@@ -1,4 +1,4 @@
-#include "../Utils.hpp"
+#include "Utils.hpp"
 #include "Solver.cuh"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"

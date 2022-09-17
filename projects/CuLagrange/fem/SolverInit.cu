@@ -1,4 +1,4 @@
-#include "../Utils.hpp"
+#include "Utils.hpp"
 #include "Solver.cuh"
 #include <zeno/types/NumericObject.h>
 

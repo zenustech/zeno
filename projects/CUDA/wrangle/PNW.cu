@@ -1,5 +1,5 @@
-#include "../Structures.hpp"
-#include "../Utils.hpp"
+#include "Structures.hpp"
+#include "Utils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/wrangler/Wrangler.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
@@ -25,8 +25,8 @@ namespace zeno {
 static zfx::Compiler compiler;
 static zfx::cuda::Assembler assembler;
 
-struct ZSParticleNeighborBvhWrangler : INode {
-    ~ZSParticleNeighborBvhWrangler() {
+struct ZSParticleNeighborWrangler : INode {
+    ~ZSParticleNeighborWrangler() {
         if (this->_cuModule)
             cuModuleUnload((CUmodule)this->_cuModule);
     }
@@ -46,6 +46,7 @@ struct ZSParticleNeighborBvhWrangler : INode {
         auto parObjPtr = parObjPtrs[0];
         auto &pars = parObjPtr->getParticles();
         auto props = pars.getPropertyTags();
+        // auto parObjPtr = get_input<ZenoParticles>("ZSParticles");
 
         /// parNeighborPtr
         auto neighborParObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSNeighborParticles");
@@ -59,13 +60,16 @@ struct ZSParticleNeighborBvhWrangler : INode {
         const auto &neighborPars = parNeighborPtr->getParticles();
         const auto neighborProps = neighborPars.getPropertyTags();
 
-        /// bvh
-        std::shared_ptr<ZenoLinearBvh> bvhPtr{};
-        if (has_input<ZenoLinearBvh>("ZSLBvh"))
-            bvhPtr = get_input<ZenoLinearBvh>("ZSLBvh");
+        /// ibs (TODO: generate based on neighborPars, when this input is absent)
+        std::shared_ptr<ZenoIndexBuckets> ibsPtr{};
+        if (has_input<ZenoIndexBuckets>("ZSIndexBuckets"))
+            ibsPtr = get_input<ZenoIndexBuckets>("ZSIndexBuckets");
+        else if (has_input<NumericObject>("ZSIndexBuckets"))
+            spatial_hashing(cudaPol, neighborPars, get_input<NumericObject>("ZSIndexBuckets")->get<float>() * 2,
+                            ibsPtr->get());
         else
-            throw std::runtime_error("PNW no input bvh accel");
-        const auto &bvh = bvhPtr->get();
+            ;
+        const auto &ibs = ibsPtr->get();
 
         zfx::Options opts(zfx::Options::for_cuda);
         opts.detect_new_symbols = true;
@@ -212,20 +216,20 @@ struct ZSParticleNeighborBvhWrangler : INode {
         zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
 
         void *function;
-        cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule, "zpc_particle_neighbor_bvh_wrangler_kernel");
+        cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule, "zpc_particle_neighbor_wrangler_kernel");
 
         // begin kernel launch
         std::size_t cnt = pars.size();
         auto parsv = zs::proxy<zs::execspace_e::cuda>({}, pars);
         auto neighborParsv = zs::proxy<zs::execspace_e::cuda>({}, neighborPars);
-        auto bvhv = zs::proxy<zs::execspace_e::cuda>(bvh);
+        auto ibsv = zs::proxy<zs::execspace_e::cuda>(ibs);
         zs::f32 *d_params = dparams.data();
         int nchns = daccessors.size();
         void *addr = daccessors.data();
         int isBox = get_input2<bool>("is_box") ? 1 : 0;
-        float radius2 = bvhPtr->thickness * bvhPtr->thickness;
-        void *args[] = {(void *)&cnt,  (void *)&isBox,    (void *)&radius2, (void *)&parsv, (void *)&neighborParsv,
-                        (void *)&bvhv, (void *)&d_params, (void *)&nchns,   (void *)&addr};
+        float radius = ibs._dx;
+        void *args[] = {(void *)&cnt,  (void *)&isBox,    (void *)&radius, (void *)&parsv, (void *)&neighborParsv,
+                        (void *)&ibsv, (void *)&d_params, (void *)&nchns,  (void *)&addr};
 
         cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
                        (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
@@ -239,16 +243,16 @@ struct ZSParticleNeighborBvhWrangler : INode {
     void *_cuModule{nullptr};
 };
 
-ZENDEFNODE(ZSParticleNeighborBvhWrangler, {
-                                              {{"ZenoParticles", "ZSParticles"},
-                                               {"ZenoParticles", "ZSNeighborParticles"},
-                                               {"ZenoLinearBvh", "ZSLBvh"},
-                                               {"string", "zfxCode"},
-                                               {"bool", "is_box", "1"},
-                                               {"DictObject:NumericObject", "params"}},
-                                              {"ZSParticles"},
-                                              {},
-                                              {"MPM"},
-                                          });
+ZENDEFNODE(ZSParticleNeighborWrangler, {
+                                           {{"ZenoParticles", "ZSParticles"},
+                                            {"ZenoParticles", "ZSNeighborParticles"},
+                                            {"ZenoIndexBuckets", "ZSIndexBuckets"},
+                                            {"string", "zfxCode"},
+                                            {"bool", "is_box", "1"},
+                                            {"DictObject:NumericObject", "params"}},
+                                           {"ZSParticles"},
+                                           {},
+                                           {"MPM"},
+                                       });
 
 } // namespace zeno

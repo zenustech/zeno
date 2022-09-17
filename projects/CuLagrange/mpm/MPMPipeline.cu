@@ -1,5 +1,5 @@
-#include "../Structures.hpp"
-#include "../Utils.hpp"
+#include "Structures.hpp"
+#include "Utils.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"

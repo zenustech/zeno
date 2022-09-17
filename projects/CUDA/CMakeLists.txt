@@ -45,76 +45,15 @@ set_target_properties(zeno
   CUDA_ARCHITECTURES OFF
 )
 
-#[=[
-target_sources(zeno PRIVATE
-  POC/jit.cu
-)
-#]=]
-
-# mpm
-target_sources(zeno PRIVATE
-  utils/IndexBuckets.cu
-  mpm/Boundary.cu
-  mpm/Generation.cu
-  mpm/Generation.cpp
-  mpm/Transfer.cu
-  mpm/MPMPipeline.cu
-  mpm/Maintenance.cu
-  mpm/Temp.cu
-)
-
-# pbd
-target_sources(zeno PRIVATE
-  pbd/PBDInit.cu
-  pbd/PBDPipeline.cu
-)
-
-# fem
-target_sources(zeno PRIVATE
-  fem/SolverInit.cu
-  fem/SolverPipeline.cu
-  fem/SolverLinearSystem.cu
-  fem/SolverIPC.cu
-  fem/BoundaryCondition.cu
-  fem/Collisions.cu
-
-  fem/Check.cu
-  fem/Generation.cpp
-  fem/test.cpp
-  fem/MeshIO.cpp
-  fem/Fiber.cpp
-  fem/Integrator.cpp
-  fem/QuasiStaticStepping.cu
-
-  fem/FastQuasiStaticStepping.cu
-
-  fem/FleshQuasiStepping.cu
-)
-
-# geometry
-target_sources(zeno PRIVATE
-  geometry/file_parser/read_vtk_mesh.hpp
-  geometry/file_parser/write_vtk_unstructured_mesh.hpp
-  geometry/file_parser/vtk_types.hpp
-  geometry/linear_system/mfcg.hpp
-  geometry/linear_system/active_set.hpp
-  geometry/kernel/laplace_matrix.hpp
-  geometry/kernel/gradient_field.hpp
-  geometry/kernel/bary_centric_weights.hpp
-  geometry/SolveLaplacian.cu
-  geometry/VectorField.cu
-  geometry/SetupSkinningWeight.cu
-  geometry/Skinning.cu
-  geometry/BaryCentricInterpolator.cu
-  geometry/BiharmonicBoundedWeight.cu
-  geometry/MeshIO.cu
-  geometry/Jiggle.cu
-)
-
 # wrangler
 target_sources(zeno PRIVATE
-  mpm/PW.cu
-  mpm/PNW.cu
-  mpm/PNBVHW.cu
-  mpm/PPW.cu
+  utils/IndexBuckets.cu
+  wrangle/PW.cu
+  wrangle/PNW.cu
+  wrangle/PNBVHW.cu
+  wrangle/PPW.cu
+)
+
+target_sources(zeno PRIVATE
+  test1.cu
 )

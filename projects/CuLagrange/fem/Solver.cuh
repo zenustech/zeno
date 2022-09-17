@@ -1,6 +1,6 @@
 #pragma once
-#include "../SpatialAccel.cuh"
-#include "../Structures.hpp"
+#include "SpatialAccel.cuh"
+#include "Structures.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/HashTable.hpp"

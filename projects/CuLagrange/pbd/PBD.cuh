@@ -1,5 +1,5 @@
 #pragma once
-#include "../Structures.hpp"
+#include "Structures.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/HashTable.hpp"

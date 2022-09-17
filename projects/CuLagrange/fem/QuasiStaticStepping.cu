@@ -1,4 +1,4 @@
-#include "../Structures.hpp"
+#include "Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/PoissonDisk.hpp"
