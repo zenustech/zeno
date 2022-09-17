@@ -101,6 +101,9 @@ struct SOCKET_INFO {
         , name(name)
         , control(CONTROL_NONE)
     {}
+    SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl)
+        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl)
+    {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {
 		return nodeid == rhs.nodeid && name == rhs.name;

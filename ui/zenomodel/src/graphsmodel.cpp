@@ -618,7 +618,7 @@ void GraphsModel::removeGraph(int idx)
 
 QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &subnetNodeIdx)
 {
-    const QString &subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
+    const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
     SubGraphModel* pModel = subGraph(subnetName);
     ZASSERT_EXIT(pModel, QModelIndex());
 
@@ -924,9 +924,9 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
             const QString &objName = idx.data(ROLE_OBJNAME).toString();
             bool bInserted = true;
             if (objName == "SubInput")
-                onSubInfoChanged(pGraph, idx, true, bInserted);
+                onSubIOAddRemove(pGraph, idx, true, bInserted);
             else if (objName == "SubOutput") 
-                onSubInfoChanged(pGraph, idx, false, bInserted);
+                onSubIOAddRemove(pGraph, idx, false, bInserted);
         }
     }
 }
@@ -961,11 +961,11 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
             bool bInserted = false;
             if (objName == "SubInput")
             {
-                onSubInfoChanged(pGraph, idx, true, bInserted);
+                onSubIOAddRemove(pGraph, idx, true, bInserted);
             }
             else if (objName == "SubOutput")
             {
-                onSubInfoChanged(pGraph, idx, false, bInserted);
+                onSubIOAddRemove(pGraph, idx, false, bInserted);
             }
         }
         pGraph->removeNode(nodeid, false);
@@ -1464,53 +1464,13 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                 }
                 else if (info.name == "type")
                 {
+                    pGraph->updateParam(id, "type", info.newValue);
+
                     updateInfo.updateWay = SOCKET_UPDATE_TYPE;
                     updateInfo.oldInfo.type = info.oldValue.toString();
                     updateInfo.newInfo.type = info.newValue.toString();
-                    updateInfo.newInfo.defaultValue = deflVal;
+                    updateInfo.newInfo.defaultValue = UiHelper::initDefaultValue(updateInfo.newInfo.type);
 
-                    pGraph->updateParam(id, info.name, info.newValue);
-
-                    if (updateInfo.newInfo.type == "string")
-                    {
-                        updateInfo.newInfo.defaultValue = "";
-                    }
-                    else if (updateInfo.newInfo.type == "float")
-                    {
-                        if (updateInfo.oldInfo.type == "int") {
-                            updateInfo.newInfo.defaultValue = deflVal.toFloat();
-                        }
-                        else {
-                            updateInfo.newInfo.defaultValue = QVariant((float)0.);
-                        }
-                    }
-                    else if (updateInfo.newInfo.type == "int")
-                    {
-                        if (updateInfo.oldInfo.type == "float") {
-                            updateInfo.newInfo.defaultValue = deflVal.toInt();
-                        }
-                        else {
-                            updateInfo.newInfo.defaultValue = QVariant((int)0);
-                        }
-                    }
-                    else if (updateInfo.newInfo.type.startsWith("vec"))
-                    {
-                        int dim = 0;
-                        bool bFloat = false;
-                        if (UiHelper::parseVecType(updateInfo.newInfo.type, dim, bFloat))
-                        {
-                            updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(dim, 0));
-                        }
-                        else
-                        {
-                            updateInfo.newInfo.defaultValue = QVariant();
-                        }
-                    }
-                    else
-                    {
-                        //other unknown or unregister type.
-                        updateInfo.newInfo.defaultValue = QVariant();
-                    }
                     //update defl type and value on SubInput/SubOutput, when type changes.
                     pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue, &updateInfo.newInfo.type);
 
@@ -1759,7 +1719,7 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
                 ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
                 desc.outputs[name].info.defaultValue = updateInfo.newInfo.defaultValue;
             }
-            break;   // if break, the default value will be sync to all subnet nodes. otherwise(if return), will not sync to outside subnet nodes.
+            break;   // if break, the default value will be sync to all subnet nodes. otherwise(if return), the value will not sync to outside subnet nodes.
         }
         case SOCKET_UPDATE_TYPE:
         {
@@ -1789,7 +1749,7 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
         SubGraphModel* pModel = m_subGraphs[i];
         if (pModel->name() != descName)
         {
-            QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchContains);
+            QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchExactly);
             for (auto idx : results)
             {
                 const QString& nodeId = idx.data(ROLE_OBJID).toString();
@@ -1997,24 +1957,27 @@ void GraphsModel::on_linkRemoved(const QModelIndex& parent, int first, int last)
 }
 
 
-void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert)
+void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert)
 {
     const QString& objId = idx.data(ROLE_OBJID).toString();
     const QString& objName = idx.data(ROLE_OBJNAME).toString();
 
     PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    ZASSERT_EXIT(params.find("name") != params.end() &&
+                 params.find("type") != params.end() &&
+                 params.find("defl") != params.end());
+
     const QString& nameValue = params["name"].value.toString();
+    const QString& typeValue = params["type"].value.toString();
+    QVariant deflVal = params["defl"].value;
+    PARAM_CONTROL ctrl = UiHelper::getControlType(typeValue);
 
     SOCKET_UPDATE_INFO updateInfo;
     updateInfo.bInput = bInput;
     updateInfo.updateWay = bInsert ? SOCKET_INSERT : SOCKET_REMOVE;
 
-    SOCKET_INFO info;
-    info.name = nameValue;
-    info.defaultValue = QVariant(); //defl?
-    info.type = "";
-
-    updateInfo.oldInfo = updateInfo.newInfo = info;
+    SOCKET_INFO newInfo("", nameValue, ctrl, typeValue, deflVal);
+    updateInfo.newInfo = newInfo;
 
     const QString& subnetNodeName = pSubModel->name();
     updateDescInfo(subnetNodeName, updateInfo);

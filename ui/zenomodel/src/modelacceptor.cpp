@@ -193,7 +193,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         param.value = param.defaultValue;
         params.insert(param.name, param);
     }
-    
+
     for (INPUT_SOCKET descInput : desc.inputs)
     {
         INPUT_SOCKET input;
@@ -204,7 +204,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         input.info.defaultValue = descInput.info.defaultValue;
         inputs.insert(input.info.name, input);
     }
-    
+
     for (OUTPUT_SOCKET descOutput : desc.outputs)
     {
         OUTPUT_SOCKET output;
@@ -377,15 +377,27 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
             params.find("type") != params.end() &&
             params.find("defl") != params.end());
         const QString& type = params["type"].value.toString();
-        PARAM_INFO& param = params["defl"];
-        if (param.value.type() == QVariant::String)
+        PARAM_INFO& defl = params["defl"];
+
+        if (defl.value.type() == QVariant::String)
         {
-            QString text = param.value.toString();
+            //legacy case, like vec3f "x,y,z" etc.
+            QString text = defl.value.toString();
             if (!text.isEmpty())
             {
-                param.control = UiHelper::getControlType(type);
-                param.value = UiHelper::_parseDefaultValue(text, type);
-                param.typeDesc = type;
+                defl.control = UiHelper::getControlType(type);
+                defl.value = UiHelper::_parseDefaultValue(text, type);
+                defl.typeDesc = type;
+                m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+            }
+        }
+        else
+        {
+            PARAM_CONTROL ctrl = UiHelper::getControlType(type);
+            if (ctrl != CONTROL_NONE && defl.control != ctrl)
+            {
+                defl.typeDesc = type;
+                defl.control = ctrl;
                 m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
             }
         }
