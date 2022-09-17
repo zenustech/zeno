@@ -130,7 +130,7 @@ struct ExtractMaterialShader : zeno::INode
           },
           {},
           {
-              "shader",
+              "deprecated",
           },
       });
 
