@@ -130,7 +130,7 @@ void GraphsManagment::importGraph(const QString& fn)
         return;
 
     IOBreakingScope batch(m_model);
-    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, false));
+    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));
 	if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
 	{
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());

@@ -163,6 +163,35 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     return true;
 }
 
+QVariant UiHelper::initDefaultValue(const QString& type)
+{
+    if (type == "string") {
+        return "";
+    }
+    else if (type == "float")
+    {
+        return QVariant((float)0.);
+    }
+    else if (type == "int")
+    {
+        return QVariant((int)0);
+    }
+    else if (type == "bool")
+    {
+        return QVariant(false);
+    }
+    else if (type.startsWith("vec"))
+    {
+        int dim = 0;
+        bool bFloat = false;
+        if (UiHelper::parseVecType(type, dim, bFloat))
+        {
+            return QVariant::fromValue(UI_VECTYPE(dim, 0));
+        }
+    }
+    return QVariant();
+}
+
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
     auto control = getControlType(type);

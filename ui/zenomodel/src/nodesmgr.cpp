@@ -5,6 +5,7 @@
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/variantptr.h>
 #include <zenomodel/include/curveutil.h>
+#include "zassert.h"
 
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
@@ -133,6 +134,19 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
         grad.setColorAt(1, QColor::fromRgbF(1., 1., 1.));
         param.value = UiHelper::gradient2colorString(grad);
         params.insert(param.name, param);
+    }
+    if (descName == "SubInput" || descName == "SubOutput")
+    {
+        ZASSERT_EXIT(params.find("name") != params.end() &&
+                     params.find("type") != params.end() &&
+                     params.find("defl") != params.end());
+        const QVariant& defl = params["defl"].value.toString();
+        const QString& typeDesc = params["type"].value.toString();
+        if (typeDesc.isEmpty())
+        {
+            params["defl"].typeDesc = "";
+            params["defl"].control = CONTROL_NONE;
+        }
     }
 }
 

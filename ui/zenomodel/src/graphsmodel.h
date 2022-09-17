@@ -141,7 +141,7 @@ public slots:
 
 private:
     NODE_DESCS getCoreDescs();
-    void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
+    void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);

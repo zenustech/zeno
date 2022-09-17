@@ -33,6 +33,7 @@ public:
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
     static QVariant _parseDefaultValue(const QString& defaultValue, const QString &type);
+    static QVariant initDefaultValue(const QString& type);
     static bool validateVariant(const QVariant& var, const QString& type);
     static QVariant parseVariantValue(const rapidjson::Value& val);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
