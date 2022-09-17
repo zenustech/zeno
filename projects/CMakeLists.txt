@@ -27,6 +27,7 @@ set(ZENO_EXTENSIONS
     CalcGeometryUV
     MeshSubdiv
     CUDA
+    CuOcean
     Audio
     Parameterization
     GUI

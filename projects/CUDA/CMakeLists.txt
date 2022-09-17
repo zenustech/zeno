@@ -23,19 +23,15 @@ find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)
+target_include_directories(zshelper INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
 target_link_libraries(zshelper INTERFACE zensim ZFX)
-
-target_compile_features(zeno PRIVATE cuda_std_17)
-
-#[=[
-target_compile_options(zeno
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+target_compile_features(zshelper INTERFACE cuda_std_17)
+target_link_options(zshelper
+  INTERFACE $<$<LINK_LANGUAGE:CUDA>:-dlto>
 )
-#]=]
-target_link_options(zeno
-  PUBLIC $<$<LINK_LANGUAGE:CUDA>:-dlto>
-)
-target_link_libraries(zeno PRIVATE zshelper CUDA::cufft)
+target_link_libraries(zeno PRIVATE zshelper)
 
 #[=[
 target_sources(zeno PRIVATE
@@ -54,14 +50,6 @@ target_sources(zeno PRIVATE
   POC/jit.cu
 )
 #]=]
-
-# fluid
-target_sources(zeno PRIVATE
-  volume/VolumeTopology.cu
-  volume/VolumeOperator.cu
-  volume/Transfer.cu
-  volume/Conversion.cu
-)
 
 # mpm
 target_sources(zeno PRIVATE
@@ -98,9 +86,6 @@ target_sources(zeno PRIVATE
   fem/Integrator.cpp
   fem/QuasiStaticStepping.cu
 
-  # fem/BaryCentricInterpolator.cu
-  # fem/Codim.cu
-
   fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
@@ -126,18 +111,10 @@ target_sources(zeno PRIVATE
   geometry/Jiggle.cu
 )
 
-# ocean
-target_sources(zeno PRIVATE
-  oceanfft/Ocean.cu
-)
-
 # wrangler
-#if(NOT MSVC)
-if(TRUE)
-  target_sources(zeno PRIVATE
-    mpm/PW.cu
-    mpm/PNW.cu
-    mpm/PNBVHW.cu
-    mpm/PPW.cu
-  )
-endif()
+target_sources(zeno PRIVATE
+  mpm/PW.cu
+  mpm/PNW.cu
+  mpm/PNBVHW.cu
+  mpm/PPW.cu
+)

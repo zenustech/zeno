@@ -4,7 +4,6 @@
 //-------attached some cuda library for FFT-----------------
 
 //--------------
-#include "../Structures.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/math/Vec.h"
