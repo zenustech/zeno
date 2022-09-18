@@ -484,6 +484,18 @@ int GetLightIndex(float p, ParallelogramLight* lightP, int n)
     }
     return e;
 }
+static __inline__ __device__
+vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
+{
+    vec3 n = cross(u,v);
+    float a = 1.0 / dot(n,n);
+    vec3 w = p - q;
+    vec3 o;
+    o.z = dot(cross(u,w),n) * a;
+    o.y = dot(cross(w,v),n) * a;
+    o.x = 1.0 - o.y - o.z;
+    return o;
+}
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -651,7 +663,8 @@ extern "C" __global__ void __closesthit__radiance()
     //discard fully opacity pixels
     prd->opacity = opacity;
     if(prd->isSS == true) {
-        roughness = clamp(roughness, 0.99, 0.99);
+        basecolor = vec3(1.0f);
+        roughness = 1.0;
         anisotropic = 0;
         sheen = 0;
         clearcoat = 0;
