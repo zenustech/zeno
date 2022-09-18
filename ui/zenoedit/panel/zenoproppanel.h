@@ -2,7 +2,7 @@
 #define __NODE_PROPERTIES_PANEL_H__
 
 #include <QtWidgets>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 class IGraphsModel;
 

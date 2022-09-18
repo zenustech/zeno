@@ -10,11 +10,11 @@
 #include <zenoui/comctrl/zlabel.h>
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "docktabcontent.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)

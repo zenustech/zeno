@@ -8,8 +8,8 @@
 #include "../panel/zlogpanel.h"
 #include "nodesview/zenographseditor.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenoui/comctrl/zlinewidget.h>
 
 

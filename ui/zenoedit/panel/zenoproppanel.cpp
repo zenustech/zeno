@@ -3,8 +3,9 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
-#include <zenomodel/model/curvemodel.h>
-#include <zenomodel/model/variantptr.h>#include <zenoui/comctrl/zcombobox.h>
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/variantptr.h>
+#include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
@@ -16,9 +17,10 @@
 #include <zenoui/comctrl/ztextedit.h>
 #include "util/log.h"
 #include "util/apphelper.h"
-#include "curvemap/curveutil.h"
+#include <zenomodel/include/curveutil.h>
 #include "curvemap/zcurvemapeditor.h"
 #include "panel/zenoheatmapeditor.h"
+#include "zenomainwindow.h"
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -91,19 +93,6 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 	m_subgIdx = subgIdx;
 	m_idx = nodes[0];
 
-	//title
-	//QHBoxLayout* pTitleLayout = new QHBoxLayout;
-	//pTitleLayout->setContentsMargins(15, 15, 15, 15);
-	//QLabel* pLabel = new QLabel(m_idx.data(ROLE_OBJNAME).toString());
-	//pLabel->setProperty("cssClass", "proppanel-nodename");
-	//pTitleLayout->addWidget(pLabel);
-	//pTitleLayout->addStretch();
-	//QLabel* pWiki = new QLabel(tr("Wiki"));
-	//pWiki->setProperty("cssClass", "proppanel");
-	//pTitleLayout->addWidget(pWiki);
-
-	//pMainLayout->addLayout(pTitleLayout);
-
 	auto box = inputsBox(pModel, subgIdx, nodes);
 	if (box)
 	{
@@ -146,7 +135,6 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 
 ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-		return nullptr;
     ZASSERT_EXIT(m_idx.isValid(), nullptr);
     INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     if (inputs.isEmpty())
@@ -502,7 +490,7 @@ void ZenoPropPanel::onCurveModelEdit(bool bInputSock, const QString& name)
 		val = inputs[name].info.defaultValue;
 	}
 	else {
-		val = pGraphsModel->getParamValue(nodeid, name, m_subgIdx);
+		val = UiHelper::getParamValue(m_idx, name);
     }
     CurveModel* pModel = QVariantPtr<CurveModel>::asPtr(val);
     ZASSERT_EXIT(pModel);	//the param has been inited as curve model.
@@ -524,7 +512,7 @@ void ZenoPropPanel::onInputColorEdited(const QString& inSock)
     editor.exec();
 
     QLinearGradient newGrad = editor.colorRamps();
-    QString colorText = AppHelper::gradient2colorString(newGrad);
+    QString colorText = UiHelper::gradient2colorString(newGrad);
     if (colorText != oldColor)
     {
         PARAM_UPDATE_INFO info;
@@ -551,7 +539,7 @@ void ZenoPropPanel::onParamColorEdited(const QString& paramName)
     editor.exec();
 
     QLinearGradient newGrad = editor.colorRamps();
-    QString colorText = AppHelper::gradient2colorString(newGrad);
+    QString colorText = UiHelper::gradient2colorString(newGrad);
     if (colorText != oldColor)
     {
         PARAM_UPDATE_INFO info;
