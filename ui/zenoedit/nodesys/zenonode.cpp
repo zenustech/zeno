@@ -1,21 +1,20 @@
 #include "zenonode.h"
 #include "zenosubgraphscene.h"
-#include <zenoui/model/modelrole.h>
-#include "model/subgraphmodel.h"
+#include <zenomodel/include/modelrole.h>
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenoui/util/uihelper.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/model/variantptr.h>
+#include <zenomodel/include/variantptr.h>
 #include "curvemap/zcurvemapeditor.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
 #include "zenosubgraphview.h"
@@ -369,10 +368,10 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
     if (ctrl == CONTROL_NONVISIBLE)
         return nullptr;
 
-    QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-
-	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
-	pParamLayout->addItem(pNameItem);
+    _param_ctrl paramCtrl;
+    paramCtrl.ctrl_layout = new QGraphicsLinearLayout(Qt::Horizontal);
+    paramCtrl.param_name = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+    paramCtrl.ctrl_layout->addItem(paramCtrl.param_name);
 
 	switch (param.control)
 	{
@@ -388,20 +387,23 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 	    case CONTROL_CURVE:
 	    {
             ZenoParamWidget* pWidget = initParamWidget(pScene, param);
-            pParamLayout->addItem(pWidget);
-            m_paramControls[paramName] = pWidget;
+            paramCtrl.ctrl_layout->addItem(pWidget);
+            paramCtrl.param_control = pWidget;
             break;
 	    }
 	    default:
 	    {
-		    zeno::log_warn("got undefined control type {}", param.control);
+		    //zeno::log_warn("got undefined control type {}", param.control);
             const QString& value = UiHelper::variantToString(param.value);
 		    ZenoTextLayoutItem* pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pValueItem);
+            paramCtrl.ctrl_layout->addItem(pValueItem);
 		    break;
 	    }
 	}
-    return pParamLayout;
+    //todo: mark this as const func.
+    m_params.insert(paramName, paramCtrl);
+
+    return paramCtrl.ctrl_layout;
 }
 
 ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param)
@@ -450,7 +452,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 const QString& nodeid = m_index.data(ROLE_OBJID).toString();
 
                 PARAM_UPDATE_INFO info;
-                info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
+                info.oldValue = UiHelper::getParamValue(m_index, paramName);
                 info.newValue = bChecked;
                 info.name = paramName;
                 if (info.oldValue != info.newValue)
@@ -531,7 +533,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
                 CurveModel* pModel = nullptr;
-                const QVariant& val = pGraphsModel->getParamValue(m_index.data(ROLE_OBJID).toString(), paramName, m_subGpIndex);
+                const QVariant& val = UiHelper::getParamValue(m_index, paramName);
                 pModel = QVariantPtr<CurveModel>::asPtr(val);
                 if (!pModel)
                 {
@@ -622,14 +624,14 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
         ZenoParamWidget* pNewWidget = initParamWidget(pScene, param);
         ZASSERT_EXIT(pNewWidget, nullptr);
         pParamLayout->addItem(pNewWidget);
-        m_paramControls[param.name] = pNewWidget;
+        m_params[param.name].param_control = pNewWidget;
         return pNewWidget;
     };
 
-    if (m_paramControls.find(paramName) != m_paramControls.end())
+    if (m_params.find(paramName) != m_params.end())
     {
-        ZenoParamWidget* pWidget = m_paramControls[paramName];
-        QGraphicsLinearLayout* pParamLayout = static_cast<QGraphicsLinearLayout*>(pWidget->parentLayoutItem());
+        ZenoParamWidget* pWidget = m_params[paramName].param_control;
+        QGraphicsLinearLayout* pParamLayout = m_params[paramName].ctrl_layout;
 
         PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
         const PARAM_INFO& param = params[paramName];
@@ -699,6 +701,17 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
                 ZenoParamPathEdit* pPathWidget = qobject_cast<ZenoParamPathEdit*>(pWidget);
                 bool isRead = param.control == CONTROL_READPATH;
                 pPathWidget->setPath(val.toString());
+                break;
+            }
+            case CONTROL_NONE:
+            {
+                //clear the control if none type.
+                if (pWidget && pParamLayout) {
+                    pParamLayout->removeItem(pWidget);
+                    delete pWidget;
+                    m_params[param.name].param_control = nullptr;
+                    bUpdateLayout = true;
+                }
                 break;
             }
         }
@@ -1711,7 +1724,7 @@ void ZenoNode::onCollaspeBtnClicked()
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 
     STATUS_UPDATE_INFO info;
     info.role = ROLE_COLLASPED;
@@ -1727,7 +1740,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	ZASSERT_EXIT(pGraphsModel);
 
-    int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
+    int options = m_index.data(ROLE_OPTIONS).toInt();
     int oldOpts = options;
 
     if (btn == STATUS_MUTE)
@@ -1833,7 +1846,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         QPointF newPos = value.toPointF();
-        QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
+        QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
         {
             STATUS_UPDATE_INFO info;

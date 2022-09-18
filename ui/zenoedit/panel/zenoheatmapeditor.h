@@ -7,7 +7,7 @@ namespace Ui
 }
 
 #include <QtWidgets>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 class ZenoRampBar;
 

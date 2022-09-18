@@ -38,6 +38,12 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
         else if (sel_attr == "Loops") {
             return (int)(m_prim->loops.size());
         }
+        else if (sel_attr == "LoopUVs") {
+            return (int)(m_prim->loop_uvs.size());
+        }
+        else if (sel_attr == "UVs") {
+            return (int)(m_prim->uvs.size());
+        }
         else {
             return 1;
         }
@@ -69,6 +75,12 @@ int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
         }
         else if (sel_attr == "Loops") {
             return 1 + (int)m_prim->loops.num_attrs<AttrAcceptAll>();
+        }
+        else if (sel_attr == "LoopUVs") {
+            return 1 + (int)m_prim->loop_uvs.num_attrs<AttrAcceptAll>();
+        }
+        else if (sel_attr == "UVs") {
+            return 1 + (int)m_prim->uvs.num_attrs<AttrAcceptAll>();
         }
         else {
             return m_prim->userData().size();
@@ -110,6 +122,12 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
         }
         else if (sel_attr == "Loops") {
             return loopsData(index);
+        }
+        else if (sel_attr == "LoopUVs") {
+            return loopUVsData(index);
+        }
+        else if (sel_attr == "UVs") {
+            return uvsData(index);
         }
         else {
             auto it = m_prim->userData().begin();
@@ -221,6 +239,22 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
             }
             else {
                 return QString(m_prim->loops.attr_keys<AttrAcceptAll>()[section - 1].c_str());
+            }
+        }
+        else if (sel_attr == "LoopUVs") {
+            if (section == 0) {
+                return QString("pos");
+            }
+            else {
+                return QString(m_prim->loop_uvs.attr_keys<AttrAcceptAll>()[section - 1].c_str());
+            }
+        }
+        else if (sel_attr == "UVs") {
+            if (section == 0) {
+                return QString("pos");
+            }
+            else {
+                return QString(m_prim->uvs.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else {
@@ -356,5 +390,23 @@ QVariant PrimAttrTableModel::loopsData(const QModelIndex &index) const {
     }
     else {
         return attrData(m_prim->loops, index);
+    }
+}
+QVariant PrimAttrTableModel::loopUVsData(const QModelIndex &index) const {
+    if (index.column() == 0) {
+        auto v = m_prim->loop_uvs.at(index.row());
+        return v;
+    }
+    else {
+        return attrData(m_prim->loop_uvs, index);
+    }
+}
+QVariant PrimAttrTableModel::uvsData(const QModelIndex &index) const {
+    if (index.column() == 0) {
+        auto v = m_prim->uvs.at(index.row());
+        return QString("%1, %2").arg(v[0]).arg(v[1]);
+    }
+    else {
+        return attrData(m_prim->uvs, index);
     }
 }

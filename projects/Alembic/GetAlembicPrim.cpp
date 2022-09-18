@@ -37,6 +37,18 @@ ZENDEFNODE(CountAlembicPrims, {
     {"alembic"},
 });
 
+void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim) {
+    for (auto i = 0; i < prim->polys.size(); i++) {
+        auto [base, cnt] = prim->polys[i];
+        for (int j = 0; j < (cnt / 2); j++) {
+            std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
+            if (prim->loop_uvs.size()) {
+                std::swap(prim->loop_uvs[base + j], prim->loop_uvs[base + cnt - 1 - j]);
+            }
+        }
+    }
+}
+
 std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index) {
     std::shared_ptr<PrimitiveObject> prim;
     abctree->visitPrims([&] (auto const &p) {
@@ -136,6 +148,9 @@ struct GetAlembicPrim : INode {
         } else {
             prim = get_alembic_prim(abctree, index);
         }
+        if (get_input2<bool>("flipFrontBack")) {
+            flipFrontBack(prim);
+        }
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(prim.get());
         }
@@ -145,6 +160,7 @@ struct GetAlembicPrim : INode {
 
 ZENDEFNODE(GetAlembicPrim, {
     {
+        {"bool", "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
         {"int", "index", "0"},
         {"bool", "use_xform", "0"},
@@ -168,7 +184,10 @@ struct AllAlembicPrim : INode {
                 prims->arr.push_back(np);
             });
         }
-        auto outprim = prim_merge(prims);
+        auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
+        if (get_input2<bool>("flipFrontBack")) {
+            flipFrontBack(outprim);
+        }
         if (get_input2<int>("triangulate") == 1) {
             zeno::primTriangulate(outprim.get());
         }
@@ -178,6 +197,7 @@ struct AllAlembicPrim : INode {
 
 ZENDEFNODE(AllAlembicPrim, {
     {
+        {"bool", "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},

@@ -1,9 +1,8 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
-#include "model/graphsmodel.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
 #include "dock/docktabcontent.h"
@@ -20,15 +19,15 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
-//#include <QtWidgets/private/qmainwindowlayout_p.h>
+#include "nodesys/zenosubgraphscene.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -640,14 +639,13 @@ void ZenoMainWindow::exportGraph() {
     QString content;
     {
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-        GraphsModel *model = (GraphsModel *)pModel;
         if (path.endsWith(".cpp")) {
-            content = serializeSceneCpp(model);
+            content = serializeSceneCpp(pModel);
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
             JsonArrayBatch batch(writer);
-            serializeScene(model, writer);
+            serializeScene(pModel, writer);
             content = QString(s.GetString());
         }
     }
@@ -657,9 +655,11 @@ void ZenoMainWindow::exportGraph() {
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
-    IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
+    IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+
+    setTimelineInfo(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -791,7 +791,8 @@ void ZenoMainWindow::saveQuit() {
     setTimelineInfo(TIMELINE_INFO());
 }
 
-void ZenoMainWindow::save() {
+void ZenoMainWindow::save()
+{
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
@@ -803,16 +804,12 @@ void ZenoMainWindow::save() {
     }
 }
 
-bool ZenoMainWindow::saveFile(QString filePath) {
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-
+bool ZenoMainWindow::saveFile(QString filePath)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
-
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
-    saveContent(strContent, filePath);
-    pModel->setFilePath(filePath);
-    pModel->clearDirty();
+    zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
 }
@@ -865,14 +862,21 @@ void ZenoMainWindow::onFeedBack()
 void ZenoMainWindow::clearErrorMark()
 {
     //clear all error mark at every scene.
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel* pModel = graphsMgm->currentModel();
     if (!pModel) {
         return;
     }
     const QModelIndexList& lst = pModel->subgraphsIndice();
     for (const QModelIndex& idx : lst)
     {
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(idx));
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(idx, pScene);
+            pScene->initModel(idx);
+        }
+
         if (pScene) {
             pScene->clearMark();
         }

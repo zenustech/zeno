@@ -1,9 +1,9 @@
 #ifndef __IACCEPTOR_H__
 #define __IACCEPTOR_H__
 
-#include <zenoui/model/modeldata.h>
 #include <rapidjson/document.h>
 #include "common.h"
+#include <zenomodel/include/modeldata.h>
 
 class IGraphsModel;
 
@@ -37,6 +37,7 @@ public:
     virtual void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) = 0;
     virtual void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) = 0;
     virtual void setTimeInfo(const TIMELINE_INFO& info) = 0;
+    virtual TIMELINE_INFO timeInfo() const = 0;
     virtual void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

@@ -14,6 +14,7 @@
 #include <zeno_Python_config.h>
 #include <cwchar>
 #include <utility>
+#include <thread>
 
 namespace zeno {
 
@@ -98,11 +99,16 @@ struct PythonFunctor {
             Py_DECREF(pyArgs);
         };
         PyObject *pyRet = PyObject_Call(pyFunc, pyArgs, pyKwargs);
+        if (!pyRet) {
+            PyErr_Print();
+            throw makeError("Python exception occurred (during function call), see console for more details");
+        }
         scope_exit pyRetDel = [=] {
             Py_DECREF(pyRet);
         };
         scope_exit pyFuncRetsRAIIDel = [=] {
-            PyObject_DelAttrString(pyFunc, "_retsRAII");
+            if (PyObject_HasAttrString(pyFunc, "_wrapRetRAII"))
+                PyObject_DelAttrString(pyFunc, "_wrapRetRAII");
         };
         if (PyDict_Check(pyRet)) {
             PyObject *key, *value;
@@ -140,6 +146,54 @@ static Zeno_Object factoryFunctionObject(void *inObj_) {
 
 static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
 
+static PyObject *callFunctionObjectCFunc(PyObject *pyHandleAndKwargs_) {
+    PyObject *pyHandleVal = PyTuple_GetItem(pyHandleAndKwargs_, 0);
+    PyObject *pyKwargs = PyTuple_GetItem(pyHandleAndKwargs_, 1);
+    Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
+    auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "callFunctionObjectCFunc");
+    FunctionObject::DictType objParams;
+    {
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+        if (!PyDict_Check(pyKwargs)) throw makeError("expect to pyArgs_ be an dict");
+        while (PyDict_Next(pyKwargs, &pos, &key, &value)) {
+            Py_ssize_t keyLen = 0;
+            const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+            if (keyDat == nullptr) {
+                throw makeError("failed to cast rets key as string");
+            }
+            std::string keyStr(keyDat, keyLen);
+            Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+            if (handle == -1 && PyErr_Occurred()) {
+                throw makeError("failed to cast rets value as integer");
+            }
+            objParams.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+        }
+    }
+    objParams = objFunc->call(objParams);
+    PyDict_Clear(pyKwargs);
+    for (auto const &[k, v]: objParams) {
+        PyObject *handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
+        PyDict_SetItemString(pyKwargs, k.c_str(), handleObj);
+    }
+    return pyKwargs;
+}
+
+static int defCallFunctionObjectCFunc = capiRegisterCFunctionPtr("FunctionObject_call", reinterpret_cast<void *(*)(void *)>(callFunctionObjectCFunc));
+
+static void *defactoryFunctionObject(Zeno_Object inHandle_) {
+    auto objSp = capiFindObjectSharedPtr(inHandle_);
+    auto funcObj = dynamic_cast<FunctionObject *>(objSp.get());
+    if (!funcObj) throw makeError<TypeError>(typeid(FunctionObject), typeid(*objSp),
+                                             "convert from zeno function to python function");
+    //PyObject *selfPtr = PyDict_New();
+    PyObject *pyHandleVal = PyLong_FromUnsignedLongLong(inHandle_);
+    if (!pyHandleVal) throw makeError("failed to invoke PyLong_FromUnsignedLongLong");
+    return reinterpret_cast<void *>(pyHandleVal);
+}
+
+static int defFunctionObjectDefactory = capiRegisterObjectDefactory("FunctionObject", defactoryFunctionObject);
+
 //static Zeno_Object dictObjFactory() {
     //PyObject *zenoMod = PyImport_AddModule("ze");
     //PyObject *zenoModDict = PyModule_GetDict(zenoMod);
@@ -151,6 +205,8 @@ static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject"
 //}
 
 //static int defDictObjFactory = capiRegisterObjectFactory("DictObject", funcObjFactory);
+
+}
 
 struct PythonScript : INode {
     void apply() override {
@@ -193,9 +249,9 @@ struct PythonScript : INode {
             throw makeError("failed to set ze._args");
         std::shared_ptr<Graph> currGraphSP = getThisGraph()->shared_from_this();  // TODO
         Zeno_Graph currGraphHandle = capiLoadGraphSharedPtr(currGraphSP);
-        scope_exit currGraphEraser = [=] {
-            capiEraseGraphSharedPtr(currGraphHandle);
-        };
+        //scope_exit currGraphEraser = [=] {
+            //capiEraseGraphSharedPtr(currGraphHandle);
+        //};
         {
             PyObject *currGraphLong = PyLong_FromUnsignedLongLong(currGraphHandle);
             scope_exit currGraphLongDel = [=] {
@@ -204,13 +260,13 @@ struct PythonScript : INode {
             if (PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLong) < 0)
                 throw makeError("failed to set ze._currgraph");
         }
-        scope_exit currGraphLongReset = [=] {
-            PyObject *currGraphLongZero = PyLong_FromUnsignedLongLong(0);
-            scope_exit currGraphLongZeroDel = [=] {
-                Py_DECREF(currGraphLongZero);
-            };
-            (void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
-        };
+        //scope_exit currGraphLongReset = [=] {
+            //PyObject *currGraphLongZero = PyLong_FromUnsignedLongLong(0);
+            //scope_exit currGraphLongZeroDel = [=] {
+                //Py_DECREF(currGraphLongZero);
+            //};
+            //(void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
+        //};
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
             mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
@@ -223,8 +279,8 @@ struct PythonScript : INode {
                 mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }
-        currGraphLongReset.reset();
-        currGraphEraser.reset();
+        //currGraphLongReset.reset();
+        //currGraphEraser.reset();
         needToDelEraser.reset();
         if (!mainMod) {
             PyErr_Print();
@@ -268,5 +324,4 @@ ZENO_DEFNODE(PythonScript)({
     {"python"},
 });
 
-}
 }

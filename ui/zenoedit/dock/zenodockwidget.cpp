@@ -5,9 +5,9 @@
 #include <comctrl/ztoolbutton.h>
 #include "nodesview/zenographseditor.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "../panel/zenoproppanel.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
 #include "viewport/viewportwidget.h"
@@ -22,6 +22,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
+#include <zenomodel/include/api.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,7 +105,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
         if (select) {
             const QModelIndex& idx = nodes[0];
-            QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
+            QString nodeName = idx.data(ROLE_OBJNAME).toString();
             pPropTitle->setTitle(nodeName);
         }
         else {
@@ -119,7 +120,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (select) {
             const QModelIndex& idx = nodes[0];
-            QString nodeId = pModel->data2(subgIdx, idx, ROLE_OBJID).toString();
+            QString nodeId = idx.data(ROLE_OBJID).toString();
             auto *scene = Zenovis::GetInstance().getSession()->get_scene();
             scene->selected.clear();
             std::string nodeid = nodeId.toStdString();
@@ -202,6 +203,11 @@ void ZenoDockWidget::onDockOptionsClicked()
     QAction* pFloatWin = new QAction("Float Window");
     QAction* pCloseLayout = new QAction("Close Layout");
 
+#ifdef TEST_ZENO_API_TRIGGER
+    QAction* pTestAPI = new QAction("Test API");
+    connect(pTestAPI, SIGNAL(triggered()), this, SLOT(onTestAPI()));
+#endif
+
     connect(pMaximize, SIGNAL(triggered()), this, SIGNAL(maximizeTriggered()));
     connect(pFloatWin, SIGNAL(triggered()), this, SLOT(onFloatTriggered()));
     connect(pCloseLayout, SIGNAL(triggered()), this, SLOT(close()));
@@ -219,8 +225,25 @@ void ZenoDockWidget::onDockOptionsClicked()
     menu->addAction(pFloatWin);
     menu->addSeparator();
     menu->addAction(pCloseLayout);
+    menu->addAction(pTestAPI);
     menu->exec(QCursor::pos());
 }
+
+#ifdef TEST_ZENO_API_TRIGGER
+void ZenoDockWidget::onTestAPI()
+{
+    ZENO_HANDLE hGraph = Zeno_GetGraph("main");
+    if (hGraph != 0)
+    {
+        ZENO_HANDLE hCube = Zeno_AddNode(hGraph, "CreateCube");
+        ZENO_HANDLE hTrans = Zeno_AddNode(hGraph, "TransformPrimitive");
+        Zeno_SetPos(hTrans, std::make_pair(1000, 0));
+
+        Zeno_SetInputDefl(hCube, "position", zeno::vec3f(2, 0, 0));
+        ZENO_ERROR err = Zeno_AddLink(hCube, "prim", hTrans, "prim");
+    }
+}
+#endif
 
 void ZenoDockWidget::onMaximizeTriggered()
 {

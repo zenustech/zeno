@@ -1,17 +1,15 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
-#include "zenomainwindow.h"
-#include "graphsmanagment.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/model/curvemodel.h>
-#include <zenoui/model/variantptr.h>
-#include <zenoui/include/igraphsmodel.h>
-#include <zenoui/comctrl/zcombobox.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/igraphsmodel.h>
+#include <zenomodel/model/curvemodel.h>
+#include <zenomodel/model/variantptr.h>#include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
@@ -129,10 +127,10 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
 ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	ZASSERT_EXIT(m_idx.isValid(), nullptr);
+    if (nodes.isEmpty())
+        return nullptr;
 
-	PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-	if (params.isEmpty())
+	PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();	if (params.isEmpty())
 		return nullptr;
 
 	ZExpandableSection* pParamsBox = new ZExpandableSection(tr("NODE PARAMETERS"));
@@ -148,8 +146,8 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 
 ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	ZASSERT_EXIT(m_idx.isValid(), nullptr);
-
+		return nullptr;
+    ZASSERT_EXIT(m_idx.isValid(), nullptr);
     INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     if (inputs.isEmpty())
         return nullptr;
@@ -470,7 +468,7 @@ void ZenoPropPanel::onParamEditFinish()
 	else if (QCheckBox *pCheckbox = qobject_cast<QCheckBox*>(pSender))
 	{
 		PARAM_UPDATE_INFO info;
-		info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
+		info.oldValue = UiHelper::getParamValue(m_idx, paramName);
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 		info.name = paramName;
 		if (info.newValue != info.oldValue)
@@ -485,10 +483,11 @@ void ZenoPropPanel::onParamEditFinish()
 	}
 
 	PARAM_UPDATE_INFO info;
-	info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
-	info.newValue = UiHelper::parseTextValue(ctrl, textValue);;
+	info.oldValue = UiHelper::getParamValue(m_idx, paramName);
+	info.newValue = UiHelper::parseTextValue(ctrl, textValue);
 	info.name = paramName;
-	model->updateParamInfo(nodeid, info, m_subgIdx, true);
+	if (info.oldValue != info.newValue)
+		model->updateParamInfo(nodeid, info, m_subgIdx, true);
 }
 
 void ZenoPropPanel::onCurveModelEdit(bool bInputSock, const QString& name)

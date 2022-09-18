@@ -4,7 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "../viewport/zenovis.h"
 #include "ui_ztimeline.h"
 

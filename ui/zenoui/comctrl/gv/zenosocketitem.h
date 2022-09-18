@@ -1,7 +1,7 @@
 #ifndef __ZENO_SOCKET_ITEM_H__
 #define __ZENO_SOCKET_ITEM_H__
 
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 #include <zenoui/nodesys/zenosvgitem.h>
 #include "../../nodesys/nodesys_common.h"
 

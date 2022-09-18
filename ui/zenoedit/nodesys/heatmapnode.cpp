@@ -1,9 +1,10 @@
 #include "heatmapnode.h"
 #include "panel/zenoheatmapeditor.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"
 #include "util/apphelper.h"
+#include <zenomodel/include/uihelper.h>
 
 
 MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -70,7 +71,7 @@ void MakeHeatMapNode::onEditClicked()
         editor.exec();
 
         QLinearGradient newGrad = editor.colorRamps();
-        QString colorText = AppHelper::gradient2colorString(newGrad);
+        QString colorText = UiHelper::gradient2colorString(newGrad);
         if (colorText != oldColor)
         {
             PARAM_UPDATE_INFO info;

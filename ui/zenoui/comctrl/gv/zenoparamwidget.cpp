@@ -4,7 +4,7 @@
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
-#include "util/uihelper.h"
+#include <zenomodel/include/uihelper.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)

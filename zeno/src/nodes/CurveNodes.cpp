@@ -4,6 +4,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/utils/arrayindex.h>
 
 namespace zeno {
@@ -153,10 +154,15 @@ ZENO_DEFNODE(UpdateCurveControlPoint)({
 struct UpdateCurveCycleType : zeno::INode {
     virtual void apply() override {
         auto curve = get_input<CurveObject>("curve");
+        auto key = get_input2<std::string>("key");
         auto type = get_input2<std::string>("type");
         auto typeIndex = array_index_safe({"CLAMP", "CYCLE", "MIRROR"}, type, "CycleType");
-        for (auto &[k, v]: curve->keys) {
-            v.cycleType = static_cast<CurveData::CycleType>(typeIndex); 
+        if (key.empty()) {
+            for (auto &[k, v]: curve->keys) {
+                v.cycleType = static_cast<CurveData::CycleType>(typeIndex); 
+            }
+        } else {
+            curve->keys.at(key).cycleType = static_cast<CurveData::CycleType>(typeIndex); 
         }
         set_output("curve", std::move(curve));
     }
@@ -165,6 +171,7 @@ struct UpdateCurveCycleType : zeno::INode {
 ZENO_DEFNODE(UpdateCurveCycleType)({
     {
         {"curve", "curve"},
+        {"string", "key", "x"},
         {"enum CLAMP CYCLE MIRROR", "type", "CLAMP"},
     },
     {
@@ -174,6 +181,40 @@ ZENO_DEFNODE(UpdateCurveCycleType)({
     {"curve"},
 });
 
+struct UpdateCurveXYRange : zeno::INode {
+    virtual void apply() override {
+        auto curve = get_input<CurveObject>("curve");
+        auto key = get_input2<std::string>("key");
+        auto &data = curve->keys.at(key);
+        auto rg = data.rg;
+        if (has_input("x_from"))
+            rg.xFrom = get_input2<float>("x_from");
+        if (has_input("x_to"))
+            rg.xTo = get_input2<float>("x_to");
+        if (has_input("y_from"))
+            rg.yFrom = get_input2<float>("y_from");
+        if (has_input("y_to"))
+            rg.yTo = get_input2<float>("y_to");
+        data.updateRange(rg);
 
+        set_output("curve", std::move(curve));
+    }
+};
+
+ZENO_DEFNODE(UpdateCurveXYRange)({
+    {
+        {"curve", "curve"},
+        {"string", "key", "x"},
+        {"optional float", "x_from"},
+        {"optional float", "x_to"},
+        {"optional float", "y_from"},
+        {"optional float", "y_to"},
+    },
+    {
+        {"curve", "curve"},
+    },
+    {},
+    {"curve"},
+});
 
 }

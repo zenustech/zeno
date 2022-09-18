@@ -41,8 +41,7 @@ ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, st
                   loc.file_name(), loc.line(),
                   msg);
     //*os << ansiclr::reset;
-    if (level >= log_level_t::critical)
-        os->flush();
+    os->flush();
 }
 
 namespace {

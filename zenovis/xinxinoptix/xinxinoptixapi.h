@@ -3,11 +3,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <zeno/utils/vec.h>
 
 namespace xinxinoptix {
 
 void optixcleanup();
-void optixrender(int fbo = 0, int samples = 16);
+void optixrender(int fbo = 0, int samples = 1);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
@@ -24,4 +25,5 @@ void load_object(std::string const &key, std::string const &mtlid, float const *
 void unload_object(std::string const &key);
 void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi );
 void unload_light();
+void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed);
 }

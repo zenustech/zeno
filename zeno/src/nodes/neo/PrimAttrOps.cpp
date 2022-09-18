@@ -74,17 +74,18 @@ struct PrimFloatAttrToInt : INode {
         auto attr = get_input2<std::string>("attr");
         auto attrOut = get_input2<std::string>("attrOut");
         auto &inArr = prim->verts.attr<float>(attr);
+        auto factor = get_input2<float>("divisor");
         if (attrOut == attr) {
             std::vector<int> outArr(inArr.size());
             parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = std::rint(inArr[i]);
+                outArr[i] = std::rint(inArr[i] * factor);
             });
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<int>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<int>(attrOut);
             parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = std::rint(inArr[i]);
+                outArr[i] = std::rint(inArr[i] * factor);
             });
         }
         set_output("prim", std::move(prim));
@@ -96,6 +97,7 @@ ZENDEFNODE(PrimFloatAttrToInt, {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
+    {"float", "divisor", "1"},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -111,17 +113,19 @@ struct PrimIntAttrToFloat : INode {
         auto attr = get_input2<std::string>("attr");
         auto attrOut = get_input2<std::string>("attrOut");
         auto &inArr = prim->verts.attr<int>(attr);
+        auto factor = get_input2<float>("divisor");
+        if (factor) factor = 1.0f / factor;
         if (attrOut == attr) {
             std::vector<float> outArr(inArr.size());
             parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = float(inArr[i]);
+                outArr[i] = float(inArr[i]) * factor;
             });
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<float>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<float>(attrOut);
             parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = float(inArr[i]);
+                outArr[i] = float(inArr[i]) * factor;
             });
         }
         set_output("prim", std::move(prim));
@@ -133,6 +137,7 @@ ZENDEFNODE(PrimIntAttrToFloat, {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
+    {"float", "divisor", "1"},
     },
     {
     {"PrimitiveObject", "prim"},

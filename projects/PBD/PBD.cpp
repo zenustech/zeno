@@ -5,7 +5,7 @@ namespace zeno {
 struct PBD : zeno::INode {
 private:
     //physical param
-    zeno::vec3f g{0, -9.8, 0};
+    zeno::vec3f g{0, -10.0, 0};
     int numSubsteps = 10;
     float dt = 1.0 / 60.0 / numSubsteps;
     float edgeCompliance = 100.0;
@@ -14,6 +14,9 @@ private:
     std::vector<float> restLen;
     std::vector<float> restVol;
     std::vector<float> invMass;
+
+    std::vector<zeno::vec3f> prevPos;
+    std::vector<zeno::vec3f> vel;
 
     int numParticles;
     int numEdges;
@@ -73,17 +76,10 @@ private:
         numEdges = prim->lines.size();
         numTets = prim->quads.size();
         numSurfs = prim->tris.size();
+
+        prevPos.resize(numParticles);
+        vel.resize(numParticles);
     }
-
-    void initPos(PrimitiveObject *prim)
-    {
-        auto &pos = prim->verts;
-
-        for (int i = 0; i < pos.size(); i++) 
-            pos[i] += vec3f(0.5,1,0);
-    }
-    
-
 
     void preSolve(  zeno::AttrVector<zeno::vec3f> &pos,
                     std::vector<zeno::vec3f> &prevPos,
@@ -113,7 +109,7 @@ private:
             int id1 = edge[i][1];
 
             grads = pos[id0] - pos[id1];
-            float Len = sqrt(grads[0] * grads[0] + grads[1] * grads[1] + grads[2] * grads[2]);
+            float Len = length(grads);
             grads /= Len;
             float C = Len - restLen[i];
             float w = invMass[id0] + invMass[id1];
@@ -131,7 +127,7 @@ private:
 
         for (int i = 0; i < numTets; i++)
         {
-            vec4i id =  vec4i(-1,-1,-1,-1);
+            vec4i id{-1,-1,-1,-1};
 
             for (int j = 0; j < 4; j++)
                 id[j] = tet[i][j];
@@ -171,44 +167,48 @@ public:
 
         g = external_force;
 
-        static bool firstTime = true;
-        if(firstTime)
-        {
-            std::cout<<g[0]<<std::endl;
-            std::cout<<g[1]<<std::endl;
-            std::cout<<g[2]<<std::endl;
-            initGeo(prim.get());
-            initPos(prim.get());
-            firstTime = false;
-        }
+        numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
+        edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
+        volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
 
+        dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
         auto &edge = prim->lines;
         auto &tet = prim->quads;
         auto &surf = prim->tris;
 
-        std::vector<zeno::vec3f> prevPos = pos;
-        std::vector<zeno::vec3f> vel(numParticles);
-
-        for (int steps = 0; steps < numSubsteps * 5; steps++) 
+        static bool firstTime = true;
+        if(firstTime)
         {
-            preSolve(pos, prevPos, vel);
-            solveEdge(pos, edge);
-            solveVolume(pos, tet);
-            postSolve(pos, prevPos, vel);
+            initGeo(prim.get());
+            firstTime = false;
         }
 
-        set_output("prim", std::move(prim));
+        for (size_t i = 0; i < 1; i++)
+        {
+            for (int steps = 0; steps < numSubsteps; steps++) 
+            {
+                preSolve(pos, prevPos, vel);
+                solveEdge(pos, edge);
+                solveVolume(pos, tet);
+                postSolve(pos, prevPos, vel);
+            }
+        }
+
+        set_output("outPrim", std::move(prim));
     };
 };
 
 ZENDEFNODE(PBD, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"vec3f", "external_force", "0.0, -1.0, 0.0"}
+                    {"vec3f", "external_force", "0.0, -10.0, 0.0"},
+                    {"int", "numSubsteps", "10"},
+                    {"float", "edgeCompliance", "100.0"},
+                    {"float", "volumeCompliance", "0.0"}
                 },
                  // outputs:
-                 {"prim"},
+                 {"outPrim"},
                  // params:
                  {},
                  //category

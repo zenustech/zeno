@@ -1,7 +1,7 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include <zeno/types/UserData.h>

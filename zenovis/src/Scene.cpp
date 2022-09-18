@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
@@ -74,6 +75,8 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 }
 
 bool Scene::loadFrameObjects(int frameid) {
+    auto &ud = zeno::getSession().userData();
+    ud.set2<int>("frameid", std::move(frameid));
     bool inserted = false;
     if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
         return inserted;

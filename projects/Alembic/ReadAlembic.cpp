@@ -31,7 +31,7 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool flipFrontBack) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -84,85 +84,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         for (size_t i = 0; i < marr->size(); i++) {
             int cnt = (*marr)[i];
             parr.emplace_back(base, cnt);
-            if (flipFrontBack) {
-                for (int j = 0; j < (cnt / 2); j++) {
-                    std::swap(loops[base + j], loops[base + cnt - 1 - j]);
-                }
-            }
             base += cnt;
         }
     }
-/*
-    prim_triangulate(prim.get());
-
-    auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-    auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-    auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
-
-    if (auto uv = mesh.getUVsParam()) {
-        auto uvsamp = uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
-        int value_size = (int) uvsamp.getVals()->size();
-        int index_size = (int) uvsamp.getIndices()->size();
-        if (!read_done) {
-            log_info("[alembic] totally {} uv value", value_size);
-            log_info("[alembic] totally {} uv indices", index_size);
-            if (prim->loops.size() == index_size) {
-                log_info("[alembic] uv per face");
-            } else if (prim->verts.size() == index_size) {
-                log_info("[alembic] uv per vertex");
-            } else {
-                log_error("[alembic] error uv indices");
-            }
-        }
-        auto uv_value = std::vector<zeno::vec3f>();
-        {
-            auto marr = uvsamp.getVals();
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                uv_value.push_back(zeno::vec3f(val[0], val[1], 0));
-            }
-        }
-        auto uv_loops = std::vector<int>();
-        std::vector<int> *uv_loops_ref;
-        if (prim->loops.size() == index_size) {
-            int start = 0;
-            {
-                auto marr = uvsamp.getIndices();
-                for (size_t i = 0; i < marr->size(); i++) {
-                    int idx = (*marr)[i];
-                    uv_loops.push_back(idx);
-                }
-            }
-            uv_loops_ref = &uv_loops;
-        } else if (prim->verts.size() == index_size) {
-            uv_loops_ref = &(prim->loops.values);
-        }
-        int count = 0;
-        for (auto [start, len]: prim->polys) {
-            if (len < 3) continue;
-            for (int i = 2; i < len; i++) {
-                uv0[count] = uv_value[(*uv_loops_ref)[start]];
-                uv1[count] = uv_value[(*uv_loops_ref)[start + i - 1]];
-                uv2[count] = uv_value[(*uv_loops_ref)[start + i]];
-                count += 1;
-            }
-        }
-    } else {
-        if (!read_done) {
-            log_warn("[alembic] Not found uv, auto fill zero.");
-        }
-        int count = 0;
-        for (auto [start, len]: prim->polys) {
-            if (len < 3) continue;
-            for (int i = 2; i < len; i++) {
-                uv0[count] = zeno::vec3f(0, 0, 0);
-                uv1[count] = zeno::vec3f(0, 0, 0);
-                uv2[count] = zeno::vec3f(0, 0, 0);
-                count += 1;
-            }
-        }
-    }
-*/
     if (auto uv = mesh.getUVsParam()) {
         auto uvsamp =
             uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
@@ -179,31 +103,34 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 log_error("[alembic] error uv indices");
             }
         }
-        auto uv_value = std::vector<zeno::vec3f>();
+        prim->uvs.resize(value_size);
         {
             auto marr = uvsamp.getVals();
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
-                uv_value.emplace_back(val[0], val[1], 0);
+                prim->uvs[i] = {val[0], val[1]};
             }
         }
-        auto &_uv = prim->loops.add_attr<zeno::vec3f>("uv");
+        prim->loop_uvs.resize(index_size);
         if (prim->loops.size() == index_size) {
             for (auto i = 0; i < prim->loops.size(); i++) {
-                _uv[i] = uv_value[(*uvsamp.getIndices())[i]];
+                prim->loop_uvs[i] = (*uvsamp.getIndices())[i];
             }
         }
         else if (prim->verts.size() == index_size) {
             for (auto i = 0; i < prim->loops.size(); i++) {
-                _uv[i] = uv_value[prim->loops[i]];
+                prim->loop_uvs[i] = prim->loops[i];
             }
         }
         else {
             if (!read_done) {
                 log_warn("[alembic] Not found uv, auto fill zero.");
             }
+            prim->uvs.resize(1);
+            prim->uvs[0] = zeno::vec2f(0, 0);
+            prim->loop_uvs.resize(prim->loops.size());
             for (auto i = 0; i < prim->loops.size(); i++) {
-                _uv[i] = zeno::vec3f(0, 0, 0);
+                prim->loop_uvs[i] = 0;
             }
         }
     }
@@ -282,8 +209,7 @@ static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
     int frameid,
-    bool read_done,
-    bool flipFrontBack
+    bool read_done
 ) {
     {
         auto const &md = obj.getMetaData();
@@ -299,7 +225,7 @@ static void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, flipFrontBack);
+            tree.prim = foundABCMesh(mesh, frameid, read_done);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_info("[alembic] found a Xform [{}]", obj.getName());
@@ -331,7 +257,7 @@ static void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, flipFrontBack);
+        traverseABC(child, *childTree, frameid, read_done);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -369,7 +295,6 @@ struct ReadAlembic : INode {
         } else {
             frameid = getGlobalState()->frameid;
         }
-        bool flipFrontBack = get_input2<int>("flipFrontBack");
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
@@ -381,7 +306,7 @@ struct ReadAlembic : INode {
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done, flipFrontBack);
+            traverseABC(obj, *abctree, frameid, read_done);
             read_done = true;
         }
         set_output("abctree", std::move(abctree));
@@ -392,7 +317,6 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
         {"frameid"},
-        {"bool", "flipFrontBack", "0"},
     },
     {{"ABCTree", "abctree"}},
     {},

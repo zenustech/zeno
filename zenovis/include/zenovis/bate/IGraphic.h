@@ -4,6 +4,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
+#include <glm/glm.hpp>
 
 
 namespace zeno {
@@ -17,6 +18,17 @@ namespace zenovis {
 
 struct Scene;
 
+enum {
+    INTERACT_X,
+    INTERACT_Y,
+    INTERACT_Z,
+    INTERACT_XY,
+    INTERACT_YZ,
+    INTERACT_XZ,
+    INTERACT_XYZ,
+    INTERACT_NONE,
+};
+
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;
@@ -28,8 +40,10 @@ struct IGraphicDraw : IGraphic {
     virtual void draw() = 0;
 };
 
-struct IGraphicInteractDraw : IGraphicDraw {
-    virtual void setHovered(bool hovered) = 0;
+struct IGraphicHandler : IGraphicDraw {
+    virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
+    virtual void setCenter(zeno::vec3f center) = 0;
+    virtual void setMode(int mode) = 0;
 };
 
 struct MakeGraphicVisitor {
@@ -47,8 +61,7 @@ std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 
-std::unique_ptr<IGraphicInteractDraw> makeGraphicRing(Scene *scene, zeno::vec3f center);
-std::unique_ptr<IGraphicInteractDraw> makeGraphicInteractAxis(Scene *scene, zeno::vec3f center) ;
-
-std::unique_ptr<IGraphicDraw> makeGraphicInteractingAxis(Scene *scene, zeno::vec3f center, zeno::vec3i axis);
+std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center);
+std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center);
 } // namespace zenovis

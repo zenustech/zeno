@@ -115,15 +115,12 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
             if (fore) fore->update_arguments(args);
-            
-
             push_context();
             zeno::INode::preApply();
             zeno::FunctionObject::DictType rets{};
-            if (requireInput("rets")) {
-                
-                auto frets = get_input<zeno::DictObject>("rets");
-                rets = frets->lut;
+            if (requireInput("ret")) {
+                auto fret1 = get_input("ret");
+                rets.emplace("ret", std::move(fret1));
             }
             pop_context();
     

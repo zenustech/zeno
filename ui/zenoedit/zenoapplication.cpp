@@ -1,7 +1,6 @@
 #include <zenoio/reader/zsgreader.h>
-#include "model/graphsmodel.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
@@ -12,8 +11,6 @@
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
-    , m_pGraphs(new GraphsManagment())
-    , m_bIOProcessing(false)
     , m_errSteam(std::clog)
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     , m_server(nullptr)
@@ -35,7 +32,6 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 ZenoApplication::~ZenoApplication()
 {
-    delete m_pGraphs;
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)
@@ -83,22 +79,12 @@ void ZenoApplication::initFonts()
 
 GraphsManagment *ZenoApplication::graphsManagment() const
 {
-    return m_pGraphs;
+    return &GraphsManagment::instance();
 }
 
 QStandardItemModel* ZenoApplication::logModel() const
 {
-    return m_pGraphs->logModel();
-}
-
-void ZenoApplication::setIOProcessing(bool bIOProcessing)
-{
-    m_bIOProcessing = bIOProcessing;
-}
-
-bool ZenoApplication::IsIOProcessing() const
-{
-    return m_bIOProcessing;
+    return graphsManagment()->logModel();
 }
 
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
