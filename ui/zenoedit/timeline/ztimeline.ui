@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>854</width>
-    <height>90</height>
+    <width>633</width>
+    <height>76</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -16,311 +16,311 @@
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="palette">
+   <palette>
+    <active>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>255</red>
+        <green>255</green>
+        <blue>255</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>45</red>
+        <green>50</green>
+        <blue>57</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </active>
+    <inactive>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>255</red>
+        <green>255</green>
+        <blue>255</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>45</red>
+        <green>50</green>
+        <blue>57</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </inactive>
+    <disabled>
+     <colorrole role="Base">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>45</red>
+        <green>50</green>
+        <blue>57</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Window">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>45</red>
+        <green>50</green>
+        <blue>57</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </disabled>
+   </palette>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <property name="autoFillBackground">
+   <bool>true</bool>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>8</number>
+   </property>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>8</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
      <item>
-      <widget class="QPushButton" name="btnKFrame">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset theme=":/icons/timeline-curvemap.svg">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>18</width>
-         <height>18</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Maximum</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>64</width>
-         <height>0</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnAlways">
-       <property name="text">
-        <string>ALWAYS</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnRun">
-       <property name="text">
-        <string>run</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnKill">
-       <property name="text">
-        <string>kill</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Maximum</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnBackward">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset theme=":/icons/timeline-lastframe.svg">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>18</width>
-         <height>18</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnPlay">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset>
-         <normaloff>:/icons/timeline-play.svg</normaloff>
-         <normalon>:/icons/timeline-pause.svg</normalon>:/icons/timeline-play.svg</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>18</width>
-         <height>18</height>
-        </size>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnForward">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset theme=":/icons/timeline-nextframe.svg">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>18</width>
-         <height>18</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="editFrame">
+      <widget class="QLineEdit" name="editFrom">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>73</width>
-         <height>0</height>
+         <width>55</width>
+         <height>24</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>73</width>
-         <height>16777215</height>
+         <width>55</width>
+         <height>24</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnRecycle">
-       <property name="text">
-        <string/>
+      <widget class="QComboBox" name="comboBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="icon">
-        <iconset theme=":/icons/timeline-recycle.svg">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-       <property name="iconSize">
+       <property name="minimumSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>0</width>
+         <height>24</height>
         </size>
        </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
+       <property name="maximumSize">
         <size>
-         <width>40</width>
-         <height>20</height>
+         <width>55</width>
+         <height>24</height>
         </size>
        </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="lblFPS">
        <property name="styleSheet">
-        <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(133, 130, 128);
-}</string>
-       </property>
-       <property name="text">
-        <string>60 fpbs</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnRecord">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset theme=":/icons/timeline-record.svg">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>18</width>
-         <height>18</height>
-        </size>
+        <string notr="true"/>
        </property>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <property name="leftMargin">
+      <number>20</number>
+     </property>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <widget class="ZSlider" name="timeliner" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
        <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Maximum</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="editFrom">
+        <widget class="QLineEdit" name="editTo">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>56</width>
-           <height>28</height>
+           <width>55</width>
+           <height>24</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>56</width>
-           <height>28</height>
+           <width>55</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
           </size>
          </property>
         </widget>
        </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="ZSlider" name="timeliner" native="true"/>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Maximum</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
+        <widget class="ZIconLabel" name="btnBackToStart"/>
        </item>
        <item>
-        <widget class="QLineEdit" name="editTo">
+        <widget class="ZIconLabel" name="btnBackward"/>
+       </item>
+       <item>
+        <widget class="ZIconLabel" name="btnPlay"/>
+       </item>
+       <item>
+        <widget class="ZIconLabel" name="btnForward"/>
+       </item>
+       <item>
+        <widget class="ZIconLabel" name="btnForwardToEnd"/>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="editFrame">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>56</width>
-           <height>28</height>
+           <width>38</width>
+           <height>24</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>56</width>
-           <height>28</height>
+           <width>38</width>
+           <height>24</height>
           </size>
          </property>
-         <property name="baseSize">
+        </widget>
+       </item>
+       <item>
+        <widget class="ZIconLabel" name="btnRecycle"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
+       <item>
+        <widget class="ZToolButton" name="btnAlways" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="ZToolButton" name="btnRun" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="ZToolButton" name="btnKill" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>96</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="ZToolButton" name="btnSound" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="ZToolButton" name="btnSettings" native="true">
+         <property name="minimumSize">
           <size>
            <width>0</width>
            <height>0</height>
@@ -339,6 +339,18 @@
    <class>ZSlider</class>
    <extends>QWidget</extends>
    <header>timeline/zslider.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZIconLabel</class>
+   <extends>QLabel</extends>
+   <header>zenoui/comctrl/zlabel.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZToolButton</class>
+   <extends>QWidget</extends>
+   <header>zenoui/comctrl/ztoolbutton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -176,5 +176,29 @@
     <file>icons/blackboard-on.svg</file>
     <file>icons/subnet-main.svg</file>
     <file>icons/subnet-general.svg</file>
+    <file>icons/always-on.svg</file>
+    <file>icons/always-off.svg</file>
+    <file>icons/run-off.svg</file>
+    <file>icons/run-on.svg</file>
+    <file>icons/kill-on.svg</file>
+    <file>icons/kill-off.svg</file>
+    <file>icons/sound-on.svg</file>
+    <file>icons/sound-off.svg</file>
+    <file>icons/next-frame.svg</file>
+    <file>icons/next-frame-hover.svg</file>
+    <file>icons/previous-frame-hover.svg</file>
+    <file>icons/previous-frame.svg</file>
+    <file>icons/play-hover.svg</file>
+    <file>icons/play.svg</file>
+    <file>icons/start-frame.svg</file>
+    <file>icons/start-frame-hover.svg</file>
+    <file>icons/end-frame-hover.svg</file>
+    <file>icons/end-frame.svg</file>
+    <file>icons/pause-hover.svg</file>
+    <file>icons/pause.svg</file>
+    <file>icons/timeline-settings.svg</file>
+    <file>icons/timeline-loop.svg</file>
+    <file>icons/timeline-play-once.svg</file>
+    <file>icons/timeline-zig-zag.svg</file>
 </qresource>
 </RCC>

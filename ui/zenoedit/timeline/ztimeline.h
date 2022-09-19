@@ -41,7 +41,8 @@ public slots:
 private:
     void initStyleSheet();
     void initSignals();
-    void initBtnIcons();
+    void initButtons();
+    void initSize();
 
     int m_frames;
 

@@ -3,6 +3,20 @@
 #include "ztoolbutton.h"
 
 
+ZToolButton::ZToolButton(QWidget* parent)
+    : QWidget(parent)
+    , m_bDown(false)
+    , m_bChecked(false)
+    , m_bPressed(false)
+    , m_bHideText(false)
+    , m_bHovered(false)
+    , m_radius(0)
+{
+    initDefault();
+    setMouseTracking(true);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+}
+
 ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, const QString& text, QWidget* parent)
     : QWidget(parent)
     , m_bDown(false)
@@ -17,6 +31,7 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
+    initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
@@ -31,29 +46,23 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_options(option)
     , m_text(text)
     , m_icon(QIcon(icon))
-    , m_iconOn(QIcon(iconOn))
     , m_iconSize(iconSize)
     , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
-    if (!m_iconSize.isValid())
-    {
-        QPixmap px(icon);
-        m_iconSize = px.size();
-    }
-    m_icon.addFile(icon, m_iconSize, QIcon::Normal, QIcon::Off);
-    m_icon.addFile(iconOn, m_iconSize, QIcon::Active, QIcon::Off);
-    m_icon.addFile(iconOn, m_iconSize, QIcon::Selected, QIcon::Off);
-    m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
-    m_icon.addFile(iconOn, m_iconSize, QIcon::Active, QIcon::On);
-    m_icon.addFile(iconOn, m_iconSize, QIcon::Selected, QIcon::On);
-
+    initDefault();
+    setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 ZToolButton::~ZToolButton()
 {
+}
+
+void ZToolButton::initDefault()
+{
+    m_clrText = m_clrTextOn = m_clrTextHover = m_clrTextOnHover = QColor(160, 160, 160);
 }
 
 QString ZToolButton::text() const
@@ -79,6 +88,11 @@ bool ZToolButton::isHovered() const
 QSize ZToolButton::iconSize() const
 {
     return m_iconSize;
+}
+
+QMargins ZToolButton::margins() const
+{
+    return m_margins;
 }
 
 bool ZToolButton::isChecked() const
@@ -110,7 +124,7 @@ QSize ZToolButton::sizeHint() const
 
     int marginLeft = 0, marginRight = 0, marginTop = 0, marginBottom = 0;
 
-    if (m_margins.isNull())
+    if (false && m_margins.isNull())
     {
         marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
         marginRight = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, this);
@@ -151,6 +165,7 @@ QSize ZToolButton::sizeHint() const
         {
             //no icon
             w = textWidth;
+            h = textHeight;
         }
     }
     else
@@ -189,7 +204,7 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
     option->font = m_font;
     option->bgRadius = m_radius;
     option->palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option->state)));
-    option->palette.setBrush(QPalette::All, QPalette::WindowText, QColor(160, 160, 160));
+    option->palette.setBrush(QPalette::All, QPalette::WindowText, textColor(option->state));
 
     if (!(buttonOption() & (Opt_DownArrow | Opt_RightArrow)))
         option->subControls = QStyle::SC_ToolButton;
@@ -203,32 +218,54 @@ QBrush ZToolButton::backgrondColor(QStyle::State state) const
     {
         return m_clrBgHover;
     }
+    else if (state & QStyle::State_On)
+    {
+        return m_clrBgChecked;
+    }
+    else if (state & QStyle::State_Sunken)
+    {
+        return m_clrBgDown;
+    }
     else
     {
-        if (state & QStyle::State_On)
-        {
-            return m_clrBgChecked;
-        }
-        else if (state & QStyle::State_Sunken)
-        {
-            return m_clrBgDown;
-        }
-        else if (state & QStyle::State_Raised)
-        {
-            return QBrush();	//transparent?
-        }
-        else
-        {
-            return QBrush();
-        }
+        return m_clrBgNormal;
     }
 }
 
-void ZToolButton::setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
+QBrush ZToolButton::textColor(QStyle::State state) const
 {
+    if (state & (QStyle::State_On | QStyle::State_MouseOver))
+    {
+        return m_clrTextOnHover;
+    }
+    else if (state & QStyle::State_MouseOver)
+    {
+        return m_clrTextHover;
+    }
+    else if (state & QStyle::State_On)
+    {
+        return m_clrTextOn;
+    }
+    else
+    {
+        return m_clrText;
+    }
+}
+
+void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
+{
+    m_clrBgNormal = normalClr;
     m_clrBgHover = hoverClr;
     m_clrBgDown = downClr;
     m_clrBgChecked = checkedClr;
+}
+
+void ZToolButton::setTextClr(const QColor& normal, const QColor& hover, const QColor& normalOn, const QColor& hoverOn)
+{
+    m_clrText = normal;
+    m_clrTextHover = hover;
+    m_clrTextOn = normalOn;
+    m_clrTextOnHover = hoverOn;
 }
 
 void ZToolButton::initColors(ZStyleOptionToolButton* option) const
@@ -238,9 +275,33 @@ void ZToolButton::initColors(ZStyleOptionToolButton* option) const
     option->ActiveBgColor = QColor();
 }
 
-void ZToolButton::setIcon(const QIcon& icon)
+void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover)
 {
-    m_icon = icon;
+    if (size.isValid())
+    {
+        m_iconSize = size;
+    }
+    else
+    {
+        QPixmap px(icon);
+        m_iconSize = px.size();
+    }
+
+    if (iconHover.isEmpty())
+        iconHover = icon;
+    if (iconOnHover.isEmpty())
+        iconOnHover = iconOn;
+    m_icon.addFile(icon, m_iconSize, QIcon::Normal, QIcon::Off);
+    m_icon.addFile(iconHover, m_iconSize, QIcon::Active, QIcon::Off);
+    m_icon.addFile(iconHover, m_iconSize, QIcon::Selected, QIcon::Off);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
+    m_icon.addFile(iconOnHover, m_iconSize, QIcon::Active, QIcon::On);
+    m_icon.addFile(iconOnHover, m_iconSize, QIcon::Selected, QIcon::On);
+}
+
+void ZToolButton::setFont(const QFont& font)
+{
+    m_font = font;
 }
 
 void ZToolButton::setIconSize(const QSize& size)
@@ -273,9 +334,9 @@ void ZToolButton::setChecked(bool bChecked)
     update();
 }
 
-void ZToolButton::setShortcut(QString text)
+void ZToolButton::setShortcut(QKeySequence text)
 {
-
+    //todo
 }
 
 void ZToolButton::setDown(bool bDown)

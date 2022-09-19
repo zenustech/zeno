@@ -27,7 +27,7 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
 
     setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
     setRadius(ZenoStyle::dpiScaled(2));
-    setBackgroundClr(bgOn, bgOn, bgOn);
+    setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
 }
 
 

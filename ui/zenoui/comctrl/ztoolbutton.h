@@ -22,6 +22,7 @@ public:
         Opt_NoBackground = 0x0001 << 7,
         Opt_UpRight = 0x0001 << 8
     };
+    ZToolButton(QWidget* parent = nullptr);
     ZToolButton(
         int option,
         const QIcon& icon = QIcon(),
@@ -41,6 +42,7 @@ public:
     QString text() const;
     QIcon icon() const;
     QSize iconSize() const;
+    QMargins margins() const;
     void setCheckable(bool bCheckable);
     bool isChecked() const;
     bool isDown() const;
@@ -48,19 +50,21 @@ public:
     bool isHovered() const;
     int buttonOption() const;
     virtual QSize sizeHint() const override;
-    void setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
+    void setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
+    void setTextClr(const QColor &normal, const QColor &hover, const QColor &normalOn, const QColor &hoverOn);
     void setMargins(const QMargins& margins);
     void setRadius(int radius);
+    void setFont(const QFont& font);
 
 public slots:
     void setText(const QString& text);
-    void setIcon(const QIcon& icon);
+    void setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover);
     void setIconSize(const QSize& size);
     void showToolTip();
     void setChecked(bool bChecked);
     void setDown(bool bDown);
     void setButtonOptions(int style);
-    void setShortcut(QString);
+    void setShortcut(QKeySequence);
     virtual void updateIcon();
 
 signals:
@@ -87,6 +91,8 @@ private:
     void setCustomTip(QString tip);
     void setPressed(bool bPressed);
     QString getCustomTip() const;
+    QBrush textColor(QStyle::State state) const;
+    void initDefault();
 
     QMargins m_margins;
     QString m_text;
@@ -99,6 +105,9 @@ private:
     QColor m_clrBgHover;
     QColor m_clrBgDown;
     QColor m_clrBgChecked;
+    QColor m_clrBgNormal;
+
+    QColor m_clrText, m_clrTextHover, m_clrTextOn, m_clrTextOnHover;
 
     int m_radius;
     int m_options;

@@ -38,11 +38,11 @@ void ZenoDockTitleWidget::setupUi()
 
 	ZToolButton* pDockSwitchBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/ic_layout_container.svg"), ZenoStyle::dpiScaledSize(QSize(16, 16)));
 	pDockSwitchBtn->setMargins(QMargins(10, 10, 10, 10));
-	pDockSwitchBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
+	pDockSwitchBtn->setBackgroundClr(QColor(), QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
 
 	ZToolButton* pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"), ZenoStyle::dpiScaledSize(QSize(16, 16)));
 	pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
-	pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
+	pDockOptionsBtn->setBackgroundClr(QColor(), QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
 
 	pHLayout->addWidget(pDockSwitchBtn);
 

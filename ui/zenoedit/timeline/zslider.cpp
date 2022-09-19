@@ -121,7 +121,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
     int n = m_to - m_from + 1;
     int frames = _getframes();
 
-    QFont font("HarmonyOS Sans", 10);
+    QFont font("Segoe UI", 10);
     QFontMetrics metrics(font);
     painter.setFont(font);
 
@@ -130,7 +130,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
         int h = 0;
         int x = _frameToPos(i);
         QString scaleValue = QString::number(i);
-        painter.setPen(QPen(QColor(119, 119, 119), 2));
+        painter.setPen(QPen(QColor("#5A646F"), 1));
 
         if (i % 5 == 0)
         {
@@ -151,7 +151,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
         {
             h = 8;
             int y = height() - h - 2;
-            painter.drawLine(QPointF(x, y), QPointF(x, y + h - 3));
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h/* - 3*/));
         }
     }
 
@@ -176,10 +176,9 @@ void ZSlider::drawSlideHandle(QPainter* painter)
     y = height() - 20;
     int w = 8;
     qreal x = xarrow_pos - w / 2;
-    painter->fillRect(QRectF(QPointF(xarrow_pos - w / 2, y), QPointF(xarrow_pos + w / 2, height())), QColor(76, 159, 244));
+    painter->fillRect(QRectF(QPointF(xarrow_pos - w / 2, y), QPointF(xarrow_pos + w / 2, height() - 2)), QColor(76, 159, 244));
 
-    QFont font("HarmonyOS Sans", 15);
-    font.setBold(true);
+    QFont font("Segoe UI Bold", 10);
     QFontMetrics metrics(font);
     painter->setFont(font);
 

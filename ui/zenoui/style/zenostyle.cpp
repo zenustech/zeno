@@ -71,20 +71,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             QRect r = option->rect;
             bool bHor = option->state & QStyle::State_Horizontal;
             bool mouseOver = option->state & QStyle::State_MouseOver;
-            QRect buttonRc;
-            int btnW = 0, btnH = 0;
-            
-            //if (bHor) {
-            //    painter->fillRect(r, QColor("#1B1D21"));
-            //    btnW = dpiScaled(30), btnH = dpiScaled(3);
-            //}
-            //else {
-            //    painter->fillRect(r, QColor("#1B1D21"));
-            //    btnW = dpiScaled(3), btnH = dpiScaled(30);
-            //}
-
-            buttonRc = QRect(r.center() - QPoint(btnW / 2, btnH / 2), QSize(btnW, btnH));
-            //painter->fillRect(buttonRc, QColor("#191D21"));
 
             if (mouseOver) {
                 painter->setPen(QColor("#4B9EF4"));
@@ -184,6 +170,7 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
         }
         case SC_ZenoToolButtonText:
         {
+            ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
             if (opt->buttonOpts & ZToolButton::Opt_UpRight)
             {
                 QFontMetrics fontMetrics(opt->font);
@@ -207,9 +194,10 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             {
                 return QRect(); //todo
             }
-            else
+            else if (opt->buttonOpts & ZToolButton::Opt_HasText)
             {
-                return QRect();
+                QMargins margins = pToolBtn->margins();
+                return opt->rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
             }
         }
         case SC_ZenoToolButtonArrow:
@@ -273,7 +261,7 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         *  actually, when there is not specific style selector, the qt will choose base style for the result.*/
         case QStyle::PM_DockWidgetHandleExtent:
         case QStyle::PM_DockWidgetSeparatorExtent: {
-            return dpiScaled(4);
+            return dpiScaled(3);
         }
     }
     return base::pixelMetric(m, option, widget);
@@ -327,17 +315,27 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     QRect rcArrow = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonArrow), widget);
 
     //draw the background
-    if (option->buttonEnabled && (option->state & (State_MouseOver | State_On)))
+    if (option->buttonEnabled)
     {
         //QRect rect = option->rect.adjusted(0, 0, -1, -1);       //???
         QRect rect = option->rect;
-        //todo: round corner
-        QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
-
-        QPainterPath path;
-        path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
-
-        painter->fillPath(path, bgBrush);
+        if (option->state & (State_MouseOver | State_On))
+        {
+            QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
+            QPainterPath path;
+            path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
+            painter->fillPath(path, bgBrush);
+        }
+        else
+        {
+            QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
+            if (bgBrush.color().isValid())
+            {
+                QPainterPath path;
+                path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
+                painter->fillPath(path, bgBrush);
+            }
+        }
     }
 
     //draw icon 
@@ -387,6 +385,14 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
             painter->setFont(option->font);
             painter->setPen(text_color);
             
+            painter->restore();
+        }
+        else
+        {
+            painter->save();
+            painter->setFont(option->font);
+            painter->setPen(text_color);
+            painter->drawText(rcText, Qt::AlignCenter, option->text);
             painter->restore();
         }
     }
