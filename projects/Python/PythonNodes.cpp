@@ -107,7 +107,8 @@ struct PythonFunctor {
             Py_DECREF(pyRet);
         };
         scope_exit pyFuncRetsRAIIDel = [=] {
-            PyObject_DelAttrString(pyFunc, "_retsRAII");
+            if (PyObject_HasAttrString(pyFunc, "_wrapRetRAII"))
+                PyObject_DelAttrString(pyFunc, "_wrapRetRAII");
         };
         if (PyDict_Check(pyRet)) {
             PyObject *key, *value;
@@ -248,9 +249,9 @@ struct PythonScript : INode {
             throw makeError("failed to set ze._args");
         std::shared_ptr<Graph> currGraphSP = getThisGraph()->shared_from_this();  // TODO
         Zeno_Graph currGraphHandle = capiLoadGraphSharedPtr(currGraphSP);
-        scope_exit currGraphEraser = [=] {
-            capiEraseGraphSharedPtr(currGraphHandle);
-        };
+        //scope_exit currGraphEraser = [=] {
+            //capiEraseGraphSharedPtr(currGraphHandle);
+        //};
         {
             PyObject *currGraphLong = PyLong_FromUnsignedLongLong(currGraphHandle);
             scope_exit currGraphLongDel = [=] {
@@ -259,13 +260,13 @@ struct PythonScript : INode {
             if (PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLong) < 0)
                 throw makeError("failed to set ze._currgraph");
         }
-        scope_exit currGraphLongReset = [=] {
-            PyObject *currGraphLongZero = PyLong_FromUnsignedLongLong(0);
-            scope_exit currGraphLongZeroDel = [=] {
-                Py_DECREF(currGraphLongZero);
-            };
-            (void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
-        };
+        //scope_exit currGraphLongReset = [=] {
+            //PyObject *currGraphLongZero = PyLong_FromUnsignedLongLong(0);
+            //scope_exit currGraphLongZeroDel = [=] {
+                //Py_DECREF(currGraphLongZero);
+            //};
+            //(void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
+        //};
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
             mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
@@ -278,8 +279,8 @@ struct PythonScript : INode {
                 mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }
-        currGraphLongReset.reset();
-        currGraphEraser.reset();
+        //currGraphLongReset.reset();
+        //currGraphEraser.reset();
         needToDelEraser.reset();
         if (!mainMod) {
             PyErr_Print();

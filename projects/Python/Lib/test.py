@@ -1,21 +1,24 @@
 # type: ignore
 import ze
 
-key = ze.args.arg
-prim = ze.args.prim.asPrim()
+def on_update(state):
+    keys = ze.no.ZGL_StateGetKeys(state=state, type='STRING').keys.split()
+    if keys:
+        print('keys are', keys)
 
-dx = 0.1
-offset = None
-if key == 'A':
-    offset = [-dx, 0, 0]
-elif key == 'S':
-    offset = [0, -dx, 0]
-elif key == 'W':
-    offset = [0, +dx, 0]
-elif key == 'D':
-    offset = [+dx, 0, 0]
+    offset = [0, 0, 0]
+    dx = 0.01
+    if 'A' in keys:
+        offset[0] = -dx
+    if 'S' in keys:
+        offset[1] = -dx
+    if 'W' in keys:
+        offset[1] = +dx
+    if 'D' in keys:
+        offset[0] = +dx
 
-if offset is not None:
-    ze.no.PrimTranslate(prim=prim, offset=offset)
+    if any(offset):
+        theBox = ze.no.PortalOut(name_='theBox').port
+        ze.no.PrimTranslate(prim=theBox, offset=offset)
 
-ze.rets.ret = 0
+ze.rets.on_update = ze.ZenoObject.fromFunc(on_update)

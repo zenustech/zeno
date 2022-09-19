@@ -55,7 +55,7 @@ void ReadFBXPrim::onEditClicked()
     ZASSERT_EXIT(scene);
     std::vector<std::pair<std::string, zeno::IObject *>> const &objs
         = scene->objectsMan->pairs();
-    zeno::IObject* fbxObj;
+    zeno::IObject* fbxObj = nullptr;
     bool findFbxObj = false;
     for (auto const &[key, obj] : objs) {
         if(key.find(fbxIdentStr, 0) != std::string::npos){

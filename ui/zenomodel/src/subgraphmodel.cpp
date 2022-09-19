@@ -364,16 +364,16 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_REMOVE:
             {
-                ZASSERT_EXIT(inputs.find(oldName) != inputs.end());
-                INPUT_SOCKET inputSock = inputs[oldName];
-				//remove link connected to oldName.
-				for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
-				{
-					const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
-					m_pGraphsModel->removeLink(linkIdx, subgIdx, false);
-				}
-                inputs.remove(oldName);
-				setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+                ZASSERT_EXIT(inputs.find(newName) != inputs.end());
+                INPUT_SOCKET inputSock = inputs[newName];
+                //remove link connected to oldName.
+                for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
+                {
+                    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+                    m_pGraphsModel->removeLink(linkIdx, subgIdx, false);
+                }
+                inputs.remove(newName);
+                setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }
             case SOCKET_UPDATE_NAME:

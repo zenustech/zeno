@@ -115,11 +115,11 @@ class ZenoObject:
                 return {}
             elif isinstance(ret, dict):
                 retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret.items()}
-                wrappedFunc._retRAII = retObjs
+                wrappedFunc._wrapRetRAII = retObjs
                 return {k: v.toHandle() for k, v in retObjs.items()}
             else:
                 retObj = ZenoObject.fromLiterial(ret)
-                wrappedFunc._retRAII = retObj
+                wrappedFunc._wrapRetRAII = retObj
                 return {'ret': retObj.toHandle()}
         return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
 
@@ -279,7 +279,7 @@ class ZenoObject:
 
 
 class _MappingProxyWrapper:
-    _prox: MappingProxyType
+    _prox: MappingProxyType[str, Union[Literial, ZenoObject]]
 
     def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
         self._prox = MappingProxyType(lut)
@@ -293,14 +293,17 @@ class _MappingProxyWrapper:
     def __contains__(self, key: str) -> bool:
         return key in self._prox
 
-    def keys(self) -> Iterable[str]:
-        return self._prox.keys()
+    def to_dict(self) -> dict[str, Union[Literial, ZenoObject]]:
+        return dict(self._prox)
 
-    def values(self) -> Iterable[Union[Literial, ZenoObject]]:
-        return self._prox.values()
+    # def keys(self) -> Iterable[str]:
+        # return self._prox.keys()
 
-    def items(self) -> Iterable[tuple[str, Union[Literial, ZenoObject]]]:
-        return self._prox.items()
+    # def values(self) -> Iterable[Union[Literial, ZenoObject]]:
+        # return self._prox.values()
+
+    # def items(self) -> Iterable[tuple[str, Union[Literial, ZenoObject]]]:
+        # return self._prox.items()
 
     def __iter__(self) -> Iterable[str]:
         return iter(self._prox)
@@ -308,7 +311,7 @@ class _MappingProxyWrapper:
     def __len__(self) -> int:
         return len(self._prox)
 
-    def __repr__(self) -> int:
+    def __repr__(self) -> str:
         return repr(self._prox)
 
 
@@ -586,7 +589,9 @@ class _TempNodeWrapper:
     def __getattr__(self, key: str):
         def wrapped(**args: dict[str, Union[Literial, ZenoObject]]):
             currGraph = ZenoGraph.current()
-            store_args : dict[str, ZenoObject] = {k: ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
+            def fixParamKey(k):
+                return k[:-1] + ':' if k.endswith('_') else k
+            store_args : dict[str, ZenoObject] = {fixParamKey(k): ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
             inputs : dict[str, int] = {k: ZenoObject.toHandle(v) for k, v in store_args.items()}
             outputs : dict[str, int] = currGraph.callTempNode(key, inputs)
             rets : dict[str, Union[Literial, ZenoObject]] = {k: ZenoObject.toLiterial(ZenoObject.fromHandle(v)) for k, v in outputs.items()}

@@ -81,6 +81,10 @@ namespace JsonHelper
                     writer.EndArray();
                 }
             }
+            else
+            {
+                writer.Null();
+            }
         }
         //todo: qlineargradient.
         else if (varType != QVariant::Invalid)
@@ -93,6 +97,11 @@ namespace JsonHelper
                 {
                     auto pModel = QVariantPtr<CurveModel>::asPtr(value);
                     dumpCurveModel(pModel, writer);
+                }
+                else
+                {
+                    //todo: color custom type.
+                    writer.Null();
                 }
             }
             else
