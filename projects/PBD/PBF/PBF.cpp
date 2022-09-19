@@ -2,7 +2,6 @@
 #include <array>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "../ReadVtkTet/MeshIO.hpp"
 #include "../Utils/myPrint.h"
 
 using namespace zeno;
@@ -33,14 +32,15 @@ private:
 //Data preparing
     //data for physical fields
     void readPoints();
-    void initCube();
     void initData();
-    int numParticles = 10000;
+    int numParticles;
     std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
     std::vector<vec3f> vel;
     std::vector<float> lambda;
     std::vector<vec3f> dpos;
+
+    std::shared_ptr<zeno::PrimitiveObject> prim;
 
     //helpers
     void boundaryHandling(vec3f &p);
@@ -70,21 +70,18 @@ private:
 
 public:
     virtual void apply() override{
-        // auto prim = get_input<PrimitiveObject>("prim");
+        prim = get_input<PrimitiveObject>("prim");
         // numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
-        
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-
-        //copy the particle postions to local
-        // std::copy(pos.begin(),pos.end(),prim->verts.begin());
 
         static bool firstTime = true;
         if(firstTime == true)
         {
             firstTime = false;
-            // readPoints();
+            // move pos to local
+            numParticles = prim->verts.size();
+            pos = std::move(prim->verts);
             initData();  
-            initCube();
+            echo(numParticles);
         }
 
         preSolve();
@@ -92,7 +89,9 @@ public:
             solve(); 
         postSolve();  
 
-        //copy back
+        // echoVec(pos[1]);
+        //move back
+        // prim->verts = std::move(pos);
         prim->verts.resize(pos.size());
         for (size_t i = 0; i < pos.size(); i++)
             prim->verts[i] = pos[i]/10.0;//scale to show
@@ -103,7 +102,7 @@ public:
 
 ZENDEFNODE(PBF, {   
                     {
-                        // {"PrimitiveObject", "prim"},
+                        {"PrimitiveObject", "prim"},
                         // {"int", "numSubsteps", "10"}
                     },
                     {   {"PrimitiveObject", "outPrim"} },
@@ -111,50 +110,14 @@ ZENDEFNODE(PBF, {
                     {"PBD"},
                 });
 
-void PBF::readPoints()
-{
-    std::string path = "E:\\Dev\\zenos\\cppPBF\\bunny.vtk";
-
-    zs::Mesh<float, 3, int, 4> tet;
-    read_tet_mesh_vtk(path, tet);
-    const auto numVerts = tet.nodes.size();
-    pos.resize(numVerts);
-
-    for (int i = 0; i < numVerts; i++)
-        pos[i] = tet.nodes[i];
-}
-
-
-void PBF::initCube()
-{
-    vec3f initPos{10.0,10.0,10.0};
-    int cubeSize = 20;
-    float spacing = 1;
-    int num_per_row = (int) (cubeSize / spacing) + 1;
-    int num_per_floor = num_per_row * num_per_row;
-    for (size_t i = 0; i < numParticles; i++)
-    {
-        int floor = i / (num_per_floor);
-        int row = (i % num_per_floor) / num_per_row ;
-        int col = (i % num_per_floor) % num_per_row ;
-        pos[i] = vec3f(col*spacing, floor*spacing, row*spacing) + initPos;
-    }
-}
-
-
 void PBF::initData()
 {     
     //prepare physical field data
-    // numParticles = pos.size();
-    pos.resize(numParticles);
-
     oldPos.resize(numParticles);
     vel.resize(numParticles);
 
     lambda.resize(numParticles);
     dpos.resize(numParticles);
-
-    echo(numParticles);
 
     //prepare cell data
     cell.resize(numCell);

@@ -86,4 +86,4 @@ void printScalarField(std::string fileName, T content,  size_t precision=8)
 }
 
 #define echo(content) {std::cout<<(#content)<<": "<<content<<std::endl;}
-#define echoVec(content,msg) {std::cout<<(#msg)<<(#content)<<": ";  printVec(content);}
+#define echoVec(content) {std::cout<<(#content)<<": ";  printVec(content);}
