@@ -7,6 +7,9 @@
 
 #include <glm/glm.hpp>
 
+#define PI 3.1415926
+
+
 namespace zenovis {
 namespace {
 
@@ -49,7 +52,7 @@ void drawCone(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_
     mem.push_back(p);
     mem.push_back(color);
     for (double t = 0.01; t < 1.0; t += 0.01) {
-        double theta = 2.0 * 3.14159 * t;
+        double theta = 2.0 * PI * t;
         auto next_p = ctr + r * cos(theta) * a + r * sin(theta) * b;
         mem.push_back(next_p);
         mem.push_back(color);
@@ -118,7 +121,7 @@ void drawCircle(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::uniqu
     double point_num = 100;
     double step = 1.0 / point_num;
     for (double t = 0; t < 1.0; t += step) {
-        double theta = 2.0 * 3.14159 * t;
+        double theta = 2.0 * PI * t;
         auto p = pos + size * cos(theta) * a + size * sin(theta) * b;
         mem.push_back(p);
         mem.push_back(color);
@@ -214,6 +217,83 @@ void drawCube(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->unbind();
+}
+
+// http://www.songho.ca/opengl/gl_sphere.html
+void drawSphere(vec3f center, vec3f color, float radius, std::unique_ptr<Buffer> &vbo, std::unique_ptr<Buffer> &ibo) {
+    std::vector<vec3f> mem;
+    std::vector<int> idx;
+
+    float x, y, z, xy;
+
+    float sectorCount = 100;
+    float stackCount = 100;
+
+    float sectorStep = 2.0f * PI / sectorCount;
+    float stackStep = PI / stackCount;
+    float sectorAngle, stackAngle;
+
+    for (int i = 0; i <= stackCount; ++i) {
+        stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+        xy = radius * cosf(stackAngle);             // r * cos(u)
+        z = radius * sinf(stackAngle);              // r * sin(u)
+
+        // add (sectorCount+1) vertices per stack
+        // the first and last vertices have same position and normal, but different tex coords
+        for (int j = 0; j <= sectorCount; ++j) {
+            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+            // vertex position (x, y, z)
+            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+            mem.emplace_back(x + center[0], y + center[1], z + center[2]);
+            mem.push_back(color);
+        }
+    }
+
+    // generate CCW index list of sphere triangles
+    // k1--k1+1
+    // |  / |
+    // | /  |
+    // k2--k2+1
+    int k1, k2;
+    for (int i = 0; i < stackCount; ++i) {
+        k1 = i * (sectorCount + 1);     // beginning of current stack
+        k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+        for(int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+            // 2 triangles per sector excluding first and last stacks
+            // k1 => k2 => k1+1
+            if (i != 0) {
+                idx.emplace_back(k1);
+                idx.emplace_back(k2);
+                idx.emplace_back(k1 + 1);
+            }
+
+            // k1+1 => k2 => k2+1
+            if (i != (stackCount-1)) {
+                idx.emplace_back(k1 + 1);
+                idx.emplace_back(k2);
+                idx.emplace_back(k2 + 1);
+            }
+        }
+    }
+
+    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    ibo->bind_data(idx.data(), idx.size() * sizeof(idx[0]));
+
+    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
+    vbo->attribute(1, sizeof(float) * 3, sizeof(float) * 6, GL_FLOAT, 3);
+
+    vbo->unbind();
+    CHECK_GL(glEnable(GL_CULL_FACE));
+    CHECK_GL(glCullFace(GL_BACK));
+    CHECK_GL(glDrawElements(GL_TRIANGLES, idx.size(), GL_UNSIGNED_INT, (void*)nullptr));
+
+    vbo->disable_attribute(0);
+    vbo->disable_attribute(1);
+
+    ibo->unbind();
 }
 
 bool rightOn(glm::vec3 v1, glm::vec3 v2, glm::vec3 n) {
@@ -401,6 +481,21 @@ bool rayIntersectRing(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::vec3 c
     if (t < 0) return false;
     auto distance = glm::length(p - center);
     return distance > i_radius && distance < o_radius;
+}
+
+std::optional<float> rayIntersectSphere(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::vec3 center, float radius) {
+    auto &p = ray_origin;
+    auto &d = ray_direction;
+    auto &c = center;
+    auto &r = radius;
+    glm::vec3 L = c - p;
+    float tca = glm::dot(L, d);
+    if (tca < 0) return std::nullopt;
+    float d2 = glm::dot(L, L) - tca * tca;
+    float radius2 = radius * radius;
+    if (d2 > radius2) return std::nullopt;
+    float thc = sqrt(radius2 - d2);
+    return tca - thc;
 }
 
 }

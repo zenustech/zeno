@@ -8,14 +8,18 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#define BALL_ROTATING (m_operation == ROTATE && m_operation_mode == zenovis::INTERACT_XYZ)
+
 namespace zeno {
 
 FakeTransformer::FakeTransformer()
     : m_objects_center(0.0f)
       , m_trans(0.0f)
       , m_scale(1.0f)
-      , m_last_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
+      , m_last_trans(0.0f)
+      , m_last_scale(1.0f)
+      , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE) {}
 
@@ -23,9 +27,11 @@ FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
     : m_objects_center(0.0f)
       , m_trans(0.0f)
       , m_scale(1.0f)
-      , m_last_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
-      , m_status(true)
+      , m_last_trans(0.0f)
+      , m_last_scale(1.0f)
+      , m_last_rotate({0, 0, 0, 1})
+      , m_status(false)
       , m_operation(NONE)
 {
     addObject(names);
@@ -95,11 +101,44 @@ void FakeTransformer::removeObject(const std::unordered_set<std::string>& names)
     }
 }
 
-bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir) {
+bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front) {
+    auto x_axis = glm::vec3(1, 0, 0);
+    auto y_axis = glm::vec3(0, 1, 0);
+    auto z_axis = glm::vec3(0, 0, 1);
+    std::optional<glm::vec3> t;
+    if (m_operation == TRANSLATE) {
+        if (m_operation_mode == zenovis::INTERACT_X || m_operation_mode == zenovis::INTERACT_Y || m_operation_mode == zenovis::INTERACT_XY)
+            t = hitOnPlane(ori, dir, z_axis, m_objects_center);
+        else if (m_operation_mode == zenovis::INTERACT_Z || m_operation_mode == zenovis::INTERACT_XZ)
+            t = hitOnPlane(ori, dir, y_axis, m_objects_center);
+        else if (m_operation_mode == zenovis::INTERACT_YZ)
+            t = hitOnPlane(ori, dir, x_axis, m_objects_center);
+        else
+            t = hitOnPlane(ori, dir, front, m_objects_center);
+        if (t.has_value()) m_trans_start = t.value();
+        else return false;
+    }
+    else if (m_operation == ROTATE) {
+        if (m_operation_mode == zenovis::INTERACT_YZ)
+            t = hitOnPlane(ori, dir, x_axis, m_objects_center);
+        else if (m_operation_mode == zenovis::INTERACT_XZ)
+            t = hitOnPlane(ori, dir, y_axis, m_objects_center);
+        else if (m_operation_mode == zenovis::INTERACT_XY)
+            t = hitOnPlane(ori, dir, z_axis, m_objects_center);
+        else
+            t = m_handler->getIntersect(ori, dir);
+        if (t.has_value()) m_rotate_start = t.value();
+        else return false;
+    }
+    return true;
+}
+
+bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front) {
     if (!m_handler) return false;
     auto ray_ori = QVec3ToGLMVec3(ori);
     auto ray_dir = QVec3ToGLMVec3(dir);
     m_operation_mode = m_handler->collisionTest(ray_ori, ray_dir);
+    if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
     return m_operation_mode != zenovis::INTERACT_NONE;
 }
 
@@ -111,98 +150,93 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir) {
  * @param end_dir
  * @param front
  */
-void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D start_dir, QVector3D end_dir, glm::vec3 front, glm::mat4 vp) {
+void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D ray_dir, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    auto start_o = QVec3ToGLMVec3(camera_pos);
-    auto start_d = QVec3ToGLMVec3(start_dir);
-    auto end_o = QVec3ToGLMVec3(camera_pos);
-    auto end_d = QVec3ToGLMVec3(end_dir);
+    auto ori = QVec3ToGLMVec3(camera_pos);
+    auto dir = QVec3ToGLMVec3(ray_dir);
 
     auto x_axis = glm::vec3(1, 0, 0);
     auto y_axis = glm::vec3(0, 1, 0);
     auto z_axis = glm::vec3(0, 0, 1);
 
-    auto camera_front = front;
-
     if (m_operation == TRANSLATE) {
         if (m_operation_mode == zenovis::INTERACT_X) {
-            auto start = hitOnPlane(start_o, start_d, camera_front, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, camera_front, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), x_axis);
-            }
+            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), x_axis);
         }
         else if (m_operation_mode == zenovis::INTERACT_Y) {
-            auto start = hitOnPlane(start_o, start_d, camera_front, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, camera_front, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), y_axis);
-            }
+            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), y_axis);
         }
         else if (m_operation_mode == zenovis::INTERACT_Z) {
-            auto start = hitOnPlane(start_o, start_d, camera_front, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, camera_front, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), z_axis);
-            }
+            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), z_axis);
         }
         else if (m_operation_mode == zenovis::INTERACT_XY) {
-            auto start = hitOnPlane(start_o, start_d, z_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, z_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), {1, 1, 0});
-            }
+            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), {1, 1, 0});
         }
         else if (m_operation_mode == zenovis::INTERACT_YZ) {
-            auto start = hitOnPlane(start_o, start_d, x_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, x_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), {0, 1, 1});
-            }
+            auto cur_pos = hitOnPlane(ori, dir, x_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), {0, 1, 1});
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
-            auto start = hitOnPlane(start_o, start_d, y_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, y_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), {1, 0, 1});
-            }
+            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), {1, 0, 1});
         }
         else {
-            auto start = hitOnPlane(start_o, start_d, camera_front, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, camera_front, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                translate(start.value(), end.value(), {1, 1, 1});
-            }
+            auto cur_pos = hitOnPlane(ori, dir, front, m_objects_center);
+            if (cur_pos.has_value())
+                translate(m_trans_start, cur_pos.value(), {1, 1, 1});
         }
     }
     else if (m_operation == ROTATE) {
         if (m_operation_mode == zenovis::INTERACT_YZ) {
-            auto start = hitOnPlane(start_o, start_d, x_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, x_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                auto start_vec = start.value() - m_objects_center;
-                auto end_vec = end.value() - m_objects_center;
+            auto cur_pos = hitOnPlane(ori, dir, x_axis, m_objects_center);
+            if (cur_pos.has_value()) {
+                auto start_vec = m_rotate_start - m_objects_center;
+                auto end_vec = cur_pos.value() - m_objects_center;
                 rotate(start_vec, end_vec, x_axis);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
-            auto start = hitOnPlane(start_o, start_d, y_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, y_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                auto start_vec = start.value() - m_objects_center;
-                auto end_vec = end.value() - m_objects_center;
+            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_objects_center);
+            if (cur_pos.has_value()) {
+                auto start_vec = m_rotate_start - m_objects_center;
+                auto end_vec = cur_pos.value() - m_objects_center;
                 rotate(start_vec, end_vec, y_axis);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_XY){
-            auto start = hitOnPlane(start_o, start_d, z_axis, m_objects_center);
-            auto end = hitOnPlane(end_o, end_d, z_axis, m_objects_center);
-            if (start.has_value() && end.has_value()) {
-                auto start_vec = start.value() - m_objects_center;
-                auto end_vec = end.value() - m_objects_center;
+            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
+            if (cur_pos.has_value()) {
+                auto start_vec = m_rotate_start - m_objects_center;
+                auto end_vec = cur_pos.value() - m_objects_center;
                 rotate(start_vec, end_vec, z_axis);
             }
+        }
+        else {
+            auto start_vec = m_rotate_start - m_objects_center;
+            auto test = m_handler->getIntersect(ori, dir);
+            glm::vec3 end_vec;
+            if (test.has_value())
+                end_vec = test.value() - m_objects_center;
+            else {
+                auto p = hitOnPlane(ori, dir, front, m_objects_center);
+                if (!p.has_value()) return;
+                end_vec = p.value() - m_objects_center;
+            }
+            start_vec = glm::normalize(start_vec);
+            end_vec = glm::normalize(end_vec);
+            auto axis = glm::cross(start_vec, end_vec);
+            rotate(start_vec, end_vec, axis);
         }
     }
     else if (m_operation == SCALE) {
@@ -239,15 +273,35 @@ void FakeTransformer::startTransform() {
 }
 
 void FakeTransformer::endTransform(bool moved) {
-    for (auto &[obj_name, obj] : m_objects) {
-        auto& user_data = obj->userData();
-        auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
-        for (int i=0; i<3; i++)
-            scale[i] *= m_scale[i];
-        user_data.setLiterial("_scale", scale);
-    }
-
     if (moved) {
+        // write transform info to objects' user data
+        for (auto &[obj_name, obj] : m_objects) {
+            auto& user_data = obj->userData();
+
+            if (m_operation == TRANSLATE) {
+                auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
+                trans += other_to_vec<3>(m_trans);
+                user_data.setLiterial("_translate", trans);
+            }
+
+            if (m_operation == ROTATE) {
+                auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
+                auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+                auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+                auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+                rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
+                user_data.setLiterial("_rotate", rotate);
+            }
+
+            if (m_operation == SCALE) {
+                auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
+                for (int i = 0; i < 3; i++)
+                    scale[i] *= m_scale[i];
+                user_data.setLiterial("_scale", scale);
+            }
+        }
+
+        // sync to node system
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         for (auto &[obj_name, obj] : m_objects) {
             QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
@@ -278,8 +332,11 @@ void FakeTransformer::endTransform(bool moved) {
 
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
-    m_last_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
+
+    m_last_trans = {0, 0, 0};
+    m_last_scale = {1, 1, 1};
+    m_last_rotate = {0, 0, 0, 1};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -292,9 +349,10 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::toTranslate() {
+    if (m_objects.empty()) return;
     if (m_operation == TRANSLATE) {
         m_operation = NONE;
-        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+        m_handler = nullptr;
     }
     else {
         m_operation = TRANSLATE;
@@ -305,9 +363,10 @@ void FakeTransformer::toTranslate() {
 }
 
 void FakeTransformer::toRotate() {
+    if (m_objects.empty()) return;
     if (m_operation == ROTATE) {
         m_operation = NONE;
-        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+        m_handler = nullptr;
     }
     else {
         m_operation = ROTATE;
@@ -318,9 +377,10 @@ void FakeTransformer::toRotate() {
 }
 
 void FakeTransformer::toScale() {
+    if (m_objects.empty()) return;
     if (m_operation == SCALE) {
         m_operation = NONE;
-        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+        m_handler = nullptr;
     }
     else {
         m_operation = SCALE;
@@ -342,8 +402,13 @@ void FakeTransformer::clear() {
     m_objects.clear();
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
-    m_last_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
+    m_last_trans = {0, 0, 0};
+    m_last_scale = {1, 1, 1};
+    m_last_rotate = {0, 0, 0, 1};
+    m_operation = NONE;
+    m_handler = nullptr;
+    Zenovis::GetInstance().getSession()->set_handler(m_handler);
     m_objects_center = {0, 0, 0};
 }
 
@@ -369,8 +434,8 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     float direct = 1.0f;
     if (glm::dot(cross_vec, axis) < 0)
         direct = -1.0f;
-    float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f)) / 2.0f;
-    glm::quat q(angle * direct * axis);
+    float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
+    glm::quat q(glm::rotate(angle * direct, axis));
     m_rotate = {q.x, q.y, q.z, q.w};
     doTransform();
 }
@@ -520,29 +585,31 @@ void FakeTransformer::doTransform() {
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
 
+        // get transform info
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
         auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
-        auto pre_translate_matrix = glm::translate(translate);
+
+        // inv last transform
+        auto pre_translate_matrix = glm::translate(translate + m_last_trans);
         auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+        auto last_quaternion = glm::quat(m_last_rotate[3], m_last_rotate[0], m_last_rotate[1], m_last_rotate[2]);
         auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
         auto pre_scale_matrix = glm::scale(scale * m_last_scale);
-        auto pre_transform_matrix = pre_translate_matrix * pre_rotate_matrix * pre_scale_matrix;
+        auto pre_transform_matrix = pre_translate_matrix * glm::toMat4(last_quaternion) * pre_rotate_matrix * pre_scale_matrix;
         auto inv_pre_transform = glm::inverse(pre_transform_matrix);
 
-        translate += m_trans;
-        scale *= m_scale;
-        m_last_scale = m_scale;
+        // do this transform
+        auto translate_matrix = glm::translate(translate + m_trans);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-
-        auto translate_matrix = glm::translate(translate);
-        // print_mat4("translate mat", translate_matrix);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
-        // print_mat4("rotate mat", rotate_matrix);
-        auto scale_matrix = glm::scale(scale);
-        // print_mat4("scale mat", scale_matrix);
+        auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
-        // print_mat4("transform mat", transform_matrix);
+
+        m_last_trans = m_trans;
+        m_last_rotate = m_rotate;
+        m_last_scale = m_scale;
+
         if (obj->has_attr("pos")) {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
@@ -570,10 +637,6 @@ void FakeTransformer::doTransform() {
             user_data.setLiterial("_bboxMin", bmin);
             user_data.setLiterial("_bboxMax", bmax);
         }
-        user_data.setLiterial("_translate", zeno::other_to_vec<3>(translate));
-        auto new_quaternion = glm::toQuat(rotate_matrix);
-        rotate = {new_quaternion.x, new_quaternion.y, new_quaternion.z, new_quaternion.w};
-        user_data.setLiterial("_rotate", zeno::other_to_vec<4>(rotate));
         m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
     m_objects_center /= m_objects.size();
