@@ -108,6 +108,10 @@ struct ZSEvalGradientField : zeno::INode {
                         if(normalize)
                             alpha = (etemp.template pack<3>("g",ei).norm());
                         eles.template tuple<3>(gtag,ei) = etemp.template pack<3>("g",ei)/alpha;
+                        if(ei == 0)
+                            printf("eles_grad : %f %f %f\n",(float)eles.template pack<3>(gtag,ei)[0],
+                                        (float)eles.template pack<3>(gtag,ei)[1],
+                                        (float)eles.template pack<3>(gtag,ei)[2]);
 
                     }
         });
@@ -158,8 +162,10 @@ struct ZSRetrieveVectorField : zeno::INode {
         auto scale = (T)get_param<float>("scale");
         auto color_tag = get_param<std::string>("color_tag");
 
-        if(type == "element" && !eles.hasProperty(gtag) && !eles.hasProperty(color_tag)){
-            fmt::print("the volume does not contain element-wise gradient field : {}\n",gtag);
+        bool on_elm = (type == "quad" || type == "tri");
+
+        if((type == "quad" || type == "tri") && !eles.hasProperty(gtag) && !eles.hasProperty(color_tag)){
+            fmt::print("the elements does not contain element-wise gradient field : {}\n",gtag);
             throw std::runtime_error("the volume does not contain element-wise gradient field");
         }
         if(type == "vert" && !verts.hasProperty(gtag) && !verts.hasProperty(color_tag)){
@@ -172,7 +178,7 @@ struct ZSRetrieveVectorField : zeno::INode {
         }
 
         std::vector<zs::PropertyTag> tags{{"x",3},{"vec",3}};
-        bool on_elm = (type == "element");
+
         auto vec_buffer = typename ZenoParticles::particles_t(tags,on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
         auto zsvec_buffer = zs::Vector<float>(on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
         // transfer the data from gpu to cpu
@@ -252,12 +258,13 @@ struct ZSRetrieveVectorField : zeno::INode {
 ZENDEFNODE(ZSRetrieveVectorField, {
     {"field","heatmap"},
     {"vec_field"},
-    {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","x"},{"float","scale","1.0"},{"string","color_tag","color_tag"}},
+    {{"enum quad tri vert","location","quad"},{"string","gtag","vec_field"},{"string","xtag","x"},{"float","scale","1.0"},{"string","color_tag","color_tag"}},
     {"ZSGeometry"},
 });
 
 
 struct ZSSampleQuadratureAttr2Vert : zeno::INode {
+    using dtiles_t = zs::TileVector<float,32>;
     void apply() override {
         using namespace zs;
         auto field = get_input<ZenoParticles>("ZSParticles");
@@ -294,10 +301,20 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
                         verts(attr,i,vi) = 0.;
         });
 
+        static dtiles_t vtemp(verts.get_allocator(),{{"wsum",1}},verts.size());
+        vtemp.resize(verts.size());
+        cudaPol(range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                vtemp("wsum",vi) = 0;
+        });    
+
         cudaPol(range(quads.size()),
-            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),execTag = wrapv<space>{},skip_bou,bou_tag = zs::SmallString(bou_tag)]
+            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),
+                execTag = wrapv<space>{},skip_bou,bou_tag = zs::SmallString(bou_tag),vtemp = proxy<space>({},vtemp)]
                 __device__(int ei) mutable {
                     float w = quads(weight,ei);
+                    // if(ei == 0)
+                    //     printf("w : %f\n",(float)w);
                     // w = 1.0;// cancel out the specified weight info
                     for(int i = 0;i != simplex_size;++i){
                         auto idx = reinterpret_bits<int>(quads("inds",i,ei));
@@ -306,10 +323,22 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
                             continue;
                         for(int j = 0;j != attr_dim;++j) {
                             // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
-                            auto alpha = w * quads(attr,j,ei) / (float)simplex_size;
-                            atomic_add(execTag,&verts(attr,j,idx),alpha);
+                            auto alpha = w / (float)simplex_size;
+                            atomic_add(execTag,&verts(attr,j,idx),alpha * quads(attr,j,ei));
+                            atomic_add(execTag,&vtemp("wsum",idx),alpha);
                         }
-                    }                    
+                    }   
+        });
+
+        cudaPol(range(verts.size()),
+            [verts = proxy<space>({},verts),attr = SmallString(attr),attr_dim,
+                    vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                // if(vi == 0)
+                //     printf("wsum : %f\n",(float)vtemp("wsum",vi));
+                for(int j = 0;j != attr_dim;++j) {
+                    // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
+                    verts(attr,j,vi) /= vtemp("wsum",vi);
+                }
         });
 
         set_output("ZSParticles",field);
@@ -362,7 +391,7 @@ struct ZSSampleVertAttr2Quadrature : zeno::INode {
                     for(int i  = 0;i != simplex_size;++i){
                         auto idx = reinterpret_bits<int>(quads("inds",i,ei));
                         for(int j = 0;j != attr_dim;++j){
-                            quads(attr,j,ei) += verts(attr,j,idx);
+                            quads(attr,j,ei) += verts(attr,j,idx) / simplex_size;
                         }
                     }
         });
