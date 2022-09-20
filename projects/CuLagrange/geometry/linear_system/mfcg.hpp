@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Structures.hpp"
+#include "Structures.hpp"
 #include "zensim/profile/CppTimers.hpp"
 
 namespace zeno { namespace PCG {
@@ -12,7 +12,7 @@ namespace zeno { namespace PCG {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         pol(zs::range(src.size()),
-            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) {
+            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
                 dst.template tuple<width>(dst_tag,vi) = src.template pack<width>(src_tag,vi);
         });
     }
@@ -22,7 +22,7 @@ namespace zeno { namespace PCG {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         pol(zs::range(src.size()),
-            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) {
+            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
                 dst(dst_tag,vi) = src(src_tag,vi);
         });
     }
