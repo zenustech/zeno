@@ -26,4 +26,5 @@ void unload_object(std::string const &key);
 void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi );
 void unload_light();
 void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed);
+void update_hdr_sky();
 }

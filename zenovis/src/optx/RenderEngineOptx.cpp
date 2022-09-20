@@ -280,6 +280,11 @@ struct GraphicsManager {
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
                 xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
             }
+            else if (prim_in->userData().has<std::string>("HDRSky")) {
+                auto path = prim_in->userData().get2<std::string>("HDRSky");
+                float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                OptixUtil::addTexture(path);
+            }
         }
     }
 

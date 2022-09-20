@@ -34,4 +34,30 @@ ZENDEFNODE(ProceduralSky, {
         {"shader"},
 });
 
+struct HDRSky : INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto path = get_input2<std::string>("path");
+        if (path.empty()) {
+            throw std::runtime_error("need hdr tex path");
+        }
+        prim->userData().set2("isRealTimeObject", std::move(1));
+        prim->userData().set2("HDRSky", std::move(path));
+        prim->userData().set2("evnTexRotation", std::move(get_input2<float>("rotation")));
+        set_output("HDRSky", std::move(prim));
+    }
+};
+
+ZENDEFNODE(HDRSky, {
+    {
+        {"readpath", "path"},
+        {"float", "rotation", "0"},
+    },
+    {
+        {"HDRSky"},
+    },
+    {
+    },
+    {"shader"},
+});
 };
