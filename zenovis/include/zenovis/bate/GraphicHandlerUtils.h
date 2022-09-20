@@ -289,6 +289,7 @@ void drawSphere(vec3f center, vec3f color, float radius, std::unique_ptr<Buffer>
     CHECK_GL(glEnable(GL_CULL_FACE));
     CHECK_GL(glCullFace(GL_BACK));
     CHECK_GL(glDrawElements(GL_TRIANGLES, idx.size(), GL_UNSIGNED_INT, (void*)nullptr));
+    CHECK_GL(glDisable(GL_CULL_FACE));
 
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
