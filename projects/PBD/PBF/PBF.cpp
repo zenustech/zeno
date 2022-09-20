@@ -47,7 +47,7 @@ private:
     inline vec3i getCellXYZ(const vec3f& p);
     inline int getCellID(const vec3f& p);
     inline int getCellHash(int i, int j, int k);
-    inline bool isInCell(const vec3i& cell);
+    inline bool isInBound(const vec3i& cell);
     inline int cellXYZ2ID(const vec3i& xyz);
     inline vec3i cellID2XYZ(int i);
     inline vec3f kernelSpikyGradient(const vec3f& r, float h);
@@ -209,7 +209,7 @@ void PBF::neighborSearch()
                     vec3i off{off_x, off_y, off_z};
                     vec3i toCheckXYZ = cellXYZ + off;
                     int toCheck = cellXYZ2ID(toCheckXYZ);
-                    if (isInCell(toCheckXYZ))
+                    if (isInBound(toCheckXYZ))
                     {
                         Cell theCell = cell[toCheck];
                         std::vector<int> parInTheCell = theCell.parInCell;
@@ -228,11 +228,11 @@ void PBF::neighborSearch()
 }
 
 //helpers for neighborSearch
-inline bool PBF::isInCell(const vec3i& cell)
+inline bool PBF::isInBound(const vec3i& cellXYZ)
 {
-    return cell[0] >= 0 && cell[0] < numCellXYZ[0] &&
-           cell[1] >= 0 && cell[1] < numCellXYZ[1] &&
-           cell[2] >= 0 && cell[2] < numCellXYZ[2];
+    return cellXYZ[0] >= 0 && cellXYZ[0] < numCellXYZ[0] &&
+           cellXYZ[1] >= 0 && cellXYZ[1] < numCellXYZ[1] &&
+           cellXYZ[2] >= 0 && cellXYZ[2] < numCellXYZ[2];
 }
 
 inline int PBF::getCellID(const vec3f& p)
