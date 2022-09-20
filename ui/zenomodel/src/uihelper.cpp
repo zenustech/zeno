@@ -447,9 +447,24 @@ QString UiHelper::variantToString(const QVariant& var)
     return value;
 }
 
-qreal UiHelper::parseNumeric(const rapidjson::Value& val, bool& bSucceed)
+float UiHelper::parseNumeric(const QVariant& val, bool castStr, bool& bSucceed)
 {
-    qreal num = 0;
+    float num = 0;
+    QVariant::Type type = val.type();
+    if (type == QMetaType::Float || type == QVariant::Double || type == QVariant::Int)
+    {
+        num = val.toFloat(&bSucceed);
+    }
+    else if (castStr && type == QVariant::String)
+    {
+        num = val.toString().toFloat(&bSucceed);
+    }
+    return num;
+}
+
+float UiHelper::parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed)
+{
+    float num = 0;
     if (val.IsFloat())
     {
         num = val.GetFloat();
@@ -465,9 +480,14 @@ qreal UiHelper::parseNumeric(const rapidjson::Value& val, bool& bSucceed)
         num = val.GetInt();
         bSucceed = true;
     }
+    else if (val.IsString() && castStr)
+    {
+        QString numStr(val.GetString());
+        num = numStr.toFloat(&bSucceed);    //may be empty string, no need to assert.
+    }
     else
     {
-        RAPIDJSON_ASSERT(false);
+        ZASSERT_EXIT(false, 0.0);
         bSucceed = false;
     }
     return num;
@@ -482,13 +502,13 @@ QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
     RAPIDJSON_ASSERT(arr_.Size() == 2);
 
     const auto &xObj = arr_[0];
-    pt.setX(UiHelper::parseNumeric(xObj, bSucceed));
+    pt.setX(UiHelper::parseJsonNumeric(xObj, false, bSucceed));
     RAPIDJSON_ASSERT(bSucceed);
     if (!bSucceed)
         return pt;
 
     const auto &yObj = arr_[1];
-    pt.setY(UiHelper::parseNumeric(yObj, bSucceed));
+    pt.setY(UiHelper::parseJsonNumeric(yObj, false, bSucceed));
     RAPIDJSON_ASSERT(bSucceed);
     if (!bSucceed)
         return pt;
@@ -819,7 +839,142 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
     return finalName;
 }
 
-QVariant UiHelper::_parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef)
+QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)
+{
+    QVariant::Type varType = var.type();
+    if (descType == "int" || descType == "float" || descType == "NumericObject")
+    {
+        if (varType == QVariant::Int || varType == QMetaType::Float || varType == QVariant::Double)
+        {
+            return var;
+        }
+        //don't support string to numeric.
+    }
+    else if ((descType == "string" || descType == "writepath" ||
+              descType == "readpath" || descType == "multiline_string" ||
+              descType.startsWith("enum ")) && varType == QVariant::String)
+    {
+        return var;
+    }
+    else if (descType == "bool")
+    {
+        if (varType == QVariant::Int)
+        {
+            return var.toInt() != 0;
+        }
+        else if (varType == QMetaType::Float)
+        {
+            return var.toFloat() != 0;
+        }
+        else if (varType == QVariant::Double)
+        {
+            return var.toDouble() != 0;
+        }
+        else if (varType == QVariant::Bool)
+        {
+            return var;
+        }
+    }
+    else if (descType.startsWith("vec") && varType == QVariant::UserType &&
+             var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+    {
+        return var;
+    }
+    else if (descType == "curve")
+    {
+        //todo: test legacy curve
+        if (varType == QMetaType::VoidStar)
+            return var;
+    }
+    return QVariant();
+}
+
+QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val, QObject* parentRef)
+{
+    QVariant res;
+    auto jsonType = val.GetType();
+    if (descType == "int")
+    {
+        bool bSucc = false;
+        int iVal = parseJsonNumeric(val, true, bSucc);
+        if (!bSucc)
+            return QVariant();  //will not be serialized when return null variant.
+        res = iVal;
+    }
+    else if (descType == "float" || descType == "NumericObject")
+    {
+        bool bSucc = false;
+        float fVal = parseJsonNumeric(val, true, bSucc);
+        if (!bSucc)
+            return QVariant();
+        res = fVal;
+    }
+    else if (descType == "string" || descType == "writepath"||
+             descType == "readpath" || descType == "multiline_string" ||
+             descType.startsWith("enum "))
+    {
+        if (val.IsString())
+            res = val.GetString();
+        else
+            return QVariant();
+    }
+    else if (descType == "bool")
+    {
+        if (val.IsBool())
+            res = val.GetBool();
+        else if (val.IsInt())
+            res = val.GetInt() != 0;
+        else if (val.IsFloat())
+            res = val.GetFloat() != 0;
+        else
+            return QVariant();
+    }
+    else if (descType.startsWith("vec"))
+    {
+        int dim = 0;
+        bool bFloat = false;
+        if (UiHelper::parseVecType(descType, dim, bFloat))
+        {
+            res = QVariant::fromValue(UI_VECTYPE(dim, 0));
+            UI_VECTYPE vec;
+            if (val.IsArray())
+            {
+                auto values = val.GetArray();
+                for (int i = 0; i < values.Size(); i++)
+                {
+                    vec.append(values[i].GetFloat());
+                }
+            }
+            res = QVariant::fromValue(vec);
+        }
+        else
+        {
+            return QVariant();
+        }
+    }
+    else if (descType == "curve")
+    {
+        CurveModel *pModel = JsonHelper::_parseCurveModel(val, parentRef);
+        res = QVariantPtr<CurveModel>::asVariant(pModel);
+    }
+    else
+    {
+        // omitted or legacy type, need to parse by json value.
+        if (jsonType == rapidjson::kStringType)
+        {
+            // the default value of many types, for example primitive, are empty string,
+            // skip it and return a invalid variant.
+            return QVariant();
+        }
+        else
+        {
+            return _parseVarByJsonValue(descType, val, parentRef);
+        }
+    }
+    return res;
+}
+
+QVariant UiHelper::_parseVarByJsonValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
 {
     if (val.GetType() == rapidjson::kStringType)
     {

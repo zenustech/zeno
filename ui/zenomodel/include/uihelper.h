@@ -41,7 +41,8 @@ public:
     static PARAM_CONTROL getControlType(const QString& type);
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
-    static qreal parseNumeric(const rapidjson::Value& val, bool& bSucceed);
+    static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
+    static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
     static NODE_TYPE nodeType(const QString& name);
 
@@ -53,12 +54,14 @@ public:
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
     static QString nthSerialNumName(QString name);
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
-    static QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
+    static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
+    static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
+    static QVariant _parseVarByJsonValue(const QString& type, const rapidjson::Value& val, QObject* parentRef);
 };
 
 #endif

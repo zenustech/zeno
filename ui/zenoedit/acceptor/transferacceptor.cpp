@@ -190,8 +190,7 @@ void TransferAcceptor::setInputSocket(
             descInfo = desc.inputs[inSock].info;
         }
 
-        //curve?
-        defaultValue = UiHelper::_parseToVariant(descInfo.type, defaultVal, nullptr);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
     }
 
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
@@ -256,7 +255,7 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
             paramInfo = desc.params[name];
         }
         //todo: parentRef;
-        var = UiHelper::_parseToVariant(paramInfo.typeDesc, value, nullptr);
+        var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, nullptr);
     }
 
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();

@@ -315,7 +315,7 @@ void ModelAcceptor::setInputSocket(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-        defaultValue = UiHelper::_parseToVariant(descInfo.type, defaultVal, m_currentGraph);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, m_currentGraph);
     }
 
     QModelIndex idx = m_currentGraph->index(id);
@@ -420,7 +420,7 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         if (desc.params.find(name) != desc.params.end()) {
             paramInfo = desc.params[name];
         }
-        var = UiHelper::_parseToVariant(paramInfo.typeDesc, value, m_currentGraph);
+        var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, m_currentGraph);
     }
 
     QModelIndex idx = m_currentGraph->index(id);
