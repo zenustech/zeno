@@ -110,5 +110,70 @@ ZENDEFNODE(Gather2DFiniteDifference, {
                                           {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                          {"zenofx"},
                                      });
+template<class T>
+T lerp(T a, T b, float c)
+{
+    return (1.0 - c) * a + c * b;
+}
+template<class T>
+void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, int nx, int ny, float h, zeno::vec3f bmin)
+{
+    std::vector<T> temp(field.size());
+#pragma omp parallel for
+    for(size_t tidx=0;tidx<coord.size();tidx++)
+    {
+        auto uv = coord[tidx];
+        auto uv2 = (uv - bmin) / h;
+        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01,0.0,0.01)), zeno::vec3f(nx-1.01, 0.0, ny-1.01));
+        int i = uv2[0];
+        int j = uv2[2];
+        float cx = uv2[0] - i, cy = uv2[2] - j;
+        size_t idx00 = j*nx + i, idx01 = j*nx + i + 1, idx10 = (j+1)*nx + i, idx11 = (j+1)*nx + i + 1;
+        temp[tidx] = lerp<T>(lerp<T>(field[idx00], field[idx01], cx), lerp<T>(field[idx10], field[idx11], cx), cy);
+    }
+#pragma omp parallel for
+    for(size_t tidx=0;tidx<coord.size();tidx++)
+    {
+        field[tidx]=temp[tidx];
+    }
+}
+struct Grid2DSample : zeno::INode {
+    virtual void apply() override {
+        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
+        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
+        auto bmin = get_input2<zeno::vec3f>("bmin");
+        auto grid = get_input<zeno::PrimitiveObject>("grid");
+        auto attrT = get_param<std::string>("attrT");
+        auto channel = get_input<zeno::StringObject>("channel")->get();
+        auto sampleby = get_input<zeno::StringObject>("sampleBy")->get();
+        auto h = get_input<zeno::NumericObject>("h")->get<float>();
+        if(grid->has_attr(channel) && grid->has_attr(sampleby))
+        {
+            if(attrT == "float")
+            {
+                sample2D<float>(grid->attr<zeno::vec3f>(sampleby), grid->attr<float>(channel), nx, ny, h, bmin);
+            }
+            else if(attrT == "vec3f")
+            {
+                sample2D<zeno::vec3f>(grid->attr<zeno::vec3f>(sampleby), grid->attr<zeno::vec3f>(channel), nx, ny, h, bmin);
+            }
+        }
 
+        set_output("prim", std::move(grid));
+
+    }
+};
+ZENDEFNODE(Grid2DSample, {
+                                         {{"PrimitiveObject", "grid"},
+                                          {"int", "nx","1"},
+                                          {"int", "ny", "1"},
+                                          {"float", "h", "1"},
+                                          {"vec3f","bmin", "0,0,0" },
+                                          {"string", "channel", "pos"},
+                                          {"string", "sampleBy", "pos"}},
+                                         {{"PrimitiveObject", "prim"}},
+                                         {{"enum vec3 float", "attrT", "float"},
+                                          },
+                                         {"zenofx"},
+                                     });
 }
