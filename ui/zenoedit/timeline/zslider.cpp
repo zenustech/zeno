@@ -13,7 +13,7 @@ ZSlider::ZSlider(QWidget* parent)
 
 QSize ZSlider::sizeHint() const
 {
-    return ZenoStyle::dpiScaledSize(QSize(0, 45));
+    return ZenoStyle::dpiScaledSize(QSize(0, 36));
 }
 
 void ZSlider::mousePressEvent(QMouseEvent* event)
@@ -134,7 +134,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
 
         if (i % 5 == 0)
         {
-            h = 16;
+            h = 12;
 
             //draw time tick
             int xpos = _frameToPos(i);
@@ -149,14 +149,14 @@ void ZSlider::paintEvent(QPaintEvent* event)
         }
         else
         {
-            h = 8;
+            h = 5;
             int y = height() - h - 2;
             painter.drawLine(QPointF(x, y), QPointF(x, y + h/* - 3*/));
         }
     }
 
-    painter.setPen(QPen(QColor(58, 58, 58), 2));
-    painter.drawLine(QPointF(_frameToPos(m_from), height() - 2), QPointF(_frameToPos(m_to), height() - 2));
+    painter.setPen(QPen(QColor("#335A646F"), 1));
+    painter.drawLine(QPointF(_frameToPos(m_from), height() - 5 - 4), QPointF(_frameToPos(m_to), height() - 5 - 4));
     drawSlideHandle(&painter);
 }
 
@@ -170,20 +170,23 @@ void ZSlider::drawSlideHandle(QPainter* painter)
 
     painter->setPen(Qt::NoPen);
     int y = height() - 10;
-    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, height() - 2)), QColor(76, 159, 244, 128));
+    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, height() - 2)), QColor(76, 159, 244, 64));
 
     //draw handle.
-    y = height() - 20;
-    int w = 8;
-    qreal x = xarrow_pos - w / 2;
-    painter->fillRect(QRectF(QPointF(xarrow_pos - w / 2, y), QPointF(xarrow_pos + w / 2, height() - 2)), QColor(76, 159, 244));
+    static const int handleHeight = ZenoStyle::dpiScaled(16);
+    static const int handleWidth = ZenoStyle::dpiScaled(8);
+    y = height() - handleHeight;
+    qreal x = xarrow_pos - handleWidth / 2;
+    painter->fillRect(QRectF(QPointF(xarrow_pos - handleWidth / 2, y),
+                             QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
+                      QColor(76, 159, 244));
 
     QFont font("Segoe UI Bold", 10);
     QFontMetrics metrics(font);
     painter->setFont(font);
 
     QString numText = QString::number(m_value);
-    w = metrics.horizontalAdvance(numText);
+    int w = metrics.horizontalAdvance(numText);
     painter->setPen(QColor(76, 159, 244));
     painter->drawText(QPointF(xarrow_pos - w / 2, height() * 0.4), numText);
 }
