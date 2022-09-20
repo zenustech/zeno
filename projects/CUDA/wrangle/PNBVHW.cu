@@ -248,7 +248,7 @@ ZENDEFNODE(ZSParticleNeighborBvhWrangler, {
                                                {"DictObject:NumericObject", "params"}},
                                               {"ZSParticles"},
                                               {},
-                                              {"MPM"},
+                                              {"zswrangle"},
                                           });
 
 } // namespace zeno
