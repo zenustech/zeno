@@ -299,7 +299,9 @@ struct FleshQuasiStaticStepping : INode {
   void apply() override {
     using namespace zs;
     auto zstets = get_input<ZenoParticles>("ZSParticles");
-    auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
+    auto gravity = zeno::vec<3,T>(0);
+    if(has_input("gravity"))
+      gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
     auto armijo = get_param<float>("armijo");
     auto curvature = get_param<float>("wolfe");
     auto cg_res = get_param<float>("cg_res");
@@ -332,18 +334,13 @@ struct FleshQuasiStaticStepping : INode {
 
     constexpr auto host_space = zs::execspace_e::openmp;
     auto ompExec = zs::omp_exec();
-    auto act_buffer = dtiles_t{{{"act",1}},(std::size_t)nm_acts,zs::memsrc_e::host};
+    auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
     ompExec(range(act_buffer.size()),
         [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
             act_buffer("act",i) = act_[i];
             // fmt::print("act<{}> : {}\n",i,act_buffer("act",i));
     });
     act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
-
-    if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
-        fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
-        throw std::runtime_error("the quadrature has no muscle id tag");
-    }
 
     static dtiles_t vtemp{verts.get_allocator(),
                           {{"grad", 3},
@@ -357,7 +354,7 @@ struct FleshQuasiStaticStepping : INode {
                            {"p", 3},
                            {"q", 3}},
                           verts.size()};
-    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12},{"inds",4},{"ActInv",3*3}}, eles.size()};
+    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12},{"inds",4},{"ActInv",3*3},{"muscle_ID",1},{"fiber",3}}, eles.size()};
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
@@ -370,25 +367,40 @@ struct FleshQuasiStaticStepping : INode {
 
 
     if(!eles.hasProperty("fiber")){
-        fmt::print("The input flesh should have fiber orientations\n");
-        throw std::runtime_error("The input flesh should have fiber orientations");
-    }
+        fmt::print("The input flesh have no fiber orientations, use the default setting\n");
+        PCG::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
+        // throw std::runtime_error("The input flesh should have fiber orientations");
 
-    if(eles.getChannelSize("fiber") != 3){
-        fmt::print("The input fiber  has wrong channel size\n");
-        throw std::runtime_error("The input fiber has wrong channel size");
+    }else {
+      if(eles.getChannelSize("fiber") != 3){
+          fmt::print("The input fiber  has wrong channel size\n");
+          throw std::runtime_error("The input fiber has wrong channel size");
+      }
+      PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
+    }
+    if(!eles.hasProperty(muscle_id_tag)) {
+
+    // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
+    //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+    //     throw std::runtime_error("the quadrature has no muscle id tag");
+    // }
+
+      fmt::print("The input flesh have no mosucle_id specified, use the default setting");
+      PCG::fill(cudaPol,etemp,"muscle_ID",-1);
+    }else {
+      PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
     }
 
     // apply muscle activation
     cudaPol(range(etemp.size()),
-        [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
+        [etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
             // auto act = eles.template pack<3>("act",ei);
-            auto fiber = eles.template pack<3>("fiber",ei);
+            auto fiber = etemp.template pack<3>("fiber",ei);
               
             vec3 act{0};
 
             auto nfiber = fiber.norm();
-            auto ID = eles(muscle_id_tag,ei);
+            auto ID = etemp("muscle_ID",ei);
             if(nfiber < 0.5 || ID < -1e-6 || nm_acts == 0){ // if there is no local fiber orientaion, use the default act and fiber
                 fiber = vec3{1.0,0.0,0.0};
                 act = vec3{1.0,1.0,1.0};
