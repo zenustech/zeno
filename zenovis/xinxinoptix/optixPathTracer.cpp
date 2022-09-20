@@ -443,19 +443,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
-    {
-        auto &ud = zeno::getSession().userData();
-        auto sunLightDir = ud.get2<zeno::vec2f>("sunLightDir", zeno::vec2f(0, 30));
-        sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
-        state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
-        state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
-        state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
 
-        float sunSoftness = ud.get2<float>("sunSoftness", 1.0f);
-        state.params.sunSoftness = clamp(sunSoftness, 0.01f, 1.0f);
-
-        state.params.elapsedTime = ud.get2<float>("elapsedTime", 0.0f);
-    }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -1072,6 +1060,7 @@ void optixinit( int argc, char* argv[] )
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
+    xinxinoptix::update_procedural_sky(zeno::vec2f(0, 30), 1, zeno::vec2f(0, 0), 0, 0.1);
 }
 
 
@@ -1302,6 +1291,30 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     ld.emission.assign(emi, emi + 3);
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
+}
+
+void update_procedural_sky(
+    zeno::vec2f sunLightDir,
+    float sunLightSoftness,
+    zeno::vec2f windDir,
+    float timeStart,
+    float timeSpeed
+){
+    auto &ud = zeno::getSession().userData();
+    sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
+    state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
+    state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
+    state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
+
+    windDir[1] = clamp(windDir[1], -90.f, 90.f);
+    state.params.windDirY = sin(windDir[1] / 180.f * M_PI);
+    state.params.windDirX = cos(windDir[1] / 180.f * M_PI) * sin(windDir[0] / 180.f * M_PI);
+    state.params.windDirZ = cos(windDir[1] / 180.f * M_PI) * cos(windDir[0] / 180.f * M_PI);
+
+    state.params.sunSoftness = clamp(sunLightSoftness, 0.01f, 1.0f);
+
+    int frameid = ud.get2<int>("frameid", 0);
+    state.params.elapsedTime = timeStart + timeSpeed * frameid;
 }
 
 static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)

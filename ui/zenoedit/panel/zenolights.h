@@ -16,11 +16,13 @@ public:
     ZLineEdit* sunLongitude = new ZLineEdit("0");
     ZLineEdit* sunLatitude = new ZLineEdit("30");
     ZLineEdit* sunSoftness = new ZLineEdit("1");
-    ZLineEdit* elapsedTime = new ZLineEdit("0");
-
-
+    ZLineEdit* windLong = new ZLineEdit("0");
+    ZLineEdit* windLat = new ZLineEdit("0");
+    ZLineEdit* timeStart = new ZLineEdit("0");
+    ZLineEdit* timeSpeed = new ZLineEdit("0.1");
     QPushButton* write_btn = new QPushButton("Write");
     QPushButton* write_all_btn = new QPushButton("Write ALL");
+    QPushButton* procedural_sky_btn = new QPushButton("Procedural Sky");
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();

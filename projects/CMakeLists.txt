@@ -1,4 +1,4 @@
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
+# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
 # ^^^NONO^^^ Please add `export OpenVDB_DIR=/usr/local/lib/cmake/OpenVDB` in your .bashrc to YI-LAO-YONG-YI!!!!!!
 
 if (ZENO_NO_WARNING)
@@ -27,9 +27,10 @@ set(ZENO_EXTENSIONS
     CalcGeometryUV
     MeshSubdiv
     CUDA
+    CuOcean
+    CuLagrange
     Audio
-    Try_OpenVDB
-    Pass
+    Parameterization
     GUI
     PBD
     Python

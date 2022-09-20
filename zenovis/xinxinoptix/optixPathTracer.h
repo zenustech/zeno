@@ -49,6 +49,10 @@ struct Params
     float sunLightDirY;
     float sunLightDirZ;
 
+    float windDirX;
+    float windDirY;
+    float windDirZ;
+
     float sunSoftness;
     float elapsedTime;
 };

@@ -380,6 +380,48 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         return tl;
     }
 
+    std::vector<std::string> getSimplestTexList(){
+        std::vector<std::string> tl;
+
+        std::map<std::string, SMaterialProp> val_tmp;
+        val_tmp.emplace("basecolor", val["basecolor"]);                             //0
+        val_tmp.emplace("metallic", val["metallic"]);                               //1
+        val_tmp.emplace("diffuseRoughness", val["diffuseRoughness"]);               //2
+        val_tmp.emplace("specular", val["specular"]);                               //3
+        val_tmp.emplace("subsurface", val["subsurface"]);                           //4
+        val_tmp.emplace("sssColor", val["sssColor"]);                               //5
+        val_tmp.emplace("sheen", val["sheen"]);                                     //6
+        val_tmp.emplace("clearcoat", val["clearcoat"]);                             //7
+        val_tmp.emplace("normal", val["normal"]);                                   //8
+        val_tmp.emplace("emission", val["emission"]);                               //9
+        val_tmp.emplace("ao", val["ao"]);                                           //10
+        val_tmp.emplace("opacity", val["opacity"]);                                 //11
+        val_tmp.emplace("transmissionColor", val["transmissionColor"]);             //12
+        val_tmp.emplace("specularRoughness", val["specularRoughness"]);             //13
+        val_tmp.emplace("displacement", val["displacement"]);                       //14
+
+        std::vector<pair> val_vec_tmp;
+
+        std::copy(val_tmp.begin(),
+                  val_tmp.end(),
+                  std::back_inserter<std::vector<pair>>(val_vec_tmp));
+
+        std::sort(val_vec_tmp.begin(), val_vec_tmp.end(),
+                  [](const pair &l, const pair &r)
+                  {
+                      if (l.second.order != r.second.order) {
+                          return l.second.order < r.second.order;
+                      }
+
+                      return l.first < r.first;
+                  });
+        for (auto const &p: val_vec_tmp) {
+            tl.emplace_back(p.second.texPath);
+        }
+
+        return tl;
+    }
+
     aiColor4D testColor;
     float testFloat;
 };

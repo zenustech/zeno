@@ -74,9 +74,6 @@ struct LoadStringPrim : INode {
         }
 
         auto retPrim = primsRaw.size() == 1 ? prims[0] : primMerge(primsRaw, {});
-        if (get_input2<bool>("decodeUVs")) {
-            primDecodeUVs(retPrim.get());
-        }
         if (get_input2<bool>("triangulate")) {
             primTriangulate(retPrim.get());
         }
@@ -87,7 +84,6 @@ struct LoadStringPrim : INode {
 ZENO_DEFNODE(LoadStringPrim)({
     {
         {"bool", "triangulate", "1"},
-        {"bool", "decodeUVs", "1"},
         {"string", "str", "Zello World!"},
     },
     {"prim"},

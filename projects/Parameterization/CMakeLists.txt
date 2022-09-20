@@ -11,6 +11,8 @@ set(PARAMETERIZATION_SOURCE_FILES
     harmonic_parameterization.cpp
     arap_parameterization.cpp
     nrosy.cpp
+    read_off.cpp
+    lscm_parameterization.cpp
 )
 
 target_sources(zeno PRIVATE ${PARAMETERIZATION_SOURCE_FILES})

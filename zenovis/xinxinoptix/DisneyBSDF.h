@@ -722,28 +722,50 @@ namespace DisneyBSDF{
         float pdf;
 
         flag = scatterEvent;
-
-        if(rnd(seed) <= subsurface && subsurface > 0.001f){
-            wi = -wi;
-            pdf = subsurface;
-            isSS = true;
-            if(thin){
-                color = sqrt(transmittanceColor);
-            }else{
-                flag = transmissionEvent;
-                //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(sssColor, scatterDistance);
-                color = transmittanceColor;
-
+        if(wo.z>0) //we are outside
+        {
+            if (rnd(seed) <= subsurface && subsurface > 0.001f) {
+                wi = -wi;
+                pdf = subsurface;
+                isSS = true;
+                if (thin) {
+                    color = sqrt(transmittanceColor);
+                } else {
+                    flag = transmissionEvent;
+                    //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                    extinction = CalculateExtinction(sssColor, scatterDistance);
+                    color = transmittanceColor;
+                }
+            } else {
+                pdf = 1.0 - subsurface;
             }
-        }else{
-            pdf = 1.0 - subsurface;
+        }else //we are inside
+        {
+            //either go out or turn in
+            if (rnd(seed) <= subsurface && subsurface > 0.001f)
+            {
+                //keep in, no flag change
+                wi = -wi;
+                isSS = true;
+                if (thin) {
+                    color = sqrt(transmittanceColor);
+                } else {
+                    //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                    extinction = CalculateExtinction(sssColor, scatterDistance);
+                    color = vec3(1.0f);//no attenuation happen
+                }
+            }else
+            {
+                flag = transmissionEvent;
+                color = transmittanceColor;
+            }
         }
 
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
-
+        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        if(wi.z<0)
+            diff = 1.0;
         reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;

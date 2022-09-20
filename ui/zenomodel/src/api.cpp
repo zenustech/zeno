@@ -441,6 +441,7 @@ ZENO_ERROR Zeno_SetView(ZENO_HANDLE hNode, bool bOn)
     info.newValue = options;
 
     pModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+    return Err_NoError;
 }
 
 ZENO_ERROR Zeno_IsMute(ZENO_HANDLE hNode, bool& ret)
@@ -482,6 +483,7 @@ ZENO_ERROR Zeno_SetMute(ZENO_HANDLE hNode, bool bOn)
     info.newValue = options;
 
     pModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+    return Err_NoError;
 }
 
 ZENO_ERROR Zeno_IsOnce(ZENO_HANDLE hNode, bool& ret)
@@ -523,6 +525,7 @@ ZENO_ERROR Zeno_SetOnce(ZENO_HANDLE hNode, bool bOn)
     info.newValue = options;
 
     pModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+    return Err_NoError;
 }
 
 ZENO_ERROR Zeno_GetPos(ZENO_HANDLE hNode, std::pair<float, float>& pt)

@@ -60,7 +60,7 @@ ZENO_DEFNODE(PrimDecodeUVs)({
         "prim",
     },
     {},
-    {"primitive"},
+    {"deprecated"},
 });
 
 struct PrimLoopUVsToVerts : INode {
