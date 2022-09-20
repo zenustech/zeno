@@ -6,14 +6,16 @@
 #include "zensim/zpc_tpls/fmt/format.h"
 
 // from projects/ZenoFX/pw.cpp : ParticlesWrangle
+#include "dbg_printf.h"
 #include <cassert>
 #include <cuda.h>
+#include <zeno/core/Graph.h>
+#include <zeno/extra/GlobalState.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/utils/safe_any_cast.h>
 #include <zeno/zeno.h>
 #include <zfx/cuda.h>
 #include <zfx/zfx.h>
