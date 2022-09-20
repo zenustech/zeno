@@ -430,6 +430,7 @@ void FakeTransformer::scale(float scale_size, vec3i axis) {
 void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis) {
     start_vec = glm::normalize(start_vec);
     end_vec = glm::normalize(end_vec);
+    if (glm::length(start_vec - end_vec) < 0.0001) return;
     auto cross_vec = glm::cross(start_vec, end_vec);
     float direct = 1.0f;
     if (glm::dot(cross_vec, axis) < 0)

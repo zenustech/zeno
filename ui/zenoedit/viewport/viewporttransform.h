@@ -74,6 +74,11 @@ class FakeTransformer {
         qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2];
     }
 
+    template <class T>
+    static void print_vec4(std::string name, T& vec) {
+        qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3];
+    }
+
     static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
         auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
         if (t > 0)
