@@ -1,6 +1,7 @@
 #include <vector>
 #include <array>
 #include <zeno/zeno.h>
+#include <map>
 #include <zeno/types/PrimitiveObject.h>
 #include "../Utils/myPrint.h"
 
@@ -82,7 +83,7 @@ private:
         int x,y,z;
         std::vector<int> parInCell; 
     };
-    std::vector<Cell>  cell;
+    std::map<int, Cell>  cell;
 
     //neighborList
     std::vector<std::vector<int>> neighborList;
@@ -143,17 +144,19 @@ void PBF::initData()
     dpos.resize(numParticles);
 
     //prepare cell data
-    cell.resize(numCell);
+    // cell.resize(numCell);
     for (size_t i = 0; i < numCell; i++)
     {
-        //to calculate the x y z coord of cell
+        // //to calculate the x y z coord of cell
         vec3i xyz = cellID2XYZ(i);
-        cell[i].x = xyz[0];
-        cell[i].y = xyz[1];
-        cell[i].z = xyz[2];
+        int hash = getCellHash(xyz[0],xyz[1],xyz[2]);
 
-        cell[i].parInCell.reserve(10); //pre-allocate memory to speed up
+        cell[hash].x = xyz[0];
+        cell[hash].y = xyz[1];
+        cell[hash].z = xyz[2];
+        cell[hash].parInCell.reserve(10); //pre-allocate memory to speed up
     }
+    echo(cell.size());
     
     //prepare neighbor list 
     neighborList.resize(numParticles);
