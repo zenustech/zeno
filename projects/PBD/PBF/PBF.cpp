@@ -55,9 +55,28 @@ private:
     inline float computeScorr(const vec3f& distVec);
 
     //data for cells
-    vec3i numCellXYZ{16,16,16};
-    size_t numCell{16*16*16};
-    float cellSizeInv = 1.0/2.51;
+    std::vector<int> numCellXYZ;
+    int numCell;
+    float dx; //cell size
+    float dxInv; 
+    vec3i bound;
+    void initCellData()
+    {
+        // dx = 2.51; //default value for test
+        // vec3i bound {40,40,40};
+        dx = get_input<zeno::NumericObject>("dx")->get<float>();
+        bound = get_input<zeno::NumericObject>("bound")->get<vec3i>();
+
+        dxInv = 1.0/dx;
+        int numX = int(bound[0] / dx) + 1;
+        int numY = int(bound[1] / dx) + 1;
+        int numZ = int(bound[2] / dx) + 1;
+        numCellXYZ.resize(3);
+        numCellXYZ[0] = numX;
+        numCellXYZ[1] = numY;
+        numCellXYZ[2] = numZ;
+        numCell = numX * numY * numZ;
+    }
     struct Cell
     {
         int x,y,z;
@@ -77,6 +96,8 @@ public:
         if(firstTime == true)
         {
             firstTime = false;
+            initCellData();
+
             // move pos to local
             numParticles = prim->verts.size();
             pos = std::move(prim->verts);
@@ -103,7 +124,9 @@ public:
 ZENDEFNODE(PBF, {   
                     {
                         {"PrimitiveObject", "prim"},
-                        // {"int", "numSubsteps", "10"}
+                        {"float", "dx", "2.51"},
+                        {"vec3i", "bound", "40, 40, 40"},
+                        // {"int", "numSubsteps", "5"}
                     },
                     {   {"PrimitiveObject", "outPrim"} },
                     {},
@@ -214,7 +237,7 @@ inline bool PBF::isInCell(const vec3i& cell)
 
 inline int PBF::getCellID(const vec3f& p)
 {
-    vec3i xyz = p*cellSizeInv;
+    vec3i xyz = p*dxInv;
     int numPerRow = numCellXYZ[0];
     int numPerFloor = numCellXYZ[0] * numCellXYZ[1];
     int res = numPerFloor * xyz[2] + numPerRow * xyz[1] + xyz[0];
@@ -245,7 +268,7 @@ inline vec3i PBF::cellID2XYZ(int i)
 
 inline vec3i PBF::getCellXYZ(const vec3f& p)
 {
-    vec3i res{p*cellSizeInv};
+    vec3i res{p*dxInv};
     return res;
 }
 
