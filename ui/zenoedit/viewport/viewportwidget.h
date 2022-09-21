@@ -60,8 +60,10 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
+    void lookTo(int dir);
     void clearTransformer();
     void changeTransformOperation(int mode);
+    void changeTransformCoordSys();
 
 private:
     bool m_mmb_pressed;
@@ -96,8 +98,10 @@ public:
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
+    void cameraLookTo(int dir);
     void clearTransformer();
     void changeTransformOperation(int mode);
+    void changeTransformCoordSys();
 
 signals:
     void frameRecorded(int);

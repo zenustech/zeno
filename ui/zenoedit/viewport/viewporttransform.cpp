@@ -8,8 +8,6 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#define BALL_ROTATING (m_operation == ROTATE && m_operation_mode == zenovis::INTERACT_XYZ)
-
 namespace zeno {
 
 FakeTransformer::FakeTransformer()
@@ -388,6 +386,15 @@ void FakeTransformer::toScale() {
         m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
+}
+
+void FakeTransformer::changeCoordSys() {
+    if (m_coord_sys == zenovis::VIEW_COORD_SYS)
+        m_coord_sys = zenovis::WORLD_COORD_SYS;
+    else
+        ++m_coord_sys;
+    if (m_handler)
+        m_handler->setCoordSys(m_coord_sys);
 }
 
 bool FakeTransformer::isTransformMode() const {
