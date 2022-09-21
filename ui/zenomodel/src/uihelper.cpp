@@ -842,19 +842,41 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
 QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)
 {
     QVariant::Type varType = var.type();
-    if (descType == "int" || descType == "float" || descType == "NumericObject")
+    if (descType == "int" ||
+        descType == "float" ||
+        descType == "NumericObject" ||
+        descType == "numeric:float" ||
+        descType == "floatslider")
     {
-        if (varType == QVariant::Int || varType == QMetaType::Float || varType == QVariant::Double)
+        switch (varType)
         {
-            return var;
+            case QVariant::Int:
+            case QMetaType::Float:
+            case QVariant::Double:
+            case QVariant::UInt:
+            case QVariant::LongLong:
+            case QVariant::ULongLong: return var;
+            case QVariant::String:
+            {
+                //irregular data. try to parse to numeric.
+                bool bOk = false;
+                float fVal = var.toString().toFloat(&bOk);
+                return QVariant(fVal);
+            }
+            default:
+                return QVariant();
         }
-        //don't support string to numeric.
     }
-    else if ((descType == "string" || descType == "writepath" ||
-              descType == "readpath" || descType == "multiline_string" ||
-              descType.startsWith("enum ")) && varType == QVariant::String)
+    else if ((descType == "string" ||
+              descType == "writepath" ||
+              descType == "readpath" ||
+              descType == "multiline_string" ||
+              descType.startsWith("enum ")))
     {
-        return var;
+        if (varType == QVariant::String)
+            return var;
+        else
+            return QVariant();
     }
     else if (descType == "bool")
     {
@@ -874,6 +896,15 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
         {
             return var;
         }
+        else if (varType == QVariant::String)
+        {
+            QString boolStr = var.toString();
+            if (boolStr == "true")
+                return true;
+            if (boolStr == "false")
+                return false;
+        }
+        return QVariant();
     }
     else if (descType.startsWith("vec") && varType == QVariant::UserType &&
              var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
@@ -886,7 +917,8 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
         if (varType == QMetaType::VoidStar)
             return var;
     }
-    return QVariant();
+    //unregister type or invalid data, return itself.
+    return var;
 }
 
 QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val, QObject* parentRef)
@@ -901,7 +933,8 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();  //will not be serialized when return null variant.
         res = iVal;
     }
-    else if (descType == "float" || descType == "NumericObject")
+    else if (descType == "float" ||
+             descType == "NumericObject")
     {
         bool bSucc = false;
         float fVal = parseJsonNumeric(val, true, bSucc);
@@ -909,8 +942,10 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();
         res = fVal;
     }
-    else if (descType == "string" || descType == "writepath"||
-             descType == "readpath" || descType == "multiline_string" ||
+    else if (descType == "string" ||
+             descType == "writepath"||
+             descType == "readpath" ||
+             descType == "multiline_string" ||
              descType.startsWith("enum "))
     {
         if (val.IsString())
@@ -960,16 +995,14 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     else
     {
         // omitted or legacy type, need to parse by json value.
-        if (jsonType == rapidjson::kStringType)
+        if (val.IsString() && val.GetStringLength() == 0)
         {
             // the default value of many types, for example primitive, are empty string,
             // skip it and return a invalid variant.
             return QVariant();
         }
-        else
-        {
-            return _parseVarByJsonValue(descType, val, parentRef);
-        }
+        // unregisted or new type, convert by json value.
+        return _parseVarByJsonValue(descType, val, parentRef);
     }
     return res;
 }
@@ -978,12 +1011,14 @@ QVariant UiHelper::_parseVarByJsonValue(const QString& type, const rapidjson::Va
 {
     if (val.GetType() == rapidjson::kStringType)
     {
+        bool bSucc = false;
+        float fVal = parseJsonNumeric(val, true, bSucc);
+        if (bSucc)
+            return fVal;
         return val.GetString();
     }
     else if (val.GetType() == rapidjson::kNumberType)
     {
-        //if (val.IsInt())
-            //zeno::log_critical("happy {}", val.GetInt());
         if (val.IsDouble())
             return val.GetDouble();
         else if (val.IsInt())
