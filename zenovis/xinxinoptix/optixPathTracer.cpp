@@ -1292,6 +1292,9 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
+void update_hdr_sky() {
+    state.params.usingProceduralSky = 0;
+}
 
 void update_procedural_sky(
     zeno::vec2f sunLightDir,
@@ -1300,6 +1303,8 @@ void update_procedural_sky(
     float timeStart,
     float timeSpeed
 ){
+    state.params.usingProceduralSky = 1;
+
     auto &ud = zeno::getSession().userData();
     sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
     state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);

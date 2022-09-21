@@ -45,6 +45,7 @@ struct Params
     ParallelogramLight     *lights;
     OptixTraversableHandle handle;
 
+    int usingProceduralSky;
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;

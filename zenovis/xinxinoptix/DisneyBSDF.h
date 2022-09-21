@@ -1216,3 +1216,17 @@ static __inline__ __device__ vec3 proceduralSky(
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
 }
+
+static __inline__ __device__ vec3 hdrSky(
+        vec3 dir,
+        vec3 sunLightDir,
+        vec3 windDir,
+        int steps,
+        float coverage,
+        float thickness,
+        float absorption,
+        float t
+){
+    vec3 col = vec3(0.5,0.5,0.5);
+    return col;
+}

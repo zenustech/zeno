@@ -284,6 +284,7 @@ struct GraphicsManager {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 OptixUtil::addTexture(path);
+                xinxinoptix::update_hdr_sky();
             }
         }
     }
