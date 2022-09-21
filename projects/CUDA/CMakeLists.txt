@@ -49,6 +49,7 @@ set_target_properties(zeno
 target_sources(zeno PRIVATE
   utils/IndexBuckets.cu
   wrangle/PW.cu
+  wrangle/P2W.cu
   wrangle/PNW.cu
   wrangle/PNBVHW.cu
   wrangle/PPW.cu

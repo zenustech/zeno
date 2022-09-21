@@ -25,7 +25,7 @@ void edgeLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channel)
     for(int tidx = 0; tidx<nx*ny; tidx++)
     {
         int i = tidx%nx;
-        int j = tidx/ny;
+        int j = tidx/nx;
         size_t lidx = j * nx + max(i-1,0);
         size_t ridx = j * nx + min(i+1, nx-1);
         size_t uidx = min(j+1, ny-1) * nx  + i;
@@ -48,7 +48,7 @@ void cornerLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channe
     for(size_t tidx = 0; tidx<nx*ny; tidx++)
     {
         int i = tidx%nx;
-        int j = tidx/ny;
+        int j = tidx/nx;
         size_t ltidx = min(j+1, ny-1) * nx + max(i-1,0);
         size_t rtidx = min(j+1, ny-1) * nx + min(i+1, nx-1);
         size_t lbidx = max(j-1, 0) * nx  + max(i-1,0);

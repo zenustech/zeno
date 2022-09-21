@@ -5,7 +5,7 @@
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 
-// from projects/ZenoFX/pw.cpp : ParticlesWrangle
+// from projects/ZenoFX/p2w.cpp : ParticlesTwoWrangle
 #include "dbg_printf.h"
 #include <cassert>
 #include <cuda.h>
@@ -25,8 +25,8 @@ namespace zeno {
 static zfx::Compiler compiler;
 static zfx::cuda::Assembler assembler;
 
-struct ZSParticlesWrangler : zeno::INode {
-    ~ZSParticlesWrangler() {
+struct ZSParticlesTwoWrangler : zeno::INode {
+    ~ZSParticlesTwoWrangler() {
         if (this->_cuModule)
             cuModuleUnload((CUmodule)this->_cuModule);
     }
@@ -34,7 +34,13 @@ struct ZSParticlesWrangler : zeno::INode {
         using namespace zs;
         auto code = get_input<StringObject>("zfxCode")->get();
 
-        auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        auto parObjPtr = get_input<ZenoParticles>("ZSParticles");
+        auto parObjPtr2 = get_input<ZenoParticles>("ZSParticles2");
+
+        if (parObjPtr->numParticles() != parObjPtr2->numParticles()) {
+            dbg_printf("prim and prim2 size mismatch (%d != %d), using minimal\n", parObjPtr->numParticles(),
+                       parObjPtr2->numParticles());
+        }
 
         zfx::Options opts(zfx::Options::for_cuda);
         opts.detect_new_symbols = true;
@@ -107,7 +113,6 @@ struct ZSParticlesWrangler : zeno::INode {
                 par);
             //dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
-            //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
         }
 
         auto &currentContext = Cuda::context(0);
@@ -115,15 +120,20 @@ struct ZSParticlesWrangler : zeno::INode {
         auto cudaPol = cuda_exec().device(0).sync(true);
 
         /// symbols
-        auto def_sym = [&opts](const std::string &key, int dim) { opts.define_symbol('@' + key, dim); };
-
-        for (auto &&parObjPtr : parObjPtrs) {
+        {
             auto &pars = parObjPtr->getParticles();
+            auto &pars2 = parObjPtr2->getParticles();
             auto props = pars.getPropertyTags();
+            auto props2 = pars2.getPropertyTags();
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
-            for (auto &&[name, nchns] : props)
-                def_sym(name.asString(), nchns);
+            auto register_attrib_syms = [&opts](const std::vector<PropertyTag> &props, const std::string &prefix) {
+                for (auto &&[name, nchns] : props)
+                    opts.define_symbol(prefix + name.asString(), nchns);
+                //def_sym(name.asString(), nchns);
+            };
+            register_attrib_syms(props, "@");
+            register_attrib_syms(props2, "@@");
 
             auto prog = compiler.compile(code, opts);
             auto jitCode = assembler.assemble(prog->assembly);
@@ -138,6 +148,8 @@ struct ZSParticlesWrangler : zeno::INode {
             std::vector<zs::PropertyTag> newChns{};
             for (auto const &[name, dim] : prog->newsyms) {
                 assert(name[0] == '@');
+                if (name[1] == '@')
+                    err_printf("ERROR: cannot define new attribute %s on prim2\n", name.c_str());
                 auto key = name.substr(1);
                 if (!checkDuplication(key))
                     newChns.push_back(PropertyTag{key, dim});
@@ -181,22 +193,21 @@ struct ZSParticlesWrangler : zeno::INode {
                    name.c_str(), dimid, pars.getChannelOffset(name.substr(1)),
                    pars.numChannels());
 #endif
+                void *parsPtr = nullptr;
+                if (name[1] == '@') {
+                    parsPtr = pars2.data();
+                    name = name.substr(2);
+                } else {
+                    parsPtr = pars.data();
+                    name = name.substr(1);
+                }
                 haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
-                                                  (void *)pars.data(),
+                                                  parsPtr,
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)pars.numChannels(),
-                                                  (unsigned short)(pars.getChannelOffset(name.substr(1)) + dimid),
+                                                  (unsigned short)(pars.getChannelOffset(name) + dimid),
                                                   (unsigned short)0};
-
-#if 0
-        auto t = haccessors[i];
-        fmt::print("accessor: numTileBits {} (tileSize {}), {}, {}, "
-                   "numUnitBits {} (unitSize {}), {}\n",
-                   t.numTileBits, tileSize, t.tileMask, t.chnCnt,
-                   t.numUnitSizeBits, unitBytes, t.aux);
-        getchar();
-#endif
             }
             auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
 
@@ -234,12 +245,14 @@ struct ZSParticlesWrangler : zeno::INode {
     void *_cuModule{nullptr};
 };
 
-ZENDEFNODE(ZSParticlesWrangler,
-           {
-               {{"ZenoParticles", "ZSParticles"}, {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
-               {"ZSParticles"},
-               {},
-               {"zswrangle"},
-           });
+ZENDEFNODE(ZSParticlesTwoWrangler, {
+                                       {{"ZenoParticles", "ZSParticles"},
+                                        {"ZenoParticles", "ZSParticles2"},
+                                        {"string", "zfxCode"},
+                                        {"DictObject:NumericObject", "params"}},
+                                       {"ZSParticles"},
+                                       {},
+                                       {"zswrangle"},
+                                   });
 
 } // namespace zeno
