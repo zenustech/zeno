@@ -25,7 +25,7 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
 
     auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
     log_critical("dump cache to disk {}", path);
-    std::ofstream ofs(path);
+    std::ofstream ofs(path, std::ios::binary);
     std::ostreambuf_iterator<char> oit(ofs);
     std::copy(keys.begin(), keys.end(), oit);
     std::copy_n((const char *)poses.data(), poses.size() * sizeof(size_t), oit);
@@ -38,7 +38,7 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     objs.clear();
     auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
     log_critical("load cache from disk {}", path);
-    std::ifstream ifs(path);
+    std::ifstream ifs(path, std::ios::binary);
     std::istreambuf_iterator<char> iit(ifs), iite;
     std::vector<char> dat;
     std::copy(iit, iite, std::back_inserter(dat));
