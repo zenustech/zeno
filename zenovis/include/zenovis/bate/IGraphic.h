@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
@@ -44,6 +45,7 @@ struct IGraphicHandler : IGraphicDraw {
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setCenter(zeno::vec3f center) = 0;
     virtual void setMode(int mode) = 0;
+    virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
 };
 
 struct MakeGraphicVisitor {
