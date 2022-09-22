@@ -57,6 +57,18 @@ struct CUDABuilder {
             << ", r" << rhs << ");\n";
     }
 
+    void addCmpOp(const char *name, int dst, int lhs, int rhs) {
+        define(dst);
+        oss << "    r" << dst << " = (r" << lhs
+            << " " << name << " r" << rhs << ") ? 1 : 0;\n";
+    }
+
+    void addBlendOp(int dst, int lhs, int rhs, int mask) {
+        define(dst);
+        oss << "    r" << dst << " = r" << mask
+            << " == 1 ? (" << "r" << lhs << ") : (r" << rhs << ");\n";
+    }
+
     void addIf(int cond) {
         oss << "    if (r" << cond << ") {\n";
     }
@@ -87,6 +99,9 @@ struct CUDABuilder {
             }
             oss_head << ";\n";
         }
+        // printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+        // printf("%s\n", oss.str().data());
+        // printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
         return oss_head.str() + oss.str();
     }
 };
@@ -224,15 +239,57 @@ struct ImplAssembler {
                 auto rhs = from_string<int>(linesep[3]);
                 auto op = wrapup_function(cmd);
                 builder->addMathFunc(op.c_str(), dst, lhs, rhs);
-
-
+            } else if (cmd == "cmpeq") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp("==", dst, lhs, rhs);
+            } else if (cmd == "cmpne") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp("!=", dst, lhs, rhs);
+            } else if (cmd == "cmplt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp("<", dst, lhs, rhs);
+            } else if (cmd == "cmple") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp("<=", dst, lhs, rhs);
+            } else if (cmd == "cmpgt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp(">", dst, lhs, rhs);
+            } else if (cmd == "cmpge") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addCmpOp(">=", dst, lhs, rhs);
             } else if (cmd == "mov") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAssign(dst, src);
 
-            } else if (cmd == ".if") {
+            } else if (cmd == "blend") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto cond = from_string<int>(linesep[2]);
+                auto lhs = from_string<int>(linesep[3]);
+                auto rhs = from_string<int>(linesep[4]);
+                builder->addBlendOp(dst, lhs, rhs, cond);
+            }
+            else if (cmd == ".if") {
                 ERROR_IF(linesep.size() < 1);
                 auto cond = from_string<int>(linesep[1]);
                 builder->addIf(cond);
