@@ -148,11 +148,11 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
     }
     else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
-        m_lastMovePos = event->pos();
         // check if clicked a selected object
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        auto front = scene->camera->m_lodfront;
         auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
-        if (!scene->selected.empty() && transformer->isTransformMode() && transformer->clickedAnyHandler(realPos(), dir)) {
+        if (!scene->selected.empty() && transformer->isTransformMode() && transformer->clickedAnyHandler(realPos(), dir, front)) {
             transformer->startTransform();
         }
     }
@@ -215,8 +215,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
     }
     else if (event->buttons() & Qt::LeftButton) {
         if (transformer->isTransforming()) {
-            auto start_dir = screenToWorldRay(m_lastMovePos.x() / res().x(), m_lastMovePos.y() / res().y());
-            auto end_dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
+            auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
             auto camera_pos = realPos();
             auto x = event->x() * 1.0f;
             auto y = event->y() * 1.0f;
@@ -224,8 +223,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
             y = 1 - (2 * y / res().y());
             auto mouse_pos = glm::vec2(x, y);
             auto vp = scene->camera->m_proj * scene->camera->m_view;
-            transformer->transform(camera_pos, mouse_pos, start_dir, end_dir, scene->camera->m_lodfront, vp);
-            m_lastMovePos = event->pos();
+            transformer->transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
