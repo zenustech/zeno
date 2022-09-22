@@ -201,12 +201,13 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                     parsPtr = pars.data();
                     name = name.substr(1);
                 }
+                const auto &curPars = name[1] == '@' ? pars2 : pars;
                 haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
                                                   parsPtr,
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
-                                                  (unsigned short)pars.numChannels(),
-                                                  (unsigned short)(pars.getChannelOffset(name) + dimid),
+                                                  (unsigned short)curPars.numChannels(),
+                                                  (unsigned short)(curPars.getChannelOffset(name) + dimid),
                                                   (unsigned short)0};
             }
             auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
