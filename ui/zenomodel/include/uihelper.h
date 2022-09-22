@@ -32,10 +32,8 @@ public:
     static NODE_DESCS parseDescs(const rapidjson::Value &descs);
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
-    static QVariant _parseDefaultValue(const QString& defaultValue, const QString &type);
     static QVariant initDefaultValue(const QString& type);
     static bool validateVariant(const QVariant& var, const QString& type);
-    static QVariant parseVariantValue(const rapidjson::Value& val);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL getControlType(const QString& type);
@@ -54,8 +52,11 @@ public:
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
     static QString nthSerialNumName(QString name);
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
+
     static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
     static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
+    static QVariant parseStringByType(const QString &defaultValue, const QString &type);
+
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
 

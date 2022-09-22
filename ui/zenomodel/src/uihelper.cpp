@@ -60,7 +60,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
                 inputSocket.info.control = getControlType(socketType);
-                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                inputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
                 Q_ASSERT(inputs[i].IsNull());
@@ -79,7 +79,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 paramInfo.control = ctrlType;
                 paramInfo.name = socketName;
                 paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                paramInfo.defaultValue = parseStringByType(socketDefl, socketType);
 
                 desc.params.insert(socketName, paramInfo);
             } else {
@@ -98,7 +98,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
                 outputSocket.info.control = getControlType(socketType);
-                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                outputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
             } else {
@@ -192,7 +192,7 @@ QVariant UiHelper::initDefaultValue(const QString& type)
     return QVariant();
 }
 
-QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
+QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString &type)
 {
     auto control = getControlType(type);
     switch (control) {
@@ -247,32 +247,6 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     default:
         return defaultValue;
     };
-}
-
-QVariant UiHelper::parseVariantValue(const rapidjson::Value& val)
-{
-    if (val.GetType() == rapidjson::kStringType) {
-        return val.GetString();
-    }
-    else if (val.GetType() == rapidjson::kNumberType) {
-        if (val.IsDouble())
-            return val.GetDouble();
-        else if (val.IsInt())
-            return val.GetInt();
-        else {
-            zeno::log_warn("bad rapidjson number type {}", val.GetType());
-            return QVariant();
-        }
-    }
-    else if (val.GetType() == rapidjson::kTrueType) {
-        return val.GetBool();
-    }
-    else if (val.GetType() == rapidjson::kFalseType) {
-        return val.GetBool();
-    }
-    else {
-        return QVariant();
-    }
 }
 
 QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue)
@@ -841,7 +815,7 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
 
 QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)
 {
-    QVariant::Type varType = var.type();
+    const QVariant::Type varType = var.type();
     if (descType == "int" ||
         descType == "float" ||
         descType == "NumericObject" ||
@@ -858,10 +832,11 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
             case QVariant::ULongLong: return var;
             case QVariant::String:
             {
-                //irregular data. try to parse to numeric.
+                //string numeric, try to parse to numeric.
                 bool bOk = false;
                 float fVal = var.toString().toFloat(&bOk);
-                return QVariant(fVal);
+                if (bOk)
+                    return QVariant(fVal);
             }
             default:
                 return QVariant();
@@ -909,15 +884,35 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     else if (descType.startsWith("vec") && varType == QVariant::UserType &&
              var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
     {
+        //ignore string vec type because it has been processed in read io.
         return var;
     }
     else if (descType == "curve")
     {
-        //todo: test legacy curve
         if (varType == QMetaType::VoidStar)
+        {
             return var;
+        }
+        //legacy curve is expressed as string, and no desc type associated with it.
+        return QVariant();
     }
-    //unregister type or invalid data, return itself.
+
+    //string:
+    if (varType == QVariant::String)
+    {
+        QString str = var.toString();
+        if (str.isEmpty()) {
+            // the default value of many types, for example primitive, are empty string,
+            // skip it and return a invalid variant.
+            return QVariant();
+        }
+        //try to convert to numeric.
+        bool bOk = false;
+        float fVal = str.toFloat(&bOk);
+        if (bOk)
+            return fVal;
+    }
+    //unregister type or unknown data, return itself.
     return var;
 }
 
@@ -978,6 +973,24 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
                 for (int i = 0; i < values.Size(); i++)
                 {
                     vec.append(values[i].GetFloat());
+                }
+            }
+            else if (val.IsString())
+            {
+                const QString& vecStr = val.GetString();
+                QStringList lst = vecStr.split(",");
+                for (int i = 0; i < lst.size(); i++)
+                {
+                    bool bSucc = false;
+                    if (lst[i].isEmpty()) {
+                        vec.append(0);
+                    }
+                    else {
+                        float fVal = lst[i].toFloat(&bSucc);
+                        if (!bSucc)
+                            return QVariant();
+                        vec.append(fVal);
+                    }
                 }
             }
             res = QVariant::fromValue(vec);

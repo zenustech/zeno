@@ -1021,7 +1021,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 INPUT_SOCKET _inSocket = AppHelper::getInputSocket(m_index, inSock, bOk);
                 ZASSERT_EXIT(bOk);
 
-                const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->text(), _inSocket.info.type);
+                const QVariant &newValue = UiHelper::parseStringByType(pSocketEditor->text(), _inSocket.info.type);
                 updateSocketDeflValue(nodeid, inSock, _inSocket, newValue);
             });
             return pSocketEditor;

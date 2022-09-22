@@ -386,7 +386,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
             if (!text.isEmpty())
             {
                 defl.control = UiHelper::getControlType(type);
-                defl.value = UiHelper::_parseDefaultValue(text, type);
+                defl.value = UiHelper::parseStringByType(text, type);
                 defl.typeDesc = type;
                 m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
             }
