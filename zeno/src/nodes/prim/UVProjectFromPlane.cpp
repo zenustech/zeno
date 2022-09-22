@@ -22,17 +22,24 @@ struct UVProjectFromPlane : zeno::INode {
         auto vDir = zeno::normalize(yOffset - originPos);
         auto uLength = zeno::length(xOffset - originPos);
         auto vLength = zeno::length(yOffset - originPos);
-        auto n = zeno::cross(uDir, vDir);
-//        zeno::log_info("uDir:{], uLength: {}, n: {}", uDir, uLength, n);
+//        zeno::log_info("uDir:{], uLength: {}, n: {}", uDir, uLength);
         for (auto i = 0; i < prim->size(); i++) {
             auto &vert = prim->verts[i];
             auto offset = vert - originPos;
-            auto proj = offset - zeno::dot(offset, n) * n;
+            auto proj = offset;
             auto u = zeno::clamp(zeno::dot(proj, uDir) / uLength, 0, 1);
             auto v = zeno::clamp(zeno::dot(proj, vDir) / vLength, 0, 1);
             uv[i] = zeno::vec3f(u,  v, 0);
         }
-
+        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            auto tri = prim->tris[i];
+            uv0[i] = uv[tri[0]];
+            uv1[i] = uv[tri[1]];
+            uv2[i] = uv[tri[2]];
+        }
         set_output("outPrim", std::move(prim));
     }
 };

@@ -226,6 +226,10 @@ struct TransHandler final : IGraphicHandler {
     virtual void setMode(int m) override {
         mode = m;
     }
+
+    virtual std::optional<glm::vec3> getIntersect(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
+        return std::nullopt;
+    }
 };
 
 } // namespace
