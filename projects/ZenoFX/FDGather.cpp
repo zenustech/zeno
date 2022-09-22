@@ -38,6 +38,27 @@ void edgeLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channel)
     }
 }
 template<class T>
+void edgeLoopSum(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channel, std::string addChannel)
+{
+    auto &l = prim->attr<T>("l"+channel);
+    auto &r = prim->attr<T>("r"+channel);
+    auto &t = prim->attr<T>("t"+channel);
+    auto &b = prim->attr<T>("b"+channel);
+    auto &res = prim->attr<T>(addChannel);
+#pragma omp parallel for
+    for(int tidx = 0; tidx<nx*ny; tidx++)
+    {
+        int i = tidx%nx;
+        int j = tidx/nx;
+        size_t lidx = j * nx + max(i-1,0);
+        size_t ridx = j * nx + min(i+1, nx-1);
+        size_t uidx = min(j+1, ny-1) * nx  + i;
+        size_t bidx = max(j-1, 0) * nx + i;
+
+        res[tidx] += r[lidx] + l[ridx] + t[bidx] + b[tidx];
+    }
+}
+template<class T>
 void cornerLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channel)
 {
     auto &lt = prim->add_attr<T>("lt"+channel);
@@ -60,6 +81,28 @@ void cornerLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channe
         rb[tidx] = prim->attr<T>(channel)[rbidx];
     }
 }
+template<class T>
+void cornerLoopSum(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channel, std::string addChannel)
+{
+    auto &lt  = prim->attr<T>("lt"+channel);
+    auto &rt  = prim->attr<T>("rt"+channel);
+    auto &lb  = prim->attr<T>("lb"+channel);
+    auto &rb  = prim->attr<T>("rb"+channel);
+    auto &res = prim->attr<T>(addChannel);
+#pragma omp parallel for
+    for(size_t tidx = 0; tidx<nx*ny; tidx++)
+    {
+        int i = tidx%nx;
+        int j = tidx/nx;
+        size_t ltidx = min(j+1, ny-1) * nx + max(i-1,0);
+        size_t rtidx = min(j+1, ny-1) * nx + min(i+1, nx-1);
+        size_t lbidx = max(j-1, 0) * nx  + max(i-1,0);
+        size_t rbidx = max(j-1, 0) * nx + min(i+1, nx-1);
+
+        res[tidx] += lt[rbidx] + rt[lbidx] + lb[rtidx] + rb[ltidx];
+    }
+}
+
 struct Gather2DFiniteDifference : zeno::INode {
     virtual void apply() override {
         auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
@@ -110,6 +153,67 @@ ZENDEFNODE(Gather2DFiniteDifference, {
                                           {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                          {"zenofx"},
                                      });
+
+struct MomentumTransfer2DFiniteDifference : zeno::INode {
+    virtual void apply() override {
+        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
+        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
+        auto grid = get_input<zeno::PrimitiveObject>("grid");
+        auto attrT = get_param<std::string>("attrT");
+        auto type = get_param<std::string>("OpType");
+        auto channel = get_input<zeno::StringObject>("channel")->get();
+        auto addChannel = get_input<zeno::StringObject>("add_channel")->get();
+        if(attrT=="float")
+        {
+            grid->add_attr<float>(addChannel);
+        }
+        if(attrT=="vec3")
+        {
+            grid->add_attr<zeno::vec3f>(addChannel);
+        }
+
+        if(grid->has_attr(channel) && grid->has_attr(addChannel))
+        {
+            if(type == "FIVE_STENCIL" || type == "NINE_STENCIL")
+            {
+                if(attrT == "float")
+                {
+                    edgeLoopSum<float>(grid.get(), nx, ny, channel, addChannel);
+                }
+                if(attrT == "vec3")
+                {
+                    edgeLoopSum<zeno::vec3f>(grid.get(), nx, ny, channel, addChannel);
+                }
+            }
+            if(type == "NINE_STENCIL")
+            {
+                if(attrT == "float")
+                {
+                    cornerLoopSum<float>(grid.get(), nx, ny, channel, addChannel);
+                }
+                if(attrT == "vec3")
+                {
+                    cornerLoopSum<zeno::vec3f>(grid.get(), nx, ny, channel, addChannel);
+                }
+            }
+        }
+
+        set_output("prim", std::move(grid));
+
+    }
+};
+ZENDEFNODE(MomentumTransfer2DFiniteDifference, {
+                                         {{"PrimitiveObject", "grid"},
+                                          {"int", "nx","1"},
+                                          {"int", "ny", "1"},
+                                          {"string", "channel", "d"},
+                                          {"string", "add_channel", "d"}},
+                                         {{"PrimitiveObject", "prim"}},
+                                         {{"enum vec3 float", "attrT", "float"},
+                                          {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
+                                         {"zenofx"},
+                                     });
+
 template<class T>
 T lerp(T a, T b, float c)
 {
@@ -157,7 +261,7 @@ struct Grid2DSample : zeno::INode {
             {
                 sample2D<zeno::vec3f>(grid->attr<zeno::vec3f>(sampleby), grid->attr<zeno::vec3f>(channel), nx, ny, h, bmin);
             }
-        }
+    }
 
         set_output("prim", std::move(grid));
 

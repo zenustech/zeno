@@ -34,6 +34,31 @@ void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const s
         });
 }
 template <int nchn>
+void edgeLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel,
+                 const std::string &addChannel) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto pol = cuda_exec().device(0);
+    const SmallString lTag = std::string("l") + channel;
+    const SmallString rTag = std::string("r") + channel;
+    const SmallString tTag = std::string("t") + channel;
+    const SmallString bTag = std::string("b") + channel;
+    const SmallString tag = addChannel;
+    pol(Collapse{nx, ny},
+        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int i, int j) mutable {
+            size_t lidx = j * nx + math::max(i - 1, 0);
+            size_t ridx = j * nx + math::min(i + 1, nx - 1);
+            size_t tidx = math::min(j + 1, ny - 1) * nx + i;
+            size_t bidx = math::max(j - 1, 0) * nx + i;
+            size_t idx = j * nx + i;
+
+            verts.template tuple<nchn>(tag, idx) =
+                verts.template pack<nchn>(rTag, lidx) + verts.template pack<nchn>(lTag, ridx) +
+                verts.template pack<nchn>(tTag, bidx) + verts.template pack<nchn>(bTag, tidx);
+        });
+}
+
+template <int nchn>
 void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -57,6 +82,30 @@ void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const
             verts.template tuple<nchn>(rtTag, idx) = verts.template pack<nchn>(tag, rtidx);
             verts.template tuple<nchn>(lbTag, idx) = verts.template pack<nchn>(tag, lbidx);
             verts.template tuple<nchn>(rbTag, idx) = verts.template pack<nchn>(tag, rbidx);
+        });
+}
+template <int nchn>
+void cornerLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel,
+                   const std::string &addChannel) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto pol = cuda_exec().device(0);
+    const SmallString ltTag = std::string("lt") + channel;
+    const SmallString rtTag = std::string("rt") + channel;
+    const SmallString lbTag = std::string("lb") + channel;
+    const SmallString rbTag = std::string("rb") + channel;
+    const SmallString tag = addChannel;
+    pol(Collapse{nx, ny},
+        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int i, int j) mutable {
+            size_t ltidx = math::min(j + 1, ny - 1) * nx + math::max(i - 1, 0);
+            size_t rtidx = math::min(j + 1, ny - 1) * nx + math::min(i + 1, nx - 1);
+            size_t lbidx = math::max(j - 1, 0) * nx + math::max(i - 1, 0);
+            size_t rbidx = math::max(j - 1, 0) * nx + math::min(i + 1, nx - 1);
+            size_t idx = j * nx + i;
+
+            verts.template tuple<nchn>(tag, idx) =
+                verts.template pack<nchn>(ltTag, rbidx) + verts.template pack<nchn>(rtTag, lbidx) +
+                verts.template pack<nchn>(lbTag, rtidx) + verts.template pack<nchn>(rbTag, ltidx);
         });
 }
 struct ZSGather2DFiniteDifference : zeno::INode {
@@ -102,6 +151,61 @@ ZENDEFNODE(ZSGather2DFiniteDifference, {
                                            {},
                                            {"zenofx"},
                                        });
+
+struct ZSMomentumTransfer2DFiniteDifference : zeno::INode {
+    void apply() override {
+        auto nx = get_input2<int>("nx");
+        auto ny = get_input2<int>("ny");
+        auto grid = get_input<ZenoParticles>("grid");
+        auto attrT = get_input2<std::string>("attrT");
+        auto type = get_input2<std::string>("OpType");
+        auto channel = get_input2<std::string>("channel");
+        auto addChannel = get_input2<std::string>("add_channel");
+
+        auto &verts = grid->getParticles();
+        auto pol = zs::cuda_exec().device(0);
+        if (attrT == "float") {
+            verts.append_channels(pol, {{addChannel, 1}});
+        }
+        if (attrT == "vec3") {
+            verts.append_channels(pol, {{addChannel, 3}});
+        }
+
+        if (verts.hasProperty(channel) && verts.hasProperty(addChannel)) {
+            if (type == "FIVE_STENCIL" || type == "NINE_STENCIL") {
+                if (attrT == "float") {
+                    edgeLoopSum<1>(verts, nx, ny, channel, addChannel);
+                }
+                if (attrT == "vec3") {
+                    edgeLoopSum<3>(verts, nx, ny, channel, addChannel);
+                }
+            }
+            if (type == "NINE_STENCIL") {
+                if (attrT == "float") {
+                    cornerLoopSum<1>(verts, nx, ny, channel, addChannel);
+                }
+                if (attrT == "vec3") {
+                    cornerLoopSum<3>(verts, nx, ny, channel, addChannel);
+                }
+            }
+        }
+
+        set_output("prim", std::move(grid));
+    }
+};
+
+ZENDEFNODE(ZSMomentumTransfer2DFiniteDifference, {
+                                                     {{"ZenoParticles", "grid"},
+                                                      {"int", "nx", "1"},
+                                                      {"int", "ny", "1"},
+                                                      {"string", "channel", "d"},
+                                                      {"string", "add_channel", "d"},
+                                                      {"enum vec3 float", "attrT", "float"},
+                                                      {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
+                                                     {{"ZenoParticles", "prim"}},
+                                                     {},
+                                                     {"zenofx"},
+                                                 });
 
 template <class T> static constexpr T lerp(T a, T b, float c) {
     return (1 - c) * a + c * b;
