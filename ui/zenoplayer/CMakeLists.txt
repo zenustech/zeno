@@ -20,9 +20,9 @@ set_property(TARGET zenoplayer PROPERTY WIN32_EXECUTABLE OFF)
 find_package(Threads REQUIRED)
 target_link_libraries(zenoplayer PRIVATE Threads::Threads)
 target_link_libraries(zenoplayer PRIVATE Qt5::Widgets Qt5::OpenGL)
-target_link_libraries(zenoplayer PRIVATE zenoui zenoio zenovis)
+target_link_libraries(zenoplayer PRIVATE zenoui zenoio zenovis zenomodel)
 target_link_libraries(zenoplayer PRIVATE zeno)
-target_include_directories(zenoplayer PRIVATE . .. ../zenoui ../zenoedit ../include)
+target_include_directories(zenoplayer PRIVATE . .. ../zenoui ../zenoedit ../include ../zenomodel/include)
 target_include_directories(zenoplayer PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 
 
