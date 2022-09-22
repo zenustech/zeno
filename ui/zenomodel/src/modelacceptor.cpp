@@ -376,31 +376,13 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
         ZASSERT_EXIT(params.find("name") != params.end() &&
             params.find("type") != params.end() &&
             params.find("defl") != params.end());
+
         const QString& type = params["type"].value.toString();
         PARAM_INFO& defl = params["defl"];
-
-        if (defl.value.type() == QVariant::String)
-        {
-            //legacy case, like vec3f "x,y,z" etc.
-            QString text = defl.value.toString();
-            if (!text.isEmpty())
-            {
-                defl.control = UiHelper::getControlType(type);
-                defl.value = UiHelper::parseStringByType(text, type);
-                defl.typeDesc = type;
-                m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
-            }
-        }
-        else
-        {
-            PARAM_CONTROL ctrl = UiHelper::getControlType(type);
-            if (ctrl != CONTROL_NONE && defl.control != ctrl)
-            {
-                defl.typeDesc = type;
-                defl.control = ctrl;
-                m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
-            }
-        }
+        defl.control = UiHelper::getControlType(type);
+        defl.value = UiHelper::parseVarByType(type, defl.value, nullptr);
+        defl.typeDesc = type;
+        m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
     }
 }
 
@@ -420,7 +402,10 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         if (desc.params.find(name) != desc.params.end()) {
             paramInfo = desc.params[name];
         }
-        var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, m_currentGraph);
+        if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value, nullptr);   //dynamic type on SubInput defl.
+        else
+            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, m_currentGraph);
     }
 
     QModelIndex idx = m_currentGraph->index(id);

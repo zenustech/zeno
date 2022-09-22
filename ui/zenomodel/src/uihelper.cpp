@@ -1015,12 +1015,12 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();
         }
         // unregisted or new type, convert by json value.
-        return _parseVarByJsonValue(descType, val, parentRef);
+        return parseJsonByValue(descType, val, parentRef);
     }
     return res;
 }
 
-QVariant UiHelper::_parseVarByJsonValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
+QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
 {
     if (val.GetType() == rapidjson::kStringType)
     {

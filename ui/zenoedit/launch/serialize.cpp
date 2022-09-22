@@ -111,6 +111,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
             QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            if (paramValue.isNull())
+                continue;
             AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
 		}
 
