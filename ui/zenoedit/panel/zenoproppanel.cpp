@@ -503,9 +503,10 @@ void ZenoPropPanel::onParamEditFinish()
 
 	PARAM_UPDATE_INFO info;
 	info.oldValue = UiHelper::getParamValue(m_idx, paramName);
-	info.newValue = UiHelper::parseTextValue(ctrl, textValue);;
+	info.newValue = UiHelper::parseTextValue(ctrl, textValue);
 	info.name = paramName;
-	model->updateParamInfo(nodeid, info, m_subgIdx, true);
+	if (info.oldValue != info.newValue)
+		model->updateParamInfo(nodeid, info, m_subgIdx, true);
 }
 
 void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)

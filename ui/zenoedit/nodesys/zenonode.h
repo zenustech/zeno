@@ -33,6 +33,13 @@ class ZenoNode : public QGraphicsWidget
         {
         }
     };
+    struct _param_ctrl
+    {
+        ZenoTextLayoutItem* param_name;
+        ZenoParamWidget* param_control;
+        QGraphicsLinearLayout* ctrl_layout;
+        _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
+    };
 
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
@@ -133,9 +140,9 @@ private:
     QPersistentModelIndex m_subGpIndex;
 
     FuckQMap<QString, _socket_ctrl> m_inSockets;
+    FuckQMap<QString, _param_ctrl> m_params;
     FuckQMap<QString, _socket_ctrl> m_outSockets;
 
-    QMap<QString, ZenoParamWidget*> m_paramControls;
     ZenoTextLayoutItem* m_NameItem;
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
