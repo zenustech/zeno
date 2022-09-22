@@ -327,6 +327,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
 }
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline std::optional<std::string> sky_tex;
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);

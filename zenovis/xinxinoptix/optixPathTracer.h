@@ -46,6 +46,9 @@ struct Params
     OptixTraversableHandle handle;
 
     int usingProceduralSky;
+    cudaTextureObject_t sky_texture;
+    float sky_rot;
+
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;

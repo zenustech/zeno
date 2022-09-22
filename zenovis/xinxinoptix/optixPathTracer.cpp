@@ -1292,8 +1292,9 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
-void update_hdr_sky() {
+void update_hdr_sky(float sky_rot) {
     state.params.usingProceduralSky = 0;
+    state.params.sky_rot = sky_rot;
 }
 
 void update_procedural_sky(
@@ -1433,6 +1434,9 @@ std::vector<std::vector<std::string>> &texs) {
         }
     }
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+    if (OptixUtil::sky_tex.has_value()) {
+        state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
+    }
 }
 
 void optixupdateend() {
