@@ -1,5 +1,5 @@
-#include "Utils.hpp"
 #include "Solver.cuh"
+#include "Utils.hpp"
 #include <zeno/types/NumericObject.h>
 
 namespace zeno {
@@ -595,6 +595,8 @@ void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
         auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
         auto vn = vtemp.pack<3>("vn", vi);
         vn += dv;
+        // if (vn.length() > 2)
+        //     vn = vn.normalized() * 2;
         int BCorder = vtemp("BCorder", vi);
         auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
         auto projVec = [&BCbasis, BCorder](auto &dx) {
