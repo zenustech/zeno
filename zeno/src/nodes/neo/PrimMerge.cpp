@@ -400,7 +400,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 
         parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
-            auto vbase = bases[primIdx];
+            auto uvbase = uvbases[primIdx];
             auto base = loop_uvbases[primIdx];
             auto core = [&] (auto key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
@@ -408,7 +408,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     auto &outarr = outprim->loop_uvs.values;
                     size_t n = std::min(arr.size(), prim->loop_uvs.size());
                     for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = vbase + arr[i];
+                        outarr[base + i] = uvbase + arr[i];
                     }
                 } else {
                     auto &outarr = outprim->loop_uvs.attr<T>(key);
@@ -430,7 +430,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 
         parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
-            auto vbase = bases[primIdx];
             auto base = uvbases[primIdx];
             auto core = [&] (auto key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
@@ -438,7 +437,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     auto &outarr = outprim->uvs.values;
                     size_t n = std::min(arr.size(), prim->uvs.size());
                     for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = vbase + arr[i];
+                        outarr[base + i] = base + arr[i];
                     }
                 } else {
                     auto &outarr = outprim->uvs.attr<T>(key);
