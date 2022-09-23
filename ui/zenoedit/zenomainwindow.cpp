@@ -389,6 +389,12 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
     adjustDockSize();
 }
 
+void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+    this->saveQuit();
+    // todo: event->ignore() when saveQuit returns false?
+    QMainWindow::closeEvent(event);
+}
+
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
     float height = size().height();
