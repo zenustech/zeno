@@ -30,6 +30,12 @@ enum {
     INTERACT_NONE,
 };
 
+enum {
+    WORLD_COORD_SYS,
+    LOCAL_COORD_SYS,
+    VIEW_COORD_SYS
+};
+
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;
@@ -45,6 +51,7 @@ struct IGraphicHandler : IGraphicDraw {
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setCenter(zeno::vec3f center) = 0;
     virtual void setMode(int mode) = 0;
+    virtual void setCoordSys(int coord_sys) = 0;
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
 };
 

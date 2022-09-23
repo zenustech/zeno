@@ -70,6 +70,7 @@ struct RotateHandler final : IGraphicHandler {
     vec3f center;
     float bound;
     int mode;
+    int coord_sys;
 
     Program *lines_prog;
     std::unique_ptr<Buffer> lines_ebo;
@@ -178,6 +179,10 @@ struct RotateHandler final : IGraphicHandler {
 
     virtual void setMode(int m) override {
         mode = m;
+    }
+
+    virtual void setCoordSys(int c) override {
+        coord_sys = c;
     }
 
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ray_origin, glm::vec3 ray_direction) override {

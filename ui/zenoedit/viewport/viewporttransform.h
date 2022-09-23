@@ -42,6 +42,7 @@ class FakeTransformer {
     void toTranslate();
     void toRotate();
     void toScale();
+    void changeCoordSys();
     bool isTransformMode() const;
     glm::vec3 getCenter() const;
     void clear();
@@ -107,6 +108,7 @@ class FakeTransformer {
     bool m_status;
     int m_operation;
     int m_operation_mode;
+    int m_coord_sys;
 
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
 
