@@ -650,7 +650,12 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
                     bUpdateLayout = true;
                 }
                 pLineEdit->setValidator(validateForParams(param));
-                pLineEdit->setText(param.value.toString());
+                if (param.control == CONTROL_FLOAT) {
+                    pLineEdit->setText(QString::number(param.value.toFloat()));
+                }
+                else {
+                    pLineEdit->setText(param.value.toString());
+                }
                 break;
             }
             case CONTROL_BOOL:
@@ -1236,7 +1241,12 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
                 bUpdateLayout = true;
             }
             pLineEdit->setValidator(validateForSockets(inSocket));
-            pLineEdit->setText(inSocket.info.defaultValue.toString());
+            if (inSocket.info.control == CONTROL_FLOAT) {
+                pLineEdit->setText(QString::number(inSocket.info.defaultValue.toFloat()));
+            }
+            else {
+                pLineEdit->setText(inSocket.info.defaultValue.toString());
+            }
             break;
         }
         case CONTROL_BOOL:
