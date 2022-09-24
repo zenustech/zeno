@@ -884,8 +884,28 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     else if (descType.startsWith("vec") && varType == QVariant::UserType &&
              var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
     {
-        //ignore string vec type because it has been processed in read io.
-        return var;
+        if (varType == QVariant::UserType && var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            return var;
+        }
+        else if (varType == QVariant::String)
+        {
+            auto lst = var.toString().split(",");
+            if (lst.isEmpty())
+                return QVariant();
+            UI_VECTYPE vec;
+            for (int i = 0; i < lst.size(); i++)
+            {
+                QString str = lst[i];
+                bool bOk = false;
+                float fVal = str.toFloat(&bOk);
+                if (!bOk)
+                    return QVariant();
+                vec.append(fVal);
+            }
+            return QVariant::fromValue(vec);
+        }
+        return QVariant();
     }
     else if (descType == "curve")
     {
