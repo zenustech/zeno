@@ -31,6 +31,9 @@ struct Session : zeno::disable_copy {
     void look_perspective(float cx, float cy, float cz, float theta,
                           float phi, float radius, float fov,
                           bool ortho_mode, float aperture, float focalPlaneDistance);
+    void look_to_dir(float cx, float cy, float cz,
+                     float dx, float dy, float dz,
+                     float ux, float uy, float uz);
     void do_screenshot(std::string path, std::string type);
     //void new_frame_offline(std::string path, int nsamples);
     void set_background_color(float r, float g, float b);
