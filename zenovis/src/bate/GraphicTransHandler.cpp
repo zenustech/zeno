@@ -228,7 +228,7 @@ struct TransHandler final : IGraphicHandler {
         mode = m;
     }
 
-    virtual void setCoordSys(int c) {
+    virtual void setCoordSys(int c) override {
         coord_sys = c;
     }
 
