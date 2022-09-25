@@ -528,6 +528,10 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     fmt.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(fmt);
 
+    // https://blog.csdn.net/zhujiangm/article/details/90760744
+    // https://blog.csdn.net/jays_/article/details/83783871
+    setFocusPolicy(Qt::ClickFocus);
+
     m_camera = std::make_shared<CameraControl>();
     Zenovis::GetInstance().m_camera_control = m_camera.get();
 }
@@ -936,36 +940,37 @@ void DisplayWidget::onRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::keyPressEvent(QKeyEvent* event) {
+void ViewportWidget::keyPressEvent(QKeyEvent* event) {
+    _base::keyPressEvent(event);
+    //qInfo() << event->key();
     if (event->key() == Qt::Key_T)
-        m_view->changeTransformOperation(0);
+        this->changeTransformOperation(0);
     if (event->key() == Qt::Key_R)
-        m_view->changeTransformOperation(1);
+        this->changeTransformOperation(1);
     if (event->key() == Qt::Key_E)
-        m_view->changeTransformOperation(2);
+        this->changeTransformOperation(2);
     if (event->key() == Qt::Key_M)
-        m_view->changeTransformCoordSys();
+        this->changeTransformCoordSys();
 
     if (event->key() == Qt::Key_1)
-        m_view->cameraLookTo(0);
+        this->cameraLookTo(0);
     if (event->key() == Qt::Key_3)
-        m_view->cameraLookTo(1);
+        this->cameraLookTo(1);
     if (event->key() == Qt::Key_7)
-        m_view->cameraLookTo(2);
+        this->cameraLookTo(2);
 
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     if (ctrl_pressed && event->key() == Qt::Key_1)
-        m_view->cameraLookTo(3);
+        this->cameraLookTo(3);
     if (ctrl_pressed && event->key() == Qt::Key_3)
-        m_view->cameraLookTo(4);
+        this->cameraLookTo(4);
     if (ctrl_pressed && event->key() == Qt::Key_7)
-        m_view->cameraLookTo(5);
+        this->cameraLookTo(5);
 }
 
-void DisplayWidget::keyReleaseEvent(QKeyEvent* event) {
-
+void ViewportWidget::keyReleaseEvent(QKeyEvent* event) {
+    _base::keyReleaseEvent(event);
 }
-
 
 void DisplayWidget::onRecord()
 {

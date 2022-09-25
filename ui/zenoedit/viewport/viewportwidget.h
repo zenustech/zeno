@@ -111,6 +111,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     std::shared_ptr<CameraControl> m_camera;
@@ -148,10 +150,6 @@ public slots:
 
 signals:
     void frameUpdated(int new_frame);
-
-  protected:
-    void keyPressEvent(QKeyEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     bool isOptxRendering() const;
