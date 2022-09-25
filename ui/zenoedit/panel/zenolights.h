@@ -13,8 +13,8 @@
 class ZenoLights : public QWidget {
     Q_OBJECT
 public:
-    ZLineEdit* sunLongitude = new ZLineEdit("0");
-    ZLineEdit* sunLatitude = new ZLineEdit("30");
+    ZLineEdit* sunLongitude = new ZLineEdit("-60");
+    ZLineEdit* sunLatitude = new ZLineEdit("45");
     ZLineEdit* sunSoftness = new ZLineEdit("1");
     ZLineEdit* windLong = new ZLineEdit("0");
     ZLineEdit* windLat = new ZLineEdit("0");
