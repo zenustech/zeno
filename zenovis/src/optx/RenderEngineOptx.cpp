@@ -17,6 +17,8 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
+#include <zeno/types/UserData.h>
+#include "zeno/core/Session.h"
 #include <variant>
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
@@ -233,11 +235,13 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    void load_lights(std::string key, zeno::IObject *obj){
+    // return if find sky
+    bool load_lights(std::string key, zeno::IObject *obj){
+        bool sky_found = false;
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
             auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
             if (isRealTimeObject == 0) {
-                return;
+                return false;
             }
             if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
@@ -273,6 +277,7 @@ struct GraphicsManager {
                                         prim->verts[3].data(), prim->verts[4].data());
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
+                sky_found = true;
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
@@ -281,6 +286,7 @@ struct GraphicsManager {
                 xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
             }
         }
+        return sky_found;
     }
 
     bool need_update_light(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
@@ -297,9 +303,25 @@ struct GraphicsManager {
     }
     bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
         xinxinoptix::unload_light();
+        bool sky_found = false;
 
         for (auto const &[key, obj] : objs) {
-            load_lights(key, obj.get());
+            if(load_lights(key, obj.get())) {
+                sky_found = true;
+            }
+        }
+//        zeno::log_info("sky_found : {}", sky_found);
+        if (sky_found == false) {
+            auto &ud = zeno::getSession().userData();
+//            zeno::log_info("ud.has sunLightDir: {}", ud.has("sunLightDir"));
+            if (ud.has("sunLightDir")) {
+                zeno::vec2f sunLightDir = ud.get2<zeno::vec2f>("sunLightDir");
+                float sunLightSoftness = ud.get2<float>("sunLightSoftness");
+                zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
+                float timeStart = ud.get2<float>("timeStart");
+                float timeSpeed = ud.get2<float>("timeSpeed");
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+            }
         }
 
         return true;

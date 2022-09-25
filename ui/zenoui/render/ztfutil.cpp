@@ -463,8 +463,8 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.paramFont = QFont("HarmonyOS Sans", 11);
     param.paramFont.setBold(true);
 
-    QColor clr(255, 255, 255);
-    clr.setAlphaF(0.4);
+    QColor clr(226, 226, 226);
+    //clr.setAlphaF(0.4);
     param.nameClr = clr;
     param.socketClr = QColor(188, 188, 188);
     clr = QColor(255, 255, 255);

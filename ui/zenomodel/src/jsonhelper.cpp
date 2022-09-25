@@ -35,6 +35,22 @@ namespace JsonHelper
         writer.EndArray();
     }
 
+    void AddParams(const QString& op,
+        const QString& ident,
+        const QString& name,
+        const QVariant& defl,
+        const QString& descType,
+        RAPIDJSON_WRITER& writer
+    )
+    {
+        writer.StartArray();
+        AddVariant(op, "string", writer, true);
+        AddVariant(ident, "string", writer, true);
+        AddVariant(name, "string", writer, true);
+        AddVariant(defl, descType, writer, true);
+        writer.EndArray();
+    }
+
     void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
     {
         QVariant::Type varType = value.type();
