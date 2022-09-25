@@ -372,7 +372,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				socket.info.type = type;
 				socket.info.name = name;
                 socket.info.control = UiHelper::getControlType(type);
-				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.inputs[name] = socket;
 			}
 			for (QString output : outputs.split("%", QtSkipEmptyParts))
@@ -387,7 +387,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				socket.info.type = type;
 				socket.info.name = name;
                 socket.info.control = UiHelper::getControlType(type);
-				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.outputs[name] = socket;
 			}
 			for (QString param : params.split("%", QtSkipEmptyParts))
@@ -402,7 +402,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				paramInfo.name = name;
 				paramInfo.typeDesc = type;
 				paramInfo.control = UiHelper::getControlType(type);
-				paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
+				paramInfo.defaultValue = UiHelper::parseStringByType(defl, type);
 				//thers is no "value" in descriptor, but it's convient to initialize param value. 
 				paramInfo.value = paramInfo.defaultValue;
 				desc.params[name] = paramInfo;

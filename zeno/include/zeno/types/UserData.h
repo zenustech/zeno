@@ -110,6 +110,10 @@ struct UserData {
     auto end() {
         return m_data.end();
     }
+
+    size_t erase(const std::string& key) {
+        return m_data.erase(key);
+    }
 };
 
 }
