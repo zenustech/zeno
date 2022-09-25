@@ -153,15 +153,19 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                 auto key = name.substr(1);
                 if (!checkDuplication(key))
                     newChns.push_back(PropertyTag{key, dim});
+                if (dim != 3 && dim != 1)
+                    err_printf("ERROR: bad attribute dimension for primitive: %d\n", dim);
             }
             if (newChns.size() > 0)
                 pars.append_channels(cudaPol, newChns);
-            props.insert(std::end(props), std::begin(newChns), std::end(newChns));
 
             if (_cuModule == nullptr) {
                 auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
                 void *state;
                 cuLinkCreate(0, nullptr, nullptr, (CUlinkState *)&state);
+                // fmt::print(">>>>>>>>>>>>>>>>>>>");
+                // fmt::print("{}\n", jitCode);
+                // fmt::print("<<<<<<<<<<<<<<<<<<<");
 
                 auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
                 cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(), (size_t)jitSrc.size(),
@@ -188,27 +192,29 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
-#if 0
-        fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i,
-                   name.c_str(), dimid, pars.getChannelOffset(name.substr(1)),
-                   pars.numChannels());
-#endif
-                void *parsPtr = nullptr;
-                if (name[1] == '@') {
+
+                unsigned short aux = name[1] == '@' ? 1 : 0;
+                float *parsPtr = nullptr;
+                if (aux) {
+                    aux = 1;
                     parsPtr = pars2.data();
                     name = name.substr(2);
                 } else {
                     parsPtr = pars.data();
                     name = name.substr(1);
                 }
-                const auto &curPars = name[1] == '@' ? pars2 : pars;
+                const auto &curPars = aux ? pars2 : pars;
                 haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
                                                   parsPtr,
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)curPars.numChannels(),
                                                   (unsigned short)(curPars.getChannelOffset(name) + dimid),
-                                                  (unsigned short)0};
+                                                  aux};
+#if 0
+                fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i, name.c_str(), dimid,
+                           curPars.getChannelOffset(name), curPars.numChannels());
+#endif
             }
             auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
 
