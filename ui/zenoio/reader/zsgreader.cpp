@@ -260,11 +260,6 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     pAcceptor->setTimeInfo(info);
 }
 
-QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
-{
-    return UiHelper::_parseDefaultValue(defaultValue, type);
-}
-
 void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
 {
     ZASSERT_EXIT(objValue.HasMember("inputs") && objValue["inputs"].IsArray());
@@ -490,7 +485,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                         inputSocket.info = SOCKET_INFO("", socketName);
                         inputSocket.info.type = socketType;
                         inputSocket.info.control = ctrlType;
-                        inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        inputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
                         desc.inputs.insert(socketName, inputSocket);
                     }
                 }
@@ -523,7 +518,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                         paramInfo.control = ctrlType;
                         paramInfo.name = socketName;
                         paramInfo.typeDesc = socketType;
-                        paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        paramInfo.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
                         desc.params.insert(socketName, paramInfo);
                     }
                 }
@@ -554,7 +549,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                         outputSocket.info = SOCKET_INFO("", socketName);
                         outputSocket.info.type = socketType;
                         outputSocket.info.control = ctrlType;
-                        outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        outputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
                         desc.outputs.insert(socketName, outputSocket);
                     }
                 }

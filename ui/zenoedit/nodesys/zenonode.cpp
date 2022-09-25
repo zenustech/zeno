@@ -254,7 +254,17 @@ ZenoBackgroundWidget* ZenoNode::initHeaderStyle()
     ZenoBackgroundWidget* headerWidget = new ZenoBackgroundWidget(this);
 	auto headerBg = m_renderParams.headerBg;
 	headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
-	headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
+
+    QColor clrHeaderBg;
+    if (pGraphsModel->IsSubGraphNode(m_index))
+        clrHeaderBg = QColor(86, 143, 131);
+    else
+        clrHeaderBg = headerBg.clr_normal;
+
+	headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
 	headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
 
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -686,7 +696,8 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
             {
                 ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget);
                 if (!pComboBox) {
-                    //todO:
+                    pComboBox = qobject_cast<ZenoParamComboBox*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    bUpdateLayout = true;
                 }
                 pComboBox->setText(val.toString());
                 break;
@@ -695,7 +706,8 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
             {
                 ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(pWidget);
                 if (!pTextEdit) {
-                    //todO
+                    pTextEdit = qobject_cast<ZenoParamMultilineStr*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    bUpdateLayout = true;
                 }
                 pTextEdit->setText(val.toString());
                 break;
@@ -1026,7 +1038,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 INPUT_SOCKET _inSocket = AppHelper::getInputSocket(m_index, inSock, bOk);
                 ZASSERT_EXIT(bOk);
 
-                const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->text(), _inSocket.info.type);
+                const QVariant &newValue = UiHelper::parseStringByType(pSocketEditor->text(), _inSocket.info.type);
                 updateSocketDeflValue(nodeid, inSock, _inSocket, newValue);
             });
             return pSocketEditor;
@@ -1088,8 +1100,17 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
         }
         case CONTROL_MULTILINE_STRING:
         {
-            //todo
-            break;
+            ZenoParamMultilineStr* pMultiStrEdit = new ZenoParamMultilineStr(
+                UiHelper::variantToString(inSocket.info.defaultValue),
+                m_renderParams.lineEditParam);
+            connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
+                bool bOk = false;
+                INPUT_SOCKET _inSocket = AppHelper::getInputSocket(m_index, inSock, bOk);
+                ZASSERT_EXIT(bOk);
+                const QString &newValue = pMultiStrEdit->text();
+                updateSocketDeflValue(nodeid, inSock, _inSocket, newValue);
+            });
+            return pMultiStrEdit;
         }
         case CONTROL_COLOR:
         {
