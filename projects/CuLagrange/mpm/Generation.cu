@@ -1254,58 +1254,101 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
 
       using namespace zs;
 
-      auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
+      // auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
+      int prim_idx = 0;
       auto attrName = get_param<std::string>("attr");
       auto attrType = get_param<std::string>("type");
+      auto location = get_param<std::string>("location");
       if(parobjPtrs.size() <= prim_idx)
         throw std::runtime_error("prim index out of range");
       const auto parobjPtr = parobjPtrs[prim_idx];
-      bool requireClone = !(parobjPtr->getParticles().memspace() == memsrc_e::host || parobjPtr->getParticles().memspace() == memsrc_e::um);
-      const auto& pars = requireClone ? parobjPtr->getParticles().clone({memsrc_e::host}) : parobjPtr->getParticles();
       if(parobjPtr->prim.get() == nullptr)
         return;
       
       auto prim = parobjPtr->prim;
-      if(!pars.hasProperty(attrName))
-        throw std::runtime_error("the particles has no specified channel");
-      // clone the specified attribute from particles to primitiveObject
-      if(!prim->has_attr(attrName)){
-        if(attrType == "float")
-          prim->add_attr<float>(attrName);
-        else
-          prim->add_attr<zeno::vec3f>(attrName);
-      }
+      if(location == "vert") {
+        bool requireClone = !(parobjPtr->getParticles().memspace() == memsrc_e::host || parobjPtr->getParticles().memspace() == memsrc_e::um);
+        const auto& pars = requireClone ? parobjPtr->getParticles().clone({memsrc_e::host}) : parobjPtr->getParticles();
 
-      
-      auto ompExec = zs::omp_exec();
-      if(attrType == "float"){
-        fmt::print("update float attr {}\n",attrName);
-        auto& attr = prim->attr<float>(attrName);
-        ompExec(range(pars.size()),
-          [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-            attr[pi] = pars(attrName,pi);
-          });
-      }else if(attrType == "vec3f"){
-        fmt::print("update vec3f attr {}\n",attrName);
-        auto& attr = prim->attr<zeno::vec3f>(attrName);
-        ompExec(range(pars.size()),
-          [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-            attr[pi] = pars.template array<3,float>(attrName,pi);
-          });
-      }else{
-        throw std::runtime_error("INVALID SPECIFIED TYPE");
-      }
 
-      fmt::print(fg(fmt::color::cyan),
-          "done executing UpdatePrimitiveAttrFromZSParticles\n");
+        if(!pars.hasProperty(attrName))
+          throw std::runtime_error("the particles has no specified channel");
+        // clone the specified attribute from particles to primitiveObject
+        if(!prim->has_attr(attrName)){
+          if(attrType == "float")
+            prim->add_attr<float>(attrName);
+          else
+            prim->add_attr<zeno::vec3f>(attrName);
+        }
+
+        
+        auto ompExec = zs::omp_exec();
+        if(attrType == "float"){
+          fmt::print("update float attr {}\n",attrName);
+          auto& attr = prim->attr<float>(attrName);
+          ompExec(range(pars.size()),
+            [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+              attr[pi] = pars(attrName,pi);
+            });
+        }else if(attrType == "vec3f"){
+          fmt::print("update vec3f attr {}\n",attrName);
+          auto& attr = prim->attr<zeno::vec3f>(attrName);
+          ompExec(range(pars.size()),
+            [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+              attr[pi] = pars.template array<3,float>(attrName,pi);
+            });
+        }else{
+          throw std::runtime_error("INVALID SPECIFIED TYPE");
+        }
+
+        fmt::print(fg(fmt::color::cyan),
+            "done executing UpdatePrimitiveAttrFromZSParticles\n");
+      }else if(location == "quad") {
+        bool requireClone = !(parobjPtr->getQuadraturePoints().memspace() == memsrc_e::host || parobjPtr->getQuadraturePoints().memspace() == memsrc_e::um);
+        const auto& quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host}) : parobjPtr->getQuadraturePoints();
+
+        if(!quads.hasProperty(attrName))
+          throw std::runtime_error("the particles has no specified channel");
+        // clone the specified attribute from particles to primitiveObject
+        if(!prim->quads.has_attr(attrName)){
+          if(attrType == "float")
+            prim->quads.add_attr<float>(attrName);
+          else
+            prim->quads.add_attr<zeno::vec3f>(attrName);
+        }
+        
+        auto ompExec = zs::omp_exec();
+        if(attrType == "float"){
+          fmt::print("update float attr {}\n",attrName);
+          auto& attr = prim->quads.attr<float>(attrName);
+          ompExec(range(quads.size()),
+            [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+              attr[pi] = quads(attrName,pi);
+            });
+        }else if(attrType == "vec3f"){
+          fmt::print("update vec3f attr {}\n",attrName);
+          auto& attr = prim->quads.attr<zeno::vec3f>(attrName);
+          ompExec(range(quads.size()),
+            [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+              attr[pi] = quads.template array<3,float>(attrName,pi);
+            });
+        }else{
+          throw std::runtime_error("INVALID SPECIFIED TYPE");
+        }
+
+        fmt::print(fg(fmt::color::cyan),
+            "done executing UpdatePrimitiveAttrFromZSParticles\n");        
+      }else {
+        throw std::runtime_error("UNRECOGINIZED LOCATION SPECIFIED");
+      }
       set_output("ZSParticles",get_input("ZSParticles"));
   }
 };
 
 ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,{
-                {"ZSParticles","index"},
                 {"ZSParticles"},
-                {{"string","attr","x"},{"enum float vec3f","type","float"}},
+                {"ZSParticles"},
+                {{"string","attr","x"},{"enum float vec3f","type","float"},{"enum vert quad","location","vert"}},
                 {"MPM"},
 });
 
