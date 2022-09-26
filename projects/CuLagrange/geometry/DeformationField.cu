@@ -9,7 +9,7 @@
 
 namespace zeno {
 
-struct ZSCalcSurfaceTenssionField : INode {
+struct ZSIsotropicTensionField : INode {
     using dtiles_t = zs::TileVector<float,32>;
 
     virtual void apply() override {
@@ -23,7 +23,7 @@ struct ZSCalcSurfaceTenssionField : INode {
         auto& tris = zssurf->getQuadraturePoints();
 
         if(tris.getChannelSize("inds") != 3) {
-            fmt::print("ZSCalcSurfaceTenssionField only supports triangle surface mesh");
+            fmt::print("ZSCalcSurfaceTenssionField only supports triangle surface mesh {}\n",tris.getChannelSize("inds"));
             throw std::runtime_error("ZSCalcSurfaceTenssionField only supports triangle surface mesh");
         }
         if(!verts.hasProperty(ref_channel)){
@@ -128,22 +128,84 @@ struct ZSCalcSurfaceTenssionField : INode {
         cudaExec(zs::range(nmVerts),
             [verts = proxy<space>({},verts),tension_tag = zs::SmallString(tension_tag),
                     vtemp = proxy<space>({},vtemp)] ZS_LAMBDA (int vi) mutable {
-                verts(tension_tag,vi) = vtemp("a",vi) / (vtemp("A",vi));
+                verts(tension_tag,vi) = vtemp("a",vi) / (vtemp("A",vi) + 1e-8);
         });
         cudaExec(zs::range(nmTris),
             [tris = proxy<space>({},tris),tension_tag = zs::SmallString(tension_tag),
-                    etemp = proxy<space>({},etemp)] ZS_LAMBDA (int vi) mutable {
-                tris(tension_tag,vi) = etemp("a",vi) / (etemp("A",vi));
+                    etemp = proxy<space>({},etemp)] ZS_LAMBDA (int ti) mutable {
+                tris(tension_tag,ti) = etemp("a",ti) / (etemp("A",ti) + 1e-8);
         });        
 
         set_output("zssurf",zssurf);
     }
 };
 
-ZENDEFNODE(ZSCalcSurfaceTenssionField, {
+ZENDEFNODE(ZSIsotropicTensionField, {
                             {"zssurf"},
                             {"zssurf"},
                             {{"string","ref_channel","X"},{"string","def_channel","x"},{"string","tension_channel"," tension"}},
                             {"ZSGeometry"}});
+
+struct ZSEvalDeformationGradient : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        auto zsvolume = get_input<ZenoParticles>("zsvolume");
+        auto defShapeTag = get_param<std::string>("defShapeTag");
+        auto gradientTag = get_param<std::string>("defGradientTag");
+
+        const auto& verts = zsvolume->getParticles();
+        if(!verts.hasProperty(defShapeTag)) {
+            fmt::print("the input zsvolume has no {} channel\n",defShapeTag);
+            throw std::runtime_error("the input zsvolume has no specified defShapeTag");
+        }
+
+        auto& quads = zsvolume->getQuadraturePoints();
+        if(quads.getChannelSize("inds") != 4) {
+            fmt::print("the input zsvolume should be a tetrahedra mesh\n");
+            throw std::runtime_error("the input zsvolume should be a tetrahedra mesh");
+        }
+
+        if(!quads.hasProperty("IB")) {
+            fmt::print("the input zsvolume should contain IB channel\n");
+            throw std::runtime_error("the input zsvolume should contain IB channel\n"); 
+        }
+
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if(!quads.hasProperty(gradientTag)) {
+            quads.append_channels(cudaExec,{{gradientTag,9}});
+        }else if(quads.getChannelSize(gradientTag) != 9) {
+            fmt::print("the size of F channel {} is not 9\n",gradientTag);
+            throw std::runtime_error("the size of F channel is not 9");
+        }
+
+        // cudaExec(zs::range(quads.size()),
+        //     [quads = proxy<space>({},quads),verts = proxy<space>({},verts),
+        //         defShapeTag = zs::SmallString(defShapeTag),
+        //         gradientTag = zs::SmallString(gradientTag)] ZS_LAMBDA(int ei) mutable {
+        //     using T = typename RM_CVREF_T(verts)::value_type;
+        //     const auto& inds = quads.template pack<4>("inds",ei).template reinterpret_bits<int>();
+
+        //     zs::vec<T,3,3> F = LSL_GEO::deformation_gradient(
+        //         verts.template pack<3>(defShapeTag,inds[0]),
+        //         verts.template pack<3>(defShapeTag,inds[1]),
+        //         verts.template pack<3>(defShapeTag,inds[2]),
+        //         verts.template pack<3>(defShapeTag,inds[3]),
+        //         quads.template pack<3,3>("IB",ei));
+
+        //     quads.template tuple<9>(gradientTag,ei) = F;
+        // });
+        // // auto refShapeTag = get_param<std::string>("refShapeTag");
+
+        set_output("zsvolume",zsvolume);
+    }
+};
+
+ZENDEFNODE(ZSEvalDeformationGradient, {
+            {"zsvolume"},
+            {"zsvolume"},
+            {{"string","defShapeTag","x"},{"string","defGradientTag","F"}},
+            {"ZSGeometry"}});
 
 };
