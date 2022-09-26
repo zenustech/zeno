@@ -22,13 +22,13 @@ struct LayerOutNode {
     NodeType type;
     ZTabDockWidget *pWidget;
     QStringList tabs;
-    QRect geom;
+    QRectF geom;
 };
 
 PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget *pWidget);
 PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget *pWidget);
-void writeLayout(PtrLayoutNode root, const QString& filePath);
-QString exportLayout(PtrLayoutNode root);
+void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString& filePath);
+QString exportLayout(PtrLayoutNode root, const QSize& szMainwin);
 PtrLayoutNode readLayoutFile(const QString& filePath);
 PtrLayoutNode readLayout(const QString& content);
 int getDockSize(PtrLayoutNode root, bool bHori);

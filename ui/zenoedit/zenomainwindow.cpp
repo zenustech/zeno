@@ -35,6 +35,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_bInDlgEventloop(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
+    , m_nResizeTimes(0)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -202,7 +203,7 @@ void ZenoMainWindow::initMenu() {
                     }
                 }
 
-                QString layoutInfo = exportLayout(m_layoutRoot);
+                QString layoutInfo = exportLayout(m_layoutRoot, size());
                 settings.beginGroup(name);
                 settings.setValue("content", layoutInfo);
                 settings.endGroup();
@@ -313,7 +314,7 @@ void ZenoMainWindow::saveLayout2()
     //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
-    writeLayout(m_layoutRoot, path);
+    writeLayout(m_layoutRoot, size(), path);
 }
 
 void ZenoMainWindow::resetDocks(PtrLayoutNode root)
@@ -332,6 +333,7 @@ void ZenoMainWindow::resetDocks(PtrLayoutNode root)
     ZTabDockWidget *cake = new ZTabDockWidget(this);
     addDockWidget(Qt::TopDockWidgetArea, cake);
     initDocksWidget(cake, m_layoutRoot);
+    m_nResizeTimes = 2;
 }
 
 void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
@@ -341,12 +343,17 @@ void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
 
     if (root->type == NT_ELEM)
     {
-        if (root->geom.width() > 0)
-            resizeDocks({root->pWidget}, {root->geom.width()}, Qt::Horizontal);
-        if (root->geom.height() > 0)
-            resizeDocks({root->pWidget}, {root->geom.height()}, Qt::Vertical);
+        if (root->geom.width() > 0) {
+            int W = size().width() * root->geom.width();
+            resizeDocks({root->pWidget}, {W}, Qt::Horizontal);
+        }
+        if (root->geom.height() > 0){
+            int H = size().height() * root->geom.height();
+            resizeDocks({root->pWidget}, {H}, Qt::Vertical);
+        }
     }
-    else{
+    else
+    {
         _resizeDocks(root->pLeft);
         _resizeDocks(root->pRight);
     }
@@ -589,18 +596,29 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event)
     QMainWindow::resizeEvent(event);
 }
 
-void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+void ZenoMainWindow::closeEvent(QCloseEvent *event)
+{
     this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     QMainWindow::closeEvent(event);
 }
+
 bool ZenoMainWindow::event(QEvent* event)
 {
     if (QEvent::LayoutRequest == event->type())
     {
         //resizing have to be done after fitting layout, which follows by LayoutRequest.
-        _resizeDocks(m_layoutRoot);
-        return true;    }
+        //it seems that after `m_nResizeTimes` times, the resize action can be valid...
+        if (m_nResizeTimes > 0 && m_layoutRoot)
+        {
+            --m_nResizeTimes;
+            if (m_nResizeTimes == 0)
+            {
+                _resizeDocks(m_layoutRoot);
+                return true;
+            }
+        }
+    }
     return QMainWindow::event(event);
 }
 

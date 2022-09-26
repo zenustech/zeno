@@ -55,7 +55,7 @@ PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget* pWidget)
     return nullptr;
 }
 
-static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
+static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer)
 {
     JsonObjBatch scope(writer);
     if (root->type == NT_HOR || root->type == NT_VERT)
@@ -64,13 +64,13 @@ static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
         writer.String(root->type == NT_HOR ? "H" : "V");
         writer.Key("left");
         if (root->pLeft)
-            _writeLayout(root->pLeft, writer);
+            _writeLayout(root->pLeft, szMainwin, writer);
         else
             writer.Null();
 
         writer.Key("right");
         if (root->pRight)
-            _writeLayout(root->pRight, writer);
+            _writeLayout(root->pRight, szMainwin, writer);
         else
             writer.Null();
     }
@@ -84,18 +84,33 @@ static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
         else
         {
             writer.StartObject();
+            int w = szMainwin.width();
+            int h = szMainwin.height();
+            if (w == 0)
+                w = 1;
+            if (h == 0)
+                h = 1;
 
             writer.Key("geometry");
             writer.StartObject();
             QRect rc = root->pWidget->geometry();
+
             writer.Key("x");
-            writer.Int(rc.left());
+            float _left = (float)rc.left() / w;
+            writer.Double(_left);
+
             writer.Key("y");
-            writer.Int(rc.top());
+            float _top = (float)rc.top() / h;
+            writer.Double(_top);
+
             writer.Key("width");
-            writer.Int(rc.width());
+            float _width = (float)rc.width() / w;
+            writer.Double(_width);
+
             writer.Key("height");
-            writer.Int(rc.height());
+            float _height = (float)rc.height() / h;
+            writer.Double(_height);
+
             writer.EndObject();
 
             writer.Key("tabs");
@@ -126,22 +141,22 @@ static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
     }
 }
 
-QString exportLayout(PtrLayoutNode root)
+QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)
 {
     rapidjson::StringBuffer s;
     PRETTY_WRITER writer(s);
-    _writeLayout(root, writer);
+    _writeLayout(root, szMainwin, writer);
     QString strJson = QString::fromUtf8(s.GetString());
     return strJson;
 }
 
-void writeLayout(PtrLayoutNode root, const QString &filePath)
+void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString &filePath)
 {
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
         return;
     }
-    QString strJson = exportLayout(root);
+    QString strJson = exportLayout(root, szMainwin);
     f.write(strJson.toUtf8());
 }
 
@@ -174,12 +189,12 @@ static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
         }
 
         const rapidjson::Value& geomObj = widObj["geometry"];
-        int x = geomObj["x"].GetInt();
-        int y = geomObj["y"].GetInt();
-        int width = geomObj["width"].GetInt();
-        int height = geomObj["height"].GetInt();
-        ptrNode->geom = QRect(x, y, width, height);
-        
+        float x = geomObj["x"].GetFloat();
+        float y = geomObj["y"].GetFloat();
+        float width = geomObj["width"].GetFloat();
+        float height = geomObj["height"].GetFloat();
+        ptrNode->geom = QRectF(x, y, width, height);
+
         return ptrNode;
     }
     else

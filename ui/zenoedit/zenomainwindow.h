@@ -75,6 +75,7 @@ private:
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
+    int m_nResizeTimes;
 };
 
 #endif
