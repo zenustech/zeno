@@ -271,6 +271,10 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         auto outAttr = get_param<std::string>("outAttr");
         auto refAttr = get_param<std::string>("refAttr");
 
+        auto useDispMap = get_param<int>("useDispMap");
+        auto refDispMapTag = get_param<std::string>("refDispMapTag");
+        auto outDispMapTag = get_param<std::string>("outDispMapTag");
+
         auto use_xform = get_param<int>("use_xform");
 
         auto &everts = zssurf->getParticles();
@@ -283,6 +287,11 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         const auto& verts = zstets->getParticles();
         const auto& eles = zstets->getQuadraturePoints();
         const auto& bcw = (*zstets)[tag];
+
+        if(useDispMap && (!everts.hasProperty(refDispMapTag) || !everts.hasProperty(outDispMapTag))) {
+            fmt::print("the input everts have no {} or {} dispMap when useDispMap is on\n",refDispMapTag,outDispMapTag);
+            throw std::runtime_error("the input everts have no specified dispMap when useDispMap is on");
+        }
 
 
         if(use_xform && !everts.hasProperty(refAttr)) {
@@ -306,13 +315,16 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
             [inAttr = zs::SmallString{inAttr},outAttr = zs::SmallString{outAttr},
                     verts = proxy<space>({},verts),eles = proxy<space>({},eles),
                     bcw = proxy<space>({},bcw),everts = proxy<space>({},everts),
-                    use_xform,refAttr = zs::SmallString{refAttr}] ZS_LAMBDA (int vi) mutable {
+                    use_xform,refAttr = zs::SmallString{refAttr},
+                    useDispMap,
+                    refDispMapTag = zs::SmallString{refDispMapTag},
+                    outDispMapTag = zs::SmallString{outDispMapTag}] ZS_LAMBDA (int vi) mutable {
                 using T = typename RM_CVREF_T(verts)::value_type;
                 const auto& ei = bcw.pack<1>("inds",vi).reinterpret_bits<int>()[0];
                 if(ei < 0)
                     return;
                 const auto& inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
-                if(use_xform) {
+                if(use_xform || useDispMap) {
                     zs::vec<T,3,3> F{};
                     zs::vec<T,3> b{};
 
@@ -326,12 +338,16 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
                     
                     everts.template tuple<3>(outAttr,vi) = F * everts.template pack<3>(refAttr,vi) + b;
 
-                    if(vi == 0){
-                        printf("F : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
-                            (float)F(0,0),(float)F(0,1),(float)F(0,2),
-                            (float)F(1,0),(float)F(1,1),(float)F(1,2),
-                            (float)F(2,0),(float)F(2,1),(float)F(2,2));
-                        printf("b : %f %f %f\n",(float)b[0],(float)b[1],(float)b[2]);
+                    // if(vi == 0){
+                    //     printf("F : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+                    //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
+                    //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
+                    //         (float)F(2,0),(float)F(2,1),(float)F(2,2));
+                    //     printf("b : %f %f %f\n",(float)b[0],(float)b[1],(float)b[2]);
+                    // }
+
+                    if(useDispMap) {
+                        everts.template tuple<3>(outDispMapTag,vi) = F * everts.template pack<3>(refDispMapTag,vi);
                     }
                 }else{
                     const auto& w = bcw.pack<4>("w",vi);
@@ -362,8 +378,19 @@ ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}
                                 {"string","outAttr","x"},
                                 {"string","refAttr","X"},
                                 {"string","tag","skin_bw"},
-                                {"int","use_xform","0"}},
+                                {"int","use_xform","0"},
+                                {"int","useDispMap","0"},
+                                {"string","refDispMapTag","dX"},
+                                {"string","outDispMapTag","dx"}
+                                },
                             {"ZSGeometry"}});
 
+
+// struct ZSTransformEmbedPrim : zeno::INode {
+//     void apply() override {
+//         using namespace zs;
+//         auto 
+//     }
+// };
 
 } // namespace zeno
