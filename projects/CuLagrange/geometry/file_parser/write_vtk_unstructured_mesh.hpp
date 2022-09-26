@@ -200,6 +200,7 @@ namespace zeno {
         bool has_quads = prim->quads.size() > 0;
         bool has_tris = prim->tris.size() > 0;
         if(has_quads){
+            // printf("OUTPUT QUADS TOPO\n");
             bool success = write_cells_topology<4>(fp,prim->quads.values);
             if(!success){
                 printf("Failed writing quad topos to %s\n",outfilename);
@@ -210,8 +211,7 @@ namespace zeno {
                 printf("Failed writing cell types to %s\n",outfilename);
                 return return_and_close_file(fp,false);
             }
-        }
-        if(!has_quads && has_tris){
+        }else if(has_tris){
             bool success = write_cells_topology<3>(fp,prim->tris.values);
             if(!success){
                 printf("Failed writing tris topos %s\n",outfilename);
@@ -222,8 +222,7 @@ namespace zeno {
                 printf("Failed writing cell types to %s\n",outfilename);
                 return return_and_close_file(fp,false);
             }            
-        }
-        if(!has_quads && !has_tris){
+        } else {
             printf("the primitive has no tris or tets topo\n");
             return return_and_close_file(fp,false);
         }
@@ -300,7 +299,7 @@ namespace zeno {
 
             if(out_customed_cell_attributes) {
                 int numberoffielddata = 0;
-                for(auto &&[key,attr] : prim->verts.attrs) {
+                for(auto &&[key,attr] : prim->quads.attrs) {
                     // if(key == "nrm" || key == "clr")
                     //     continue;
                     numberoffielddata++;
@@ -348,7 +347,7 @@ namespace zeno {
 
             if(out_customed_cell_attributes) {
                 int numberoffielddata = 0;
-                for(auto &&[key,attr] : prim->verts.attrs) {
+                for(auto &&[key,attr] : prim->tris.attrs) {
                     // if(key == "nrm" || key == "clr")
                     //     continue;
                     numberoffielddata++;
@@ -356,7 +355,7 @@ namespace zeno {
                 printf("number of customed cell attributes %d \n",numberoffielddata);
                 if(numberoffielddata > 0){
                     write_field_header(fp,"elm_field",numberoffielddata);
-                    for(auto &&[key,arr] : prim->quads.attrs) {
+                    for(auto &&[key,arr] : prim->tris.attrs) {
                         // if(key == "nrm" || key == "clr")
                         //     continue;
                         const auto& k{key};
