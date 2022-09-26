@@ -201,9 +201,15 @@ namespace zeno {
                 for(int i = 0;i != cols;++i){
                     attr[nm_field_read][i] = (float)strtod(bufferp,&bufferp);
                     // printf("read in<%d,%d,%d> : %f\n",nm_field_read,rows,i,attr[nm_field_read][i]);
-                    bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+                    if(nm_field_read != rows - 1 || i != cols - 1) // if the reading is not finished
+                        bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
                 }
-                // printf("read lines : <%d %d> %d \n",nm_field_read,rows,nm_field_read < rows);
+                // std::cout << "re"
+                // if(line_count < 50000)
+                    // printf("read lines : <%d %d %d> : %f %f %f \n",line_count,nm_field_read,rows,
+                    //     attr[nm_field_read][0],
+                    //     attr[nm_field_read][1],
+                    //     attr[nm_field_read][2]);
             // }
             nm_field_read++;
         }
@@ -228,11 +234,18 @@ namespace zeno {
         // }
 
         int nm_field_read = 0;
-        while(nm_field_read < rows){
-            attr[nm_field_read] = (float)strtod(bufferp,&bufferp);
-            bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
-            nm_field_read++;
+        for(int i = 0;i != rows;++i) {
+            attr[i] = (float)strtod(bufferp,&bufferp);
+            if(i != rows-1)
+                bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
         }
+        // while(nm_field_read < rows){
+        //     attr[nm_field_read] = (float)strtod(bufferp,&bufferp);
+        //     bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+
+        //     nm_field_read++;
+        //     if(nm_field_read)
+        // }
 
         return true;
     }
@@ -310,12 +323,15 @@ namespace zeno {
             if(!strcmp(id,"FIELD")) {
                 int nm_arrays = 0;
                 sscanf(bufferp,"%s %s %d",id,data_name,&nm_arrays);
+                printf("reading field data %s %d\n",data_name,nm_arrays);
+
+
                 for(int array_id = 0;array_id != nm_arrays;++array_id){
                     int nm_components,nm_tuples;
                     bufferp = readline(buffer,fp,&line_count);
                     sscanf(bufferp,"%s %d %d %s",array_name,&nm_components,&nm_tuples,dummy_str);
-                    printf("array_name : %s | nm_components  %d | nm_tuples : %d | type : %s\n",
-                        array_name,nm_components,nm_tuples,dummy_str);
+                    printf("array_name : %s | nm_components  %d | nm_tuples : %d | type : %s at %d\n",
+                        array_name,nm_components,nm_tuples,dummy_str,line_count);
 
                     if(nm_tuples != buffer_size){
                         printf("the number of tuples[%d] in the field(%s) should match the number of cells[%d]\n",
@@ -324,7 +340,7 @@ namespace zeno {
                         return false;
                     }
 
-                    if(nm_components < 1 && nm_components > 3){
+                    if(nm_components < 1 || nm_components > 3){
                         printf("invalid nm_components(%d) in the field(%s)\n",nm_components,array_name);
                         fclose(fp);
                         return false;
@@ -338,6 +354,8 @@ namespace zeno {
                         auto& data = attrv.add_attr(array_name,0.f);
                         printf("add channel  %s <%d,%d>\n",array_name,data.size(),nm_components);
                         parsing_attribs(fp,data,buffer_size,line_count);
+                        // for(int i = 0;i < 100;++i)
+                        //     printf("read attr[%d] : %f\n",i,data[i]);
                     }
                     continue;
                 }
