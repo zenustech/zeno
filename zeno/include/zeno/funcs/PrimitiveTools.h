@@ -72,4 +72,16 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
 ZENO_API void BarycentricInterpPrimitive(PrimitiveObject* _dst, const PrimitiveObject* _src, int i, int v0, int v1, int v2,
 zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2);
 
+static void setDummyUvsLoopuvs(PrimitiveObject* prim) {
+    if (prim->loops.size() == 0) {
+        return;
+    }
+    prim->uvs.resize(1);
+    prim->uvs[0] = zeno::vec2f(0, 0);
+    prim->loop_uvs.resize(prim->loops.size());
+    for (auto i = 0; i < prim->loops.size(); i++) {
+        prim->loop_uvs[i] = 0;
+    }
+}
+
 }

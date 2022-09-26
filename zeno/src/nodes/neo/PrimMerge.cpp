@@ -2,6 +2,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/para/parallel_for.h>
@@ -33,6 +34,11 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         size_t loop_uvtotal = 0;
         size_t uvtotal = 0;
         size_t polytotal = 0;
+        for (auto prim : primList) {
+            if (prim->loops.size() > 0 && prim->loop_uvs.size() == 0) {
+                zeno::setDummyUvsLoopuvs(prim);
+            }
+        }
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto prim = primList[primIdx];
             total += prim->verts.size();

@@ -44,7 +44,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 
     if (auto marr = mesamp.getPositions()) {
         if (!read_done) {
-            log_info("[alembic] totally {} positions", marr->size());
+            log_debug("[alembic] totally {} positions", marr->size());
         }
         auto &parr = prim->verts;
         for (size_t i = 0; i < marr->size(); i++) {
@@ -55,7 +55,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 
     if (auto marr = mesamp.getVelocities()) {
         if (!read_done) {
-            log_info("[alembic] totally {} velocities", marr->size());
+            log_debug("[alembic] totally {} velocities", marr->size());
         }
         auto &parr = prim->attr<vec3f>("vel");
         for (size_t i = 0; i < marr->size(); i++) {
@@ -65,7 +65,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
     if (auto marr = mesamp.getFaceIndices()) {
         if (!read_done) {
-            log_info("[alembic] totally {} face indices", marr->size());
+            log_debug("[alembic] totally {} face indices", marr->size());
         }
         auto &parr = prim->loops;
         for (size_t i = 0; i < marr->size(); i++) {
@@ -76,7 +76,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
 
     if (auto marr = mesamp.getFaceCounts()) {
         if (!read_done) {
-            log_info("[alembic] totally {} faces", marr->size());
+            log_debug("[alembic] totally {} faces", marr->size());
         }
         auto &loops = prim->loops;
         auto &parr = prim->polys;
@@ -93,14 +93,14 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         int value_size = (int)uvsamp.getVals()->size();
         int index_size = (int)uvsamp.getIndices()->size();
         if (!read_done) {
-            log_info("[alembic] totally {} uv value", value_size);
-            log_info("[alembic] totally {} uv indices", index_size);
+            log_debug("[alembic] totally {} uv value", value_size);
+            log_debug("[alembic] totally {} uv indices", index_size);
             if (prim->loops.size() == index_size) {
-                log_info("[alembic] uv per face");
+                log_debug("[alembic] uv per face");
             } else if (prim->verts.size() == index_size) {
-                log_info("[alembic] uv per vertex");
+                log_debug("[alembic] uv per vertex");
             } else {
-                log_error("[alembic] error uv indices");
+                log_debug("[alembic] error uv indices");
             }
         }
         prim->uvs.resize(value_size);
@@ -125,14 +125,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
     if (prim->loop_uvs.size() == 0) {
         if (!read_done) {
-            log_warn("[alembic] Not found uv, auto fill zero.");
+            log_debug("[alembic] Not found uv, auto fill zero.");
         }
-        prim->uvs.resize(1);
-        prim->uvs[0] = zeno::vec2f(0, 0);
-        prim->loop_uvs.resize(prim->loops.size());
-        for (auto i = 0; i < prim->loops.size(); i++) {
-            prim->loop_uvs[i] = 0;
-        }
+        zeno::setDummyUvsLoopuvs(prim.get());
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
 
@@ -143,7 +138,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             if (IFloatGeomParam::matches(p)) {
                 IFloatGeomParam param(arbattrs, p.getName());
                 if (!read_done) {
-                    log_info("[alembic] float attr {}.", p.getName());
+                    log_debug("[alembic] float attr {}.", p.getName());
                 }
                 IFloatGeomParam::Sample samp = param.getIndexedValue();
                 if (prim->verts.size() == samp.getVals()->size()) {
@@ -156,7 +151,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             else if (IV3fGeomParam::matches(p)) {
                 IV3fGeomParam param(arbattrs, p.getName());
                 if (!read_done) {
-                    log_info("[alembic] vec3f attr {}.", p.getName());
+                    log_debug("[alembic] vec3f attr {}.", p.getName());
                 }
                 IV3fGeomParam::Sample samp = param.getIndexedValue();
                 if (prim->verts.size() == samp.getVals()->size()) {
@@ -214,13 +209,13 @@ static void traverseABC(
     {
         auto const &md = obj.getMetaData();
         if (!read_done) {
-            log_info("[alembic] meta data: [{}]", md.serialize());
+            log_debug("[alembic] meta data: [{}]", md.serialize());
         }
         tree.name = obj.getName();
 
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
             if (!read_done) {
-                log_info("[alembic] found a mesh [{}]", obj.getName());
+                log_debug("[alembic] found a mesh [{}]", obj.getName());
             }
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
@@ -228,14 +223,14 @@ static void traverseABC(
             tree.prim = foundABCMesh(mesh, frameid, read_done);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
-                log_info("[alembic] found a Xform [{}]", obj.getName());
+                log_debug("[alembic] found a Xform [{}]", obj.getName());
             }
             Alembic::AbcGeom::IXform xfm(obj);
             auto &cam_sch = xfm.getSchema();
             tree.xform = foundABCXform(cam_sch, frameid);
         } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
             if (!read_done) {
-                log_info("[alembic] found a Camera [{}]", obj.getName());
+                log_debug("[alembic] found a Camera [{}]", obj.getName());
             }
             Alembic::AbcGeom::ICamera cam(obj);
             auto &cam_sch = cam.getSchema();
@@ -245,13 +240,13 @@ static void traverseABC(
 
     size_t nch = obj.getNumChildren();
     if (!read_done) {
-        log_info("[alembic] found {} children", nch);
+        log_debug("[alembic] found {} children", nch);
     }
 
     for (size_t i = 0; i < nch; i++) {
         auto const &name = obj.getChildHeader(i).getName();
         if (!read_done) {
-            log_info("[alembic] at {} name: [{}]", i, name);
+            log_debug("[alembic] at {} name: [{}]", i, name);
         }
 
         Alembic::AbcGeom::IObject child(obj, name);
