@@ -150,6 +150,11 @@ struct GraphicsManager {
             {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 if(isRealTimeObject == 0){
+                    if (prim_in->quads.size() || prim_in->polys.size()) {
+                        zeno::log_trace("demoting faces");
+                        zeno::primTriangulateQuads(prim_in);
+                        zeno::primTriangulate(prim_in);
+                    }
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
