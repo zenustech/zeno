@@ -180,22 +180,22 @@ struct ZSEvalDeformationGradient : zeno::INode {
             throw std::runtime_error("the size of F channel is not 9");
         }
 
-        // cudaExec(zs::range(quads.size()),
-        //     [quads = proxy<space>({},quads),verts = proxy<space>({},verts),
-        //         defShapeTag = zs::SmallString(defShapeTag),
-        //         gradientTag = zs::SmallString(gradientTag)] ZS_LAMBDA(int ei) mutable {
-        //     using T = typename RM_CVREF_T(verts)::value_type;
-        //     const auto& inds = quads.template pack<4>("inds",ei).template reinterpret_bits<int>();
+        cudaExec(zs::range(quads.size()),
+            [quads = proxy<space>({},quads),verts = proxy<space>({},verts),
+                defShapeTag = zs::SmallString(defShapeTag),
+                gradientTag = zs::SmallString(gradientTag)] ZS_LAMBDA(int ei) mutable {
+            using T = typename RM_CVREF_T(verts)::value_type;
+            const auto& inds = quads.template pack<4>("inds",ei).template reinterpret_bits<int>();
 
-        //     zs::vec<T,3,3> F = LSL_GEO::deformation_gradient(
-        //         verts.template pack<3>(defShapeTag,inds[0]),
-        //         verts.template pack<3>(defShapeTag,inds[1]),
-        //         verts.template pack<3>(defShapeTag,inds[2]),
-        //         verts.template pack<3>(defShapeTag,inds[3]),
-        //         quads.template pack<3,3>("IB",ei));
+            zs::vec<T,3,3> F = LSL_GEO::deformation_gradient(
+                verts.template pack<3>(defShapeTag,inds[0]),
+                verts.template pack<3>(defShapeTag,inds[1]),
+                verts.template pack<3>(defShapeTag,inds[2]),
+                verts.template pack<3>(defShapeTag,inds[3]),
+                quads.template pack<3,3>("IB",ei));
 
-        //     quads.template tuple<9>(gradientTag,ei) = F;
-        // });
+            quads.template tuple<9>(gradientTag,ei) = F;
+        });
         // // auto refShapeTag = get_param<std::string>("refShapeTag");
 
         set_output("zsvolume",zsvolume);
