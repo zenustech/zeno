@@ -352,11 +352,13 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
     }
     if (!name.empty()) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        auto node_id = QString(name.substr(0, name.find_first_of(':')).c_str());
+        auto obj_name = QString(name.c_str());
+        QString subgraph_name, node_id;
         auto graph_editor = zenoApp->getMainWindow()->editor();
+        node_id = QString(name.substr(0, name.find_first_of(':')).c_str());
         auto search_result = pModel->search(node_id, SEARCH_NODEID);
         auto subgraph_index = search_result[0].subgIdx;
-        auto subgraph_name = subgraph_index.data(ROLE_OBJNAME).toString();
+        subgraph_name = subgraph_index.data(ROLE_OBJNAME).toString();
         graph_editor->activateTab(subgraph_name, "", node_id);
     }
     else
