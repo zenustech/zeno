@@ -19,3 +19,8 @@ target_sources(zeno PRIVATE
   volume/Transfer.cu
   volume/Conversion.cu
 )
+
+# shallow water
+target_sources(zeno PRIVATE
+  swe/FDGather.cu
+)

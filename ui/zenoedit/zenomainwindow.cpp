@@ -389,6 +389,12 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
     adjustDockSize();
 }
 
+void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+    this->saveQuit();
+    // todo: event->ignore() when saveQuit returns false?
+    QMainWindow::closeEvent(event);
+}
+
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
     float height = size().height();
@@ -699,11 +705,10 @@ void ZenoMainWindow::saveAs() {
 
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
-    const QString &initialPath = ".";
+    const QString &initialPath = "";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
-    fileDialog.setDirectory(initialPath);
     if (fileDialog.exec() != QDialog::Accepted)
         return "";
 

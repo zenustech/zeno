@@ -86,10 +86,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             {
                 QVariant defl = input.info.defaultValue;
                 const QString& sockType = input.info.type;
-                if (UiHelper::validateVariant(defl, sockType) && !defl.isNull())
-                {
-                    AddVariantList({"setNodeInput", ident, inputName, defl}, sockType, writer);
-                }
+                defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                if (!defl.isNull())
+                    AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
             }
             else
             {
@@ -111,7 +110,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             //todo: validation on param value.
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
-            AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, param_info.typeDesc, writer);
+            QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            if (paramValue.isNull())
+                continue;
+            AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
 		}
 
         if (opts & OPT_ONCE) {

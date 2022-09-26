@@ -90,7 +90,6 @@ ZENDEFNODE(PrimConnectTape, {
 struct PrimConnectBridge : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto faceType = get_input2<std::string>("faceType");
         auto edgeIndAttr = get_input2<std::string>("edgeIndAttr");
 
         auto &ind = prim->lines.attr<int>(edgeIndAttr);

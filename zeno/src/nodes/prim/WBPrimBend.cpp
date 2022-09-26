@@ -1715,7 +1715,120 @@ ZENDEFNODE(BVHNearestPos,
                }});
 
 
+///////////////////////////////////////////////////////////////////////////////
+// 2022.09.14 terrainErosion
+///////////////////////////////////////////////////////////////////////////////
 
+int Pos2Idx(const int x, const int z, const int nx)
+{
+    return z * nx + x;
+}
+
+struct TerrainErosion_Simple : INode{
+    void apply() override {
+
+        // 获取地形的基本尺寸
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto nx = get_input<NumericObject>("nx")->get<int>();
+        auto nz = get_input<NumericObject>("ny")->get<int>();
+
+        // 创建 height 和 debris
+        if (!terrain->has_attr("height"))   {terrain->add_attr<float>("height", 0);}
+        if (!terrain->has_attr("debris"))   {terrain->add_attr<float>("debris", 0);}
+        if (!terrain->has_attr("debug"))   {terrain->add_attr<float>("debug", 0);}
+        auto &pos = terrain->attr<vec3f>("pos");
+        auto &attr_color = terrain->attr<vec3f>("clr");
+        auto &attr_debug = terrain->attr<float>("debug");
+
+        auto &attr_height = terrain->attr<float>("height");
+        auto &attr_debris = terrain->attr<float>("debris");
+
+#pragma omp parallel for
+        for (intptr_t i = 0; i < terrain->size(); i++)
+        {
+            attr_height[i] = pos[i][1];
+        }
+//#pragma omp parallel for
+//        for (intptr_t i = 0; i < terrain->size(); i++)  {attr_debris[i] = 0;}
+
+//        float tanThresholdAngle = 0.6f;         // ~33°，角度的阈值
+        auto tanThresholdAngle = get_input<NumericObject>("tanThresholdAngle")->get<float>();
+        float cellSize = std::abs(pos[0][0] - pos[1][0]); // 网格的大小
+
+        for (int z = 0; z < nz; z++)
+        {
+            for (int x = 0; x < nx; x++)
+            {
+                int idx = Pos2Idx(x, z, nx);
+                float height = attr_height[idx];
+
+                // 用于存放最陡峭邻格的数据
+                int steepestIdx = -1;   // 索引
+                float hDiffMax = -1;    // 最大高度差
+                float scale = 1;        // 斜角方向为 1.414，否则为 1
+
+                // 遍历所有的邻格，找到最陡峭的格子
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        if (!dx && !dz) // 移除(0,0)
+                            continue;
+
+                        scale = (!dx || !dz) ? 1 : 1.414;
+
+                        int tmp_x = x + dx;
+                        int tmp_z = z + dz;
+                        if (tmp_x < 0 || tmp_x >= nx || tmp_z < 0 || tmp_z >= nz) // 出地形了
+                            continue;
+
+                        int tmp_idx = Pos2Idx(tmp_x, tmp_z, nx);
+                        float h_diff = height - attr_height[tmp_idx];   // 高度差 = 当前格的高度 - 邻格的高度
+
+                        if (h_diff > 0.0f && h_diff > hDiffMax)       // 最陡峭的低地邻格
+                        {
+                            steepestIdx = tmp_idx;
+                            hDiffMax = h_diff;
+                        }
+                    }
+                }
+
+                if (hDiffMax > 0)
+                {
+                    float tan = hDiffMax / (cellSize * scale);
+                    attr_debug[idx] = tan;
+                    if ( tan > tanThresholdAngle)
+                    {
+                        attr_color[idx] = vec3f(float(x)/nx,0,float(z)/nz);
+                        attr_height[idx] -= 0.1*cellSize;          // 削平此格高度
+                        attr_height[steepestIdx] += 0.07*cellSize;   // 填充最陡峭格子的高度，风化一部分
+                    }
+                }
+
+            }
+        }
+
+#pragma omp parallel for
+        for (intptr_t i = 0; i < terrain->size(); i++)
+        {
+            pos[i][1] = attr_height[i];
+        }
+
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(TerrainErosion_Simple,
+           { /* inputs: */ {
+                   "prim_2DGrid",
+                   {"int", "nx", "500"},
+                   {"int", "ny", "500"},
+                   {"float", "tanThresholdAngle", "0.6"},
+               }, /* outputs: */ {
+                   "prim_2DGrid"
+               }, /* params: */ {
+               }, /* category: */ {
+                   "terrain"
+               }});
 
 
 }

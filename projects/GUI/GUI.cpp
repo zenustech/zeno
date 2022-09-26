@@ -205,7 +205,7 @@ struct ZGL_StateGetKeys : INode {
 ZENO_DEFNODE(ZGL_StateGetKeys)({
     {
         {"state"},
-        {"enum LIST STRING DICT", "type", "LIST"},
+        {"enum DICT LIST STRING", "type", "DICT"},
     },
     {
         {"keys"},
@@ -219,6 +219,7 @@ struct ZGL_Main : INode {
         auto title = get_input2<std::string>("title");
         auto resx = get_input2<int>("resx");
         auto resy = get_input2<int>("resy");
+        auto quitOnEsc = get_input2<int>("quitOnEsc");
         auto callbacks = get_input<DictObject>("callbacks");
         auto state = std::make_shared<ZGL_StateData>();
 
@@ -246,6 +247,8 @@ struct ZGL_Main : INode {
                     log_debug("key pressed [{}]", key);
                     MethodCaller(callbacks, "on_keydown", {}).set2("key", key).call();
                     state->pressed_keys.insert(key);
+                    if (quitOnEsc && key == "Escape")
+                        quit = true;
                 } else if (event.type == SDL_KEYUP) {
                     std::string key = SDL_GetKeyName(event.key.keysym.sym);
                     log_debug("key released [{}]", key);
@@ -272,6 +275,7 @@ ZENO_DEFNODE(ZGL_Main)({
         {"string", "title", "ZenoPlay"},
         {"int", "resx", "400"},
         {"int", "resy", "300"},
+        {"bool", "quitOnEsc", "1"},
         {"DictObject", "callbacks"},
     },
     {},
