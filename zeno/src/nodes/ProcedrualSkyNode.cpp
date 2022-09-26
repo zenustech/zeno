@@ -20,7 +20,7 @@ struct ProceduralSky : INode {
 
 ZENDEFNODE(ProceduralSky, {
         {
-                {"vec2f", "sunLightDir", "0,30"},
+                {"vec2f", "sunLightDir", "-60,45"},
                 {"float", "sunLightSoftness", "1"},
                 {"vec2f", "windDir", "0,0"},
                 {"float", "timeStart", "0"},

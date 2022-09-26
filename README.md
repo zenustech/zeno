@@ -63,7 +63,6 @@ Fig.6 - Procedural modeling
 
 <img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Procedural_Modeling.gif" width="640" position="left">
 
-
 Fig.7 - Human rendering
 
 <img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214042.jpg" width="640" position="left">
@@ -83,10 +82,11 @@ Apart from the GitHub release page, we also offer binary download from our offic
 
 ## How to play
 
-There are some example graphs in the `graphs/` folder, you may open them in the editor and have fun!
-Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Run`.
-Also MMB to drag in the node editor, LMB click on sockets to create connections. MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
-More details are available in [our official tutorial](https://zenustech.com/tutorial) and [my video tutorials](https://space.bilibili.com/263032155).
+There are some example graphs in the `misc/graphs/` folder, you may open them in the editor and have fun!
+Hint: To run an animation for 100 frames, change the `1` on the bottom-right of the viewport to `100`, then click `Run`.
+Also MMB to drag in the node editor, LMB click on sockets to create connections.
+MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
+More details are available in [our official tutorial](https://doc.zenustech.com/) and [my video tutorials](https://space.bilibili.com/263032155).
 
 ## Bug report
 

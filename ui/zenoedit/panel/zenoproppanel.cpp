@@ -399,7 +399,7 @@ void ZenoPropPanel::onInputEditFinish()
 	if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pSender))
 	{
 		QString textValue = pLineEdit->text();
-		info.newValue = UiHelper::_parseDefaultValue(textValue, inSocket.info.type);
+		info.newValue = UiHelper::parseStringByType(textValue, inSocket.info.type);
 	}
 	else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pSender))
 	{

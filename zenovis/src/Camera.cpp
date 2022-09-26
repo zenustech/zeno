@@ -67,7 +67,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {
-        placeCamera(center - front * radius, front, up, 0.f, -100.f, 100.f);
+        placeCamera(center - front * radius * 0.4f, front, up, 0.f, -100.f, 100.f);
     }
     m_aperture = aperture;
     this->focalPlaneDistance = focalPlaneDistance;

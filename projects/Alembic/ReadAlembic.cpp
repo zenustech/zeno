@@ -122,16 +122,16 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 prim->loop_uvs[i] = prim->loops[i];
             }
         }
-        else {
-            if (!read_done) {
-                log_warn("[alembic] Not found uv, auto fill zero.");
-            }
-            prim->uvs.resize(1);
-            prim->uvs[0] = zeno::vec2f(0, 0);
-            prim->loop_uvs.resize(prim->loops.size());
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loop_uvs[i] = 0;
-            }
+    }
+    if (prim->loop_uvs.size() == 0) {
+        if (!read_done) {
+            log_warn("[alembic] Not found uv, auto fill zero.");
+        }
+        prim->uvs.resize(1);
+        prim->uvs[0] = zeno::vec2f(0, 0);
+        prim->loop_uvs.resize(prim->loops.size());
+        for (auto i = 0; i < prim->loops.size(); i++) {
+            prim->loop_uvs[i] = 0;
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();

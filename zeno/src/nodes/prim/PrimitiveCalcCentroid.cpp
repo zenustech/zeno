@@ -63,7 +63,7 @@ ZENDEFNODE(PrimitiveCalcCentroid, {
     {
     {"enum Volume Area Vertex", "method", "Volume"}
     },
-    {"primitive"},
+    {"deprecated"},
 });
 
 

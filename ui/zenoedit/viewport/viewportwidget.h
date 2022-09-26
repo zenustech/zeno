@@ -60,15 +60,16 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
+    void lookTo(int dir);
     void clearTransformer();
     void changeTransformOperation(int mode);
+    void changeTransformCoordSys();
 
 private:
     bool m_mmb_pressed;
     float m_theta;
     float m_phi;
     QPointF m_lastPos;
-    QPointF m_lastMovePos;
     QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
@@ -97,8 +98,10 @@ public:
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
+    void cameraLookTo(int dir);
     void clearTransformer();
     void changeTransformOperation(int mode);
+    void changeTransformCoordSys();
 
 signals:
     void frameRecorded(int);
@@ -108,6 +111,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     std::shared_ptr<CameraControl> m_camera;
@@ -142,10 +147,6 @@ public slots:
 
 signals:
     void frameUpdated(int new_frame);
-
-  protected:
-    void keyPressEvent(QKeyEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     bool isOptxRendering() const;

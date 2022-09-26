@@ -512,9 +512,12 @@ void ZenoLights::modifySunLightDir() {
     float timeStartValue = timeStart->text().toFloat();
     float timeSpeedValue = timeSpeed->text().toFloat();
 
+    bool found = false;
+
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
         if (key.find("ProceduralSky") != std::string::npos) {
+            found = true;
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
                 prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
                 prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
@@ -523,6 +526,21 @@ void ZenoLights::modifySunLightDir() {
                 prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
             }
         }
+    }
+    auto &ud = zeno::getSession().userData();
+    if (found) {
+        ud.erase("sunLightDir");
+        ud.erase("sunLightSoftness");
+        ud.erase("windDir");
+        ud.erase("timeStart");
+        ud.erase("timeSpeed");
+    }
+    else {
+        ud.set2("sunLightDir", std::move(sunLightDir));
+        ud.set2("sunLightSoftness", std::move(sunSoftnessValue));
+        ud.set2("windDir", std::move(windDir));
+        ud.set2("timeStart", std::move(timeStartValue));
+        ud.set2("timeSpeed", std::move(timeSpeedValue));
     }
     scene->objectsMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();

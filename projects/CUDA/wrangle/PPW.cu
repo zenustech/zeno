@@ -6,14 +6,16 @@
 #include "zensim/zpc_tpls/fmt/format.h"
 
 // from projects/ZenoFX/ppw.cpp : ParticlesParticlesWrangle
+#include "dbg_printf.h"
 #include <cassert>
 #include <cuda.h>
+#include <zeno/core/Graph.h>
+#include <zeno/extra/GlobalState.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/utils/safe_any_cast.h>
 #include <zeno/zeno.h>
 #include <zensim/execution/ExecutionPolicy.hpp>
 #include <zensim/physics/ConstitutiveModel.hpp>
@@ -26,45 +28,79 @@ static zfx::Compiler compiler;
 static zfx::cuda::Assembler assembler;
 
 struct ZSParticleParticleWrangler : INode {
-  ~ZSParticleParticleWrangler() {
-    if (this->_cuModule)
-      cuModuleUnload((CUmodule)this->_cuModule);
-  }
-  void apply() override {
-    using namespace zs;
-    auto code = get_input<StringObject>("zfxCode")->get();
+    ~ZSParticleParticleWrangler() {
+        if (this->_cuModule)
+            cuModuleUnload((CUmodule)this->_cuModule);
+    }
+    void apply() override {
+        using namespace zs;
+        auto code = get_input<StringObject>("zfxCode")->get();
 
-    /// parObjPtr
-    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
-    if (parObjPtrs.size() > 1)
-      throw std::runtime_error(
-          "zs ppw currently only supports up to one particle object.");
-    auto parObjPtr = parObjPtrs[0];
-    auto &pars = parObjPtr->getParticles();
-    auto props = pars.getPropertyTags();
-    // auto parObjPtr = get_input<ZenoParticles>("ZSParticles");
+        /// parObjPtr
+        auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        if (parObjPtrs.size() > 1)
+            throw std::runtime_error("zs ppw currently only supports up to one particle object.");
+        auto parObjPtr = parObjPtrs[0];
+        auto &pars = parObjPtr->getParticles();
+        auto props = pars.getPropertyTags();
+        // auto parObjPtr = get_input<ZenoParticles>("ZSParticles");
 
-    /// parNeighborPtr
-    std::shared_ptr<ZenoParticles> parNeighborPtr{};
-    if (has_input<ZenoParticles>("ZSNeighborParticles"))
-      parNeighborPtr = get_input<ZenoParticles>("ZSNeighborParticles");
-    else if (!has_input("ZSNeighborParticles"))
-      parNeighborPtr = std::make_shared<ZenoParticles>(*parObjPtr); // copy-ctor
-    else
-      throw std::runtime_error(
-          "something strange passed to zs pnw as the neighbor particles.");
-    const auto &neighborPars = parNeighborPtr->getParticles();
-    const auto neighborProps = neighborPars.getPropertyTags();
+        /// parNeighborPtr
+        std::shared_ptr<ZenoParticles> parNeighborPtr{};
+        if (has_input<ZenoParticles>("ZSNeighborParticles"))
+            parNeighborPtr = get_input<ZenoParticles>("ZSNeighborParticles");
+        else if (!has_input("ZSNeighborParticles"))
+            parNeighborPtr = std::make_shared<ZenoParticles>(*parObjPtr); // copy-ctor
+        else
+            throw std::runtime_error("something strange passed to zs pnw as the neighbor particles.");
+        const auto &neighborPars = parNeighborPtr->getParticles();
+        const auto neighborProps = neighborPars.getPropertyTags();
 
-    zfx::Options opts(zfx::Options::for_cuda);
-    opts.detect_new_symbols = true;
+        zfx::Options opts(zfx::Options::for_cuda);
+        opts.detect_new_symbols = true;
 
-    /// params
-    auto params = has_input("params") ? get_input<zeno::DictObject>("params")
-                                      : std::make_shared<zeno::DictObject>();
-    std::vector<float> parvals;
-    std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
-    for (auto const &[key_, par] : params->getLiterial<zeno::NumericValue>()) {
+        /// params
+        auto params =
+            has_input("params") ? get_input<zeno::DictObject>("params") : std::make_shared<zeno::DictObject>();
+        {
+            // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+            auto const &gs = *this->getGlobalState();
+            params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
+            params->lut["F"] = objectFromLiterial((float)gs.frameid);
+            params->lut["DT"] = objectFromLiterial(gs.frame_time);
+            params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+            // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+            // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+            for (auto const &[key, ref] : getThisGraph()->portalIns) {
+                if (auto i = code.find('$' + key); i != std::string::npos) {
+                    i = i + key.size() + 1;
+                    if (code.size() <= i || !std::isalnum(code[i])) {
+                        if (params->lut.count(key))
+                            continue;
+                        dbg_printf("ref portal %s\n", key.c_str());
+                        auto res =
+                            getThisGraph()->callTempNode("PortalOut", {{"name:", objectFromLiterial(key)}}).at("port");
+                        params->lut[key] = std::move(res);
+                    }
+                }
+            }
+            // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+            // BEGIN伺候心欣伺候懒得extract出变量了
+            std::vector<std::string> keys;
+            for (auto const &[key, val] : params->lut) {
+                keys.push_back(key);
+            }
+            for (auto const &key : keys) {
+                if (!dynamic_cast<zeno::NumericObject *>(params->lut.at(key).get())) {
+                    dbg_printf("ignored non-numeric %s\n", key.c_str());
+                    params->lut.erase(key);
+                }
+            }
+            // END伺候心欣伺候懒得extract出变量了
+        }
+        std::vector<float> parvals;
+        std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
+        for (auto const &[key_, par] : params->getLiterial<zeno::NumericValue>()) {
             auto key = '$' + key_;
             auto dim = std::visit(
                 [&](auto const &v) {
@@ -92,151 +128,143 @@ struct ZSParticleParticleWrangler : INode {
             //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
         }
 
-    /// symbols
-    auto def_sym = [&opts](const std::string &prefix, const std::string &key,
-                           int dim) { opts.define_symbol(prefix + key, dim); };
+        /// symbols
+        auto def_sym = [&opts](const std::string &prefix, const std::string &key, int dim) {
+            opts.define_symbol(prefix + key, dim);
+        };
 
-    opts.symdims.clear();
-    for (auto &&[name, nchns] : props)
-      def_sym("@", name.asString(), nchns);
-    for (auto &&[name, nchns] : neighborProps)
-      def_sym("@@", name.asString(), nchns);
+        opts.symdims.clear();
+        for (auto &&[name, nchns] : props)
+            def_sym("@", name.asString(), nchns);
+        for (auto &&[name, nchns] : neighborProps)
+            def_sym("@@", name.asString(), nchns);
 
-    auto &currentContext = Cuda::context(0);
-    currentContext.setContext();
-    auto cudaPol = cuda_exec().device(0).sync(true);
+        auto &currentContext = Cuda::context(0);
+        currentContext.setContext();
+        auto cudaPol = cuda_exec().device(0).sync(true);
 
-    auto prog = compiler.compile(code, opts);
-    auto jitCode = assembler.assemble(prog->assembly);
+        auto prog = compiler.compile(code, opts);
+        auto jitCode = assembler.assemble(prog->assembly);
 
-    /// supplement new properties
-    auto checkDuplication = [](std::string_view tag,
-                               const auto &props) -> bool {
-      for (auto &&[name, nchns] : props)
-        if (name == tag)
-          return true;
-      return false;
-    };
-    // adding channels is for particles only!
-    std::vector<zs::PropertyTag> newChns{};
-    for (auto const &[name, dim] : prog->newsyms) {
-      assert(name[0] == '@');
-      if (name.substr(0, 2) == "@@") { // channel is from neighbor
-        auto key = name.substr(2);
-        if (!checkDuplication(key, neighborProps)) {
-          auto msg = fmt::format(
-              "property [{}] is not present in the neighbor particles.", key);
-          throw std::runtime_error(msg);
+        /// supplement new properties
+        auto checkDuplication = [](std::string_view tag, const auto &props) -> bool {
+            for (auto &&[name, nchns] : props)
+                if (name == tag)
+                    return true;
+            return false;
+        };
+        // adding channels is for particles only!
+        std::vector<zs::PropertyTag> newChns{};
+        for (auto const &[name, dim] : prog->newsyms) {
+            assert(name[0] == '@');
+            if (name.substr(0, 2) == "@@") { // channel is from neighbor
+                auto key = name.substr(2);
+                if (!checkDuplication(key, neighborProps)) {
+                    auto msg = fmt::format("property [{}] is not present in the neighbor particles.", key);
+                    throw std::runtime_error(msg);
+                }
+            } else {
+                auto key = name.substr(1);
+                if (!checkDuplication(key, props))
+                    newChns.push_back(PropertyTag{key, dim});
+            }
         }
-      } else {
-        auto key = name.substr(1);
-        if (!checkDuplication(key, props))
-          newChns.push_back(PropertyTag{key, dim});
-      }
+        if (newChns.size() > 0)
+            pars.append_channels(cudaPol, newChns);
+
+        if (_cuModule == nullptr) {
+            /// execute on the current particle object
+            auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
+            void *state;
+            cuLinkCreate(0, nullptr, nullptr, (CUlinkState *)&state);
+
+            auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
+            cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(), (size_t)jitSrc.size(), "script",
+                          0, NULL, NULL);
+
+            int no = 0;
+            for (auto const &ptx : wrangleKernelPtxs) {
+                auto str = std::string("wrangler") + std::to_string(no++);
+                cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX, (char *)ptx.data(), ptx.size(), str.data(), 0, NULL,
+                              NULL);
+            }
+            void *cubin;
+            size_t cubinSize;
+            cuLinkComplete((CUlinkState)state, &cubin, &cubinSize);
+
+            cuModuleLoadData((CUmodule *)&_cuModule, cubin);
+            cuLinkDestroy((CUlinkState)state);
+        }
+
+        /// symbols
+        zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
+        auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
+        constexpr auto tileSize = RM_CVREF_T(pars)::lane_width;
+
+        for (int i = 0; i < prog->symbols.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            bool isNeighborProperty = false;
+            auto targetParPtr = &neighborPars;
+            if (name.substr(0, 2) == "@@") {
+                isNeighborProperty = true;
+                name = name.substr(2);
+            } else {
+                targetParPtr = &pars;
+                name = name.substr(1);
+            }
+
+            haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
+                                              (void *)targetParPtr->data(),
+                                              (unsigned short)unitBytes,
+                                              (unsigned short)tileSize,
+                                              (unsigned short)targetParPtr->numChannels(),
+                                              (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
+                                              (unsigned short)isNeighborProperty};
+        }
+        auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
+
+        /// params
+        zs::Vector<zs::f32> hparams{prog->params.size()};
+        for (int i = 0; i < prog->params.size(); i++) {
+            auto [name, dimid] = prog->params[i];
+            // printf("parameter %d: %s.%d\t", i, name.c_str(), dimid);
+            auto it = std::find(parnames.begin(), parnames.end(), std::make_pair(name, dimid));
+            auto value = parvals.at(it - parnames.begin());
+            hparams[i] = value;
+        }
+        zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
+
+        void *function;
+        cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule, "zpc_particle_particle_wrangler_kernel");
+
+        // begin kernel launch
+        std::size_t cnt = pars.size();
+        std::size_t cntNei = neighborPars.size();
+        zs::f32 *d_params = dparams.data();
+        int nchns = daccessors.size();
+        void *addr = daccessors.data();
+        void *args[] = {(void *)&cnt, (void *)&cntNei, (void *)&d_params, (void *)&nchns, (void *)&addr};
+
+        cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
+                       (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
+        // end kernel launch
+        cuCtxSynchronize();
+
+        set_output("ZSParticles", get_input("ZSParticles"));
     }
-    if (newChns.size() > 0)
-      pars.append_channels(cudaPol, newChns);
-    props.insert(std::end(props), std::begin(newChns), std::end(newChns));
 
-    if (_cuModule == nullptr) {
-      /// execute on the current particle object
-      auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
-      void *state;
-      cuLinkCreate(0, nullptr, nullptr, (CUlinkState *)&state);
-
-      auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
-      cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
-                    (size_t)jitSrc.size(), "script", 0, NULL, NULL);
-
-      int no = 0;
-      for (auto const &ptx : wrangleKernelPtxs) {
-        auto str = std::string("wrangler") + std::to_string(no++);
-        cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
-                      ptx.size(), str.data(), 0, NULL, NULL);
-      }
-      void *cubin;
-      size_t cubinSize;
-      cuLinkComplete((CUlinkState)state, &cubin, &cubinSize);
-
-      cuModuleLoadData((CUmodule *)&_cuModule, cubin);
-      cuLinkDestroy((CUlinkState)state);
-    }
-
-    /// symbols
-    zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
-    auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
-    constexpr auto tileSize = RM_CVREF_T(pars)::lane_width;
-
-    for (int i = 0; i < prog->symbols.size(); i++) {
-      auto [name, dimid] = prog->symbols[i];
-      bool isNeighborProperty = false;
-      auto targetParPtr = &neighborPars;
-      if (name.substr(0, 2) == "@@") {
-        isNeighborProperty = true;
-        name = name.substr(2);
-      } else {
-        targetParPtr = &pars;
-        name = name.substr(1);
-      }
-
-      haccessors[i] = zs::AccessorAoSoA{
-          zs::aosoa_c,
-          (void *)targetParPtr->data(),
-          (unsigned short)unitBytes,
-          (unsigned short)tileSize,
-          (unsigned short)targetParPtr->numChannels(),
-          (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
-          (unsigned short)isNeighborProperty};
-    }
-    auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
-
-    /// params
-    zs::Vector<zs::f32> hparams{prog->params.size()};
-    for (int i = 0; i < prog->params.size(); i++) {
-      auto [name, dimid] = prog->params[i];
-      // printf("parameter %d: %s.%d\t", i, name.c_str(), dimid);
-      auto it = std::find(parnames.begin(), parnames.end(),
-                          std::make_pair(name, dimid));
-      auto value = parvals.at(it - parnames.begin());
-      hparams[i] = value;
-    }
-    zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
-
-    void *function;
-    cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule,
-                        "zpc_particle_particle_wrangler_kernel");
-
-    // begin kernel launch
-    std::size_t cnt = pars.size();
-    std::size_t cntNei = neighborPars.size();
-    zs::f32 *d_params = dparams.data();
-    int nchns = daccessors.size();
-    void *addr = daccessors.data();
-    void *args[] = {(void *)&cnt, (void *)&cntNei, (void *)&d_params,
-                    (void *)&nchns, (void *)&addr};
-
-    cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                   (CUstream)currentContext.streamSpare(0), args,
-                   (void **)nullptr);
-    // end kernel launch
-    cuCtxSynchronize();
-
-    set_output("ZSParticles", get_input("ZSParticles"));
-  }
-
-private:
-  void *_cuModule{nullptr};
+  private:
+    void *_cuModule{nullptr};
 };
 
-ZENDEFNODE(ZSParticleParticleWrangler,
-           {
-               {{"ZenoParticles", "ZSParticles"},
-                {"ZenoParticles", "ZSNeighborParticles"},
-                {"string", "zfxCode"},
-                {"DictObject:NumericObject", "params"}},
-               {"ZSParticles"},
-               {},
-               {"MPM"},
-           });
+ZENDEFNODE(ZSParticleParticleWrangler, {
+                                           {{"ZenoParticles", "ZSParticles"},
+                                            {"ZenoParticles", "ZSNeighborParticles"},
+                                            {"string", "zfxCode"},
+                                            {"DictObject:NumericObject", "params"}},
+                                           {"ZSParticles"},
+                                           {},
+                                           {"zswrangle"},
+                                       });
 
 } // namespace zeno

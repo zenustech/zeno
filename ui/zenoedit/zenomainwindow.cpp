@@ -589,14 +589,18 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event)
     QMainWindow::resizeEvent(event);
 }
 
+void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+    this->saveQuit();
+    // todo: event->ignore() when saveQuit returns false?
+    QMainWindow::closeEvent(event);
+}
 bool ZenoMainWindow::event(QEvent* event)
 {
     if (QEvent::LayoutRequest == event->type())
     {
         //resizing have to be done after fitting layout, which follows by LayoutRequest.
         _resizeDocks(m_layoutRoot);
-        return true;
-    }
+        return true;    }
     return QMainWindow::event(event);
 }
 
@@ -893,11 +897,10 @@ void ZenoMainWindow::saveAs() {
 
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
-    const QString &initialPath = ".";
+    const QString &initialPath = "";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
-    fileDialog.setDirectory(initialPath);
     if (fileDialog.exec() != QDialog::Accepted)
         return "";
 

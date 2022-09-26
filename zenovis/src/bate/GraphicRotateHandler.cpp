@@ -50,11 +50,13 @@ static const char *frag_code = R"(
     uniform mat4 mInvView;
     uniform mat4 mInvProj;
 
+    uniform float alpha;
+
     varying vec3 position;
     varying vec3 color;
 
     void main() {
-        gl_FragColor = vec4(color, 1.0);
+        gl_FragColor = vec4(color, alpha);
     }
 )";
 
@@ -62,11 +64,13 @@ struct RotateHandler final : IGraphicHandler {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
+    std::unique_ptr<Buffer> ibo;
     size_t vertex_count;
 
     vec3f center;
     float bound;
     int mode;
+    int coord_sys;
 
     Program *lines_prog;
     std::unique_ptr<Buffer> lines_ebo;
@@ -75,6 +79,7 @@ struct RotateHandler final : IGraphicHandler {
     explicit RotateHandler(Scene *scene_, vec3f &center_)
         : scene(scene_), center(center_), mode(INTERACT_NONE) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        ibo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
     }
 
     void draw() override {
@@ -111,6 +116,8 @@ struct RotateHandler final : IGraphicHandler {
         auto y_axis = vec3f(0, 1, 0);
         auto z_axis = vec3f(0, 0, 1);
 
+        lines_prog->set_uniform("alpha", 1.0f);
+
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
             drawCircle(center, y_axis, z_axis, {0.6, 0.2, 0.2}, bound, vbo);
 
@@ -119,6 +126,11 @@ struct RotateHandler final : IGraphicHandler {
 
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
             drawCircle(center, x_axis, y_axis, {0.2, 0.2, 0.6}, bound, vbo);
+
+        lines_prog->set_uniform("alpha", 0.3f);
+
+        if (mode == INTERACT_NONE || mode == INTERACT_XYZ)
+            drawSphere(center, {1.0, 1.0, 1.0}, bound * 0.9f, vbo, ibo);
     }
 
     virtual int collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
@@ -151,6 +163,12 @@ struct RotateHandler final : IGraphicHandler {
             return INTERACT_XY;
         }
 
+        // xyz handler
+        if (rayIntersectSphere(ray_origin, ray_direction, zeno::vec_to_other<glm::vec3>(center), i_radius).has_value()) {
+            mode = INTERACT_XYZ;
+            return INTERACT_XYZ;
+        }
+
         mode = INTERACT_NONE;
         return INTERACT_NONE;
     }
@@ -161,6 +179,17 @@ struct RotateHandler final : IGraphicHandler {
 
     virtual void setMode(int m) override {
         mode = m;
+    }
+
+    virtual void setCoordSys(int c) override {
+        coord_sys = c;
+    }
+
+    virtual std::optional<glm::vec3> getIntersect(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
+        auto intersect = rayIntersectSphere(ray_origin, ray_direction,
+                                    zeno::vec_to_other<glm::vec3>(center), bound * 0.9f);
+        if (intersect.has_value()) return ray_origin + intersect.value() * ray_direction;
+        return std::nullopt;
     }
 };
 
