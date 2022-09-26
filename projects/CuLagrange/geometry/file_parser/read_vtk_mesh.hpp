@@ -545,6 +545,8 @@ namespace zeno {
         char id[256],dummy_str[64];
         int dummy;
 
+        int simplex_size = 0;
+
         while((bufferp = readline(line,fp,&line_count,1)) != nullptr) {
             // if(line_count < 100)
             
@@ -571,8 +573,15 @@ namespace zeno {
             if(!strcmp(id,"CELLS")){
                 printf("reading cells\n");
                 int numberofcells = 0;
-                sscanf(line,"%s %d %d",id,&numberofcells,&dummy);
-                parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
+                sscanf(line,"%s %d %d",id,&numberofcells,&simplex_size);
+                simplex_size = simplex_size/numberofcells - 1;
+                if(simplex_size == 4)
+                    parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
+                else if(simplex_size == 3)
+                    parsing_cells_topology<3>(fp,prim->tris,numberofcells,line_count);
+                else {
+                    throw std::runtime_error("INVALID SIMPLEX SIZE");
+                }
                 continue;
             }            
             if(!strcmp(id,"CELL_TYPES")){
@@ -583,10 +592,14 @@ namespace zeno {
                 bufferp = readline(line,fp,&line_count);
                 if(numberofcells > 0){
                     int type = strtol(bufferp,&bufferp,0);
-                    if(type != VTK_TETRA){
-                        printf("non-tetra cell detected on line %d parsing cell types\n",line_count);
+                    if(type != VTK_TETRA && simplex_size == 4){
+                        printf("non-tetra cell detected on line %d parsing cell types with simplex size = 4\n",line_count);
                         fclose(fp);
                         return false;
+                    }else if(type != VTK_TRIANGLE && simplex_size == 3) {
+                        printf("non-triangle cell detected on line %d parsing cell types with simplex size = 3\n",line_count);
+                        fclose(fp);
+                        return false;                        
                     }
                     bufferp = find_next_numeric(bufferp,line,fp,&line_count);
                 }
@@ -599,7 +612,10 @@ namespace zeno {
                 printf("reading cell data\n");
                 int numberofcells = 0;
                 sscanf(line,"%s %d",id,&numberofcells);
-                parsing_attributes_data(fp,prim,prim->quads,line_count,4);
+                if(simplex_size == 4)
+                    parsing_attributes_data(fp,prim,prim->quads,line_count,simplex_size);
+                else if(simplex_size == 3)
+                    parsing_attributes_data(fp,prim,prim->tris,line_count,simplex_size);
                 continue;
             }
             // parsing the points data
@@ -607,7 +623,7 @@ namespace zeno {
                 printf("reading point data\n");
                 int numberofpoints = 0;
                 sscanf(line,"%s %d",id,&numberofpoints);
-                parsing_attributes_data(fp,prim,prim->verts,line_count,4);
+                parsing_attributes_data(fp,prim,prim->verts,line_count,simplex_size);
                 continue;
             }
 
