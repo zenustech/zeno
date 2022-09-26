@@ -200,7 +200,7 @@ namespace zeno {
         bool has_quads = prim->quads.size() > 0;
         bool has_tris = prim->tris.size() > 0;
         if(has_quads){
-            // printf("OUTPUT QUADS TOPO\n");
+            printf("OUTPUT QUADS TOPO\n");
             bool success = write_cells_topology<4>(fp,prim->quads.values);
             if(!success){
                 printf("Failed writing quad topos to %s\n",outfilename);
@@ -212,12 +212,13 @@ namespace zeno {
                 return return_and_close_file(fp,false);
             }
         }else if(has_tris){
+            printf("OUTPUT TRIS TOPO\n");
             bool success = write_cells_topology<3>(fp,prim->tris.values);
             if(!success){
                 printf("Failed writing tris topos %s\n",outfilename);
                 return return_and_close_file(fp,false);
             }
-            success = write_cell_types<VTK_TRIANGLE>(fp,prim->quads.size());
+            success = write_cell_types<VTK_TRIANGLE>(fp,prim->tris.size());
             if(!success) {
                 printf("Failed writing cell types to %s\n",outfilename);
                 return return_and_close_file(fp,false);
