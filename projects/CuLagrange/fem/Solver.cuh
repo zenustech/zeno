@@ -3,16 +3,60 @@
 #include "Structures.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
+#include "zensim/container/Bvtt.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/utils/logger.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
+
+template <int n = 1> struct HessianPiece {
+    using HessT = zs::vec<float, n * 3, n * 3>;
+    using IndsT = zs::vec<int, n>;
+    zs::Vector<HessT> hess;
+    zs::Vector<IndsT> inds;
+    zs::Vector<int> cnt;
+    using allocator_t = typename zs::Vector<int>::allocator_type;
+    void init(const allocator_t &allocator, std::size_t size = 0) {
+        hess = zs::Vector<HessT>{allocator, size};
+        inds = zs::Vector<IndsT>{allocator, size};
+        cnt = zs::Vector<int>{allocator, 1};
+    }
+    int count() const {
+        return cnt.getVal();
+    }
+    int increaseCount(int inc) {
+        int v = cnt.getVal();
+        cnt.setVal(v + inc);
+        hess.resize((std::size_t)(v + inc));
+        inds.resize((std::size_t)(v + inc));
+        return v;
+    }
+    void reset(bool setZero = true, std::size_t count = 0) {
+        if (setZero)
+            hess.reset(0);
+        cnt.setVal(count);
+    }
+};
+template <typename HessianPieceT> struct HessianView {
+    static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
+    using HT = typename HessianPieceT::HessT;
+    using IT = typename HessianPieceT::IndsT;
+    zs::conditional_t<is_const_structure, const HT *, HT *> hess;
+    zs::conditional_t<is_const_structure, const IT *, IT *> inds;
+    zs::conditional_t<is_const_structure, const int *, int *> cnt;
+};
+template <zs::execspace_e space, int n> HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
+    return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+}
+template <zs::execspace_e space, int n> HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
+    return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+}
 
 struct IPCSystem : IObject {
     using T = double;
@@ -20,6 +64,7 @@ struct IPCSystem : IObject {
     using dtiles_t = zs::TileVector<T, 32>;
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T, 3>;
+    using vec3f = zs::vec<float, 3>;
     using ivec3 = zs::vec<int, 3>;
     using ivec2 = zs::vec<int, 2>;
     using mat2 = zs::vec<T, 2, 2>;
@@ -32,6 +77,7 @@ struct IPCSystem : IObject {
     using dpair4_t = zs::vec<Ti, 4>;
     // using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
     using bvh_t = zs::LBvh<3, int, T>;
+    using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = zs::AABBBox<3, T>;
 
     inline static const char s_meanMassTag[] = "MeanMass";
@@ -161,6 +207,9 @@ struct IPCSystem : IObject {
         return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nPPM.getVal(), nPEM.getVal(),
                               nEEM.getVal(), ncsPT.getVal(), ncsEE.getVal());
     }
+    auto getCollisionCnts() const {
+        return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
+    }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
@@ -178,8 +227,14 @@ struct IPCSystem : IObject {
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                   bool includeHessian = true);
     // krylov solver
+    void convertHessian(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
+    void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
+                      const zs::SmallString dstTag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
+
+    void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
+                  const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
@@ -225,7 +280,7 @@ struct IPCSystem : IObject {
     //
     std::vector<PrimitiveHandle> prims;
     std::vector<PrimitiveHandle> auxPrims;
-    std::size_t coOffset, numDofs;
+    std::size_t coOffset, numDofs, numBouDofs;
     std::size_t sfOffset, seOffset, svOffset;
 
     // (scripted) collision objects
@@ -277,6 +332,13 @@ struct IPCSystem : IObject {
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
 
+    // for faster linear system solve
+    HessianPiece<1> hess1;
+    HessianPiece<2> hess2;
+    HessianPiece<3> hess3;
+    HessianPiece<4> hess4;
+    tiles_t cgtemp;
+
     // boundary contacts
     // auxiliary data (spatial acceleration)
     tiles_t stInds, seInds, svInds;
@@ -285,6 +347,9 @@ struct IPCSystem : IObject {
     bvs_t stBvs, seBvs;       // STQ
     bvh_t bouStBvh, bouSeBvh; // for collision objects
     bvs_t bouStBvs, bouSeBvs; // STQ
+    bvfront_t selfStFront, boundaryStFront;
+    bvfront_t selfSeFront, boundarySeFront;
+    bool frontManageRequired;
     T dt, framedt, curRatio;
 };
 
