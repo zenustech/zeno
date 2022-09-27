@@ -89,14 +89,16 @@ ZENO_API void GlobalComm::finishFrame() {
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
     if (m_maxPlayFrame >= 0 && m_maxPlayFrame < m_frames.size())
         m_frames[m_maxPlayFrame].b_frame_completed = true;
-
-    if (maxCachedFrames != 0) { // immediatedump
-        int i = m_maxPlayFrame;
-        toDisk(cacheFramePath, i, m_frames[i].view_objects);
-        m_inCacheFrames.erase(i);
-    }
-
     m_maxPlayFrame += 1;
+}
+
+ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
+    std::lock_guard lck(m_mtx);
+    int offset = frameid - beginFrameNumber;
+    if (offset >= 0 && frameid < m_frames.size()) {
+        log_debug("dumping frame {}", frameid);
+        toDisk(cacheFramePath, frameid, m_frames[offset].view_objects);
+    }
 }
 
 ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {

@@ -19,6 +19,8 @@
 #endif
 #include <zeno/utils/scope_exit.h>
 #include "corelaunch.h"
+#include "viewdecode.h"
+#include "settings/zsettings.h"
 
 namespace {
 
@@ -100,6 +102,17 @@ static int runner_start(std::string const &progJson, int sessionid) {
     if (session->globalStatus->failed())
         return onfail();
 
+    QSettings settings(zsCompanyName, zsEditor);
+    const QString& cachedir = settings.value("zencachedir").toString();
+    const QString& cachenum = settings.value("zencachenum").toString();
+    bool bDiskCache = false;
+    int cnum = cachenum.toInt(&bDiskCache);
+    bDiskCache = bDiskCache & QFileInfo(cachedir).isDir();
+    if (bDiskCache) {
+        auto cdir = cachedir.toStdString();
+        session->globalComm->frameCache(cdir.c_str(), cnum);
+    }
+
     std::vector<char> buffer;
 
     session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
@@ -128,17 +141,21 @@ static int runner_start(std::string const &progJson, int sessionid) {
         }
         session->globalComm->finishFrame();
 
-        auto const &viewObjs = session->globalComm->getViewObjects();
-        zeno::log_debug("runner got {} view objects", viewObjs.size());
         zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
-        for (auto const &[key, obj]: viewObjs) {
-            if (zeno::encodeObject(obj.get(), buffer))
-                send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
+        if (bDiskCache) {
+            session->globalComm->dumpFrameCache(frame);
+        } else {
+            auto const& viewObjs = session->globalComm->getViewObjects();
+            zeno::log_debug("runner got {} view objects", viewObjs.size());
+            for (auto const& [key, obj] : viewObjs) {
+                if (zeno::encodeObject(obj.get(), buffer))
+                    send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
                         buffer.data(), buffer.size());
-            buffer.clear();
+                buffer.clear();
+            }
         }
 
         send_packet("{\"action\":\"finishFrame\"}", "", 0);
