@@ -1,7 +1,9 @@
 #include "Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/types/Property.h"
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 
@@ -19,8 +21,8 @@ void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const s
     const SmallString tag = channel;
     prim.append_channels(
         pol, {{lTag.asString(), nchn}, {rTag.asString(), nchn}, {tTag.asString(), nchn}, {bTag.asString(), nchn}});
-    pol(Collapse{nx, ny},
-        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int i, int j) mutable {
+    pol(Collapse{ny, nx},
+        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int j, int i) mutable {
             size_t lidx = j * nx + math::max(i - 1, 0);
             size_t ridx = j * nx + math::min(i + 1, nx - 1);
             size_t tidx = math::min(j + 1, ny - 1) * nx + i;
@@ -34,6 +36,92 @@ void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const s
         });
 }
 template <int nchn>
+void checkEdgeLoop(PrimitiveObject *prim, typename ZenoParticles::particles_t &zsprim, int nx, int ny,
+                   const std::string &channel) {
+    using namespace zs;
+    constexpr auto space = execspace_e::host;
+    auto pol = omp_exec();
+    using T = conditional_t<nchn == 1, float, zeno::vec3f>;
+    auto &l = prim->add_attr<T>("l" + channel);
+    auto &r = prim->add_attr<T>("r" + channel);
+    auto &t = prim->add_attr<T>("t" + channel);
+    auto &b = prim->add_attr<T>("b" + channel);
+    auto &channels = prim->add_attr<T>(channel);
+
+    const SmallString lTag = std::string("l") + channel;
+    const SmallString rTag = std::string("r") + channel;
+    const SmallString tTag = std::string("t") + channel;
+    const SmallString bTag = std::string("b") + channel;
+    const SmallString tag = channel;
+    pol(Collapse{nx, ny}, [&, verts = proxy<space>({}, zsprim)](int i, int j) {
+        size_t lidx = j * nx + math::max(i - 1, 0);
+        size_t ridx = j * nx + math::min(i + 1, nx - 1);
+        size_t tidx = math::min(j + 1, ny - 1) * nx + i;
+        size_t bidx = math::max(j - 1, 0) * nx + i;
+        size_t idx = j * nx + i;
+
+        if constexpr (nchn == 1) {
+            auto dev_results = [&]() {
+                auto li = verts(lTag, idx);
+                auto ri = verts(rTag, idx);
+                auto ti = verts(tTag, idx);
+                auto bi = verts(bTag, idx);
+                auto inli = verts(tag, lidx);
+                auto inri = verts(tag, ridx);
+                auto inti = verts(tag, tidx);
+                auto inbi = verts(tag, bidx);
+                return zs::make_tuple(li, ri, ti, bi, inli, inri, inti, inbi);
+            };
+            auto host_results = [&]() {
+                auto li = l[idx];
+                auto ri = r[idx];
+                auto ti = t[idx];
+                auto bi = b[idx];
+                auto inli = channels[lidx];
+                auto inri = channels[ridx];
+                auto inti = channels[tidx];
+                auto inbi = channels[bidx];
+                return zs::make_tuple(li, ri, ti, bi, inli, inri, inti, inbi);
+            };
+            auto [da, db, dc, dd, dain, dbin, dcin, ddin] = dev_results();
+            auto [ha, hb, hc, hd, hain, hbin, hcin, hdin] = host_results();
+            if (da != ha || db != hb || dc != hc || dd != hd || dain != hain || dbin != hbin || dcin != hcin ||
+                ddin != hdin)
+                printf("damn wrong at <%d, %d>!\n\tdev: [%f(%f), %f(%f), %f(%f), %f(%f)]\n\thost_ref: [%f(%f), %f(%f), "
+                       "%f(%f), %f(%f)]\n",
+                       i, j, da, dain, db, dbin, dc, dcin, dd, ddin, ha, hain, hb, hbin, hc, hcin, hd, hdin);
+        } else if constexpr (nchn == 3) {
+            auto dev_results = [&]() {
+                auto li = verts.template pack<nchn>(lTag, idx).to_array();
+                auto ri = verts.template pack<nchn>(rTag, idx).to_array();
+                auto ti = verts.template pack<nchn>(tTag, idx).to_array();
+                auto bi = verts.template pack<nchn>(bTag, idx).to_array();
+                auto inli = verts.template pack<nchn>(tag, lidx).to_array();
+                auto inri = verts.template pack<nchn>(tag, ridx).to_array();
+                auto inti = verts.template pack<nchn>(tag, tidx).to_array();
+                auto inbi = verts.template pack<nchn>(tag, bidx).to_array();
+                return zs::make_tuple(li, ri, ti, bi, inli, inri, inti, inbi);
+            };
+            auto host_results = [&]() {
+                auto li = l[idx];
+                auto ri = r[idx];
+                auto ti = t[idx];
+                auto bi = b[idx];
+                auto inli = channels[lidx];
+                auto inri = channels[ridx];
+                auto inti = channels[tidx];
+                auto inbi = channels[bidx];
+                return zs::make_tuple(li, ri, ti, bi, inli, inri, inti, inbi);
+            };
+            auto [da, db, dc, dd, dain, dbin, dcin, ddin] = dev_results();
+            auto [ha, hb, hc, hd, hain, hbin, hcin, hdin] = host_results();
+            if (da != ha || db != hb || dc != hc || dd != hd || dain != hain || dbin != hbin || dcin != hcin ||
+                ddin != hdin)
+                printf("damn wrong vec3f! <%d, %d>\n", i, j);
+        }
+    });
+}
+template <int nchn>
 void edgeLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel,
                  const std::string &addChannel) {
     using namespace zs;
@@ -44,8 +132,8 @@ void edgeLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, cons
     const SmallString tTag = std::string("t") + channel;
     const SmallString bTag = std::string("b") + channel;
     const SmallString tag = addChannel;
-    pol(Collapse{nx, ny},
-        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int i, int j) mutable {
+    pol(Collapse{ny, nx},
+        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int j, int i) mutable {
             size_t lidx = j * nx + math::max(i - 1, 0);
             size_t ridx = j * nx + math::min(i + 1, nx - 1);
             size_t tidx = math::min(j + 1, ny - 1) * nx + i;
@@ -70,8 +158,8 @@ void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const
     const SmallString tag = channel;
     prim.append_channels(
         pol, {{ltTag.asString(), nchn}, {rtTag.asString(), nchn}, {lbTag.asString(), nchn}, {rbTag.asString(), nchn}});
-    pol(Collapse{nx, ny},
-        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int i, int j) mutable {
+    pol(Collapse{ny, nx},
+        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int j, int i) mutable {
             size_t ltidx = math::min(j + 1, ny - 1) * nx + math::max(i - 1, 0);
             size_t rtidx = math::min(j + 1, ny - 1) * nx + math::min(i + 1, nx - 1);
             size_t lbidx = math::max(j - 1, 0) * nx + math::max(i - 1, 0);
@@ -95,8 +183,8 @@ void cornerLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, co
     const SmallString lbTag = std::string("lb") + channel;
     const SmallString rbTag = std::string("rb") + channel;
     const SmallString tag = addChannel;
-    pol(Collapse{nx, ny},
-        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int i, int j) mutable {
+    pol(Collapse{ny, nx},
+        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int j, int i) mutable {
             size_t ltidx = math::min(j + 1, ny - 1) * nx + math::max(i - 1, 0);
             size_t rtidx = math::min(j + 1, ny - 1) * nx + math::min(i + 1, nx - 1);
             size_t lbidx = math::max(j - 1, 0) * nx + math::max(i - 1, 0);
@@ -151,6 +239,124 @@ ZENDEFNODE(ZSGather2DFiniteDifference, {
                                            {},
                                            {"zenofx"},
                                        });
+
+struct ZSCheckGather2DFiniteDifference : zeno::INode {
+    virtual void apply() override {
+        auto nx = get_input2<int>("nx");
+        auto ny = get_input2<int>("ny");
+        auto grid = get_input<ZenoParticles>("ZSParticles");
+        auto gridRef = get_input<PrimitiveObject>("grid");
+        auto attrT = get_input2<std::string>("attrT");
+        auto type = get_input2<std::string>("OpType");
+        auto channel = get_input2<std::string>("channel");
+
+        if (auto &verts_ = grid->getParticles(); verts_.hasProperty(channel)) {
+            auto verts = verts_.clone({zs::memsrc_e::host, -1});
+            if (type == "FIVE_STENCIL" || type == "NINE_STENCIL") {
+                puts("begin edge loop checking");
+                if (attrT == "float") {
+                    checkEdgeLoop<1>(gridRef.get(), verts, nx, ny, channel);
+                }
+                if (attrT == "vec3") {
+                    checkEdgeLoop<3>(gridRef.get(), verts, nx, ny, channel);
+                }
+                puts("done edge loop checking");
+            }
+#if 0
+            if (type == "NINE_STENCIL") {
+                if (attrT == "float") {
+                    checkCornerLoop<1>(gridRef.get(), verts, nx, ny, channel);
+                }
+                if (attrT == "vec3") {
+                    checkCornerLoop<3>(gridRef.get(), verts, nx, ny, channel);
+                }
+            }
+#endif
+        }
+
+        set_output("prim", std::move(grid));
+    }
+};
+
+ZENDEFNODE(ZSCheckGather2DFiniteDifference, {
+                                                {{"PrimitiveObject", "grid"},
+                                                 {"ZSParticles", "ZSParticles"},
+                                                 {"int", "nx", "1"},
+                                                 {"int", "ny", "1"},
+                                                 {"string", "channel", "pos"},
+                                                 {"enum vec3 float", "attrT", "float"},
+                                                 {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
+                                                {{"ZSParticles", "prim"}},
+                                                {},
+                                                {"zenofx"},
+                                            });
+
+struct ZSCheckPrimAttribs : zeno::INode {
+    virtual void apply() override {
+        auto grid = get_input<ZenoParticles>("ZSParticles");
+        auto gridRef = get_input<PrimitiveObject>("grid");
+        auto attribs = get_input<zeno::ListObject>("attribs");
+
+        const auto &verts = grid->getParticles();
+        for (auto &attrib_ : attribs->get2<std::string>()) {
+            auto attrib = attrib_;
+            auto attribAct = attrib_;
+            if (attribAct == "pos")
+                attribAct = "x";
+            if (attribAct == "vel")
+                attribAct = "v";
+            if (!verts.hasProperty(attribAct) || !gridRef->has_attr(attrib))
+                throw std::runtime_error(fmt::format("about prop [{}], zspar [{}], ref [{}]\n", attrib,
+                                                     verts.hasProperty(attribAct), gridRef->has_attr(attrib)));
+            if (verts.size() != gridRef->size())
+                throw std::runtime_error("size mismatch!\n");
+            auto nchn = verts.getPropertySize(attribAct);
+            auto nchnRef = gridRef->attr_is<float>(attrib) ? 1 : 3;
+            if (nchn != nchnRef)
+                throw std::runtime_error("attrib dimension mismatch!\n");
+            auto compare = [&](auto dim_v) {
+                fmt::print("begin checking prim [{}] of size {}\n", attrib, nchn);
+                using namespace zs;
+                constexpr auto dim = RM_CVREF_T(dim_v)::value;
+                using T = conditional_t<dim == 1, float, zeno::vec3f>;
+                auto ompPol = omp_exec();
+                constexpr auto space = execspace_e::host;
+                ompPol(range(verts.size()),
+                       [&, verts = proxy<space>({}, verts), tag = SmallString{attribAct}, nchn](int vi) {
+                           float v, vref;
+                           for (int d = 0; d != nchn; ++d) {
+                               v = verts(tag, d, vi);
+                               if constexpr (dim == 1)
+                                   vref = gridRef->attr<T>(attrib)[vi];
+                               else
+                                   vref = gridRef->attr<T>(attrib)[vi][d];
+                               if (v != vref) {
+                                   fmt::print("damn this, {}-th vert prop [{}, {}] actual: {}, ref: {}\n", vi, attrib,
+                                              d, v, vref);
+                               }
+                           }
+                       });
+                fmt::print("done checking prim [{}]\n", attrib);
+            };
+            std::variant<zs::wrapv<1>, zs::wrapv<3>> tmp{};
+            if (nchn == 1)
+                tmp = zs::wrapv<1>{};
+            else
+                tmp = zs::wrapv<3>{};
+            zs::match(compare)(tmp);
+        }
+
+        set_output("prim", std::move(grid));
+    }
+};
+
+ZENDEFNODE(ZSCheckPrimAttribs,
+           {
+               {{"PrimitiveObject", "grid"}, {"ZSParticles", "ZSParticles"}, {"ListObject", "attribs"}},
+               {{"ZSParticles", "prim"}},
+               {},
+               {"zenofx"},
+           });
 
 struct ZSMomentumTransfer2DFiniteDifference : zeno::INode {
     void apply() override {

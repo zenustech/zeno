@@ -144,7 +144,6 @@ struct ZSParticlesWrangler : zeno::INode {
             }
             if (newChns.size() > 0)
                 pars.append_channels(cudaPol, newChns);
-            props.insert(std::end(props), std::begin(newChns), std::end(newChns));
 
             if (_cuModule == nullptr) {
                 auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
