@@ -385,7 +385,6 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
 void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                                  bool includeHessian) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
@@ -504,6 +503,234 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
             }
     }
     return;
+}
+
+void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr execspace_e space = execspace_e::cuda;
+    constexpr auto execTag = wrapv<space>{};
+
+    hess1.reset(true, numDofs); // additive style
+    hess2.reset(false, 0);      // overwrite style
+    hess3.reset(false, 0);
+    hess4.reset(false, 0);
+    // inertial
+    pol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), hess1 = proxy<space>(hess1)] __device__(int i) mutable {
+        auto Hi = tempI.template pack<3, 3>("Hi", i);
+        hess1.hess[i] = Hi;
+        hess1.inds[i][0] = i;
+    });
+
+    // elasticity
+    for (auto &primHandle : prims) {
+        auto &eles = primHandle.getEles();
+        // elasticity
+        if (primHandle.category == ZenoParticles::curve) {
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
+                continue;
+            auto offset = hess2.increaseCount(eles.size());
+            pol(zs::range(eles.size()),
+                [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess2 = proxy<space>(hess2),
+                 vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                    auto He = etemp.template pack<6, 6>("He", ei);
+                    auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    hess2.hess[offset + ei] = He;
+                    hess2.inds[offset + ei] = inds;
+                });
+        } else if (primHandle.category == ZenoParticles::surface) {
+            if (primHandle.isBoundary())
+                continue;
+            auto offset = hess3.increaseCount(eles.size());
+            pol(zs::range(eles.size()),
+                [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess3 = proxy<space>(hess3),
+                 vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                    auto He = etemp.template pack<9, 9>("He", ei);
+                    auto inds = eles.template pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    hess3.hess[offset + ei] = He;
+                    hess3.inds[offset + ei] = inds;
+                });
+        } else if (primHandle.category == ZenoParticles::tet) {
+            auto offset = hess4.increaseCount(eles.size());
+            pol(zs::range(eles.size()),
+                [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess4 = proxy<space>(hess4),
+                 vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                    auto He = etemp.template pack<12, 12>("He", ei);
+                    auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    hess4.hess[offset + ei] = He;
+                    hess4.inds[offset + ei] = inds;
+                });
+        }
+        for (auto &primHandle : auxPrims) {
+            auto &eles = primHandle.getEles();
+            // soft bindings
+            if (primHandle.category == ZenoParticles::curve) {
+                auto offset = hess2.increaseCount(eles.size());
+                pol(zs::range(eles.size()),
+                    [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles),
+                     hess2 = proxy<space>(hess2), vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                        auto He = etemp.template pack<6, 6>("He", ei);
+                        auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                        hess2.hess[offset + ei] = He;
+                        hess2.inds[offset + ei] = inds;
+                    });
+            }
+        }
+
+        // contacts
+        if (enableContact) {
+            auto numPP = nPP.getVal();
+            auto offset = hess2.increaseCount(numPP);
+            pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
+                                   hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int ppi) mutable {
+                auto H = tempPP.template pack<6, 6>("H", ppi);
+                auto inds = PP[ppi];
+                hess2.hess[offset + ppi] = H;
+                hess2.inds[offset + ppi] = inds;
+            });
+
+            auto numPE = nPE.getVal();
+            offset = hess3.increaseCount(numPE);
+            pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE),
+                                   hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int pei) mutable {
+                auto H = tempPE.template pack<9, 9>("H", pei);
+                auto inds = PE[pei];
+                hess3.hess[offset + pei] = H;
+                hess3.inds[offset + pei] = inds;
+            });
+
+            auto numPT = nPT.getVal();
+            offset = hess4.increaseCount(numPT);
+            pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT),
+                                   hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pti) mutable {
+                auto H = tempPT.template pack<12, 12>("H", pti);
+                auto inds = PT[pti];
+                hess4.hess[offset + pti] = H;
+                hess4.inds[offset + pti] = inds;
+            });
+
+            auto numEE = nEE.getVal();
+            offset = hess4.increaseCount(numEE);
+            pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE),
+                                   hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eei) mutable {
+                auto H = tempEE.template pack<12, 12>("H", eei);
+                auto inds = EE[eei];
+                hess4.hess[offset + eei] = H;
+                hess4.inds[offset + eei] = inds;
+            });
+
+            if (enableMollification) {
+                auto numEEM = nEEM.getVal();
+                offset = hess4.increaseCount(numEEM);
+                pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = proxy<space>(EEM),
+                                        hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eemi) mutable {
+                    auto H = tempEEM.template pack<12, 12>("H", eemi);
+                    auto inds = EEM[eemi];
+                    hess4.hess[offset + eemi] = H;
+                    hess4.inds[offset + eemi] = inds;
+                });
+
+                auto numPPM = nPPM.getVal();
+                offset = hess4.increaseCount(numPPM);
+                pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = proxy<space>(PPM),
+                                        hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int ppmi) mutable {
+                    auto H = tempPPM.template pack<12, 12>("H", ppmi);
+                    auto inds = PPM[ppmi];
+                    hess4.hess[offset + ppmi] = H;
+                    hess4.inds[offset + ppmi] = inds;
+                });
+
+                auto numPEM = nPEM.getVal();
+                offset = hess4.increaseCount(numPEM);
+                pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = proxy<space>(PEM),
+                                        hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pemi) mutable {
+                    auto H = tempPEM.template pack<12, 12>("H", pemi);
+                    auto inds = PEM[pemi];
+                    hess4.hess[offset + pemi] = H;
+                    hess4.inds[offset + pemi] = inds;
+                });
+            } // end mollification
+
+            if (s_enableFriction) {
+                if (fricMu != 0) {
+                    if (s_enableSelfFriction) {
+                        auto numFPP = nFPP.getVal();
+                        offset = hess2.increaseCount(numFPP);
+                        pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP),
+                                                hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int fppi) mutable {
+                            auto H = fricPP.template pack<6, 6>("H", fppi);
+                            auto inds = FPP[fppi];
+                            hess2.hess[offset + fppi] = H;
+                            hess2.inds[offset + fppi] = inds;
+                        });
+
+                        auto numFPE = nFPE.getVal();
+                        offset = hess3.increaseCount(numFPE);
+                        pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE),
+                                                hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int fpei) mutable {
+                            auto H = fricPE.template pack<9, 9>("H", fpei);
+                            auto inds = FPE[fpei];
+                            hess3.hess[offset + fpei] = H;
+                            hess3.inds[offset + fpei] = inds;
+                        });
+
+                        auto numFPT = nFPT.getVal();
+                        offset = hess4.increaseCount(numFPT);
+                        pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT),
+                                                hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int fpti) mutable {
+                            auto H = fricPT.template pack<12, 12>("H", fpti);
+                            auto inds = FPT[fpti];
+                            hess4.hess[offset + fpti] = H;
+                            hess4.inds[offset + fpti] = inds;
+                        });
+
+                        auto numFEE = nFEE.getVal();
+                        offset = hess4.increaseCount(numFEE);
+                        pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE),
+                                                hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int feei) mutable {
+                            auto H = fricEE.template pack<12, 12>("H", feei);
+                            auto inds = FEE[feei];
+                            hess4.hess[offset + feei] = H;
+                            hess4.inds[offset + feei] = inds;
+                        });
+                    } // self friction
+                }     //fricmu
+            }         //enable friction
+        }             //enable contact
+
+        // ground contact
+        if (enableGround) {
+            for (auto &primHandle : prims) {
+                if (primHandle.isBoundary()) // skip soft boundary
+                    continue;
+                const auto &svs = primHandle.getSurfVerts();
+
+                pol(zs::range(svs.size()),
+                    [svtemp = proxy<space>({}, primHandle.svtemp), svs = proxy<space>({}, svs),
+                     svOffset = primHandle.svOffset, hess1 = proxy<space>(hess1), execTag] __device__(int svi) mutable {
+                        const auto vi = reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                        auto pbHess = svtemp.template pack<3, 3>("H", svi);
+                        for (int i = 0; i != 3; ++i)
+                            for (int j = 0; j != 3; ++j)
+                                atomic_add(execTag, &hess1.hess[vi](i, j), (float)pbHess(i, j));
+                        // hess1.hess[i] = Hi;
+                    });
+            }
+        }
+
+        // constraint hessian
+        if (!BCsatisfied) {
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), hess1 = proxy<space>(hess1),
+                                     boundaryKappa = boundaryKappa, execTag] __device__(int vi) mutable {
+                auto w = vtemp("ws", vi);
+                int BCfixed = vtemp("BCfixed", vi);
+                if (!BCfixed) {
+                    int BCorder = vtemp("BCorder", vi);
+                    for (int d = 0; d != BCorder; ++d)
+                        atomic_add(execTag, &hess1.hess[vi](d, d), (float)(boundaryKappa * w));
+                }
+            });
+        }
+    }
 }
 
 } // namespace zeno
