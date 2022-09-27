@@ -9,6 +9,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/utils/zeno_p.h>
+#include <zeno/utils/string.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
@@ -30,16 +31,6 @@ static std::wstring s2ws(std::string const &s) {
     return ws;
 }
 
-static std::size_t replace_all(std::string& inout, std::string_view what, std::string_view with)
-{
-    std::size_t count{};
-    for (std::string::size_type pos{};
-         std::string::npos != (pos = inout.find(what.data(), pos, what.length()));
-         pos += with.length(), ++count) {
-        inout.replace(pos, what.length(), with.data(), with.length());
-    }
-    return count;
-}
 
 static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     log_debug("Initializing Python...");
@@ -54,7 +45,7 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
 #ifdef _WIN32
-    replace_all(libpath, "\\", "\\\\");
+    libpath = replace_all(libpath, "\\", "\\\\");
 #endif
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str()) < 0) {
