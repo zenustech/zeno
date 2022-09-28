@@ -102,16 +102,7 @@ static int runner_start(std::string const &progJson, int sessionid) {
     if (session->globalStatus->failed())
         return onfail();
 
-    QSettings settings(zsCompanyName, zsEditor);
-    const QString& cachedir = settings.value("zencachedir").toString();
-    const QString& cachenum = settings.value("zencachenum").toString();
-    bool bDiskCache = false;
-    int cnum = cachenum.toInt(&bDiskCache);
-    bDiskCache = bDiskCache && QFileInfo(cachedir).isDir() && cnum > 0;
-    if (bDiskCache) {
-        auto cdir = cachedir.toStdString();
-        session->globalComm->frameCache(cdir.c_str(), cnum);
-    }
+    bool bZenCache = initZenCache();
 
     std::vector<char> buffer;
 
@@ -145,7 +136,7 @@ static int runner_start(std::string const &progJson, int sessionid) {
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
-        if (bDiskCache) {
+        if (bZenCache) {
             session->globalComm->dumpFrameCache(frame);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
