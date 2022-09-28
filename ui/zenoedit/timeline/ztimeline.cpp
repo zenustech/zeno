@@ -37,7 +37,7 @@ ZTimeline::ZTimeline(QWidget* parent)
 
 void ZTimeline::initSignals()
 {
-    connect(m_ui->btnPlay, SIGNAL(clicked(bool)), this, SIGNAL(playForward(bool)));
+    connect(m_ui->btnPlay, SIGNAL(toggled(bool)), this, SIGNAL(playForward(bool)));
     connect(m_ui->editFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
