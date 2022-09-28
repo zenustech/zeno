@@ -1,4 +1,4 @@
-file(GLOB PROJECT_SOURCE include/*/*.h *.cpp)
+file(GLOB PROJECT_SOURCE include/*/*.h *.cpp include/zeno/packed3grids.cpp)
 
 if (UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB)

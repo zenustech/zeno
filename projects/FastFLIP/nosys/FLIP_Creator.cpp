@@ -57,10 +57,24 @@ struct FLIPCreator : zeno::INode {
     velocity->m_grid->setTransform(voxel_center_transform);
     velocity->m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
     velocity->m_grid->setName("Velocity");
+    velocity->m_packedGrid = packed_FloatGrid3{};
+    auto &velocityPackedGrid = velocity->refPackedGrid();
+    velocityPackedGrid.from_vec3(velocity->m_grid); // velocityPackedGrid.to_vec3(velocity->m_grid);
+
+    velocity_after_p2g->m_grid = velocity->m_grid->deepCopy();
+    velocity_after_p2g->m_packedGrid = packed_FloatGrid3{};
+    velocity_after_p2g->m_packedGrid->from_vec3(velocity_after_p2g->m_grid);
+
     velocity_snapshot->m_grid = velocity->m_grid->deepCopy();
     velocity_snapshot->m_grid->setName("Velocity_Snapshot");
+    velocity_snapshot->m_packedGrid = packed_FloatGrid3{};
+    velocity_snapshot->m_packedGrid->from_vec3(velocity_snapshot->m_grid);
+
     velocity_update->m_grid = velocity->m_grid->deepCopy();
     velocity_update->m_grid->setName("Velocity_Update");
+    velocity_update->m_packedGrid = packed_FloatGrid3{};
+    velocity_update->m_packedGrid->from_vec3(velocity_update->m_grid);
+    
     solid_velocity->m_grid =
         openvdb::Vec3fGrid::create(openvdb::Vec3f{0, 0, 0});
     solid_velocity->m_grid->setTransform(voxel_center_transform);

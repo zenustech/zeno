@@ -4,7 +4,7 @@
 #include "openvdb/points/PointConversion.h"
 #include <openvdb/Types.h>
 #include <openvdb/openvdb.h>
-
+#include <zeno/VDBGrid.h>
 
 
 static inline float frand(unsigned int i) {
@@ -97,50 +97,45 @@ struct FLIP_vdb {
 
   static void Advect(float dt, float dx,
                      openvdb::points::PointDataGrid::Ptr &particles,
-                     openvdb::Vec3fGrid::Ptr &velocity,
-                     openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+                     packed_FloatGrid3 &velocity,
+                     packed_FloatGrid3 &velocity_after_p2g,
                      float pic_component, int RK_ORDER);
   static void Advect(float dt, float dx,
                      openvdb::points::PointDataGrid::Ptr &particles,
-                     openvdb::Vec3fGrid::Ptr &velocity,
-                     openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+                     packed_FloatGrid3 &velocity,
+                     packed_FloatGrid3 &velocity_after_p2g,
                      openvdb::FloatGrid::Ptr &solid_sdf,
                      openvdb::Vec3fGrid::Ptr &solid_vel, float pic_component,
                      int RK_ORDER);
   static void AdvectSheetty(float dt, float dx, float surfacedist,
                             openvdb::points::PointDataGrid::Ptr &particles,
                             openvdb::FloatGrid::Ptr &liquid_sdf,
-                            openvdb::Vec3fGrid::Ptr &velocity,
-                            openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+                            packed_FloatGrid3 &velocity,
+                            packed_FloatGrid3 &velocity_after_p2g,
                             openvdb::FloatGrid::Ptr &solid_sdf,
                             openvdb::Vec3fGrid::Ptr &solid_vel,
                             float pic_component, int RK_ORDER);
+
   static void custom_move_points_and_set_flip_vel(
-      openvdb::points::PointDataGrid &in_out_points,
-      const openvdb::Vec3fGrid &in_velocity_field,
-      const openvdb::Vec3fGrid &in_old_velocity, float PIC_component, float dt,
-      float dx, int RK_order);
-  static void custom_move_points_and_set_flip_vel(
-      openvdb::points::PointDataGrid::Ptr in_out_points,
-      const openvdb::FloatGrid::Ptr in_liquid_sdf,
-      const openvdb::Vec3fGrid::Ptr in_velocity_field,
-      const openvdb::Vec3fGrid::Ptr in_velocity_field_to_be_advected,
-      const openvdb::Vec3fGrid::Ptr in_old_velocity,
-      openvdb::FloatGrid::Ptr in_solid_sdf,
-      openvdb::Vec3fGrid::Ptr in_solid_vel, float PIC_component, float dt,
-      float surfacedist, int RK_order);
+        openvdb::points::PointDataGrid::Ptr in_out_points,
+        packed_FloatGrid3 in_velocity_field,
+        packed_FloatGrid3 in_velocity_field_to_be_advected,
+        packed_FloatGrid3 in_old_velocity,
+        openvdb::FloatGrid::Ptr in_solid_sdf, openvdb::Vec3fGrid::Ptr in_solid_vel,
+        float PIC_component, float dt, int RK_order);
+
   static void
   update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids,
                    openvdb::FloatGrid::Ptr &m_solid_sdf,
                    openvdb::points::PointDataGrid::Ptr &particles);
   static void
-  particle_to_grid_collect_style(openvdb::points::PointDataGrid::Ptr &particles,
-                                 openvdb::Vec3fGrid::Ptr &velocity,
-                                 openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+  particle_to_grid_collect_style(openvdb::points::PointDataGrid::Ptr &in_particles,
+                                 packed_FloatGrid3 &out_velocity,
+                                 packed_FloatGrid3 &velocity_after_p2g,
                                  openvdb::Vec3fGrid::Ptr &velocity_weights,
-                                 openvdb::FloatGrid::Ptr &liquid_sdf,
+                                 openvdb::FloatGrid::Ptr &out_liquid_sdf,
                                  openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
-                                 float dx, bool setActive);
+                                 float dx);
   static void calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
                                      openvdb::FloatGrid::Ptr &liquid_sdf,
                                      openvdb::FloatGrid::Ptr &solid_sdf);
