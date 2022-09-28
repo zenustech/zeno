@@ -34,8 +34,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     objs.clear();
 }
 
-static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
-    if (cachedir.empty()) return;
+static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
+    if (cachedir.empty()) return false;
     objs.clear();
     auto path = std::filesystem::u8path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
     log_critical("load cache from disk {}", path);
@@ -45,7 +45,7 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     FILE* fp = fopen(path.string().c_str(), "rb");
     if (!fp) {
         log_error("zeno cache file does not exist");
-        return;
+        return false;
     }
     size_t ret = fread(&dat[0], 1, szBuffer, fp);
     assert(ret == szBuffer);
@@ -54,12 +54,12 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
 
     if (dat.size() <= 8 || std::string(dat.data(), 8) != "ZENCACHE") {
         log_error("zeno cache file broken (1)");
-        return;
+        return false;
     }
     size_t pos = std::find(dat.begin() + 8, dat.end(), '\a') - dat.begin();
     if (pos == dat.size()) {
         log_error("zeno cache file broken (2)");
-        return;
+        return false;
     }
     int keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
     pos = pos + 1;
@@ -68,7 +68,7 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
         size_t newpos = std::find(dat.begin() + pos, dat.end(), '\a') - dat.begin();
         if (newpos == dat.size()) {
             log_error("zeno cache file broken (3.{})", k);
-            return;
+            return false;
         }
         keys.emplace_back(dat.data() + pos, newpos - pos);
         pos = newpos + 1;
@@ -80,11 +80,12 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     for (int k = 0; k < keyscount; k++) {
         if (poses[k] > dat.size() - pos || poses[k + 1] < poses[k]) {
             log_error("zeno cache file broken (4.{})", k);
-            return;
+            return true;
         }
         const char *p = dat.data() + pos + poses[k];
         objs.try_emplace(keys[k], decodeObject(p, poses[k + 1] - poses[k]));
     }
+    return true;
 }
 
 ZENO_API void GlobalComm::newFrame() {
@@ -149,7 +150,9 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
+            bool ret = fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
+            if (!ret)
+                return nullptr;
             m_inCacheFrames.insert(frameid);
             // and dump one as balance:
             if (m_inCacheFrames.size() && m_inCacheFrames.size() > maxCachedFrames) { // notindisk then dumpit
