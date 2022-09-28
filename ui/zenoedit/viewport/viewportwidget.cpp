@@ -803,10 +803,12 @@ TIMELINE_INFO DisplayWidget::timelineInfo()
     return info;
 }
 
-void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
+void DisplayWidget::resetTimeline(TIMELINE_INFO info)
 {
+    BlockSignalScope scope(m_timeline);
     m_timeline->setAlways(info.bAlways);
-    m_timeline->setFromTo(info.beginFrame, info.endFrame);
+    m_timeline->initFromTo(info.beginFrame, info.endFrame);
+    m_timeline->setSliderValue(info.currFrame);
 }
 
 ViewportWidget* DisplayWidget::getViewportWidget()

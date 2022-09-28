@@ -107,7 +107,7 @@ static int runner_start(std::string const &progJson, int sessionid) {
     const QString& cachenum = settings.value("zencachenum").toString();
     bool bDiskCache = false;
     int cnum = cachenum.toInt(&bDiskCache);
-    bDiskCache = bDiskCache & QFileInfo(cachedir).isDir();
+    bDiskCache = bDiskCache && QFileInfo(cachedir).isDir() && cnum > 0;
     if (bDiskCache) {
         auto cdir = cachedir.toStdString();
         session->globalComm->frameCache(cdir.c_str(), cnum);

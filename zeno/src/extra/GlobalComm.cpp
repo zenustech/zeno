@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <fstream>
+#include <cassert>
 
 namespace zeno {
 
@@ -23,12 +24,12 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     poses.push_back(buf.size());
     keys.push_back('\a');
 
-    auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
+    auto path = std::filesystem::u8path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
     log_critical("dump cache to disk {}", path);
     std::ofstream ofs(path, std::ios::binary);
     std::ostreambuf_iterator<char> oit(ofs);
     std::copy(keys.begin(), keys.end(), oit);
-    std::copy_n((const char *)poses.data(), poses.size() * sizeof(size_t), oit);
+    std::copy_n((const char*)poses.data(), poses.size() * sizeof(size_t), oit);
     std::copy(buf.begin(), buf.end(), oit);
     objs.clear();
 }
@@ -36,12 +37,20 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
 static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
     if (cachedir.empty()) return;
     objs.clear();
-    auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
+    auto path = std::filesystem::u8path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
     log_critical("load cache from disk {}", path);
-    std::ifstream ifs(path, std::ios::binary);
-    std::istreambuf_iterator<char> iit(ifs), iite;
-    std::vector<char> dat;
-    std::copy(iit, iite, std::back_inserter(dat));
+
+    auto szBuffer = std::filesystem::file_size(path);
+    std::vector<char> dat(szBuffer);
+    FILE* fp = fopen(path.string().c_str(), "rb");
+    if (!fp) {
+        log_error("zeno cache file does not exist");
+        return;
+    }
+    size_t ret = fread(&dat[0], 1, szBuffer, fp);
+    assert(ret == szBuffer);
+    fclose(fp);
+    fp = nullptr;
 
     if (dat.size() <= 8 || std::string(dat.data(), 8) != "ZENCACHE") {
         log_error("zeno cache file broken (1)");
@@ -94,10 +103,10 @@ ZENO_API void GlobalComm::finishFrame() {
 
 ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
     std::lock_guard lck(m_mtx);
-    int offset = frameid - beginFrameNumber;
-    if (offset >= 0 && frameid < m_frames.size()) {
+    int frameIdx = frameid - beginFrameNumber;
+    if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[offset].view_objects);
+        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
     }
 }
 
@@ -132,21 +141,23 @@ ZENO_API int GlobalComm::maxPlayFrames() {
     return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
 }
 
-ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) {
-    frameid -= beginFrameNumber;
+ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
+    int frameIdx = frameid - beginFrameNumber;
     std::lock_guard lck(m_mtx);
-    if (frameid < 0 || frameid >= m_frames.size())
+    if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            fromDisk(cacheFramePath, frameid, m_frames[frameid].view_objects);
+            fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
             m_inCacheFrames.insert(frameid);
             // and dump one as balance:
             if (m_inCacheFrames.size() && m_inCacheFrames.size() > maxCachedFrames) { // notindisk then dumpit
                 for (int i: m_inCacheFrames) {
                     if (i != frameid) {
-                        toDisk(cacheFramePath, i, m_frames[i].view_objects);
+                        // seems that objs will not be modified when load_objects called later.
+                        // so, there is no need to dump.
+                        //toDisk(cacheFramePath, i, m_frames[i - beginFrameNumber].view_objects);
                         m_inCacheFrames.erase(i);
                         break;
                     }
@@ -154,7 +165,7 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) 
             }
         }
     }
-    return &m_frames[frameid].view_objects;
+    return &m_frames[frameIdx].view_objects;
 }
 
 ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
