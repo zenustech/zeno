@@ -4,6 +4,7 @@
 //-------attached some cuda library for FFT-----------------
 
 //--------------
+#include "zeno/types/UserData.h"
 #include "zensim/container/Vector.hpp"
 #include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/math/Vec.h"
@@ -669,10 +670,7 @@ struct OceanCompute : zeno::INode {
                        zeno::vec3f(-CalOcean->choppyness * dxdt2, dhdt2, -CalOcean->choppyness * dzdt2) * dt_inv;
         }
 
-// no userData anymore, specify elsewhere
-#if 0
-        grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2 - t));
-#endif
+        grid->userData().set("dt", std::make_shared<NumericObject>((float)(t2 - t)));
         set_output("OceanData", grid);
     }
 };
@@ -853,10 +851,7 @@ struct OceanCuCompute : zeno::INode {
         write_back(mapx, CalOcean->d_mapx);
         write_back(repos, CalOcean->d_repos);
         write_back(revel, CalOcean->d_revel);
-// no userData anymore, specify elsewhere
-#if 0
-        grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2 - t));
-#endif
+        grid->userData().set("dt", std::make_shared<NumericObject>((float)(t2 - t)));
         set_output("OceanData", grid);
     }
 };
