@@ -1292,9 +1292,10 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
-void update_hdr_sky(float sky_rot) {
+void update_hdr_sky(float sky_rot, float sky_strength) {
     state.params.usingProceduralSky = 0;
     state.params.sky_rot = sky_rot;
+    state.params.sky_strength = sky_strength;
 }
 
 void update_procedural_sky(
