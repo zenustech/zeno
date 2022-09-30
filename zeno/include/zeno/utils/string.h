@@ -50,4 +50,19 @@ static std::string trim_string(std::string str) {
 	return str;
 }
 
+static std::string replace_all(const std::string& inout_, std::string_view what, std::string_view with) {
+    std::string inout = inout_;
+    for (std::string::size_type pos{};
+         std::string::npos != (pos = inout.find(what.data(), pos, what.length()));
+         pos += with.length()
+     ) {
+        inout.replace(pos, what.length(), with.data(), with.length());
+    }
+    return inout;
+}
+
+static std::string remove_all(const std::string& inout, std::string_view what) {
+    return replace_all(inout, what, "");
+}
+
 }
