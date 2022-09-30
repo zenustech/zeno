@@ -538,6 +538,8 @@ struct CreatePlane : zeno::INode {
         auto &verts = prim->verts;
         auto &quads = prim->quads;
         auto &tris = prim->tris;
+        auto &poly = prim->polys;
+        auto &loops = prim->loops;
         std::vector<zeno::vec3f> uvs;
         std::vector<zeno::vec3f> nors;
 
@@ -573,6 +575,7 @@ struct CreatePlane : zeno::INode {
         }
 
         // Indices
+        int ss = 0;
         for(int i=0; i<rows; i++){
             for(int j=0; j<columns; j++){
                 int i1 = fi;
@@ -581,12 +584,17 @@ struct CreatePlane : zeno::INode {
                 int i4 = i3+1;
 
                 if(quad){
-                    quads.emplace_back(i3, i4, i2, i1);
-                }else{
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i2);
+                    prim->loops.push_back(i4);
+                    prim->loops.push_back(i3);
+                    prim->polys.push_back({ss * 4, 4});
+                }
+                else{
                     tris.emplace_back(i1, i4, i2);
                     tris.emplace_back(i3, i4, i1);
                 }
-
+                ss++;
                 fi += 1;
             }
             fi += 1;
@@ -596,7 +604,7 @@ struct CreatePlane : zeno::INode {
         for(int i=0; i<1; i++){
             vec3i ind;
             if(quad){
-                ind = vec3i(quads[i][0], quads[i][1], quads[i][2]);
+                ind = vec3i(loops[4*i],loops[4*i+1],loops[4*i+2]);
             }
             else{
                 ind = tris[i];
@@ -637,6 +645,18 @@ struct CreatePlane : zeno::INode {
         for(int i=0; i<verts.size(); i++){
             uv[i] = zeno::vec3f(1 - uvs[i][0], 1 - uvs[i][1], 0);
             norm[i] = normal;
+        }
+
+        for (int i = 0; i < uvs.size(); i++) {
+            prim->uvs.emplace_back(uvs[i][0], uvs[i][1]);
+        }
+
+        if(prim->loops.size()!= 0 ){
+            prim->loop_uvs.resize(prim->loops.size());
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                auto lo = prim->loops[i];
+                prim->loop_uvs[i] = lo;
+            }
         }
 
         prim->userData().setLiterial("pos", std::move(position));
