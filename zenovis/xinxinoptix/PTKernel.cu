@@ -132,7 +132,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
             if(prd.depth>4){
-               //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f); 
+                //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
                 if(rnd(prd.seed) > RRprob || prd.depth>16){
                     prd.done=true;
@@ -169,7 +169,7 @@ extern "C" __global__ void __raygen__rg()
     /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
-    float3 out_color = accum_color;
+    float3 out_color = aecs_fitted;
     params.frame_buffer[ image_index ] = make_color ( out_color );
 }
 
