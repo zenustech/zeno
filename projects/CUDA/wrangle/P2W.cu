@@ -16,6 +16,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zfx/cuda.h>
 #include <zfx/zfx.h>
@@ -128,8 +129,17 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
             auto register_attrib_syms = [&opts](const std::vector<PropertyTag> &props, const std::string &prefix) {
-                for (auto &&[name, nchns] : props)
+                for (auto [name, nchns] : props) {
+                    if (name == "x" || name == "v")
+                        zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
+                                       "now on to keep "
+                                       "consistent with cpu-side wrangles");
+                    if (name == "pos")
+                        name = "x";
+                    else if (name == "vel")
+                        name = "v";
                     opts.define_symbol(prefix + name.asString(), nchns);
+                }
                 //def_sym(name.asString(), nchns);
             };
             register_attrib_syms(props, "@");

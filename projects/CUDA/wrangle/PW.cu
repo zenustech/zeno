@@ -16,6 +16,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zfx/cuda.h>
 #include <zfx/zfx.h>
@@ -115,7 +116,17 @@ struct ZSParticlesWrangler : zeno::INode {
         auto cudaPol = cuda_exec().device(0).sync(true);
 
         /// symbols
-        auto def_sym = [&opts](const std::string &key, int dim) { opts.define_symbol('@' + key, dim); };
+        auto def_sym = [&opts](std::string key, int dim) {
+            if (key == "x" || key == "v")
+                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
+                               "now on to keep "
+                               "consistent with cpu-side wrangles");
+            if (key == "pos")
+                key = "x";
+            else if (key == "vel")
+                key = "v";
+            opts.define_symbol('@' + key, dim);
+        };
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();
