@@ -294,7 +294,9 @@ void ZenoMainWindow::initDocks() {
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    m_pEditor = new ZenoGraphsEditor(this);
+    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
+    // m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
 
     m_logger = new ZenoDockWidget("logger", this);
     m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));

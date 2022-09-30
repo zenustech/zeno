@@ -13,6 +13,7 @@
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
+#include <nodesview/zenographseditor.h>
 //#include <zeno/utils/zeno_p.h>
 // #include <nodesys/nodesmgr.h>
 #include <zenomodel/include/nodesmgr.h>
@@ -324,6 +325,44 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
         zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
         zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
     }
+}
+
+void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto cam_pos = realPos();
+
+    float x = (float)event->x() / m_res.x();
+    float y = (float)event->y() / m_res.y();
+    auto rdir = screenToWorldRay(x, y);
+    float min_t = std::numeric_limits<float>::max();
+    std::string name;
+    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+        zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
+        zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
+        zeno::vec3f bmin, bmax;
+        if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
+            if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
+                float t = *ret;
+                if (t < min_t) {
+                    min_t = t;
+                    name = key;
+                }
+            }
+        }
+    }
+    if (!name.empty()) {
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        auto obj_name = QString(name.c_str());
+        QString subgraph_name, node_id;
+        auto graph_editor = zenoApp->getMainWindow()->editor();
+        node_id = QString(name.substr(0, name.find_first_of(':')).c_str());
+        auto search_result = pModel->search(node_id, SEARCH_NODEID);
+        auto subgraph_index = search_result[0].subgIdx;
+        subgraph_name = subgraph_index.data(ROLE_OBJNAME).toString();
+        graph_editor->activateTab(subgraph_name, "", node_id);
+    }
+    else
+        scene->selected.clear();
 }
 
 void CameraControl::setKeyFrame()
@@ -640,6 +679,12 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
 void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
+    update();
+}
+
+void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
+    _base::mouseReleaseEvent(event);
+    m_camera->fakeMouseDoubleClickEvent(event);
     update();
 }
 
