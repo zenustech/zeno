@@ -42,7 +42,7 @@ struct NumericEval : zeno::INode {
         auto code = get_input2<std::string>("zfxCode");
         auto type = get_input2<std::string>("resType");
         //需要将index属性添加进去
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+       // auto prim = get_input<zeno::PrimitiveObject>("prim");
 
         if (type == "string") { // 转发给 se
             auto res = getThisGraph()->callTempNode("StringEval",
@@ -59,6 +59,7 @@ struct NumericEval : zeno::INode {
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
+        /*
         prim->foreach_attr([&](auto const &key, auto const &attr) {
             //
             int dim = ([](auto const &v) {
@@ -75,6 +76,7 @@ struct NumericEval : zeno::INode {
             })(attr);
             opts.define_symbol('@' + key, dim);
         });
+         */
       //预处理@i这一个symbol
       //opts.define_symbol();
 //现在有一个问题就是NumericEval如果只接收一个std::string，那么用户输入zfx代码中包含$frame，我们如何设置这一个$DictObject的值

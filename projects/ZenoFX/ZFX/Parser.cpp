@@ -71,7 +71,9 @@ struct Parser {
                     ope->iter->c_str());
             }
         }
+
         //parse[]
+        /*
         if (auto ope = parse_operator(iter, {"["}); ope) {
             if(auto rhs = parse_expr(ope->iter); rhs) {
                 if (auto ket = parse_operator(rhs->iter,{"]"}); ket) {
@@ -85,7 +87,9 @@ struct Parser {
               error("expression expected after '[', got '%s'", ope->iter->c_str());
             }
         }
+         */
         return nullptr;
+
     }
 
     AST::Ptr parse_factor(AST::Iter iter) {
