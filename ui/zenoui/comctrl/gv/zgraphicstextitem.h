@@ -56,7 +56,8 @@ public:
     void setFixedWidth(qreal fixedWidth);
     void setHoverCursor(Qt::CursorShape cursor);
     bool isHovered() const;
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void updateBoundingRect();
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
     static QSizeF size(const QString& text, const QFont& font, int pleft, int pTop, int pRight, int pBottom);
 
@@ -69,8 +70,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 private:
-    static QRectF setupTextLayout(QTextLayout* layout, _padding padding, Qt::Alignment align = Qt::AlignLeft, int fixedWidth = -1);
-    void updateBoundingRect();
+    static QRectF setupTextLayout(QTextLayout* layout, _padding padding, Qt::Alignment align = Qt::AlignLeft, qreal fixedWidth = -1);
 
     QColor m_bg;
     QRectF m_boundingRect;
@@ -89,6 +89,7 @@ public:
     void setGeometry(const QRectF& rect) override;
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;

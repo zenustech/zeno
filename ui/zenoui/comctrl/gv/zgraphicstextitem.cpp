@@ -79,6 +79,7 @@ ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
     , m_alignment(Qt::AlignLeft)
 {
     setAcceptHoverEvents(true);
+    updateBoundingRect();
 }
 
 ZSimpleTextItem::~ZSimpleTextItem()
@@ -132,7 +133,7 @@ void ZSimpleTextItem::setFixedWidth(qreal fixedWidth)
     updateBoundingRect();
 }
 
-QRectF ZSimpleTextItem::setupTextLayout(QTextLayout* layout, _padding padding, Qt::Alignment align, int fixedWidth)
+QRectF ZSimpleTextItem::setupTextLayout(QTextLayout* layout, _padding padding, Qt::Alignment align, qreal fixedWidth)
 {
     layout->setCacheEnabled(true);
     layout->beginLayout();
@@ -143,13 +144,21 @@ QRectF ZSimpleTextItem::setupTextLayout(QTextLayout* layout, _padding padding, Q
     qreal y = 0;
     for (int i = 0; i < layout->lineCount(); ++i) {
         QTextLine line = layout->lineAt(i);
+        qreal wtf = line.width();
         maxWidth = qMax(maxWidth, line.naturalTextWidth() + padding.left + padding.right);
 
         qreal x = 0;
-        if (fixedWidth > 0 && align == Qt::AlignCenter)
+        qreal w = line.horizontalAdvance();
+        if (fixedWidth > 0)
         {
-            qreal w = line.horizontalAdvance();
-            x = (fixedWidth - w) / 2;
+            if (align == Qt::AlignCenter)
+            {
+                x = (fixedWidth - w) / 2;
+            }
+            else if (align == Qt::AlignRight)
+            {
+                x = (fixedWidth - w);
+            }
         }
         line.setPosition(QPointF(x, y + padding.top));
         y += line.height() + padding.top + padding.bottom;
@@ -257,7 +266,8 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
         layout.setFormats(QVector<QTextLayout::FormatRange>(1, range));
     }
 
-    setupTextLayout(&layout, m_padding, m_alignment, m_fixedWidth);
+    qreal w = boundingRect().width();
+    setupTextLayout(&layout, m_padding, m_alignment, m_fixedWidth == -1 ? w : m_fixedWidth);
 
     layout.draw(painter, QPointF(0, 0));
 }
@@ -267,7 +277,10 @@ ZSimpleTextLayoutItem::ZSimpleTextLayoutItem(const QString& text, QGraphicsItem*
     : QGraphicsLayoutItem()
     , ZSimpleTextItem(text, parent)
 {
-
+    setZValue(3);
+    setGraphicsItem(this);
+    setFlags(ItemSendsScenePositionChanges);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 
 void ZSimpleTextLayoutItem::setGeometry(const QRectF& rect)
@@ -279,7 +292,7 @@ void ZSimpleTextLayoutItem::setGeometry(const QRectF& rect)
 
 QRectF ZSimpleTextLayoutItem::boundingRect() const
 {
-    QRectF rc(QPointF(0, 0), geometry().size());
+    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
     return rc;
 }
 
@@ -288,6 +301,12 @@ QPainterPath ZSimpleTextLayoutItem::shape() const
     QPainterPath path;
     path.addRect(boundingRect());
     return path;
+}
+
+void ZSimpleTextLayoutItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    //painter->fillRect(boundingRect(), QColor(255, 0, 0));
+    ZSimpleTextItem::paint(painter, option, widget);
 }
 
 QSizeF ZSimpleTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const

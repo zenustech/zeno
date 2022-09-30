@@ -21,7 +21,7 @@ class ZenoNode : public QGraphicsWidget
     struct _socket_ctrl
     {
         ZenoSocketItem* socket;
-        ZenoTextLayoutItem* socket_text;
+        QGraphicsItem* socket_text;
         ZenoParamWidget* socket_control;
         QGraphicsLinearLayout* ctrl_layout;
 
@@ -35,7 +35,7 @@ class ZenoNode : public QGraphicsWidget
     };
     struct _param_ctrl
     {
-        ZenoTextLayoutItem* param_name;
+        ZSimpleTextLayoutItem* param_name;
         ZenoParamWidget* param_control;
         QGraphicsLinearLayout* ctrl_layout;
         _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
@@ -130,7 +130,7 @@ private:
     void _initSocketItemPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText);
+    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, QGraphicsItem* pSocketText);
     ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param);
     bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
     void updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET inSocket);

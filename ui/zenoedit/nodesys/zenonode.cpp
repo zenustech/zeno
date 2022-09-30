@@ -22,6 +22,7 @@
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
+#include <zenoui/comctrl/gv/zgraphicstextitem.h>
 
 
 static QString getOpenFileName(
@@ -380,7 +381,11 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 
     _param_ctrl paramCtrl;
     paramCtrl.ctrl_layout = new QGraphicsLinearLayout(Qt::Horizontal);
-    paramCtrl.param_name = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
+    auto textItem = new ZSimpleTextLayoutItem(paramName);
+    textItem->setBrush(m_renderParams.socketClr.color());
+    textItem->setFont(m_renderParams.socketFont);
+    textItem->updateBoundingRect();
+    paramCtrl.param_name = textItem;
     paramCtrl.ctrl_layout->addItem(paramCtrl.param_name);
 
 	switch (param.control)
@@ -782,11 +787,13 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             ZASSERT_EXIT(oldName != newName && it != m_inSockets.end(), false);
 
             _socket_ctrl ctrl = it->second;
-            ctrl.socket_text->setText(newName);
+            auto textItem = dynamic_cast<ZenoTextLayoutItem*>(ctrl.socket_text);
+            ZASSERT_EXIT(textItem, false);
+            textItem->setText(newName);
             ctrl.socket->updateSockName(newName);
 
             //have to reset the text format, which is trivial.
-            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
+            QTextFrame *frame = textItem->document()->rootFrame();
             QTextFrameFormat format = frame->frameFormat();
             format.setBackground(QColor(37, 37, 37));
             frame->setFrameFormat(format);
@@ -813,11 +820,13 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             ZASSERT_EXIT(oldName != newName, false);
 
             _socket_ctrl ctrl = m_outSockets[oldName];
-            ctrl.socket_text->setText(newName);
+            auto textItem = dynamic_cast<ZenoTextLayoutItem*>(ctrl.socket_text);
+            ZASSERT_EXIT(textItem, false);
+            textItem->setText(newName);
             ctrl.socket->updateSockName(newName);
 
             //have to reset the text format, which is trivial.
-            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
+            QTextFrame *frame = textItem->document()->rootFrame();
             QTextFrameFormat format = frame->frameFormat();
             format.setBackground(QColor(37, 37, 37));
             frame->setFrameFormat(format);
@@ -869,21 +878,33 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
-                ZenoTextLayoutItem* pSocketItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
-                pMiniLayout->addItem(pSocketItem);
+                _socket_ctrl socket_ctrl;
+                if (inSocket.info.control == CONTROL_DICTKEY)
+                {
+                    auto dictKeyItem = new ZenoTextLayoutItem(inSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
+                    pMiniLayout->addItem(dictKeyItem);
+                    socket_ctrl.socket_text = dictKeyItem;
+                }
+                else
+                {
+                    auto pSocketItem = new ZSimpleTextLayoutItem(inSock);
+                    pSocketItem->setBrush(m_renderParams.socketClr.color());
+                    pSocketItem->setFont(m_renderParams.socketFont);
+                    pSocketItem->updateBoundingRect();  //todo: integrade into setFont...
+                    pMiniLayout->addItem(pSocketItem);
+                    socket_ctrl.socket_text = pSocketItem;
+                }
 
                 const QString &sockType = inSocket.info.type;
                 PARAM_CONTROL ctrl = inSocket.info.control;
 
-                ZenoParamWidget* pSocketControl = initSocketWidget(pScene, inSocket, pSocketItem);
+                ZenoParamWidget* pSocketControl = initSocketWidget(pScene, inSocket, socket_ctrl.socket_text);
                 if (pSocketControl) {
                     pMiniLayout->addItem(pSocketControl);
                     pSocketControl->setVisible(inSocket.linkIndice.isEmpty());
                 }
 
-                _socket_ctrl socket_ctrl;
                 socket_ctrl.socket = socket;
-                socket_ctrl.socket_text = pSocketItem;
                 socket_ctrl.socket_control = pSocketControl;
                 socket_ctrl.ctrl_layout = pMiniLayout;
 
@@ -912,7 +933,6 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
             if (inputs.find(name) == inputs.end())
             {
                 const _socket_ctrl &sock = m_inSockets[name];
-                //auto socketlayout = sock.socket_text->parentLayoutItem();
                 m_pInSocketsLayout->removeItem(sock.ctrl_layout);
                 delete sock.socket;
                 delete sock.socket_text;
@@ -936,8 +956,6 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(outSock, false, m_index, m_renderParams.socket, m_renderParams.szSocket, this);
                 sock.socket->updateSockName(outSock);
-                sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
-                sock.socket_text->setRight(true);
                 connect(sock.socket, &ZenoSocketItem::clicked, this, [=]() {
                     QString sockName;
                     QPointF sockPos;
@@ -948,17 +966,27 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
                     emit socketClicked(nodeid, bInput, sockName, sockPos, linkIdx);
                 });
 
-                if (outSocket.info.control == CONTROL_DICTKEY)
+                if (outSocket.info.control != CONTROL_DICTKEY)
                 {
-                    sock.socket_text->setTextInteractionFlags(Qt::TextEditorInteraction);
+                    auto textItem = new ZSimpleTextLayoutItem(outSock);
+                    textItem->setBrush(m_renderParams.socketClr.color());
+                    textItem->setFont(m_renderParams.socketFont);
+                    textItem->updateBoundingRect();  //todo: integrade into setFont...
+                    textItem->setAlignment(Qt::AlignRight);
+                    sock.socket_text = textItem;
+                }
+                else
+                {
+                    auto textItem = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
+                    textItem->setTextInteractionFlags(Qt::TextEditorInteraction);
 
-                    QTextFrame *frame = sock.socket_text->document()->rootFrame();
+                    QTextFrame* frame = textItem->document()->rootFrame();
                     QTextFrameFormat format = frame->frameFormat();
                     format.setBackground(QColor(37, 37, 37));
                     frame->setFrameFormat(format);
 
-                    connect(sock.socket_text, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
-                        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                    connect(textItem, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
+                        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                         ZASSERT_EXIT(pGraphsModel);
                         SOCKET_UPDATE_INFO info;
                         info.bInput = false;
@@ -968,18 +996,21 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
                         bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info, m_subGpIndex, true);
                         if (!ret) {
                             //todo: error hint.
-                            sock.socket_text->blockSignals(true);
-                            sock.socket_text->setText(oldText);
-                            sock.socket_text->blockSignals(false);
+                            textItem->blockSignals(true);
+                            textItem->setText(oldText);
+                            textItem->blockSignals(false);
                         }
-                    });
+                        });
+                    sock.socket_text = textItem;
                     sock.socket_control = nullptr;
                 }
 
                 m_outSockets[outSock] = sock;
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-                pMiniLayout->addItem(sock.socket_text);
+                QGraphicsLayoutItem* pLayoutText = dynamic_cast<QGraphicsLayoutItem*>(sock.socket_text);
+                ZASSERT_EXIT(pLayoutText);
+                pMiniLayout->addItem(pLayoutText);
 
 				if (!bInit && pModel->IsSubGraphNode(m_index))
 				{
@@ -1002,7 +1033,9 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
             {
                 const _socket_ctrl &sock = m_outSockets[name];
                 //ugly...
-                auto socketlayout = sock.socket_text->parentLayoutItem();
+                QGraphicsLayoutItem* pLayoutText = dynamic_cast<QGraphicsLayoutItem*>(sock.socket_text);
+                ZASSERT_EXIT(pLayoutText);
+                auto socketlayout = pLayoutText->parentLayoutItem();
                 m_pOutSocketsLayout->removeItem(socketlayout);
                 delete sock.socket;
                 delete sock.socket_text;
@@ -1013,7 +1046,7 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
     }
 }
 
-ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText)
+ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, QGraphicsItem* pSocketText)
 {
     const QString& nodeid = nodeId();
     const QString& inSock = inSocket.info.name;
@@ -1131,14 +1164,15 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
         }
         case CONTROL_DICTKEY:
         {
-            pSocketText->setTextInteractionFlags(Qt::TextEditorInteraction);
+            ZenoTextLayoutItem* pSocketEdit = static_cast<ZenoTextLayoutItem*>(pSocketText);
+            pSocketEdit->setTextInteractionFlags(Qt::TextEditorInteraction);
 
-            QTextFrame *frame = pSocketText->document()->rootFrame();
+            QTextFrame *frame = pSocketEdit->document()->rootFrame();
             QTextFrameFormat format = frame->frameFormat();
             format.setBackground(QColor(37, 37, 37));
             frame->setFrameFormat(format);
 
-            connect(pSocketText, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
+            connect(pSocketEdit, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
                 IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
                 SOCKET_UPDATE_INFO info;
@@ -1152,9 +1186,9 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                                                                  m_subGpIndex, true);
                 if (!ret) {
                     //todo: error hint.
-                    pSocketText->blockSignals(true);
-                    pSocketText->setText(oldText);
-                    pSocketText->blockSignals(false);
+                    pSocketEdit->blockSignals(true);
+                    pSocketEdit->setText(oldText);
+                    pSocketEdit->blockSignals(false);
                 }
             });
             return nullptr; //no control expect key editor.
