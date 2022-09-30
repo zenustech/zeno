@@ -56,6 +56,3 @@ target_sources(zeno PRIVATE
   wrangle/PPW.cu
 )
 
-target_sources(zeno PRIVATE
-  test1.cu
-)

@@ -177,7 +177,7 @@ struct ZSParticlesWrangler : zeno::INode {
                 auto [name, dimid] = prog->symbols[i];
 #if 0
         fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i,
-                   name.c_str(), dimid, pars.getChannelOffset(name.substr(1)),
+                   name.c_str(), dimid, pars.getPropertyOffset(name.substr(1)),
                    pars.numChannels());
 #endif
                 haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
@@ -185,7 +185,7 @@ struct ZSParticlesWrangler : zeno::INode {
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)pars.numChannels(),
-                                                  (unsigned short)(pars.getChannelOffset(name.substr(1)) + dimid),
+                                                  (unsigned short)(pars.getPropertyOffset(name.substr(1)) + dimid),
                                                   (unsigned short)0};
 
 #if 0

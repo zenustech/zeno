@@ -209,11 +209,11 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)curPars.numChannels(),
-                                                  (unsigned short)(curPars.getChannelOffset(name) + dimid),
+                                                  (unsigned short)(curPars.getPropertyOffset(name) + dimid),
                                                   aux};
 #if 0
                 fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i, name.c_str(), dimid,
-                           curPars.getChannelOffset(name), curPars.numChannels());
+                           curPars.getPropertyOffset(name), curPars.numChannels());
 #endif
             }
             auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
