@@ -1,6 +1,8 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include <Eigen/Eigen>
+
+using Matrix4r = Eigen::Matrix<float, 4, 4>;
 namespace zeno {
 struct PBDCloth : zeno::INode {
 private:
@@ -15,6 +17,7 @@ private:
     std::vector<float> restVol;
     std::vector<float> invMass;
     std::vector<float> restAngle;
+    std::vector<Matrix4r> stiffMatrix{0.0};
 
     std::vector<zeno::vec3f> prevPos;
     std::vector<zeno::vec3f> vel;
@@ -74,6 +77,7 @@ private:
         restLen.resize(prim->lines.size());
         restVol.resize(prim->quads.size());
         invMass.resize(prim->verts.size());
+        stiffMatrix.resize(prim->lines.size());
 
         initRestLenAndRestAngle(prim);
         initInvMass(prim);
@@ -128,24 +132,26 @@ private:
     void solveBendingConstraint(
         zeno::AttrVector<zeno::vec3f> &pos,
         const zeno::AttrVector<zeno::vec4i> &tet,
-        const std::vector<Eigen::Matrix4r> &stiffMatrix
+        const std::vector<Matrix4r> &stiffMatrix,
+        const float bendingCompliance,
+        const float dt
         )
     {
-        float alpha = BendingCompliance / dt / dt;
+        float alpha = bendingCompliance / dt / dt;
         float lambda = 0.0;
 
-        for (int i = 0; i < numTets; i++)
+        for (int i = 0; i < tet.size(); i++)
         {
             vec4i id{-1,-1,-1,-1};
             for (int j = 0; j < 4; j++)
                 id[j] = tet[i][j];
             
             vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
-            Eigen::Matrix4r &Q = stiffMatrix[i];
+            Matrix4r Q = stiffMatrix[i];
 
             for (int k = 0; k < 4; k++)
 		        for (int j = 0; j < 4; j++)
-			        grad[j] += Q(j,k) * *pos[id[k]];
+			        grad[j] += Q(j,k) * pos[id[k]];
 
             float w = 0.0;
             for (int j = 0; j < 4; j++)
@@ -154,7 +160,7 @@ private:
             float energy = 0.0;
             for (int k = 0; k < 4; k++)
                 for (int j = 0; j < 4; j++)
-                    energy += Q(j, k) * (x[k]->dot(*x[j]));
+                    energy += Q(j, k) * (dot(pos[id[k]],pos[id[j]]));
             energy *= 0.5;
 
 
@@ -162,12 +168,12 @@ private:
             const float s = -(energy + alpha * lambda) / (w + alpha);
             lambda += s;
 
-            vec4f dpos;
+            vec3f dpos[4];
             //注意对应关系0对2, 1对3...
-            dpos[0] = (s * invMass[2]) * grad[2];
-            dpos[1] = (s * invMass[3]) * grad[3];
-            dpos[2] = (s * invMass[0]) * grad[0];
-            dpos[3] = (s * invMass[1]) * grad[1];
+            dpos[0] = (s * invMass[id[2]]) * grad[2];
+            dpos[1] = (s * invMass[id[3]]) * grad[3];
+            dpos[2] = (s * invMass[id[0]]) * grad[0];
+            dpos[3] = (s * invMass[id[1]]) * grad[1];
             
             for (int j = 0; j < 4; j++)
                 pos[id[j]] += dpos[j];
@@ -191,7 +197,7 @@ public:
 
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
-        volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
+        auto bendingCompliance = get_input<zeno::NumericObject>("bendingCompliance")->get<float>();
 
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
@@ -212,7 +218,7 @@ public:
             {
                 preSolve(pos, prevPos, vel);
                 solveDistanceConstraint(pos, edge);
-                solveBendingConstraint(pos, tet);
+                solveBendingConstraint(pos, tet, stiffMatrix, bendingCompliance, dt);
                 postSolve(pos, prevPos, vel);
             }
         }
@@ -227,7 +233,7 @@ ZENDEFNODE(PBDCloth, {// inputs:
                     {"vec3f", "externForce", "0.0, -10.0, 0.0"},
                     {"int", "numSubsteps", "10"},
                     {"float", "edgeCompliance", "100.0"},
-                    {"float", "volumeCompliance", "0.0"}
+                    {"float", "bendingCompliance", "100.0"}
                 },
                  // outputs:
                  {"outPrim"},
