@@ -71,20 +71,6 @@ struct Parser {
                     ope->iter->c_str());
             }
         }
-        //parse[]
-        if (auto ope = parse_operator(iter, {"["}); ope) {
-            if(auto rhs = parse_expr(ope->iter); rhs) {
-                if (auto ket = parse_operator(rhs->iter,{"]"}); ket) {
-                    rhs->iter = ket->iter;
-                    return rhs;
-                } else {
-                    error("']' expected to match the '[', got '%s'",
-                          rhs->iter->c_str());
-                }
-            } else {
-              error("expression expected after '[', got '%s'", ope->iter->c_str());
-            }
-        }
         return nullptr;
     }
 
