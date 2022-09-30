@@ -188,18 +188,16 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
 
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = proceduralSky(
-            normalize(prd->direction), 
-            sunLightDir, 
-            make_float3(0., 0., 1.), 
+        prd->radiance = envSky(
+            normalize(prd->direction),
+            sunLightDir,
+            make_float3(0., 0., 1.),
             40, // be careful
             .45,
             15.,
             1.030725 * 0.3,
             params.elapsedTime
         );
-
-        //prd->radiance = vec3(0,0,0);
         prd->done      = true;
         return;
     }

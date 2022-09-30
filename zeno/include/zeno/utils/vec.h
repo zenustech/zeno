@@ -33,6 +33,8 @@ struct vec : std::array<T, N> {
     }
   }
 
+/*
+  // will not be called for implicit or explicit conversion
   operator std::array<T, N>() const {
     std::array<T, N> res;
     for (size_t i = 0; i < N; i++) {
@@ -40,6 +42,7 @@ struct vec : std::array<T, N> {
     }
     return res;
   }
+*/
 
   template <class S>
   explicit vec(vec<N, S> const &x) {

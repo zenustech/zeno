@@ -19,6 +19,8 @@
 #endif
 #include <zeno/utils/scope_exit.h>
 #include "corelaunch.h"
+#include "viewdecode.h"
+#include "settings/zsettings.h"
 
 namespace {
 
@@ -100,6 +102,8 @@ static int runner_start(std::string const &progJson, int sessionid) {
     if (session->globalStatus->failed())
         return onfail();
 
+    bool bZenCache = initZenCache();
+
     std::vector<char> buffer;
 
     session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
@@ -128,17 +132,21 @@ static int runner_start(std::string const &progJson, int sessionid) {
         }
         session->globalComm->finishFrame();
 
-        auto const &viewObjs = session->globalComm->getViewObjects();
-        zeno::log_debug("runner got {} view objects", viewObjs.size());
         zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
-        for (auto const &[key, obj]: viewObjs) {
-            if (zeno::encodeObject(obj.get(), buffer))
-                send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
+        if (bZenCache) {
+            session->globalComm->dumpFrameCache(frame);
+        } else {
+            auto const& viewObjs = session->globalComm->getViewObjects();
+            zeno::log_debug("runner got {} view objects", viewObjs.size());
+            for (auto const& [key, obj] : viewObjs) {
+                if (zeno::encodeObject(obj.get(), buffer))
+                    send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
                         buffer.data(), buffer.size());
-            buffer.clear();
+                buffer.clear();
+            }
         }
 
         send_packet("{\"action\":\"finishFrame\"}", "", 0);

@@ -32,10 +32,11 @@ struct GlobalComm {
     ZENO_API void frameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
+    ZENO_API void dumpFrameCache(int frameid);
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API void clearState();
-    ZENO_API ViewObjects const *getViewObjects(int frameid);
+    ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
 };

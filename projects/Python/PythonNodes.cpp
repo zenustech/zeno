@@ -9,6 +9,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/utils/zeno_p.h>
+#include <zeno/utils/string.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
@@ -30,6 +31,7 @@ static std::wstring s2ws(std::string const &s) {
     return ws;
 }
 
+
 static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     log_debug("Initializing Python...");
     Py_SetPythonHome(s2ws(getAssetDir(ZENO_PYTHON_LIB_DIR, "..")).c_str());
@@ -42,6 +44,9 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
 #endif
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
+#ifdef _WIN32
+    libpath = replace_all(libpath, "\\", "\\\\");
+#endif
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str()) < 0) {
         log_warn("Failed to initialize Python module");

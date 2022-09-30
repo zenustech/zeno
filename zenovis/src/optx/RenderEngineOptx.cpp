@@ -150,6 +150,11 @@ struct GraphicsManager {
             {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 if(isRealTimeObject == 0){
+                    if (prim_in->quads.size() || prim_in->polys.size()) {
+                        zeno::log_trace("demoting faces");
+                        zeno::primTriangulateQuads(prim_in);
+                        zeno::primTriangulate(prim_in);
+                    }
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -284,6 +289,14 @@ struct GraphicsManager {
                 float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
                 xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+            }
+            else if (prim_in->userData().has<std::string>("HDRSky")) {
+                auto path = prim_in->userData().get2<std::string>("HDRSky");
+                float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                OptixUtil::sky_tex = path;
+                OptixUtil::addTexture(path);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
             }
         }
         return sky_found;
