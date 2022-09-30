@@ -1,11 +1,10 @@
-#include <iostream>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 namespace zeno {
-struct PBD : zeno::INode {
+struct PBDSoftBody : zeno::INode {
 private:
     //physical param
-    zeno::vec3f g{0, -10.0, 0};
+    zeno::vec3f externForce{0, -10.0, 0};
     int numSubsteps = 10;
     float dt = 1.0 / 60.0 / numSubsteps;
     float edgeCompliance = 100.0;
@@ -35,7 +34,7 @@ private:
         return res;
     }
 
-    void init_physics(PrimitiveObject *prim) 
+    void initRestLenAndRestVolume(PrimitiveObject *prim) 
     {
         auto &pos = prim->verts;
         auto &edge = prim->lines;
@@ -46,7 +45,7 @@ private:
             restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
     }
 
-    void init_invMass(PrimitiveObject *prim) 
+    void initInvMass(PrimitiveObject *prim) 
     {
         auto &pos = prim->verts;
         auto &edge = prim->lines;
@@ -69,8 +68,8 @@ private:
         restVol.resize(prim->quads.size());
         invMass.resize(prim->verts.size());
 
-        init_physics(prim);
-        init_invMass(prim);
+        initRestLenAndRestVolume(prim);
+        initInvMass(prim);
 
         numParticles = prim->verts.size();
         numEdges = prim->lines.size();
@@ -88,7 +87,7 @@ private:
         for (int i = 0; i < pos.size(); i++) 
         {
             prevPos[i] = pos[i];
-            vel[i] += g * dt;
+            vel[i] += (externForce) * dt;
             pos[i] += vel[i] * dt;
             if (pos[i][1] < 0.0) 
             {
@@ -98,32 +97,32 @@ private:
         }
     }
 
-    void solveEdge( zeno::AttrVector<zeno::vec3f> &pos,
+    void solveDistanceConstraint( zeno::AttrVector<zeno::vec3f> &pos,
                     const zeno::AttrVector<zeno::vec2i> &edge)
     {
         float alpha = edgeCompliance / dt / dt;
-        zeno::vec3f grads{0, 0, 0};
+        zeno::vec3f grad{0, 0, 0};
         for (int i = 0; i < numEdges; i++) 
         {
             int id0 = edge[i][0];
             int id1 = edge[i][1];
 
-            grads = pos[id0] - pos[id1];
-            float Len = length(grads);
-            grads /= Len;
+            grad = pos[id0] - pos[id1];
+            float Len = length(grad);
+            grad /= Len;
             float C = Len - restLen[i];
             float w = invMass[id0] + invMass[id1];
             float s = -C / (w + alpha);
 
-            pos[id0] += grads *   s * invMass[id0];
-            pos[id1] += grads * (-s * invMass[id1]);
+            pos[id0] += grad *   s * invMass[id0];
+            pos[id1] += grad * (-s * invMass[id1]);
         }
     }
-    void solveVolume(zeno::AttrVector<zeno::vec3f> &pos,
+    void solveVolumeConstraint(zeno::AttrVector<zeno::vec3f> &pos,
                     const zeno::AttrVector<zeno::vec4i> &tet)
     {
         float alphaVol = volumeCompliance / dt / dt;
-        vec3f gradsVol[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
+        vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
 
         for (int i = 0; i < numTets; i++)
         {
@@ -132,21 +131,21 @@ private:
             for (int j = 0; j < 4; j++)
                 id[j] = tet[i][j];
             
-            gradsVol[0] = cross((pos[id[3]] - pos[id[1]]), (pos[id[2]] - pos[id[1]]));
-            gradsVol[1] = cross((pos[id[2]] - pos[id[0]]), (pos[id[3]] - pos[id[0]]));
-            gradsVol[2] = cross((pos[id[3]] - pos[id[0]]), (pos[id[1]] - pos[id[0]]));
-            gradsVol[3] = cross((pos[id[1]] - pos[id[0]]), (pos[id[2]] - pos[id[0]]));
+            grad[0] = cross((pos[id[3]] - pos[id[1]]), (pos[id[2]] - pos[id[1]]));
+            grad[1] = cross((pos[id[2]] - pos[id[0]]), (pos[id[3]] - pos[id[0]]));
+            grad[2] = cross((pos[id[3]] - pos[id[0]]), (pos[id[1]] - pos[id[0]]));
+            grad[3] = cross((pos[id[1]] - pos[id[0]]), (pos[id[2]] - pos[id[0]]));
 
             float w = 0.0;
             for (int j = 0; j < 4; j++)
-                w += invMass[id[j]] * (length(gradsVol[j])) * (length(gradsVol[j])) ;
+                w += invMass[id[j]] * (length(grad[j])) * (length(grad[j])) ;
 
             float vol = tetVolume(pos, tet, i);
             float C = (vol - restVol[i]) * 6.0;
             float s = -C /(w + alphaVol);
             
             for (int j = 0; j < 4; j++)
-                pos[tet[i][j]] += gradsVol[j] * s * invMass[id[j]];
+                pos[tet[i][j]] += grad[j] * s * invMass[id[j]];
         }
     }
 
@@ -163,9 +162,7 @@ public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto external_force = get_input<zeno::NumericObject>("external_force")->get<zeno::vec3f>();
-
-        g = external_force;
+        externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
 
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
@@ -189,8 +186,8 @@ public:
             for (int steps = 0; steps < numSubsteps; steps++) 
             {
                 preSolve(pos, prevPos, vel);
-                solveEdge(pos, edge);
-                solveVolume(pos, tet);
+                solveDistanceConstraint(pos, edge);
+                solveVolumeConstraint(pos, tet);
                 postSolve(pos, prevPos, vel);
             }
         }
@@ -199,10 +196,10 @@ public:
     };
 };
 
-ZENDEFNODE(PBD, {// inputs:
+ZENDEFNODE(PBDSoftBody, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"vec3f", "external_force", "0.0, -10.0, 0.0"},
+                    {"vec3f", "externForce", "0.0, -10.0, 0.0"},
                     {"int", "numSubsteps", "10"},
                     {"float", "edgeCompliance", "100.0"},
                     {"float", "volumeCompliance", "0.0"}
