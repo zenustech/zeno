@@ -6,6 +6,7 @@
 class IGraphsModel;
 
 void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame);
+bool initZenCache();
 void killProgram();
 
 #endif

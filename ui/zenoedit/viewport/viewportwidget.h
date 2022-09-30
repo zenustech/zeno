@@ -135,7 +135,7 @@ public:
     void init();
     QSize sizeHint() const override;
     TIMELINE_INFO timelineInfo();
-    void setTimelineInfo(TIMELINE_INFO info);
+    void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
 
 public slots:
