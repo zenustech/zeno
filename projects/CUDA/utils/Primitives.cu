@@ -40,7 +40,7 @@ template <typename T, typename Op> __forceinline__ __device__ void reduce_to(int
 }
 
 template <typename TransOp, typename ReduceOp>
-static float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp top, ReduceOp rop,
+float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp top, ReduceOp rop,
                          std::string attrToReduce) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -71,12 +71,14 @@ static float prim_reduce(typename ZenoParticles::particles_t &verts, float e, Tr
 
 struct ZSPrimitiveReduction : zeno::INode {
     struct pass_on {
-        constexpr auto operator()(auto v) const noexcept {
+        template <typename T>
+        constexpr T operator()(T v) const noexcept {
             return v;
         }
     };
     struct getabs {
-        constexpr auto operator()(auto v) const noexcept {
+        template <typename T>
+        constexpr T operator()(T v) const noexcept {
             return zs::abs(v);
         }
     };
