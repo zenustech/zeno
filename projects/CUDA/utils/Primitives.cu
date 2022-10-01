@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <zeno/types/DummyObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/parallel_reduce.h>
@@ -41,7 +42,7 @@ template <typename T, typename Op> __forceinline__ __device__ void reduce_to(int
 
 template <typename TransOp, typename ReduceOp>
 float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp top, ReduceOp rop,
-                         std::string attrToReduce) {
+                  std::string attrToReduce) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     using T = typename ZenoParticles::particles_t::value_type;
@@ -71,14 +72,12 @@ float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp t
 
 struct ZSPrimitiveReduction : zeno::INode {
     struct pass_on {
-        template <typename T>
-        constexpr T operator()(T v) const noexcept {
+        template <typename T> constexpr T operator()(T v) const noexcept {
             return v;
         }
     };
     struct getabs {
-        template <typename T>
-        constexpr T operator()(T v) const noexcept {
+        template <typename T> constexpr T operator()(T v) const noexcept {
             return zs::abs(v);
         }
     };
@@ -128,5 +127,23 @@ ZENDEFNODE(ZSPrimitiveReduction, {/* inputs: */ {
                                   {
                                       "primitive",
                                   }});
+
+struct ZSGetUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<ZenoParticles>("object");
+        auto key = get_param<std::string>("key");
+        auto hasValue = object->userData().has(key);
+        auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+        set_output2("hasValue", hasValue);
+        set_output("data", std::move(data));
+    }
+};
+
+ZENDEFNODE(ZSGetUserData, {
+                              {"object"},
+                              {"data", {"bool", "hasValue"}},
+                              {{"string", "key", ""}},
+                              {"lifecycle"},
+                          });
 
 } // namespace zeno
