@@ -18,17 +18,10 @@
 #include "zensim/physics/plasticity_models/NonAssociativeVonMises.hpp"
 #include "zensim/resource/Resource.h"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
-
-struct ZpcInitializer {
-  ZpcInitializer() {
-    printf("Initializing Zpc resource\n");
-    (void)zs::Resource::instance();
-    printf("Initialized Zpc resource!\n");
-  }
-};
 
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
@@ -124,6 +117,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   using dtiles_t = zs::TileVector<zs::f64, 32>;
   using lbvh_t = zs::LBvh<3>;
 
+  static constexpr auto s_userDataTag = "userdata";
   static constexpr auto s_particleTag = "particles";
   static constexpr auto s_elementTag = "elements";
   static constexpr auto s_edgeTag = "edges";
@@ -252,6 +246,16 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   template <typename T = float>
   decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
     return std::any_cast<T>(metas.at(tag));
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  const UserData &userData() const {
+    return readMeta(s_userDataTag, zs::wrapt<const UserData &>{});
+  }
+  UserData &userData() {
+    return readMeta(s_userDataTag, zs::wrapt<UserData &>{});
   }
   bool hasBvh(const std::string &tag) const {
     // return auxSpatialData.find(tag) != auxSpatialData.end();
