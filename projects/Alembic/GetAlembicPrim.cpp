@@ -128,7 +128,7 @@ get_xformed_prims(
 struct GetAlembicPrim : INode {
     virtual void apply() override {
         auto abctree = get_input<ABCTree>("abctree");
-        int index = get_input<NumericObject>("index")->get<int>();
+        int index = get_input<>("index")->get<int>();
         int use_xform = get_input<NumericObject>("use_xform")->get<int>();
         std::shared_ptr<PrimitiveObject> prim;
         if (use_xform) {
