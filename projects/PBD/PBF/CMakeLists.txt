@@ -1,1 +1,1 @@
-target_sources(zeno PRIVATE PBF.cpp initCube.cpp)
+target_sources(zeno PRIVATE PBF.cpp testPBFCube.cpp)

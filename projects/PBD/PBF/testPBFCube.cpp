@@ -4,7 +4,11 @@
 #include <zeno/types/PrimitiveObject.h>
 using namespace zeno;
 
-struct initCube : INode{
+/**
+ * @brief this node just for test, do not use!
+ * 
+ */
+struct testPBFCube : INode{
     std::vector<vec3f> pos;
     std::shared_ptr<zeno::PrimitiveObject> prim;
     void initCubeData()
@@ -33,7 +37,7 @@ struct initCube : INode{
     }
 };
 
-ZENDEFNODE(initCube, {
+ZENDEFNODE(testPBFCube, {
     {},
     {"outPrim"},
     {},
