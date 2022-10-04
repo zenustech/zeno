@@ -102,8 +102,8 @@ public:
 
         auto &pos = prim->verts;
         auto &quads = prim->quads;
-        auto &invMass = prim->attr<float>("invMass");
-        auto &restAng = prim->attr<float>("restAng");
+        auto &invMass = prim->verts.attr<float>("invMass");
+        auto &restAng = prim->quads.attr<float>("restAng");
 
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();

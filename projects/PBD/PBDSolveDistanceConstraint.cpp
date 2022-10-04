@@ -10,7 +10,7 @@ private:
      * @param edge 边连接关系
      * @param invMass 点质量的倒数
      * @param restLen 边的原长
-     * @param edgeCompliance 柔度（越小约束越强，最小为0）
+     * @param disntanceCompliance 柔度（越小约束越强，最小为0）
      * @param dt 时间步长
      */
     void solveDistanceConstraint( 
@@ -18,11 +18,11 @@ private:
         const zeno::AttrVector<zeno::vec2i> &edge,
         const std::vector<float> & invMass,
         const std::vector<float> & restLen,
-        const float edgeCompliance,
+        const float disntanceCompliance,
         const float dt
         )
     {
-        float alpha = edgeCompliance / dt / dt;
+        float alpha = disntanceCompliance / dt / dt;
         zeno::vec3f grad{0, 0, 0};
         for (int i = 0; i < edge.size(); i++) 
         {
@@ -47,16 +47,16 @@ public:
         //get data
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
+        auto disntanceCompliance = get_input<zeno::NumericObject>("disntanceCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
 
         auto &pos = prim->verts;
         auto &edge = prim->lines;
-        auto &restLen = prim->attr<float>("restLen");
-        auto &invMass = prim->attr<float>("invMass");
+        auto &restLen = prim->lines.attr<float>("restLen");
+        auto &invMass = prim->verts.attr<float>("invMass");
 
         //solve distance constraint
-        solveDistanceConstraint(pos, edge, invMass, restLen, edgeCompliance, dt);
+        solveDistanceConstraint(pos, edge, invMass, restLen, disntanceCompliance, dt);
 
         //output
         set_output("outPrim", std::move(prim));
@@ -66,7 +66,7 @@ public:
 ZENDEFNODE(PBDSolveDistanceConstraint, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"float", "edgeCompliance", "100.0"},
+                    {"float", "disntanceCompliance", "100.0"},
                     {"float", "dt", "0.0016667"}
                 },
                  // outputs:

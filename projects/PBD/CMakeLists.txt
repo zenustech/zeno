@@ -4,6 +4,8 @@ PBDSolveDistanceConstraint.cpp
 PBDSolveVolumeConstraint.cpp
 PBDSoftBodyInit.cpp
 PBDPostSolve.cpp
+PBDPreSolve.cpp
+PBDCollision.cpp
 )
 add_subdirectory(PBDCloth)
 add_subdirectory(PBF)
