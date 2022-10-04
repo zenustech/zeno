@@ -8,7 +8,7 @@ using namespace zeno;
 
 /**
  * @brief this node just for test, do not use in production!
- * 
+ * 不要使用这个节点！只是用来debug的。在git push的时候会删除。如果没删除就是我忘了。
  */
 struct testCloth : zeno::INode
 {
