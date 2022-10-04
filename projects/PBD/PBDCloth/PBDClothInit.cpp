@@ -9,7 +9,6 @@ private:
     std::vector<float> restLen;
     std::vector<float> invMass;
     std::vector<float> restAng;
-    std::vector<Matrix4r> stiffMatrix{0.0};
 
     int numParticles;
 
@@ -66,9 +65,9 @@ private:
 
     void init(PrimitiveObject *prim, float areaDensity)
     {
-        restLen.resize(prim->lines.size());
         invMass.resize(prim->verts.size());
-        stiffMatrix.resize(prim->lines.size());
+        restLen.resize(prim->lines.size());
+        restAng.resize(prim->quads.size());
 
         initRestLen(prim);
         initRestAng(prim);
