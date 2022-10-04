@@ -1,8 +1,5 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
-#include <Eigen/Eigen>
-
-using Matrix4r = Eigen::Matrix<float, 4, 4>;
 namespace zeno {
 struct PBDCloth : zeno::INode {
 private:
@@ -11,85 +8,41 @@ private:
     int numSubsteps = 10;
     float dt = 1.0 / 60.0 / numSubsteps;
     float edgeCompliance = 100.0;
-    float volumeCompliance = 0.0;
+    float dihedralCompliance = 1.0;
 
     std::vector<float> restLen;
     std::vector<float> restVol;
     std::vector<float> invMass;
-    std::vector<float> restAngle;
-    std::vector<Matrix4r> stiffMatrix{0.0};
+    std::vector<float> restAng;
 
     std::vector<zeno::vec3f> prevPos;
     std::vector<zeno::vec3f> vel;
 
     int numParticles;
-    int numEdges;
-    int numTets;
-    int numSurfs;
 
-    float computeAngle( zeno::AttrVector<zeno::vec3f> &pos,
-                        const zeno::AttrVector<zeno::vec4i> &tet,
-                        int i)
+    float computeAng(   const vec3f & p0,
+                        const vec3f & p1,
+                        const vec3f & p2,
+                        const vec3f & p3)
     {
-        auto id = vec4i(-1, -1, -1, -1);
-        for (int j = 0; j < 4; j++)
-            id[j] = tet[i][j];
+        return acos(computeFaceNormalDot(p0,p1,p2,p3));
+    }
 
-        auto first = cross((pos[id[1]] - pos[id[0]]), (pos[id[2]] - pos[id[0]]));
-        first = first / length(first) ;
-        auto second = cross((pos[id[1]] - pos[id[0]]), (pos[id[3]] - pos[id[0]]));
-        second = second / length(second) ;
-        auto res = dot(first, second);
+    float computeFaceNormalDot( const vec3f & p0,
+                                const vec3f & p1,
+                                const vec3f & p2,
+                                const vec3f & p3)
+    {
+        auto n1 = cross((p1 - p0), (p2 - p0));
+        n1 = n1 / length(n1);
+        auto n2 = cross((p1 - p0), (p3 - p0));
+        n2 = n2 / length(n2) ;
+        auto res = dot(n1, n2);
+        if(res<-1.0) res = -1.0;
+        if(res>1.0)  res = 1.0;
         return res;
     }
 
-    void initRestLenAndRestAngle(PrimitiveObject *prim) 
-    {
-        auto &pos = prim->verts;
-        auto &edge = prim->lines;
-        auto &tet = prim->quads;
-        auto &tris = prim->tris;
-        for(int i = 0; i < tris.size(); i++)
-            restAngle[i] = computeAngle(pos, tet, i);
-        for(int i = 0; i < edge.size(); i++)
-            restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
-    }
-
-    void initInvMass(PrimitiveObject *prim) 
-    {
-        auto &pos = prim->verts;
-        auto &edge = prim->lines;
-        auto &tet = prim->quads;
-
-        for(int i = 0; i < tet.size(); i++)
-        {
-            float pInvMass = 0.0;
-            if (restVol[i] > 0.0)
-                pInvMass = 1.0 / (restVol[i] / 3.0);
-            for (int j = 0; j < 4; j++)
-                invMass[tet[i][j]] += pInvMass;
-        }
-    }
-
-
-    void initGeo(PrimitiveObject *prim)
-    {
-        restLen.resize(prim->lines.size());
-        restVol.resize(prim->quads.size());
-        invMass.resize(prim->verts.size());
-        stiffMatrix.resize(prim->lines.size());
-
-        initRestLenAndRestAngle(prim);
-        initInvMass(prim);
-
-        numParticles = prim->verts.size();
-        numEdges = prim->lines.size();
-        numTets = prim->quads.size();
-        numSurfs = prim->tris.size();
-
-        prevPos.resize(numParticles);
-        vel.resize(numParticles);
-    }
 
     void preSolve(  zeno::AttrVector<zeno::vec3f> &pos,
                     std::vector<zeno::vec3f> &prevPos,
@@ -108,12 +61,28 @@ private:
         }
     }
 
-    void solveDistanceConstraint( zeno::AttrVector<zeno::vec3f> &pos,
-                    const zeno::AttrVector<zeno::vec2i> &edge)
+    /**
+     * @brief 求解PBD所有边约束（也叫距离约束）。目前采用Gauss-Seidel方式（难以并行）。
+     * 
+     * @param pos 点位置
+     * @param edge 边连接关系
+     * @param invMass 点质量的倒数
+     * @param restLen 边的原长
+     * @param edgeCompliance 柔度（越小约束越强，最小为0）
+     * @param dt 时间步长
+     */
+    void solveDistanceConstraint( 
+        zeno::AttrVector<zeno::vec3f> &pos,
+        const zeno::AttrVector<zeno::vec2i> &edge,
+        const std::vector<float> & invMass,
+        const std::vector<float> & restLen,
+        const float edgeCompliance,
+        const float dt
+        )
     {
         float alpha = edgeCompliance / dt / dt;
         zeno::vec3f grad{0, 0, 0};
-        for (int i = 0; i < numEdges; i++) 
+        for (int i = 0; i < edge.size(); i++) 
         {
             int id0 = edge[i][0];
             int id1 = edge[i][1];
@@ -129,54 +98,72 @@ private:
             pos[id1] += grad * (-s * invMass[id1]);
         }
     }
-    void solveBendingConstraint(
+
+    /**
+     * @brief 求解两面夹角约束。注意需要先求出原角度再用。
+     * 
+     * @param pos 点位置
+     * @param quads 一小块布（由四个点组成的两个三角形）的四个顶点编号
+     * @param invMass 点的质量倒数
+     * @param restAng 原角度
+     * @param dihedralCompliance 二面角柔度
+     * @param dt 时间步长
+     */
+    void solveDihedralConstraint(
         zeno::AttrVector<zeno::vec3f> &pos,
-        const zeno::AttrVector<zeno::vec4i> &tet,
-        const std::vector<Matrix4r> &stiffMatrix,
-        const float bendingCompliance,
+        const zeno::AttrVector<zeno::vec4i> &quads,
+        const zeno::AttrVector<float> &invMass,
+        const zeno::AttrVector<float> &restAng,
+        const float dihedralCompliance,
         const float dt
         )
     {
-        float alpha = bendingCompliance / dt / dt;
-        float lambda = 0.0;
+        float alpha = dihedralCompliance / dt / dt;
 
-        for (int i = 0; i < tet.size(); i++)
+        for (int i = 0; i < quads.size(); i++)
         {
-            vec4i id{-1,-1,-1,-1};
-            for (int j = 0; j < 4; j++)
-                id[j] = tet[i][j];
+            //get data
+            const auto &invMass1 = invMass[quads[i][0]];
+            const auto &invMass2 = invMass[quads[i][1]];
+            const auto &invMass3 = invMass[quads[i][2]];
+            const auto &invMass4 = invMass[quads[i][3]];
+
+            vec3f &p1 = pos[quads[i][0]];
+            vec3f &p2 = pos[quads[i][1]];
+            vec3f &p3 = pos[quads[i][2]];
+            vec3f &p4 = pos[quads[i][3]];
+
+            //compute grads
+            p2 -= p1;
+            p3 -= p1;
+            p4 -= p1;
+            auto n1 = cross(p2, p3);
+            n1 = n1 / length(n1);
+            auto n2 = cross(p1, p3);
+            n2 = n2 / length(n2);
+            float d = computeFaceNormalDot(p1,p2,p3,p4);
+            vec3f grad3 =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
+            vec3f grad4 =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
+            vec3f grad2 = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
+                          -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
+            vec3f grad1 = - grad2 - grad3 - grad4;
+
+            //compute denominator
+            float denom = 0.0;  
+            denom += invMass1 * length(grad1)*length(grad1); 
+            denom += invMass2 * length(grad2)*length(grad2); 
+            denom += invMass3 * length(grad3)*length(grad3); 
+            denom += invMass4 * length(grad4)*length(grad4); 
             
-            vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
-            Matrix4r Q = stiffMatrix[i];
-
-            for (int k = 0; k < 4; k++)
-		        for (int j = 0; j < 4; j++)
-			        grad[j] += Q(j,k) * pos[id[k]];
-
-            float w = 0.0;
-            for (int j = 0; j < 4; j++)
-                w += invMass[id[j]] * (length(grad[j])) * (length(grad[j])) ;
-
-            float energy = 0.0;
-            for (int k = 0; k < 4; k++)
-                for (int j = 0; j < 4; j++)
-                    energy += Q(j, k) * (dot(pos[id[k]],pos[id[j]]));
-            energy *= 0.5;
-
-
-            // compute impulse-based scaling factor
-            const float s = -(energy + alpha * lambda) / (w + alpha);
-            lambda += s;
-
-            vec3f dpos[4];
-            //注意对应关系0对2, 1对3...
-            dpos[0] = (s * invMass[id[2]]) * grad[2];
-            dpos[1] = (s * invMass[id[3]]) * grad[3];
-            dpos[2] = (s * invMass[id[0]]) * grad[0];
-            dpos[3] = (s * invMass[id[1]]) * grad[1];
+            //compute scaling factor
+            float ang = computeAng(p1,p2,p3,p4);
+            float C = (ang - restAng[i]);
+            float s = -C * sqrt(1-d*d) /(denom + alpha);
             
-            for (int j = 0; j < 4; j++)
-                pos[id[j]] += dpos[j];
+            p1 += grad1 * s * invMass1;
+            p2 += grad2 * s * invMass2;
+            p3 += grad3 * s * invMass3;
+            p4 += grad4 * s * invMass4;
         }
     }
 
@@ -197,28 +184,21 @@ public:
 
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
-        auto bendingCompliance = get_input<zeno::NumericObject>("bendingCompliance")->get<float>();
+        dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
 
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
         auto &edge = prim->lines;
-        auto &tet = prim->quads;
+        auto &quads = prim->quads;
         auto &surf = prim->tris;
-
-        static bool firstTime = true;
-        if(firstTime)
-        {
-            initGeo(prim.get());
-            firstTime = false;
-        }
 
         for (size_t i = 0; i < 1; i++)
         {
             for (int steps = 0; steps < numSubsteps; steps++) 
             {
                 preSolve(pos, prevPos, vel);
-                solveDistanceConstraint(pos, edge);
-                solveBendingConstraint(pos, tet, stiffMatrix, bendingCompliance, dt);
+                solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+                solveDihedralConstraint(pos, quads, invMass, restAng, dihedralCompliance, dt);
                 postSolve(pos, prevPos, vel);
             }
         }
@@ -233,7 +213,7 @@ ZENDEFNODE(PBDCloth, {// inputs:
                     {"vec3f", "externForce", "0.0, -10.0, 0.0"},
                     {"int", "numSubsteps", "10"},
                     {"float", "edgeCompliance", "100.0"},
-                    {"float", "bendingCompliance", "100.0"}
+                    {"float", "dihedralCompliance", "100.0"}
                 },
                  // outputs:
                  {"outPrim"},

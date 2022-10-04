@@ -1,5 +1,6 @@
 target_sources(zeno PRIVATE
-    # PBDCloth.cpp
+    PBDCloth.cpp
     testCloth.cpp
     PBDClothInit.cpp
+    PBDSolveDihedralConstraint.cpp
     )

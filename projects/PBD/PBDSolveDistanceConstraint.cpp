@@ -8,18 +8,18 @@ private:
      * 
      * @param pos 点位置
      * @param edge 边连接关系
+     * @param invMass 点质量的倒数
+     * @param restLen 边的原长
      * @param edgeCompliance 柔度（越小约束越强，最小为0）
      * @param dt 时间步长
-     * @param restLen 边的原长
-     * @param invMass 点质量的倒数
      */
     void solveDistanceConstraint( 
         zeno::AttrVector<zeno::vec3f> &pos,
         const zeno::AttrVector<zeno::vec2i> &edge,
-        const float edgeCompliance,
-        const float dt,
+        const std::vector<float> & invMass,
         const std::vector<float> & restLen,
-        const std::vector<float> & invMass
+        const float edgeCompliance,
+        const float dt
         )
     {
         float alpha = edgeCompliance / dt / dt;
@@ -56,7 +56,7 @@ public:
         auto &invMass = prim->attr<float>("invMass");
 
         //solve distance constraint
-        solveDistanceConstraint(pos, edge, edgeCompliance, dt, restLen, invMass);
+        solveDistanceConstraint(pos, edge, invMass, restLen, edgeCompliance, dt);
 
         //output
         set_output("outPrim", std::move(prim));

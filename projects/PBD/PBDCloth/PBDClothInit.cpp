@@ -13,19 +13,19 @@ private:
 
     int numParticles;
 
-    float computeAngle( zeno::AttrVector<zeno::vec3f> &pos,
-                        const zeno::AttrVector<zeno::vec4i> &tet,
-                        int i)
+    float computeAng(
+        const vec3f &p0,
+        const vec3f &p1, 
+        const vec3f &p2, 
+        const vec3f &p3)
     {
-        auto id = vec4i(-1, -1, -1, -1);
-        for (int j = 0; j < 4; j++)
-            id[j] = tet[i][j];
-
-        auto first = cross((pos[id[1]] - pos[id[0]]), (pos[id[2]] - pos[id[0]]));
-        first = first / length(first) ;
-        auto second = cross((pos[id[1]] - pos[id[0]]), (pos[id[3]] - pos[id[0]]));
-        second = second / length(second) ;
-        auto res = dot(first, second);
+        auto n1 = cross((p1 - p0), (p2 - p0));
+        n1 = n1 / length(n1);
+        auto n2 = cross((p1 - p0), (p3 - p0));
+        n2 = n2 / length(n2) ;
+        auto res = dot(n1, n2);
+        if(res<-1.0) res = -1.0;
+        if(res>1.0)  res = 1.0;
         return res;
     }
 
@@ -37,40 +37,42 @@ private:
             restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
     }
 
-    void initRestAngle(PrimitiveObject *prim) 
+    void initRestAng(PrimitiveObject *prim) 
     {
         auto &pos = prim->verts;
-        auto &tris = prim->tris;
-        auto &tet = prim->quads;
-        for(int i = 0; i < tris.size(); i++)
-            restAngle[i] = computeAngle(pos, tet, i);
-    }
-
-    void initInvMass(PrimitiveObject *prim, float dx, float dy, float areaDensity) {
-        auto &pos = prim->verts;
-        auto &tet = prim->quads;
-        for(int i = 0; i < tet.size(); i++)
+        auto &quads = prim->quads;
+        for(int i = 0; i < quads.size(); i++)
         {
-            float pInvMass = 0.0;
-            pInvMass = areaDensity * dx * dy;
-            for (int j = 0; j < 4; j++)
-                invMass[tet[i][j]] += pInvMass;
+            vec3f &p1 = pos[quads[i][0]];
+            vec3f &p2 = pos[quads[i][1]];
+            vec3f &p3 = pos[quads[i][2]];
+            vec3f &p4 = pos[quads[i][3]];
+            restAngle[i] = computeAng(p1,p2,p3,p4);
         }
     }
-    void initStiffMatrix(PrimitiveObject *prim)
-    {
-        //TODO:
+
+    void initInvMass(PrimitiveObject *prim, float areaDensity) {
+        auto &pos = prim->verts;
+        auto &quads = prim->quads;
+        for(int i = 0; i < quads.size(); i++)
+        {
+            float quad_area = dot(pos[quads[i][1]] - pos[quads[i][0]],  pos[quads[i][3]] - pos[quads[i][2]]);
+            float pInvMass = 0.0;
+            pInvMass = areaDensity * quad_area;
+            for (int j = 0; j < 4; j++)
+                invMass[quads[i][j]] += pInvMass;
+        }
     }
 
-    void init(PrimitiveObject *prim, float dx, float dy, float areaDensity)
+    void init(PrimitiveObject *prim, float areaDensity)
     {
         restLen.resize(prim->lines.size());
         invMass.resize(prim->verts.size());
         stiffMatrix.resize(prim->lines.size());
 
         initRestLen(prim);
-        initRestAngle(prim);
-        initInvMass(prim, dx,  dy, areaDensity);
+        initRestAng(prim);
+        initInvMass(prim, areaDensity);
 
         numParticles = prim->verts.size();
     }
@@ -80,18 +82,9 @@ private:
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-
-        auto externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
-        auto edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
-        auto bendingCompliance = get_input<zeno::NumericObject>("bendingCompliance")->get<float>();
-        auto dx = get_input<zeno::NumericObject>("dx")->get<float>();
-        auto dy = get_input<zeno::NumericObject>("dy")->get<float>();
-        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
-        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
         auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
 
-        init(prim.get(), dx,  dy, areaDensity);
+        init(prim.get(), areaDensity);
 
         set_output("outPrim", std::move(prim));
     };
@@ -100,27 +93,11 @@ public:
 ZENDEFNODE(PBDClothInit, {// inputs:
                           {
                               {"PrimitiveObject", "prim"},
-                              {"vec3f", "externForce", "0.0, -10.0, 0.0"},
-                              {"float", "dt", "0.001666667"},
-                              {"float", "edgeCompliance", "100.0"},
-                              {"float", "bendingCompliance", "100.0"},
-                              {"float", "dx", "0.0078125"},
-                              {"float", "dy", "0.0078125"},
-                              {"int", "nx", "128"},
-                              {"int", "ny", "128"},
                               {"float", "areaDensity", "1.0"},
                           },
                           // outputs:
                           {
-                              {"outPrim"},
-                              {"vec3f", "externForce"},
-                              {"float", "dt", "0.001666667"},
-                              {"float", "edgeCompliance"},
-                              {"float", "bendingCompliance"},
-                              {"float", "dx"},
-                              {"float", "dy"},
-                              {"int", "nx"},
-                              {"int", "ny"},
+                              {"outPrim"}
                           },
                           // params:
                           {},
