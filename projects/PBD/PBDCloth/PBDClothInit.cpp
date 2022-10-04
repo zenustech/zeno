@@ -8,7 +8,7 @@ struct PBDClothInit : zeno::INode {
 private:
     std::vector<float> restLen;
     std::vector<float> invMass;
-    std::vector<float> restAngle;
+    std::vector<float> restAng;
     std::vector<Matrix4r> stiffMatrix{0.0};
 
     int numParticles;
@@ -47,7 +47,7 @@ private:
             vec3f &p2 = pos[quads[i][1]];
             vec3f &p3 = pos[quads[i][2]];
             vec3f &p4 = pos[quads[i][3]];
-            restAngle[i] = computeAng(p1,p2,p3,p4);
+            restAng[i] = computeAng(p1,p2,p3,p4);
         }
     }
 
@@ -82,17 +82,19 @@ private:
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+
         auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
 
         init(prim.get(), areaDensity);
 
         set_output("outPrim", std::move(prim));
+
     };
 };
 
 ZENDEFNODE(PBDClothInit, {// inputs:
                           {
-                              {"PrimitiveObject", "prim"},
+                              {"PrimitiveObject", "prim"}
                               {"float", "areaDensity", "1.0"},
                           },
                           // outputs:
