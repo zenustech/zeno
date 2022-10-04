@@ -1,9 +1,12 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 namespace zeno {
+/**
+ * @brief 这个节点是用来为PBD的布料模拟初始化invMass, restLen和restAng的。
+ * 注意不要和软体模拟的初始化混用，因为其中的invMass定义不同。
+ * 
+ */
 struct PBDClothInit : zeno::INode {
-
-
     /**
      * @brief 计算两个面夹角的辅助函数。
      * 
@@ -92,22 +95,6 @@ struct PBDClothInit : zeno::INode {
             pInvMass = areaDensity * quad_area;
             for (int j = 0; j < 4; j++)
                 invMass[quads[i][j]] += pInvMass;
-        }
-    }
-
-    void buildEdge(const AttrVector<vec4i> &quads, AttrVector<vec2i> &edge)
-    {
-        for(int i= 0; i<quads.size(); i++)
-        {
-            int q0 = quads[i][0];
-            int q1 = quads[i][1];
-            int q2 = quads[i][2];
-            int q3 = quads[i][3];
-            edge[i + 0] = vec2i(q0,q1);
-            edge[i + 1] = vec2i(q1,q3);            
-            edge[i + 2] = vec2i(q3,q0);
-            edge[i + 3] = vec2i(q1,q2);           
-            edge[i + 4] = vec2i(q3,q2);
         }
     }
 
