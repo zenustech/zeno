@@ -3,4 +3,5 @@ target_sources(zeno PRIVATE
     testCloth.cpp
     PBDClothInit.cpp
     PBDSolveDihedralConstraint.cpp
+    buildEdge.cpp
     )
