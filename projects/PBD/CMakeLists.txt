@@ -2,6 +2,7 @@ target_sources(zeno PRIVATE
 PBDSoftBody.cpp 
 PBDSolveDistanceConstraint.cpp 
 PBDSolveVolumeConstraint.cpp
+PBDSolveDihedralConstraint.cpp
 PBDSoftBodyInit.cpp
 PBDPostSolve.cpp
 PBDPreSolve.cpp

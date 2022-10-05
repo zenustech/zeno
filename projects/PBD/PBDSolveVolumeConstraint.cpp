@@ -46,7 +46,7 @@ private:
             float s = -C /(w + alphaVol);
             
             for (int j = 0; j < 4; j++)
-                pos[tet[i][j]] += grad[j] * s * invMass[id[j]];
+                pos[id[j]] += grad[j] * s * invMass[id[j]];
         }
     }
 

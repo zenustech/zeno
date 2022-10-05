@@ -1,4 +1,3 @@
-#include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 
@@ -27,6 +26,13 @@ struct PBDSolveDihedralConstraint : zeno::INode {
         return res;
     }
 
+    inline vec3f computeNormal(vec3f & vec1, vec3f vec2)
+    {
+        auto normal = cross(vec1, vec2);
+        normal = normal / length(normal);
+        return normal;
+    }
+
     /**
      * @brief 求解两面夹角约束。注意需要先求出原角度再用。
      * 
@@ -47,51 +53,40 @@ struct PBDSolveDihedralConstraint : zeno::INode {
         )
     {
         float alpha = dihedralCompliance / dt / dt;
-
+        vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
+        vec4i id{-1,-1,-1,-1};
+ 
         for (int i = 0; i < quads.size(); i++)
         {
-            //get data
-            const auto &invMass1 = invMass[quads[i][0]];
-            const auto &invMass2 = invMass[quads[i][1]];
-            const auto &invMass3 = invMass[quads[i][2]];
-            const auto &invMass4 = invMass[quads[i][3]];
-
-            vec3f &p1 = pos[quads[i][0]];
-            vec3f &p2 = pos[quads[i][1]];
-            vec3f &p3 = pos[quads[i][2]];
-            vec3f &p4 = pos[quads[i][3]];
+            for (int j = 0; j < 4; j++)
+                id[j] = quads[i][j];
 
             //compute grads
-            p2 -= p1;
-            p3 -= p1;
-            p4 -= p1;
-            auto n1 = cross(p2, p3);
-            n1 = n1 / length(n1);
-            auto n2 = cross(p1, p3);
-            n2 = n2 / length(n2);
-            float d = computeFaceNormalDot(p1,p2,p3,p4);
-            vec3f grad3 =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
-            vec3f grad4 =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
-            vec3f grad2 = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
+            vec3f p1 = pos[id[0]];
+            vec3f p2 = pos[id[1]] - p1;
+            vec3f p3 = pos[id[2]] - p1;
+            vec3f p4 = pos[id[3]] - p1;
+            auto n1 = computeNormal(p2, p3);
+            auto n2 = computeNormal(p2, p4);
+            float d = dot(n1,n2);
+            grad[2] =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
+            grad[3] =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
+            grad[1] = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
                           -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
-            vec3f grad1 = - grad2 - grad3 - grad4;
+            grad[0] = - grad[1] - grad[2] - grad[3];
 
             //compute denominator
-            float denom = 0.0;  
-            denom += invMass1 * length(grad1)*length(grad1); 
-            denom += invMass2 * length(grad2)*length(grad2); 
-            denom += invMass3 * length(grad3)*length(grad3); 
-            denom += invMass4 * length(grad4)*length(grad4); 
+            float w = 0.0;
+            for (int j = 0; j < 4; j++)
+                w += invMass[id[j]] * (length(grad[j])) * (length(grad[j])) ;
             
             //compute scaling factor
-            float ang = computeAng(p1,p2,p3,p4);
+            float ang = acos(d);
             float C = (ang - restAng[i]);
-            float s = -C * sqrt(1-d*d) /(denom + alpha);
+            float s = -C * sqrt(1-d*d) /(w + alpha);
             
-            p1 += grad1 * s * invMass1;
-            p2 += grad2 * s * invMass2;
-            p3 += grad3 * s * invMass3;
-            p4 += grad4 * s * invMass4;
+            for (int j = 0; j < 4; j++)
+                pos[id[j]] += grad[j] * s * invMass[id[j]];
         }
     }
 
@@ -117,7 +112,7 @@ public:
 ZENDEFNODE(PBDSolveDihedralConstraint, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"float", "dihedralCompliance", "1.0"},
+                    {"float", "dihedralCompliance", "0.0"},
                     {"float", "dt", "0.0016667"}
                 },
                  // outputs:
