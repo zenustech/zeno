@@ -11,10 +11,13 @@ struct PBDPreSolve : zeno::INode {
                     std::vector<zeno::vec3f> &prevPos,
                     std::vector<zeno::vec3f> &vel,
                     vec3f & externForce,
+                    std::vector<float> &invMass,
                     float dt)
     {
         for (int i = 0; i < pos.size(); i++) 
         {
+            if(invMass[i]==0.0)
+                continue;
             prevPos[i] = pos[i];
             vel[i] += (externForce) * dt;
             pos[i] += vel[i] * dt;
@@ -34,10 +37,12 @@ struct PBDPreSolve : zeno::INode {
         auto externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
 
         auto &pos = prim->verts;
-        auto &vel = prim->verts.add_attr<vec3f>("vel");
-        auto &prevPos = prim->verts.add_attr<vec3f>("prevPos");
+        auto &invMass = prim->verts.attr<float>("invMass");
 
-        preSolve(pos, prevPos, vel, externForce, dt);
+        auto &vel = prim->verts.attr<vec3f>("vel");
+        auto &prevPos = prim->verts.attr<vec3f>("prevPos");
+
+        preSolve(pos, prevPos, vel, externForce, invMass, dt);
 
         set_output("outPrim", std::move(prim));
     }

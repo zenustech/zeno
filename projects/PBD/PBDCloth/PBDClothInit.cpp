@@ -64,8 +64,8 @@ struct PBDClothInit : zeno::INode {
      * @param restLen 原长
      */
     void initRestLen(
-        AttrVector<vec3f> &pos,
-        AttrVector<vec2i> &edge,
+        const AttrVector<vec3f> &pos,
+        const AttrVector<vec2i> &edge,
         std::vector<float> &restLen
     ) 
     {
@@ -79,20 +79,21 @@ struct PBDClothInit : zeno::INode {
      * 
      * @param pos 顶点
      * @param quads 四个点连接关系
-     * @param invMass 质量倒数
      * @param areaDensity 面密度
+     * @param invMass 质量倒数
      */
     void initInvMass(        
         const AttrVector<vec3f> &pos,
         const AttrVector<vec4i> &quads,
-        std::vector<float> &invMass,
-        const float areaDensity) 
+        const float areaDensity,
+        std::vector<float> &invMass
+        ) 
     {
         for(int i = 0; i < quads.size(); i++)
         {
-            float quad_area = dot(pos[quads[i][1]] - pos[quads[i][0]],  pos[quads[i][3]] - pos[quads[i][2]]);
+            float quad_area = length(cross(pos[quads[i][1]] - pos[quads[i][0]],  pos[quads[i][1]] - pos[quads[i][2]]));
             float pInvMass = 0.0;
-            pInvMass = areaDensity * quad_area;
+            pInvMass = areaDensity * quad_area / 4.0;
             for (int j = 0; j < 4; j++)
                 invMass[quads[i][j]] += pInvMass;
         }
@@ -114,11 +115,14 @@ public:
         auto &restAng = prim->quads.add_attr<float>("restAng");
         invMass.resize(prim->verts.size());
         restLen.resize(prim->lines.size());
-        invMass.resize(prim->quads.size());
+        restAng.resize(prim->quads.size());
 
-        initInvMass(pos,quads,invMass,areaDensity);
+        initInvMass(pos,quads,areaDensity,invMass);
         initRestLen(pos,edge,restLen);
         initRestAng(pos,quads,restAng);
+
+        auto &vel = prim->verts.add_attr<vec3f>("vel");
+        auto &prevPos = prim->verts.add_attr<vec3f>("prevPos");
 
         set_output("outPrim", std::move(prim));
 

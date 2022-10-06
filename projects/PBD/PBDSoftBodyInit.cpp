@@ -69,60 +69,25 @@ private:
     }
 
 public:
-    // virtual void apply() override {
-    //     auto prim = get_input<PrimitiveObject>("prim");
-    //     auto &pos = prim->verts;
-    //     auto &edge = prim->lines;
-    //     auto &tet = prim->quads;
-
-    //     auto restLen = std::make_shared<ListObject>();
-    //     auto restVol = std::make_shared<ListObject>();
-    //     auto invMass = std::make_shared<ListObject>();
-
-    //     // initGeo(pos, edge, tet, restLen.get(), restVol.get(), invMass.get());
-        
-    //     set_output("restLen",restLen);
-    //     set_output("restVol",restVol);
-    //     set_output("invMass",invMass);
-    // };
-
-    // virtual void apply() override {
-    //     auto prim = get_input<PrimitiveObject>("prim");
-    //     auto &pos = prim->verts;
-    //     auto &edge = prim->lines;
-    //     auto &tet = prim->quads;
-
-    //     auto restLen = IObject::make<std::vector<float>>();
-    //     auto restVol = IObject::make<std::vector<float>>();
-    //     auto invMass = IObject::make<std::vector<float>>();
-
-    //     // initGeo(pos, edge, tet, restLen.get(), restVol.get(), invMass.get());
-        
-    //     set_output("restLen",std::move(restLen));
-    //     set_output("restVol",std::move(restVol));
-    //     set_output("invMass",std::move(invMass));
-    // };
-
         virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto &pos = prim->verts;
         auto &edge = prim->lines;
         auto &tet = prim->quads;
 
-        auto &restLen = prim->add_attr<float>("restLen");
-        auto &restVol = prim->add_attr<float>("restVol");
-        auto &invMass = prim->add_attr<float>("invMass");
+        auto &restLen = prim->lines.add_attr<float>("restLen");
+        auto &restVol = prim->quads.add_attr<float>("restVol");
+        auto &invMass = prim->verts.add_attr<float>("invMass");
 
         restLen.resize(edge.size());
         restVol.resize(tet.size());
         invMass.resize(pos.size());
 
-        // auto restLen = IObject::make<std::vector<float>>();
-        // auto restVol = IObject::make<std::vector<float>>();
-        // auto invMass = IObject::make<std::vector<float>>();
-
         initGeo(pos, edge, tet, restLen, restVol, invMass);
-        std::cout<<"restLen:"<<restLen[0];
+
+        auto &vel = prim->verts.add_attr<vec3f>("vel");
+        auto &prevPos = prim->verts.add_attr<vec3f>("prevPos");
+
         set_output("outPrim",std::move(prim));
     };
 };

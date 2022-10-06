@@ -10,10 +10,15 @@ struct PBDPostSolve : zeno::INode {
     void postSolve(const zeno::AttrVector<zeno::vec3f> &pos,
                    const std::vector<zeno::vec3f> &prevPos,
                    std::vector<zeno::vec3f> &vel,
+                   std::vector<float> &invMass,
                    float dt)
     {
         for (int i = 0; i < pos.size(); i++) 
+        {
+            if(invMass[i] == 0)
+                continue;
             vel[i] = (pos[i] - prevPos[i]) / dt;
+        }
     }
 
 
@@ -25,8 +30,9 @@ struct PBDPostSolve : zeno::INode {
         auto &pos = prim->verts;
         auto &vel = prim->verts.attr<vec3f>("vel");
         auto &prevPos = prim->verts.attr<vec3f>("prevPos");
+        auto &invMass = prim->verts.attr<float>("invMass");
 
-        postSolve(pos, prevPos, vel, dt);
+        postSolve(pos, prevPos, vel, invMass, dt);
 
         set_output("outPrim", std::move(prim));
     }

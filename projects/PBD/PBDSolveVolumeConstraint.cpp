@@ -75,31 +75,27 @@ private:
 public:
     virtual void apply() override {
         //get data
-        auto primPos = get_input<PrimitiveObject>("pos");
-        auto primTet = get_input<PrimitiveObject>("tet");
-        auto primRestVol = get_input<PrimitiveObject>("restVol");
-        auto primInvMass = get_input<PrimitiveObject>("invMass");
+        auto prim = get_input<PrimitiveObject>("prim");
+
         auto volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
-        auto &pos = primPos->verts;
-        auto &tet = primTet->quads;
-        auto &restVol = primRestVol->attr<float>("restVol");
-        auto &invMass = primInvMass->attr<float>("invMass");
+
+        auto &pos = prim->verts;
+        auto &tet = prim->quads;
+        auto &restVol = prim->quads.attr<float>("restVol");
+        auto &invMass = prim->verts.attr<float>("invMass");
 
         // solve
         solveVolumeConstraint(pos, tet, volumeCompliance, dt, restVol, invMass);
 
         // output
-        set_output("outPos", std::move(primPos));
+        set_output("outPos", std::move(prim));
     };
 };
 
 ZENDEFNODE(PBDSolveVolumeConstraint, {// inputs:
                  {
-                    {"PrimitiveObject", "pos"},
-                    {"PrimitiveObject", "tet"},
-                    {"PrimitiveObject", "restVol"}, 
-                    {"PrimitiveObject", "invMass"}, 
+                    {"PrimitiveObject", "prim"},
                     {"float", "volumeCompliance", "0.0"},
                     {"float", "dt", "0.0016667"}
                 },
