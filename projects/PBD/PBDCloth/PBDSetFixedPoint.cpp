@@ -15,7 +15,7 @@ public:
         auto & invMass = prim->verts.attr<float>("invMass");
         auto & pos = prim->verts;
 
-        // solve
+        // set fixed
         invMass[fixedPoint] = 0.0;
 
         // output

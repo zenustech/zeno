@@ -7,7 +7,7 @@ using namespace zeno;
  * 可以使用那个节点代替这个）
  * 
  */
-struct buildEdge : zeno::INode {
+struct buildEdgeFromQuads : zeno::INode {
     void build(const AttrVector<vec4i> &quads, std::vector<vec2i> &edge)
     {
         struct myLess {
@@ -54,7 +54,7 @@ struct buildEdge : zeno::INode {
 };
 
 ZENDEFNODE(
-    buildEdge,{
+    buildEdgeFromQuads,{
         {"prim"},
         {"outPrim"},
         {},

@@ -1,5 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulateQuads
 namespace zeno {
 /**
  * @brief 这个节点是用来为PBD的布料模拟初始化invMass, restLen和restAng的。
@@ -7,6 +8,7 @@ namespace zeno {
  * 
  */
 struct PBDClothInit : zeno::INode {
+
     /**
      * @brief 计算两个面夹角的辅助函数。
      * 
@@ -55,7 +57,6 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
-
     /**
      * @brief 计算所有原长
      * 
@@ -100,6 +101,7 @@ struct PBDClothInit : zeno::INode {
     }
 
 
+
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -108,6 +110,7 @@ public:
         auto &quads = prim->quads;
         auto &edge = prim->lines;
 
+        //面密度，用来算invMass的参数
         auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
 
         auto &invMass = prim->verts.add_attr<float>("invMass");
@@ -121,6 +124,7 @@ public:
         initRestLen(pos,edge,restLen);
         initRestAng(pos,quads,restAng);
 
+        //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");
         auto &prevPos = prim->verts.add_attr<vec3f>("prevPos");
 

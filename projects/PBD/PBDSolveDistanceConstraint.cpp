@@ -14,6 +14,7 @@ private:
      * @param dt 时间步长
      */
     void solveDistanceConstraint( 
+        PrimitiveObject * prim,
         zeno::AttrVector<zeno::vec3f> &pos,
         const zeno::AttrVector<zeno::vec2i> &edge,
         const std::vector<float> & invMass,
@@ -22,6 +23,13 @@ private:
         const float dt
         )
     {
+        auto & dpos1 = prim->lines.add_attr<vec3f>("dpos1");
+        auto & dpos2 = prim->lines.add_attr<vec3f>("dpos2");
+        auto & len = prim->lines.add_attr<float>("len");
+        auto & s1 = prim->lines.add_attr<float>("s");
+        auto & grad1 = prim->lines.add_attr<vec3f>("grad1");
+
+
         float alpha = disntanceCompliance / dt / dt;
         zeno::vec3f grad{0, 0, 0};
         for (int i = 0; i < edge.size(); i++) 
@@ -35,6 +43,12 @@ private:
             float C = Len - restLen[i];
             float w = invMass[id0] + invMass[id1];
             float s = -C / (w + alpha);
+
+            grad1[i] = grad;
+            len[i] = Len;
+            s1[i] = s;
+            dpos1[i] = grad *   s * invMass[id0];
+            dpos2[i] = -grad *   s * invMass[id1];
 
             pos[id0] += grad *   s * invMass[id0];
             pos[id1] += grad * (-s * invMass[id1]);
@@ -56,7 +70,7 @@ public:
         auto &invMass = prim->verts.attr<float>("invMass");
 
         //solve distance constraint
-        solveDistanceConstraint(pos, edge, invMass, restLen, disntanceCompliance, dt);
+        solveDistanceConstraint(prim.get(), pos, edge, invMass, restLen, disntanceCompliance, dt);
 
         //output
         set_output("outPrim", std::move(prim));
