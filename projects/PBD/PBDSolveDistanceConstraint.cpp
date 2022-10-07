@@ -44,6 +44,7 @@ private:
             float w = invMass[id0] + invMass[id1];
             float s = -C / (w + alpha);
 
+            //debug
             grad1[i] = grad;
             len[i] = Len;
             s1[i] = s;

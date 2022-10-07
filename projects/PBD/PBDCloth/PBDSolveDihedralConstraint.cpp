@@ -111,6 +111,8 @@ struct PBDSolveDihedralConstraint : zeno::INode {
             for (int j = 0; j < 4; j++)
                 w += invMass[id[j]] * (length(grad[j])) * (length(grad[j])) ;
             
+            if(w==0.0)
+                continue;
             //compute scaling factor
             float ang = acos(d);
             float C = (ang - restAng[i]);

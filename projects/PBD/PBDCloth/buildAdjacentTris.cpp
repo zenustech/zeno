@@ -1,99 +1,52 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
-#include <set>
-#include <unordered_set>
+#include <zeno/utils/tuple_hash.h>
+#include <iostream>
+// #include  "../Utils/myPrint.h"
 
 using namespace zeno;
 /**
  * @brief 找到某个三角形的所有邻接三角形（有共享边的三角形）。至少有1个，至多有3个。
- * 
+ * 需要先用节点lines2tris建立边到三角面的映射
  */
-struct findAdjacent : zeno::INode {
+struct buildAdjacentTris : zeno::INode {
 
     //找到所有三角形的邻接三角形，然后建立一个邻接表
-    void buildAdjacentList(PrimitiveObject *prim)
+    void func(PrimitiveObject *prim)
     {
-        auto & lines2Tris = prim->lines.add_attr<int>("lines2Tris");
-
-        struct myLess {
-        bool operator()(vec2i const &a, vec2i const &b) const {
-                return std::make_pair(std::min(a[0], a[1]), std::max(a[0], a[1]))
-                    < std::make_pair(std::min(b[0], b[1]), std::max(b[0], b[1]));
-            }
-        };
-        std::set<vec2i, myLess> segments;
-        auto append = [&] (int i, int j) {
-            segments.emplace(i, j);
-        };
-        for (auto const &ind: prim->lines) {
-            append(ind[0], ind[1]);
-        }
-        for (auto const &ind: prim->tris) {
-            append(ind[0], ind[1]);
-            append(ind[1], ind[2]);
-            append(ind[2], ind[0]);
-        }
+        auto &lines = prim->lines;
+        auto &lines2tris = prim->lines.attr<vec3i>("lines2tris");
         
-    }
 
-
-
-    //找到某个邻接的三角形
-    int find(PrimitiveObject *prim, int t, vec2i &adjacentEdge)
-    {
-        auto & tris = prim->tris
-        //取出所有点
-        auto p1 = tris[t][0];
-        auto p2 = tris[t][1];
-        auto p3 = tris[t][2];
-        //取出所有边
-        std::set<int> e1(pp1,pp2);
-        std::set<int> e2(pp1,pp3);
-        std::set<int> e3(pp3,pp2);
-
-        std::vector<std::set<int>> edgesOfT{e1,e2,e3};
-        // struct myLess {
-        //     bool operator()(vec2i const &a, vec2i const &b) const {
-        //         return std::make_pair(std::min(*a.cbegin(), *a.cend()), std::max(*a.cbegin(), *a.cend())) <
-        //         std::make_pair(std::min(*b.cbegin(), *b.cend()), std::max(*b.cbegin(), *b.cend()));
-        //     }
-        // };
-        // std::set<std::set<int>,myLess> edgesOft{e1,e2,e3};
-
-        for (size_t i = 0; i < tris.size(); i++)
+        //遍历所有边到三角面的映射表。
+        //对每条边，假如恰好有个与其序号相反的边也在表内，那么这条边就是它的邻接边。
+        //那么邻接边所属的三角面就是它的一个邻接三角面。把他们存到map3里面
+        for(auto &[k,v]:map1)
         {
-            //取出所有点
-            auto pp1 = tris[i][0];  
-            auto pp2 = tris[i][1];
-            auto pp3 = tris[i][2];
-
-            //取出所有边
-            std::set<int> ee1(pp1,pp2);
-            std::set<int> ee2(pp1,pp3);
-            std::set<int> ee3(pp3,pp2);
-            
-            std::vector<std::set<int>> edgesOfI{ee1,ee2,ee3};
-
-            //比较边是否相同
-            for(const auto & t1:edgesOfT)
+            edgeType inv{k[1],k[0]};
+            if(map1.find(inv) != map1.end())
             {
-                for(const auto & t2:edgesOfI)
-                {
-                    if(*t1.cbegin() == *t2.cbegin && *t1.cend() == *t2.cend())
-                    {
-                        //t1和t2是邻接边
-                        adjacent.push_back(i); //返回三角形编号
-                    }
-                }
+                map3.emplace(v,map1.at(inv));
             }
         }
 
-        //如果没找到返回-1.
-        if(i == (tris.size()+1) )
-            return -1;
+        //最后把邻接三角面存到tris的新建属性adjTri当中
+        auto & adjTri = prim->tris.add_attr<vec3i>("adjTri");
+        adjTri.clear(); 
+        for(auto & t:tris)
+        {
+            if(map3.find(t) != map3.end())
+            {
+                adjTri.emplace_back(map3.find(t)->second);
+            }
+            else{
+                adjTri.emplace_back(vec3i{-1,-1,-1});
+            }
+        }
         
     }
+
 
 
 public:
@@ -104,13 +57,9 @@ public:
     };
 };
 
-ZENDEFNODE(findAdjacent, {// inputs:
+ZENDEFNODE(buildAdjacentTris, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"float", "dihedralCompliance", "0.0"},
-                    {"float", "dt", "0.0016667"},
-                    {"int", "triangle1", ""},
-                    {"int", "triangle2", ""},
                 },
                  // outputs:
                  {"outPrim"},

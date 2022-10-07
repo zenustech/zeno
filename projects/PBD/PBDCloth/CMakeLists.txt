@@ -3,7 +3,10 @@ target_sources(zeno PRIVATE
     testCloth.cpp
     PBDClothInit.cpp
     buildEdgeFromQuads.cpp
-    # buildAdjacentTris.cpp
+    buildAdjacentTris.cpp
     PBDSetFixedPoint.cpp
     PBDSolveDihedralConstraint.cpp
+    buildCloth.cpp
+    buildEdgeFromTris.cpp
+    lines2tris.cpp
     )
