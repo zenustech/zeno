@@ -129,38 +129,33 @@ struct FLIP_vdb {
                    openvdb::FloatGrid::Ptr &m_solid_sdf,
                    openvdb::points::PointDataGrid::Ptr &particles);
   static void
-  particle_to_grid_collect_style(openvdb::points::PointDataGrid::Ptr &in_particles,
-                                 packed_FloatGrid3 &out_velocity,
-                                 packed_FloatGrid3 &velocity_after_p2g,
-                                 openvdb::Vec3fGrid::Ptr &velocity_weights,
+  particle_to_grid_collect_style(packed_FloatGrid3 &out_velocity,
+                                 packed_FloatGrid3 &out_velocity_after_p2g,
                                  openvdb::FloatGrid::Ptr &out_liquid_sdf,
-                                 openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
+                                 openvdb::points::PointDataGrid::Ptr &in_particles,
                                  float dx);
   static void calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
                                      openvdb::FloatGrid::Ptr &liquid_sdf,
                                      openvdb::FloatGrid::Ptr &solid_sdf);
   
-  static void clamp_liquid_phi_in_solids(
+  static void immerse_liquid_phi_in_solids(
       openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
-      openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx);
+      float dx);
 
   static void solve_pressure_simd(
       openvdb::FloatGrid::Ptr &liquid_sdf,
-      openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
-      openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
-      openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
+      openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &pressure,
+      openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
       openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
 
   static void apply_pressure_gradient(
       openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
-      openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
       openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
-      openvdb::Vec3fGrid::Ptr &velocity,
+      packed_FloatGrid3 &velocity,
       openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
 
-  static void field_add_vector(openvdb::Vec3fGrid::Ptr &velocity_field,
-                               openvdb::Vec3fGrid::Ptr &face_weight, float x,
-                               float y, float z, float dt);
+  static void field_add_vector(packed_FloatGrid3 &velocity_field,
+                               float x, float y, float z, float dt);
   static void emit_liquid(openvdb::points::PointDataGrid::Ptr &in_out_particles,
                           openvdb::FloatGrid::Ptr &sdf,
                           openvdb::Vec3fGrid::Ptr &vel,

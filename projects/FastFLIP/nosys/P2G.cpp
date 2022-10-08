@@ -28,16 +28,14 @@ struct FLIP_P2G : zeno::INode {
     auto PostP2GVelGrid = get_input("PostP2GVelocity")->as<VDBFloat3Grid>();
     auto VelWeightGrid = get_input("VelocityWeights")->as<VDBFloat3Grid>();
     auto LiquidSDFGrid = get_input("LiquidSDF")->as<VDBFloatGrid>();
-    auto ExtractedLiquidSDFGrid =
-        get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
 
     VelGrid->m_packedGrid->from_vec3(VelGrid->m_grid);
     PostP2GVelGrid->m_packedGrid->from_vec3(PostP2GVelGrid->m_grid);
 
     FLIP_vdb::particle_to_grid_collect_style(
-        Particles->m_grid, *(VelGrid->m_packedGrid), *(PostP2GVelGrid->m_packedGrid),
-        VelWeightGrid->m_grid, LiquidSDFGrid->m_grid,
-        ExtractedLiquidSDFGrid->m_grid, dx);
+        *(VelGrid->m_packedGrid), *(PostP2GVelGrid->m_packedGrid),
+        LiquidSDFGrid->m_grid, Particles->m_grid, dx);
+//    ExtractedLiquidSDFGrid->m_grid = LiquidSDFGrid->m_grid->deepCopy();
 
     VelGrid->m_packedGrid->to_vec3(VelGrid->m_grid);
     PostP2GVelGrid->m_packedGrid->to_vec3(PostP2GVelGrid->m_grid);
@@ -52,7 +50,6 @@ static int defFLIP_P2G =
                                                   "PostP2GVelocity",
                                                   "VelocityWeights",
                                                   "LiquidSDF",
-                                                  "ExtractedLiquidSDF",
                                               },
                                               /* outputs: */ {},
                                               /* params: */

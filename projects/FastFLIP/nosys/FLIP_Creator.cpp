@@ -89,14 +89,17 @@ struct FLIPCreator : zeno::INode {
     face_weight->m_grid->setName("Face_Weights");
     face_weight->m_grid->setTransform(voxel_center_transform);
     face_weight->m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
-    liquid_sdf->m_grid = openvdb::FloatGrid::create(3.0f * dx);
+    liquid_sdf->m_grid = openvdb::FloatGrid::create(1.0f * dx);
     liquid_sdf->m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
     liquid_sdf->m_grid->setTransform(voxel_center_transform);
     liquid_sdf->m_grid->setName("Liquid_SDF");
     liquid_sdf_snapshot->m_grid = liquid_sdf->m_grid->deepCopy();
     pushed_out_liquid_sdf->m_grid = liquid_sdf->m_grid->deepCopy();
 
-    solid_sdf->m_grid = openvdb::FloatGrid::create(0.9f * dx);
+    //solid sdf
+	//set background value to be positive to show it is away from the solid
+	//treat it as the narrow band width
+    solid_sdf->m_grid = openvdb::FloatGrid::create(3.0f * dx);
     solid_sdf->m_grid->setTransform(voxel_vertex_transform);
     solid_sdf->m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
     solid_sdf->m_grid->setName("Solid_SDF");

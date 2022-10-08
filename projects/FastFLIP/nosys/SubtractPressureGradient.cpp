@@ -31,17 +31,20 @@ struct SubtractPressureGradient : zeno::INode {
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
     auto liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
     auto solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>();
-    auto pushed_out_liquid_sdf =
-        get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
     auto curr_pressure = get_input("Pressure")->as<VDBFloatGrid>();
     auto face_weight = get_input("CellFWeight")->as<VDBFloat3Grid>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto solid_velocity = get_input("SolidVelocity")->as<VDBFloat3Grid>();
 
+    velocity->m_packedGrid->from_vec3(velocity->m_grid);
+
     FLIP_vdb::apply_pressure_gradient(
-        liquid_sdf->m_grid, solid_sdf->m_grid, pushed_out_liquid_sdf->m_grid,
-        curr_pressure->m_grid, face_weight->m_grid, velocity->m_grid,
+        liquid_sdf->m_grid, solid_sdf->m_grid,
+        curr_pressure->m_grid, face_weight->m_grid,
+        *(velocity->m_packedGrid),
         solid_velocity->m_grid, dx, dt);
+
+    velocity->m_packedGrid->to_vec3(velocity->m_grid);
   }
 };
 
@@ -51,7 +54,6 @@ static int defSubtractPressureGradient =
                                                       "dt","Dx",
                                                       "LiquidSDF",
                                                       "SolidSDF",
-                                                      "ExtractedLiquidSDF",
                                                       "Pressure",
                                                       "CellFWeight",
                                                       "Velocity",
