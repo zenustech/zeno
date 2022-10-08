@@ -116,9 +116,7 @@ public:
         auto &invMass = prim->verts.add_attr<float>("invMass");
         auto &restLen = prim->lines.add_attr<float>("restLen");
         auto &restAng = prim->quads.add_attr<float>("restAng");
-        invMass.resize(prim->verts.size());
-        restLen.resize(prim->lines.size());
-        restAng.resize(prim->quads.size());
+
 
         initInvMass(pos,quads,areaDensity,invMass);
         initRestLen(pos,edge,restLen);
