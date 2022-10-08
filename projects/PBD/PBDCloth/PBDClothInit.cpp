@@ -10,23 +10,23 @@ namespace zeno {
 struct PBDClothInit : zeno::INode {
 
     /**
-     * @brief 计算两个面夹角的辅助函数。
+     * @brief 计算两个面夹角的辅助函数。注意按照论文Muller2006中Fig.4的顺序。1-2是共享边。
      * 
-     * @param p0 顶点0位置
      * @param p1 顶点1位置
      * @param p2 顶点2位置
      * @param p3 顶点3位置
+     * @param p4 顶点4位置
      * @return float 两个面夹角
      */
     float computeAng(
-        const vec3f &p0,
-        const vec3f &p1, 
+        const vec3f &p1,
         const vec3f &p2, 
-        const vec3f &p3)
+        const vec3f &p3, 
+        const vec3f &p4)
     {
-        auto n1 = cross((p1 - p0), (p2 - p0));
+        auto n1 = cross((p2 - p1), (p3 - p1));
         n1 = n1 / length(n1);
-        auto n2 = cross((p1 - p0), (p3 - p0));
+        auto n2 = cross((p2 - p1), (p4 - p1));
         n2 = n2 / length(n2);
         auto res = dot(n1, n2);
         if(res<-1.0) res = -1.0;
@@ -34,26 +34,63 @@ struct PBDClothInit : zeno::INode {
         return acos(res);
     }
 
+    //找到other中与self不同的那个点的位置（other的位置），可能是0,1,2
+    int cmp33(vec3i self, vec3i other)
+    {
+        std::vector<bool> isSame{false,false,false};
+        for (size_t i = 0; i < 3; i++)
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                if(self[j] == other[i])//注意是other[i]
+                {
+                    isSame[i] = true;
+                    break;
+                }
+            }
+        }
+
+        for (size_t k = 0; k < 3; k++)
+        {
+            if(isSame[k] == false)
+                return k;
+        }
+        return -1; //没找到
+    }
+
+
     /**
      * @brief 计算所有原角度
      * 
      * @param pos 顶点
-     * @param quads 四个顶点连成一块布片
-     * @param restAng 原角度
+     * @param tris 三角面
+     * @param adjTriId 邻接三角面在tris中的编号
+     * @param restAng 原角度, 最多有三个，每个邻接三角面对应一个。没有则存-1
      */
     void initRestAng(
         const AttrVector<vec3f> &pos,
-        const AttrVector<vec4i> &quads,
-        std::vector<float> &restAng
+        const AttrVector<vec3i> &tris,
+        const AttrVector<vec3i> &adjTriId,
+        std::vector<vec3f> &restAng
     ) 
     {
-        for(int i = 0; i < quads.size(); i++)
+        for(int i = 0; i < tris.size(); i++)
         {
-            const vec3f &p1 = pos[quads[i][0]];
-            const vec3f &p2 = pos[quads[i][1]];
-            const vec3f &p3 = pos[quads[i][2]];
-            const vec3f &p4 = pos[quads[i][3]];
-            restAng[i] = computeAng(p1,p2,p3,p4);
+            const vec3i & self = tris[i];
+            int pid1 = self[0]; //先取出本身的三个点的编号
+            int pid2 = self[1];
+            int pid3 = self[2];
+            int pid4 = -1;      //第四个点要搜索另一个面的点
+            for (int j = 0; j < 3; j++)
+            {
+                if(adjTriId[i][j] != -1) //如果是负一证明该边没有邻接面
+                {
+                    vec3i other = tris[adjTriId[i][j]]; //取出一个邻接三角面
+                    //再找到非本身三个点的那个点，作为第四个点。
+                    pid4 = other[cmp33(self, other)];
+                    restAng[i][j] = computeAng(pos[pid1],pos[pid2],pos[pid3],pos[pid4]);
+                }
+            }
         }
     }
 
@@ -79,24 +116,24 @@ struct PBDClothInit : zeno::INode {
      * @brief 计算所有质量倒数
      * 
      * @param pos 顶点
-     * @param quads 四个点连接关系
+     * @param tris 三角面
      * @param areaDensity 面密度
      * @param invMass 质量倒数
      */
     void initInvMass(        
         const AttrVector<vec3f> &pos,
-        const AttrVector<vec4i> &quads,
+        const AttrVector<vec3i> &tris,
         const float areaDensity,
         std::vector<float> &invMass
         ) 
     {
-        for(int i = 0; i < quads.size(); i++)
+        for(int i = 0; i < tris.size(); i++)
         {
-            float quad_area = length(cross(pos[quads[i][1]] - pos[quads[i][0]],  pos[quads[i][1]] - pos[quads[i][2]]));
+            float area = abs(length(cross(pos[tris[i][1]] - pos[tris[i][0]],  pos[tris[i][1]] - pos[tris[i][2]]))/2.0);
             float pInvMass = 0.0;
-            pInvMass = areaDensity * quad_area / 4.0;
-            for (int j = 0; j < 4; j++)
-                invMass[quads[i][j]] += pInvMass;
+            pInvMass = areaDensity * area / 3.0;
+            for (int j = 0; j < 3; j++)
+                invMass[tris[i][j]] += pInvMass;
         }
     }
 
@@ -107,7 +144,7 @@ public:
         auto prim = get_input<PrimitiveObject>("prim");
 
         auto &pos = prim->verts;
-        auto &quads = prim->quads;
+        auto &tris = prim->tris;
         auto &edge = prim->lines;
 
         //面密度，用来算invMass的参数
@@ -115,12 +152,13 @@ public:
 
         auto &invMass = prim->verts.add_attr<float>("invMass");
         auto &restLen = prim->lines.add_attr<float>("restLen");
-        auto &restAng = prim->quads.add_attr<float>("restAng");
+        auto &restAng = prim->quads.add_attr<vec3f>("restAng");
 
+        auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
 
-        initInvMass(pos,quads,areaDensity,invMass);
+        initInvMass(pos,tris,areaDensity,invMass);
         initRestLen(pos,edge,restLen);
-        initRestAng(pos,quads,restAng);
+        initRestAng(pos,tris,adjTriId,restAng);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");

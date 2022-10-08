@@ -46,10 +46,6 @@ struct PBDSolveDihedralConstraint : zeno::INode {
      */
     void solveDihedralConstraint(
         PrimitiveObject * prim,
-        zeno::AttrVector<zeno::vec3f> &pos,
-        const zeno::AttrVector<zeno::vec4i> &quads,
-        const std::vector<float> &invMass,
-        const std::vector<float> &restAng,
         const float dihedralCompliance,
         const float dt
         )
@@ -69,6 +65,12 @@ struct PBDSolveDihedralConstraint : zeno::INode {
         auto & dpos2 = prim->quads.add_attr<vec3f>("dpos2");
         auto & dpos3 = prim->quads.add_attr<vec3f>("dpos3");
         auto & dpos4 = prim->quads.add_attr<vec3f>("dpos4");
+
+
+        auto &pos = prim->verts;
+        auto &quads = prim->quads;
+        auto &invMass = prim->verts.attr<float>("invMass");
+        auto &restAng = prim->quads.attr<float>("restAng");
 
         float alpha = dihedralCompliance / dt / dt;
         vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
@@ -139,15 +141,12 @@ public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto &pos = prim->verts;
-        auto &quads = prim->quads;
-        auto &invMass = prim->verts.attr<float>("invMass");
-        auto &restAng = prim->quads.attr<float>("restAng");
+
 
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
 
-        solveDihedralConstraint(prim.get(),pos, quads, invMass, restAng, dihedralCompliance, dt);
+        solveDihedralConstraint(prim.get(), dihedralCompliance, dt);
 
         set_output("outPrim", std::move(prim));
     };
