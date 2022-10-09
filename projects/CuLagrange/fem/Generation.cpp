@@ -743,6 +743,8 @@ struct ToZSTriMesh : INode {
         tags.insert(std::end(tags), std::begin(auxVertAttribs), std::end(auxVertAttribs));
         eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs), std::end(auxElmAttribs));
 
+        zstris->setMeta(ZenoParticles::s_userDataTag, prim->userData());
+
         constexpr auto space = zs::execspace_e::openmp;
         zstris->particles = std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
         auto &pars = zstris->getParticles();
