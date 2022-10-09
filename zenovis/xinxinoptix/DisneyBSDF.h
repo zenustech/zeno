@@ -237,7 +237,7 @@ namespace DisneyBSDF{
         else
             color = baseColor;
 
-        float c = (HoL * HoV) / (NoL * NoV);
+        float c = (HoL * HoV) / (NoL * NoV + 1e-7);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
@@ -289,7 +289,7 @@ namespace DisneyBSDF{
             float fss90 = HoL * HoL * roughness;
             float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
 
-            float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
+            float ss = 1.25f * (fss * (1.0f / (NoL + NoV + 1e-6) - 0.5f) + 0.5f);
             h = ss;
         }
 
@@ -744,20 +744,20 @@ namespace DisneyBSDF{
             //either go out or turn in
             if (rnd(seed) <= subsurface && subsurface > 0.001f)
             {
-                //keep in, no flag change
+                //go out, flag change
                 wi = -wi;
                 isSS = true;
                 if (thin) {
                     color = sqrt(transmittanceColor);
                 } else {
+                    flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(sssColor, scatterDistance);
                     color = vec3(1.0f);//no attenuation happen
                 }
             }else
             {
-                flag = transmissionEvent;
-                color = transmittanceColor;
+                color = vec3(1.0f);
             }
         }
 
