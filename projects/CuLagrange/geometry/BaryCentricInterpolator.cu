@@ -128,6 +128,8 @@ ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed s
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
 
+
+
 struct ZSSampleEmbedVectorField : zeno::INode {
     void apply() override {
         using namespace zs;
@@ -260,6 +262,134 @@ ZENDEFNODE(ZSSampleEmbedTagField, {{{"volume"}, {"embed tag field", "tag_field"}
                             {"ZSGeometry"}});
 
 
+struct ZSInterpolateEmbedAttr : zeno::INode {
+    template<int DIM,typename SRC_TILEVEC,typename DST_TILEVEC,typename TOPO_TIELVEC,typename BCW_TILEVEC>
+    void interpolate_p2p_imp(const std::string& srcAttr,const std::string& dstAttr,
+            const SRC_TILEVEC& src_tilevec,DST_TILEVEC& dst_tilevec,const TOPO_TIELVEC& src_topo,const BCW_TILEVEC& bcw) {
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if(!dst_tilevec.hasProperty(dstAttr))
+            dst_tilevec.append_channels(cudaExec, {{dstAttr, DIM}});
+
+        cudaExec(zs::range(dst_tilevec.size()),
+            [srcAttr = zs::SmallString{srcAttr},dstAttr = zs::SmallString{dstAttr},
+                    src_tilevec = zs::proxy<space>({},src_tilevec), bcw = zs::proxy<space>({},bcw),
+                    dst_tilevec = zs::proxy<space>({},dst_tilevec),
+                    src_topo = zs::proxy<space>({},src_topo)] ZS_LAMBDA (int vi) mutable {
+                using T = typename RM_CVREF_T(dst_tilevec)::value_type;
+                const auto& ei = bcw.template pack<1>("inds",vi).template reinterpret_bits<int>()[0];
+                if(ei < 0)
+                    return;
+                const auto& inds = src_topo.template pack<4>("inds",ei).template reinterpret_bits<int>();
+
+                const auto& w = bcw.template pack<4>("w",vi);
+                dst_tilevec.template tuple<DIM>(dstAttr,vi) = zs::vec<T,DIM>::zeros();
+                for(size_t i = 0;i < 4;++i){
+                    auto idx = inds[i];
+                    dst_tilevec.template tuple<DIM>(dstAttr,vi) = dst_tilevec.template pack<DIM>(dstAttr,vi) + w[i] * src_tilevec.template pack<DIM>(srcAttr, idx);
+                }
+
+        });
+    }
+
+    template<int DIM,typename QUAD_TILEVEC,typename POINT_TILEVEC,typename BCW_TILEVEC>
+    void interpolate_q2p_imp(const std::string& quadAttr,const std::string& pointAttr,
+            const QUAD_TILEVEC& quad_tilevec,POINT_TILEVEC& point_tilevec,const BCW_TILEVEC& bcw) {
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if(!point_tilevec.hasProperty(pointAttr))
+            point_tilevec.append_channels(cudaExec, {{pointAttr, DIM}});   
+             
+        cudaExec(zs::range(point_tilevec.size()),
+            [pointAttr = zs::SmallString{pointAttr},quadAttr = zs::SmallString{quadAttr},
+                point_tilevec = zs::proxy<space>({},point_tilevec),bcw = zs::proxy<space>({},bcw),
+                quad_tilevec = zs::proxy<space>({},quad_tilevec)] ZS_LAMBDA (int vi) mutable {
+            using T = typename RM_CVREF_T(point_tilevec)::value_type;
+            const auto& ei = bcw.template pack<1>("inds",vi).template reinterpret_bits<int>()[0];
+            if(ei < 0)
+                return;
+            point_tilevec.template tuple<DIM>(pointAttr,vi) = quad_tilevec.template pack<DIM>(quadAttr,ei);
+        });
+    }
+
+
+    void apply() override {
+        using namespace zs;
+        auto source = get_input<ZenoParticles>("source");
+        auto dest = get_input<ZenoParticles>("dest");
+
+        auto srcAttr = get_param<std::string>("srcAttr");
+        auto dstAttr = get_param<std::string>("dstAttr");
+        auto bcw_tag = get_param<std::string>("bcw_tag");
+        auto strategy = get_param<std::string>("strategy");
+        const auto& bcw = (*source)[bcw_tag];
+        auto& dest_pars = dest->getParticles();
+
+        if(bcw.size() != dest_pars.size()) {
+            fmt::print("the dest and bcw's size not match\n");
+            throw std::runtime_error("the dest and bcw's size not match");
+        }
+
+        
+        if(strategy == "p2p") {
+            const auto& source_pars = source->getParticles();
+            const auto& topo = source->getQuadraturePoints();
+            if(!source_pars.hasProperty(srcAttr)) {
+                fmt::print("the source have no {} channel\n",srcAttr);
+                throw std::runtime_error("the source have no specified channel");
+            }           
+            if(topo.getChannelSize("inds") != 4) {
+                fmt::print("only support tetrahedra mesh as source\n");
+                throw std::runtime_error("only support tetrahedra mesh as source");
+            }
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getChannelSize(dstAttr) != source_pars.getChannelSize(srcAttr)){
+                fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
+                throw std::runtime_error("the dest attr and source attr not match in size");
+            }
+
+            if(source_pars.getChannelSize(srcAttr) == 1)
+                interpolate_p2p_imp<1>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+            if(source_pars.getChannelSize(srcAttr) == 2)
+                interpolate_p2p_imp<2>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+            if(source_pars.getChannelSize(srcAttr) == 3)
+                interpolate_p2p_imp<3>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+        }else if(strategy == "q2p") {
+            const auto& source_quads = source->getQuadraturePoints();
+            if(!source_quads.hasProperty(srcAttr)) {
+                fmt::print("the source have no {} channel\n",srcAttr);
+                throw std::runtime_error("the source have no specified channel");
+            }    
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getChannelSize(dstAttr) != source_quads.getChannelSize(srcAttr)){
+                fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
+                throw std::runtime_error("the dest attr and source attr not match in size");
+            }
+
+            if(source_quads.getChannelSize(srcAttr) == 1)
+                interpolate_q2p_imp<1>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+            if(source_quads.getChannelSize(srcAttr) == 2)
+                interpolate_q2p_imp<2>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+            if(source_quads.getChannelSize(srcAttr) == 3)
+                interpolate_q2p_imp<3>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+        }
+        set_output("dest",dest);
+    }
+};
+
+
+ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"}},
+                            {{"dest"}},
+                            {
+                                {"string","srcAttr","x"},
+                                {"string","dstAttr","x"},
+                                {"string","bcw_tag","skin_bw"},
+                                {"enum p2p q2p","strategy","p2p"}
+
+                            },
+                            {"ZSGeometry"}});
+
+// deprecated
 struct ZSInterpolateEmbedPrim : zeno::INode {
     void apply() override {
         using namespace zs;
@@ -278,12 +408,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         // auto use_xform = get_param<int>("use_xform");
 
         auto &everts = zssurf->getParticles();
-
-        auto cudaExec = zs::cuda_exec();
-
-        if(!everts.hasProperty(outAttr))
-            everts.append_channels(cudaExec, {{outAttr, 3}});
-        
+    
         const auto& verts = zstets->getParticles();
         const auto& eles = zstets->getQuadraturePoints();
         const auto& bcw = (*zstets)[tag];
@@ -304,11 +429,11 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         // }
 
         const auto nmEmbedVerts = bcw.size();
-
         if(everts.size() != nmEmbedVerts)
             throw std::runtime_error("INPUT SURF SIZE AND BCWS SIZE DOES NOT MATCH");
 
 
+        auto cudaExec = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
         cudaExec(zs::range(nmEmbedVerts),
@@ -390,7 +515,7 @@ ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}
 struct ZSDeformEmbedPrim : zeno::INode {
     void apply() override {
         using namespace zs;
-        auto zstets = get_input<ZenoParticles>("zsvolume");
+        auto zsvolume = get_input<ZenoParticles>("zsvolume");
         auto zssurf = get_input<ZenoParticles>("zssurf");
 
         auto tag = get_param<std::string>("tag");
@@ -411,9 +536,9 @@ struct ZSDeformEmbedPrim : zeno::INode {
             everts.append_channels(cudaExec, {{outAttr, 3}});
 
         
-        const auto& verts = zstets->getParticles();
-        const auto& eles = zstets->getQuadraturePoints();
-        const auto& bcw = (*zstets)[tag];
+        const auto& verts = zsvolume->getParticles();
+        const auto& eles = zsvolume->getQuadraturePoints();
+        const auto& bcw = (*zsvolume)[tag];
 
         if(!eles.hasProperty(deformField)) {
             fmt::print("the embed prim has no {} deformField\n",deformField);
@@ -438,7 +563,7 @@ struct ZSDeformEmbedPrim : zeno::INode {
                 if(ei < 0)
                     return;
                 everts.template tuple<3>(outAttr,vi) = eles.template pack<3,3>(deformField,ei) * everts.template pack<3>(inAttr,vi);
-                // if(vi == 0){
+                // if(vi == 114754){
                 //     auto dx = everts.template pack<3>(outAttr,vi);
                 //     auto dX = everts.template pack<3>(inAttr,vi);
                 //     auto F = eles.template pack<3,3>(deformField,ei);
@@ -447,17 +572,19 @@ struct ZSDeformEmbedPrim : zeno::INode {
                 //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
                 //         (float)F(2,0),(float)F(2,1),(float)F(2,2)
                 //     );
-                //     printf("dX : %f %f %f\n",(float)dX[0],(float)dX[1],(float)dX[2]);
-                //     printf("dx : %f %f %f\n",(float)dx[0],(float)dx[1],(float)dx[2]);
+                //     printf("Fdet : %f\n",(float)zs::determinant(F));
+                //     printf("dX : %f %f %f with length %f\n",(float)dX[0],(float)dX[1],(float)dX[2],(float)dX.norm());
+                //     printf("dx : %f %f %f with length %f\n",(float)dx[0],(float)dx[1],(float)dx[2],(float)dx.norm());
                 // }
 
         });
         set_output("zssurf",zssurf);
+        set_output("zsvolume",zsvolume);
     }
 };
 
 ZENDEFNODE(ZSDeformEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
-                            {{"embed primitive", "zssurf"}},
+                            {{"embed primitive", "zssurf"},{"zsvolume"}},
                             {
                                 {"string","inAttr","V"},
                                 {"string","outAttr","v"},
