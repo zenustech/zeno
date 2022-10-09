@@ -87,11 +87,14 @@ namespace zeno { namespace PCG {
         constexpr auto space = execspace_e::cuda;
         Vector<T> res{vtemp.get_allocator(), 1};
         res.setVal(0);
+        bool shouldSync = cudaPol.shouldSync();
+        cudaPol.sync(true);
         cudaPol(range(vtemp.size()),
             [data = proxy<space>({}, vtemp), res = proxy<space>(res),tag] __device__(int pi) mutable {
                 auto v = data.template pack<space_dim>(tag, pi);
                 atomic_max(exec_cuda, res.data(), v.abs().max());
         });
+        cudaPol.sync(shouldSync);
         return res.getVal();
     }    
 
@@ -156,8 +159,11 @@ namespace zeno { namespace PCG {
              Op op = {}) {
       using namespace zs;
       Vector<T> ret{res.get_allocator(), 1};
+      bool shouldSync = cudaPol.shouldSync();
+      cudaPol.sync(true);
       zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
                  op);
+      cudaPol.sync(shouldSync);
       return ret.getVal();
     }
 #if 0
@@ -199,6 +205,8 @@ namespace zeno { namespace PCG {
         // auto tag1Offset=vtemp.getChannelOffset(tag1);
         
         // pol.profile(true);
+        bool shouldSync = pol.shouldSync();
+        pol.sync(true);
         pol(range(vtemp.size()),
                 [data = proxy<space>({}, vtemp), res = proxy<space>(res), tag0, tag1, n = vtemp.size()] __device__(int pi) mutable {
                     auto v0 = data.template pack<space_dim>(tag0,pi);
@@ -206,6 +214,7 @@ namespace zeno { namespace PCG {
                     // atomic_add(exec_cuda, res.data(), v0.dot(v1));
                     reduce_to(pi, n, v0.dot(v1), res[0]);
                 });
+        pol.sync(shouldSync);
         // pol.profile(false);
         return res.getVal();
     }
@@ -454,7 +463,7 @@ namespace zeno { namespace PCG {
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
         T residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
         T localTol = rel_accuracy * residualPreconditionedNorm;
-        fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+        // fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
 
         int iter = 0;
         for(;iter != max_iters;++iter){

@@ -52,6 +52,8 @@ struct FleshQuasiStaticStepping : INode {
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{verts.get_allocator(), 1};
       res.setVal(0);
+      bool shouldSync = pol.shouldSync();
+      pol.sync(true);
     //   elastic potential
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
                                eles = proxy<space>({}, eles),
@@ -123,7 +125,7 @@ struct FleshQuasiStaticStepping : INode {
                 // the cnorm here should be the allocated volume of point in embeded tet 
               atomic_add(exec_cuda, &res[0], (T)bpsi);
       });
-
+      pol.sync(shouldSync);
       return res.getVal();
     }
 
@@ -361,13 +363,13 @@ struct FleshQuasiStaticStepping : INode {
     FEMSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
 
     constexpr auto space = execspace_e::cuda;
-    auto cudaPol = cuda_exec();
+    auto cudaPol = cuda_exec().sync(false);
 
     PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
 
 
     if(!eles.hasProperty("fiber")){
-        fmt::print("The input flesh have no fiber orientations, use the default setting\n");
+        // fmt::print("The input flesh have no fiber orientations, use the default setting\n");
         PCG::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
         // throw std::runtime_error("The input flesh should have fiber orientations");
 
@@ -379,13 +381,11 @@ struct FleshQuasiStaticStepping : INode {
       PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
     }
     if(!eles.hasProperty(muscle_id_tag)) {
-
-    // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
-    //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
-    //     throw std::runtime_error("the quadrature has no muscle id tag");
-    // }
-
-      fmt::print("The input flesh have no mosucle_id specified, use the default setting");
+      // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
+      //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+      //     throw std::runtime_error("the quadrature has no muscle id tag");
+      // }
+      // fmt::print("The input flesh have no mosucle_id specified, use the default setting");
       PCG::fill(cudaPol,etemp,"muscle_ID",-1);
     }else {
       PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
@@ -494,8 +494,7 @@ struct FleshQuasiStaticStepping : INode {
       }
       T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
       if(fabs(dg) < btl_res){
-        fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",
-        newtonIter, res);
+        // fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
         break;
       }
       if(dg < 0){
@@ -532,8 +531,8 @@ struct FleshQuasiStaticStepping : INode {
       } while (line_search < max_line_search);
       if(line_search == max_line_search){
           fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
-          for(size_t i = 0;i != max_line_search;++i)
-            fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+          // for(size_t i = 0;i != max_line_search;++i)
+          //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
       }
 
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
@@ -550,6 +549,28 @@ struct FleshQuasiStaticStepping : INode {
               verts.tuple<3>("x", vi) = newX;
             });
 
+    cudaPol.syncCtx();
+
+    // write back muscle activation
+    auto output_act = get_param<int>("output_act");
+    if(output_act) {
+      auto ActTag = get_param<std::string>("actTag");
+      if(!eles.hasProperty(ActTag))
+        eles.append_channels(cudaPol,{{ActTag,1}});
+      PCG::fill(cudaPol,eles,ActTag,0);
+      if(nm_acts > 0) {
+        cudaPol(zs::range(eles.size()),
+          [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
+              act_buffer = proxy<space>({},act_buffer),ActTag = zs::SmallString{ActTag}] __device__(int ei) mutable {
+            auto ID = eles(muscle_id_tag,ei);
+            int id = (int)ID;
+            eles(ActTag,ei) = id > -1 ? act_buffer("act",id) : 0;
+            // eles(ActTag,ei) = id > -1 ? 0.5 : 0;
+        });
+      }
+    }
+
+    cudaPol.syncCtx();
 
     set_output("ZSParticles", zstets);
   }
@@ -560,7 +581,7 @@ ZENDEFNODE(FleshQuasiStaticStepping, {{"ZSParticles","driven_bones","gravity","A
                                   {{"float","armijo","0.1"},{"float","wolfe","0.9"},
                                     {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
                                     {"string","driven_tag","bone_bw"},{"float","bone_driven_weight","0.0"},
-                                    {"string","muscle_id_tag","ms_id_tag"}  
+                                    {"string","muscle_id_tag","ms_id_tag"},{"int","output_act","0"},{"string","actTag","Act"}  
                                   },
                                   {"FEM"}});
 
