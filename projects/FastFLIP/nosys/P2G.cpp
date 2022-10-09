@@ -1,17 +1,18 @@
 #include "FLIP_vdb.h"
+#include "../vdb_velocity_extrapolator.h"
 #include <omp.h>
 #include <zeno/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
 
-#include "../vdb_velocity_extrapolator.h"
-
 namespace zeno {
 
 struct FLIP_P2G : zeno::INode {
   virtual void apply() override {
     auto dx = get_param<float>("dx");
+    auto n = get_param<int>("VelExtraLayer");
+
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
@@ -29,7 +30,7 @@ struct FLIP_P2G : zeno::INode {
         packed_VelGrid, packed_PostP2GVelGrid,
         LiquidSDFGrid->m_grid, Particles->m_grid, dx);
 
-    vdb_velocity_extrapolator::union_extrapolate(3,
+    vdb_velocity_extrapolator::union_extrapolate(n,
 		                            packed_VelGrid.v[0],
 		                            packed_VelGrid.v[1],
 		                            packed_VelGrid.v[2],
@@ -52,6 +53,7 @@ static int defFLIP_P2G =
                                               /* params: */
                                               {
                                                   {"float", "dx", "0.01 0.0"},
+                                                  {"int", "VelExtraLayer", "3"},
                                               },
 
                                               /* category: */

@@ -25,6 +25,7 @@ struct SubtractPressureGradient : zeno::INode {
   virtual void apply() override {
 
     auto dx = get_param<float>("dx");
+    auto n = get_param<int>("VelExtraLayer");
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
@@ -46,7 +47,7 @@ struct SubtractPressureGradient : zeno::INode {
         packed_velocity,
         solid_velocity->m_grid, dx, dt);
 
-    vdb_velocity_extrapolator::union_extrapolate(3,
+    vdb_velocity_extrapolator::union_extrapolate(n,
 		                            packed_velocity.v[0],
 		                            packed_velocity.v[1],
 		                            packed_velocity.v[2],
@@ -72,6 +73,7 @@ static int defSubtractPressureGradient =
                                                   /* params: */
                                                   {
                                                       {"float", "dx", "0.0"},
+                                                      {"int", "VelExtraLayer", "3"},
                                                   },
 
                                                   /* category: */
