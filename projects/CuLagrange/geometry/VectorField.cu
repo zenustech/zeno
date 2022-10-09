@@ -165,7 +165,10 @@ struct ZSRetrieveVectorField : zeno::INode {
         bool on_elm = (type == "quad" || type == "tri");
 
         if((type == "quad" || type == "tri") && (!eles.hasProperty(gtag) || !eles.hasProperty(color_tag))){
-            fmt::print("the elements does not contain element-wise gradient field : {}\n",gtag);
+            if(!eles.hasProperty(gtag))
+                fmt::print("the elements does not contain element-wise gradient field : {}\n",gtag);
+            if(!eles.hasProperty(color_tag))
+                fmt::print("the elements does not contain element-wise color_tag field : {}\n",color_tag);
             throw std::runtime_error("the volume does not contain element-wise gradient field");
         }
         if(type == "vert" && !verts.hasProperty(gtag) && !verts.hasProperty(color_tag)){
