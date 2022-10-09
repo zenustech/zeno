@@ -44,7 +44,10 @@ bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
 
 void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
 {
-    m_timeInfo = info;
+    m_timeInfo.beginFrame = qMin(info.beginFrame, info.endFrame);
+    m_timeInfo.endFrame = qMax(info.beginFrame, info.endFrame);
+    m_timeInfo.currFrame = qMax(qMin(m_timeInfo.currFrame, m_timeInfo.endFrame),
+        m_timeInfo.beginFrame);
 }
 
 TIMELINE_INFO ModelAcceptor::timeInfo() const

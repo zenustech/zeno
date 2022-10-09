@@ -21,8 +21,10 @@ void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const s
     const SmallString tag = channel;
     prim.append_channels(
         pol, {{lTag.asString(), nchn}, {rTag.asString(), nchn}, {tTag.asString(), nchn}, {bTag.asString(), nchn}});
-    pol(Collapse{ny, nx},
-        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int j, int i) mutable {
+    pol(Collapse{(std::size_t)ny * (std::size_t)nx},
+        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(size_t id) mutable {
+            int i = id % nx;
+            int j = id / nx;
             size_t lidx = j * nx + math::max(i - 1, 0);
             size_t ridx = j * nx + math::min(i + 1, nx - 1);
             size_t tidx = math::min(j + 1, ny - 1) * nx + i;
@@ -132,8 +134,10 @@ void edgeLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, cons
     const SmallString tTag = std::string("t") + channel;
     const SmallString bTag = std::string("b") + channel;
     const SmallString tag = addChannel;
-    pol(Collapse{ny, nx},
-        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(int j, int i) mutable {
+    pol(Collapse{(size_t)ny * (size_t)nx},
+        [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(size_t id) mutable {
+            int i = id % nx;
+            int j = id / nx;
             size_t lidx = j * nx + math::max(i - 1, 0);
             size_t ridx = j * nx + math::min(i + 1, nx - 1);
             size_t tidx = math::min(j + 1, ny - 1) * nx + i;
@@ -158,8 +162,10 @@ void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const
     const SmallString tag = channel;
     prim.append_channels(
         pol, {{ltTag.asString(), nchn}, {rtTag.asString(), nchn}, {lbTag.asString(), nchn}, {rbTag.asString(), nchn}});
-    pol(Collapse{ny, nx},
-        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int j, int i) mutable {
+    pol(Collapse{(size_t)ny * (size_t)nx},
+        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(size_t id) mutable {
+            int i = id % nx;
+            int j = id / nx;
             size_t ltidx = math::min(j + 1, ny - 1) * nx + math::max(i - 1, 0);
             size_t rtidx = math::min(j + 1, ny - 1) * nx + math::min(i + 1, nx - 1);
             size_t lbidx = math::max(j - 1, 0) * nx + math::max(i - 1, 0);
@@ -183,8 +189,10 @@ void cornerLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, co
     const SmallString lbTag = std::string("lb") + channel;
     const SmallString rbTag = std::string("rb") + channel;
     const SmallString tag = addChannel;
-    pol(Collapse{ny, nx},
-        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(int j, int i) mutable {
+    pol(Collapse{(size_t)ny * (size_t)nx},
+        [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(size_t id) mutable {
+            int i = id % nx;
+            int j = id / nx;
             size_t ltidx = math::min(j + 1, ny - 1) * nx + math::max(i - 1, 0);
             size_t rtidx = math::min(j + 1, ny - 1) * nx + math::min(i + 1, nx - 1);
             size_t lbidx = math::max(j - 1, 0) * nx + math::max(i - 1, 0);
@@ -322,11 +330,11 @@ struct ZSCheckPrimAttribs : zeno::INode {
                 auto ompPol = omp_exec();
                 constexpr auto space = execspace_e::host;
                 ompPol(range(verts.size()),
-                       [&, verts = proxy<space>({}, verts), tag = SmallString{attribAct}, nchn](int vi) {
+                       [&, verts = proxy<space>({}, verts), tag = SmallString{attribAct}](int vi) {
                            float v, vref;
                            for (int d = 0; d != nchn; ++d) {
                                v = verts(tag, d, vi);
-                               if constexpr (dim == 1)
+                               if constexpr (RM_CVREF_T(dim_v)::value == 1)
                                    vref = gridRef->attr<T>(attrib)[vi];
                                else
                                    vref = gridRef->attr<T>(attrib)[vi][d];

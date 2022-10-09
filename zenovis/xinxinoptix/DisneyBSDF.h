@@ -1216,3 +1216,41 @@ static __inline__ __device__ vec3 proceduralSky(
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
 }
+
+static __inline__ __device__ vec3 hdrSky(
+        vec3 dir
+){
+    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float v = asin(dir.y) / 3.1415926 + 0.5;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
+    return col * params.sky_strength;
+}
+
+static __inline__ __device__ vec3 envSky(
+    vec3 dir,
+    vec3 sunLightDir,
+    vec3 windDir,
+    int steps,
+    float coverage,
+    float thickness,
+    float absorption,
+    float t
+){
+    if (params.usingProceduralSky) {
+        return proceduralSky(
+            dir,
+            sunLightDir,
+            windDir,
+            steps,
+            coverage,
+            thickness,
+            absorption,
+            t
+        );
+    }
+    else {
+        return hdrSky(
+            dir
+        );
+    }
+}

@@ -56,6 +56,7 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
+    void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
@@ -110,6 +111,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -135,7 +137,7 @@ public:
     void init();
     QSize sizeHint() const override;
     TIMELINE_INFO timelineInfo();
-    void setTimelineInfo(TIMELINE_INFO info);
+    void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
 
 public slots:
