@@ -1,4 +1,5 @@
 #include "FLIP_vdb.h"
+#include "../vdb_velocity_extrapolator.h"
 #include <omp.h>
 #include <zeno/MeshObject.h>
 #include <zeno/NumericObject.h>
@@ -36,15 +37,22 @@ struct SubtractPressureGradient : zeno::INode {
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto solid_velocity = get_input("SolidVelocity")->as<VDBFloat3Grid>();
 
-    velocity->m_packedGrid->from_vec3(velocity->m_grid);
+    packed_FloatGrid3 packed_velocity;
+    packed_velocity.from_vec3(velocity->m_grid);
 
     FLIP_vdb::apply_pressure_gradient(
         liquid_sdf->m_grid, solid_sdf->m_grid,
         curr_pressure->m_grid, face_weight->m_grid,
-        *(velocity->m_packedGrid),
+        packed_velocity,
         solid_velocity->m_grid, dx, dt);
 
-    velocity->m_packedGrid->to_vec3(velocity->m_grid);
+    vdb_velocity_extrapolator::union_extrapolate(3,
+		                            packed_velocity.v[0],
+		                            packed_velocity.v[1],
+		                            packed_velocity.v[2],
+	  	                          &(liquid_sdf->m_grid->tree()));
+
+    packed_velocity.to_vec3(velocity->m_grid);
   }
 };
 

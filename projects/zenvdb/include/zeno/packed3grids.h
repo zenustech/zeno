@@ -1,8 +1,9 @@
 #pragma once
 #include "openvdb/openvdb.h"
+#include "zeno/core/IObject.h"
 
 //separately store three channels, used for handling velocity with extrapolation
-struct packed_FloatGrid3 {
+struct packed_FloatGrid3 : zeno::IObject {
 	packed_FloatGrid3() {
 		for (int i = 0; i < 3; i++) {
 			v[i] = openvdb::FloatGrid::create(0.f);
@@ -18,7 +19,7 @@ struct packed_FloatGrid3 {
 	void swap(packed_FloatGrid3& other);
 
 	packed_FloatGrid3 deepCopy() const;
-	packed_FloatGrid3 clone() const;
+	packed_FloatGrid3 fullCopy() const;
 	openvdb::FloatGrid::Ptr v[3];
 	openvdb::GridClass m_gridclass;
 	openvdb::math::Transform::Ptr m_transform;

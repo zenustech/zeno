@@ -98,7 +98,7 @@ packed_FloatGrid3 packed_FloatGrid3::deepCopy() const {
 	return result;
 }
 
-packed_FloatGrid3 packed_FloatGrid3::clone() const {
+packed_FloatGrid3 packed_FloatGrid3::fullCopy() const {
 	packed_FloatGrid3 result = deepCopy();
 	result.m_gridclass = m_gridclass;
 	result.m_transform = m_transform;

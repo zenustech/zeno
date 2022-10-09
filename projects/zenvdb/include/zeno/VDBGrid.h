@@ -193,7 +193,7 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
       if (other.m_grid) {
           m_grid = other.m_grid->deepCopy();
           if (other.hasPackedGrid())
-            m_packedGrid = other.refPackedGrid().clone();
+            m_packedGrid = other.refPackedGrid().fullCopy();
       } else {
           m_grid = nullptr;
           m_packedGrid = {};

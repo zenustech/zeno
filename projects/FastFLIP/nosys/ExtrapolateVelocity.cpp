@@ -17,18 +17,15 @@ struct Vec3FieldExtrapolate : zeno::INode {
         int n = get_param<int>("NumIterates");
         auto velocity = get_input("Field")->as<VDBFloat3Grid>();
         auto liquidsdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
-
-        velocity->m_packedGrid->from_vec3(velocity->m_grid);
-
+#if 0
         vdb_velocity_extrapolator::union_extrapolate(n,
-		                            velocity->m_packedGrid->v[0],
-		                            velocity->m_packedGrid->v[1],
-		                            velocity->m_packedGrid->v[2],
+		                            velocity->v[0],
+		                            velocity->v[1],
+		                            velocity->v[2],
 	  	                            &(liquidsdf->m_grid->tree()));
-
-        velocity->m_packedGrid->to_vec3(velocity->m_grid);
+#endif
         
-        //vdb_velocity_extrapolator::extrapolate(n, velocity->m_grid);
+        vdb_velocity_extrapolator::extrapolate(n, velocity->m_grid);
     }
 };
 

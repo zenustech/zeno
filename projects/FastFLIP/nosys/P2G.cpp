@@ -5,15 +5,8 @@
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
 
-/*FLIP_vdb::particle_to_grid_collect_style(
-        openvdb::points::PointDataGrid::Ptr particles,
-        openvdb::Vec3fGrid::Ptr velocity,
-        openvdb::Vec3fGrid::Ptr velocity_after_p2g,
-        openvdb::Vec3fGrid::Ptr velocity_weights,
-        openvdb::FloatGrid::Ptr liquid_sdf,
-        openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
-        float dx);
- */
+#include "../vdb_velocity_extrapolator.h"
+
 namespace zeno {
 
 struct FLIP_P2G : zeno::INode {
@@ -26,19 +19,24 @@ struct FLIP_P2G : zeno::INode {
     auto Particles = get_input("Particles")->as<VDBPointsGrid>();
     auto VelGrid = get_input("Velocity")->as<VDBFloat3Grid>();
     auto PostP2GVelGrid = get_input("PostP2GVelocity")->as<VDBFloat3Grid>();
-    auto VelWeightGrid = get_input("VelocityWeights")->as<VDBFloat3Grid>();
     auto LiquidSDFGrid = get_input("LiquidSDF")->as<VDBFloatGrid>();
 
-    VelGrid->m_packedGrid->from_vec3(VelGrid->m_grid);
-    PostP2GVelGrid->m_packedGrid->from_vec3(PostP2GVelGrid->m_grid);
+    packed_FloatGrid3 packed_VelGrid, packed_PostP2GVelGrid;
+    packed_VelGrid.from_vec3(VelGrid->m_grid);
+    packed_PostP2GVelGrid.from_vec3(PostP2GVelGrid->m_grid);
 
     FLIP_vdb::particle_to_grid_collect_style(
-        *(VelGrid->m_packedGrid), *(PostP2GVelGrid->m_packedGrid),
+        packed_VelGrid, packed_PostP2GVelGrid,
         LiquidSDFGrid->m_grid, Particles->m_grid, dx);
-//    ExtractedLiquidSDFGrid->m_grid = LiquidSDFGrid->m_grid->deepCopy();
 
-    VelGrid->m_packedGrid->to_vec3(VelGrid->m_grid);
-    PostP2GVelGrid->m_packedGrid->to_vec3(PostP2GVelGrid->m_grid);
+    vdb_velocity_extrapolator::union_extrapolate(3,
+		                            packed_VelGrid.v[0],
+		                            packed_VelGrid.v[1],
+		                            packed_VelGrid.v[2],
+	  	                          &(LiquidSDFGrid->m_grid->tree()));
+
+    packed_VelGrid.to_vec3(VelGrid->m_grid);
+    packed_PostP2GVelGrid.to_vec3(PostP2GVelGrid->m_grid);
   }
 };
 
@@ -48,7 +46,6 @@ static int defFLIP_P2G =
                                                   "Particles",
                                                   "Velocity",
                                                   "PostP2GVelocity",
-                                                  "VelocityWeights",
                                                   "LiquidSDF",
                                               },
                                               /* outputs: */ {},

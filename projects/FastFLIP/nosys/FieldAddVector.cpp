@@ -21,13 +21,14 @@ struct FieldAddVector : zeno::INode {
     auto ivec3 =
         get_input("invec3")->as<zeno::NumericObject>()->get<zeno::vec3f>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
-    
-    velocity->m_packedGrid->from_vec3(velocity->m_grid);
-    
-    FLIP_vdb::field_add_vector(*(velocity->m_packedGrid),
-                                 ivec3[0], ivec3[1], ivec3[2], 1.0);
 
-    velocity->m_packedGrid->to_vec3(velocity->m_grid);
+    packed_FloatGrid3 packed_velocity;
+    packed_velocity.from_vec3(velocity->m_grid);
+    
+    FLIP_vdb::field_add_vector( packed_velocity,
+                                ivec3[0], ivec3[1], ivec3[2], 1.0);
+    
+    packed_velocity.to_vec3(velocity->m_grid);
   }
 };
 
