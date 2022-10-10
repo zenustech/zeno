@@ -599,7 +599,7 @@ struct point_to_counter_reducer2 {
       // old leaf beging and end
       openvdb::Coord olbegin{openvdb::Coord::max()};
       openvdb::Coord olend{openvdb::Coord::min()};
-      float flip_component = (1.0f - m_pic_component);
+      
       float deep_threshold = -4.0 * m_dx;
       float touch_threshold = 0.6f * m_dx;
       float invdx = 1.0f / m_dx;
@@ -616,6 +616,8 @@ struct point_to_counter_reducer2 {
         pIspos);*/
         adv_vel = StaggeredBoxSampler::sample(vaxr, pIspos);
         old_vel = StaggeredBoxSampler::sample(old_vaxr, pIspos);
+
+        float flip_component = (1.0f - m_pic_component);
         float p_liquidsdf =
             openvdb::tools::BoxSampler::sample(liquid_sdf_axr, pIspos);
         float t_coef = 1;
