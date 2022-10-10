@@ -630,6 +630,15 @@ struct point_to_counter_reducer2 {
         }
         if (m_surfacedist > 0)
           flip_component = t_coef * flip_component + (1.0f - t_coef) * 0.95f;
+
+        float p_solidsdf = openvdb::tools::BoxSampler::sample(
+            sdfaxr, pIspos + openvdb::Vec3f{0.5f});
+        if(p_solidsdf >= 0 && p_solidsdf <= 2.0*m_dx)
+        {
+          float scoef = p_solidsdf / (2.0f * m_dx);
+          flip_component = scoef * flip_component + (1.0f - scoef) * 1.0f;
+        }
+
         if (adv_same_field) {
           carried_vel = adv_vel;
         } else {
