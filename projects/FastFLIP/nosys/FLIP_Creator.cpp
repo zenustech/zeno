@@ -51,16 +51,31 @@ struct FLIPCreator : zeno::INode {
 
     rhsgrid->m_grid = pressure->m_grid->deepCopy();
     rhsgrid->m_grid->setName("Divergence");
-
+    
     // velocity
     velocity->m_grid = openvdb::Vec3fGrid::create(openvdb::Vec3f{0});
     velocity->m_grid->setTransform(voxel_center_transform);
     velocity->m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
     velocity->m_grid->setName("Velocity");
+    velocity_after_p2g->m_grid = velocity->m_grid->deepCopy();
+    velocity_after_p2g->m_grid->setName("Velocity_After_P2G");
     velocity_snapshot->m_grid = velocity->m_grid->deepCopy();
     velocity_snapshot->m_grid->setName("Velocity_Snapshot");
     velocity_update->m_grid = velocity->m_grid->deepCopy();
     velocity_update->m_grid->setName("Velocity_Update");
+    /*
+    auto vel_init = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0 });
+	vel_init->setTransform(voxel_center_transform);
+	vel_init->setName("Velocity");
+	vel_init->setGridClass(openvdb::GridClass::GRID_STAGGERED);
+
+	velocity->from_vec3(vel_init, true);
+    velocity_update = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
+    velocity_update->setName("Velocity_Update");
+    velocity_snapshot = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
+    velocity_after_p2g = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
+    */
+    
     solid_velocity->m_grid =
         openvdb::Vec3fGrid::create(openvdb::Vec3f{0, 0, 0});
     solid_velocity->m_grid->setTransform(voxel_center_transform);
@@ -75,14 +90,17 @@ struct FLIPCreator : zeno::INode {
     face_weight->m_grid->setName("Face_Weights");
     face_weight->m_grid->setTransform(voxel_center_transform);
     face_weight->m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
-    liquid_sdf->m_grid = openvdb::FloatGrid::create(3.0f * dx);
+    liquid_sdf->m_grid = openvdb::FloatGrid::create(1.0f * dx);
     liquid_sdf->m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
     liquid_sdf->m_grid->setTransform(voxel_center_transform);
     liquid_sdf->m_grid->setName("Liquid_SDF");
     liquid_sdf_snapshot->m_grid = liquid_sdf->m_grid->deepCopy();
     pushed_out_liquid_sdf->m_grid = liquid_sdf->m_grid->deepCopy();
 
-    solid_sdf->m_grid = openvdb::FloatGrid::create(0.9f * dx);
+    //solid sdf
+	//set background value to be positive to show it is away from the solid
+	//treat it as the narrow band width
+    solid_sdf->m_grid = openvdb::FloatGrid::create(3.0f * dx);
     solid_sdf->m_grid->setTransform(voxel_vertex_transform);
     solid_sdf->m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
     solid_sdf->m_grid->setName("Solid_SDF");
