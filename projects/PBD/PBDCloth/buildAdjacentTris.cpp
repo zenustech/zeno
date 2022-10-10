@@ -12,6 +12,31 @@ using namespace zeno;
  * 
  */
 struct buildAdjacentTris : zeno::INode {
+    
+    //比较两个三角形self与other。他们有一个共享边。
+    //找到other中与self不同的那个点的位置（other的位置），可能是0,1,2
+    int cmp33(vec3i self, vec3i other)
+    {
+        std::vector<bool> isSame{false,false,false};
+        for (size_t i = 0; i < 3; i++)
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                if(self[j] == other[i])//注意是other[i]
+                {
+                    isSame[i] = true;
+                    break;
+                }
+            }
+        }
+
+        for (size_t k = 0; k < 3; k++)
+        {
+            if(isSame[k] == false)
+                return k;
+        }
+        return -1; //没找到
+    }
 
     //找到所有三角形的邻接三角形，然后建立一个邻接表
     void func(PrimitiveObject *prim)
@@ -54,7 +79,7 @@ struct buildAdjacentTris : zeno::INode {
         for(auto &[k,v]:map1) //k是边，v是所属的面
         {
             edgeType inv{k[1],k[0]}; //相反序号的边
-            if(map1.find(inv) != map1.end())
+            if(map1.find(inv) != map1.end()) //如果存在相反序号的共享边
             {
                 const triType & one= map1.at(inv); //其中一个邻接面
                 map2[v].push_back(one);//放到邻接面表中
@@ -73,7 +98,18 @@ struct buildAdjacentTris : zeno::INode {
                 adjTriId[i][j] = ind; //j是0，1，2
             }
         }
-        
+
+        //为了方便使用，我们最好再存一下邻接面的第四个点。
+        auto & adj4th = prim->tris.add_attr<vec3i>("adj4th");
+        std::fill(adj4th.begin(),adj4th.end(),vec3i{-1,-1,-1});//默认值存成-1，表示无邻接面
+        for (size_t i = 0; i < tris.size(); i++) //遍历所有三角面
+        {
+            const multiTriType & adjs = map2.at(tris[i]); //取出所有邻接面adjs(1-3个)
+             for(int j=0; j < adjs.size(); j++) //对每个邻接面adjs[j]
+            {
+                adj4th[i][j] = adjs[j][cmp33(tris[i],adjs[j])];//比较得到邻接面中哪个点与自身不同。
+            }
+        }
     }
 
 

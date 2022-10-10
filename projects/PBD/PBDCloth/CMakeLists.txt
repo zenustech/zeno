@@ -6,6 +6,7 @@ target_sources(zeno PRIVATE
     buildAdjacentTris.cpp
     PBDSetFixedPoint.cpp
     PBDSolveDihedralConstraint.cpp
+    PBDDihedralConstraint.cpp
     buildCloth.cpp
     buildEdgeFromTris.cpp
     lines2tris.cpp

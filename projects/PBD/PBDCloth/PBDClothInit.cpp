@@ -1,6 +1,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulateQuads
+#include <limits>
+#include <iostream>
+using std::cout;
 namespace zeno {
 /**
  * @brief 这个节点是用来为PBD的布料模拟初始化invMass, restLen和restAng的。
@@ -28,8 +31,8 @@ struct PBDClothInit : zeno::INode {
         n1 = n1 / length(n1);
         auto n2 = cross((p2 - p1), (p4 - p1));
         n2 = n2 / length(n2);
-        auto res = dot(n1, n2);
-        if(res<-1.0) res = -1.0;
+        auto res = abs(dot(n1, n2)); //只计算锐角。TODO:是否该如此存疑。
+        if(res<-1.0) res = -1.0;  
         if(res>1.0)  res = 1.0;
         return acos(res);
     }
@@ -83,11 +86,15 @@ struct PBDClothInit : zeno::INode {
             int pid4 = -1;      //第四个点要搜索另一个面的点
             for (int j = 0; j < 3; j++)
             {
+                //因为可能有-1，所以默认值设置负的很大的数字来表示不存在该角度（因为不存在该邻接面）
+                restAng[i][j] = std::numeric_limits<float>::lowest(); 
                 if(adjTriId[i][j] != -1) //如果是负一证明该边没有邻接面
                 {
                     vec3i other = tris[adjTriId[i][j]]; //取出一个邻接三角面
                     //再找到非本身三个点的那个点，作为第四个点。
                     pid4 = other[cmp33(self, other)];
+                    if(pid4==-1)
+                        throw std::runtime_error("the adjacent tris failed");
                     restAng[i][j] = computeAng(pos[pid1],pos[pid2],pos[pid3],pos[pid4]);
                 }
             }
@@ -152,7 +159,7 @@ public:
 
         auto &invMass = prim->verts.add_attr<float>("invMass");
         auto &restLen = prim->lines.add_attr<float>("restLen");
-        auto &restAng = prim->quads.add_attr<vec3f>("restAng");
+        auto &restAng = prim->tris.add_attr<vec3f>("restAng");
 
         auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
 

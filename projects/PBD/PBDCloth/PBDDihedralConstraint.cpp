@@ -3,122 +3,125 @@
 
 using namespace zeno;
 struct PBDDihedralConstraint : zeno::INode {
+    inline vec3f calcNormal(const vec3f & vec1, const vec3f & vec2)
+    {
+        auto res = cross(vec1, vec2);
+        res = res / length(res);
+        return res;
+    }
 
-    void constraint(
-        const vec3f & p1,
-        const vec3f & p2,
-        const vec3f & p3,
-        const vec3f & p4,
-        const float invMass1,
-        const float invMass2,
-        const float invMass3,
-        const float invMass4,
-        const float restAng,
-        const float dihedralCompliance,
-        const float dt,
-        const vec3f &n1,
-        const vec3f &n2,
-        vec3f & dp1,
-        vec3f & dp2,
-        vec3f & dp3,
-        vec3f & dp4,
+    /**
+     * @brief 求解给定四个点二面角约束。用于布料。
+     * 
+     * @param pos 输入的四个点位置
+     * @param invMass 输入四个点质量倒数
+     * @param restAng 输入四个点之间的夹角
+     * @param dihedralCompliance 物理参数，柔度
+     * @param dt 物理参数，时间步长
+     * @param dpos 待求解的对4个位置的修正值。是返回值。
+     */
+    void dihedralConstraint(
+        const std::array<vec3f,4> & pos,
+        const vec4f & invMass,
+        const float  restAng,
+        float dihedralCompliance,
+        float dt,
+        std::array<vec3f,4> & dpos
         )
     {
         float alpha = dihedralCompliance / dt / dt;
 
-        //compute grads
-        p2 = p2 - p1;
-        p3 = p3 - p1;
-        p4 = p4 - p1;
-        float d = dot(n1,n2);
-        grad3 =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
-        grad4 =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
-        grad2 = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
-                        -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
-        grad1 = - grad2 - grad3 - grad4;
+        vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
 
-        //compute denominator
+        //计算梯度。先对每个点求相对p1的位置。只是为了准备数据。
+        vec3f p1 = pos[0];
+        vec3f p2 = pos[1] - p1;
+        vec3f p3 = pos[2] - p1;
+        vec3f p4 = pos[3] - p1;
+        vec3f n1 = calcNormal(p2, p3); //p2与p3叉乘所得面法向
+        vec3f n2 = calcNormal(p2, p4);
+        float d = dot(n1,n2); 
+
+        //参考Muller2006附录公式(25)-(28)
+        grad[2] =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
+        grad[3] =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
+        grad[1] = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
+                        -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
+        grad[0] = - grad[1] - grad[2] - grad[3];
+
+        //公式（8）的分母
         float w = 0.0;
-        w += invMass1 * (length(grad1)) * (length(grad1));
-        w += invMass2 * (length(grad2)) * (length(grad2));
-        w += invMass3 * (length(grad3)) * (length(grad3));
-        w += invMass4 * (length(grad4)) * (length(grad4));
+        for (int j = 0; j < 4; j++)
+            w += invMass[j] * (length(grad[j])) * (length(grad[j]));
+        if(w==0.0)
+            return; //防止分母为0
         
-        //compute scaling factor
+        //公式（8）。sqrt(1-d*d)来源请看公式（29），实际上来自grad。
         float ang = acos(d);
         float C = (ang - restAng);
         float s = -C * sqrt(1-d*d) /(w + alpha);
-        
-        dpos1 = grad1 * s * invMass1;
-        dpos2 = grad2 * s * invMass2;
-        dpos3 = grad3 * s * invMass3;
-        dpos4 = grad4 * s * invMass4;
+
+        for (int j = 0; j < 4; j++)
+            dpos[j] = grad[j] * s * invMass[j];
     }
 
 
 public:
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
 
-        auto i = get_input<zeno::NumericObject>("triangle1")->get<int>();
-        auto j = get_input<zeno::NumericObject>("triangle2")->get<int>();
+        auto p1 = get_input<zeno::NumericObject>("p1")->get<vec3f>();
+        auto p2 = get_input<zeno::NumericObject>("p2")->get<vec3f>();
+        auto p3 = get_input<zeno::NumericObject>("p3")->get<vec3f>();
+        auto p4 = get_input<zeno::NumericObject>("p4")->get<vec3f>();
+        auto invMass1 = get_input<zeno::NumericObject>("invMass1")->get<float>();
+        auto invMass2 = get_input<zeno::NumericObject>("invMass2")->get<float>();
+        auto invMass3 = get_input<zeno::NumericObject>("invMass3")->get<float>();
+        auto invMass4 = get_input<zeno::NumericObject>("invMass4")->get<float>();
+        auto restAng4p = get_input<zeno::NumericObject>("restAng4p")->get<float>();
 
-        //取出数据。 假设 三角形为1-2-4， 2-3-4， 边2-4 为邻接边
-        const vec3i &tri1 = prim->tris[i];
-        const vec3i &tri2 = prim->tris[j];
-        int id1 = tri1[0];
-        int id2 = tri1[1];
-        int id3 = tri2[1];
-        int id4 = tri1[2];
-        const auto & pos = prim->verts;
-        const vec3f & p1 = pos[id1];
-        const vec3f & p2 = pos[id2];
-        const vec3f & p3 = pos[id3];
-        const vec3f & p4 = pos[id4];
-        const auto &invMass = prim->verts.attr<float>("invMass");
-        const float invMass1 =  invMass[id1];
-        const float invMass2 =  invMass[id2];
-        const float invMass3 =  invMass[id3];
-        const float invMass4 =  invMass[id4];
-        const float restAng = prim->tris.attr<float>("restAng")[];
+        std::array<vec3f,4> pos4p{p1,p2,p3,p4};
+        std::array<vec3f,4> dpos4p;
+        for (auto & x: dpos4p)
+            x = vec3f{0,0,0};
+        std::array<float,4> invMass4p{invMass1, invMass2, invMass3, invMass4};
 
-        constraint(
-        p1,
-        p2,
-        p3,
-        p4,
-        invMass1,
-        invMass2,
-        invMass3,
-        invMass4,
-        restAng,
-        dihedralCompliance,
-        dt,
-        n1,
-        n2,
-        dp1,
-        dp2,
-        dp3,
-        dp4,
-        );
+        dihedralConstraint(pos4p, invMass4p, restAng4p, dihedralCompliance, dt,  dpos4p);
 
+        auto & dpos1 = std::make_shared<NumericObject> (dpos4p[0]);
+        auto & dpos2 = std::make_shared<NumericObject> (dpos4p[1]);
+        auto & dpos3 = std::make_shared<NumericObject> (dpos4p[2]);
+        auto & dpos4 = std::make_shared<NumericObject> (dpos4p[3]);
 
-        set_output("outPrim", std::move(prim));
+        set_output("dpos1", std::move(dpos1));
+        set_output("dpos2", std::move(dpos2));
+        set_output("dpos3", std::move(dpos3));
+        set_output("dpos4", std::move(dpos4));
     };
 };
 
 ZENDEFNODE(PBDDihedralConstraint, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
                     {"float", "dihedralCompliance", "0.0"},
                     {"float", "dt", "0.0016667"},
-                    {"int", "triangle1", ""},
-                    {"int", "triangle2", ""},
+                    {"vec3f", "p1", ""},
+                    {"vec3f", "p2", ""},
+                    {"vec3f", "p3", ""},
+                    {"vec3f", "p4", ""},
+                    {"float", "invMass1", ""},
+                    {"float", "invMass2", ""},
+                    {"float", "invMass3", ""},
+                    {"float", "invMass4", ""},
+                    {"float", "restAng4p", ""},
                 },
                  // outputs:
-                 {"outPrim"},
+                 {
+                    {"vec3f", "dpos1"},
+                    {"vec3f", "dpos2"},
+                    {"vec3f", "dpos3"},
+                    {"vec3f", "dpos4"},
+                 },
                  // params:
                  {},
                  //category
