@@ -103,7 +103,9 @@ jobs:
         ls $env:CUDA_PATH\lib
         ls $env:CUDA_PATH\lib\cmake
         ls $env:CUDA_PATH\lib\x64
+        echo "PATH is $($env:PATH)"
         nvcc -V
+        python misc/ci/fuckwenpath.py
 
     - name: Check CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
@@ -133,8 +135,9 @@ jobs:
         buildPreset: default
 
     - name: Process CMake Error
-      if: ${{ (failure() && steps.run_cmake.outcome == 'failure') || success() }}
-      working-directory: ${{ env.build_dir }}
+      if: ${{ (failure() && steps.run_cmake.outcome == 'failure') }}
+      #if: ${{ (failure() && steps.run_cmake.outcome == 'failure') || success() }}
+      working-directory: ${{ github.workspace }}
       shell: bash
       run: |
           if [[ -f "build/CMakeFiles/CMakeOutput.log" ]]; then

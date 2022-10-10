@@ -66,6 +66,14 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
     emit perspectiveUpdated(perspective);
 }
 
+void Zenovis::updateCameraFront(QVector3D center, QVector3D front, QVector3D up) {
+    if (session) {
+        session->look_to_dir(center.x(), center.y(), center.z(),
+                             front.x(), front.y(), front.z(),
+                             up.x(), up.y(), up.z());
+    }
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;

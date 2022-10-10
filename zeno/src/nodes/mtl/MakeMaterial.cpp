@@ -130,7 +130,7 @@ struct ExtractMaterialShader : zeno::INode
           },
           {},
           {
-              "shader",
+              "deprecated",
           },
       });
 
@@ -187,8 +187,9 @@ struct ExtractMaterialShader : zeno::INode
                 }
             }
 
-            obj->userData().setLiterial("isL", std::move(isL));
-            obj->userData().setLiterial("ivD", std::move(inverdir));
+            obj->userData().set2("isRealTimeObject", std::move(isL));
+            obj->userData().set2("isL", std::move(isL));
+            obj->userData().set2("ivD", std::move(inverdir));
             set_output("object", std::move(obj));
         }
     };

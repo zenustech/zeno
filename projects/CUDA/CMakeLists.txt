@@ -23,116 +23,36 @@ find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)
+target_include_directories(zshelper INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
 target_link_libraries(zshelper INTERFACE zensim ZFX)
-
-target_compile_features(zeno PRIVATE cuda_std_17)
-
-#[=[
-target_compile_options(zeno
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+target_compile_features(zshelper INTERFACE cuda_std_17)
+target_link_options(zshelper
+  INTERFACE $<$<LINK_LANGUAGE:CUDA>:-dlto>
 )
-#]=]
-target_link_options(zeno
-  PUBLIC $<$<LINK_LANGUAGE:CUDA>:-dlto>
-)
-target_link_libraries(zeno PRIVATE zshelper CUDA::cufft)
+target_link_libraries(zeno PRIVATE zshelper)
 
 #[=[
 target_sources(zeno PRIVATE
   test1.cu
 )
-set_target_properties(zeno
-  PROPERTIES  CUDA_EXTENSIONS ON
-  CUDA_SEPARABLE_COMPILATION ON
-# LINKER_LANGUAGE CUDA
-  POSITION_INDEPENDENT_CODE ON
-# CUDA_ARCHITECTURES OFF
-)
 #]=]
-
-# fluid
-target_sources(zeno PRIVATE
-  volume/VolumeTopology.cu
-  volume/VolumeOperator.cu
-  volume/Transfer.cu
-  volume/Conversion.cu
+set_target_properties(zeno
+  PROPERTIES # CUDA_EXTENSIONS ON
+  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_ARCHITECTURES OFF
 )
-
-# mpm
-target_sources(zeno PRIVATE
-  utils/IndexBuckets.cu
-  mpm/Boundary.cu
-  mpm/Generation.cu
-  mpm/Generation.cpp
-  mpm/Transfer.cu
-  mpm/MPMPipeline.cu
-  mpm/Maintenance.cu
-  mpm/Temp.cu
-)
-
-# pbd
-target_sources(zeno PRIVATE
-  pbd/PBDInit.cu
-  pbd/PBDPipeline.cu
-)
-
-# fem
-target_sources(zeno PRIVATE
-  fem/SolverInit.cu
-  fem/SolverPipeline.cu
-  fem/SolverLinearSystem.cu
-  fem/SolverIPC.cu
-  fem/BoundaryCondition.cu
-  fem/Collisions.cu
-
-  # fem/TimeStepping.cu
-  fem/Check.cu
-  fem/Generation.cpp
-  fem/test.cpp
-  fem/MeshIO.cpp
-  fem/Fiber.cpp
-  fem/Integrator.cpp
-  fem/QuasiStaticStepping.cu
-
-  # fem/BaryCentricInterpolator.cu
-  fem/Codim.cu
-
-  # fem/TestAugLag.cu
-  fem/FastQuasiStaticStepping.cu
-
-  fem/FleshQuasiStepping.cu
-)
-
-# geometry
-target_sources(zeno PRIVATE
-  geometry/file_parser/read_vtk_mesh.hpp
-  geometry/file_parser/write_vtk_unstructured_mesh.hpp
-  geometry/file_parser/vtk_types.hpp
-  geometry/linear_system/mfcg.hpp
-  geometry/linear_system/active_set.hpp
-  geometry/kernel/laplace_matrix.hpp
-  geometry/kernel/gradient_field.hpp
-  geometry/kernel/bary_centric_weights.hpp
-  geometry/SolveLaplacian.cu
-  geometry/VectorField.cu
-  geometry/SetupSkinningWeight.cu
-  geometry/Skinning.cu
-  geometry/BaryCentricInterpolator.cu
-  geometry/BiharmonicBoundedWeight.cu
-  geometry/MeshIO.cu
-  geometry/Jiggle.cu
-)
-
-# ocean
-# target_sources(zeno PRIVATE
-# oceanfft/Ocean.cu
-# )
 
 # wrangler
-if(NOT MSVC)
-  target_sources(zeno PRIVATE
-    mpm/PW.cu
-    mpm/PNW.cu
-    mpm/PPW.cu
-  )
-endif()
+target_sources(zeno PRIVATE
+  utils/IndexBuckets.cu
+  utils/Primitives.cu
+  wrangle/PW.cu
+  wrangle/P2W.cu
+  wrangle/PNW.cu
+  wrangle/PNBVHW.cu
+  wrangle/PPW.cu
+)
+

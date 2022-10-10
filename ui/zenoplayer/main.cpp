@@ -6,6 +6,7 @@
 #include "zeno/extra/assetDir.h"
 #include <zeno/utils/logger.h>
 #include "AudioFile.h"
+#define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 

@@ -31,6 +31,9 @@ struct Session : zeno::disable_copy {
     void look_perspective(float cx, float cy, float cz, float theta,
                           float phi, float radius, float fov,
                           bool ortho_mode, float aperture, float focalPlaneDistance);
+    void look_to_dir(float cx, float cy, float cz,
+                     float dx, float dy, float dz,
+                     float ux, float uy, float uz);
     void do_screenshot(std::string path, std::string type);
     //void new_frame_offline(std::string path, int nsamples);
     void set_background_color(float r, float g, float b);
@@ -42,9 +45,7 @@ struct Session : zeno::disable_copy {
     void set_render_wireframe(bool render_wireframe);
     void set_render_engine(std::string const &name);
     void set_interactive(bool interactive);
-    void set_hovered_graphic(std::string hovered_graphic_id);
-    void set_interactive_graphics(std::map<std::string, std::unique_ptr<IGraphicInteractDraw>> &interactGraphics);
-    void set_interacting_graphics(std::set<std::unique_ptr<IGraphicDraw>> &interactGraphics);
+    void set_handler(std::shared_ptr<IGraphicHandler> &handler);
     bool focus_on_node(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void load_opengl_api(void *procaddr);
     Scene* get_scene() const;

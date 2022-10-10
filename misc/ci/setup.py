@@ -10,7 +10,7 @@ if sys.platform == 'linux':
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',
-        'autoconf-archive', 'libcgal-dev',
+        'autoconf-archive', 'libcgal-dev', 'libxext-dev',
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',

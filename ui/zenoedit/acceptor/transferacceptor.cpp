@@ -1,12 +1,12 @@
 #include <QtWidgets>
-#include <zenoui/model/modelrole.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "transferacceptor.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"
 #include <zenoio/reader/zsgreader.h>
-#include "../nodesys/nodesmgr.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/nodesmgr.h>
+#include <zenomodel/include/uihelper.h>
 
 
 TransferAcceptor::TransferAcceptor(IGraphsModel* pModel)
@@ -190,8 +190,7 @@ void TransferAcceptor::setInputSocket(
             descInfo = desc.inputs[inSock].info;
         }
 
-        //curve?
-        defaultValue = ZsgReader::getInstance()._parseToVariant(descInfo.type, defaultVal, nullptr);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
     }
 
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
@@ -256,7 +255,10 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
             paramInfo = desc.params[name];
         }
         //todo: parentRef;
-        var = ZsgReader::getInstance()._parseToVariant(paramInfo.typeDesc, value, nullptr);
+        if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value, nullptr);
+        else
+            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, nullptr);
     }
 
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -330,6 +332,11 @@ void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
 {
 }
 
+TIMELINE_INFO TransferAcceptor::timeInfo() const
+{
+    return TIMELINE_INFO();
+}
+
 void TransferAcceptor::setLegacyCurve(
     const QString& id,
     const QVector<QPointF>& pts,
@@ -349,7 +356,21 @@ void TransferAcceptor::endInputs(const QString& id, const QString& nodeCls)
 
 void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
+    if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+    {
+        NODE_DATA& data = m_nodes[id];
+        PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+        ZASSERT_EXIT(params.find("name") != params.end() &&
+            params.find("type") != params.end() &&
+            params.find("defl") != params.end());
 
+        const QString& descType = params["type"].value.toString();
+        PARAM_INFO& defl = params["defl"];
+        defl.control = UiHelper::getControlType(descType);
+        defl.value = UiHelper::parseVarByType(descType, defl.value, nullptr);
+        defl.typeDesc = descType;
+        data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+    }
 }
 
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const

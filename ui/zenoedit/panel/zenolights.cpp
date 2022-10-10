@@ -1,7 +1,6 @@
 #include "zenolights.h"
-#include "graphsmanagment.h"
-#include "model/graphsmodel.h"
-#include "model/modelrole.h"
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
@@ -28,8 +27,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
     QHBoxLayout* pSunLightLayout = new QHBoxLayout;
+    pMainLayout->addLayout(pSunLightLayout);
 
-    QLabel* sunLongitudeLabel = new QLabel(tr("sunLongitude: "));
+    QLabel* sunLongitudeLabel = new QLabel(tr("Longitude: "));
     sunLongitudeLabel->setProperty("cssClass", "proppanel");
     pSunLightLayout->addWidget(sunLongitudeLabel);
 
@@ -37,7 +37,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     sunLongitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLongitude);
 
-    QLabel* sunLatitudeLabel = new QLabel(tr("sunLatitude: "));
+    QLabel* sunLatitudeLabel = new QLabel(tr("Latitude: "));
     sunLatitudeLabel->setProperty("cssClass", "proppanel");
     pSunLightLayout->addWidget(sunLatitudeLabel);
 
@@ -45,12 +45,54 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     sunLatitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLatitude);
 
-    pMainLayout->addLayout(pSunLightLayout);
+    QLabel* sunSoftnessLabel = new QLabel(tr("Softness: "));
+    sunSoftnessLabel->setProperty("cssClass", "proppanel");
+    pSunLightLayout->addWidget(sunSoftnessLabel);
+
+    sunSoftness->setProperty("cssClass", "proppanel");
+    sunSoftness->setNumSlider({ 0.01, .1 });
+    pSunLightLayout->addWidget(sunSoftness);
+
+    QHBoxLayout* pWindLayout = new QHBoxLayout;
+    pMainLayout->addLayout(pWindLayout);
+
+    QLabel* sunWindLongLabel = new QLabel(tr("WindLong: "));
+    sunWindLongLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(sunWindLongLabel);
+
+    windLong->setProperty("cssClass", "proppanel");
+    windLong->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(windLong);
+
+    QLabel* sunWindLatLabel = new QLabel(tr("WindLat: "));
+    sunWindLatLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(sunWindLatLabel);
+
+    windLat->setProperty("cssClass", "proppanel");
+    windLat->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(windLat);
+
+    QLabel* timeStartLabel = new QLabel(tr("TimeStart: "));
+    timeStartLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(timeStartLabel);
+
+    timeStart->setProperty("cssClass", "proppanel");
+    timeStart->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(timeStart);
+
+    QLabel* timeSpeedLabel = new QLabel(tr("TimeSpeed: "));
+    timeSpeedLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(timeSpeedLabel);
+
+    timeSpeed->setProperty("cssClass", "proppanel");
+    timeSpeed->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(timeSpeed);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
     write_btn->setProperty("cssClass", "grayButton");
     write_all_btn->setProperty("cssClass", "grayButton");
+    procedural_sky_btn->setProperty("cssClass", "grayButton");
     connect(write_btn, &QPushButton::clicked, this, [&](){
         QModelIndex index = lights_view->currentIndex();
         if (index.row() >= 0) {
@@ -69,8 +111,18 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             }
         }
     });
+    connect(procedural_sky_btn, &QPushButton::clicked, this, [&](){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+            if (key.find("ProceduralSky") != std::string::npos) {
+                QString primid = QString(key.c_str());
+                write_param_into_node(primid);
+            }
+        }
+    });
     pTitleLayout->addWidget(write_btn);
     pTitleLayout->addWidget(write_all_btn);
+    pTitleLayout->addWidget(procedural_sky_btn);
 
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
@@ -319,6 +371,11 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     connect(sunLatitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunLongitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(sunSoftness, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(timeStart, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(timeSpeed, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(windLong, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(windLat, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
 
     connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
@@ -446,9 +503,45 @@ void ZenoLights::modifySunLightDir() {
     float sunLongitudeValue = sunLongitude->text().toFloat();
     float sunLatitudeValue = sunLatitude->text().toFloat();
     zeno::vec2f sunLightDir = zeno::vec2f(sunLongitudeValue, sunLatitudeValue);
-    auto &ud = zeno::getSession().userData();
-    ud.set2("sunLightDir", sunLightDir);
+
+    float windLongValue = windLong->text().toFloat();
+    float windLatValue = windLat->text().toFloat();
+    zeno::vec2f windDir = zeno::vec2f(windLongValue, windLatValue);
+
+    float sunSoftnessValue = sunSoftness->text().toFloat();
+    float timeStartValue = timeStart->text().toFloat();
+    float timeSpeedValue = timeSpeed->text().toFloat();
+
+    bool found = false;
+
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
+        if (key.find("ProceduralSky") != std::string::npos) {
+            found = true;
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
+                prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
+                prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
+                prim_in->userData().set2("windDir", std::move(windDir));
+                prim_in->userData().set2("timeStart", std::move(timeStartValue));
+                prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
+            }
+        }
+    }
+    auto &ud = zeno::getSession().userData();
+    if (found) {
+        ud.erase("sunLightDir");
+        ud.erase("sunLightSoftness");
+        ud.erase("windDir");
+        ud.erase("timeStart");
+        ud.erase("timeSpeed");
+    }
+    else {
+        ud.set2("sunLightDir", std::move(sunLightDir));
+        ud.set2("sunLightSoftness", std::move(sunSoftnessValue));
+        ud.set2("windDir", std::move(windDir));
+        ud.set2("timeStart", std::move(timeStartValue));
+        ud.set2("timeSpeed", std::move(timeSpeedValue));
+    }
     scene->objectsMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();
 }
@@ -458,28 +551,40 @@ void ZenoLights::write_param_into_node(const QString& primid) {
     if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
         return;
     }
-    auto light = scene->objectsMan->lightObjects[primid.toStdString()];
-    auto ud = light->userData();
+    auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
+    auto ud = realtime_obj->userData();
     IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (pIGraphsModel == nullptr) {
         return;
     }
     auto subgraphIndices = pIGraphsModel->subgraphsIndice();
 
-    for (const auto &subGpIdx: subgraphIndices) {
-        auto items = pIGraphsModel->nodes(subGpIdx);
-        for (const auto &item: items) {
+    for (const auto &subGpIdx : subgraphIndices) {
+        int n = pIGraphsModel->itemCount(subGpIdx);
+        for (int i = 0; i < n; i++) {
+            const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
-                auto p = ud.get2<zeno::vec3f>("pos");
-                auto s = ud.get2<zeno::vec3f>("scale");
-                auto r = ud.get2<zeno::vec3f>("rotate");
-                auto c = ud.get2<zeno::vec3f>("color");
-                inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
-                inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
-                inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
-                inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
-                inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+                if (ud.get2<int>("isL", 0)) {
+                    auto p = ud.get2<zeno::vec3f>("pos");
+                    auto s = ud.get2<zeno::vec3f>("scale");
+                    auto r = ud.get2<zeno::vec3f>("rotate");
+                    auto c = ud.get2<zeno::vec3f>("color");
+                    inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
+                    inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
+                    inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
+                    inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
+                    inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+                }
+                else if (ud.get2<int>("ProceduralSky", 0)) {
+                    auto d = ud.get2<zeno::vec2f>("sunLightDir");
+                    auto w = ud.get2<zeno::vec2f>("windDir");
+                    inputs["sunLightDir"].info.defaultValue.setValue(UI_VECTYPE({d[0], d[1]}));
+                    inputs["windDir"].info.defaultValue.setValue(UI_VECTYPE({w[0], w[1]}));
+                    inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
+                    inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
+                    inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
+                }
                 auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
                 pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
             }

@@ -1,6 +1,6 @@
 #include "zenosocketitem.h"
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 
 
 ZenoSocketItem::ZenoSocketItem(

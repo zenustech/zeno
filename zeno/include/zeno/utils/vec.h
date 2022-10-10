@@ -7,12 +7,15 @@
 #include <limits>
 
 namespace zeno {
+namespace _impl_vec {
+
 template <class T, class S>
 constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
 
 /* main class definition */
 
-template <size_t N, class T> struct vec : std::array<T, N> {
+template <size_t N, class T>
+struct vec : std::array<T, N> {
   vec() = default;
   explicit vec(T const &x) {
     for (size_t i = 0; i < N; i++) {
@@ -30,6 +33,8 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     }
   }
 
+/*
+  // will not be called for implicit or explicit conversion
   operator std::array<T, N>() const {
     std::array<T, N> res;
     for (size_t i = 0; i < N; i++) {
@@ -37,6 +42,7 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     }
     return res;
   }
+*/
 
   template <class S>
   explicit vec(vec<N, S> const &x) {
@@ -189,7 +195,7 @@ inline auto other_to_vec(OtherT const &x) {
 /* element-wise operations */
 
 template <size_t N, class T, class F>
-inline auto vapply(F const &f, vec<N, T> const &a) {
+inline auto _vec_apply(F const &f, vec<N, T> const &a) {
   vec<N, decltype(f(a[0]))> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i]);
@@ -198,12 +204,12 @@ inline auto vapply(F const &f, vec<N, T> const &a) {
 }
 
 template <class T, class F, std::enable_if_t<!is_vec_v<T>, bool> = true>
-inline auto vapply(F const &f, T const &a) {
+inline auto _vec_apply(F const &f, T const &a) {
   return f(a);
 }
 
 template <size_t N, class T, class S, class F>
-inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
+inline auto _vec_apply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
   vec<N, decltype(f(a[0], b[0]))> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i], b[i]);
@@ -213,7 +219,7 @@ inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F,
           std::enable_if_t<!is_vec_v<T>, bool> = true>
-inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
+inline auto _vec_apply(F const &f, T const &a, vec<N, S> const &b) {
   vec<N, decltype(f(a, b[0]))> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a, b[i]);
@@ -223,7 +229,7 @@ inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F,
           std::enable_if_t<!is_vec_v<S>, bool> = true>
-inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
+inline auto _vec_apply(F const &f, vec<N, T> const &a, S const &b) {
   vec<N, decltype(f(a[0], b))> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i], b);
@@ -233,35 +239,35 @@ inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
 
 template <class T, class S, class F,
           std::enable_if_t<!is_vec_v<T> && !is_vec_v<S>, bool> = true>
-inline auto vapply(F const &f, T const &a, S const &b) {
+inline auto _vec_apply(F const &f, T const &a, S const &b) {
   return f(a, b);
 }
 
 template <class T, class S>
 inline constexpr bool
-    is_vapply_v = (is_vec_v<T> || is_vec_v<S>) &&
+    is__vec_apply_v = (is_vec_v<T> || is_vec_v<S>) &&
     (std::is_arithmetic_v<T> || std::is_arithmetic_v<S>
      || is_vec_n<T> == is_vec_n<S>);
 
 template <class T, class S, class F,
-          std::enable_if_t<is_vapply_v<T, S>, bool> = true>
-inline auto vapply(F const &f, T const &a, S const &b) {
+          std::enable_if_t<is__vec_apply_v<T, S>, bool> = true>
+inline auto _vec_apply(F const &f, T const &a, S const &b) {
   return f(a, b);
 }
 
 #define _PER_OP2(op)                                                           \
   template <class T, class S,                                                  \
-            std::enable_if_t<is_vapply_v<T, S>, bool> = true,                  \
+            std::enable_if_t<is__vec_apply_v<T, S>, bool> = true,                  \
             decltype(std::declval<decay_vec_t<T>>()                            \
                          op std::declval<decay_vec_t<S>>(),                    \
                      true) = true>                                             \
   inline auto operator op(T const &a, S const &b)->decltype(auto) {            \
-    return vapply([](auto const &x, auto const &y) { return x op y; }, a, b);  \
+    return _vec_apply([](auto const &x, auto const &y) { return x op y; }, a, b);  \
   }
 #define _PER_IOP2(op)                                                          \
   _PER_OP2(op)                                                                 \
   template <size_t N, class T, class S,                                        \
-            std::enable_if_t<is_vapply_v<vec<N, T>, S>, bool> = true,          \
+            std::enable_if_t<is__vec_apply_v<vec<N, T>, S>, bool> = true,          \
             decltype(std::declval<vec<N, T>>() op std::declval<S>(), true) =   \
                 true>                                                          \
   inline vec<N, T> &operator op##=(vec<N, T> &a, S const &b) {                 \
@@ -293,7 +299,7 @@ _PER_OP2(||)
   template <class T, std::enable_if_t<is_vec_v<T>, bool> = true,               \
             decltype(op std::declval<decay_vec_t<T>>(), true) = true>          \
   inline auto operator op(T const &a) {                                        \
-    return vapply([](auto const &x) { return op x; }, a);                      \
+    return _vec_apply([](auto const &x) { return op x; }, a);                      \
   }
 _PER_OP1(+)
 _PER_OP1(-)
@@ -305,7 +311,7 @@ _PER_OP1(!)
   template <class T, class S,                                                  \
             decltype(std::declval<T>() + std::declval<S>(), true) = true>      \
   inline auto func(T const &a, S const &b)->decltype(auto) {                   \
-    return vapply(                                                             \
+    return _vec_apply(                                                             \
         [](auto const &x, auto const &y) {                                     \
           using promoted = decltype(x + y);                                    \
           return (promoted)std::func((promoted)x, (promoted)y);                \
@@ -321,7 +327,7 @@ _PER_FN2(fmod)
 
 #define _PER_FN1(func)                                                         \
   template <class T> inline auto func(T const &a) {                            \
-    return vapply([](auto const &x) { return (decltype(x))std::func(x); }, a); \
+    return _vec_apply([](auto const &x) { return (decltype(x))std::func(x); }, a); \
   }
 _PER_FN1(abs)
 _PER_FN1(sqrt)
@@ -347,15 +353,18 @@ inline auto ifloor(T const &a) {
   return toint(floor(a));
 }
 
-template <class To, class T> inline auto cast(T const &a) {
-  return vapply([](auto const &x) { return (To)x; }, a);
+template <class To, class T>
+inline auto cast(T const &a) {
+  return _vec_apply([](auto const &x) { return (To)x; }, a);
 }
 
-template <class T> inline auto toint(T const &a) {
+template <class T>
+inline auto toint(T const &a) {
   return cast<int, T>(a);
 }
 
-template <class T> inline auto tofloat(T const &a) {
+template <class T>
+inline auto tofloat(T const &a) {
   return cast<float, T>(a);
 }
 
@@ -453,6 +462,11 @@ inline auto mix(T const &a, S const &b, F const &f) {
 }
 
 template <class T, class S, class F>
+inline auto unmix(T const &a, S const &b, F const &f) {
+  return (f - a) / (b - a);
+}
+
+template <class T, class S, class F>
 inline auto clamp(T const &x, S const &a, F const &b) {
   return min(max(x, a), b);
 }
@@ -509,6 +523,8 @@ using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
 
+}
+using namespace _impl_vec;
 }
 
 /* specialization for structual-binding */

@@ -152,7 +152,8 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
 
         auto& user_data = outprim->userData();
         user_data.setLiterial("_translate", translate);
-        user_data.setLiterial("_rotate", eulerXYZ);
+        vec4f rotate = {myQuat.x, myQuat.y, myQuat.z, myQuat.w};
+        user_data.setLiterial("_rotate", rotate);
         user_data.setLiterial("_scale", scaling);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;

@@ -17,6 +17,8 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
+#include <zeno/types/UserData.h>
+#include "zeno/core/Session.h"
 #include <variant>
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
@@ -146,8 +148,13 @@ struct GraphicsManager {
         {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
-                auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-                if(isL != 1){
+                auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
+                if(isRealTimeObject == 0){
+                    if (prim_in->quads.size() || prim_in->polys.size()) {
+                        zeno::log_trace("demoting faces");
+                        zeno::primTriangulateQuads(prim_in);
+                        zeno::primTriangulate(prim_in);
+                    }
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -171,7 +178,6 @@ struct GraphicsManager {
                     std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                     auto &in_pos   = prim_in->verts;
                     auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
-                    auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
                     auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
                     auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
 
@@ -182,9 +188,6 @@ struct GraphicsManager {
                           prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
                           prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
                           prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
-                              att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
-                              att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
-                              att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
                               att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
                               att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
                               att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
@@ -197,6 +200,15 @@ struct GraphicsManager {
                              prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
 
                     }
+                    if (prim_in->has_attr("clr")) {
+                        auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
+                        for(size_t tid=0;tid<prim_in->tris.size();tid++) {
+                            size_t vid = tid*3;
+                            att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
+                            att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
+                            att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
+                        }
+                    }
                     //flatten here, keep the rest of codes unchanged.
 
                     det = DetPrimitive{};
@@ -208,7 +220,7 @@ struct GraphicsManager {
                     auto ts = (int const *)prim->tris.data();
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
-                    auto mtlid = prim_in->userData().getLiterial<std::string>("mtlid", "Default");
+                    auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
                 }
             }
@@ -228,10 +240,15 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    void load_lights(std::string key, zeno::IObject *obj){
+    // return if find sky
+    bool load_lights(std::string key, zeno::IObject *obj){
+        bool sky_found = false;
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
-            auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-            if (isL == 1) {
+            auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
+            if (isRealTimeObject == 0) {
+                return false;
+            }
+            if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
@@ -264,7 +281,25 @@ struct GraphicsManager {
                 xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
                                         prim->verts[3].data(), prim->verts[4].data());
             }
+            else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
+                sky_found = true;
+                zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
+                float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+                float timeStart = prim_in->userData().get2<float>("timeStart");
+                float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+            }
+            else if (prim_in->userData().has<std::string>("HDRSky")) {
+                auto path = prim_in->userData().get2<std::string>("HDRSky");
+                float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                OptixUtil::sky_tex = path;
+                OptixUtil::addTexture(path);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+            }
         }
+        return sky_found;
     }
 
     bool need_update_light(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
@@ -281,9 +316,25 @@ struct GraphicsManager {
     }
     bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
         xinxinoptix::unload_light();
+        bool sky_found = false;
 
         for (auto const &[key, obj] : objs) {
-            load_lights(key, obj.get());
+            if(load_lights(key, obj.get())) {
+                sky_found = true;
+            }
+        }
+//        zeno::log_info("sky_found : {}", sky_found);
+        if (sky_found == false) {
+            auto &ud = zeno::getSession().userData();
+//            zeno::log_info("ud.has sunLightDir: {}", ud.has("sunLightDir"));
+            if (ud.has("sunLightDir")) {
+                zeno::vec2f sunLightDir = ud.get2<zeno::vec2f>("sunLightDir");
+                float sunLightSoftness = ud.get2<float>("sunLightSoftness");
+                zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
+                float timeStart = ud.get2<float>("timeStart");
+                float timeSpeed = ud.get2<float>("timeSpeed");
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+            }
         }
 
         return true;

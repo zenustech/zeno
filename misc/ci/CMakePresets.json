@@ -55,7 +55,8 @@
         "ZENO_WITH_DemBones": "ON",
         "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
-        "ZENO_WITH_Python": "ON",
+        "ZENO_WITH_Python": "OFF",
+        "ZENO_WITH_GUI": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
@@ -66,7 +67,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_CUDA": "ON",
+        "ZENO_WITH_CUDA": "OFF",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }

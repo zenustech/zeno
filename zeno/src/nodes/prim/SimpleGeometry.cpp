@@ -90,16 +90,13 @@ struct CreateCube : zeno::INode {
         auto &indis = prim->tris;
         auto &quads = prim->quads;
         auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &poly = prim->polys;
+        auto &loops = prim->loops;
 
         std::vector<zeno::vec3f> dummy;
         auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
         auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
         auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
-
-        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
-        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
-        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
-        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -136,6 +133,7 @@ struct CreateCube : zeno::INode {
         int pcircle=le-(div_h-2)*(div_d-2);
         int inc=verts.size()-div_h*div_d;
 
+        int ss=0;
         for (int j = 0; j < div_h-1; j++)
         {
             for (int k = 0; k < div_d-1; k++)
@@ -147,7 +145,6 @@ struct CreateCube : zeno::INode {
                 i2=i1+1;
                 i3=i2+(div_d-1);
                 i4=i3+1;
-
 
                 float u1,v1,u2,v2,u3,v3,u4,v4;
                 zeno::vec3f uvw1,uvw2,uvw3,uvw4;
@@ -166,18 +163,20 @@ struct CreateCube : zeno::INode {
                 uvw3=zeno::vec3f(0.125+u3*sc,v3*sc,0);
                 uvw4=zeno::vec3f(0.125+u4*sc,v4*sc,0);
 
-
-
                 // Left
                 if(quad){
-                    quads.emplace_back(i3,i4,i2,i1);
-                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i2);
+                    prim->loops.push_back(i4);
+                    prim->loops.push_back(i3);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1,i3,i2);
                     indis.emplace_back(i4,i2,i3);
                     uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
                     uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
                 }
+                ss++;
 
                 uvw1=zeno::vec3f((1.0f-u1)*sc+0.625f,v1*sc,0);
                 uvw2=zeno::vec3f((1.0f-u2)*sc+0.625f,v2*sc,0);
@@ -193,17 +192,20 @@ struct CreateCube : zeno::INode {
 
                 // Right
                 if(quad){
-                    quads.emplace_back(i1_,i2_,i4_,i3_);
-                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                    prim->loops.push_back(i3_);
+                    prim->loops.push_back(i4_);
+                    prim->loops.push_back(i2_);
+                    prim->loops.push_back(i1_);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1_,i2_,i3_);
                     indis.emplace_back(i4_,i3_,i2_);
                     uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
                     uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
                 }
+                ss++;
             }
         }
-
 
         for (int j = -1; j < div_w-2; j++)
         {
@@ -236,14 +238,18 @@ struct CreateCube : zeno::INode {
 
                 // Bottom
                 if(quad){
-                    quads.emplace_back(i3,i4,i2,i1);
-                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i2);
+                    prim->loops.push_back(i4);
+                    prim->loops.push_back(i3);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1,i3,i2);
                     indis.emplace_back(i4,i2,i3);
                     uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
                     uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
                 }
+                ss++;
 
                 int i1_,i2_,i3_,i4_;
                 i1_=pp+i+(j+1)*pcircle;
@@ -265,16 +271,21 @@ struct CreateCube : zeno::INode {
 
                 // Top
                 if(quad){
-                    quads.emplace_back(i1_,i2_,i4_,i3_);
-                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                    prim->loops.push_back(i3_);
+                    prim->loops.push_back(i4_);
+                    prim->loops.push_back(i2_);
+                    prim->loops.push_back(i1_);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1_,i2_,i3_);
                     indis.emplace_back(i4_,i3_,i2_);
                     uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
                     uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
                 }
+                ss++;
             }
         }
+
 
         for (int j = 0; j < div_w-1; j++)
         {
@@ -340,14 +351,18 @@ struct CreateCube : zeno::INode {
 
                 // Back
                 if(quad){
-                    quads.emplace_back(i3,i4,i2,i1);
-                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i2);
+                    prim->loops.push_back(i4);
+                    prim->loops.push_back(i3);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1,i3,i2);
                     indis.emplace_back(i4,i2,i3);
                     uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
                     uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
                 }
+                ss++;
 
                 uvw1=zeno::vec3f(0.375f+u1*sc,0.75f+(1.0f-v1)*sc,0);
                 uvw2=zeno::vec3f(0.375f+u2*sc,0.75f+(1.0f-v2)*sc,0);
@@ -361,14 +376,18 @@ struct CreateCube : zeno::INode {
 
                 // Front
                 if(quad){
-                    quads.emplace_back(i1_,i2_,i4_,i3_);
-                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                    prim->loops.push_back(i3_);
+                    prim->loops.push_back(i4_);
+                    prim->loops.push_back(i2_);
+                    prim->loops.push_back(i1_);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     indis.emplace_back(i1_,i2_,i3_);
                     indis.emplace_back(i4_,i3_,i2_);
                     uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
                     uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
                 }
+                ss++;
             }
         }
 
@@ -420,13 +439,12 @@ struct CreateCube : zeno::INode {
             nors[i4]=normalize(zeno::vec3f(0,0.5,-0.5));
         }
 
-
         for (int i = 0; i < verts->size(); i++)
         {
             auto p = verts[i];
             auto n = nors[i];
 
-            p = p * scale * size ;
+            p = p * scale * size;
 
             ROTATE_COMPUTE
                 p+= position;
@@ -529,15 +547,18 @@ struct CreatePlane : zeno::INode {
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto size = get_input2<float>("size");
-        auto rows = get_input2<int>("rows");;
-        auto columns = get_input2<int>("columns");;
-        auto quad = get_input2<bool>("quads");;
+        auto rows = get_input2<int>("rows");
+        auto columns = get_input2<int>("columns");
+        auto quad = get_input2<bool>("quads");
 
         ROTATE_MATRIX
 
         auto &verts = prim->verts;
         auto &quads = prim->quads;
         auto &tris = prim->tris;
+        auto &poly = prim->polys;
+        auto &loops = prim->loops;
+
         std::vector<zeno::vec3f> uvs;
         std::vector<zeno::vec3f> nors;
 
@@ -573,6 +594,7 @@ struct CreatePlane : zeno::INode {
         }
 
         // Indices
+        int ss = 0;
         for(int i=0; i<rows; i++){
             for(int j=0; j<columns; j++){
                 int i1 = fi;
@@ -581,12 +603,17 @@ struct CreatePlane : zeno::INode {
                 int i4 = i3+1;
 
                 if(quad){
-                    quads.emplace_back(i3, i4, i2, i1);
-                }else{
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i2);
+                    prim->loops.push_back(i4);
+                    prim->loops.push_back(i3);
+                    prim->polys.push_back({ss * 4, 4});
+                }
+                else{
                     tris.emplace_back(i1, i4, i2);
                     tris.emplace_back(i3, i4, i1);
                 }
-
+                ss++;
                 fi += 1;
             }
             fi += 1;
@@ -596,7 +623,7 @@ struct CreatePlane : zeno::INode {
         for(int i=0; i<1; i++){
             vec3i ind;
             if(quad){
-                ind = vec3i(quads[i][0], quads[i][1], quads[i][2]);
+                ind = vec3i(loops[4*i],loops[4*i+1],loops[4*i+2]);
             }
             else{
                 ind = tris[i];
@@ -639,6 +666,18 @@ struct CreatePlane : zeno::INode {
             norm[i] = normal;
         }
 
+        for (int i = 0; i < uvs.size(); i++) {
+            prim->uvs.emplace_back(uvs[i][0], uvs[i][1]);
+        }
+
+        if(prim->loops.size()!= 0 ){
+            prim->loop_uvs.resize(prim->loops.size());
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                auto lo = prim->loops[i];
+                prim->loop_uvs[i] = lo;
+            }
+        }
+
         prim->userData().setLiterial("pos", std::move(position));
         prim->userData().setLiterial("scale", std::move(scale));
         prim->userData().setLiterial("rotate", std::move(rotate));
@@ -667,7 +706,6 @@ ZENDEFNODE(CreatePlane, {
 struct CreateTube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto radius1 = get_input2<float>("radius1");
@@ -933,12 +971,8 @@ struct CreateSphere : zeno::INode {
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
-
-        std::vector<zeno::vec3f> dummy;
-        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
-        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
-        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
-        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
+        auto &poly = prim->polys;
+        auto &loops = prim->loops;
 
         if(rows <= 3)
             rows = 3;
@@ -1000,6 +1034,7 @@ struct CreateSphere : zeno::INode {
         }
 
         // body tris
+        int ss = 0;
         for (int i = 0; i<rows-3; i++) {
             for (int j = 1; j < columns+1; j++) {
                 int i0,i1,i2,i3;
@@ -1029,14 +1064,18 @@ struct CreateSphere : zeno::INode {
                 uvw1=zeno::vec3f(u1,v1,0);uvw2=zeno::vec3f(u2,v2,0);uvw3=zeno::vec3f(u3,v3,0);uvw4=zeno::vec3f(u4,v4,0);
 
                 if(quad){
-                    quads.emplace_back(i0, i1, i3, i2);
-                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                    prim->loops.push_back(i0);
+                    prim->loops.push_back(i1);
+                    prim->loops.push_back(i3);
+                    prim->loops.push_back(i2);
+                    prim->polys.push_back({ss * 4, 4});
                 }else{
                     uv1.push_back(uvw1);uv2.push_back(uvw4);uv3.push_back(uvw3);
                     uv1.push_back(uvw4);uv2.push_back(uvw1);uv3.push_back(uvw2);
                     tris.emplace_back(i0,i3,i2);
                     tris.emplace_back(i3,i0,i1);
                 }
+                ss++;
             }
         }
 
@@ -1131,7 +1170,6 @@ struct CreateCone : zeno::INode {
             tris.push_back(vec3i(lons, i, (i + 1) % lons));
             tris.push_back(vec3i(i, lons + 1, (i + 1) % lons));
         }
-
         set_output("prim", std::move(prim));
     }
 };
@@ -1205,6 +1243,5 @@ ZENDEFNODE(CreateCylinder, {
     {},
     {"create"},
 });
-
 }
 }

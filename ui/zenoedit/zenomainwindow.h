@@ -21,7 +21,7 @@ public:
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
-    void setTimelineInfo(TIMELINE_INFO info);
+    void resetTimeline(TIMELINE_INFO info);
 
     ZenoLights* lightPanel = nullptr;
 
@@ -50,6 +50,7 @@ public slots:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
 private:
     void init();

@@ -6,6 +6,10 @@
 #include <list>
 #include <fstream>
 #include "MeshIO.hpp"
+#include "../Utils/myPrint.h"
+#include <zeno/utils/log.h>
+
+
 namespace zeno {
 
 struct ReadVtkTet : INode {

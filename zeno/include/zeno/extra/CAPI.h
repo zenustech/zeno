@@ -66,6 +66,7 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMe
 ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t newSize_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_InvokeObjectFactory(Zeno_Object *objectRet_, const char *typeName_, void *ffiObj_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_InvokeObjectDefactory(Zeno_Object object_, const char *typeName_, void **ffiObjRet_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_InvokeCFunctionPtr(void *ffiObjArg_, const char *typeName_, void **ffiObjRet_) ZENO_CAPI_NOEXCEPT;
 
 #ifdef __cplusplus
 }

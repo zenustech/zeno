@@ -4,7 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "ui_ztimeline.h"
 
 
@@ -154,9 +154,13 @@ bool ZTimeline::isAlways() const
     return m_ui->btnAlways->isChecked();
 }
 
-void ZTimeline::setFromTo(int frameFrom, int frameTo)
+void ZTimeline::initFromTo(int frameFrom, int frameTo)
 {
-    m_ui->editFrame->setText(QString::number(frameFrom));
+    BlockSignalScope s1(m_ui->timeliner);
+    BlockSignalScope s2(m_ui->editFrom);
+    BlockSignalScope s3(m_ui->editTo);
+
+    m_ui->editFrom->setText(QString::number(frameFrom));
     m_ui->editTo->setText(QString::number(frameTo));
     if (frameTo >= frameFrom)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);

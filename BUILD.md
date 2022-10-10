@@ -129,7 +129,8 @@ cmake --build build --config Release
 Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
 
 > The `--config Release` argument is **only required on Windows**, thank to the fact that MSBuild is a multi-config generator.
-> If you are using Visual Studio as an IDE, you must select the `Release` configuration in the UI combobox (it is `x64-Debug` by default).
+> If you are using Visual Studio as an IDE, you must select the `Release` configuration in the UI combobox (it is `x64-Debug` by default), otherwise fail.
+> `Debug` mode may fail to build (also suck in performance), I always recommend to use `Release` all the way. Try `RelWithDebInfo` if you want debug info anyway.
 > If you wanna debug and used `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
 
 > Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait. If you really want parallel build on Windows, you have to install [Ninja](https://github.com/ninja-build/ninja/releases), and use `cmake -G Ninja -B build` in the first step instead.
