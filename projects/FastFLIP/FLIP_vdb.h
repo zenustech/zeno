@@ -102,27 +102,28 @@ struct FLIP_vdb {
                      float pic_component, int RK_ORDER);
   static void Advect(float dt, float dx,
                      openvdb::points::PointDataGrid::Ptr &particles,
-                     packed_FloatGrid3 &velocity,
-                     packed_FloatGrid3 &velocity_after_p2g,
+                     openvdb::Vec3fGrid::Ptr &velocity,
+                     openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                      openvdb::FloatGrid::Ptr &solid_sdf,
                      openvdb::Vec3fGrid::Ptr &solid_vel, float pic_component,
                      int RK_ORDER);
   static void AdvectSheetty(float dt, float dx, float surfacedist,
                             openvdb::points::PointDataGrid::Ptr &particles,
                             openvdb::FloatGrid::Ptr &liquid_sdf,
-                            packed_FloatGrid3 &velocity,
-                            packed_FloatGrid3 &velocity_after_p2g,
+                            openvdb::Vec3fGrid::Ptr &velocity,
+                            openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                             openvdb::FloatGrid::Ptr &solid_sdf,
                             openvdb::Vec3fGrid::Ptr &solid_vel,
                             float pic_component, int RK_ORDER);
 
   static void custom_move_points_and_set_flip_vel(
         openvdb::points::PointDataGrid::Ptr in_out_points,
-        packed_FloatGrid3 in_velocity_field,
-        packed_FloatGrid3 in_velocity_field_to_be_advected,
-        packed_FloatGrid3 in_old_velocity,
+        const openvdb::FloatGrid::Ptr in_liquid_sdf,
+        const openvdb::Vec3fGrid::Ptr in_velocity_field,
+        const openvdb::Vec3fGrid::Ptr in_velocity_field_to_be_advected,
+        const openvdb::Vec3fGrid::Ptr in_old_velocity,
         openvdb::FloatGrid::Ptr in_solid_sdf, openvdb::Vec3fGrid::Ptr in_solid_vel,
-        float PIC_component, float dt, int RK_order);
+        float PIC_component, float dt, float surfacedist, int RK_order);
 
   static void
   update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids,

@@ -40,16 +40,9 @@ struct G2P_Advector : zeno::INode {
       solid_vel = nullptr;
     auto velocity_after_p2g = get_input("PostAdvVelocity")->as<VDBFloat3Grid>();
 
-    packed_FloatGrid3 packed_velocity, packed_velocity_after_p2g;
-    packed_velocity.from_vec3(velocity->m_grid);
-    packed_velocity_after_p2g.from_vec3(velocity_after_p2g->m_grid);
-
-    FLIP_vdb::Advect(dt, dx, particles->m_grid, packed_velocity,
-                     packed_velocity_after_p2g, solid_sdf,
+    FLIP_vdb::Advect(dt, dx, particles->m_grid, velocity->m_grid,
+                     velocity_after_p2g->m_grid, solid_sdf,
                      solid_vel, smoothness, RK_ORDER);
-
-    packed_velocity.to_vec3(velocity->m_grid);
-    packed_velocity_after_p2g.to_vec3(velocity_after_p2g->m_grid);
   }
 };
 
