@@ -1060,7 +1060,7 @@ void optixinit( int argc, char* argv[] )
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
-    xinxinoptix::update_procedural_sky(zeno::vec2f(0, 30), 1, zeno::vec2f(0, 0), 0, 0.1);
+    xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
 }
 
 
@@ -1292,6 +1292,11 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
+void update_hdr_sky(float sky_rot, float sky_strength) {
+    state.params.usingProceduralSky = 0;
+    state.params.sky_rot = sky_rot;
+    state.params.sky_strength = sky_strength;
+}
 
 void update_procedural_sky(
     zeno::vec2f sunLightDir,
@@ -1300,6 +1305,8 @@ void update_procedural_sky(
     float timeStart,
     float timeSpeed
 ){
+    state.params.usingProceduralSky = 1;
+
     auto &ud = zeno::getSession().userData();
     sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
     state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
@@ -1428,6 +1435,9 @@ std::vector<std::vector<std::string>> &texs) {
         }
     }
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+    if (OptixUtil::sky_tex.has_value()) {
+        state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
+    }
 }
 
 void optixupdateend() {

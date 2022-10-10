@@ -1,5 +1,5 @@
-#include "Utils.hpp"
 #include "Solver.cuh"
+#include "Utils.hpp"
 #include <zeno/types/NumericObject.h>
 
 namespace zeno {
@@ -218,6 +218,20 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, svOffset};
 
+    auto deduce_node_cnt = [](std::size_t numLeaves) {
+        if (numLeaves <= 2)
+            return numLeaves;
+        return numLeaves * 2 - 1;
+    };
+    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    if (coVerts) {
+        boundaryStFront =
+            bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySeFront =
+            bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    }
+
     meanEdgeLength = averageSurfEdgeLength(pol);
     meanSurfaceArea = averageSurfArea(pol);
     avgNodeMass = averageNodalMass(pol);
@@ -286,8 +300,9 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       //
       temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles<true>().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
       csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, dt{dt}, framedt{dt}, curRatio{0},
-      estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
+      ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      //
+      dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
       enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
       augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
       kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat_}, epsv{epsv_}, extForce{0, gravity, 0} {
@@ -300,11 +315,14 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         else if (primPtr->category == ZenoParticles::category_e::tet)
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
     }
-    fmt::print("num total obj <verts, surfV, surfE, surfT>: {}, {}, {}, {}\n", coOffset, svOffset, seOffset, sfOffset);
-
     numDofs = coOffset;
     if (coVerts)
         numDofs += coVerts->size();
+    numBouDofs = numDofs - coOffset;
+
+    fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
+               svOffset, seOffset, sfOffset);
+
     vtemp = dtiles_t{zsprims[0]->getParticles<true>().get_allocator(),
                      {{"grad", 3},
                       {"P", 9},
@@ -333,6 +351,18 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                      numDofs};
     // inertial hessian
     tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
+
+    // connect vtemp with "dir", "grad"
+    cgtemp = tiles_t{vtemp.get_allocator(),
+                     {{"P", 9},
+
+                      {"dir", 3},
+
+                      {"temp", 3},
+                      {"r", 3},
+                      {"p", 3},
+                      {"q", 3}},
+                     numDofs};
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
@@ -463,28 +493,57 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         }
 
     // spatial accel structs
+    frontManageRequired = true;
+#define init_front(sInds, front)                                                                                 \
+    {                                                                                                            \
+        auto numNodes = front.numNodes();                                                                        \
+        if (numNodes <= 2) {                                                                                     \
+            front.reserve(sInds.size() * numNodes);                                                              \
+            front.setCounter(sInds.size() * numNodes);                                                           \
+            pol(Collapse{sInds.size()}, [front = proxy<space>(selfStFront), numNodes] ZS_LAMBDA(int i) mutable { \
+                for (int j = 0; j != numNodes; ++j)                                                              \
+                    front.assign(i *numNodes + j, i, j);                                                         \
+            });                                                                                                  \
+        } else {                                                                                                 \
+            front.reserve(sInds.size());                                                                         \
+            front.setCounter(sInds.size());                                                                      \
+            pol(Collapse{sInds.size()},                                                                          \
+                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });              \
+        }                                                                                                        \
+    }
     {
         auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
         stBvh.build(pol, triBvs);
+        init_front(svInds, selfStFront);
+
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
         seBvh.build(pol, edgeBvs);
+        init_front(seInds, selfSeFront);
     }
     if (coVerts)
         if (coVerts->size()) {
             auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
             bouStBvh.build(pol, triBvs);
+            init_front(svInds, boundaryStFront);
+
             auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
             bouSeBvh.build(pol, edgeBvs);
+            init_front(seInds, boundarySeFront);
         }
 
     updateWholeBoundingBoxSize(pol);
     /// update grad pn residual tolerance
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
     // zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
+
+    /// for faster linear solve
+    hess1.init(vtemp.get_allocator(), numDofs);
+    hess2.init(PP.get_allocator(), estNumCps);
+    hess3.init(PP.get_allocator(), estNumCps);
+    hess4.init(PP.get_allocator(), estNumCps);
 }
 void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
     auto cudaPol = zs::cuda_exec();
     if (kappa0 == 0) {
         /// kappaMin
@@ -594,6 +653,8 @@ void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
         auto newX = vtemp.pack<3>("xn", vi);
         auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
         auto vn = vtemp.pack<3>("vn", vi);
+        if (dv.length() > 4)
+            dv = dv.normalized() * 4;
         vn += dv;
         int BCorder = vtemp("BCorder", vi);
         auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);

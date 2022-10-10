@@ -670,6 +670,9 @@ struct ToZSTriMesh : INode {
         // auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
         auto prim = get_input<PrimitiveObject>("prim");
         const auto &pos = prim->attr<zeno::vec3f>("pos");
+        zeno::vec3f *velsPtr = nullptr;
+        if (prim->has_attr("vel"))
+            velsPtr = prim->attr<zeno::vec3f>("vel").data();
         const auto &points = prim->points;
         const auto &lines = prim->lines;
         const auto &tris = prim->tris;
@@ -686,7 +689,7 @@ struct ToZSTriMesh : INode {
 
         bool include_customed_properties = get_param<int>("add_customed_attr");
 
-        std::vector<zs::PropertyTag> tags{{"x", 3}};
+        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
         std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
         std::vector<zs::PropertyTag> auxVertAttribs{};
@@ -740,19 +743,26 @@ struct ToZSTriMesh : INode {
         tags.insert(std::end(tags), std::begin(auxVertAttribs), std::end(auxVertAttribs));
         eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs), std::end(auxElmAttribs));
 
+        zstris->setMeta(ZenoParticles::s_userDataTag, prim->userData());
+
         constexpr auto space = zs::execspace_e::openmp;
         zstris->particles = std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
         auto &pars = zstris->getParticles();
-        ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs](int vi) mutable {
-            pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+        ompExec(Collapse{pars.size()},
+                [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
+                    pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+                    auto vel = vec3::zeros();
+                    if (velsPtr != nullptr)
+                        vel = vec3{velsPtr[vi][0], velsPtr[vi][1], velsPtr[vi][2]};
+                    pars.tuple<3>("v", vi) = vel;
 
-            for (auto &prop : auxVertAttribs) {
-                if (prop.numChannels == 3)
-                    pars.tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
-                else // prop.numChannles == 1
-                    pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
-            }
-        });
+                    for (auto &prop : auxVertAttribs) {
+                        if (prop.numChannels == 3)
+                            pars.tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
+                        else // prop.numChannles == 1
+                            pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
+                    }
+                });
 
         zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(), zs::memsrc_e::host);
         auto &eles = zstris->getQuadraturePoints();

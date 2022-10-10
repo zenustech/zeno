@@ -33,7 +33,7 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
     }
     if(type==std::string("absmax")){
         T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return zeno::abs(temp[i]); },
-        [&] (T i, T j) -> T { return zeno::min(i, j); });
+        [&] (T i, T j) -> T { return zeno::max(i, j); });
         return total;
     }
     return T(0);

@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/safe_at.h>
 #include <iostream>
 namespace zeno {
 namespace {
@@ -29,13 +30,18 @@ struct DictGetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
-        auto obj = dict->lut.at(key);
-        set_output("object", std::move(obj));
+        if (has_input("defl") && dict->lut.find(key) == dict->lut.end()) {
+            auto obj = get_input("defl");
+            set_output("object", std::move(obj));
+        } else {
+            auto obj = safe_at(dict->lut, key, "DictGetItem");
+            set_output("object", std::move(obj));
+        }
     }
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"DictObject", "dict"}, {"string", "key"}},
+    {{"DictObject", "dict"}, {"string", "key"}, {"IObject", "defl"}},
     {{"zany", "object"}},
     {},
     {"dict"},
@@ -229,6 +235,22 @@ struct DictGetKeyList : zeno::INode {
 ZENDEFNODE(DictGetKeyList, {
     {{"DictObject", "dict"}},
     {{"ListObject", "keys"}},
+    {},
+    {"dict"},
+});
+
+struct DictHasKey : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict");
+        auto key = get_input2<std::string>("key");
+        int count = dict->lut.count(key);
+        set_output2("hasKey", bool(count));
+    }
+};
+
+ZENDEFNODE(DictHasKey, {
+    {{"DictObject", "dict"}, {"string", "key"}},
+    {{"bool", "hasKey"}},
     {},
     {"dict"},
 });

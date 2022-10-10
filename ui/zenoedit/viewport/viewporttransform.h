@@ -33,15 +33,16 @@ class FakeTransformer {
     void addObject(const std::unordered_set<std::string>& names);
     void removeObject(const std::string& name);
     void removeObject(const std::unordered_set<std::string>& names);
-    bool clickedAnyHandler(QVector3D ori, QVector3D dir);
-    void transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D start_dir, QVector3D end_dir,
-                   glm::vec3 front, glm::mat4 vp);
+    bool calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
+    bool clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
+    void transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D ray_dir, glm::vec3 front, glm::mat4 vp);
     void startTransform();
     void endTransform(bool moved);
     bool isTransforming() const;
     void toTranslate();
     void toRotate();
     void toScale();
+    void changeCoordSys();
     bool isTransformMode() const;
     glm::vec3 getCenter() const;
     void clear();
@@ -74,6 +75,11 @@ class FakeTransformer {
         qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2];
     }
 
+    template <class T>
+    static void print_vec4(std::string name, T& vec) {
+        qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3];
+    }
+
     static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
         auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
         if (t > 0)
@@ -88,13 +94,21 @@ class FakeTransformer {
     glm::vec3 m_objects_center;
 
     glm::vec3 m_trans;
-    glm::vec3 m_scale;
-    glm::vec3 m_last_scale;
     glm::vec4 m_rotate;
+    glm::vec3 m_scale;
+
+    glm::vec3 m_last_trans;
+    glm::vec4 m_last_rotate;
+    glm::vec3 m_last_scale;
+
+    glm::vec3 m_trans_start;
+    glm::vec3 m_rotate_start;
+    // glm::vec3 m_scale_start;
 
     bool m_status;
     int m_operation;
     int m_operation_mode;
+    int m_coord_sys;
 
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
 

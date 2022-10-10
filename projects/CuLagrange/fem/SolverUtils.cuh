@@ -88,31 +88,50 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, 
     });
     return ret;
 }
-template <typename Op = std::plus<typename IPCSystem::T>>
-inline typename IPCSystem::T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<typename IPCSystem::T> &res,
-                                    Op op = {}) {
+template <typename T, typename Op = std::plus<T>>
+inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op op = {}) {
     using namespace zs;
-    using T = typename IPCSystem::T;
     Vector<T> ret{res.get_allocator(), 1};
+    bool shouldSync = cudaPol.shouldSync();
+    cudaPol.sync(true);
     zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0, op);
+    cudaPol.sync(shouldSync);
     return ret.getVal();
 }
-inline typename IPCSystem::T dot(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
-                                 const zs::SmallString tag0, const zs::SmallString tag1) {
+template <typename TT, typename T, typename AllocatorT>
+inline TT dot(zs::CudaExecutionPolicy &cudaPol, zs::wrapt<TT>, zs::TileVector<T, 32, AllocatorT> &vertData,
+              const zs::SmallString tag0, const zs::SmallString tag1) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    Vector<TT> res{vertData.get_allocator(), count_warps(vertData.size())};
+    zs::memset(zs::mem_device, res.data(), 0, sizeof(TT) * count_warps(vertData.size()));
+    cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
+                                     offset0 = vertData.getPropertyOffset(tag0),
+                                     offset1 = vertData.getPropertyOffset(tag1)] __device__(int pi) mutable {
+        auto v0 = data.template pack<3>(offset0, pi).template cast<TT>();
+        auto v1 = data.template pack<3>(offset1, pi).template cast<TT>();
+        auto v = v0.dot(v1);
+        reduce_to(pi, n, v, res[pi / 32]);
+    });
+    return reduce(cudaPol, res, thrust::plus<TT>{});
+}
+template <typename T, typename AllocatorT>
+inline T dot(zs::CudaExecutionPolicy &cudaPol, zs::TileVector<T, 32, AllocatorT> &vertData, const zs::SmallString tag0,
+             const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // Vector<double> res{vertData.get_allocator(), vertData.size()};
-    Vector<double> res{vertData.get_allocator(), count_warps(vertData.size())};
-    zs::memset(zs::mem_device, res.data(), 0, sizeof(double) * count_warps(vertData.size()));
+    Vector<T> res{vertData.get_allocator(), count_warps(vertData.size())};
+    zs::memset(zs::mem_device, res.data(), 0, sizeof(T) * count_warps(vertData.size()));
     cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0, tag1,
                                      n = vertData.size()] __device__(int pi) mutable {
-        auto v0 = data.pack<3>(tag0, pi);
-        auto v1 = data.pack<3>(tag1, pi);
+        auto v0 = data.template pack<3>(tag0, pi);
+        auto v1 = data.template pack<3>(tag1, pi);
         auto v = v0.dot(v1);
         // res[pi] = v;
         reduce_to(pi, n, v, res[pi / 32]);
     });
-    return reduce(cudaPol, res, thrust::plus<double>{});
+    return reduce(cudaPol, res, thrust::plus<T>{});
 }
 inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
                                      const zs::SmallString tag = "dir") {
@@ -121,9 +140,9 @@ inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename 
     constexpr auto space = execspace_e::cuda;
     Vector<T> res{vertData.get_allocator(), count_warps(vertData.size())};
     zs::memset(zs::mem_device, res.data(), 0, sizeof(T) * count_warps(vertData.size()));
-    cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), tag,
-                                     n = vertData.size()] __device__(int pi) mutable {
-        auto v = data.pack<3>(tag, pi);
+    cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
+                                     offset = vertData.getPropertyOffset(tag)] __device__(int pi) mutable {
+        auto v = data.pack<3>(offset, pi);
         auto val = v.abs().max();
 
         auto [mask, numValid] = warp_mask(pi, n);

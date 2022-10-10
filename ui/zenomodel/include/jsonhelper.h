@@ -49,6 +49,13 @@ namespace JsonHelper
 {
 	void AddStringList(const QStringList& list, RAPIDJSON_WRITER& writer);
 	void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid = true);
+	void AddParams(const QString& op,
+		const QString& ident,
+		const QString& name,
+		const QVariant& defl,
+		const QString& descType,
+		RAPIDJSON_WRITER& writer
+		);
 	void AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid);
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
 	CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);

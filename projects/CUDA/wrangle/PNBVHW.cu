@@ -5,15 +5,18 @@
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 
-// from projects/ZenoFX/pw.cpp : ParticlesWrangle
+// from projects/ZenoFX/pnbvhw.cpp : ParticlesNeighborWrangle
+#include "dbg_printf.h"
 #include <cassert>
 #include <cuda.h>
+#include <zeno/core/Graph.h>
+#include <zeno/extra/GlobalState.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/utils/safe_any_cast.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zensim/execution/ExecutionPolicy.hpp>
 #include <zensim/physics/ConstitutiveModel.hpp>
@@ -73,6 +76,42 @@ struct ZSParticleNeighborBvhWrangler : INode {
         /// params
         auto params =
             has_input("params") ? get_input<zeno::DictObject>("params") : std::make_shared<zeno::DictObject>();
+        {
+            // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+            auto const &gs = *this->getGlobalState();
+            params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
+            params->lut["F"] = objectFromLiterial((float)gs.frameid);
+            params->lut["DT"] = objectFromLiterial(gs.frame_time);
+            params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+            // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+            // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+            for (auto const &[key, ref] : getThisGraph()->portalIns) {
+                if (auto i = code.find('$' + key); i != std::string::npos) {
+                    i = i + key.size() + 1;
+                    if (code.size() <= i || !std::isalnum(code[i])) {
+                        if (params->lut.count(key))
+                            continue;
+                        dbg_printf("ref portal %s\n", key.c_str());
+                        auto res =
+                            getThisGraph()->callTempNode("PortalOut", {{"name:", objectFromLiterial(key)}}).at("port");
+                        params->lut[key] = std::move(res);
+                    }
+                }
+            }
+            // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+            // BEGIN伺候心欣伺候懒得extract出变量了
+            std::vector<std::string> keys;
+            for (auto const &[key, val] : params->lut) {
+                keys.push_back(key);
+            }
+            for (auto const &key : keys) {
+                if (!dynamic_cast<zeno::NumericObject *>(params->lut.at(key).get())) {
+                    dbg_printf("ignored non-numeric %s\n", key.c_str());
+                    params->lut.erase(key);
+                }
+            }
+            // END伺候心欣伺候懒得extract出变量了
+        }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
         for (auto const &[key_, par] : params->getLiterial<zeno::NumericValue>()) {
@@ -104,7 +143,15 @@ struct ZSParticleNeighborBvhWrangler : INode {
         }
 
         /// symbols
-        auto def_sym = [&opts](const std::string &prefix, const std::string &key, int dim) {
+        auto def_sym = [&opts](const std::string &prefix, std::string key, int dim) {
+            if (key == "x" || key == "v")
+                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
+                               "now on to keep "
+                               "consistent with cpu-side wrangles");
+            if (key == "pos")
+                key = "x";
+            else if (key == "vel")
+                key = "v";
             opts.define_symbol(prefix + key, dim);
         };
 
@@ -142,7 +189,6 @@ struct ZSParticleNeighborBvhWrangler : INode {
         }
         if (newChns.size() > 0)
             pars.append_channels(cudaPol, newChns);
-        props.insert(std::end(props), std::begin(newChns), std::end(newChns));
 
         if (_cuModule == nullptr) {
             /// execute on the current particle object
@@ -195,7 +241,7 @@ struct ZSParticleNeighborBvhWrangler : INode {
                                               (unsigned short)unitBytes,
                                               (unsigned short)tileSize,
                                               (unsigned short)targetParPtr->numChannels(),
-                                              (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
+                                              (unsigned short)(targetParPtr->getPropertyOffset(name) + dimid),
                                               (unsigned short)isNeighborProperty};
         }
         auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
@@ -248,7 +294,7 @@ ZENDEFNODE(ZSParticleNeighborBvhWrangler, {
                                                {"DictObject:NumericObject", "params"}},
                                               {"ZSParticles"},
                                               {},
-                                              {"MPM"},
+                                              {"zswrangle"},
                                           });
 
 } // namespace zeno

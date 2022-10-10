@@ -294,7 +294,9 @@ void ZenoMainWindow::initDocks() {
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    m_pEditor = new ZenoGraphsEditor(this);
+    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
+    // m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
 
     m_logger = new ZenoDockWidget("logger", this);
     m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
@@ -389,6 +391,12 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
     adjustDockSize();
 }
 
+void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+    this->saveQuit();
+    // todo: event->ignore() when saveQuit returns false?
+    QMainWindow::closeEvent(event);
+}
+
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
     float height = size().height();
@@ -459,7 +467,7 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    setTimelineInfo(pGraphs->timeInfo());
+    resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -588,7 +596,7 @@ void ZenoMainWindow::saveQuit() {
     }
     pGraphsMgm->clear();
     //clear timeline info.
-    setTimelineInfo(TIMELINE_INFO());
+    resetTimeline(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save()
@@ -633,12 +641,12 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     return info;
 }
 
-void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     if (view)
     {
-        view->setTimelineInfo(info);
+        view->resetTimeline(info);
     }
 }
 
@@ -699,11 +707,10 @@ void ZenoMainWindow::saveAs() {
 
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
-    const QString &initialPath = ".";
+    const QString &initialPath = "";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
-    fileDialog.setDirectory(initialPath);
     if (fileDialog.exec() != QDialog::Accepted)
         return "";
 
