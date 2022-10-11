@@ -708,6 +708,7 @@ struct Mesh{
                         //vertex.boneWeights[0] = meshBoneWeight;
                     }else
                     {
+                        // XXX processing model transformation
                         vertex.position = m_TransMatrix[relMeshName] * fbxData.iVertices.value[i].position;
                     }
                 }
@@ -802,12 +803,16 @@ struct Anim{
 
     std::unordered_map<std::string, std::vector<SKeyMorph>> m_Morph;  // Value: NumKeys
 
-    float duration;
-    float tick;
+    AnimInfo m_animInfo;
+
     void initAnim(aiScene const*scene, Mesh* model){
 
+        m_animInfo.duration = 0.0f;
+        m_animInfo.tick = 0.0f;
+        m_animInfo.maxTimeStamp = std::numeric_limits<float>::min();
+        m_animInfo.minTimeStamp = std::numeric_limits<float>::max();
+
         readHierarchyData(m_RootNode, scene->mRootNode);
-        //zeno::log_info("----- Anim: Convert AssimpNode.");
 
         //Helper::printNodeTree(&m_RootNode, 0);
 
@@ -815,8 +820,8 @@ struct Anim{
             // TODO handle more animation if have
             for(unsigned int i=0; i<scene->mNumAnimations; i++){
                 auto animation = scene->mAnimations[i];
-                duration = animation->mDuration;
-                tick = animation->mTicksPerSecond;
+                m_animInfo.duration = animation->mDuration;
+                m_animInfo.tick = animation->mTicksPerSecond;
                 zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
                                animation->mName.data,
                                animation->mNumChannels,
@@ -828,6 +833,8 @@ struct Anim{
 
                 setupBones(animation);
                 setupBlendShape(animation);
+
+                break;
             }
         }
     }
@@ -859,9 +866,14 @@ struct Anim{
             bone.initBone(boneName, channel);
 
             m_Bones.AnimBoneMap[boneName] = bone;
-        }
 
+            m_animInfo.maxTimeStamp = std::max(m_animInfo.maxTimeStamp, bone.m_MaxTimeStamp);
+            m_animInfo.minTimeStamp = std::min(m_animInfo.minTimeStamp, bone.m_MinTimeStamp);
+        }
+        // XXX -5 ~ 18  ---> 5 -> 28
         //zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
+        //std::cout << "FBX: MinTimeStamp " << m_animInfo.minTimeStamp
+        //          << " MaxTimeStamp " << m_animInfo.maxTimeStamp << std::endl;
     }
 
     void setupBlendShape(const aiAnimation *animation){
@@ -979,18 +991,17 @@ void readFBXFile(
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
 
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
+    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
+
     *data = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
     *boneTree = anim.m_Bones;
-    animInfo->duration = anim.duration;
-    animInfo->tick = anim.tick;
+    *animInfo = anim.m_animInfo;
 
     data->animInfo = animInfo;
     data->boneTree = boneTree;
     data->nodeTree = nodeTree;
-
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
-    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
     if(readOption.makePrim){
         mesh.processPrim(prim);

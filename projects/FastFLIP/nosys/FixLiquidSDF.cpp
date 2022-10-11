@@ -22,11 +22,9 @@ struct PushOutLiquidSDF : zeno::INode {
     }
     auto liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
     auto solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>();
-    auto pushed_out_liquid_sdf =
-        get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
 
-    FLIP_vdb::clamp_liquid_phi_in_solids(liquid_sdf->m_grid, solid_sdf->m_grid,
-                                         pushed_out_liquid_sdf->m_grid, dx);
+    FLIP_vdb::immerse_liquid_phi_in_solids(liquid_sdf->m_grid, solid_sdf->m_grid,
+                                           dx);
   }
 };
 
@@ -34,7 +32,6 @@ static int defPushOutLiquidSDF = zeno::defNodeClass<PushOutLiquidSDF>(
     "PushOutLiquidSDF", {/* inputs: */ {"Dx",
                              "LiquidSDF",
                              "SolidSDF",
-                             "ExtractedLiquidSDF",
                          },
                          /* outputs: */ {},
                          /* params: */

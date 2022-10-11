@@ -1,2811 +1,2321 @@
 #include "simd_vdb_poisson.h"
-//#include "Timer.h"
-#include "immintrin.h"
-#include "levelset_util.h"
-#include "openvdb/tools/Interpolation.h"
-#include "openvdb/tree/LeafManager.h"
-#include "tbb/concurrent_vector.h"
+
 #include <atomic>
-simd_vdb_poisson::Laplacian_with_level::Laplacian_with_level(
-    openvdb::FloatGrid::Ptr in_liquid_phi,
-    openvdb::Vec3fGrid::Ptr in_face_weights, const float in_dt,
-    const float in_dx) {
-  // random token to identify the finest level
-  std::random_device device;
-  std::mt19937 generator(/*seed=*/device());
-  std::uniform_real_distribution<> distribution(-0.5, 0.5);
-  m_root_token = distribution(generator);
+#include <immintrin.h>
+#include <unordered_map>
 
-  m_dt = in_dt;
-  m_dx_finest = in_dx;
-  m_dx_this_level = in_dx;
-  m_level = 0;
+#include "openvdb/tree/LeafManager.h"
+#include "openvdb/tools/Interpolation.h"
 
-  float term = m_dt / (m_dx_this_level * m_dx_this_level);
-  m_diag_entry_min_threshold = term * 1e-1;
-  // Note we do not set the background of the diagonal to be zero
-  // later when we run the red-black Gauss seidel in simd instruction
-  // we need to divide the result by the diagonal term
-  // to avoid dividing by zero we set it to be one
-  // then the mask of the diagonal term becomes very important
-  // It is the only indicator to show this is a degree of freedom
-  m_Diagonal = openvdb::FloatGrid::create(6 * term);
-  m_Diagonal->setName("Poisson_Diagonal");
-  m_Diagonal->setTransform(in_liquid_phi->transformPtr());
-  m_Diagonal->setTree(std::make_shared<openvdb::FloatTree>(
-      in_liquid_phi->tree(), 6 * term, openvdb::TopologyCopy()));
+#include "levelset_util.h"
+#include "openvdb_grid_math_op.h"
+#include "SIMD_UAAMG_Ops.h"
+#include "tbb/concurrent_vector.h"
+#include "vdb_SIMD_IO.h"
 
-  // by default, the solid is sparse
-  // so only a fraction of faces have weight<1
-  // the default value of the vector form of face weight is 1
-  // so the default value for each component is 1, but we directly
-  // store the entry here
-  m_Neg_x_entry = openvdb::FloatGrid::create(-term);
-  m_Neg_x_entry->setName("Neg_x_term");
-  m_Neg_x_entry->setTransform(in_face_weights->transformPtr());
-  m_Neg_x_entry->setTree(std::make_shared<openvdb::FloatTree>(
-      in_liquid_phi->tree(), -term, openvdb::TopologyCopy()));
+namespace simd_uaamg {
 
-  m_Neg_y_entry = m_Neg_x_entry->deepCopy();
-  m_Neg_y_entry->setName("Neg_y_term");
+struct BuildPoissonRhs {
+    BuildPoissonRhs(
+        openvdb::FloatGrid::Ptr vx,
+        openvdb::FloatGrid::Ptr vy,
+        openvdb::FloatGrid::Ptr vz,
+        openvdb::Vec3fGrid::Ptr weight,
+        openvdb::Vec3fGrid::Ptr solidVel,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& rhsLeaves, const float dx, const float dt) :
+        mVelAxr{ vx->tree(),  vy->tree(), vz->tree() },
+        mWeightAxr(weight->tree()), mSolidVelAxr(solidVel->tree()),
+        mRhsLeaves(rhsLeaves), mDx(dx), mDt(dt) {}
 
-  m_Neg_z_entry = m_Neg_x_entry->deepCopy();
-  m_Neg_z_entry->setName("Neg_z_term");
-
-  initialize_finest(in_liquid_phi, in_face_weights);
-
-  initialize_evaluators();
-}
-
-simd_vdb_poisson::Laplacian_with_level::Laplacian_with_level(
-    const Laplacian_with_level &parent, coarsening) {
-  // copy the token
-  m_root_token = parent.m_root_token;
-
-  m_dt = parent.m_dt;
-  m_dx_finest = parent.m_dx_finest;
-  m_dx_this_level = 2.0f * parent.m_dx_this_level;
-  m_level = parent.m_level + 1;
-
-  initialize_entries_from_parent(parent);
-}
-
-void simd_vdb_poisson::Laplacian_with_level::initialize_entries_from_parent(
-    const Laplacian_with_level &parent) {
-  // the parent diagonal and face terms is already trimmed
-  // hence only the parent dof_idx keeps the actual layout
-  // of the degree of freedoms
-  auto coarse_xform =
-      openvdb::math::Transform::createLinearTransform(m_dx_this_level);
-  coarse_xform->postTranslate(openvdb::Vec3d(0.5 * parent.m_dx_this_level));
-
-  m_dof_idx = openvdb::Int32Grid::create(-1);
-  m_dof_idx->setTransform(coarse_xform);
-  for (auto iter = parent.m_dof_idx->tree().cbeginLeaf(); iter; ++iter) {
-    m_dof_idx->tree().touchLeaf(openvdb::Coord(iter->origin().asVec3i() / 2));
-  }
-
-  m_dof_leafmanager =
-      std::make_unique<openvdb::tree::LeafManager<openvdb::Int32Tree>>(
-          m_dof_idx->tree());
-
-  // piecewise constant interpolation and restriction function
-  // coarse voxel =8 fine voxels
-  auto set_dof_mask_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                             openvdb::Index leafpos) {
-    auto fine_dof_axr{parent.m_dof_idx->getConstAccessor()};
-    for (auto iter = leaf.beginValueAll(); iter; ++iter) {
-      // the global coordinate in the coarse level
-      auto C_gcoord{iter.getCoord().asVec3i()};
-      auto parent_g_coord = C_gcoord * 2;
-
-      bool no_target_dof = true;
-      for (int ii = 0; ii < 2 && no_target_dof; ii++) {
-        for (int jj = 0; jj < 2 && no_target_dof; jj++) {
-          for (int kk = 0; kk < 2 && no_target_dof; kk++) {
-            if (fine_dof_axr.isValueOn(
-                    openvdb::Coord(parent_g_coord).offsetBy(ii, jj, kk))) {
-              no_target_dof = false;
-            }
-          }
+    BuildPoissonRhs(const BuildPoissonRhs& other) :
+        mVelAxr{ other.mVelAxr[0], other.mVelAxr[1], other.mVelAxr[2] },
+        mWeightAxr(other.mWeightAxr), mSolidVelAxr(other.mSolidVelAxr),
+        mRhsLeaves(other.mRhsLeaves), mDx(other.mDx), mDt(other.mDt)
+    {
+        //clear the cache
+        for (int i = 0; i < 3; i++) {
+            mVelAxr[i].clear();
         }
-      } // for all fine voxels accociated
-
-      if (no_target_dof) {
-        iter.setValueOff();
-      } else {
-        iter.setValueOn();
-      }
-    } // end for all voxel in this leaf
-  };  // end set dof_idx_op
-  m_dof_leafmanager->foreach (set_dof_mask_op);
-
-  set_dof_idx(m_dof_idx);
-
-  float dt_over_dxsqr = m_dt / (m_dx_this_level * m_dx_this_level);
-  // set up the full diagonal matrix, full face weight matrix
-
-  m_Diagonal = openvdb::FloatGrid::create(6.0f * dt_over_dxsqr);
-  m_Diagonal->setTransform(coarse_xform);
-  m_Diagonal->setName("Poisson_Diagonal_level_" + std::to_string(m_level));
-  m_Diagonal->setTree(std::make_shared<openvdb::FloatTree>(
-      m_dof_idx->tree(), 6.0f * dt_over_dxsqr, openvdb::TopologyCopy()));
-
-  m_Neg_x_entry = openvdb::FloatGrid::create(-dt_over_dxsqr);
-  m_Neg_x_entry->setName("Neg_x_term_level_" + std::to_string(m_level));
-  m_Neg_x_entry->setTransform(m_Diagonal->transformPtr());
-  m_Neg_x_entry->setTree(std::make_shared<openvdb::FloatTree>(
-      m_dof_idx->tree(), -dt_over_dxsqr, openvdb::TopologyCopy()));
-
-  m_Neg_y_entry = m_Neg_x_entry->deepCopy();
-  m_Neg_y_entry->setName("Neg_y_term_level_" + std::to_string(m_level));
-
-  m_Neg_z_entry = m_Neg_x_entry->deepCopy();
-  m_Neg_z_entry->setName("Neg_z_term_level_" + std::to_string(m_level));
-
-  // The prolongation operator is
-  // fine = coarse
-  // the restriction operator is
-  // coarse = 1/8*(eight fine)
-  // ideally, if the fine level diagonal is 6
-  // then the coarse level diagonal should be 1.5, because dx_c=dx_f*2
-  // 1. a input coarse voxel turns on up to 8 fine voxels
-  // 2. each fine voxel scatters to its center 6, and its neighbor -1
-  // 3. the results are restricted
-  // in a 2D example, original weight is 4, after scatter it becomes
-  //-------------------------------------
-  //|        |        |        |        |
-  //|        |   -1   |   -1   |        |
-  //|        |        |        |        |
-  //-------------------------------------
-  //|        |        |        |        |
-  //|   -1   |    2   |    2   |   -1   |
-  //|        |        |        |        |
-  //-------------------------------------
-  //|        |        |        |        |
-  //|   -1   |    2   |    2   |   -1   |
-  //|        |        |        |        |
-  //-------------------------------------
-  //|        |        |        |        |
-  //|        |   -1   |   -1   |        |
-  //|        |        |        |        |
-  //-------------------------------------
-  //
-  // after restriction (sum and * 1/4) it becomes
-  //-------------------------------------
-  //|        |                 |        |
-  //|        |      -0.5       |        |
-  //|        |                 |        |
-  //-------------------------------------
-  //|        |                 |        |
-  //|        |                 |        |
-  //|        |                 |        |
-  //|  -0.5  |        2        |  -0.5  |
-  //|        |                 |        |
-  //|        |                 |        |
-  //|        |                 |        |
-  //-------------------------------------
-  //|        |                 |        |
-  //|        |      -0.5       |        |
-  //|        |                 |        |
-  //-------------------------------------
-  // it should additionally multiply by 0.5
-  // to get correct coefficients
-
-  auto set_terms = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                       openvdb::Index leafpos) {
-    auto x_axr{parent.m_Neg_x_entry->getConstAccessor()};
-    auto y_axr{parent.m_Neg_y_entry->getConstAccessor()};
-    auto z_axr{parent.m_Neg_z_entry->getConstAccessor()};
-    auto diag_axr{parent.m_Diagonal->getConstAccessor()};
-    auto fine_dof_axr{parent.m_dof_idx->getConstAccessor()};
-
-    auto *diagleaf = m_Diagonal->tree().probeLeaf(leaf.origin());
-    auto *xleaf = m_Neg_x_entry->tree().probeLeaf(leaf.origin());
-    auto *yleaf = m_Neg_y_entry->tree().probeLeaf(leaf.origin());
-    auto *zleaf = m_Neg_z_entry->tree().probeLeaf(leaf.origin());
-
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      // each voxel only record the flux of its and its below dof
-      float voxel_diag = 0, voxel_x_term = 0, voxel_y_term = 0,
-            voxel_z_term = 0;
-      // the global coordinate in the coarse level
-      auto C_gcoord{iter.getCoord().asVec3i()};
-      auto fine_g_coord = openvdb::Coord(C_gcoord * 2);
-
-      // loop over the 8 fine cells
-      for (int ii = 0; ii < 2; ii++) {
-        for (int jj = 0; jj < 2; jj++) {
-          for (int kk = 0; kk < 2; kk++) {
-            auto at_voxel = fine_g_coord.offsetBy(ii, jj, kk);
-
-            // contribution to diag
-            if (fine_dof_axr.isValueOn(at_voxel)) {
-              voxel_diag += diag_axr.getValue(at_voxel);
-
-              // three face terms
-              auto neg_x_voxel = at_voxel;
-              neg_x_voxel[0]--;
-              if (fine_dof_axr.isValueOn(neg_x_voxel)) {
-                if (ii == 0) {
-                  // contribute to the neg x term
-                  voxel_x_term += x_axr.getValue(at_voxel);
-                } else {
-                  // this face will decrease two fine dofs
-                  // diagonal terms
-                  voxel_diag += 2 * x_axr.getValue(at_voxel);
-                }
-              } // end if x- neib on
-
-              auto neg_y_voxel = at_voxel;
-              neg_y_voxel[1]--;
-              if (fine_dof_axr.isValueOn(neg_y_voxel)) {
-                if (jj == 0) {
-                  voxel_y_term += y_axr.getValue(at_voxel);
-                } else {
-                  voxel_diag += 2 * y_axr.getValue(at_voxel);
-                }
-              } // end if y- neib on
-
-              auto neg_z_voxel = at_voxel;
-              neg_z_voxel[2]--;
-              if (fine_dof_axr.isValueOn(neg_z_voxel)) {
-                if (kk == 0) {
-                  voxel_z_term += z_axr.getValue(at_voxel);
-                } else {
-                  voxel_diag += 2 * z_axr.getValue(at_voxel);
-                }
-              } // end if z- neib on
-            }   // end if this voxel is on
-
-          } // end fine kk
-        }   // end fine jj
-      }     // end fine ii
-
-      // coefficient R accounts for 1/8
-      // Then there is an additional 1/2
-      auto offset = iter.offset();
-      const float factor = 0.5f * (1.0f / 8.0f);
-      diagleaf->setValueOnly(offset, voxel_diag * factor);
-      xleaf->setValueOnly(offset, voxel_x_term * factor);
-      yleaf->setValueOnly(offset, voxel_y_term * factor);
-      zleaf->setValueOnly(offset, voxel_z_term * factor);
-    } // end loop over all coarse dofs
-  };  // end set terms
-  m_dof_leafmanager->foreach (set_terms);
-
-  initialize_evaluators();
-  trim_default_nodes();
-}
-
-void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
-    openvdb::FloatGrid::Ptr in_liquid_phi,
-    openvdb::Vec3fGrid::Ptr in_face_weights) {
-  // really create the poisson matrix
-
-  float dt_over_dxsqr = m_dt / (m_dx_this_level * m_dx_this_level);
-
-  // this function is to be used with the leaf manager of diagonal term
-  auto set_coeffs = [&](float_leaf_t &leaf, openvdb::Index leafpos) {
-    // in the initial state, the tree contains both phi<0 and phi>0
-    // we only take the phi<0
-    const auto &phi_leaf = *in_liquid_phi->tree().probeConstLeaf(leaf.origin());
-    auto phi_axr{in_liquid_phi->getConstAccessor()};
-    auto weight_axr{in_face_weights->getConstAccessor()};
-
-    // everytime only write to the coefficient on the lower side
-    // the positive side will be handled from the dof on the other side
-    auto *x_entry_leaf = m_Neg_x_entry->tree().probeLeaf(leaf.origin());
-    auto *y_entry_leaf = m_Neg_y_entry->tree().probeLeaf(leaf.origin());
-    auto *z_entry_leaf = m_Neg_z_entry->tree().probeLeaf(leaf.origin());
-
-    if (!(x_entry_leaf && y_entry_leaf && z_entry_leaf)) {
-      printf("dof leaf exists, but weight entry leaf is not ready\n");
-      exit(-1);
+        mWeightAxr.clear();
+        mSolidVelAxr.clear();
     }
 
-    for (auto phi_iter = phi_leaf.cbeginValueOn(); phi_iter; ++phi_iter) {
-      if (phi_iter.getValue() < 0) {
-        // this is a valid dof
-        auto voxel_gcoord = phi_iter.getCoord();
+    void operator()(const openvdb::Int32Tree::LeafNodeType& dofLeaf, openvdb::Index leafpos)  const {
+        float invdx = 1.0f / mDx;
+        for (auto iter = dofLeaf.beginValueOn(); iter; ++iter) {
+            float rhs = 0;
+            openvdb::Coord globalCoord = iter.getCoord();
+            bool hasNonZeroWeight = false;
+            //x+ x- y+ y- z+ z-
+            for (int i = 0; i < 6; i++) {
+                int channel = i / 2;
+                bool positiveDirection = (i % 2) == 0;
 
-        float this_diag_entry = 0;
-        float this_xyz_term[3] = {0, 0, 0};
-        float phi_other_cell = 0;
-        float weight_other_cell = 0;
-        openvdb::Coord other_weight_coord = voxel_gcoord;
-        openvdb::Coord other_phi_coord = voxel_gcoord;
+                auto nextCoord = globalCoord;
+                nextCoord[channel] += int{ positiveDirection };
 
-        // its six faces
-        for (auto i_f = 0; i_f < 6; i_f++) {
-          // 0,1,2 direction
-          int component = i_f / 2;
-          bool positive_dir = (i_f % 2 == 0);
+                //face weight
+                float weight = mWeightAxr.getValue(nextCoord)[channel];
+                if (weight != 0.f) {
+                    hasNonZeroWeight = true;
+                }
 
-          // reset the other coordinate
-          other_weight_coord = voxel_gcoord;
-          other_phi_coord = voxel_gcoord;
+                //liquid velocity iChannel
+                float vel = mVelAxr[channel].getValue(nextCoord);
 
-          if (positive_dir) {
-            other_weight_coord[component]++;
-            weight_other_cell =
-                weight_axr.getValue(other_weight_coord)[component];
+                //solid velocity iChannel
+                float svel = mSolidVelAxr.getValue(nextCoord)[channel];
 
-            other_phi_coord[component]++;
-            phi_other_cell = phi_axr.getValue(other_phi_coord);
-          } else {
-            weight_other_cell =
-                weight_axr.getValue(other_weight_coord)[component];
-            other_phi_coord[component]--;
-            phi_other_cell = phi_axr.getValue(other_phi_coord);
-          } // end else positive direction
-          float term = weight_other_cell * dt_over_dxsqr;
-          // if other cell is a dof
-          if (phi_other_cell < 0) {
-            this_diag_entry += term;
-            // write to the negative term
-            if (!positive_dir) {
-              this_xyz_term[component] = -term;
+                //all elements there, write the rhs
+                //write to the right hand side part
+                if (positiveDirection) {
+                    rhs -= invdx * (weight * vel
+                        + (1.0f - weight) * svel);
+                }
+                else {
+                    rhs += invdx * (weight * vel
+                        + (1.0f - weight) * svel);
+                }
+            }//end for 6 faces of this voxel
+
+            if (!hasNonZeroWeight) {
+                rhs = 0;
             }
-          } else {
-            // the other cell is an air cell
-            float theta = fraction_inside(phi_iter.getValue(), phi_other_cell);
-            if (theta < 0.02f) { theta = 0.02f; }
-            this_diag_entry += term / theta;
-          } // end else other cell is dof
-        }// end for 6 faces
-        if (this_diag_entry == 0.f) {
-            //for totally isolated voxel
-            //mark it as inactive
-            leaf.setValueOff(phi_iter.offset());
-            x_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
-            y_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
-            z_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
-        }
-        else {
-            leaf.setValueOn(phi_iter.offset(), this_diag_entry);
-            x_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[0]);
-            y_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[1]);
-            z_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[2]);
-        }
-      } // end if this voxel is liquid voxel
-      else {
-        leaf.setValueOff(phi_iter.offset());
-        x_entry_leaf->setValueOff(phi_iter.offset());
-        y_entry_leaf->setValueOff(phi_iter.offset());
-        z_entry_leaf->setValueOff(phi_iter.offset());
-      } // else if this voxel is liquid voxel
-    }   // end for all touched liquid phi voxels
-  };    // end set diagonal
+            mRhsLeaves[leafpos]->setValueOn(iter.offset(), rhs);
+        }//end for all dof 
+    }//end operator
 
-  auto diag_leafman =
-      openvdb::tree::LeafManager<openvdb::FloatTree>(m_Diagonal->tree());
-  diag_leafman.foreach (set_coeffs);
+    mutable openvdb::FloatGrid::ConstUnsafeAccessor mVelAxr[3];
+    mutable openvdb::Vec3fGrid::ConstUnsafeAccessor mWeightAxr, mSolidVelAxr;
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mRhsLeaves;
+    const float mDx, mDt;
+};
 
-  // set the dof index
-  m_dof_idx = openvdb::Int32Grid::create(0);
-  m_dof_idx->setTree(std::make_shared<openvdb::Int32Tree>(
-      m_Diagonal->tree(), -1, openvdb::TopologyCopy()));
-  m_dof_idx->setTransform(m_Diagonal->transformPtr());
-
-  set_dof_idx(m_dof_idx);
-  trim_default_nodes();
+LaplacianWithLevel::Ptr LaplacianWithLevel::createPressurePoissonLaplacian(openvdb::FloatGrid::Ptr liquidPhi, openvdb::Vec3fGrid::Ptr faceWeight, const float dt)
+{
+    float dx = static_cast<float>(liquidPhi->voxelSize()[0]);
+    return std::make_shared<LaplacianWithLevel>(liquidPhi, faceWeight, dt, dx);
 }
 
-void simd_vdb_poisson::Laplacian_with_level::set_dof_idx(
-    openvdb::Int32Grid::Ptr in_out_dofidx) {  // crash on 0 particles?
-  auto dof_leafman =
-      openvdb::tree::LeafManager<openvdb::Int32Tree>(in_out_dofidx->tree());
-
-  // first count how many dof in each leaf
-  // then assign the global dof id
-  std::vector<openvdb::Int32> dof_end_in_each_leaf;
-  dof_end_in_each_leaf.assign(in_out_dofidx->tree().leafCount(), 0);
-
-  auto leaf_active_dof_counter = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                                     openvdb::Index leafpos) {
-    dof_end_in_each_leaf[leafpos] = leaf.onVoxelCount();
-  }; // end leaf active dof counter
-  dof_leafman.foreach (leaf_active_dof_counter);
-
-  // scan through all leaves to determine
-  for (size_t i = 1; i < dof_end_in_each_leaf.size(); i++) {
-    dof_end_in_each_leaf[i] += dof_end_in_each_leaf[i - 1];
-  }
-
-  auto set_dof_id = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                        openvdb::Index leafpos) {
-    openvdb::Int32 begin_idx = 0;
-    if (leafpos != 0) {
-      begin_idx = dof_end_in_each_leaf[leafpos - 1];
+openvdb::FloatGrid::Ptr LaplacianWithLevel::createPressurePoissonRightHandSide(
+    openvdb::Vec3fGrid::Ptr faceWeight,
+    openvdb::FloatGrid::Ptr vx, openvdb::FloatGrid::Ptr vy, openvdb::FloatGrid::Ptr vz,
+    openvdb::Vec3fGrid::Ptr solidVel, float dt)
+{
+    
+    if (mLevel != 0) {
+        return openvdb::FloatGrid::create();
     }
-    leaf.fill(-1);
-    for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-      iter.setValue(begin_idx);
-      begin_idx++;
-    }
-  };
-  dof_leafman.foreach (set_dof_id);
 
-  // return the total number of degree of freedom
-  m_ndof = *dof_end_in_each_leaf.crbegin();
+    auto rhs = getZeroVectorGrid();
+
+    std::vector<openvdb::FloatTree::LeafNodeType*> rhsLeaves;
+    rhsLeaves.reserve(rhs->tree().leafCount());
+    rhs->tree().getNodes(rhsLeaves);
+
+    BuildPoissonRhs op(
+        vx,
+        vy,
+        vz,
+        faceWeight,
+        solidVel,
+        rhsLeaves, mDxThisLevel, dt);
+
+    mDofLeafManager->foreach(op);
+    return rhs;
 }
 
-// In normal mode applies L * lhs = result
-// where lhs is the input
-// In weighted jacobi mode
-// apply one iteration to solve L * lhs = rhs
-// and lhs and rhs are unchanged
-struct alignas(32) simd_laplacian_apply_op {
-  enum class working_mode {
-    NORMAL_LAPLACIAN,
-    WEIGHTED_JACOBI,
-    SPAI0,
-    RESIDUAL,
-    RED_GS,
-    BLACK_GS
-  };
+struct LaplacianTripletsReducer {
+    LaplacianTripletsReducer(const LaplacianWithLevel* laplacian,
+        const std::vector<openvdb::Int32Tree::LeafNodeType*>& dofLeaves)
+        :mLaplacian(laplacian), mDofLeaves(dofLeaves) {
+    }
 
-  // default term is dt_over_dxsqr
-  simd_laplacian_apply_op(openvdb::FloatGrid::Ptr in_Diagonal,
-                          openvdb::FloatGrid::Ptr in_Neg_x_entry,
-                          openvdb::FloatGrid::Ptr in_Neg_y_entry,
-                          openvdb::FloatGrid::Ptr in_Neg_z_entry,
-                          openvdb::FloatGrid::Ptr in_out_lhs,
-                          openvdb::FloatGrid::Ptr in_out_rhs,
-                          openvdb::FloatGrid::Ptr in_out_result,
-                          float in_default_term)
-      : m_sor(1.2) {
-    m_Diagonal = in_Diagonal;
-    m_Neg_x_entry = in_Neg_x_entry;
-    m_Neg_y_entry = in_Neg_y_entry;
-    m_Neg_z_entry = in_Neg_z_entry;
-    m_rhs = in_out_rhs;
-    m_w_jacobi = 6.0 / 7.0;
-    m_lhs = in_out_lhs;
-    m_result = in_out_result;
-    default_lhs = _mm256_set1_ps(0);
-    default_rhs = _mm256_set1_ps(0);
-    default_face_term = _mm256_set1_ps(-in_default_term);
-    default_diag = _mm256_set1_ps(6.f * in_default_term);
-    default_inv_diagonal = _mm256_set1_ps(1.0f / (6.f * in_default_term));
-    default_SPAI0 = _mm256_set1_ps(1.0f / (7.f * in_default_term));
-    packed_w_jacobi = _mm256_set1_ps(m_w_jacobi);
-    packed_sor = _mm256_set1_ps(m_sor);
-    packed_1msor = _mm256_set1_ps(1 - m_sor);
-    m_mode = working_mode::NORMAL_LAPLACIAN;
-    m_inv_diagonal =
-        openvdb::FloatGrid::create(1.0f / m_Diagonal->background());
-    m_invdiag_initialized = false;
-    m_SPAI0 = openvdb::FloatGrid::create(1.0f / (7.f * in_default_term));
-    m_spai_initialized = false;
-  }
+    LaplacianTripletsReducer(const LaplacianTripletsReducer& other, tbb::split)
+        :mLaplacian(other.mLaplacian), mDofLeaves(other.mDofLeaves) {
+    }
 
-  void init_invdiag() {
-    if (m_invdiag_initialized)
-      return;
-    // set the inverse default term and inverse diagonal
-    m_inv_diagonal->setTree(std::make_shared<openvdb::FloatTree>(
-        m_Diagonal->tree(), 1.0f / m_Diagonal->background(),
-        openvdb::TopologyCopy()));
-    float diag_small_threshold = m_Diagonal->background() / 6.0f * 1e-1;
-    auto leafman =
-        openvdb::tree::LeafManager<openvdb::FloatTree>(m_inv_diagonal->tree());
-    leafman.foreach (
-        [&](openvdb::FloatTree::LeafNodeType &leaf, openvdb::Index leafpos) {
-          auto *diagleaf = m_Diagonal->tree().probeConstLeaf(leaf.origin());
-          for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-            float diag_val = diagleaf->getValue(iter.offset());
-            if (diag_val == 0) {
-              iter.setValue(1);
-            } else {
-              iter.setValue(1.0f / diag_val);
+    void operator()(const tbb::blocked_range<size_t>& r) {
+        auto dofAxr = mLaplacian->mDofIndex->getConstUnsafeAccessor();
+        auto diagonalAxr = mLaplacian->mDiagonal->getConstUnsafeAccessor();
+        openvdb::FloatGrid::ConstUnsafeAccessor offDiagonalAxr[3] = {
+            mLaplacian->mXEntry->tree(),
+            mLaplacian->mYEntry->tree(),
+            mLaplacian->mZEntry->tree() };
+
+        //for each dof leaf
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+            auto& leaf = *mDofLeaves[i];
+            for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                const auto globalCoord = iter.getCoord();
+                const float diagonal = diagonalAxr.getValue(globalCoord);
+
+                //the diagonal entry
+                mTriplets.push_back(
+                    Eigen::Triplet<float>(
+                        iter.getValue(), iter.getValue(), diagonal));
+
+                for (int iChannel = 0; iChannel < 3; iChannel++)
+                {
+                    //check lower neighbor
+                    auto negCoord = globalCoord;
+                    negCoord[iChannel]--;
+                    if (dofAxr.isValueOn(negCoord)) {
+                        mTriplets.push_back(
+                            Eigen::Triplet<float>(
+                                iter.getValue(), dofAxr.getValue(negCoord), offDiagonalAxr[iChannel].getValue(globalCoord)));
+                    }
+                    //check upper neighbor
+                    auto posCoord = globalCoord;
+                    posCoord[iChannel]++;
+                    if (dofAxr.isValueOn(posCoord)) {
+                        mTriplets.push_back(
+                            Eigen::Triplet<float>(
+                                iter.getValue(), dofAxr.getValue(posCoord), offDiagonalAxr[iChannel].getValue(posCoord)));
+                    }
+
+                }//end for three direction
+            }//end for all active DOF in this leaf
+        }//end for leaves
+    }//end operator
+
+    void join(const LaplacianTripletsReducer& other) {
+        auto originalSize = mTriplets.size();
+        auto otherSize = other.mTriplets.size();
+        auto newSize = originalSize + otherSize;
+        mTriplets.resize(newSize);
+        std::copy(other.mTriplets.begin(), other.mTriplets.end(), mTriplets.begin() + originalSize);
+    }
+
+    const std::vector<openvdb::Int32Tree::LeafNodeType*>& mDofLeaves;
+    const LaplacianWithLevel* mLaplacian;
+    std::vector<Eigen::Triplet<float>> mTriplets;
+};
+
+void LaplacianWithLevel::getTriplets(std::vector<Eigen::Triplet<float>>& outTriplets) const
+{
+    std::vector<openvdb::Int32Tree::LeafNodeType*> dofLeaves;
+    dofLeaves.reserve(mDofLeafManager->tree().leafCount());
+    mDofLeafManager->getNodes(dofLeaves);
+    size_t nleaves = dofLeaves.size();
+
+    LaplacianTripletsReducer reducer(this, dofLeaves);
+    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, nleaves), reducer);
+    outTriplets.swap(reducer.mTriplets);
+}
+
+LaplacianWithLevel::LaplacianWithLevel(openvdb::FloatGrid::Ptr liquidPhi,
+    openvdb::Vec3fGrid::Ptr faceWeight,
+    const float dt,
+    const float dx)
+{
+    mDt = dt;
+    mDxThisLevel = dx;
+    mLevel = 0;
+
+    float term = mDt / (mDxThisLevel * mDxThisLevel);
+
+    //Note we do not set the background of the diagonal to be zero
+    //later when we run the red-black Gauss seidel in simd instruction
+    //we need to divide the result by the diagonal term
+    //to avoid dividing by zero we set it to be one
+    //then the mask of the diagonal term becomes very important
+    //It is the only indicator to show this is a degree of freedom
+    mDiagonal = openvdb::FloatGrid::create(6 * term);
+    mDiagonal->setName("mDiagonal");
+    mDiagonal->setTransform(liquidPhi->transformPtr());
+    mDiagonal->setTree(std::make_shared<openvdb::FloatTree>(liquidPhi->tree(), 6 * term, openvdb::TopologyCopy()));
+
+    //by default, the solid is sparse
+    //so only a fraction of faces have weight<1
+    //the default value of the vector form of face weight is 1
+    //so the default value for each component is 1, but we directly
+    //store the entry here
+    mXEntry = openvdb::FloatGrid::create(-term);
+    mXEntry->setName("mXEntry");
+    mXEntry->setTransform(faceWeight->transform().copy());
+    mXEntry->transform().postTranslate(openvdb::Vec3d(-0.5 * mDxThisLevel, 0.0, 0.0));
+    mXEntry->setTree(std::make_shared<openvdb::FloatTree>(liquidPhi->tree(), -term, openvdb::TopologyCopy()));
+
+    mYEntry = mXEntry->deepCopy();
+    mYEntry->transform().postTranslate(openvdb::Vec3d(0.0, -0.5 * mDxThisLevel, 0.0));
+    mYEntry->setName("mYEntry");
+
+    mZEntry = mXEntry->deepCopy();
+    mZEntry->transform().postTranslate(openvdb::Vec3d(0.0, 0.0, -0.5 * mDxThisLevel));
+    mZEntry->setName("mZEntry");
+
+    mDofIndex = openvdb::Int32Grid::create(-1);
+    mDofIndex->setTransform(mDiagonal->transformPtr());
+    initializeFinest(liquidPhi, faceWeight);
+    initializeApplyOperator();
+}
+
+LaplacianWithLevel::LaplacianWithLevel(const LaplacianWithLevel& fineLevel, LaplacianWithLevel::Coarsening)
+{
+    initializeFromFineLevel(fineLevel);
+}
+
+void LaplacianWithLevel::initializeFromFineLevel(const LaplacianWithLevel& fineLevel)
+{
+    mDt = fineLevel.mDt;
+    mDxThisLevel = 2.0f * fineLevel.mDxThisLevel;
+    mLevel = fineLevel.mLevel + 1;
+
+    //the laplacian diagonal and face terms is already trimmed
+    //hence only the laplacian dof_idx keeps the actual layout
+    //of the degree of freedoms
+    auto coarseTransform = openvdb::math::Transform::createLinearTransform(mDxThisLevel);
+    coarseTransform->postTranslate(openvdb::Vec3d(0.5f * fineLevel.mDxThisLevel));
+
+    mDofIndex = openvdb::Int32Grid::create(-1);
+    mDofIndex->setTransform(coarseTransform);
+
+    //reduction touch leaves
+    std::vector<openvdb::Int32Tree::LeafNodeType*> fineLevelLeaves;
+    auto fineLevelLeafCount = fineLevel.mDofIndex->tree().leafCount();
+    fineLevelLeaves.reserve(fineLevelLeafCount);
+    fineLevel.mDofIndex->tree().getNodes(fineLevelLeaves);
+
+    simd_uaamg::TouchCoarseLeafReducer leafToucher{ fineLevelLeaves };
+    tbb::parallel_reduce(tbb::blocked_range<openvdb::Index32>(0, fineLevelLeafCount, /*grain size*/100), leafToucher);
+    mDofIndex->setTree(leafToucher.mCoarseDofGrid->treePtr());
+
+    mDofLeafManager = std::make_unique<openvdb::tree::LeafManager<openvdb::Int32Tree>>(mDofIndex->tree());
+
+    //piecewise constant interpolation and restriction function
+    //coarse voxel =8 fine voxels
+    mDofLeafManager->foreach([&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto fineDofAxr{ fineLevel.mDofIndex->getConstUnsafeAccessor() };
+        for (auto iter = leaf.beginValueAll(); iter; ++iter) {
+            //the global coordinate in the coarse level
+            auto coarseGlobalCoord{ iter.getCoord().asVec3i() };
+            auto fineBaseCoord = coarseGlobalCoord * 2;
+
+            bool fineDofNotFound = true;
+            for (int ii = 0; ii < 2 && fineDofNotFound; ii++) {
+                for (int jj = 0; jj < 2 && fineDofNotFound; jj++) {
+                    for (int kk = 0; kk < 2 && fineDofNotFound; kk++) {
+                        if (fineDofAxr.isValueOn(
+                            openvdb::Coord(fineBaseCoord).offsetBy(ii, jj, kk))) {
+                            fineDofNotFound = false;
+                        }
+                    }
+                }
+            }//for all fine voxels accociated
+
+            if (fineDofNotFound) {
+                iter.setValueOff();
             }
-          }
+            else {
+                iter.setValueOn();
+            }
+        }//end for all voxel in this leaf
         });
-    m_invdiag_initialized = true;
-  };
-  void init_SPAI0() {
-    if (m_spai_initialized)
-      return;
-    // set the SPAI0 matrix
-    // by default the rhs has the correct pattern, which is not pruned
-    // spai diagonal: akk/(ak)_2^2
-    // diagonal entry over the row norm
-    // set the inverse default term and inverse diagonal
+    setDofIndex(mDofIndex);
 
-    float default_spai0_val = 6.0f / (7.f * m_Diagonal->background());
-    m_SPAI0->setTree(std::make_shared<openvdb::FloatTree>(
-        m_rhs->tree(), default_spai0_val, openvdb::TopologyCopy()));
-    auto sqr = [](float in) { return in * in; };
-    auto spai0_setter = [&](openvdb::FloatTree::LeafNodeType &leaf,
-                            openvdb::Index leafpos) {
-      auto x_axr{m_Neg_x_entry->getConstAccessor()};
-      auto y_axr{m_Neg_y_entry->getConstAccessor()};
-      auto z_axr{m_Neg_z_entry->getConstAccessor()};
-      auto diag_axr{m_Diagonal->getConstAccessor()};
-      auto dof_axr{m_rhs->getConstAccessor()};
-      auto spai_leaf = m_SPAI0->tree().probeLeaf(leaf.origin());
-      for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-        float row_normsqr = 0;
-        auto gcoord = iter.getCoord();
-        //+x
-        auto at_coord = gcoord.offsetBy(1, 0, 0);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(x_axr.getValue(at_coord));
-        }
-        //-x
-        at_coord = gcoord.offsetBy(-1, 0, 0);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(x_axr.getValue(gcoord));
-        }
-        //+y
-        at_coord = gcoord.offsetBy(0, 1, 0);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(y_axr.getValue(at_coord));
-        }
-        //-y
-        at_coord = gcoord.offsetBy(0, -1, 0);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(y_axr.getValue(gcoord));
-        }
-        //+z
-        at_coord = gcoord.offsetBy(0, 0, 1);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(z_axr.getValue(at_coord));
-        }
-        //-z
-        at_coord = gcoord.offsetBy(0, 0, -1);
-        if (dof_axr.isValueOn(at_coord)) {
-          row_normsqr += sqr(z_axr.getValue(gcoord));
-        }
-        float diagval = diag_axr.getValue(gcoord);
-        if (diagval == 0) {
-          spai_leaf->setValueOn(iter.offset(), 0);
-        } else {
-          spai_leaf->setValueOn(iter.offset(),
-                                diagval / (sqr(diagval) + row_normsqr));
-        }
-      } // end for all dof
-    };  // end spai setter
+    float dtOverDxSqr = mDt / (mDxThisLevel * mDxThisLevel);
+    //set up the full diagonal matrix, full face weight matrix
 
-    auto dofman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_rhs->tree());
-    dofman.foreach (spai0_setter);
+    mDiagonal = openvdb::FloatGrid::create(6.0f * dtOverDxSqr);
+    mDiagonal->setTransform(coarseTransform);
+    mDiagonal->setName("mDiagonal_level_" + std::to_string(mLevel));
+    mDiagonal->setTree(
+        std::make_shared<openvdb::FloatTree>(
+            mDofIndex->tree(), 6.0f * dtOverDxSqr, openvdb::TopologyCopy()));
 
-    simd_vdb_poisson::Laplacian_with_level::trim_default_nodes(
-        m_SPAI0, default_spai0_val, default_spai0_val * 1e-5);
-    m_spai_initialized = true;
-  };
+    mXEntry = openvdb::FloatGrid::create(-dtOverDxSqr);
+    mXEntry->setName("mXEntry_level_" + std::to_string(mLevel));
+    mXEntry->setTransform(mDiagonal->transformPtr());
+    mXEntry->setTree(
+        std::make_shared<openvdb::FloatTree>(
+            mDofIndex->tree(), -dtOverDxSqr, openvdb::TopologyCopy()));
 
-  void set_normal_mode() { m_mode = working_mode::NORMAL_LAPLACIAN; }
-  void set_jacobi_mode() {
-    m_mode = working_mode::WEIGHTED_JACOBI;
-    init_invdiag();
-  }
-  void set_SPAI0_mode() {
-    m_mode = working_mode::SPAI0;
-    init_SPAI0();
-  }
-  void set_residual_mode() { m_mode = working_mode::RESIDUAL; }
-  void set_w_jacobi(float in_w_jacobi) {
-    m_w_jacobi = in_w_jacobi;
-    packed_w_jacobi = _mm256_set1_ps(m_w_jacobi);
-  }
-  // gauss seidel updating the red points (i+j+k) even
-  void set_red_GS() {
-    m_mode = working_mode::RED_GS;
-    init_invdiag();
-  }
-  // gauss seidel update the black points (i+j+k) odd
-  void set_black_GS() {
-    m_mode = working_mode::BLACK_GS;
-    init_invdiag();
-  }
+    mYEntry = mXEntry->deepCopy();
+    mYEntry->setName("mYEntry_level_" + std::to_string(mLevel));
 
-  void set_input_lhs(openvdb::FloatGrid::Ptr in_lhs) { m_lhs = in_lhs; }
-  void set_input_rhs(openvdb::FloatGrid::Ptr in_rhs) { m_rhs = in_rhs; }
-  void set_output_result(openvdb::FloatGrid::Ptr out_result) {
-    m_result = out_result;
-  }
+    mZEntry = mXEntry->deepCopy();
+    mZEntry->setName("mZEntry_level_" + std::to_string(mLevel));
 
-  // this operator is to be applied on the dof index grid
-  // this ensures operating on the correct mask
-  // the computation only operates on 8 float at a time
-  // using avx intrinsics
-  // each leaf contains 512 float
-  // offset = 64*x+8*y+z
-  // hence each bulk need to loop over x and y
-  // make sure not to use SSE instructions here to avoid context switching cost
-  void operator()(openvdb::Int32Tree::LeafNodeType &leaf,
-                  openvdb::Index leafpos) const {
-    const auto *rhs_leaf = m_rhs->tree().probeConstLeaf(leaf.origin());
 
-    auto *result_leaf = m_result->tree().probeLeaf(leaf.origin());
-    result_leaf->setValueMask(leaf.getValueMask());
-
-    const auto *diagleaf = m_Diagonal->tree().probeConstLeaf(leaf.origin());
-    const auto *invdiagleaf =
-        m_inv_diagonal->tree().probeConstLeaf(leaf.origin());
-    const auto *SPAI0leaf = m_SPAI0->tree().probeConstLeaf(leaf.origin());
-    // the six neighbor leafs for the pressure
-    // 0     1   2   3   4   5   6
-    // self, xp, xm, yp, ym, zp, zm
-    std::array<const simd_vdb_poisson::float_leaf_t *, 7> lhs_leaf;
-    lhs_leaf.fill(nullptr);
-    lhs_leaf[0] = m_lhs->tree().probeConstLeaf(leaf.origin());
-
-    for (int i_f = 0; i_f < 6; i_f++) {
-      int component = i_f / 2;
-      int positive_direction = (i_f % 2 == 0);
-
-      auto neib_origin = leaf.origin();
-      if (positive_direction) {
-        neib_origin[component] += 8;
-      } else {
-        neib_origin[component] -= 8;
-      }
-      lhs_leaf[size_t(i_f + 1)] = m_lhs->tree().probeConstLeaf(neib_origin);
-    }
-
-    // 0 self, 1 xp
-    const simd_vdb_poisson::float_leaf_t *x_weight_leaf[2] = {nullptr, nullptr};
-    x_weight_leaf[0] = m_Neg_x_entry->tree().probeConstLeaf(leaf.origin());
-    x_weight_leaf[1] =
-        m_Neg_x_entry->tree().probeConstLeaf(leaf.origin().offsetBy(8, 0, 0));
-
-    // 0 self, 1 yp
-    const simd_vdb_poisson::float_leaf_t *y_weight_leaf[2] = {nullptr, nullptr};
-    y_weight_leaf[0] = m_Neg_y_entry->tree().probeConstLeaf(leaf.origin());
-    y_weight_leaf[1] =
-        m_Neg_y_entry->tree().probeConstLeaf(leaf.origin().offsetBy(0, 8, 0));
-
-    // 0 self, 1 zp
-    const simd_vdb_poisson::float_leaf_t *z_weight_leaf[2] = {nullptr, nullptr};
-    z_weight_leaf[0] = m_Neg_z_entry->tree().probeConstLeaf(leaf.origin());
-    z_weight_leaf[1] =
-        m_Neg_z_entry->tree().probeConstLeaf(leaf.origin().offsetBy(0, 0, 8));
-
-    // loop over 64 lanes to conduct the computation
-    // laneid = x*8+y
-    __m256 xp_lhs;
-    __m256 xp_weight;
-    __m256 xm_lhs;
-    __m256 xm_weight;
-    __m256 yp_lhs;
-    __m256 yp_weight;
-    __m256 ym_lhs;
-    __m256 ym_weight;
-    __m256 zp_lhs;
-    __m256 zp_weight;
-    __m256 zm_lhs;
-    __m256 zm_weight;
-    __m256 this_lhs;
-    __m256 this_diag;
-    __m256 this_rhs;
-    __m256 residual;
-    __m256 this_invdiag;
-    std::array<__m256, 7> faced_result;
-    uint32_t tempoffset;
-    for (uint32_t laneoffset = 0; laneoffset < 512; laneoffset += 8) {
-      const uint8_t lanemask =
-          leaf.getValueMask().getWord<uint8_t>(laneoffset / 8);
-      bool lane_even = ((laneoffset >> 3) + (laneoffset >> 6)) % 2 == 0;
-      if (lanemask == uint8_t(0)) {
-        // there is no diagonal entry in this lane
-        continue;
-      }
-
-      // lane in the x plus directoin
-      /****************************************************************************/
-
-      if (laneoffset >= (7 * 64)) {
-        // load the nextleaf
-        tempoffset = laneoffset - (7 * 64);
-        get_x_y_lane(xp_lhs, lhs_leaf[1], tempoffset, default_lhs);
-        get_x_y_lane(xp_weight, x_weight_leaf[1], tempoffset,
-                     default_face_term);
-
-        // x-
-        get_x_y_lane_unsafe(xm_lhs, lhs_leaf[0], laneoffset - 64, default_lhs);
-      } else {
-        tempoffset = laneoffset + 64;
-        get_x_y_lane_unsafe(xp_lhs, lhs_leaf[0], tempoffset, default_lhs);
-        get_x_y_lane(xp_weight, x_weight_leaf[0], tempoffset,
-                     default_face_term);
-        if (laneoffset < 64) {
-          get_x_y_lane(xm_lhs, lhs_leaf[2], laneoffset + (7 * 64), default_lhs);
-        } else {
-          get_x_y_lane_unsafe(xm_lhs, lhs_leaf[0], laneoffset - 64,
-                              default_lhs);
-        }
-      }
-      faced_result[1] = _mm256_mul_ps(xp_lhs, xp_weight);
-      // lane in the x minux direction
-      /******************************************************************************/
-      /*if (laneoffset < 64) {
-              get_x_y_lane(xm_lhs, lhs_leaf[2], laneoffset + (7 * 64),
-      default_lhs);
-      }
-      else {
-              get_x_y_lane(xm_lhs, lhs_leaf[0], laneoffset - 64, default_lhs);
-      }*/
-      get_x_y_lane(xm_weight, x_weight_leaf[0], laneoffset, default_face_term);
-      faced_result[2] = _mm256_mul_ps(xm_lhs, xm_weight);
-      // lane in the y plus direction
-      /****************************************************************************/
-      // y==7 go to the next leaf and
-      if ((laneoffset & 63u) == 56u) {
-        tempoffset = laneoffset - 56;
-        get_x_y_lane(yp_lhs, lhs_leaf[3], tempoffset, default_lhs);
-        get_x_y_lane(yp_weight, y_weight_leaf[1], tempoffset,
-                     default_face_term);
-        // y-
-        get_x_y_lane_unsafe(ym_lhs, lhs_leaf[0], laneoffset - 8, default_lhs);
-      } else {
-        tempoffset = laneoffset + 8;
-        get_x_y_lane_unsafe(yp_lhs, lhs_leaf[0], tempoffset, default_lhs);
-        get_x_y_lane(yp_weight, y_weight_leaf[0], tempoffset,
-                     default_face_term);
-        if ((laneoffset & 63) == 0) {
-          get_x_y_lane(ym_lhs, lhs_leaf[4], laneoffset + 56, default_lhs);
-        } else {
-          get_x_y_lane_unsafe(ym_lhs, lhs_leaf[0], laneoffset - 8, default_lhs);
-        }
-      }
-      faced_result[3] = _mm256_mul_ps(yp_lhs, yp_weight);
-      // lane in the y minus direction
-      /****************************************************************************/
-
-      get_x_y_lane(ym_weight, y_weight_leaf[0], laneoffset, default_face_term);
-      faced_result[4] = _mm256_mul_ps(ym_lhs, ym_weight);
-      // lane in the z plus direction
-      /****************************************************************************/
-      get_pos_z_lane(zp_lhs, lhs_leaf[0], lhs_leaf[5], laneoffset, default_lhs);
-      get_pos_z_lane(zp_weight, z_weight_leaf[0], z_weight_leaf[1], laneoffset,
-                     default_face_term);
-      faced_result[5] = _mm256_mul_ps(zp_lhs, zp_weight);
-      // lane in the z minus direction
-      /****************************************************************************/
-      get_neg_z_lane(zm_lhs, lhs_leaf[0], lhs_leaf[6], laneoffset, default_lhs);
-      get_x_y_lane(zm_weight, z_weight_leaf[0], laneoffset, default_face_term);
-      // temp_result = _mm256_fmadd_ps(zm_lhs, zm_weight, temp_result);
-      faced_result[6] = _mm256_mul_ps(zm_lhs, zm_weight);
-
-      // collect
-      faced_result[1] = _mm256_add_ps(faced_result[1], faced_result[2]);
-      faced_result[3] = _mm256_add_ps(faced_result[3], faced_result[4]);
-      faced_result[5] = _mm256_add_ps(faced_result[5], faced_result[6]);
-
-      faced_result[1] = _mm256_add_ps(faced_result[1], faced_result[3]);
-      faced_result[1] = _mm256_add_ps(faced_result[1], faced_result[5]);
-
-      // now faced_result[1] contains all the off-diagonal results
-      // collected form 1,2,3,4,5,6
-
-      // faced_result[0] stores the result of A*lhs
-      // faced_result[6] = _mm256_add_ps(faced_result[4], faced_result[6]);
-      get_x_y_lane_unsafe(this_lhs, lhs_leaf[0], laneoffset, default_lhs);
-      switch (m_mode) {
-      case working_mode::BLACK_GS:
-        get_x_y_lane_unsafe(this_rhs, rhs_leaf, laneoffset, default_rhs);
-        residual = _mm256_sub_ps(this_rhs, faced_result[1]);
-        get_x_y_lane(this_invdiag, invdiagleaf, laneoffset,
-                     default_inv_diagonal);
-        residual = _mm256_mul_ps(residual, this_invdiag);
-        residual = _mm256_mul_ps(residual, packed_sor);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, packed_1msor, residual);
-        // blend result
-        if (lane_even) {
-          faced_result[0] =
-              _mm256_blend_ps(this_lhs, faced_result[0], 0b10101010);
-        } else {
-          faced_result[0] =
-              _mm256_blend_ps(this_lhs, faced_result[0], 0b01010101);
-        }
-        break;
-      case working_mode::RED_GS:
-        get_x_y_lane_unsafe(this_rhs, rhs_leaf, laneoffset, default_rhs);
-        residual = _mm256_sub_ps(this_rhs, faced_result[1]);
-        get_x_y_lane(this_invdiag, invdiagleaf, laneoffset,
-                     default_inv_diagonal);
-        residual = _mm256_mul_ps(residual, this_invdiag);
-        residual = _mm256_mul_ps(residual, packed_sor);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, packed_1msor, residual);
-        // blend result
-        if (lane_even) {
-          faced_result[0] =
-              _mm256_blend_ps(this_lhs, faced_result[0], 0b01010101);
-        } else {
-          faced_result[0] =
-              _mm256_blend_ps(this_lhs, faced_result[0], 0b10101010);
-        }
-        break;
-      case working_mode::WEIGHTED_JACOBI:
-        // v^1 = v^0 + w D^-1 r
-        // r = rhs - A*v^0
-        // v^0 is the input lhs
-        // v^1 is the output result
-        // the residual
-        // the diagonal term
-        /****************************************************************************/
-        get_x_y_lane(this_diag, diagleaf, laneoffset, default_diag);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, this_diag, faced_result[1]);
-        get_x_y_lane_unsafe(this_rhs, rhs_leaf, laneoffset, default_rhs);
-        residual = _mm256_sub_ps(this_rhs, faced_result[0]);
-        get_x_y_lane(this_invdiag, invdiagleaf, laneoffset,
-                     default_inv_diagonal);
-        residual = _mm256_mul_ps(residual, this_invdiag);
-        faced_result[0] = _mm256_fmadd_ps(packed_w_jacobi, residual, this_lhs);
-        break;
-      case working_mode::SPAI0:
-        // the diagonal term
-        /****************************************************************************/
-        get_x_y_lane(this_diag, diagleaf, laneoffset, default_diag);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, this_diag, faced_result[1]);
-        get_x_y_lane_unsafe(this_rhs, rhs_leaf, laneoffset, default_rhs);
-        residual = _mm256_sub_ps(this_rhs, faced_result[0]);
-        get_x_y_lane(this_invdiag, SPAI0leaf, laneoffset, default_SPAI0);
-        faced_result[0] = _mm256_fmadd_ps(this_invdiag, residual, this_lhs);
-        break;
-      case working_mode::RESIDUAL:
-        // the diagonal term
-        /****************************************************************************/
-        get_x_y_lane(this_diag, diagleaf, laneoffset, default_diag);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, this_diag, faced_result[1]);
-        get_x_y_lane_unsafe(this_rhs, rhs_leaf, laneoffset, default_rhs);
-        faced_result[0] = _mm256_sub_ps(this_rhs, faced_result[0]);
-        break;
-      default:
-      case working_mode::NORMAL_LAPLACIAN:
-        // the diagonal term
-        /****************************************************************************/
-        get_x_y_lane(this_diag, diagleaf, laneoffset, default_diag);
-        faced_result[0] = _mm256_fmadd_ps(this_lhs, this_diag, faced_result[1]);
-        break;
-      } // end case working mode
-      // write to the result
-      _mm256_storeu_ps(result_leaf->buffer().data() + laneoffset,
-                       faced_result[0]);
-    } // end laneid = [0 63]
-
-    // set the off elements to zero
-    if (result_leaf->isValueMaskOn()) {
-      return;
-    }
-    for (auto offiter = result_leaf->beginValueOff(); offiter; ++offiter) {
-      offiter.setValue(0);
-    }
-
-  } // end operator
-
-  void get_x_y_lane(__m256 &out_lane,
-                    const simd_vdb_poisson::float_leaf_t *leaf_ptr,
-                    uint32_t load_offset, const __m256 &default_val) const {
-    if (!leaf_ptr) {
-      out_lane = default_val;
-    } else {
-      out_lane = _mm256_loadu_ps(leaf_ptr->buffer().data() + load_offset);
-    }
-  };
-  void get_x_y_lane_unsafe(__m256 &out_lane,
-                           const simd_vdb_poisson::float_leaf_t *leaf_ptr,
-                           uint32_t load_offset, const __m256) const {
-    out_lane = _mm256_loadu_ps(leaf_ptr->buffer().data() + load_offset);
-  };
-  // get a z lane that looks liks taking from a lane
-  // that is shifted 1 element towards negative z direction
-  // with respect to current leaf
-  // for example, assume in a one dimensional storage
-  //  neg z neib        this
-  // | 0 1 2 ... 7 | 8 9 ... 15 | 16 ...
-  // return the result of
-  // | 7 8 9 ... 14 |
-  // this is done by shuffle and blend
-  // (1) first use avx instruction to load the previous lane
-  // |0 1 2 3 4 5 6 7|
-  // permute the above lane: using _mm256_permute_ps
-  // |3 0 1 2 7 4 5 6|
-  //
-  // (2) load the middle m256 lane:
-  // |8 9 10 11 12 13 14 15 |
-  // permute each 128 lane: using _mm256_permute_ps
-  // |11 8 9 10 15 12 13 14 |
-  //
-  // (3) we need to replace the 11 and 15 in the above result
-  // to prepare for that, we extract the lower part of the above result:
-  // we need the following lane:
-  // |7 4 5 6 11 8 9 10 |
-  // to get it we then blend it with the original using _mm256_permute2f128_ps
-  //
-  // (4) finally we use _mm256_blend_ps to blend the result
-  // this function would only be called to retrieve the lhs leaf
-  void get_neg_z_lane(__m256 &out_lane,
-                      const simd_vdb_poisson::float_leaf_t *this_leaf,
-                      const simd_vdb_poisson::float_leaf_t *neg_neib_z_leaf,
-                      uint32_t lane256_offset,
-                      const __m256 &default_val) const {
-    // the beginning of the x y lane in a leaf
-
-    // the data of this lane
-    //| 8 9 ... 15 |
-    __m256 original_this_lane;
-    if (this_leaf) {
-      original_this_lane =
-          _mm256_loadu_ps(this_leaf->buffer().data() + lane256_offset);
-    } else {
-      original_this_lane = default_val;
-      if (!neg_neib_z_leaf) {
-        out_lane = default_val;
-        return;
-      }
-    }
-
-    // the data in the negative neighbor
-    //|0 1 2 3 4 5 6 7|
-    __m256 neg_neib_lane;
-    if (neg_neib_z_leaf) {
-      neg_neib_lane =
-          _mm256_loadu_ps(neg_neib_z_leaf->buffer().data() + lane256_offset);
-    } else {
-      neg_neib_lane = default_val;
-    }
-
-    //(1),(2)
-    // permute each lane, this happens within each 128 half of the 256 lane
-    // lowz  highz
-    //|0 1 2 3| -> |3 0 1 2|
-    // hence imm8[1:0]=3
-    // imm8[3:2] = 0
-    // imm8[5:4] = 1
-    // imm8[7:6] = 2
-    // use _mm256_permute_ps
-    const uint8_t permute_imm8 = 0b10010011;
-    original_this_lane = _mm256_permute_ps(original_this_lane, permute_imm8);
-    neg_neib_lane = _mm256_permute_ps(neg_neib_lane, permute_imm8);
-
-    //(3)
-    // the lower part of this is the high part of the permuted neg neiber
-    // the higher part of this is the lower part of the permuted original
-    // use _mm256_permute2f128_ps
-    /*
-    DEFINE SELECT4(src1, src2, control) {
-    CASE(control[1:0]) OF
-    0:	tmp[127:0] := src1[127:0]
-    1:	tmp[127:0] := src1[255:128]
-    2:	tmp[127:0] := src2[127:0]
-    3:	tmp[127:0] := src2[255:128]
-    ESAC
-    IF control[3]
-            tmp[127:0] := 0
-    FI
-    RETURN tmp[127:0]
-    }
-    dst[127:0] := SELECT4(a[255:0], b[255:0], imm8[3:0])
-    dst[255:128] := SELECT4(a[255:0], b[255:0], imm8[7:4])
-    dst[MAX:256] := 0
-    */
-
-    // we use src1 = neg neib
-    //       src2 = original
-    // lower 128 is high src1, imm8[3:0] = 1
-    // higher 128 is low src2, imm8[7:4] = 2
-    __m256 high_neg_neib_low_original;
-
-    const uint8_t interweave_imm8 = 0b00100001;
-    high_neg_neib_low_original = _mm256_permute2f128_ps(
-        neg_neib_lane, original_this_lane, interweave_imm8);
-
-    // blend the permuted original lane with the
-    // the 0 and 4 position will be from the high_neg_neib
-    // the rest bits are from the permuted original
-    const uint8_t blend_imm8 = 0b00010001;
-    out_lane = _mm256_blend_ps(original_this_lane, high_neg_neib_low_original,
-                               blend_imm8);
-  } // end get_neg_z_lane
-
-  // get a z lane that looks liks taking from a lane
-  // that is shifted 1 element towards positive z direction
-  // with respect to current leaf
-  // for example, assume in a one dimensional storage
-  //      this     positive neib
-  // | 0 1 2 ... 7 | 8 9 ... 15 | 16 ...
-  // return the result of
-  // | 1 2 3 4 5 6 7 8 |
-  // this is done by shuffle and blend
-  // (1) first use avx instruction to load the positive lane
-  // |8 9 10 11 12 13 14 15|
-  // permute the above lane: using _mm256_permute_ps
-  // |9 10 11 8 15 12 13 14|
-  //
-  // (2) load the middle m256 lane:
-  // | 0 1 2 3 4 5 6 7 |
-  // permute each 128 lane: using _mm256_permute_ps
-  // | 1 2 3 0 5 6 7 4 |
-  //
-  // (3) we need to replace the 0 and 4 in the above result
-  // to prepare for that, we extract the upper part of the above result:
-  // we need the following lane:
-  // |5 6 7 4, 9 10 11 8 |
-  //  high original, lower pos neib
-  // to get it we then blend it with the original using _mm256_permute2f128_ps
-  //
-  // (4) finally we use _mm256_blend_ps to blend the result
-  // this function would only be called to retrieve the lhs leaf
-  inline void
-  get_pos_z_lane(__m256 &out_lane,
-                 const simd_vdb_poisson::float_leaf_t *this_leaf,
-                 const simd_vdb_poisson::float_leaf_t *pos_neib_z_leaf,
-                 uint32_t lane256_offset, const __m256 &default_val) const {
-
-    // the data of this lane
-    //| 8 9 ... 15 |
-    __m256 original_this_lane;
-    if (this_leaf) {
-      original_this_lane =
-          _mm256_loadu_ps(this_leaf->buffer().data() + lane256_offset);
-    } else {
-      original_this_lane = default_val;
-      if (!pos_neib_z_leaf) {
-        out_lane = default_val;
-        return;
-      }
-    }
-
-    // the data in the negative neighbor
-    //|0 1 2 3 4 5 6 7|
-    __m256 pos_neib_lane;
-    if (pos_neib_z_leaf) {
-      pos_neib_lane =
-          _mm256_loadu_ps(pos_neib_z_leaf->buffer().data() + lane256_offset);
-    } else {
-      pos_neib_lane = default_val;
-    }
-
-    //(1),(2)
-    // permute each lane, this happens within each 128 half of the 256 lane
-    // lowz  highz
-    //|0 1 2 3| -> |1 2 3 0|
-    // hence imm8[1:0]=1
-    // imm8[3:2] = 2
-    // imm8[5:4] = 3
-    // imm8[7:6] = 0
-    // use _mm256_permute_ps
-    const uint8_t permute_imm8 = 0b00111001;
-    original_this_lane = _mm256_permute_ps(original_this_lane, permute_imm8);
-    pos_neib_lane = _mm256_permute_ps(pos_neib_lane, permute_imm8);
-
-    //(3)
-    // the lower part of this is the high part of the permuted neg neiber
-    // the higher part of this is the lower part of the permuted original
-    // use _mm256_permute2f128_ps
-    /*
-    DEFINE SELECT4(src1, src2, control) {
-    CASE(control[1:0]) OF
-    0:	tmp[127:0] := src1[127:0]
-    1:	tmp[127:0] := src1[255:128]
-    2:	tmp[127:0] := src2[127:0]
-    3:	tmp[127:0] := src2[255:128]
-    ESAC
-    IF control[3]
-            tmp[127:0] := 0
-    FI
-    RETURN tmp[127:0]
-    }
-    dst[127:0] := SELECT4(a[255:0], b[255:0], imm8[3:0])
-    dst[255:128] := SELECT4(a[255:0], b[255:0], imm8[7:4])
-    dst[MAX:256] := 0
-    */
-
-    // we use src1 = original
-    //       src2 = high neib
-    // lower 128 is high src1 imm8[3:0] = 1
-    // higher 128 is low src2, imm8[7:4] = 2
-    __m256 high_original_low_pos_neib;
-
+    //The prolongation operator is
+    //fine = coarse
+    //the restriction operator is
+    //coarse = 1/8*(eight fine)
+    //ideally, if the fine level diagonal is 6
+    //then the coarse level diagonal should be 1.5, because dx_c=dx_f*2
+    //1. a input coarse voxel turns on up to 8 fine voxels
+    //2. each fine voxel scatters to its center 6, and its neighbor -1
+    //3. the results are restricted
+    //in a 2D example, original weight is 4, after scatter it becomes
+    //-------------------------------------
+    //|        |        |        |        |
+    //|        |   -1   |   -1   |        |
+    //|        |        |        |        |
+    //-------------------------------------
+    //|        |        |        |        |
+    //|   -1   |    2   |    2   |   -1   |
+    //|        |        |        |        |
+    //-------------------------------------
+    //|        |        |        |        |
+    //|   -1   |    2   |    2   |   -1   |
+    //|        |        |        |        |
+    //-------------------------------------
+    //|        |        |        |        |
+    //|        |   -1   |   -1   |        |
+    //|        |        |        |        |
+    //-------------------------------------
     //
-    const uint8_t interweave_imm8 = 0b00100001;
-    high_original_low_pos_neib = _mm256_permute2f128_ps(
-        original_this_lane, pos_neib_lane, interweave_imm8);
+    // after restriction (sum and * 1/4) it becomes
+    //-------------------------------------
+    //|        |                 |        |
+    //|        |      -0.5       |        |
+    //|        |                 |        |
+    //-------------------------------------
+    //|        |                 |        |
+    //|        |                 |        |
+    //|        |                 |        |
+    //|  -0.5  |        2        |  -0.5  |
+    //|        |                 |        |
+    //|        |                 |        |
+    //|        |                 |        |
+    //-------------------------------------
+    //|        |                 |        |
+    //|        |      -0.5       |        |
+    //|        |                 |        |
+    //-------------------------------------
+    //it should additionally multiply by 0.5 
+    //to get correct coefficients
 
-    // blend the permuted original lane with the
-    // the 3 and 7 position will be from the high_neg_neib
-    // the rest bits are from the permuted original
-    const uint8_t blend_imm8 = 0b10001000;
-    out_lane = _mm256_blend_ps(original_this_lane, high_original_low_pos_neib,
-                               blend_imm8);
-  } // end get_pos_z_lane
 
-  // over load new and delete for aligned allocation and free
-  void *operator new(size_t memsize) {
-    size_t ptr_alloc = sizeof(void *);
-    size_t align_size = 32;
-    size_t request_size = sizeof(simd_laplacian_apply_op) + align_size;
-    size_t needed = ptr_alloc + request_size;
+    auto setCoarseLevelTerms = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto xAxr{ fineLevel.mXEntry->getConstUnsafeAccessor() };
+        auto yAxr{ fineLevel.mYEntry->getConstUnsafeAccessor() };
+        auto zAxr{ fineLevel.mZEntry->getConstUnsafeAccessor() };
+        auto diagAxr{ fineLevel.mDiagonal->getConstUnsafeAccessor() };
+        auto fineDofAxr{ fineLevel.mDofIndex->getConstUnsafeAccessor() };
 
-    void *alloc = ::operator new(needed);
-    void *real_alloc =
-        reinterpret_cast<void *>(reinterpret_cast<char *>(alloc) + ptr_alloc);
-    void *ptr = std::align(align_size, sizeof(simd_laplacian_apply_op),
-                           real_alloc, request_size);
+        auto* diagLeaf = mDiagonal->tree().probeLeaf(leaf.origin());
+        auto* xLeaf = mXEntry->tree().probeLeaf(leaf.origin());
+        auto* yLeaf = mYEntry->tree().probeLeaf(leaf.origin());
+        auto* zLeaf = mZEntry->tree().probeLeaf(leaf.origin());
 
-    ((void **)ptr)[-1] = alloc; // save for delete calls to use
-    return ptr;
-  }
+        for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+            //each voxel only record the flux of its and its below dof
+            float diag = 0, x = 0, y = 0, z = 0;
+            //the global coordinate in the coarse level
+            auto coarseGlobalCoord{ iter.getCoord().asVec3i() };
+            auto fineBaseCoord = openvdb::Coord(coarseGlobalCoord * 2);
 
-  void operator delete(void *ptr) {
-    void *alloc = ((void **)ptr)[-1];
-    ::operator delete(alloc);
-  }
+            //loop over the 8 fine cells 
+            for (int ii = 0; ii < 2; ii++) {
+                for (int jj = 0; jj < 2; jj++) {
+                    for (int kk = 0; kk < 2; kk++) {
+                        const auto fineCoord = fineBaseCoord.offsetBy(ii, jj, kk);
 
-  // the default face term when the faces are all liquid
-  // -dt_over_dxsqr
-  float default_term;
+                        //contribution to diag
+                        if (fineDofAxr.isValueOn(fineCoord)) {
+                            diag += diagAxr.getValue(fineCoord);
 
-  // to be set in the constructor
-  // when the requested leaf doesn't exist
-  __m256 default_lhs;
-  __m256 default_rhs;
-  __m256 default_face_term;
-  __m256 default_diag;
-  __m256 default_inv_diagonal;
-  __m256 default_SPAI0;
-  std::array<__m256, 7> m_zeros_for_result;
+                            //three face terms
+                            if (fineDofAxr.isValueOn(fineCoord.offsetBy(-1, 0, 0))) {
+                                if (ii == 0) {
+                                    //contribute to the neg x term
+                                    x += xAxr.getValue(fineCoord);
+                                }
+                                else {
+                                    //this face will decrease two fine dofs
+                                    //diagonal terms
+                                    diag += 2 * xAxr.getValue(fineCoord);
+                                }
+                            }//end if x- neib on
 
-  // damped jacobi weight
-  float m_w_jacobi;
-  __m256 packed_w_jacobi;
+                            if (fineDofAxr.isValueOn(fineCoord.offsetBy(0, -1, 0))) {
+                                if (jj == 0) {
+                                    y += yAxr.getValue(fineCoord);
+                                }
+                                else {
+                                    diag += 2 * yAxr.getValue(fineCoord);
+                                }
+                            }//end if y- neib on
 
-  const float m_sor;
-  __m256 packed_sor, packed_1msor;
+                            if (fineDofAxr.isValueOn(fineCoord.offsetBy(0, 0, -1))) {
+                                if (kk == 0) {
+                                    z += zAxr.getValue(fineCoord);
+                                }
+                                else {
+                                    diag += 2 * zAxr.getValue(fineCoord);
+                                }
+                            }//end if z- neib on
+                        }//end if this voxel is on
+                    }//end fine kk
+                }//end fine jj
+            }//end fine ii
 
-  openvdb::FloatGrid::Ptr m_Diagonal;
-  openvdb::FloatGrid::Ptr m_inv_diagonal;
-  bool m_invdiag_initialized;
-  openvdb::FloatGrid::Ptr m_SPAI0;
-  bool m_spai_initialized;
-  openvdb::FloatGrid::Ptr m_Neg_x_entry;
-  openvdb::FloatGrid::Ptr m_Neg_y_entry;
-  openvdb::FloatGrid::Ptr m_Neg_z_entry;
+            //coefficient R accounts for 1/8
+            //Then there is an additional 1/2
+            auto offset = iter.offset();
+            const float factor = 0.5f * (1.0f / 8.0f);
+            diagLeaf->setValueOnly(offset, diag * factor);
+            xLeaf->setValueOnly(offset, x * factor);
+            yLeaf->setValueOnly(offset, y * factor);
+            zLeaf->setValueOnly(offset, z * factor);
+        }//end loop over all coarse dofs
+    };//end set terms
 
-  openvdb::FloatGrid::Ptr m_rhs;
-  openvdb::FloatGrid::Ptr m_lhs;
-  openvdb::FloatGrid::Ptr m_result;
-  working_mode m_mode;
-}; // end simd_laplacian_apply_op
+    mDofLeafManager->foreach(setCoarseLevelTerms);
 
-void simd_vdb_poisson::Laplacian_with_level::initialize_evaluators() {
-  // set the leaf manager
-  m_dof_leafmanager =
-      std::make_unique<openvdb::tree::LeafManager<openvdb::Int32Tree>>(
-          m_dof_idx->tree());
-
-  auto zerovec = get_zero_vec_grid();
-
-  m_laplacian_evaluator =
-      std::shared_ptr<simd_laplacian_apply_op>(new simd_laplacian_apply_op(
-          m_Diagonal, m_Neg_x_entry, m_Neg_y_entry, m_Neg_z_entry, zerovec,
-          zerovec, zerovec,
-          /*default term*/ m_dt / (m_dx_this_level * m_dx_this_level)));
-  m_laplacian_evaluator->set_normal_mode();
+    trimDefaultNodes();
+    initializeApplyOperator();
 }
 
-openvdb::FloatGrid::Ptr
-simd_vdb_poisson::Laplacian_with_level::apply(openvdb::FloatGrid::Ptr in_lhs) {
-  _mm256_zeroall();
-
-  auto result = get_zero_vec_grid();
-  // set the input and out put
-  m_laplacian_evaluator->set_input_lhs(in_lhs);
-  m_laplacian_evaluator->set_output_result(result);
-  // CSim::TimerMan::timer("Sim.step/vdbflip/mulvsimd/apply").start();
-  // diag_leafman.foreach(apply_op);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-  // CSim::TimerMan::timer("Sim.step/vdbflip/mulvsimd/apply").stop();
-  _mm256_zeroall();
-  return result;
-}
-
-void simd_vdb_poisson::Laplacian_with_level::residual_apply_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_residual, openvdb::FloatGrid::Ptr in_lhs,
-    openvdb::FloatGrid::Ptr in_rhs) {
-  m_laplacian_evaluator->set_residual_mode();
-  _mm256_zeroupper();
-  m_laplacian_evaluator->set_input_lhs(in_lhs);
-  m_laplacian_evaluator->set_input_rhs(in_rhs);
-  m_laplacian_evaluator->set_output_result(in_out_residual);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-  _mm256_zeroupper();
-}
-
-void simd_vdb_poisson::Laplacian_with_level::Laplacian_apply_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_result, openvdb::FloatGrid::Ptr in_lhs) {
-  m_laplacian_evaluator->set_normal_mode();
-  _mm256_zeroupper();
-  m_laplacian_evaluator->set_input_lhs(in_lhs);
-  m_laplacian_evaluator->set_input_rhs(in_lhs);
-  m_laplacian_evaluator->set_output_result(in_out_result);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-  _mm256_zeroupper();
-}
-
-void simd_vdb_poisson::Laplacian_with_level::weighted_jacobi_apply_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_updated_lhs, openvdb::FloatGrid::Ptr in_lhs,
-    openvdb::FloatGrid::Ptr in_rhs) {
-  m_laplacian_evaluator->set_jacobi_mode();
-  _mm256_zeroupper();
-  m_laplacian_evaluator->set_input_lhs(in_lhs);
-  m_laplacian_evaluator->set_input_rhs(in_rhs);
-  m_laplacian_evaluator->set_output_result(in_out_updated_lhs);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-  _mm256_zeroupper();
-}
-void simd_vdb_poisson::Laplacian_with_level::SPAI0_apply_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_updated_lhs, openvdb::FloatGrid::Ptr in_lhs,
-    openvdb::FloatGrid::Ptr in_rhs) {
-  m_laplacian_evaluator->set_SPAI0_mode();
-  _mm256_zeroupper();
-  m_laplacian_evaluator->set_input_lhs(in_lhs);
-  m_laplacian_evaluator->set_input_rhs(in_rhs);
-  m_laplacian_evaluator->set_output_result(in_out_updated_lhs);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-  _mm256_zeroupper();
-}
-template <bool red_first>
-void simd_vdb_poisson::Laplacian_with_level::RBGS_apply_assume_topo_inplace(
-    openvdb::FloatGrid::Ptr scratch_pad, openvdb::FloatGrid::Ptr in_out_lhs,
-    openvdb::FloatGrid::Ptr in_rhs) {
-  openvdb::FloatGrid::Ptr output_updated_lhs = scratch_pad;
-  _mm256_zeroupper();
-  if (red_first) {
-    m_laplacian_evaluator->set_red_GS();
-  } else {
-    m_laplacian_evaluator->set_black_GS();
-  }
-  m_laplacian_evaluator->set_input_lhs(in_out_lhs);
-  m_laplacian_evaluator->set_input_rhs(in_rhs);
-  m_laplacian_evaluator->set_output_result(scratch_pad);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-
-  // the updated lhs has now red points updated
-  if (red_first) {
-    m_laplacian_evaluator->set_black_GS();
-  } else {
-    m_laplacian_evaluator->set_red_GS();
-  }
-  m_laplacian_evaluator->set_input_lhs(scratch_pad);
-  m_laplacian_evaluator->set_output_result(in_out_lhs);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-
-  // now the in_out_lhs is updated, let's copy the result to the output
-  auto copy_to_result = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                            openvdb::Index leafpos) {
-    auto *source_leaf = in_out_lhs->tree().probeLeaf(leaf.origin());
-    auto *target_leaf = output_updated_lhs->tree().probeLeaf(leaf.origin());
-
-    std::copy(source_leaf->buffer().data(),
-              source_leaf->buffer().data() + leaf.SIZE,
-              target_leaf->buffer().data());
-  }; // end copy to result
-
-  // m_dof_leafmanager->foreach(copy_to_result);
-  _mm256_zeroupper();
-}
-
-void simd_vdb_poisson::Laplacian_with_level::inplace_add_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_result, openvdb::FloatGrid::Ptr in_rhs) {
-  // assume the input has the same topology
-  _mm256_zeroall();
-
-  auto set_first_iter_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *result_leaf = in_out_result->tree().probeLeaf(leaf.origin());
-    const auto *rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
-
-    __m256 result_256;
-    __m256 rhs_256;
-    for (auto laneoffset = 0; laneoffset < leaf.SIZE; laneoffset += 8) {
-      result_256 = _mm256_loadu_ps(result_leaf->buffer().data() + laneoffset);
-      rhs_256 = _mm256_loadu_ps(rhs_leaf->buffer().data() + laneoffset);
-      result_256 = _mm256_add_ps(rhs_256, result_256);
-      _mm256_storeu_ps(result_leaf->buffer().data() + laneoffset, result_256);
+namespace {
+struct BuildFinestMatrix {
+    BuildFinestMatrix(
+        openvdb::FloatGrid::Ptr in_liquid_phi,
+        openvdb::Vec3fGrid::Ptr in_face_weights,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& in_phi_leaf,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& in_neg_x,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& in_neg_y,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& in_neg_z, float in_dt, float in_dx) :
+        mPhiAxr(in_liquid_phi->tree()), mWeightAxr(in_face_weights->tree()),
+        mPhiLeaves(in_phi_leaf), mNegX(in_neg_x), mNegY(in_neg_y), mNegZ(in_neg_z)
+    {
+        mDt = in_dt;
+        mDx = in_dx;
     }
 
-    for (auto iter = result_leaf->beginValueOff(); iter; ++iter) {
-      iter.setValue(0);
+    BuildFinestMatrix(const BuildFinestMatrix& other) :
+        mPhiAxr{ other.mPhiAxr }, mWeightAxr(other.mWeightAxr),
+        mPhiLeaves(other.mPhiLeaves),
+        mNegX(other.mNegX),
+        mNegY(other.mNegY),
+        mNegZ(other.mNegZ),
+        mDt(other.mDt),
+        mDx(other.mDx)
+    {
+        mPhiAxr.clear();
+        mWeightAxr.clear();
     }
-  }; // end set_first_iter_op
 
-  m_dof_leafmanager->foreach (set_first_iter_op);
+    void operator ()(openvdb::FloatTree::LeafNodeType& diagleaf, openvdb::Index leafpos) const {
+        //in the initial state, the tree contains both phi<0 and phi>0
+        //we only take the phi<0
+        const auto& phiLeaf = *mPhiLeaves[leafpos];
 
-  _mm256_zeroall();
+        //everytime only write to the coefficient on the lower side
+        //the positive side will be handled from the dof on the other side
+        auto* xLeaf = mNegX[leafpos];
+        auto* yLeaf = mNegY[leafpos];
+        auto* zLeaf = mNegZ[leafpos];
+
+        float dtOverDxSqr = mDt / (mDx * mDx);
+        for (auto phiIter = phiLeaf.cbeginValueOn(); phiIter; ++phiIter) {
+            if (phiIter.getValue() < 0.f) {
+                //this is a valid dof
+                auto globalCoord = phiIter.getCoord();
+
+                float diagonal = 0.f;
+                float xyzTerm[3] = { 0.f,0.f,0.f };
+                float phiOther = 0.f;
+                float weight = 0.f;
+                openvdb::Coord weightCoord = globalCoord;
+                openvdb::Coord phiCoord = globalCoord;
+
+                //its six faces
+                for (auto i_f = 0; i_f < 6; i_f++) {
+                    //0,1,2 direction
+                    int component = i_f / 2;
+                    bool isPositiveDir = (i_f % 2 == 0);
+
+                    //reset the other coordinate
+                    weightCoord = globalCoord;
+                    phiCoord = globalCoord;
+
+                    if (isPositiveDir) {
+                        weightCoord[component]++;
+                        weight = mWeightAxr.getValue(weightCoord)[component];
+
+                        phiCoord[component]++;
+                        phiOther = mPhiAxr.getValue(phiCoord);
+                    }
+                    else {
+                        weight = mWeightAxr.getValue(weightCoord)[component];
+                        phiCoord[component]--;
+                        phiOther = mPhiAxr.getValue(phiCoord);
+                    }//end else positive direction
+                    float term = weight * dtOverDxSqr;
+                    //if other cell is a dof
+                    if (phiOther < 0) {
+                        diagonal += term;
+                        //write to the negative term
+                        if (!isPositiveDir) {
+                            xyzTerm[component] = -term;
+                        }
+                    }
+                    else {
+                        //the other cell is an air cell
+                        float theta = fraction_inside(phiIter.getValue(), phiOther);
+                        if (theta < 0.02f) theta = 0.02f;
+                        diagonal += term / theta;
+                    }//end else other cell is dof
+                }//end for 6 faces
+
+                //for totally isolated DOF, do not include in the solving process.
+                if (diagonal != 0.f) {
+                    diagleaf.setValueOn(phiIter.offset(), diagonal);
+                    xLeaf->setValueOn(phiIter.offset(), xyzTerm[0]);
+                    yLeaf->setValueOn(phiIter.offset(), xyzTerm[1]);
+                    zLeaf->setValueOn(phiIter.offset(), xyzTerm[2]);
+                }
+                else {
+                    diagleaf.setValueOff(phiIter.offset());
+                    xLeaf->setValueOff(phiIter.offset());
+                    yLeaf->setValueOff(phiIter.offset());
+                    zLeaf->setValueOff(phiIter.offset());
+                }
+            }//end if this voxel is liquid voxel
+            else {
+                diagleaf.setValueOff(phiIter.offset());
+                xLeaf->setValueOff(phiIter.offset());
+                yLeaf->setValueOff(phiIter.offset());
+                zLeaf->setValueOff(phiIter.offset());
+            }//else if this voxel is liquid voxel
+        }//end for all touched liquid phi voxels
+    }//end operator ()
+
+
+    mutable openvdb::FloatGrid::ConstUnsafeAccessor mPhiAxr;
+    mutable openvdb::Vec3fGrid::ConstUnsafeAccessor mWeightAxr;
+
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mPhiLeaves;
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mNegX;
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mNegY;
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mNegZ;
+    float mDt, mDx;
+};
+}//end namespace
+
+void LaplacianWithLevel::initializeFinest(
+    openvdb::FloatGrid::Ptr in_liquid_phi,
+    openvdb::Vec3fGrid::Ptr in_face_weights)
+{
+    std::vector<openvdb::FloatTree::LeafNodeType*> phiLeaves, xLeaves, yLeaves, zLeaves;
+    auto nLeaf = in_liquid_phi->tree().leafCount();
+    if (0 == nLeaf) {
+        return;
+    }
+    phiLeaves.reserve(nLeaf);
+    xLeaves.reserve(nLeaf);
+    yLeaves.reserve(nLeaf);
+    zLeaves.reserve(nLeaf);
+    in_liquid_phi->tree().getNodes(phiLeaves);
+    mXEntry->tree().getNodes(xLeaves);
+    mYEntry->tree().getNodes(yLeaves);
+    mZEntry->tree().getNodes(zLeaves);
+
+    BuildFinestMatrix op(
+        in_liquid_phi,
+        in_face_weights,
+        phiLeaves,
+        xLeaves,
+        yLeaves,
+        zLeaves, mDt, mDxThisLevel);
+
+    auto diagLeafMan = openvdb::tree::LeafManager<openvdb::FloatTree>(mDiagonal->tree());
+    diagLeafMan.foreach(op, true, 10);
+
+    //set the dof index
+    mDofIndex = openvdb::Int32Grid::create(0);
+    mDofIndex->setTree(std::make_shared<openvdb::Int32Tree>(mDiagonal->tree(), -1, openvdb::TopologyCopy()));
+    mDofIndex->setTransform(mDiagonal->transformPtr());
+    setDofIndex(mDofIndex);
+    trimDefaultNodes();
 }
 
-openvdb::FloatGrid::Ptr
-simd_vdb_poisson::Laplacian_with_level::get_zero_vec_grid() {
-  openvdb::FloatGrid::Ptr result = openvdb::FloatGrid::create(0);
-  result->setTree(std::make_shared<openvdb::FloatTree>(
-      m_dof_idx->tree(), 0.f, openvdb::TopologyCopy()));
-  result->setTransform(m_dof_idx->transformPtr());
-  return result;
-}
+void LaplacianWithLevel::setDofIndex(openvdb::Int32Grid::Ptr in_out_dofidx)
+{
+    auto dofLeafMan = openvdb::tree::LeafManager<openvdb::Int32Tree>(in_out_dofidx->tree());
 
-void simd_vdb_poisson::Laplacian_with_level::set_grid_constant_assume_topo(
-    openvdb::FloatGrid::Ptr in_out_grid, float constant) {
-  openvdb::FloatTree::LeafNodeType zeroleaf;
-  zeroleaf.fill(constant);
+    //first count how many dof in each leaf
+    //then assign the global dof id
+    std::vector<openvdb::Int32> dofEndInEachLeaf;
+    dofEndInEachLeaf.assign(in_out_dofidx->tree().leafCount(), 0);
 
-  // it is assumed that the
-  auto set_constant_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                             openvdb::Index leafpos) {
-    auto *out_leaf = in_out_grid->tree().probeLeaf(leaf.origin());
-    std::copy(zeroleaf.buffer().data(),
-              zeroleaf.buffer().data() + zeroleaf.SIZE,
-              out_leaf->buffer().data());
-    for (auto iter = out_leaf->beginValueOff(); iter; ++iter) {
-      iter.setValue(0);
-    }
-  };
+    auto dofCounter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+        dofEndInEachLeaf[leafpos] = leaf.onVoxelCount();
+    };//end leaf active dof counter
+    dofLeafMan.foreach(dofCounter);
 
-  m_dof_leafmanager->foreach (set_constant_op);
-}
-
-void simd_vdb_poisson::Laplacian_with_level::
-    set_grid_to_result_after_first_jacobi_assume_topo(
-        openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs) {
-  // assume the input has the same topology
-  // apply weighted jacobi iteration to result = (L^-1) rhs
-  // assume the initial guess of result was 0
-  // This amounts to v^1 = w*D^-1(b-A*0)=w*(invdiag)*rhs
-  float w = m_laplacian_evaluator->m_w_jacobi;
-  _mm256_zeroall();
-
-  auto set_first_iter_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *result_leaf = in_out_grid->tree().probeLeaf(leaf.origin());
-    const auto *rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
-    const auto *invdiag_leav =
-        m_laplacian_evaluator->m_inv_diagonal->tree().probeConstLeaf(
-            leaf.origin());
-    __m256 default_invdiag = m_laplacian_evaluator->default_inv_diagonal;
-    __m256 packed_w = m_laplacian_evaluator->packed_w_jacobi;
-
-    __m256 result_256;
-    __m256 this_invdiag;
-    for (auto laneoffset = 0; laneoffset < leaf.SIZE; laneoffset += 8) {
-      result_256 = _mm256_loadu_ps(rhs_leaf->buffer().data() + laneoffset);
-      m_laplacian_evaluator->get_x_y_lane(this_invdiag, invdiag_leav,
-                                          laneoffset, default_invdiag);
-      result_256 = _mm256_mul_ps(this_invdiag, result_256);
-      result_256 = _mm256_mul_ps(packed_w, result_256);
-      _mm256_storeu_ps(result_leaf->buffer().data() + laneoffset, result_256);
+    //scan through all leaves to determine
+    for (size_t i = 1; i < dofEndInEachLeaf.size(); i++) {
+        dofEndInEachLeaf[i] += dofEndInEachLeaf[i - 1];
     }
 
-    for (auto iter = result_leaf->beginValueOff(); iter; ++iter) {
-      iter.setValue(0);
-    }
-  }; // end set_first_iter_op
-
-  m_dof_leafmanager->foreach (set_first_iter_op);
-
-  _mm256_zeroall();
-}
-
-void simd_vdb_poisson::Laplacian_with_level::
-    set_grid_to_result_after_first_SPAI_assume_topo(
-        openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs) {
-  // assume the input has the same topology
-  // apply SPAI iteration to result = (L^-1) rhs
-  // assume the initial guess of result was 0
-  // This amounts to v^1 =SPAI0(b-A*0)=(SPAI0)*rhs
-  _mm256_zeroall();
-
-  auto set_first_iter_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *result_leaf = in_out_grid->tree().probeLeaf(leaf.origin());
-    const auto *rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
-    const auto *SPAI0_leaf =
-        m_laplacian_evaluator->m_inv_diagonal->tree().probeConstLeaf(
-            leaf.origin());
-    __m256 default_SPAI0 = m_laplacian_evaluator->default_SPAI0;
-    __m256 packed_w = m_laplacian_evaluator->packed_w_jacobi;
-
-    __m256 result_256;
-    __m256 SPAI0_256;
-    for (auto laneoffset = 0; laneoffset < leaf.SIZE; laneoffset += 8) {
-      result_256 = _mm256_loadu_ps(rhs_leaf->buffer().data() + laneoffset);
-      m_laplacian_evaluator->get_x_y_lane(SPAI0_256, SPAI0_leaf, laneoffset,
-                                          default_SPAI0);
-      result_256 = _mm256_mul_ps(SPAI0_256, result_256);
-      _mm256_storeu_ps(result_leaf->buffer().data() + laneoffset, result_256);
-    }
-
-    for (auto iter = result_leaf->beginValueOff(); iter; ++iter) {
-      iter.setValue(0);
-    }
-  }; // end set_first_iter_op
-
-  m_dof_leafmanager->foreach (set_first_iter_op);
-
-  _mm256_zeroall();
-}
-
-template <bool red_first>
-void simd_vdb_poisson::Laplacian_with_level::
-    set_grid_to_result_after_first_RBGS_assume_topo(
-        openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs) {
-  // assume the initial guess is zero
-  // then the first iteration only get red dof updated
-  _mm256_zeroall();
-
-  auto set_first_iter_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *result_leaf = in_out_grid->tree().probeLeaf(leaf.origin());
-    const auto *rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
-    const auto *invdiag_leav =
-        m_laplacian_evaluator->m_inv_diagonal->tree().probeConstLeaf(
-            leaf.origin());
-    __m256 default_invdiag = m_laplacian_evaluator->default_inv_diagonal;
-    __m256 packed_sor = m_laplacian_evaluator->packed_sor;
-
-    __m256 result_256;
-    __m256 this_invdiag;
-    for (auto laneoffset = 0; laneoffset < leaf.SIZE; laneoffset += 8) {
-      bool lane_even = ((laneoffset >> 3) + (laneoffset >> 6)) % 2 == 0;
-      result_256 = _mm256_loadu_ps(rhs_leaf->buffer().data() + laneoffset);
-      m_laplacian_evaluator->get_x_y_lane(this_invdiag, invdiag_leav,
-                                          laneoffset, default_invdiag);
-      result_256 = _mm256_mul_ps(this_invdiag, result_256);
-      result_256 = _mm256_mul_ps(packed_sor, result_256);
-
-      if (red_first) {
-        // only update
-        if (lane_even) {
-          result_256 =
-              _mm256_blend_ps(_mm256_setzero_ps(), result_256, 0b01010101);
-        } else {
-          result_256 =
-              _mm256_blend_ps(_mm256_setzero_ps(), result_256, 0b10101010);
+    auto set_dof_id = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+        openvdb::Int32 beginIndex = 0;
+        if (leafpos != 0) {
+            beginIndex = dofEndInEachLeaf[leafpos - 1];
         }
-      } else {
-        if (lane_even) {
-          result_256 =
-              _mm256_blend_ps(_mm256_setzero_ps(), result_256, 0b10101010);
-        } else {
-          result_256 =
-              _mm256_blend_ps(_mm256_setzero_ps(), result_256, 0b01010101);
+        leaf.fill(-1);
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            iter.setValue(beginIndex);
+            beginIndex++;
         }
-      }
-      _mm256_storeu_ps(result_leaf->buffer().data() + laneoffset, result_256);
-    }
+    };
+    dofLeafMan.foreach(set_dof_id);
 
-    for (auto iter = result_leaf->beginValueOff(); iter; ++iter) {
-      iter.setValue(0);
-    }
-  }; // end set_first_iter_op
-
-  m_dof_leafmanager->foreach (set_first_iter_op);
-
-  // try inplace?
-  if (red_first) {
-    m_laplacian_evaluator->set_black_GS();
-  } else {
-    m_laplacian_evaluator->set_red_GS();
-  }
-  m_laplacian_evaluator->set_input_lhs(in_out_grid);
-  m_laplacian_evaluator->set_output_result(in_out_grid);
-  m_laplacian_evaluator->set_input_rhs(in_rhs);
-  m_dof_leafmanager->foreach (*m_laplacian_evaluator);
-
-  _mm256_zeroall();
+    //return the total number of degree of freedom
+    mNumDof = *dofEndInEachLeaf.crbegin();
 }
 
-void simd_vdb_poisson::Laplacian_with_level::grid2vector(
-    std::vector<float> &out_vector, openvdb::FloatGrid::Ptr in_grid) {
-  out_vector.resize(m_ndof);
 
-  // it is assumed that the input grid has exactly the same dof as the
-  auto dof_leafman =
-      openvdb::tree::LeafManager<openvdb::Int32Tree>(m_dof_idx->tree());
-  auto set_result = [&](int_leaf_t &leaf, openvdb::Index leafpos) {
-    auto *val_leaf = in_grid->tree().probeConstLeaf(leaf.origin());
-    if (!val_leaf) {
-      printf("input grid doesn't have a leaf that the dof idx tree has\n");
-      exit(-1);
-    }
-    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-      if (leaf.isValueOn(offset)) {
-        out_vector[leaf.getValue(offset)] = val_leaf->getValue(offset);
-      }
-    }
-  };
-  dof_leafman.foreach (set_result);
-}
 
-void simd_vdb_poisson::Laplacian_with_level::vector2grid(
-    openvdb::FloatGrid::Ptr out_grid, const std::vector<float> &in_vector) {
-  out_grid->setTree(std::make_shared<openvdb::FloatTree>(
-      m_dof_idx->tree(), 0.f, openvdb::TopologyCopy()));
-  out_grid->setTransform(m_Diagonal->transformPtr());
-  vector2grid_assume_topo(out_grid, in_vector);
-}
 
-void simd_vdb_poisson::Laplacian_with_level::vector2grid_assume_topo(
-    openvdb::FloatGrid::Ptr out_grid, const std::vector<float> &in_vector) {
-  // it is assumed that the input grid has exactly the same dof as the
-  auto dof_leafman =
-      openvdb::tree::LeafManager<openvdb::Int32Tree>(m_dof_idx->tree());
-  auto set_result = [&](int_leaf_t &leaf, openvdb::Index leafpos) {
-    auto *val_leaf = out_grid->tree().probeLeaf(leaf.origin());
-    if (!val_leaf) {
-      printf("input grid doesn't have a leaf that the dof idx tree has\n");
-      exit(-1);
-    }
-    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-      if (leaf.isValueOn(offset)) {
-        val_leaf->setValueOn(offset, in_vector[leaf.getValue(offset)]);
-      }
-    }
-  };
-  dof_leafman.foreach (set_result);
-}
 
-void simd_vdb_poisson::Laplacian_with_level::restriction(
-    openvdb::FloatGrid::Ptr out_coarse_grid,
-    openvdb::FloatGrid::Ptr in_fine_grid, const Laplacian_with_level &child) {
-  if (child.m_root_token != m_root_token) {
-    printf("restriction error, level0 mismatch\n");
-    exit(-1);
-  }
-  if (child.m_level != (m_level + 1)) {
-    printf("not restrict to a child\n");
-    exit(-1);
-  }
-  bool topology_check = false;
-  if (topology_check) {
-    if (!in_fine_grid->tree().hasSameTopology(m_dof_idx->tree())) {
-      printf("input fine grid does not match this level\n");
-      exit(-1);
-    }
-    if (!out_coarse_grid->tree().hasSameTopology(child.m_dof_idx->tree())) {
-      printf("output coarse grid does not match chile level\n");
-      exit(-1);
-    }
-  }
+//In normal mode applies L * lhs = result
+//where lhs is the input
+//In weighted jacobi mode
+//apply one iteration to solve L * lhs = rhs
+//and lhs and rhs are unchanged
+struct alignas(32) LaplacianApplySIMD {
+    enum class WorkingMode {
+        WeightedJacobi,
+        Residual,
+        Laplacian,
+        RedGS,
+        BlackGS,
+        SPAI0
+    };
+    struct LightWeightApplier {
+        using LeafType = openvdb::FloatTree::LeafNodeType;
+        using LeafArrayType = std::vector<LeafType*>;
+        using LeafArrayPtrType = std::shared_ptr<LeafArrayType>;
 
-  // to be use by the dof idx manager at coarse level, the child level
-  auto collect_from_fine = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *coarse_leaf = out_coarse_grid->tree().probeLeaf(leaf.origin());
-    // fine voxel:   -4 -3 -2 -1 0 1 2 3 4 5
-    // coarse voxel: -2 -2 -1 -1 0 0 1 1 2 2
+        LightWeightApplier(LaplacianApplySIMD* in_parent,
+            openvdb::FloatGrid::Ptr lhs,
+            openvdb::FloatGrid::Ptr rhs,
+            openvdb::FloatGrid::Ptr result, WorkingMode in_mode) {
+            mMode = in_mode;
+            mParent = in_parent;
 
-    // each coarse leaf corresponds to 8 potential fine leaves that are active
-    std::array<const openvdb::FloatTree::LeafNodeType *, 8> fine_leaves{
-        nullptr};
-    int fine_leaves_counter = 0;
-    auto fine_base_origin = openvdb::Coord(leaf.origin().asVec3i() * 2);
-    for (int ii = 0; ii < 16; ii += 8) {
-      for (int jj = 0; jj < 16; jj += 8) {
-        for (int kk = 0; kk < 16; kk += 8) {
-          fine_leaves[fine_leaves_counter++] =
-              in_fine_grid->tree().probeConstLeaf(
-                  fine_base_origin.offsetBy(ii, jj, kk));
+            //fill result leaves
+            mResultLeaves = std::make_shared<LeafArrayType>();
+            mResultLeaves->reserve(result->tree().leafCount());
+            result->tree().getNodes(*mResultLeaves);
+
+            mLhsLeaves = std::make_shared<LeafArrayType>();
+            mLhsLeaves->reserve(lhs->tree().leafCount());
+            lhs->tree().getNodes(*mLhsLeaves);
+            //adding the last element as nullptr so the leaf neighbor vector can point to this nullptr.
+            mLhsLeaves->push_back(nullptr);
+
+            //depending on the working mode, prepare leaf arrays
+            if (mMode == WorkingMode::WeightedJacobi ||
+                mMode == WorkingMode::SPAI0 ||
+                mMode == WorkingMode::Residual ||
+                mMode == WorkingMode::RedGS ||
+                mMode == WorkingMode::BlackGS) {
+                mRhsLeaves = std::make_shared<LeafArrayType>();
+                mRhsLeaves->reserve(rhs->tree().leafCount());
+                rhs->tree().getNodes(*mRhsLeaves);
+            }
+        }//light weight applier constructor
+
+        //default copy constructor and destructor should be sufficient to do the job
+
+        float* getData(openvdb::FloatTree::LeafNodeType* in_leaf) const {
+            if (in_leaf) {
+                return in_leaf->buffer().data();
+            }
+            else {
+                return nullptr;
+            }
         }
-      }
+
+        const float* getData(const openvdb::FloatTree::LeafNodeType* in_leaf) const {
+            if (in_leaf) {
+                return in_leaf->buffer().data();
+            }
+            else {
+                return nullptr;
+            }
+        }
+
+        //this operator is to be applied on the dof index grid
+        //this ensures operating on the correct mask
+        //the computation only operates on 8 float at a time
+        //using avx intrinsics
+        //each leaf contains 512 float
+        //offset = 64*x+8*y+z
+        //hence each bulk need to loop over x and y
+        //make sure not to use SSE instructions here to avoid context switching cost
+        //called by the topology tree manager
+        void operator()(openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) const {
+            const float* rhsData;
+            if (mMode == WorkingMode::WeightedJacobi ||
+                mMode == WorkingMode::SPAI0 ||
+                mMode == WorkingMode::Residual ||
+                mMode == WorkingMode::RedGS ||
+                mMode == WorkingMode::BlackGS) {
+                rhsData = getData((*mRhsLeaves)[leafpos]);
+            }
+            float* resultData = getData((*mResultLeaves)[leafpos]);
+            const float* diagData = getData(mParent->mDiagonalLeaves[leafpos]);
+            const float* invdiagData = getData(mParent->mInvDiagLeaves[leafpos]);
+            const float* SPAI0data;
+            if (mMode == WorkingMode::SPAI0) SPAI0data = getData(mParent->mSPAI0Leaves[leafpos]);
+
+            std::array<const float*, 7> lhsData;
+            lhsData.fill(nullptr); lhsData[0] = getData((*mLhsLeaves)[leafpos]);
+            for (int i = 0; i < 6; i++) {
+                lhsData[i + 1] = getData((*mLhsLeaves)[mParent->mNeighborLeafOffset[leafpos][i]]);
+            }
+
+            const float* xTermData[2] = { nullptr,nullptr };
+            xTermData[0] = getData(mParent->mXLeaves[leafpos]);
+            xTermData[1] = getData(mParent->mXLeavesUpper[leafpos]);
+
+            //0 self, 1 yp
+            const float* yTermData[2] = { nullptr,nullptr };
+            yTermData[0] = getData(mParent->mYLeaves[leafpos]);
+            yTermData[1] = getData(mParent->mYLeavesUpper[leafpos]);
+
+            //0 self, 1 zp
+            const float* zTermData[2] = { nullptr,nullptr };
+            zTermData[0] = getData(mParent->mZLeaves[leafpos]);
+            zTermData[1] = getData(mParent->mZLeavesUpper[leafpos]);
+
+            //loop over 64 vectors to conduct the computation
+            // vectorid = x*8+y
+            std::array<__m256, 7> faceResult;
+            //uint32_t tempoffset;
+            for (uint32_t vectorOffset = 0; vectorOffset < 512; vectorOffset += 8) {
+                const uint8_t vectorMask = leaf.getValueMask().getWord<uint8_t>(vectorOffset / 8);
+                if (vectorMask == uint8_t(0)) {
+                    //there is no diagonal entry in this vector
+                    continue;
+                }
+
+                {
+                    __m256 xPlusLhs;
+                    __m256 xPlusTerm;
+                    __m256 xMinusLhs;
+                    __m256 xMinusTerm;
+                    //vector in the x directoin
+                    /****************************************************************************/
+
+                    //load current and lower leaf
+                    if (vectorOffset < (7 * 64)) {
+                        auto tempoffset = vectorOffset + 64;
+                        vdb_SIMD_IO::get_simd_vector_unsafe(xPlusLhs, lhsData[0], tempoffset);
+                        vdb_SIMD_IO::get_simd_vector(xPlusTerm, xTermData[0], tempoffset, mParent->mDefaultFaceTerm);
+                        if (vectorOffset < 64) {
+                            vdb_SIMD_IO::get_simd_vector(xMinusLhs, lhsData[2], vectorOffset + (7 * 64), _mm256_setzero_ps());
+                        }
+                        else {
+                            vdb_SIMD_IO::get_simd_vector_unsafe(xMinusLhs, lhsData[0], vectorOffset - 64);
+                        }
+                    }
+                    else {
+                        //load next leaf
+                        auto tempoffset = vectorOffset - (7 * 64);
+                        vdb_SIMD_IO::get_simd_vector(xPlusLhs, lhsData[1], tempoffset, _mm256_setzero_ps());
+                        vdb_SIMD_IO::get_simd_vector(xPlusTerm, xTermData[1], tempoffset, mParent->mDefaultFaceTerm);
+
+                        //x-
+                        vdb_SIMD_IO::get_simd_vector_unsafe(xMinusLhs, lhsData[0], vectorOffset - 64);
+                    }
+
+                    //vector in the x minux direction
+                    /******************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(xMinusTerm, xTermData[0], vectorOffset, mParent->mDefaultFaceTerm);
+                    faceResult[1] = _mm256_mul_ps(xPlusLhs, xPlusTerm);
+                    faceResult[2] = _mm256_mul_ps(xMinusLhs, xMinusTerm);
+                }
+
+                {
+                    __m256 yPlusLhs;
+                    __m256 yPlusTerm;
+                    __m256 yMinusLhs;
+                    __m256 yMinusTerm;
+
+                    //vector in the y plus direction
+                    /****************************************************************************/
+                    //load current and lower
+                    if ((vectorOffset & 63u) != 56u) {
+                        auto tempoffset = vectorOffset + 8;
+                        vdb_SIMD_IO::get_simd_vector_unsafe(yPlusLhs, lhsData[0], tempoffset);
+                        vdb_SIMD_IO::get_simd_vector(yPlusTerm, yTermData[0], tempoffset, mParent->mDefaultFaceTerm);
+                        if ((vectorOffset & 63) == 0) {
+                            vdb_SIMD_IO::get_simd_vector(yMinusLhs, lhsData[4], vectorOffset + 56, _mm256_setzero_ps());
+                        }
+                        else {
+                            vdb_SIMD_IO::get_simd_vector_unsafe(yMinusLhs, lhsData[0], vectorOffset - 8);
+                        }
+                    }
+                    else {
+                        //load next leaf
+                        auto tempoffset = vectorOffset - 56;
+                        vdb_SIMD_IO::get_simd_vector(yPlusLhs, lhsData[3], tempoffset, _mm256_setzero_ps());
+                        vdb_SIMD_IO::get_simd_vector(yPlusTerm, yTermData[1], tempoffset, mParent->mDefaultFaceTerm);
+                        //y-
+                        vdb_SIMD_IO::get_simd_vector_unsafe(yMinusLhs, lhsData[0], vectorOffset - 8);
+                    }
+
+                    //vector in the y minus direction
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(yMinusTerm, yTermData[0], vectorOffset, mParent->mDefaultFaceTerm);
+                    faceResult[3] = _mm256_mul_ps(yPlusLhs, yPlusTerm);
+                    faceResult[4] = _mm256_mul_ps(yMinusLhs, yMinusTerm);
+                }
+
+                {
+                    __m256 zPlusLhs;
+                    __m256 zPlusTerm;
+                    __m256 zMinusLhs;
+                    __m256 zMinusTerm;
+
+                    //Z lhs terms
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_pos_z_simd_vector(zPlusLhs, lhsData[0], lhsData[5], vectorOffset, _mm256_setzero_ps());
+                    vdb_SIMD_IO::get_neg_z_simd_vector(zMinusLhs, lhsData[0], lhsData[6], vectorOffset, _mm256_setzero_ps());
+
+                    //Z coefficient terms
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_pos_z_simd_vector(zPlusTerm, zTermData[0], zTermData[1], vectorOffset, mParent->mDefaultFaceTerm);
+                    vdb_SIMD_IO::get_simd_vector(zMinusTerm, zTermData[0], vectorOffset, mParent->mDefaultFaceTerm);
+                    //temp_result = _mm256_fmadd_ps(zMinusLhs, zMinusTerm, temp_result);
+
+                    faceResult[5] = _mm256_mul_ps(zPlusLhs, zPlusTerm);
+                    faceResult[6] = _mm256_mul_ps(zMinusLhs, zMinusTerm);
+
+                    //collect
+                    faceResult[1] = _mm256_add_ps(faceResult[1], faceResult[2]);
+                    faceResult[3] = _mm256_add_ps(faceResult[3], faceResult[4]);
+                    faceResult[5] = _mm256_add_ps(faceResult[5], faceResult[6]);
+
+                    faceResult[1] = _mm256_add_ps(faceResult[1], faceResult[3]);
+                    faceResult[1] = _mm256_add_ps(faceResult[1], faceResult[5]);
+                }
+                //now faced_result[1] contains all the off-diagonal results
+                //collected form 1,2,3,4,5,6
+                __m256 thisLhs;
+                //__m256 thisDiag;
+                //__m256 thisRhs;
+                //__m256 residual;
+                //__m256 thisInvDiag;
+                //faced_result[0] stores the result of A*lhs
+                //faced_result[6] = _mm256_add_ps(faced_result[4], faced_result[6]);
+                vdb_SIMD_IO::get_simd_vector_unsafe(thisLhs, lhsData[0], vectorOffset);
+                switch (mMode) {
+                case WorkingMode::WeightedJacobi:
+                {
+                    __m256 thisDiag;
+                    __m256 thisRhs;
+                    __m256 residual;
+                    __m256 thisInvDiag;
+                    //v^1 = v^0 + w D^-1 r
+                    // r = rhs - A*v^0
+                    //v^0 is the input lhs
+                    //v^1 is the output result
+                    //the residual
+                    //the diagonal term
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(thisDiag, diagData, vectorOffset, mParent->mDefaultDiagonal);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, thisDiag, faceResult[1]);
+                    vdb_SIMD_IO::get_simd_vector_unsafe(thisRhs, rhsData, vectorOffset);
+                    residual = _mm256_sub_ps(thisRhs, faceResult[0]);
+                    vdb_SIMD_IO::get_simd_vector(thisInvDiag, invdiagData, vectorOffset, mParent->mDefaultInvDiagonal);
+                    //thisInvDiag = _mm256_rcp_ps(thisDiag);
+                    residual = _mm256_mul_ps(residual, thisInvDiag);
+                    faceResult[0] = _mm256_fmadd_ps(mParent->mPackedWeightJacobi, residual, thisLhs);
+                    break;
+                }
+
+                case WorkingMode::Residual:
+                {
+                    __m256 thisDiag;
+                    __m256 thisRhs;
+                    //the diagonal term
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(thisDiag, diagData, vectorOffset, mParent->mDefaultDiagonal);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, thisDiag, faceResult[1]);
+                    vdb_SIMD_IO::get_simd_vector_unsafe(thisRhs, rhsData, vectorOffset);
+                    faceResult[0] = _mm256_sub_ps(thisRhs, faceResult[0]);
+                    break;
+                }
+
+                default:
+                case WorkingMode::Laplacian:
+                {
+                    __m256 thisDiag;
+                    //the diagonal term
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(thisDiag, diagData, vectorOffset, mParent->mDefaultDiagonal);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, thisDiag, faceResult[1]);
+                    break;
+                }
+                case WorkingMode::RedGS:
+                {
+                    bool vector_even = ((vectorOffset >> 3) + (vectorOffset >> 6)) % 2 == 0;
+                    __m256 residual;
+                    __m256 thisRhs;
+                    __m256 thisInvDiag;
+                    vdb_SIMD_IO::get_simd_vector_unsafe(thisRhs, rhsData, vectorOffset);
+                    residual = _mm256_sub_ps(thisRhs, faceResult[1]);
+                    vdb_SIMD_IO::get_simd_vector(thisInvDiag, invdiagData, vectorOffset, mParent->mDefaultInvDiagonal);
+                    residual = _mm256_mul_ps(residual, thisInvDiag);
+                    residual = _mm256_mul_ps(residual, mParent->mPackedWeightSOR);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, mParent->mPackedOneMinusWeightSOR, residual);
+                    //blend result
+                    if (vector_even) {
+                        faceResult[0] = _mm256_blend_ps(thisLhs, faceResult[0], 0b01010101);
+                    }
+                    else {
+                        faceResult[0] = _mm256_blend_ps(thisLhs, faceResult[0], 0b10101010);
+                    }
+                    break;
+                }
+                case WorkingMode::BlackGS:
+                {
+                    bool vector_even = ((vectorOffset >> 3) + (vectorOffset >> 6)) % 2 == 0;
+                    __m256 residual;
+                    __m256 thisRhs;
+                    __m256 thisInvDiag;
+                    vdb_SIMD_IO::get_simd_vector_unsafe(thisRhs, rhsData, vectorOffset);
+                    residual = _mm256_sub_ps(thisRhs, faceResult[1]);
+                    vdb_SIMD_IO::get_simd_vector(thisInvDiag, invdiagData, vectorOffset, mParent->mDefaultInvDiagonal);
+                    residual = _mm256_mul_ps(residual, thisInvDiag);
+                    residual = _mm256_mul_ps(residual, mParent->mPackedWeightSOR);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, mParent->mPackedOneMinusWeightSOR, residual);
+                    //blend result
+                    if (vector_even) {
+                        faceResult[0] = _mm256_blend_ps(thisLhs, faceResult[0], 0b10101010);
+                    }
+                    else {
+                        faceResult[0] = _mm256_blend_ps(thisLhs, faceResult[0], 0b01010101);
+                    }
+                    break;
+                }
+                case WorkingMode::SPAI0:
+                {
+                    __m256 residual;
+                    __m256 thisDiag;
+                    __m256 thisRhs;
+                    __m256 this_SPAI0;
+                    //the diagonal term
+                    /****************************************************************************/
+                    vdb_SIMD_IO::get_simd_vector(thisDiag, diagData, vectorOffset, mParent->mDefaultDiagonal);
+                    faceResult[0] = _mm256_fmadd_ps(thisLhs, thisDiag, faceResult[1]);
+                    vdb_SIMD_IO::get_simd_vector_unsafe(thisRhs, rhsData, vectorOffset);
+                    residual = _mm256_sub_ps(thisRhs, faceResult[0]);
+                    vdb_SIMD_IO::get_simd_vector(this_SPAI0, SPAI0data, vectorOffset, mParent->mDefaultSPAI0);
+                    faceResult[0] = _mm256_fmadd_ps(this_SPAI0, residual, thisLhs);
+                    break;
+                }
+                }//end case working mode
+                //faced_result[0] = _mm256_blend_ps(faced_result[0], this_lhs, vectormask);
+                //write to the result
+
+                _mm256_storeu_ps(resultData + vectorOffset, faceResult[0]);
+                //make sure we write at the correct place
+                for (int bit = 0; bit < 8; bit += 1) {
+                    if (0 == ((vectorMask) & (1 << bit))) {
+                        resultData[vectorOffset + bit] = 0.f;
+                    }
+                }
+
+            }//end vectorid = [0 63]
+        }//end operator()
+
+
+        //lhs, rhs, result leaves having the same topology
+        //these are the flattened leaves used for fast access of 
+        LeafArrayPtrType mLhsLeaves;
+        LeafArrayPtrType mRhsLeaves;
+        LeafArrayPtrType mResultLeaves;
+
+        WorkingMode mMode;
+
+        LaplacianApplySIMD* mParent;
+    };//end light weight evaluator
+
+    LaplacianApplySIMD(
+        openvdb::FloatGrid::Ptr in_Diagonal,
+        openvdb::FloatGrid::Ptr in_Neg_x_entry,
+        openvdb::FloatGrid::Ptr in_Neg_y_entry,
+        openvdb::FloatGrid::Ptr in_Neg_z_entry,
+        openvdb::Int32Grid::Ptr in_DOF,
+        float in_default_term) : mDofLeafManager(in_DOF->tree()),
+        mWeightSOR(1.2f) {
+        mDiagonal = in_Diagonal;
+        mXEntry = in_Neg_x_entry;
+        mYEntry = in_Neg_y_entry;
+        mZEntry = in_Neg_z_entry;
+        mWeightJacobi = 6.0f / 7.0f;
+        mDefaultFaceTerm = _mm256_set1_ps(-in_default_term);
+        mDefaultDiagonal = _mm256_set1_ps(6.f * in_default_term);
+        mDefaultInvDiagonal = _mm256_set1_ps(1.0f / (6.f * in_default_term));
+        mDefaultSPAI0 = _mm256_set1_ps(1.0f / (7.f * in_default_term));
+        mPackedWeightJacobi = _mm256_set1_ps(mWeightJacobi);
+        mPackedWeightSOR = _mm256_set1_ps(mWeightSOR);
+        mPackedOneMinusWeightSOR = _mm256_set1_ps(1.0f - mWeightSOR);
+        mMode = WorkingMode::Laplacian;
+        mInvDIagonal = openvdb::FloatGrid::create(1.0f / mDiagonal->background());
+        mIsInvDiagonalInitialized = false;
+        mSPAI0 = openvdb::FloatGrid::create(1.0f / (7.f * in_default_term));
+        mIsSPAI0Initialized = false;
+        initLinearizedLeaves();
     }
 
-    for (auto iter = coarse_leaf->beginValueOn(); iter; ++iter) {
-      // uint32_t at_fine_leaf = iter.offset();
+    LightWeightApplier getLightWeightApplier(openvdb::FloatGrid::Ptr in_out_result, openvdb::FloatGrid::Ptr in_lhs, openvdb::FloatGrid::Ptr in_rhs) {
+        return LightWeightApplier(this, in_lhs, in_rhs, in_out_result, mMode);
+    }
 
-      auto itercoord = coarse_leaf->offsetToLocalCoord(iter.offset());
-      uint32_t at_fine_leaf = 0;
-      if (itercoord[2] >= 4) {
-        at_fine_leaf += 1;
-      }
-      if (itercoord[1] >= 4) {
-        at_fine_leaf += 2;
-      }
-      if (itercoord[0] >= 4) {
-        at_fine_leaf += 4;
-      }
+    void Apply(LightWeightApplier in_applier) {
+        mDofLeafManager.foreach(in_applier);
+    }
 
-      // if there is possibly a dof in the fine leaf
-      if (auto fine_leaf = fine_leaves[at_fine_leaf]) {
-        auto fine_base_voxel = openvdb::Coord(iter.getCoord().asVec3i() * 2);
-        auto fine_base_offset = fine_leaf->coordToOffset(fine_base_voxel);
-        float temp_sum = 0;
-        for (int ii = 0; ii < 2; ii++) {
-          for (int jj = 0; jj < 2; jj++) {
-            for (int kk = 0; kk < 2; kk++) {
-              auto fine_offset = fine_base_offset + 64 * ii + 8 * jj + kk;
-              if (fine_leaf->isValueOn(fine_offset)) {
-                temp_sum += fine_leaf->getValue(fine_offset);
-              }
-            } // kk
-          }   // jj
-        }     // ii
-        iter.setValue(temp_sum * 0.125f);
-      } // if fine leaf
-    }   // for all coarse on voxels
-  };    // end collect from fine
+    void initInvDiagonal() {
+        if (mIsInvDiagonalInitialized) return;
+        //set the inverse default term and inverse diagonal
+        mInvDIagonal->setTree(std::make_shared<openvdb::FloatTree>(
+            mDiagonal->tree(), 1.0f / mDiagonal->background(), openvdb::TopologyCopy()));
+        auto leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(mInvDIagonal->tree());
+        leafman.foreach([&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index) {
+            auto* diagleaf = mDiagonal->tree().probeConstLeaf(leaf.origin());
+            for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                float diagValue = diagleaf->getValue(iter.offset());
+                if (diagValue == 0) {
+                    iter.setValue(0.f);
+                }
+                else {
+                    iter.setValue(1.0f / diagValue);
+                }
 
-  child.m_dof_leafmanager->foreach (collect_from_fine);
+            }
+            }
+        );
+
+        size_t nleaf = mDofLeafManager.leafCount();
+        mInvDiagLeaves.resize(nleaf, nullptr);
+
+        auto invdiag_leaves_setter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+            mInvDiagLeaves[leafpos] = mInvDIagonal->tree().probeConstLeaf(leaf.origin());
+        };
+        mDofLeafManager.foreach(invdiag_leaves_setter);
+
+        mIsInvDiagonalInitialized = true;
+    };
+
+    void init_SPAI0() {
+        if (mIsSPAI0Initialized) return;
+        //set the SPAI0 matrix
+        //by default the rhs has the correct pattern, which is not pruned
+        // spai diagonal: akk/(ak)_2^2
+        // diagonal entry over the row norm
+        //set the inverse default term and inverse diagonal
+
+        float defaultSPAI0Val = 6.0f / (7.f * mDiagonal->background());
+        mSPAI0->setTree(std::make_shared<openvdb::FloatTree>(
+            mDofLeafManager.tree(), defaultSPAI0Val, openvdb::TopologyCopy()));
+        auto sqr = [](float in) {
+            return in * in;
+        };
+
+        auto spai0Setter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+            auto xAxr{ mXEntry->getConstUnsafeAccessor() };
+            auto yAxr{ mYEntry->getConstUnsafeAccessor() };
+            auto zAxr{ mZEntry->getConstUnsafeAccessor() };
+            auto diagAxr{ mDiagonal->getConstUnsafeAccessor() };
+            openvdb::Int32Grid::ConstUnsafeAccessor dofAxr(mDofLeafManager.tree());
+            auto spai0Leaf = mSPAI0->tree().probeLeaf(leaf.origin());
+            for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                float rowNormSqr = 0;
+                const auto globalCoord = iter.getCoord();
+                //+x
+                auto atCoord = globalCoord.offsetBy(1, 0, 0);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(xAxr.getValue(atCoord));
+                }
+                //-x
+                atCoord = globalCoord.offsetBy(-1, 0, 0);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(xAxr.getValue(globalCoord));
+                }
+                //+y
+                atCoord = globalCoord.offsetBy(0, 1, 0);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(yAxr.getValue(atCoord));
+                }
+                //-y
+                atCoord = globalCoord.offsetBy(0, -1, 0);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(yAxr.getValue(globalCoord));
+                }
+                //+z
+                atCoord = globalCoord.offsetBy(0, 0, 1);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(zAxr.getValue(atCoord));
+                }
+                //-z
+                atCoord = globalCoord.offsetBy(0, 0, -1);
+                if (dofAxr.isValueOn(atCoord)) {
+                    rowNormSqr += sqr(zAxr.getValue(globalCoord));
+                }
+                float diagval = diagAxr.getValue(globalCoord);
+                if (diagval == 0) {
+                    spai0Leaf->setValueOn(iter.offset(), 0);
+                }
+                else {
+                    spai0Leaf->setValueOn(iter.offset(), diagval / (sqr(diagval) + rowNormSqr));
+                }
+            }//end for all dof
+        };//end spai setter
+
+        mDofLeafManager.foreach(spai0Setter);
+        LaplacianWithLevel::trimDefaultNodes(mSPAI0, defaultSPAI0Val, defaultSPAI0Val * 1e-5f);
+
+        //set SPAI0 leaves after trim
+        size_t nleaf = mDofLeafManager.leafCount();
+        mSPAI0Leaves.resize(nleaf, nullptr);
+        auto SPAI0LeavesSetter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+            mSPAI0Leaves[leafpos] = mSPAI0->tree().probeConstLeaf(leaf.origin());
+        };
+        mDofLeafManager.foreach(SPAI0LeavesSetter);
+
+        mIsSPAI0Initialized = true;
+    };
+
+    void initLinearizedLeaves() {
+        size_t nLeaf = mDofLeafManager.leafCount();
+
+        //map DOF ptrs to their positions in the linearized array
+        std::unordered_map<const openvdb::Int32Tree::LeafNodeType*, size_t> leafPtrToLeafposMap;
+        std::vector<openvdb::Int32Tree::LeafNodeType*> dofLeafPtrs;
+        dofLeafPtrs.reserve(nLeaf);
+        mDofLeafManager.getNodes(dofLeafPtrs);
+        for (size_t i = 0; i < nLeaf; i++) {
+            leafPtrToLeafposMap[dofLeafPtrs[i]] = i;
+        }
+        mNeighborLeafOffset.resize(nLeaf);
+
+        mDiagonalLeaves.resize(nLeaf, nullptr);
+        mXLeaves.resize(nLeaf, nullptr);
+        mYLeaves.resize(nLeaf, nullptr);
+        mZLeaves.resize(nLeaf, nullptr);
+        mXLeavesUpper.resize(nLeaf, nullptr);
+        mYLeavesUpper.resize(nLeaf, nullptr);
+        mZLeavesUpper.resize(nLeaf, nullptr);
+
+        auto LinearArraySetter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+            //nLeaf+1 is the last element of linearized array
+            //indicating nullptr
+            mNeighborLeafOffset[leafpos].fill(nLeaf);
+
+            mDiagonalLeaves[leafpos] = mDiagonal->tree().probeConstLeaf(leaf.origin());
+            mXLeaves[leafpos] = mXEntry->tree().probeConstLeaf(leaf.origin());
+            mYLeaves[leafpos] = mYEntry->tree().probeConstLeaf(leaf.origin());
+            mZLeaves[leafpos] = mZEntry->tree().probeConstLeaf(leaf.origin());
+            mXLeavesUpper[leafpos] = mXEntry->tree().probeConstLeaf(leaf.origin().offsetBy(8, 0, 0));
+            mYLeavesUpper[leafpos] = mYEntry->tree().probeConstLeaf(leaf.origin().offsetBy(0, 8, 0));
+            mZLeavesUpper[leafpos] = mZEntry->tree().probeConstLeaf(leaf.origin().offsetBy(0, 0, 8));
+
+            for (int iFace = 0; iFace < 6; iFace++) {
+                int component = iFace / 2;
+                int isPositiveDir = (iFace % 2 == 0);
+
+                auto neihborOrigin = leaf.origin();
+                if (isPositiveDir) {
+                    neihborOrigin[component] += 8;
+                }
+                else {
+                    neihborOrigin[component] -= 8;
+                }
+                auto neighborLeaf = mDofLeafManager.tree().probeConstLeaf(neihborOrigin);
+                if (neighborLeaf) {
+                    mNeighborLeafOffset[leafpos][iFace] = leafPtrToLeafposMap[neighborLeaf];
+                }
+            }
+        };
+        mDofLeafManager.foreach(LinearArraySetter);
+        initInvDiagonal();
+    };
+
+    void setLaplacianMode() { mMode = WorkingMode::Laplacian; }
+    void setWeightedJacobiMode() { mMode = WorkingMode::WeightedJacobi; initInvDiagonal(); }
+    void setSPAI0Mode() { mMode = WorkingMode::SPAI0; init_SPAI0(); }
+    void setResidualMode() { mMode = WorkingMode::Residual; }
+    void setWeightJacobi(float weight) {
+        mWeightJacobi = weight;
+        mPackedWeightJacobi = _mm256_set1_ps(mWeightJacobi);
+    }
+
+    void set_w_sor(float in_w_sor) {
+        mWeightSOR = in_w_sor;
+        mPackedWeightSOR = _mm256_set1_ps(mWeightSOR);
+        mPackedOneMinusWeightSOR = _mm256_set1_ps(1.0f - mWeightSOR);
+    }
+    //gauss seidel updating the red points (iChannel+j+k) even
+    void setRedGaussSeidelMode() { mMode = WorkingMode::RedGS; initInvDiagonal(); }
+    //gauss seidel update the black points (iChannel+j+k) odd
+    void setBlackGaussSeidelMode() { mMode = WorkingMode::BlackGS; initInvDiagonal(); }
+
+
+    //over load new and delete for aligned allocation and free
+    //this struct must be properly aligned for __m256 member
+    void* operator new(size_t memsize) {
+        size_t ptrAlloc = sizeof(void*);
+        size_t alignSize = 32;
+        size_t requestSize = sizeof(LaplacianApplySIMD) + alignSize;
+        size_t needed = ptrAlloc + requestSize;
+
+        void* alloc = ::operator new(needed);
+        void* realAlloc = reinterpret_cast<void*>(reinterpret_cast<char*>(alloc) + ptrAlloc);
+        void* ptr = std::align(alignSize, sizeof(LaplacianApplySIMD),
+            realAlloc, requestSize);
+
+        ((void**)ptr)[-1] = alloc; // save for delete calls to use
+        return ptr;
+    }
+
+    void operator delete(void* ptr) {
+        void* alloc = ((void**)ptr)[-1];
+        ::operator delete(alloc);
+    }
+
+    //to be set in the constructor
+    //when the requested leaf doesn't exist
+    __m256 mDefaultFaceTerm;
+    __m256 mDefaultDiagonal;
+    __m256 mDefaultInvDiagonal;
+    __m256 mDefaultSPAI0;
+
+    //damped jacobi weight
+    float mWeightJacobi;
+    __m256 mPackedWeightJacobi;
+
+    float mWeightSOR;
+    __m256 mPackedWeightSOR, mPackedOneMinusWeightSOR;
+
+    openvdb::FloatGrid::Ptr mDiagonal;
+    openvdb::FloatGrid::Ptr mInvDIagonal;
+    bool mIsInvDiagonalInitialized;
+    openvdb::FloatGrid::Ptr mSPAI0;
+    bool mIsSPAI0Initialized;
+    openvdb::FloatGrid::Ptr mXEntry;
+    openvdb::FloatGrid::Ptr mYEntry;
+    openvdb::FloatGrid::Ptr mZEntry;
+
+    //DOF manager that calls all function body over leaves
+    openvdb::tree::LeafManager<openvdb::Int32Tree> mDofLeafManager;
+
+    //linearized leaves for matrix coefficient
+    //note some leaves may be nullptrs, because they are default values;
+    //all leaves have length of DOF leaves
+    std::vector<const openvdb::FloatTree::LeafNodeType*> mDiagonalLeaves, mInvDiagLeaves, mSPAI0Leaves;
+    std::vector<const openvdb::FloatTree::LeafNodeType*> mXLeaves, mYLeaves, mZLeaves;
+    std::vector<const openvdb::FloatTree::LeafNodeType*> mXLeavesUpper, mYLeavesUpper, mZLeavesUpper;
+
+    //6 neighbor LHS leaves
+    //x- x+ y- y+ z- z+
+    //the offset referrs to the linearize LHS leaves in the light weight applier, length DOF leaves+1
+    //the last element of that array is nullptr, so empty neighbor points to the last element.
+    //this vector has leng of DOF leaves
+    std::vector<std::array<size_t, 6>> mNeighborLeafOffset;
+
+    WorkingMode mMode;
+};//end LaplacianApplySIMD
+
+
+void LaplacianWithLevel::initializeApplyOperator()
+{
+    //set the leaf manager
+    mDofLeafManager = std::make_unique<openvdb::tree::LeafManager<openvdb::Int32Tree>>(mDofIndex->tree());
+
+    mApplyOperator = std::shared_ptr<LaplacianApplySIMD>(new LaplacianApplySIMD(mDiagonal,
+        mXEntry,
+        mYEntry,
+        mZEntry, mDofIndex,
+        /*default term*/ mDt / (mDxThisLevel * mDxThisLevel)));
+    mApplyOperator->setLaplacianMode();
+}
+
+
+void LaplacianWithLevel::residualApply(
+    openvdb::FloatGrid::Ptr in_out_residual, openvdb::FloatGrid::Ptr in_lhs, openvdb::FloatGrid::Ptr in_rhs)
+{
+    mApplyOperator->setResidualMode();
+    _mm256_zeroupper();
+    auto op = mApplyOperator->getLightWeightApplier(in_out_residual, in_lhs, in_rhs);
+    {
+        mApplyOperator->Apply(op);
+    }
+    _mm256_zeroupper();
+}
+
+void LaplacianWithLevel::laplacianApply(openvdb::FloatGrid::Ptr in_out_result, openvdb::FloatGrid::Ptr in_lhs)
+{
+    mApplyOperator->setLaplacianMode();
+    _mm256_zeroupper();
+    auto op = mApplyOperator->getLightWeightApplier(in_out_result, in_lhs, in_lhs);
+    mApplyOperator->Apply(op);
+    _mm256_zeroupper();
+}
+
+void LaplacianWithLevel::weightedJacobiApply(openvdb::FloatGrid::Ptr in_out_updated_lhs, openvdb::FloatGrid::Ptr in_lhs, openvdb::FloatGrid::Ptr in_rhs)
+{
+    mApplyOperator->setWeightedJacobiMode();
+    _mm256_zeroupper();
+    auto op = mApplyOperator->getLightWeightApplier(in_out_updated_lhs, in_lhs, in_rhs);
+    {
+        mApplyOperator->Apply(op);
+    }
+    _mm256_zeroupper();
+}
+void LaplacianWithLevel::spai0Apply(openvdb::FloatGrid::Ptr in_out_updated_lhs, openvdb::FloatGrid::Ptr in_lhs, openvdb::FloatGrid::Ptr in_rhs)
+{
+    mApplyOperator->setSPAI0Mode();
+    _mm256_zeroupper();
+    auto op = mApplyOperator->getLightWeightApplier(in_out_updated_lhs, in_lhs, in_rhs);
+    mApplyOperator->Apply(op);
+    _mm256_zeroupper();
+}
+template<bool red_first>
+void LaplacianWithLevel::redBlackGaussSeidelApply(openvdb::FloatGrid::Ptr in_out_lhs, openvdb::FloatGrid::Ptr in_rhs)
+{
+    _mm256_zeroupper();
+    if (red_first) {
+        mApplyOperator->setRedGaussSeidelMode();
+    }
+    else {
+        mApplyOperator->setBlackGaussSeidelMode();
+    }
+
+    auto op = mApplyOperator->getLightWeightApplier(in_out_lhs, in_out_lhs, in_rhs);
+    mApplyOperator->Apply(op);
+
+    //the scratch_pad has now red points updated
+    if (red_first) {
+        mApplyOperator->setBlackGaussSeidelMode();
+    }
+    else {
+        mApplyOperator->setRedGaussSeidelMode();
+    }
+
+    op = mApplyOperator->getLightWeightApplier(in_out_lhs, in_out_lhs, in_rhs);
+    mApplyOperator->Apply(op);
+
+    _mm256_zeroupper();
+}
+
+openvdb::FloatGrid::Ptr LaplacianWithLevel::getZeroVectorGrid()
+{
+    openvdb::FloatGrid::Ptr result = openvdb::FloatGrid::create(0);
+    result->setTree(std::make_shared<openvdb::FloatTree>(mDofIndex->tree(), 0.f, openvdb::TopologyCopy()));
+    result->setTransform(mDofIndex->transformPtr());
+    return result;
+}
+
+void LaplacianWithLevel::setGridToConstant(openvdb::FloatGrid::Ptr in_out_grid, float constant)
+{
+    openvdb::FloatTree::LeafNodeType constantLeaf;
+    constantLeaf.fill(constant);
+
+    auto set_constant_op = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* out_leaf = in_out_grid->tree().probeLeaf(leaf.origin());
+        std::copy(constantLeaf.buffer().data(), constantLeaf.buffer().data() + constantLeaf.SIZE, out_leaf->buffer().data());
+    };
+
+    mDofLeafManager->foreach(set_constant_op);
+}
+
+void LaplacianWithLevel::setGridToResultAfterFirstJacobi(openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs)
+{
+    //assume the input has the same topology 
+    //apply weighted jacobi iteration to result = (L^-1) rhs
+    //assume the initial guess of result was 0
+    //This amounts to v^1 = w*D^-1(b-A*0)=w*(invdiag)*rhs
+    _mm256_zeroall();
+
+    std::vector<openvdb::FloatTree::LeafNodeType*> resultLeaves, rhsLeaves;
+    resultLeaves.reserve(mApplyOperator->mDofLeafManager.leafCount());
+    rhsLeaves.reserve(mApplyOperator->mDofLeafManager.leafCount());
+    in_out_grid->tree().getNodes(resultLeaves);
+    in_rhs->tree().getNodes(rhsLeaves);
+
+    auto setResultAfterFirstIter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+        auto* resultData = resultLeaves[leafpos]->buffer().data();
+        const auto* rhsData = rhsLeaves[leafpos]->buffer().data();
+
+        const auto* invDiagLeaf = mApplyOperator->mInvDIagonal->tree().probeConstLeaf(leaf.origin());
+        const float* invDiagData = nullptr;
+        if (invDiagLeaf) {
+            invDiagData = invDiagLeaf->buffer().data();
+        }
+
+        __m256& defaultInvDiag = mApplyOperator->mDefaultInvDiagonal;
+        __m256& packedWeight = mApplyOperator->mPackedWeightJacobi;
+
+        __m256 result256;
+        __m256 thisInvDiag;
+        for (auto vectorOffset = 0; vectorOffset < leaf.SIZE; vectorOffset += 8) {
+            const uint8_t mask = leaf.getValueMask().getWord<uint8_t>(vectorOffset / 8);
+            if (mask == uint8_t(0)) {
+                //there is no diagonal entry in this vector
+                continue;
+            }
+            result256 = _mm256_loadu_ps(rhsData + vectorOffset);
+            vdb_SIMD_IO::get_simd_vector(thisInvDiag, invDiagData, vectorOffset, defaultInvDiag);
+            result256 = _mm256_mul_ps(thisInvDiag, result256);
+            result256 = _mm256_mul_ps(packedWeight, result256);
+            _mm256_storeu_ps(resultData + vectorOffset, result256);
+        }
+    };//end set_first_iter_op
+    mDofLeafManager->foreach(setResultAfterFirstIter);
+    _mm256_zeroall();
+}
+
+void LaplacianWithLevel::setGridToResultAfterFirstSPAI0(openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs)
+{
+    //assume the input has the same topology 
+    //apply SPAI iteration to result = (L^-1) rhs
+    //assume the initial guess of result was 0
+    //This amounts to v^1 =SPAI0(b-A*0)=(SPAI0)*rhs
+    _mm256_zeroall();
+
+    auto setResultAfterFirstIter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        float* resultData = in_out_grid->tree().probeLeaf(leaf.origin())->buffer().data();
+        const float* rhsData = in_rhs->tree().probeConstLeaf(leaf.origin())->buffer().data();
+        const auto* SPAI0Leaf = mApplyOperator->mSPAI0->tree().probeConstLeaf(leaf.origin());
+        const float* SPAI0_data = nullptr;
+        if (SPAI0Leaf) {
+            SPAI0_data = SPAI0Leaf->buffer().data();
+        }
+        __m256 defaultSPAI0 = mApplyOperator->mDefaultSPAI0;
+        __m256 result256;
+        __m256 SPAI0_256;
+        for (auto vectorOffset = 0; vectorOffset < leaf.SIZE; vectorOffset += 8) {
+            result256 = _mm256_loadu_ps(rhsData + vectorOffset);
+            vdb_SIMD_IO::get_simd_vector(SPAI0_256, SPAI0_data, vectorOffset, defaultSPAI0);
+            result256 = _mm256_mul_ps(SPAI0_256, result256);
+            _mm256_storeu_ps(resultData + vectorOffset, result256);
+        }
+
+        for (auto iter = leaf.beginValueOff(); iter; ++iter) {
+            resultData[iter.offset()] = 0.f;
+        }
+    };//end set_first_iter_op
+
+    mDofLeafManager->foreach(setResultAfterFirstIter);
+    _mm256_zeroall();
+}
+
+template<bool redFirst>
+void LaplacianWithLevel::setGridToResultAfterFirstRBGS(openvdb::FloatGrid::Ptr in_out_grid, openvdb::FloatGrid::Ptr in_rhs)
+{
+    //assume the initial guess is zero
+    //then the first iteration only get red dof updated
+    _mm256_zeroall();
+
+    auto setResultAfterFirstIter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        float* resultData = in_out_grid->tree().probeLeaf(leaf.origin())->buffer().data();
+        const float* rhsData = in_rhs->tree().probeConstLeaf(leaf.origin())->buffer().data();
+        const auto* invDiagLeaf = mApplyOperator->mInvDIagonal->tree().probeConstLeaf(leaf.origin());
+        const float* invDiagData = nullptr;
+        if (invDiagLeaf) {
+            invDiagData = invDiagLeaf->buffer().data();
+        }
+
+        __m256 defaultInvDiag = mApplyOperator->mDefaultInvDiagonal;
+        __m256 packedWeightSOR = mApplyOperator->mPackedWeightSOR;
+
+        __m256 result256;
+        __m256 thisInvDiag;
+        for (auto vector_offset = 0; vector_offset < leaf.SIZE; vector_offset += 8) {
+            bool vector_even = ((vector_offset >> 3) + (vector_offset >> 6)) % 2 == 0;
+            result256 = _mm256_loadu_ps(rhsData + vector_offset);
+            vdb_SIMD_IO::get_simd_vector(thisInvDiag, invDiagData, vector_offset, defaultInvDiag);
+            result256 = _mm256_mul_ps(thisInvDiag, result256);
+            result256 = _mm256_mul_ps(packedWeightSOR, result256);
+
+            if (redFirst) {
+                //only update
+                if (vector_even) {
+                    result256 = _mm256_blend_ps(_mm256_setzero_ps(), result256, 0b01010101);
+                }
+                else {
+                    result256 = _mm256_blend_ps(_mm256_setzero_ps(), result256, 0b10101010);
+                }
+            }
+            else {
+                if (vector_even) {
+                    result256 = _mm256_blend_ps(_mm256_setzero_ps(), result256, 0b10101010);
+                }
+                else {
+                    result256 = _mm256_blend_ps(_mm256_setzero_ps(), result256, 0b01010101);
+                }
+            }
+            _mm256_storeu_ps(resultData + vector_offset, result256);
+        }
+
+        for (auto iter = leaf.beginValueOff(); iter; ++iter) {
+            resultData[iter.offset()] = 0.f;
+        }
+    };//end set_first_iter_op
+
+    mDofLeafManager->foreach(setResultAfterFirstIter);
+
+    if (redFirst) {
+        mApplyOperator->setBlackGaussSeidelMode();
+    }
+    else {
+        mApplyOperator->setRedGaussSeidelMode();
+    }
+
+    auto op = mApplyOperator->getLightWeightApplier(in_out_grid, in_out_grid, in_rhs);
+    mApplyOperator->Apply(op);
+
+    _mm256_zeroall();
+}
+
+void LaplacianWithLevel::gridToVector(
+    std::vector<float>& out_vector, openvdb::FloatGrid::Ptr in_grid)
+{
+    out_vector.resize(mNumDof);
+
+    //it is assumed that the input grid has exactly the same topology as the DOF grid.
+    auto setResult = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* valueLeaf = in_grid->tree().probeConstLeaf(leaf.origin());
+        if (valueLeaf) {
+            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                if (leaf.isValueOn(offset)) {
+                    out_vector[leaf.getValue(offset)] = valueLeaf->getValue(offset);
+                }
+            }
+        }
+    };
+    mApplyOperator->mDofLeafManager.foreach(setResult);
+}
+
+void LaplacianWithLevel::vectorToGrid(openvdb::FloatGrid::Ptr out_grid, const std::vector<float>& in_vector)
+{
+    out_grid->setTree(std::make_shared<openvdb::FloatTree>(mDofIndex->tree(), 0.f, openvdb::TopologyCopy()));
+    out_grid->setTransform(mDiagonal->transformPtr());
+    vectorToGridUnsafe(out_grid, in_vector);
+}
+
+void LaplacianWithLevel::vectorToGridUnsafe(openvdb::FloatGrid::Ptr out_grid, const std::vector<float>& in_vector)
+{
+    //it is assumed that the input grid has exactly the same dof as the 
+    auto setResult = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* valueLeaf = out_grid->tree().probeLeaf(leaf.origin());
+        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+            if (leaf.isValueOn(offset)) {
+                valueLeaf->setValueOn(offset, in_vector[leaf.getValue(offset)]);
+            }
+        }
+    };
+    mApplyOperator->mDofLeafManager.foreach(setResult);
+}
+
+void LaplacianWithLevel::restriction(
+    openvdb::FloatGrid::Ptr outCoarseGrid,
+    openvdb::FloatGrid::Ptr inFineGrid,
+    const LaplacianWithLevel& coarseLevel)
+{
+    //to be use by the dof idx manager at coarse level, the laplacian level
+    auto collectFromFine = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* coarseValueLeaf = outCoarseGrid->tree().probeLeaf(leaf.origin());
+        //fine voxel:   -4 -3 -2 -1 0 1 2 3 4 5
+        //coarse voxel: -2 -2 -1 -1 0 0 1 1 2 2
+
+        //each coarse leaf corresponds to 8 potential fine leaves that are active
+        std::array<const openvdb::FloatTree::LeafNodeType*, 8> fineLeaves{ nullptr };
+        int fineLeavesCounter = 0;
+        auto fineBaseOrigin = openvdb::Coord(leaf.origin().asVec3i() * 2);
+        for (int ii = 0; ii < 16; ii += 8) {
+            for (int jj = 0; jj < 16; jj += 8) {
+                for (int kk = 0; kk < 16; kk += 8) {
+                    fineLeaves[fineLeavesCounter++] =
+                        inFineGrid->tree().probeConstLeaf(fineBaseOrigin.offsetBy(ii, jj, kk));
+                }
+            }
+        }
+
+        for (auto iter = coarseValueLeaf->beginValueOn(); iter; ++iter) {
+            //uint32_t at_fine_leaf = iter.offset();
+
+            auto itercoord = coarseValueLeaf->offsetToLocalCoord(iter.offset());
+            uint32_t atFineLeaf = 0;
+            if (itercoord[2] >= 4) {
+                atFineLeaf += 1;
+            }
+            if (itercoord[1] >= 4) {
+                atFineLeaf += 2;
+            }
+            if (itercoord[0] >= 4) {
+                atFineLeaf += 4;
+            }
+
+            //if there is possibly a dof in the fine leaf
+            if (auto fine_leaf = fineLeaves[atFineLeaf]) {
+                auto fine_base_voxel = openvdb::Coord(iter.getCoord().asVec3i() * 2);
+                auto fine_base_offset = fine_leaf->coordToOffset(fine_base_voxel);
+                float temp_sum = 0;
+                for (int ii = 0; ii < 2; ii++) {
+                    for (int jj = 0; jj < 2; jj++) {
+                        for (int kk = 0; kk < 2; kk++) {
+                            auto fine_offset = fine_base_offset + 64 * ii + 8 * jj + kk;
+                            if (fine_leaf->isValueOn(fine_offset)) {
+                                temp_sum += fine_leaf->getValue(fine_offset);
+                            }
+                        }//kk
+                    }//jj
+                }//ii
+                iter.setValue(temp_sum * 0.125f);
+            }//if fine leaf
+        }//for all coarse on voxels
+    };//end collect from fine
+
+    coarseLevel.mDofLeafManager->foreach(collectFromFine);
 }
 
 template <bool inplace_add>
-void simd_vdb_poisson::Laplacian_with_level::prolongation(
-    openvdb::FloatGrid::Ptr out_fine_grid,
-    openvdb::FloatGrid::Ptr in_coarse_grid,
-    const Laplacian_with_level &parent) {
-  if (parent.m_root_token != m_root_token) {
-    printf("prolongation error, level0 mismatch\n");
-    exit(-1);
-  }
-  if (parent.m_level != (m_level - 1)) {
-    printf("prolongation error, not to a parent\n");
-    exit(-1);
-  }
-  bool topology_check = false;
-  if (topology_check) {
-    if (!in_coarse_grid->tree().hasSameTopology(m_dof_idx->tree())) {
-      printf("input coarse grid does not match this level\n");
-      exit(-1);
-    }
-    if (!out_fine_grid->tree().hasSameTopology(parent.m_dof_idx->tree())) {
-      printf("output fine grid does not match parent level\n");
-      exit(-1);
-    }
-  }
+void LaplacianWithLevel::prolongation(
+    openvdb::FloatGrid::Ptr outFineGrid, openvdb::FloatGrid::Ptr inCoarseGrid, float alpha)
+{
+    //to be use by the dof idx manager at coarse level, the laplacian level
+    auto scatterToFine = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        const auto* coarseLeaf = inCoarseGrid->tree().probeConstLeaf(leaf.origin());
+        //fine voxel:   -4 -3 -2 -1 0 1 2 3 4 5
+        //coarse voxel: -2 -2 -1 -1 0 0 1 1 2 2
 
-  // to be used by the fine dof idx manager, which is the parent
-  auto collect_from_coarse = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                                 openvdb::Index leafpos) {
-    const auto *coarse_leaf = in_coarse_grid->tree().probeConstLeaf(
-        openvdb::Coord(leaf.origin().asVec3i() / 2));
-    auto *fine_leaf = out_fine_grid->tree().probeLeaf(leaf.origin());
-
-    auto base_coarse_voxel = openvdb::Coord(leaf.origin().asVec3i() / 2);
-    for (auto iter = fine_leaf->beginValueOn(); iter; ++iter) {
-      auto coarse_shift_coord =
-          fine_leaf->offsetToLocalCoord(iter.offset()).asVec3i() / 2;
-      iter.setValue(coarse_leaf->getValue(
-          openvdb::Coord(base_coarse_voxel + coarse_shift_coord)));
-    }
-  }; // end collect from coarse
-
-  // parent.m_dof_leafmanager->foreach(collect_from_coarse);
-
-  // to be use by the dof idx manager at coarse level, the child level
-  auto scatter_to_fine = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                             openvdb::Index leafpos) {
-    const auto *coarse_leaf =
-        in_coarse_grid->tree().probeConstLeaf(leaf.origin());
-    // fine voxel:   -4 -3 -2 -1 0 1 2 3 4 5
-    // coarse voxel: -2 -2 -1 -1 0 0 1 1 2 2
-
-    // each coarse leaf corresponds to 8 potential fine leaves that are active
-    std::array<openvdb::FloatTree::LeafNodeType *, 8> fine_leaves{nullptr};
-    int fine_leaves_counter = 0;
-    auto fine_base_origin = openvdb::Coord(leaf.origin().asVec3i() * 2);
-    for (int ii = 0; ii < 16; ii += 8) {
-      for (int jj = 0; jj < 16; jj += 8) {
-        for (int kk = 0; kk < 16; kk += 8) {
-          fine_leaves[fine_leaves_counter++] = out_fine_grid->tree().probeLeaf(
-              fine_base_origin.offsetBy(ii, jj, kk));
-        }
-      }
-    }
-
-    for (auto iter = coarse_leaf->cbeginValueOn(); iter; ++iter) {
-      // uint32_t at_fine_leaf = iter.offset();
-
-      auto itercoord = coarse_leaf->offsetToLocalCoord(iter.offset());
-      uint32_t at_fine_leaf = 0;
-      if (itercoord[2] >= 4) {
-        at_fine_leaf += 1;
-      }
-      if (itercoord[1] >= 4) {
-        at_fine_leaf += 2;
-      }
-      if (itercoord[0] >= 4) {
-        at_fine_leaf += 4;
-      }
-
-      float coarseval = iter.getValue();
-      // if there is possibly a dof in the fine leaf
-      if (auto fine_leaf = fine_leaves[at_fine_leaf]) {
-        auto fine_base_voxel = openvdb::Coord(iter.getCoord().asVec3i() * 2);
-        auto fine_base_offset = fine_leaf->coordToOffset(fine_base_voxel);
-        for (int ii = 0; ii < 2; ii++) {
-          for (int jj = 0; jj < 2; jj++) {
-            for (int kk = 0; kk < 2; kk++) {
-              auto fine_offset = fine_base_offset + kk;
-              if (ii)
-                fine_offset += 64;
-              if (jj)
-                fine_offset += 8;
-              if (fine_leaf->isValueOn(fine_offset)) {
-                if (inplace_add) {
-                  fine_leaf->buffer().data()[fine_offset] += coarseval;
-                } else {
-                  fine_leaf->setValueOnly(fine_offset, coarseval);
+        //each coarse leaf corresponds to 8 potential fine leaves that are active
+        std::array<openvdb::FloatTree::LeafNodeType*, 8> fineLeaves{ nullptr };
+        int fineLeavesCounter = 0;
+        auto fineBaseOrigin = openvdb::Coord(leaf.origin().asVec3i() * 2);
+        for (int ii = 0; ii < 16; ii += 8) {
+            for (int jj = 0; jj < 16; jj += 8) {
+                for (int kk = 0; kk < 16; kk += 8) {
+                    fineLeaves[fineLeavesCounter++] =
+                        outFineGrid->tree().probeLeaf(fineBaseOrigin.offsetBy(ii, jj, kk));
                 }
-              }
-            } // kk
-          }   // jj
-        }     // ii
-        // iter.setValue(temp_sum * 0.125f);
-      } // if fine leaf
-    }   // for all coarse on voxels
-  };    // end collect from fine
-
-  m_dof_leafmanager->foreach (scatter_to_fine);
-}
-
-void simd_vdb_poisson::Laplacian_with_level::trim_default_nodes() {
-  // if a leaf node has the same value and equal to the default
-  // poisson equation term, remove the node
-  float term = -m_dt / (m_dx_this_level * m_dx_this_level);
-  float diag_term = -6.0f * term;
-  float threshold = diag_term * 1e-5f;
-
-  trim_default_nodes(m_Diagonal, diag_term, diag_term * 1e-5);
-  trim_default_nodes(m_Neg_x_entry, term, term * 1e-5);
-  trim_default_nodes(m_Neg_y_entry, term, term * 1e-5);
-  trim_default_nodes(m_Neg_z_entry, term, term * 1e-5);
-}
-
-void simd_vdb_poisson::Laplacian_with_level::trim_default_nodes(
-    openvdb::FloatGrid::Ptr in_out_grid, float default_value, float epsilon) {
-  std::vector<openvdb::Coord> leaf_origins;
-  std::vector<bool> quasi_uniform;
-  epsilon = std::abs(epsilon);
-  auto leafman =
-      openvdb::tree::LeafManager<openvdb::FloatTree>(in_out_grid->tree());
-  leaf_origins.resize(leafman.leafCount());
-  quasi_uniform.resize(leafman.leafCount(), false);
-
-  auto determine_uniform = [&](float_leaf_t &leaf, openvdb::Index leafpos) {
-    leaf_origins[leafpos] = leaf.origin();
-    if (!leaf.isValueMaskOn()) {
-      quasi_uniform[leafpos] = false;
-      return;
-    }
-
-    float max_error = 0;
-    for (auto offset = 0; offset < 512; ++offset) {
-      float curr_error = std::abs(leaf.getValue(offset) - default_value);
-      if (curr_error > max_error) {
-        max_error = curr_error;
-      }
-    }
-    if (max_error < epsilon) {
-      quasi_uniform[leafpos] = true;
-    }
-  }; // end determine uniform
-
-  leafman.foreach (determine_uniform);
-
-  for (auto i = 0; i < leaf_origins.size(); ++i) {
-    if (quasi_uniform[i]) {
-      delete in_out_grid->tree().stealNode<float_leaf_t>(leaf_origins[i],
-                                                         default_value, false);
-    }
-  }
-}
-
-void simd_vdb_poisson::construct_levels() {
-  // build the first level
-  Laplacian_with_level::Ptr level0 = std::make_shared<Laplacian_with_level>(
-      m_liquid_sdf, m_face_weight, dt, m_dx);
-
-  m_laplacian_with_levels.push_back(level0);
-
-  int max_dof = 4000;
-  while (m_laplacian_with_levels.back()->m_ndof > max_dof) {
-    Laplacian_with_level::Ptr next_level =
-        std::make_shared<Laplacian_with_level>(
-            *m_laplacian_with_levels.back(),
-            Laplacian_with_level::coarsening());
-    m_laplacian_with_levels.push_back(next_level);
-  }
-
-  // the scratchpad for the v cycle to avoid
-  for (int level = 0; level < m_laplacian_with_levels.size(); level++) {
-    // the solution at each level
-    m_v_cycle_lhss.push_back(
-        m_laplacian_with_levels[level]->get_zero_vec_grid());
-    // the right hand side at each level
-    m_v_cycle_rhss.push_back(
-        m_laplacian_with_levels[level]->get_zero_vec_grid());
-    // the temporary result to store the jacobi iteration
-    // use std::shared_ptr::swap to change the content
-    m_v_cycle_temps.push_back(
-        m_laplacian_with_levels[level]->get_zero_vec_grid());
-    if (level > 0) {
-      m_K_cycle_cs.push_back(
-          m_laplacian_with_levels[level]->get_zero_vec_grid());
-      m_K_cycle_vs.push_back(
-          m_laplacian_with_levels[level]->get_zero_vec_grid());
-      m_K_cycle_ds.push_back(
-          m_laplacian_with_levels[level]->get_zero_vec_grid());
-      m_K_cycle_ws.push_back(
-          m_laplacian_with_levels[level]->get_zero_vec_grid());
-    } else {
-      // the finest level is never used in Kcycle
-      m_K_cycle_cs.push_back(openvdb::FloatGrid::create());
-      m_K_cycle_vs.push_back(openvdb::FloatGrid::create());
-      m_K_cycle_ds.push_back(openvdb::FloatGrid::create());
-      m_K_cycle_ws.push_back(openvdb::FloatGrid::create());
-    }
-  }
-  construct_coarsest_exact_solver();
-  printf("levels: %zd Dof:%d\n", m_laplacian_with_levels.size(),
-         m_laplacian_with_levels[0]->m_ndof);
-}
-
-void simd_vdb_poisson::Vcycle(const openvdb::FloatGrid::Ptr in_out_lhs,
-                              const openvdb::FloatGrid::Ptr in_rhs, int n1,
-                              int n2, int ncoarse) {
-  bool topology_check = false;
-  if (topology_check) {
-    if (!in_out_lhs->tree().hasSameTopology(
-            m_laplacian_with_levels[0]->m_dof_idx->tree())) {
-      printf("Vcyel lhs grid does not match level 0\n");
-      exit(-1);
-    }
-    if (!in_rhs->tree().hasSameTopology(
-            m_laplacian_with_levels[0]->m_dof_idx->tree())) {
-      printf("Vcyel rhs grid does not match level 0\n");
-      exit(-1);
-    }
-  }
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V").start();
-  size_t nlevel = m_laplacian_with_levels.size();
-  m_v_cycle_lhss[0] = in_out_lhs;
-  m_v_cycle_rhss[0] = in_rhs;
-
-  // on the finest level, relax a few iterations
-  // in general in_out_lhs as the initial guess is not zero vector
-  for (int i = 0; i < n1; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").start();
-    m_laplacian_with_levels[0]->RBGS_apply_assume_topo_inplace<true>(
-        m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").stop();
-    // the updated lhs is in m_v_cycle_temps
-    // we need to update the v_cycle_lhs
-    // m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
-    // now the lhs is updated
-  }
-
-  // pass the residual to the next level
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual0").start();
-  m_laplacian_with_levels[0]->residual_apply_assume_topo(
-      m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual0").stop();
-
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R0").start();
-  m_laplacian_with_levels[0]->restriction(m_v_cycle_rhss[1], m_v_cycle_temps[0],
-                                          *m_laplacian_with_levels[1]);
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R0").stop();
-  // pass get the residual, restrict the residual to the next level
-  for (int level = 1; level < (nlevel - 1); level++) {
-    // relax
-    // the initial of the lhs for this level was supposed to be 0
-    // but passing 0 to one iteration of weighted jacobi
-    // gives weighted right handside
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_RBGS_assume_topo(
-            m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    /*m_laplacian_with_levels[level]->set_grid_constant_assume_topo(
-            m_v_cycle_lhss[level], 0);*/
-    for (int i = 0; i < n1; i++) {
-      // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth"+std::to_string(level)).start();
-      m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<true>(
-          m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-      // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" +
-      // std::to_string(level)).stop();
-      // m_v_cycle_lhss[level].swap(m_v_cycle_temps[level]);
-    }
-    // calculate residual
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->residual_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual" +
-    // std::to_string(level)).stop();
-
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->restriction(
-        m_v_cycle_rhss[size_t(level + 1)], m_v_cycle_temps[level],
-        *m_laplacian_with_levels[size_t(level + 1)]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R" +
-    // std::to_string(level)).stop(); pass to next level
-  } // end for 0 to the last second level
-
-  // at the coarsest level
-  int level = nlevel - 1;
-
-  bool use_iter = true;
-
-  if (nlevel != m_laplacian_with_levels.size()) {
-    use_iter = true;
-  }
-
-  if (use_iter) {
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_jacobi_assume_topo(
-            m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-
-    /*m_laplacian_with_levels[level]->set_grid_constant_assume_topo(
-            m_v_cycle_lhss[level], 0);*/
-
-    for (int i = 0; i < ncoarse; i++) {
-      m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<true>(
-          m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-      // m_v_cycle_lhss[level].swap(m_v_cycle_temps[level]);
-    }
-  } else {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/Direct").start();
-    write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, m_v_cycle_rhss[level]);
-    m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
-    write_coarsest_grid_solution(m_v_cycle_lhss[level],
-                                 m_coarsest_eigen_solution);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/Direct").stop();
-  }
-
-  // get the error correction back
-  for (level = nlevel - 2; level >= 0; level--) {
-    int child_level = level + 1;
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/P" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[child_level]->prolongation</*inplace add*/ true>(
-        m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],
-        *m_laplacian_with_levels[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/P" +
-    // std::to_string(level)).stop();
-    /*m_laplacian_with_levels[level]->inplace_add_assume_topo(
-            m_v_cycle_lhss[level], m_v_cycle_temps[level]);*/
-
-    for (int i = 0; i < n2; i++) {
-      // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" +
-      // std::to_string(level)).start();
-      m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<false>(
-          m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-      // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" +
-      // std::to_string(level)).stop();
-      // m_v_cycle_lhss[level].swap(m_v_cycle_temps[level]);
-    }
-  }
-
-  // at this point the m_v_cycle_lhss[0] contains the solution
-  // we need to write it back to the input
-  // the input tree is among the m_v_cycle_lhss and m_v_cycle_temps
-  // and is already modified multiple times
-  // it's worthless to to distinguish, just copy.
-  auto copy_to_result = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                            openvdb::Index leafpos) {
-    auto *source_leaf = m_v_cycle_lhss[0]->tree().probeLeaf(leaf.origin());
-    auto *target_leaf = in_out_lhs->tree().probeLeaf(leaf.origin());
-
-    std::copy(source_leaf->buffer().data(),
-              source_leaf->buffer().data() + leaf.SIZE,
-              target_leaf->buffer().data());
-  }; // end copy to result
-
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/copy").start();
-  // m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(copy_to_result);
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/copy").stop();
-  if ((n1 + n2) % 2 == 1) {
-    // m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
-  }
-  // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V").stop();
-}
-
-template <int mu_time, bool skip_first_iter>
-void simd_vdb_poisson::mucycle_RBGS(const openvdb::FloatGrid::Ptr in_out_lhs,
-                                    const openvdb::FloatGrid::Ptr in_rhs,
-                                    const int level, int n1, int n2) {
-  size_t nlevel = m_laplacian_with_levels.size();
-  if (level == nlevel - 1) {
-    write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, in_rhs);
-    m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
-    write_coarsest_grid_solution(in_out_lhs, m_coarsest_eigen_solution);
-    return;
-  }
-
-  m_v_cycle_lhss[level] = in_out_lhs;
-  m_v_cycle_rhss[level] = in_rhs;
-
-  if (skip_first_iter) {
-    // set result after first iter, with zero lhs guess
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_RBGS_assume_topo(
-            m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-  }
-
-  for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<true>(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-  }
-  m_laplacian_with_levels[level]->residual_apply_assume_topo(
-      m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-
-  int child_level = level + 1;
-  m_laplacian_with_levels[level]->restriction(
-      m_v_cycle_rhss[child_level], m_v_cycle_temps[level],
-      /*child level*/ *m_laplacian_with_levels[child_level]);
-
-  // set the initial guess for the next level
-  m_laplacian_with_levels[child_level]
-      ->set_grid_to_result_after_first_RBGS_assume_topo(
-          m_v_cycle_lhss[child_level], m_v_cycle_rhss[child_level]);
-  mucycle_RBGS<mu_time, true>(m_v_cycle_lhss[child_level],
-                              m_v_cycle_rhss[child_level], child_level, n1, n2);
-  for (int mu = 1; mu < mu_time; mu++) {
-    mucycle_RBGS<mu_time, false>(m_v_cycle_lhss[child_level],
-                                 m_v_cycle_rhss[child_level], child_level,
-                                 n1 + 1, n2);
-  }
-
-  m_laplacian_with_levels[child_level]->prolongation</*inplace add*/ true>(
-      m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],
-      /*parent level*/ *m_laplacian_with_levels[level]);
-
-  for (int i = 0; i < n2; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<false>(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).stop();
-  }
-}
-
-template <int mu_time, bool skip_first_iter>
-void simd_vdb_poisson::mucycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs,
-                                   const openvdb::FloatGrid::Ptr in_rhs,
-                                   const int level, int n) {
-  /*lv_copyval(in_out_lhs, in_rhs);
-  return;*/
-  int n1 = n, n2 = n;
-  std::array<float, 3> scheduled_weight;
-  if (n == 1) {
-    scheduled_weight[0] = 2.0f / 3.0f;
-  }
-  if (n == 2) {
-    scheduled_weight[0] = 1.7319f;
-    scheduled_weight[1] = 0.5695f;
-  }
-  if (n == 3) {
-    scheduled_weight[0] = 2.2473f;
-    scheduled_weight[1] = 0.8571f;
-    scheduled_weight[2] = 0.5296f;
-  }
-
-  size_t nlevel = m_laplacian_with_levels.size();
-  if (level == nlevel - 1) {
-    write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, in_rhs);
-    m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
-    write_coarsest_grid_solution(in_out_lhs, m_coarsest_eigen_solution);
-    return;
-  }
-
-  m_v_cycle_lhss[level] = in_out_lhs;
-  m_v_cycle_rhss[level] = in_rhs;
-
-  if (skip_first_iter) {
-    // set result after first iter, with zero lhs guess
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[0]);
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_jacobi_assume_topo(
-            m_v_cycle_temps[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-  }
-
-  for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[i]);
-    m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-  }
-  m_laplacian_with_levels[level]->residual_apply_assume_topo(
-      m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-
-  int child_level = level + 1;
-  m_laplacian_with_levels[level]->restriction(
-      m_v_cycle_rhss[child_level], m_v_cycle_temps[level],
-      /*child level*/ *m_laplacian_with_levels[child_level]);
-
-  mucycle_SRJ<mu_time, /*skip first*/ true>(
-      m_v_cycle_lhss[child_level], m_v_cycle_rhss[child_level], child_level, n);
-  for (int mu = 1; mu < mu_time; mu++) {
-    mucycle_SRJ<mu_time, /*skip first*/ false>(m_v_cycle_lhss[child_level],
-                                               m_v_cycle_rhss[child_level],
-                                               child_level, n);
-  }
-
-  m_laplacian_with_levels[child_level]->prolongation</*inplace add*/ true>(
-      m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],
-      /*parent level*/ *m_laplacian_with_levels[level]);
-
-  for (int i = 0; i < n2; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[size_t(n2 - 1 - i)]);
-    m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).stop();
-  }
-}
-
-template <int mu_time, bool skip_first_iter>
-void simd_vdb_poisson::mucycle_SPAI0(const openvdb::FloatGrid::Ptr in_out_lhs,
-                                     const openvdb::FloatGrid::Ptr in_rhs,
-                                     const int level, int n) {
-  int n1 = n, n2 = n;
-
-  size_t nlevel = m_laplacian_with_levels.size();
-  if (level == nlevel - 1) {
-    write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, in_rhs);
-    m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
-    write_coarsest_grid_solution(in_out_lhs, m_coarsest_eigen_solution);
-    return;
-  }
-
-  m_v_cycle_lhss[level] = in_out_lhs;
-  m_v_cycle_rhss[level] = in_rhs;
-
-  if (skip_first_iter) {
-    // set result after first iter, with zero lhs guess
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_SPAI_assume_topo(
-            m_v_cycle_temps[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-  }
-
-  for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->SPAI0_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-  }
-  m_laplacian_with_levels[level]->residual_apply_assume_topo(
-      m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-
-  int child_level = level + 1;
-  m_laplacian_with_levels[level]->restriction(
-      m_v_cycle_rhss[child_level], m_v_cycle_temps[level],
-      /*child level*/ *m_laplacian_with_levels[child_level]);
-
-  mucycle_SPAI0<mu_time, /*skip first*/ true>(
-      m_v_cycle_lhss[child_level], m_v_cycle_rhss[child_level], child_level, n);
-  for (int mu = 1; mu < mu_time; mu++) {
-    mucycle_SPAI0<mu_time, /*skip first*/ false>(m_v_cycle_lhss[child_level],
-                                                 m_v_cycle_rhss[child_level],
-                                                 child_level, n);
-  }
-
-  m_laplacian_with_levels[child_level]->prolongation</*inplace add*/ true>(
-      m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],
-      /*parent level*/ *m_laplacian_with_levels[level]);
-
-  for (int i = 0; i < n2; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->SPAI0_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).stop();
-  }
-}
-
-/*
-https://www.sciencedirect.com/science/article/pii/S0898122114004143
-A GPU accelerated aggregation algebraic multigrid method
-*/
-template <bool skip_first_iter>
-void simd_vdb_poisson::Kcycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs,
-                                  const openvdb::FloatGrid::Ptr in_rhs,
-                                  const int level, int n) {
-
-  int n1 = n, n2 = n;
-  std::array<float, 3> scheduled_weight;
-  if (n == 1) {
-    scheduled_weight[0] = 2.0f / 3.0f;
-  }
-  if (n == 2) {
-    scheduled_weight[0] = 1.7319f;
-    scheduled_weight[1] = 0.5695f;
-  }
-  if (n == 3) {
-    scheduled_weight[0] = 2.2473f;
-    scheduled_weight[1] = 0.8571f;
-    scheduled_weight[2] = 0.5296f;
-  }
-
-  size_t nlevel = m_laplacian_with_levels.size();
-
-  m_v_cycle_lhss[level] = in_out_lhs;
-  m_v_cycle_rhss[level] = in_rhs;
-
-  if (skip_first_iter) {
-    // set result after first iter, with zero lhs guess
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[0]);
-    m_laplacian_with_levels[level]
-        ->set_grid_to_result_after_first_jacobi_assume_topo(
-            m_v_cycle_temps[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-  }
-
-  for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[i]);
-    m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-  }
-  m_laplacian_with_levels[level]->residual_apply_assume_topo(
-      m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-
-  int child_level = level + 1;
-  m_laplacian_with_levels[level]->restriction(
-      m_v_cycle_rhss[child_level], m_v_cycle_temps[level],
-      /*child level*/ *m_laplacian_with_levels[child_level]);
-
-  if (child_level == nlevel - 1) {
-    write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, m_v_cycle_rhss[child_level]);
-    m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
-    write_coarsest_grid_solution(m_v_cycle_lhss[child_level],
-                                 m_coarsest_eigen_solution);
-  } else {
-    // first Krylov iteration
-
-    Kcycle_SRJ<true>(m_v_cycle_lhss[child_level], m_v_cycle_rhss[child_level],
-                     child_level);
-
-    lv_copyval(m_K_cycle_cs[child_level], m_v_cycle_lhss[child_level],
-               child_level);
-    m_laplacian_with_levels[child_level]->Laplacian_apply_assume_topo(
-        m_K_cycle_vs[child_level], m_K_cycle_cs[child_level]);
-    float rho1 = lv_dot(m_K_cycle_vs[child_level], m_K_cycle_cs[child_level],
-                        child_level);
-    float alpha1 = lv_dot(m_v_cycle_rhss[child_level],
-                          m_K_cycle_cs[child_level], child_level);
-
-    float r_child_norm = lv_abs_max(m_v_cycle_rhss[child_level], child_level);
-    lv_axpy(-alpha1 / rho1, m_K_cycle_vs[child_level],
-            m_v_cycle_rhss[child_level], child_level);
-    float r_tilde_child_norm =
-        lv_abs_max(m_v_cycle_rhss[child_level], child_level);
-    // printf("level:%d rnorm:%e, rtildenorm:%e\n", level, r_child_norm,
-    // r_tilde_child_norm);
-    if (r_tilde_child_norm < 0.25 * r_child_norm) {
-      lv_axpy(alpha1 / rho1 - 1, m_v_cycle_lhss[child_level],
-              m_v_cycle_lhss[child_level], child_level);
-    } else {
-      // the second Krylov iteration
-      // the error will be stored in temps, instead of lhss, because the latter
-      // stores previous step results
-      Kcycle_SRJ<true>(m_v_cycle_lhss[child_level], m_v_cycle_rhss[child_level],
-                       child_level);
-      lv_copyval(m_K_cycle_ds[child_level], m_v_cycle_lhss[child_level],
-                 child_level);
-      m_laplacian_with_levels[child_level]->Laplacian_apply_assume_topo(
-          m_K_cycle_ws[child_level], m_K_cycle_ds[child_level]);
-      float gamma = lv_dot(m_K_cycle_ds[child_level], m_K_cycle_vs[child_level],
-                           child_level);
-      float beta = lv_dot(m_K_cycle_ds[child_level], m_K_cycle_ws[child_level],
-                          child_level);
-      float alpha2 = lv_dot(m_K_cycle_ds[child_level],
-                            m_v_cycle_rhss[child_level], child_level);
-      float rho2 = beta - gamma * gamma / rho1;
-      float coef1 = alpha1 / rho1 - gamma * alpha2 / (rho1 * rho2);
-      float coef2 = alpha2 / rho2;
-      lv_out_axby(m_v_cycle_lhss[child_level], coef1, coef2,
-                  m_K_cycle_cs[child_level], m_K_cycle_ds[child_level],
-                  child_level);
-    }
-  }
-
-  m_laplacian_with_levels[child_level]->prolongation</*inplace add*/ true>(
-      m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],
-      /*parent level*/ *m_laplacian_with_levels[level]);
-
-  for (int i = 0; i < n2; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).start();
-    m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(
-        scheduled_weight[i]);
-    m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
-        m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-    m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" +
-    // std::to_string(level)).stop();
-  }
-}
-
-void simd_vdb_poisson::construct_coarsest_exact_solver() {
-  // the coarse level usually contains <1000 dofs
-  tbb::concurrent_vector<Eigen::Triplet<float>> ijval;
-
-  const Laplacian_with_level &laplacian = *m_laplacian_with_levels.back();
-
-  auto build_triplet = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                           openvdb::Index leafpos) {
-    auto diag_axr{laplacian.m_Diagonal->getConstAccessor()};
-    auto x_axr{laplacian.m_Neg_x_entry->getConstAccessor()};
-    auto y_axr{laplacian.m_Neg_y_entry->getConstAccessor()};
-    auto z_axr{laplacian.m_Neg_z_entry->getConstAccessor()};
-    auto dof_axr{laplacian.m_dof_idx->getConstAccessor()};
-
-    float diag_epsl = laplacian.m_Diagonal->background() * 1e-2f;
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      auto gcoord = iter.getCoord();
-
-      float diagval = diag_axr.getValue(gcoord);
-      if (diagval == 0) {
-        diagval = diag_epsl;
-      }
-      // the diagonal entry
-      ijval.push_back(
-          Eigen::Triplet<float>(iter.getValue(), iter.getValue(), diagval));
-
-      // check lower neighbor
-      auto negx_coord = gcoord.offsetBy(-1, 0, 0);
-      if (dof_axr.isValueOn(negx_coord)) {
-        ijval.push_back(Eigen::Triplet<float>(iter.getValue(),
-                                              dof_axr.getValue(negx_coord),
-                                              x_axr.getValue(gcoord)));
-        ijval.push_back(Eigen::Triplet<float>(dof_axr.getValue(negx_coord),
-                                              iter.getValue(),
-                                              x_axr.getValue(gcoord)));
-      } // end negx dof on
-
-      auto negy_coord = gcoord.offsetBy(0, -1, 0);
-      if (dof_axr.isValueOn(negy_coord)) {
-        ijval.push_back(Eigen::Triplet<float>(iter.getValue(),
-                                              dof_axr.getValue(negy_coord),
-                                              y_axr.getValue(gcoord)));
-        ijval.push_back(Eigen::Triplet<float>(dof_axr.getValue(negy_coord),
-                                              iter.getValue(),
-                                              y_axr.getValue(gcoord)));
-      } // end negy dof on
-
-      auto negz_coord = gcoord.offsetBy(0, 0, -1);
-      if (dof_axr.isValueOn(negz_coord)) {
-        ijval.push_back(Eigen::Triplet<float>(iter.getValue(),
-                                              dof_axr.getValue(negz_coord),
-                                              z_axr.getValue(gcoord)));
-        ijval.push_back(Eigen::Triplet<float>(dof_axr.getValue(negz_coord),
-                                              iter.getValue(),
-                                              z_axr.getValue(gcoord)));
-      } // end negz dof on
-    }   // end for all on dof in this leaf
-  };    // end gen triplet
-
-  m_laplacian_with_levels.back()->m_dof_leafmanager->foreach (build_triplet);
-  printf("triplet gen\n");
-  int ndof = laplacian.m_ndof;
-  m_coarsest_eigen_matrix.resize(ndof, ndof);
-  // std::vector<Eigen::Triplet<float>> triplets;
-  // triplets.reserve(ijval.size());
-  // for (int i = 0; i < ijval.size(); i++) {
-  //	triplets.push_back(ijval[i]);
-  //}
-  m_coarsest_eigen_matrix.setFromTriplets(ijval.begin(), ijval.end());
-  printf("factor\n");
-  m_coarsest_solver =
-      std::make_shared<Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>>>(
-          m_coarsest_eigen_matrix);
-}
-
-void simd_vdb_poisson::write_coarsest_eigen_rhs(
-    Eigen::VectorXf &out_eigen_rhs, openvdb::FloatGrid::Ptr in_rhs) {
-  out_eigen_rhs.setZero(m_laplacian_with_levels.back()->m_ndof);
-
-  auto set_eigen_rhs = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                           openvdb::Index leafpos) {
-    auto in_rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
-
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      out_eigen_rhs[iter.getValue()] = in_rhs_leaf->getValue(iter.offset());
-    }
-  };
-  m_laplacian_with_levels.back()->m_dof_leafmanager->foreach (set_eigen_rhs);
-}
-
-void simd_vdb_poisson::write_coarsest_grid_solution(
-    openvdb::FloatGrid::Ptr in_out_result,
-    const Eigen::VectorXf &in_eigen_solution) {
-  auto set_grid_solution = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                               openvdb::Index leafpos) {
-    auto *result_leaf = in_out_result->tree().probeLeaf(leaf.origin());
-
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      result_leaf->setValueOn(iter.offset(),
-                              in_eigen_solution[iter.getValue()]);
-    }
-  };
-  m_laplacian_with_levels.back()->m_dof_leafmanager->foreach (
-      set_grid_solution);
-}
-
-void simd_vdb_poisson::build_rhs() {
-  if (m_laplacian_with_levels.empty()) {
-    construct_levels();
-  }
-
-  m_rhs = m_laplacian_with_levels[0]->get_zero_vec_grid();
-  std::atomic<size_t> isolated_cell{0};
-  auto build_rhs_op = [&](const openvdb::Int32Tree::LeafNodeType &idxleaf,
-                          openvdb::Index leafpos) {
-    auto *rhs_leaf = m_rhs->tree().probeLeaf(idxleaf.origin());
-    auto weight_axr = m_face_weight->getConstUnsafeAccessor();
-    auto vel_axr = m_velocity->getConstUnsafeAccessor();
-    auto svel_axr = m_solid_velocity->getConstUnsafeAccessor();
-
-    float invdx = 1.0f / m_dx;
-
-    for (auto offset = 0; offset < idxleaf.SIZE; offset++) {
-      if (!idxleaf.isValueMaskOn(offset)) {
-        continue;
-      }
-      const auto lcoord = idxleaf.offsetToLocalCoord(offset);
-      const auto gcoord = lcoord + idxleaf.origin();
-
-      float local_rhs = 0;
-      openvdb::Vec3f this_vel = vel_axr.getValue(gcoord);
-      bool has_non_zero_weight = false;
-
-      // x+ x- y+ y- z+ z-
-      for (int i_face = 0; i_face < 6; i_face++) {
-        int channel = i_face / 2;
-        bool positive_dir = (i_face % 2) == 0;
-
-        auto vneib_c = gcoord;
-        vneib_c[channel] += positive_dir;
-
-        //face weight
-        float weight = weight_axr.getValue(vneib_c)[channel];
-
-        if (weight != 0.f) {
-            has_non_zero_weight = true;
+            }
         }
 
-        //liquid velocity channel
-        float vel = vel_axr.getValue(vneib_c)[channel];
+        for (auto iter = coarseLeaf->cbeginValueOn(); iter; ++iter) {
+            //uint32_t at_fine_leaf = iter.offset();
 
-        //solid velocity channel
-        float svel = svel_axr.getValue(vneib_c)[channel];
+            auto itercoord = coarseLeaf->offsetToLocalCoord(iter.offset());
+            uint32_t atFineLeaf = 0;
+            if (itercoord[2] >= 4) {
+                atFineLeaf += 1;
+            }
+            if (itercoord[1] >= 4) {
+                atFineLeaf += 2;
+            }
+            if (itercoord[0] >= 4) {
+                atFineLeaf += 4;
+            }
 
-        // all elements there, write the rhs
-        if (positive_dir) {
-          local_rhs -= invdx * (weight * vel + (1.0f - weight) * svel);
-        } else {
-          local_rhs += invdx * (weight * vel + (1.0f - weight) * svel);
+            float coarseValue = alpha * iter.getValue();
+            //if there is possibly a dof in the fine leaf
+            if (auto fineLeaf = fineLeaves[atFineLeaf]) {
+                auto fineBaseVoxel = openvdb::Coord(iter.getCoord().asVec3i() * 2);
+                auto fineBaseOffset = fineLeaf->coordToOffset(fineBaseVoxel);
+                for (int ii = 0; ii < 2; ii++) {
+                    for (int jj = 0; jj < 2; jj++) {
+                        for (int kk = 0; kk < 2; kk++) {
+                            auto fineOffset = fineBaseOffset + kk;
+                            if (ii) fineOffset += 64;
+                            if (jj) fineOffset += 8;
+                            if (fineLeaf->isValueOn(fineOffset)) {
+                                if (inplace_add) {
+                                    fineLeaf->buffer().data()[fineOffset] += coarseValue;
+                                }
+                                else {
+                                    fineLeaf->setValueOnly(fineOffset, coarseValue);
+                                }
+
+                            }
+                        }//kk
+                    }//jj
+                }//ii
+                //iter.setValue(temp_sum * 0.125f);
+            }//if fine leaf
+        }//for all coarse on voxels
+    };//end collect from fine
+
+
+    mDofLeafManager->foreach(scatterToFine);
+}
+
+void LaplacianWithLevel::trimDefaultNodes()
+{
+    //if a leaf node has the same value and equal to the default 
+    //poisson equation term, remove the node
+    float term = -mDt / (mDxThisLevel * mDxThisLevel);
+    float diagonalTerm = -6.0f * term;
+    float epsilon = 1e-5f;
+
+    trimDefaultNodes(mDiagonal, diagonalTerm, diagonalTerm * epsilon);
+    trimDefaultNodes(mXEntry, term, term * epsilon);
+    trimDefaultNodes(mYEntry, term, term * epsilon);
+    trimDefaultNodes(mZEntry, term, term * epsilon);
+}
+
+void LaplacianWithLevel::trimDefaultNodes(
+    openvdb::FloatGrid::Ptr inOutGrid, float defaultValue, float epsilon)
+{
+    std::vector<openvdb::Coord> leafOrigins;
+    std::vector<int> isQuasiUniform;
+    epsilon = std::abs(epsilon);
+    auto leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(inOutGrid->tree());
+    leafOrigins.resize(leafman.leafCount());
+    isQuasiUniform.resize(leafman.leafCount(), false);
+
+    auto markUniform = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+        leafOrigins[leafpos] = leaf.origin();
+        if (!leaf.isValueMaskOn()) {
+            isQuasiUniform[leafpos] = false;
+            //off-diagonal terms in the air are the same for active values
+            //allow such leaves to be trimmed, so off-diagonal leaves
+            //only exists near solid boundaries
+            //uncomment the return retains such partially active homogeneous
+            //leaves
+            //return;
         }
 
-      } // end for 6 faces of this voxel
+        float maxError = 0;
+        for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+            float error = std::abs(iter.getValue() - defaultValue);
+            if (error > maxError) {
+                maxError = error;
+            }
+        }
+        if (maxError <= epsilon) {
+            isQuasiUniform[leafpos] = true;
+        }
+    };//end determine uniform
 
-      if (!has_non_zero_weight) {
-          local_rhs = 0;
-          isolated_cell++;
-      }
-      rhs_leaf->setValueOn(offset, local_rhs);
-    } // for all active dof in this leaf
-  };  // end build rhs
+    leafman.foreach(markUniform);
 
-  m_laplacian_with_levels[0]->m_dof_leafmanager->foreach (build_rhs_op);
-  printf("isolated cell:%d\n", int(isolated_cell));
-}
-void simd_vdb_poisson::smooth_solve(openvdb::FloatGrid::Ptr in_out_presssure,
-                                    int n) {
-  auto &level0 = *m_laplacian_with_levels[0];
-
-  if (!m_rhs) {
-    build_rhs();
-  }
-  if (!in_out_presssure->tree().hasSameTopology(level0.m_dof_idx->tree())) {
-    printf("input guess pressure does not match dof idx pattern\n");
-    exit(-1);
-  }
-  auto r = level0.get_zero_vec_grid();
-  lv_copyval(m_v_cycle_temps[0], r, 0);
-  lv_copyval(m_v_cycle_lhss[0], r, 0);
-  level0.residual_apply_assume_topo(r, in_out_presssure, m_rhs);
-
-  m_v_cycle_rhss[0] = r;
-  for (int i = 0; i < n; i++) {
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").start();
-    m_laplacian_with_levels[0]->RBGS_apply_assume_topo_inplace<true>(
-        m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
-    // CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").stop();
-    // the updated lhs is in m_v_cycle_temps
-    // we need to update the v_cycle_lhs
-    // m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
-    // now the lhs is updated
-  }
-  lv_axpy(1, m_v_cycle_lhss[0], in_out_presssure);
-}
-bool simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure,
-                                 float tolerance) {
-  auto &level0 = *m_laplacian_with_levels[0];
-  if (!in_out_presssure->tree().hasSameTopology(level0.m_dof_idx->tree())) {
-    printf("input guess pressure does not match dof idx pattern\n");
-    exit(-1);
-  }
-
-  if (!m_rhs) {
-    build_rhs();
-  }
-  m_iteration = 0;
-
-  // according to mcadams algorithm 3
-
-  // line2
-  auto r = level0.get_zero_vec_grid();
-  level0.residual_apply_assume_topo(r, in_out_presssure, m_rhs);
-  float nu = lv_abs_max(r);
-  float numax = tolerance * nu;
-  numax = std::min(numax, 1e-7f);
-
-  // line3
-  if (nu <= numax) {
-    return true;
-  }
-
-  // line4
-  auto p = level0.get_zero_vec_grid();
-  level0.set_grid_constant_assume_topo(p, 0);
-  mucycle_SRJ<2, true>(p, r, 0);
-  // Kcycle_SRJ<true>(p, r);
-  // Vcycle(p, r,4,4,200);
-  float rho = lv_dot(p, r);
-
-  auto z = level0.get_zero_vec_grid();
-  // line 5
-  for (; m_iteration < m_max_iter; m_iteration++) {
-    // line6
-    level0.Laplacian_apply_assume_topo(z, p);
-    float sigma = lv_dot(p, z);
-    // line7
-    float alpha = rho / sigma;
-    // line8
-    lv_axpy(-alpha, z, r);
-    nu = lv_abs_max(r);
-    printf("iter:%d err:%e\n", m_iteration, nu);
-    // line9
-    if (nu <= numax || m_iteration == (m_max_iter - 1)) {
-      // line10
-      lv_axpy(alpha, p, in_out_presssure);
-      // line11
-      return (nu <= numax) && (m_iteration <= (m_max_iter - 1));
-      // line12
+    for (auto i = 0; i < leafOrigins.size(); ++i) {
+        if (isQuasiUniform[i]) {
+            delete inOutGrid->tree().stealNode<openvdb::FloatTree::LeafNodeType>(leafOrigins[i], defaultValue, false);
+        }
     }
-    // line13
-    level0.set_grid_constant_assume_topo(z, 0);
-    mucycle_SRJ<2, true>(z, r, 0);
-    // Kcycle_SRJ<true>(z, r);
-    // Vcycle(z, r,4,4,200);
-    float rho_new = lv_dot(z, r);
-
-    // line14
-    float beta = rho_new / rho;
-    // line15
-    rho = rho_new;
-    // line16
-    lv_axpy(alpha, p, in_out_presssure);
-    lv_xpay(beta, z, p);
-    // line17
-  }
-  // line18
-  return {};
 }
 
-int simd_vdb_poisson::iterations() { return m_iteration; }
-void simd_vdb_poisson::symmetry_test(int level) {
-  if (m_laplacian_with_levels.empty()) {
-    construct_levels();
-  }
-
-  if (level >= m_laplacian_with_levels.size()) {
-    level = m_laplacian_with_levels.size() - 1;
-  }
-  // initialize two random vectors
-  auto a = m_laplacian_with_levels[level]->get_zero_vec_grid();
-  auto b = m_laplacian_with_levels[level]->get_zero_vec_grid();
-
-  auto randomize = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                       openvdb::Index leafpos) {
-    std::random_device device;
-    std::mt19937 generator(/*seed=*/device());
-    std::uniform_real_distribution<> distribution(-0.5, 0.5);
-    auto aleaf = a->tree().probeLeaf(leaf.origin());
-    auto bleaf = b->tree().probeLeaf(leaf.origin());
-    for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-      aleaf->setValueOnly(iter.offset(), distribution(generator));
-      bleaf->setValueOnly(iter.offset(), distribution(generator));
+void PoissonSolver::constructMultigridHierarchy()
+{
+    
+    int maxCoarsestDOF = 4000;
+    while (mMultigridHierarchy.back()->mNumDof > maxCoarsestDOF) {
+        //CSim::TimerMan::timer("Step/SIMD/levels/lv" + std::to_string(mMultigridHierarchy.size())).start();
+        LaplacianWithLevel::Ptr coarserLevel = std::make_shared<LaplacianWithLevel>(
+            *mMultigridHierarchy.back(), LaplacianWithLevel::Coarsening()
+            );
+        //CSim::TimerMan::timer("Step/SIMD/levels/lv" + std::to_string(mMultigridHierarchy.size())).stop();
+        mMultigridHierarchy.push_back(coarserLevel);
     }
-  };
 
-  m_laplacian_with_levels[level]->m_dof_leafmanager->foreach (randomize);
-
-  auto tempval = m_laplacian_with_levels[level]->get_zero_vec_grid();
-  m_laplacian_with_levels[level]->Laplacian_apply_assume_topo(tempval, b);
-  float aTLb = lv_dot(a, tempval, level);
-  m_laplacian_with_levels[level]->Laplacian_apply_assume_topo(tempval, a);
-  float bTLa = lv_dot(b, tempval, level);
-
-  printf("aTLb:%e, bTLa:%e, difference:%e\n", aTLb, bTLa,
-         std::abs(aTLb - bTLa));
-}
-namespace {
-struct grid_abs_max_op {
-  grid_abs_max_op(openvdb::FloatGrid::Ptr in_grid) {
-    m_max = 0;
-    m_grid = in_grid;
-  }
-
-  grid_abs_max_op(const grid_abs_max_op &other, tbb::split) {
-    m_max = 0;
-    m_grid = other.m_grid;
-  }
-
-  // used by level0 dof leafmanager
-  void operator()(openvdb::Int32Tree::LeafNodeType &leaf,
-                  openvdb::Index leafpos) {
-    auto *float_leaf = m_grid->tree().probeConstLeaf(leaf.origin());
-    for (auto iter = float_leaf->cbeginValueOn(); iter; ++iter) {
-      m_max = std::max(m_max, std::abs(iter.getValue()));
+    //CSim::TimerMan::timer("Step/SIMD/levels/scratchpad").start();
+    //the scratchpad for the v cycle to avoid
+    for (int level = 0; level < mMultigridHierarchy.size(); level++) {
+        //the solution at each level
+        mMuCycleLHSs.push_back(mMultigridHierarchy[level]->getZeroVectorGrid());
+        //the right hand side at each level
+        mMuCycleRHSs.push_back(mMuCycleLHSs.back()->deepCopy());
+        //the temporary result to store the jacobi iteration
+        //use std::shared_ptr::swap to change the content
+        mMuCycleTemps.push_back(mMuCycleLHSs.back()->deepCopy());
     }
-  }
-
-  void join(grid_abs_max_op &other) { m_max = std::max(m_max, other.m_max); }
-
-  openvdb::FloatGrid::Ptr m_grid;
-  float m_max;
-};
-} // namespace
-float simd_vdb_poisson::lv_abs_max(openvdb::FloatGrid::Ptr in_lv0_grid,
-                                   int level) {
-  auto op{grid_abs_max_op(in_lv0_grid)};
-  m_laplacian_with_levels[level]->m_dof_leafmanager->reduce(op);
-  return op.m_max;
+    //CSim::TimerMan::timer("Step/SIMD/levels/scratchpad").stop();
+    //CSim::TimerMan::timer("Step/SIMD/levels/solver").start();
+    constructCoarsestLevelExactSolver();
+    //CSim::TimerMan::timer("Step/SIMD/levels/solver").stop();
+    printf("levels: %zd Dof:%d\n", mMultigridHierarchy.size(), mMultigridHierarchy[0]->mNumDof);
 }
-namespace {
-struct grid_dot_op {
-  grid_dot_op(openvdb::FloatGrid::Ptr in_a, openvdb::FloatGrid::Ptr in_b) {
-    m_a = in_a;
-    m_b = in_b;
-    dp_result = 0;
-  }
 
-  grid_dot_op(const grid_dot_op &other, tbb::split) {
-    m_a = other.m_a;
-    m_b = other.m_b;
-    dp_result = 0;
-  }
+template<int mu_time, bool skip_first_iter>
+void PoissonSolver::muCyclePreconditioner(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, int n)
+{
+    
+    auto get_scheduled_weight = [n](int iteration) {
+        std::array<float, 3> scheduled_weight;
+        if (iteration >= n) {
+            return 6.0f / 7.0f;
+        }
+        if (n == 1) {
+            scheduled_weight[0] = 6.0f / 7.0f;
+        }
+        if (n == 2) {
+            scheduled_weight[0] = 1.7319f;
+            scheduled_weight[1] = 0.5695f;
+        }
+        if (n == 3) {
+            scheduled_weight[0] = 2.2473f;
+            scheduled_weight[1] = 0.8571f;
+            scheduled_weight[2] = 0.5296f;
+        }
+        return scheduled_weight[iteration];
+    };
 
-  void operator()(openvdb::Int32Tree::LeafNodeType &leaf,
-                  openvdb::Index leafpos) {
-    auto *aleaf = m_a->tree().probeConstLeaf(leaf.origin());
-    auto *bleaf = m_b->tree().probeConstLeaf(leaf.origin());
+    size_t nlevel = mMultigridHierarchy.size();
 
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      dp_result +=
-          aleaf->getValue(iter.offset()) * bleaf->getValue(iter.offset());
+    if (level == nlevel - 1) {
+        writeCoarsestEigenRhs(mCoarsestEigenRhs, in_rhs);
+        mCoarsestEigenSolution = mCoarsestCGSolver->solve(mCoarsestEigenRhs);
+        writeCoarsestGridSolution(in_out_lhs, mCoarsestEigenSolution);
+        return;
     }
-  }
 
-  void join(grid_dot_op &other) { dp_result += other.dp_result; }
+    mMuCycleLHSs[level] = in_out_lhs;
+    mMuCycleRHSs[level] = in_rhs;
 
-  float dp_result;
-  openvdb::FloatGrid::Ptr m_a;
-  openvdb::FloatGrid::Ptr m_b;
-};
-} // namespace
-float simd_vdb_poisson::lv_dot(openvdb::FloatGrid::Ptr a,
-                               openvdb::FloatGrid::Ptr b, int level) {
-  auto op{grid_dot_op{a, b}};
-  m_laplacian_with_levels[level]->m_dof_leafmanager->reduce(op);
-  return op.dp_result;
-}
-
-void simd_vdb_poisson::lv_axpy(const float alpha, openvdb::FloatGrid::Ptr in_x,
-                               openvdb::FloatGrid::Ptr in_out_y, int level) {
-  // y = a*x + y
-  auto add_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                    openvdb::Index leafpos) {
-    auto *xleaf = in_x->tree().probeConstLeaf(leaf.origin());
-    auto *yleaf = in_out_y->tree().probeLeaf(leaf.origin());
-
-    const float *xdata = xleaf->buffer().data();
-    float *ydata = yleaf->buffer().data();
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      ydata[iter.offset()] += alpha * xdata[iter.offset()];
+    if (skip_first_iter) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            //set result after first iter, with zero lhs guess
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(0));
+            mMultigridHierarchy[level]->
+                setGridToResultAfterFirstJacobi(mMuCycleTemps[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            //set result after first iter, with zero lhs guess
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->
+                setGridToResultAfterFirstJacobi(mMuCycleTemps[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->
+                setGridToResultAfterFirstRBGS(mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->
+                setGridToResultAfterFirstSPAI0(mMuCycleTemps[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
     }
-  }; // end add_op
 
-  m_laplacian_with_levels[level]->m_dof_leafmanager->foreach (add_op);
-}
-
-void simd_vdb_poisson::lv_xpay(const float alpha, openvdb::FloatGrid::Ptr in_x,
-                               openvdb::FloatGrid::Ptr in_out_y, int level) {
-  // y = x + a*y
-  auto add_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                    openvdb::Index leafpos) {
-    auto *xleaf = in_x->tree().probeConstLeaf(leaf.origin());
-    auto *yleaf = in_out_y->tree().probeLeaf(leaf.origin());
-
-    const float *xdata = xleaf->buffer().data();
-    float *ydata = yleaf->buffer().data();
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      ydata[iter.offset()] =
-          xdata[iter.offset()] + alpha * ydata[iter.offset()];
+    for (int i = (skip_first_iter ? 1 : 0); i < n; i++) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(i));
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/true>(
+                mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->spai0Apply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
     }
-  }; // end add_op
 
-  m_laplacian_with_levels[level]->m_dof_leafmanager->foreach (add_op);
-}
+    mMultigridHierarchy[level]->residualApply(
+        mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
 
-void simd_vdb_poisson::lv_out_axby(openvdb::FloatGrid::Ptr out_result,
-                                   const float alpha, const float beta,
-                                   openvdb::FloatGrid::Ptr in_x,
-                                   openvdb::FloatGrid::Ptr in_y, int level) {
-  // y = x + a*y
-  auto add_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                    openvdb::Index leafpos) {
-    auto *xleaf = in_x->tree().probeConstLeaf(leaf.origin());
-    auto *yleaf = in_y->tree().probeConstLeaf(leaf.origin());
-    auto *outleaf = out_result->tree().probeLeaf(leaf.origin());
+    int parent_level = level + 1;
+    mMultigridHierarchy[level]->restriction(
+        mMuCycleRHSs[parent_level], mMuCycleTemps[level], /*laplacian level*/ *mMultigridHierarchy[parent_level]);
 
-    const float *xdata = xleaf->buffer().data();
-    const float *ydata = yleaf->buffer().data();
-    float *outdata = outleaf->buffer().data();
-    for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
-      outdata[iter.offset()] =
-          alpha * xdata[iter.offset()] + beta * ydata[iter.offset()];
+    muCyclePreconditioner<mu_time,/*skip first*/true>(mMuCycleLHSs[parent_level], mMuCycleRHSs[parent_level], parent_level, n);
+    for (int mu = 1; mu < mu_time; mu++) {
+        muCyclePreconditioner<mu_time,/*skip first*/false>(mMuCycleLHSs[parent_level], mMuCycleRHSs[parent_level], parent_level, n);
     }
-  }; // end add_op
 
-  m_laplacian_with_levels[level]->m_dof_leafmanager->foreach (add_op);
+    mMultigridHierarchy[parent_level]->prolongation</*inplace add*/true>(
+        mMuCycleLHSs[level], mMuCycleLHSs[parent_level]);
+
+    for (int i = 0; i < n; i++) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(n - 1 - i));
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/false>(
+                mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->spai0Apply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
+    }
 }
 
-void simd_vdb_poisson::lv_copyval(openvdb::FloatGrid::Ptr out_grid,
-                                  openvdb::FloatGrid::Ptr in_grid, int level) {
-  // it is assumed that the
-  auto copy_op = [&](openvdb::Int32Tree::LeafNodeType &leaf,
-                     openvdb::Index leafpos) {
-    auto *in_leaf = in_grid->tree().probeLeaf(leaf.origin());
-    auto *out_leaf = out_grid->tree().probeLeaf(leaf.origin());
-    std::copy(in_leaf->buffer().data(),
-              in_leaf->buffer().data() + in_leaf->SIZE,
-              out_leaf->buffer().data());
-  };
+template<int mu_time>
+void PoissonSolver::muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, const int n)
+{
+    
+    auto get_scheduled_weight = [n](int iteration) {
+        std::array<float, 3> scheduled_weight;
+        scheduled_weight.fill(6.0f / 7.0f);
+        if (iteration >= n) {
+            return 6.0f / 7.0f;
+        }
+        if (n == 2) {
+            scheduled_weight[0] = 1.7319f;
+            scheduled_weight[1] = 0.5695f;
+        }
+        if (n >= 3) {
+            scheduled_weight[0] = 2.2473f;
+            scheduled_weight[1] = 0.8571f;
+            scheduled_weight[2] = 0.5296f;
+        }
+        return scheduled_weight[iteration];
+    };
 
-  m_laplacian_with_levels[level]->m_dof_leafmanager->foreach (copy_op);
+    float sor = 1.0f;
+
+    size_t nlevel = mMultigridHierarchy.size();
+
+    if (level == nlevel - 1) {
+        //must be an even number to make sure no actual swap happens
+        int large_iter_n = 10 * n;
+        for (int i = 0; i < large_iter_n; i++) {
+            switch (mSmoother) {
+            default:
+            case SmootherOption::ScheduledRelaxedJacobi:
+                mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(i));
+                mMultigridHierarchy[level]->weightedJacobiApply(
+                    mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+                mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+                break;
+            case SmootherOption::WeightedJacobi:
+                mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+                mMultigridHierarchy[level]->weightedJacobiApply(
+                    mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+                mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+                break;
+            case SmootherOption::RedBlackGaussSeidel:
+                mMultigridHierarchy[level]->mApplyOperator->set_w_sor(1.0f);
+                mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/true>(
+                    mMuCycleLHSs[level], mMuCycleRHSs[level]);
+                break;
+            case SmootherOption::SPAI0:
+                mMultigridHierarchy[level]->spai0Apply(
+                    mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+                mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+                break;
+            }
+        }
+        return;
+    }
+
+    mMuCycleLHSs[level] = in_out_lhs;
+    mMuCycleRHSs[level] = in_rhs;
+
+    for (int i = 0; i < n; i++) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(i));
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->mApplyOperator->set_w_sor(1.0f);
+            mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/true>(
+                mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->spai0Apply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
+    }
+
+    mMultigridHierarchy[level]->residualApply(
+        mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+
+    int parent_level = level + 1;
+    mMultigridHierarchy[level]->restriction(
+        mMuCycleRHSs[parent_level], mMuCycleTemps[level], /*laplacian level*/ *mMultigridHierarchy[parent_level]);
+
+    for (int mu = 0; mu < mu_time; mu++) {
+        muCycleIterative<mu_time>(mMuCycleLHSs[parent_level], mMuCycleRHSs[parent_level], parent_level, n);
+    }
+
+    mMultigridHierarchy[parent_level]->prolongation</*inplace add*/true>(
+        mMuCycleLHSs[level], mMuCycleLHSs[parent_level],/*scaling*/0.5f);
+
+    for (int i = 0; i < n; i++) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(n - 1 - i));
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->mApplyOperator->set_w_sor(1.0f);
+            mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/false>(
+                mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->spai0Apply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
+    }
 }
+
+
+
+void PoissonSolver::constructCoarsestLevelExactSolver()
+{
+    std::vector<Eigen::Triplet<float>> triplets;
+    mMultigridHierarchy.back()->getTriplets(triplets);
+
+    int ndof = mMultigridHierarchy.back()->mNumDof;
+    mCoarsestEigenMatrix.resize(ndof, ndof);
+
+    mCoarsestEigenMatrix.setFromTriplets(triplets.begin(), triplets.end());
+    //mCoarsestDirectSolver = std::make_shared<Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>>>(mCoarsestEigenMatrix);
+    mCoarsestCGSolver = std::make_shared<Eigen::ConjugateGradient<Eigen::SparseMatrix<float>>>(mCoarsestEigenMatrix);
+    mCoarsestCGSolver->setMaxIterations(10);
+}
+
+void PoissonSolver::writeCoarsestEigenRhs(Eigen::VectorXf& out_eigen_rhs, openvdb::FloatGrid::Ptr in_rhs)
+{
+    out_eigen_rhs.setZero(mMultigridHierarchy.back()->mNumDof);
+
+    auto set_eigen_rhs = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto in_rhs_leaf = in_rhs->tree().probeConstLeaf(leaf.origin());
+
+        for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+            out_eigen_rhs[iter.getValue()] = in_rhs_leaf->getValue(iter.offset());
+        }
+    };
+    mMultigridHierarchy.back()->mDofLeafManager->foreach(set_eigen_rhs);
+}
+
+void PoissonSolver::writeCoarsestGridSolution(openvdb::FloatGrid::Ptr in_out_result, const Eigen::VectorXf& in_eigen_solution)
+{
+    auto set_grid_solution = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* result_leaf = in_out_result->tree().probeLeaf(leaf.origin());
+
+        for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+            result_leaf->setValueOn(iter.offset(), in_eigen_solution[iter.getValue()]);
+        }
+    };
+    mMultigridHierarchy.back()->mDofLeafManager->foreach(set_grid_solution);
+}
+
+
+int PoissonSolver::solveMultigridPCG(openvdb::FloatGrid::Ptr in_out_presssure, openvdb::FloatGrid::Ptr in_rhs)
+{
+    
+    auto& level0 = *mMultigridHierarchy[0];
+    mIterationTaken = 0;
+
+    //according to mcadams algorithm 3
+
+    //line2
+    auto r = level0.getZeroVectorGrid();
+    level0.residualApply(r, in_out_presssure, in_rhs);
+    float nu = levelAbsMax(r);
+    float initAbsoluteError = nu + 1e-16f;
+    float numax = mRelativeTolerance * nu; //numax = std::min(numax, 1e-7f);
+    printf("init error%e\n", nu/initAbsoluteError);
+    //line3
+    if (nu <= numax) {
+        printf("iter:%d err:%e\n", mIterationTaken + 1, nu/initAbsoluteError);
+        return PoissonSolver::SUCCESS;
+    }
+
+    //line4
+    auto p = level0.getZeroVectorGrid();
+    level0.setGridToConstant(p, 0);
+    muCyclePreconditioner<2, true>(p, r, 0, 3);
+    float rho = levelDot(p, r);
+
+    auto z = level0.getZeroVectorGrid();
+    //line 5
+    float nu_old = nu;
+    for (; mIterationTaken < mMaxIteration; mIterationTaken++) {
+        //line6
+        level0.laplacianApply(z, p);
+        float sigma = levelDot(p, z);
+        //line7
+        float alpha = rho / sigma;
+        //line8
+        levelAlphaXPlusY(-alpha, z, r);
+        nu_old = nu;
+        nu = levelAbsMax(r); printf("iter:%d err:%e\n", mIterationTaken + 1, nu/initAbsoluteError);
+        //line9
+        if (nu <= numax) {
+            //line10
+            levelAlphaXPlusY(alpha, p, in_out_presssure);
+            //line11
+            //printf("iter:%d err:%e\n", mIterationTaken, nu);
+            return PoissonSolver::SUCCESS;
+            //line12
+        }
+        if (nu > nu_old && mIterationTaken > 3) {
+            return PoissonSolver::FAILED;
+        }
+        //line13
+        level0.setGridToConstant(z, 0);
+        muCyclePreconditioner<2, true>(z, r, 0, 3);
+
+        float rho_new = levelDot(z, r);
+
+        //line14
+        float beta = rho_new / rho;
+
+        //line15
+        rho = rho_new;
+        //line16
+        levelAlphaXPlusY(alpha, p, in_out_presssure);
+        levelXPlusAlphaY(beta, z, p);
+        //line17
+    }
+
+    //line18
+    return PoissonSolver::FAILED;
+}
+
+int PoissonSolver::solvePureMultigrid(openvdb::FloatGrid::Ptr in_out_presssure, openvdb::FloatGrid::Ptr in_rhs)
+{
+    
+    auto& level0 = *mMultigridHierarchy[0];
+    mIterationTaken = 0;
+
+    //according to mcadams algorithm 3
+
+    //line2
+    auto r = level0.getZeroVectorGrid();
+    level0.residualApply(r, in_out_presssure, in_rhs);
+    float nu = levelAbsMax(r);
+    float initAbsoluteError = nu + 1e-16f;
+    float numax = mRelativeTolerance * nu; //numax = std::min(numax, 1e-7f);
+
+    //line3
+    if (nu <= numax) {
+        //printf("iter:%d err:%e\n", mIterationTaken, nu);
+        return PoissonSolver::SUCCESS;
+    }
+    float nu_old = nu;
+    for (; mIterationTaken < mMaxIteration; mIterationTaken++) {
+        muCycleIterative<2>(in_out_presssure, in_rhs, 0, 3);
+        level0.residualApply(r, in_out_presssure, in_rhs);
+        nu_old = nu;
+        nu = levelAbsMax(r);
+        printf("iter:%d err:%e\n", mIterationTaken, nu/initAbsoluteError);
+        if (nu <= numax) {
+            //printf("iter:%d err:%e\n", mIterationTaken, nu);
+            return PoissonSolver::SUCCESS;
+        }
+        if (nu > nu_old) {
+            if (mIterationTaken > 8) {
+                return PoissonSolver::FAILED;
+            }
+        }
+    }
+
+    return PoissonSolver::FAILED;
+}
+
+
+float PoissonSolver::levelAbsMax(openvdb::FloatGrid::Ptr in_lv0_grid, int level)
+{
+    
+    auto op{ grid_abs_max_op(in_lv0_grid) };
+    mMultigridHierarchy[level]->mDofLeafManager->reduce(op);
+    return op.m_max;
+}
+
+float PoissonSolver::levelDot(openvdb::FloatGrid::Ptr a, openvdb::FloatGrid::Ptr b, int level)
+{
+    
+    auto op{ grid_dot_op{ a, b} };
+    mMultigridHierarchy[level]->mDofLeafManager->reduce(op);
+    return op.dp_result;
+}
+
+void PoissonSolver::levelAlphaXPlusY(const float alpha, openvdb::FloatGrid::Ptr in_x, openvdb::FloatGrid::Ptr in_out_y, int level)
+{
+    
+    //y = a*x + y
+    auto add_op = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* xleaf = in_x->tree().probeConstLeaf(leaf.origin());
+        auto* yleaf = in_out_y->tree().probeLeaf(leaf.origin());
+
+        const float* xdata = xleaf->buffer().data();
+        float* ydata = yleaf->buffer().data();
+        for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+            ydata[iter.offset()] += alpha * xdata[iter.offset()];
+        }
+    };//end add_op
+
+    mMultigridHierarchy[level]->mDofLeafManager->foreach(add_op);
+}
+
+void PoissonSolver::levelXPlusAlphaY(const float alpha, openvdb::FloatGrid::Ptr in_x, openvdb::FloatGrid::Ptr in_out_y, int level)
+{
+    
+    //y = x + a*y
+    auto add_op = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index) {
+        auto* xleaf = in_x->tree().probeConstLeaf(leaf.origin());
+        auto* yleaf = in_out_y->tree().probeLeaf(leaf.origin());
+
+        const float* xdata = xleaf->buffer().data();
+        float* ydata = yleaf->buffer().data();
+        for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+            ydata[iter.offset()] = xdata[iter.offset()] + alpha * ydata[iter.offset()];
+        }
+    };//end add_op
+
+    mMultigridHierarchy[level]->mDofLeafManager->foreach(add_op);
+}
+
+}//end namespace simd_uaamg
