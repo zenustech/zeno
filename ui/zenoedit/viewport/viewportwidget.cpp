@@ -97,6 +97,103 @@ static std::optional<float> ray_box_intersect(
     return t_result;
 }
 
+//https://blog.csdn.net/Angelloveyatou/article/details/127247083?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22127247083%22%2C%22source%22%3A%22Angelloveyatou%22%7D
+static zeno::vec3f Project(const zeno::vec3f & length, const zeno::vec3f& direction) {
+    float dot = zeno::dot(length, direction);
+    float magSq = zeno::dot(direction , direction);
+    return direction * (dot / magSq);
+}
+
+static zeno::vec3f barycentric(
+    zeno::vec3f const &point,   //point = pos + dir * t;
+    zeno::PrimitiveObject* prim
+) {
+    auto &tris = prim->tris;
+    zeno::vec3f p = point;
+    auto normal = zeno::normalize(zeno::cross(tris[1] - tris[0], tris[2] - tris[0]));
+    auto distance = zeno::dot(normal, tris[0]);
+
+    auto ap = p - tris[0];
+    auto bp = p - tris[1];
+    auto cp = p - tris[2];
+
+    zeno::vec3f ab = tris[1] - tris[0];
+    zeno::vec3f ac = tris[2] - tris[0];
+    zeno::vec3f bc = tris[2] - tris[1];
+    zeno::vec3f cb = tris[1] - tris[2];
+    zeno::vec3f ca = tris[0] - tris[2];
+
+    zeno::vec3f v = ab - Project(ab, cb);
+    float a = 1.0f - (zeno::dot(v, ap) / zeno::dot(v, ab));
+
+    v = bc - Project(bc, ac);
+    float b = 1.0f - (zeno::dot(v, bp) / zeno::dot(v, bc));
+
+    v = ca - Project(ca, ab);
+    float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
+
+    return zeno::vec3f(a, b, c);
+}
+
+static std::optional<float> ray_triangle_intersect(
+    zeno::PrimitiveObject *prim,
+    zeno::vec3f const &ray_pos,
+    zeno::vec3f const &ray_dir
+) {
+    auto &tris = prim->tris;
+    auto &verts = prim->verts;
+    auto &pos = ray_pos;
+    auto &dir = ray_dir;
+
+    for(int i = 0;i<prim->tris.size();i++) {
+        auto nor = zeno::cross(verts[tris[i][1]]- verts[tris[i][0]], verts[tris[i][2]] - verts[tris[i][0]]);
+        auto normal = nor * (1.0f / zeno::dot(nor, nor));
+        zeno::log_info("normal: {}", normal);
+
+        auto distance = zeno::dot(normal, verts[tris[i][0]]);
+
+        float nd = zeno::dot(dir, normal);
+        float pn = zeno::dot(pos, normal);
+        zeno::log_info("dis: {}", distance);
+        zeno::log_info("pn: {}", pn);
+        zeno::log_info("nd: {}", nd);
+
+        float t = (distance - pn) / nd;
+        zeno::log_info("t: {}", t);
+
+        if (t >= 0.0f) {
+            auto p = pos + dir * t; //p：ray在三角形所在平面上的投影
+            zeno::log_info("p: {}", p);
+
+            auto ap = p - verts[tris[i][0]];
+            auto bp = p - verts[tris[i][1]];
+            auto cp = p - verts[tris[i][2]];
+
+            zeno::vec3f ab = verts[tris[i][1]] - verts[tris[i][0]];
+            zeno::vec3f ac = verts[tris[i][2]] - verts[tris[i][0]];
+            zeno::vec3f bc = verts[tris[i][2]] - verts[tris[i][1]];
+            zeno::vec3f cb = verts[tris[i][1]] - verts[tris[i][2]];
+            zeno::vec3f ca = verts[tris[i][0]] - verts[tris[i][2]];
+
+            zeno::vec3f v = ab - Project(ab, cb);
+            float a = 1.0f - (zeno::dot(v, ap) / zeno::dot(v, ab));
+
+            v = bc - Project(bc, ac);
+            float b = 1.0f - (zeno::dot(v, bp) / zeno::dot(v, bc));
+
+            v = ca - Project(ca, ab);
+            float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
+            zeno::log_info("a: {}", a);
+            zeno::log_info("b: {}", b);
+            zeno::log_info("c: {}", c);
+
+            if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= -1.0f && c <= 1.0f) {
+                return t;
+            }
+        }
+    }
+    return std::nullopt;
+}
 
 static bool test_in_selected_bounding(
     QVector3D centerWS,
@@ -117,14 +214,14 @@ static bool test_in_selected_bounding(
 
 CameraControl::CameraControl(QWidget* parent)
     : m_mmb_pressed(false)
-    , m_theta(0.)
-    , m_phi(0.)
-    , m_ortho_mode(false)
-    , m_fov(45.)
-    , m_radius(5.0)
-    , m_res(1, 1)
-    , m_aperture(0.1f)
-    , m_focalPlaneDistance(2.0f)
+      , m_theta(0.)
+      , m_phi(0.)
+      , m_ortho_mode(false)
+      , m_fov(45.)
+      , m_radius(5.0)
+      , m_res(1, 1)
+      , m_aperture(0.1f)
+      , m_focalPlaneDistance(2.0f)
 {
     transformer = std::make_unique<zeno::FakeTransformer>();
     updatePerspective();
@@ -309,7 +406,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
     }
     else if (aperture_pressed) {
         float temp = m_aperture += delta * 0.01;
-        m_aperture = temp >= 0 ? temp : 0;  
+        m_aperture = temp >= 0 ? temp : 0;
 
     }
     else if (focalPlaneDistance_pressed) {
@@ -350,6 +447,8 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
             }
         }
     }
+
+
     if (!name.empty()) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         auto obj_name = QString(name.c_str());
@@ -454,6 +553,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //}
 
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        //auto prim = std::make_shared<zeno::PrimitiveObject>();
 
         if (transformer->isTransforming()) {
             bool moved = false;
@@ -486,10 +586,14 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     zeno::vec3f bmin,bmax;
                     if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
                         if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
-                            float t = *ret;
-                            if (t < min_t) {
-                                min_t = t;
-                                name = key;
+                            if (auto prim = dynamic_cast<zeno::PrimitiveObject*>(ptr)) {
+                                if(auto rett = ray_triangle_intersect(prim,ro,rd)) {
+                                    float t = *rett;
+                                    if (t < min_t) {
+                                        min_t = t;
+                                        name = key;
+                                    }
+                                }
                             }
                         }
                     }
@@ -533,7 +637,6 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     }
                 }
                 scene->selected.insert(passed_prim.begin(), passed_prim.end());
-
             }
         }
 
@@ -543,22 +646,22 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 //void CameraControl::createPointNode(QPointF pnt) {
-    //auto pModel = zenoApp->graphsManagment()->currentModel();
-	//ZASSERT_EXIT(pModel);
-    ////todo luzh: select specific subgraph to add node.
-    //const QModelIndex &subgIdx = pModel->index("main");
-    //NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
+//auto pModel = zenoApp->graphsManagment()->currentModel();
+//ZASSERT_EXIT(pModel);
+////todo luzh: select specific subgraph to add node.
+//const QModelIndex &subgIdx = pModel->index("main");
+//NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);
 
-    //STATUS_UPDATE_INFO info;
-    //info.role = ROLE_OPTIONS;
-    //info.newValue = OPT_VIEW;
-    //pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
+//STATUS_UPDATE_INFO info;
+//info.role = ROLE_OPTIONS;
+//info.newValue = OPT_VIEW;
+//pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
 //}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
-    , m_camera(nullptr)
-    , updateLightOnce(true)
+      , m_camera(nullptr)
+      , updateLightOnce(true)
 {
     QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -689,7 +792,7 @@ void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 
 void ViewportWidget::cameraLookTo(int dir) {
-     m_camera->lookTo(dir);
+    m_camera->lookTo(dir);
 }
 
 
@@ -776,10 +879,10 @@ QDMRecordMenu::QDMRecordMenu()
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     : QWidget(pMainWin)
-    , m_view(nullptr)
-    , m_timeline(nullptr)
-    , m_mainWin(pMainWin)
-    , m_pTimer(nullptr)
+      , m_view(nullptr)
+      , m_timeline(nullptr)
+      , m_mainWin(pMainWin)
+      , m_pTimer(nullptr)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -813,10 +916,10 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     m_camera_keyframe = new CameraKeyframeWidget;
     Zenovis::GetInstance().m_camera_keyframe = m_camera_keyframe;
 
-	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
+    connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
     connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
-	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
-	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
+    connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
+    connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
@@ -825,7 +928,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     auto graphs = zenoApp->graphsManagment();
     connect(&*graphs, SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
-	m_pTimer = new QTimer(this);
+    m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
