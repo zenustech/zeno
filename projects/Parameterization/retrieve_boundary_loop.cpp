@@ -80,7 +80,7 @@ namespace {
 
             set_output("loops",std::move(loops));
             // set_output2("nm_loops",num)
-            // set_ouput("prim",prim);
+            set_output("prim",prim);
         }
     };
 
