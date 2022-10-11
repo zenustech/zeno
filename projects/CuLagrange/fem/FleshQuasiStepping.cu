@@ -26,7 +26,8 @@ struct FleshQuasiStaticStepping : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
   using mat3 = zs::vec<T, 3, 3>;
-  struct FEMSystem {
+  
+  struct FEMQuasiStaticSystem {
 
     constexpr auto dFAdF(const mat3& A) {
         zs::vec<T,9,9> M{};
@@ -286,7 +287,7 @@ struct FleshQuasiStaticStepping : INode {
 
     }
 
-    FEMSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf)
+    FEMQuasiStaticSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf)
         : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf}{}
 
     const tiles_t &verts;
@@ -360,7 +361,7 @@ struct FleshQuasiStaticStepping : INode {
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
-    FEMSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
+    FEMQuasiStaticSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec().sync(false);
