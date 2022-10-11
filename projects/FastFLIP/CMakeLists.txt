@@ -35,7 +35,7 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp vdb_velocity_extrapolator.h vdb_velocity_extrapolator.cpp)
+set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp simd_vdb_poisson_uaamg.h simd_vdb_poisson_uaamg.cpp vdb_velocity_extrapolator.h vdb_velocity_extrapolator.cpp)
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 target_sources(zeno PRIVATE ${FLIP_SOURCE} ${NOSYS_SOURCE})

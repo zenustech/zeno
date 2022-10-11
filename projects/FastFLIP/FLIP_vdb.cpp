@@ -12,6 +12,7 @@
 #include <atomic>
 // intrinsics
 #include "simd_vdb_poisson.h"
+#include "simd_vdb_poisson_uaamg.h"
 #include <openvdb/tools/Interpolation.h>
 #include <xmmintrin.h>
 // #include "BPS3D_volume_vel_cache.h" // decouple Datan BEM works for now
@@ -472,7 +473,8 @@ struct point_to_counter_reducer2 {
       const openvdb::Vec3fGrid &in_old_velocity,
       const openvdb::FloatGrid &in_solid_sdf,
       const openvdb::Vec3fGrid &in_center_solid_grad,
-      const openvdb::FloatGrid &in_center_solid_vel_n, float pic_component,
+      const openvdb::FloatGrid &in_center_solid_vel_n,
+      float pic_min, float pic_max,
       const std::vector<openvdb::points::PointDataTree::LeafNodeType *>
           &in_particles,
       float surfacedist, int RK_order)
@@ -482,7 +484,8 @@ struct point_to_counter_reducer2 {
         m_old_velocity(in_old_velocity), m_solid_sdf(in_solid_sdf),
         m_center_solidgrad(in_center_solid_grad),
         m_center_solidveln(in_center_solid_vel_n),
-        m_pic_component(pic_component), m_particles(in_particles),
+        m_pic_min_comp(pic_min), m_pic_max_comp(pic_max),
+        m_particles(in_particles),
         m_liquidsdf(in_liquidsdf), m_surfacedist(surfacedist) {
 
     m_integrator =
@@ -495,7 +498,8 @@ struct point_to_counter_reducer2 {
         m_invdx(other.m_invdx), m_velocity(other.m_velocity),
         m_velocity_to_be_advected(other.m_velocity_to_be_advected),
         m_old_velocity(other.m_old_velocity),
-        m_pic_component(other.m_pic_component), m_solid_sdf(other.m_solid_sdf),
+        m_pic_min_comp(other.m_pic_min_comp), m_pic_max_comp(other.m_pic_max_comp),
+        m_solid_sdf(other.m_solid_sdf),
         m_center_solidgrad(other.m_center_solidgrad),
         m_center_solidveln(other.m_center_solidveln),
         m_particles(other.m_particles), m_surfacedist(other.m_surfacedist),
@@ -617,7 +621,7 @@ struct point_to_counter_reducer2 {
         adv_vel = StaggeredBoxSampler::sample(vaxr, pIspos);
         old_vel = StaggeredBoxSampler::sample(old_vaxr, pIspos);
 
-        float flip_component = (1.0f - m_pic_component);
+        float flip_component = (1.0f - m_pic_min_comp);
         float p_liquidsdf =
             openvdb::tools::BoxSampler::sample(liquid_sdf_axr, pIspos);
         float t_coef = 1;
@@ -629,7 +633,7 @@ struct point_to_counter_reducer2 {
           t_coef = 0;
         }
         if (m_surfacedist > 0)
-          flip_component = t_coef * flip_component + (1.0f - t_coef) * 0.95f;
+          flip_component = t_coef * flip_component + (1.0f - t_coef) * std::min( 1.0f - m_pic_max_comp, flip_component );
 
         float p_solidsdf = openvdb::tools::BoxSampler::sample(
             sdfaxr, pIspos + openvdb::Vec3f{0.5f});
@@ -793,7 +797,8 @@ struct point_to_counter_reducer2 {
   const openvdb::FloatGrid &m_liquidsdf;
   const openvdb::Vec3fGrid &m_velocity_to_be_advected;
   const openvdb::Vec3fGrid &m_old_velocity;
-  float m_pic_component;
+  float m_pic_min_comp;
+  float m_pic_max_comp;
 
   const openvdb::FloatGrid &m_solid_sdf;
   const openvdb::Vec3fGrid &m_center_solidgrad;
@@ -2928,10 +2933,10 @@ void FLIP_vdb::apply_pressure_gradient(
 
 void FLIP_vdb::solve_pressure_simd(
     openvdb::FloatGrid::Ptr &liquid_sdf,
-    openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &pressure,
-    openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
+    openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
+    openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
     openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
-/*
+
     //skip if there is no dof to solve
 	if (liquid_sdf->tree().leafCount() == 0) {
 		return;
@@ -2989,9 +2994,14 @@ void FLIP_vdb::solve_pressure_simd(
   // m_rhsgrid->deepCopy()); m_rhsgrid =
   // simd_solver.m_laplacian_with_levels[0]->m_Neg_z_entry;
   rhsgrid->setName("RHS");
-*/
+}
 
-	
+void FLIP_vdb::solve_pressure_simd_uaamg(
+    openvdb::FloatGrid::Ptr &liquid_sdf,
+    openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
+    openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
+    openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
+
 	//skip if there is no dof to solve
 	if (liquid_sdf->tree().leafCount() == 0) {
 		return;
@@ -3002,22 +3012,42 @@ void FLIP_vdb::solve_pressure_simd(
 	auto lhs_matrix = simd_uaamg::LaplacianWithLevel::
 		createPressurePoissonLaplacian(liquid_sdf, face_weight, dt);
 	auto simd_solver = simd_uaamg::PoissonSolver(lhs_matrix);
-	simd_solver.mRelativeTolerance = 1e-7;
+	simd_solver.mRelativeTolerance = 1e-6;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
 	rhsgrid = lhs_matrix->createPressurePoissonRightHandSide(face_weight, velocity.v[0],
 		velocity.v[1], velocity.v[2], solid_velocity, dt);
 
-	pressure = lhs_matrix->getZeroVectorGrid();
+	auto pressure = lhs_matrix->getZeroVectorGrid();
 	pressure->setName("Pressure");
 
+  auto set_warm_pressure = [&](openvdb::Int32Tree::LeafNodeType &leaf,
+                               openvdb::Index leafpos) {
+    auto old_pressure_axr{curr_pressure->getConstUnsafeAccessor()};
+    auto *new_pressure_leaf = pressure->tree().probeLeaf(leaf.origin());
+
+    for (auto iter = new_pressure_leaf->beginValueOn(); iter; ++iter) {
+      float old_pressure = old_pressure_axr.getValue(iter.getCoord());
+      if (std::isfinite(old_pressure)) {
+        iter.setValue(old_pressure);
+      }
+    }
+  }; // end set_warm_pressure
+
+  
 	auto state = simd_solver.solveMultigridPCG(pressure, rhsgrid);
 
-	if (state != simd_uaamg::PoissonSolver::SUCCESS) {
-		printf("start MG solve\n");
-		lhs_matrix->setGridToConstant(pressure, 0.f);
-		simd_solver.solvePureMultigrid(pressure, rhsgrid);
+	if (state == simd_uaamg::PoissonSolver::SUCCESS) {
+		curr_pressure.swap(pressure);
 	}
+  else{
+    std::cout<<"MGPCG failed, begin pure MG solver\n";
+    lhs_matrix->mDofLeafManager->foreach(set_warm_pressure);
+    simd_solver.mMaxIteration = 200;
+    simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::RedBlackGaussSeidel;
+    simd_solver.solvePureMultigrid(pressure, rhsgrid);
+    curr_pressure.swap(pressure);
+  }
 
 	rhsgrid->setName("RHS");
 }
@@ -3096,7 +3126,7 @@ void FLIP_vdb::Advect(float dt, float dx,
 
   custom_move_points_and_set_flip_vel(
       particles, nullptr, velocity, velocity, velocity_after_p2g, solid_sdf,
-      solid_vel, pic_component, dt, 0, /*RK order*/ RK_ORDER);
+      solid_vel, pic_component, 0.05, dt, 0, /*RK order*/ RK_ORDER);
 }
 void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist,
                              openvdb::points::PointDataGrid::Ptr &particles,
@@ -3105,11 +3135,12 @@ void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist,
                              openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                              openvdb::FloatGrid::Ptr &solid_sdf,
                              openvdb::Vec3fGrid::Ptr &solid_vel,
-                             float pic_component, int RK_ORDER) {
+                             float pic_min, float pic_max, int RK_ORDER) {
 
   custom_move_points_and_set_flip_vel(
       particles, liquid_sdf, velocity, velocity, velocity_after_p2g, solid_sdf,
-      solid_vel, pic_component, dt, surfacedist, /*RK order*/ RK_ORDER);
+      solid_vel, pic_min, pic_max,
+      dt, surfacedist, /*RK order*/ RK_ORDER);
 }
 
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
@@ -3119,7 +3150,8 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
     const openvdb::Vec3fGrid::Ptr in_velocity_field_to_be_advected,
     const openvdb::Vec3fGrid::Ptr in_old_velocity,
     openvdb::FloatGrid::Ptr in_solid_sdf, openvdb::Vec3fGrid::Ptr in_solid_vel,
-    float PIC_component, float dt, float surfacedist, int RK_order) {
+    float PIC_min, float PIC_max,
+    float dt, float surfacedist, int RK_order) {
   if (!in_out_points) {
     return;
   }
@@ -3259,7 +3291,8 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
   auto reducer = std::make_unique<point_to_counter_reducer2>(
       dt, dx, *to_use_liquid_sdf, *in_velocity_field,
       *in_velocity_field_to_be_advected, *in_old_velocity, *in_solid_sdf,
-      *voxel_center_solid_normal, *voxel_center_solid_vn, PIC_component,
+      *voxel_center_solid_normal, *voxel_center_solid_vn,
+      PIC_min, PIC_max,
       particle_leaves, surfacedist, RK_order);
   tbb::parallel_reduce(
       tbb::blocked_range<openvdb::Index>(0, particle_leaves.size(), 10),
