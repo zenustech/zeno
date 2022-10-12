@@ -107,31 +107,36 @@ static zeno::vec3f barycentric(
     zeno::vec3f const &point,   //point = pos + dir * t;
     zeno::PrimitiveObject* prim
 ) {
-    auto &tris = prim->tris;
-    zeno::vec3f p = point;
-    auto normal = zeno::normalize(zeno::cross(tris[1] - tris[0], tris[2] - tris[0]));
-    auto distance = zeno::dot(normal, tris[0]);
+    for(int i = 0;i<prim->tris.size();i++) {
+        auto &tris = prim->tris;
+        auto &verts = prim->verts;
+        zeno::vec3f p = point;
+        auto nor = zeno::cross(verts[tris[i][1]]- verts[tris[i][0]], verts[tris[i][2]] - verts[tris[i][0]]);
+        auto normal = nor * (1.0f / zeno::dot(nor, nor));
 
-    auto ap = p - tris[0];
-    auto bp = p - tris[1];
-    auto cp = p - tris[2];
+        auto distance = zeno::dot(normal, verts[tris[i][0]]);
 
-    zeno::vec3f ab = tris[1] - tris[0];
-    zeno::vec3f ac = tris[2] - tris[0];
-    zeno::vec3f bc = tris[2] - tris[1];
-    zeno::vec3f cb = tris[1] - tris[2];
-    zeno::vec3f ca = tris[0] - tris[2];
+        auto ap = p - verts[tris[i][0]];
+        auto bp = p - verts[tris[i][1]];
+        auto cp = p - verts[tris[i][2]];
 
-    zeno::vec3f v = ab - Project(ab, cb);
-    float a = 1.0f - (zeno::dot(v, ap) / zeno::dot(v, ab));
+        zeno::vec3f ab = verts[tris[i][1]] - verts[tris[i][0]];
+        zeno::vec3f ac = verts[tris[i][2]] - verts[tris[i][0]];
+        zeno::vec3f bc = verts[tris[i][2]] - verts[tris[i][1]];
+        zeno::vec3f cb = verts[tris[i][1]] - verts[tris[i][2]];
+        zeno::vec3f ca = verts[tris[i][0]] - verts[tris[i][2]];
 
-    v = bc - Project(bc, ac);
-    float b = 1.0f - (zeno::dot(v, bp) / zeno::dot(v, bc));
+        zeno::vec3f v = ab - Project(ab, cb);
+        float a = 1.0f - (zeno::dot(v, ap) / zeno::dot(v, ab));
 
-    v = ca - Project(ca, ab);
-    float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
+        v = bc - Project(bc, ac);
+        float b = 1.0f - (zeno::dot(v, bp) / zeno::dot(v, bc));
 
-    return zeno::vec3f(a, b, c);
+        v = ca - Project(ca, ab);
+        float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
+
+        return zeno::vec3f(a, b, c);
+    }
 }
 
 static std::optional<float> ray_triangle_intersect(
@@ -445,8 +450,6 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
             }
         }
     }
-
-
     if (!name.empty()) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         auto obj_name = QString(name.c_str());
@@ -551,7 +554,6 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //}
 
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        //auto prim = std::make_shared<zeno::PrimitiveObject>();
 
         if (transformer->isTransforming()) {
             bool moved = false;
@@ -635,6 +637,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     }
                 }
                 scene->selected.insert(passed_prim.begin(), passed_prim.end());
+
             }
         }
 
@@ -657,15 +660,15 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QGLWidget(parent)
       , m_camera(nullptr)
       , updateLightOnce(true)
 {
-    QSurfaceFormat fmt;
+    QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setProfile(QGLFormat::CoreProfile);
     setFormat(fmt);
 
     // https://blog.csdn.net/zhujiangm/article/details/90760744
@@ -682,7 +685,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QOpenGLContext *ctx;
+    inline static QGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
@@ -777,9 +780,9 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     update();
 }
 
-void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event); 
+    m_camera->fakeMouseReleaseEvent(event);
     update();
 }
 

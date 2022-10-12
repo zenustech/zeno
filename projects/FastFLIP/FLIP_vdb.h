@@ -114,7 +114,7 @@ struct FLIP_vdb {
                             openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                             openvdb::FloatGrid::Ptr &solid_sdf,
                             openvdb::Vec3fGrid::Ptr &solid_vel,
-                            float pic_component, int RK_ORDER);
+                            float pic_min, float pic_max, int RK_ORDER);
 
   static void custom_move_points_and_set_flip_vel(
         openvdb::points::PointDataGrid::Ptr in_out_points,
@@ -123,7 +123,7 @@ struct FLIP_vdb {
         const openvdb::Vec3fGrid::Ptr in_velocity_field_to_be_advected,
         const openvdb::Vec3fGrid::Ptr in_old_velocity,
         openvdb::FloatGrid::Ptr in_solid_sdf, openvdb::Vec3fGrid::Ptr in_solid_vel,
-        float PIC_component, float dt, float surfacedist, int RK_order);
+        float PIC_min, float PIC_max, float dt, float surfacedist, int RK_order);
 
   static void
   update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids,
@@ -145,7 +145,13 @@ struct FLIP_vdb {
 
   static void solve_pressure_simd(
       openvdb::FloatGrid::Ptr &liquid_sdf,
-      openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &pressure,
+      openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
+      openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
+      openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
+
+  static void solve_pressure_simd_uaamg(
+      openvdb::FloatGrid::Ptr &liquid_sdf,
+      openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
       openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
       openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
 
