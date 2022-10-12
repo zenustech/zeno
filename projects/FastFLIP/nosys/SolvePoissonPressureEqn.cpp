@@ -34,16 +34,24 @@ struct AssembleSolvePPE : zeno::INode {
     auto face_weight = get_input("CellFWeight")->as<VDBFloat3Grid>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto solid_velocity = get_input("SolidVelocity")->as<VDBFloat3Grid>();
-    
+
+#if 0    
+    FLIP_vdb::solve_pressure_simd(
+        liquid_sdf->m_grid, rhsgrid->m_grid,
+        curr_pressure->m_grid, face_weight->m_grid, velocity->m_grid,
+        solid_velocity->m_grid, dt, dx);
+#endif
+
     packed_FloatGrid3 packed_velocity;
     packed_velocity.from_vec3(velocity->m_grid);
         
-    FLIP_vdb::solve_pressure_simd(
+    FLIP_vdb::solve_pressure_simd_uaamg(
         liquid_sdf->m_grid, rhsgrid->m_grid,
         curr_pressure->m_grid, face_weight->m_grid, packed_velocity,
         solid_velocity->m_grid, dt, dx);
 
     packed_velocity.to_vec3(velocity->m_grid);
+
   }
 };
 
