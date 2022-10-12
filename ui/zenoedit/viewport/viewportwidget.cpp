@@ -91,7 +91,7 @@ static std::optional<float> ray_box_intersect(
 
     // If tmin is < 0, tmax is closer
     if (tmin < 0.0f) {
-        t_result = tmax;
+        t_result = 0;
     }
     //zeno::vec3f  final_t = p + d * t_result;
     return t_result;
@@ -586,6 +586,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     zeno::vec3f bmin,bmax;
                     if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
                         if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
+                            if (ret.has_value() && ret.value() > min_t) {
+                                continue;
+                            }
                             if (auto prim = dynamic_cast<zeno::PrimitiveObject*>(ptr)) {
                                 if(auto rett = ray_triangle_intersect(prim,ro,rd)) {
                                     float t = *rett;
