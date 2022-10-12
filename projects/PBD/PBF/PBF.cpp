@@ -61,23 +61,7 @@ private:
     float dx; //cell size
     float dxInv; 
     vec3i bound;
-    void initCellData()
-    {
-        // dx = 2.51; //default value for test
-        // vec3i bound {40,40,40};
-        dx = get_input<zeno::NumericObject>("dx")->get<float>();
-        bound = get_input<zeno::NumericObject>("bound")->get<vec3i>();
-
-        dxInv = 1.0/dx;
-        int numX = int(bound[0] / dx) + 1;
-        int numY = int(bound[1] / dx) + 1;
-        int numZ = int(bound[2] / dx) + 1;
-        numCellXYZ.resize(3);
-        numCellXYZ[0] = numX;
-        numCellXYZ[1] = numY;
-        numCellXYZ[2] = numZ;
-        numCell = numX * numY * numZ;
-    }
+    void initCellData();
     struct Cell
     {
         int x,y,z;
@@ -91,7 +75,6 @@ private:
 public:
     virtual void apply() override{
         prim = get_input<PrimitiveObject>("prim");
-        // numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
 
         static bool firstTime = true;
         if(firstTime == true)
@@ -103,7 +86,6 @@ public:
             numParticles = prim->verts.size();
             pos = std::move(prim->verts);
             initData();  
-            echo(numParticles);
         }
 
         preSolve();
@@ -111,9 +93,7 @@ public:
             solve(); 
         postSolve();  
 
-        // echoVec(pos[1]);
-        //move back
-        // prim->verts = std::move(pos);
+
         prim->verts.resize(pos.size());
         for (size_t i = 0; i < pos.size(); i++)
             prim->verts[i] = pos[i]/10.0;//scale to show
@@ -133,6 +113,24 @@ ZENDEFNODE(PBF, {
                     {},
                     {"PBD"},
                 });
+
+void PBF::initCellData()
+{
+    // dx = 2.51; //default value for test
+    // vec3i bound {40,40,40};
+    dx = get_input<zeno::NumericObject>("dx")->get<float>();
+    bound = get_input<zeno::NumericObject>("bound")->get<vec3i>();
+
+    dxInv = 1.0/dx;
+    int numX = int(bound[0] / dx) + 1;
+    int numY = int(bound[1] / dx) + 1;
+    int numZ = int(bound[2] / dx) + 1;
+    numCellXYZ.resize(3);
+    numCellXYZ[0] = numX;
+    numCellXYZ[1] = numY;
+    numCellXYZ[2] = numZ;
+    numCell = numX * numY * numZ;
+}
 
 void PBF::initData()
 {     

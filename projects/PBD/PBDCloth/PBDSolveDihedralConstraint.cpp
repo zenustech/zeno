@@ -41,58 +41,56 @@ struct PBDSolveDihedralConstraint : zeno::INode {
      * @param prim 所传入的所有数据
      */
     void solve(PrimitiveObject * prim)
+    {
+        auto &tris = prim->tris;
+        auto &pos = prim->verts;
+        auto &adj4th = prim->tris.attr<vec3i>("adj4th");
+        if(!prim->has_attr("dpos"))
+            prim->add_attr<zeno::vec3f>("dpos");
+        auto &dpos = prim->verts.attr<vec3f>("dpos");
+        auto &restAng = prim->tris.attr<vec3f>("restAng");
+        auto &invMass = prim->verts.attr<float>("invMass");
+        float dihedralCompliance = prim->userData().getLiterial<float>("dihedralCompliance");
+        float dt = prim->userData().getLiterial<float>("dt");
+        float isGaussSidel = prim->userData().getLiterial<bool>("isGaussSidel");
+
+        for (int i = 0; i < tris.size(); i++) //对所有三角面
         {
-            auto &tris = prim->tris;
-            auto &pos = prim->verts;
-            auto &adj4th = prim->tris.attr<vec3i>("adj4th");
-            if(!prim->has_attr("dpos"))
-                prim->add_attr<zeno::vec3f>("dpos");
-            auto &dpos = prim->verts.attr<vec3f>("dpos");
-            auto &restAng = prim->tris.attr<vec3f>("restAng");
-            auto &invMass = prim->verts.attr<float>("invMass");
-            float dihedralCompliance = prim->userData().getLiterial<float>("dihedralCompliance");
-            float dt = prim->userData().getLiterial<float>("dt");
-            float isGaussSidel = prim->userData().getLiterial<bool>("isGaussSidel");
-
-            for (int i = 0; i < tris.size(); i++) //对所有三角面
+            for(int k=0; k<3; k++) //三个边，对应着三个邻接面
             {
-                for(int k=0; k<3; k++) //三个边，对应着三个邻接面
-                {
-                    int id4 = adj4th[i][k]; //取出第四个点编号
-                    if (id4 == -1) //如果编号为-1，证明没有这个邻接面
-                        continue;
+                int id4 = adj4th[i][k]; //取出第四个点编号
+                if (id4 == -1) //如果编号为-1，证明没有这个邻接面
+                    continue;
 
-                    //对四个点进行求解。注意顺序要按照Muller2006论文中的Fig4。1-2是共享边。3是自己的点，4是对方的点。
-                    int id1 = tris[i][0];
-                    int id2 = tris[i][1];
-                    int id3 = tris[i][2];
-                    vec4i id{id1,id2,id3,id4};
+                //对四个点进行求解。注意顺序要按照Muller2006论文中的Fig4。1-2是共享边。3是自己的点，4是对方的点。
+                int id1 = tris[i][0];
+                int id2 = tris[i][1];
+                int id3 = tris[i][2];
+                vec4i id{id1,id2,id3,id4};
 
-                    vec4f invMass1; //4个点的invMass
+                vec4f invMass4p; //4个点的invMass
+                for (size_t j = 0; j < 4; j++)
+                    invMass4p[j] = invMass[id[j]];
+                float restAng4p{restAng[i][k]}; // 四个点的原角度
+                std::array<vec3f,4>  pos1; //四个点的pos
+                for (size_t j = 0; j < 4; j++)
+                    pos1[j] = pos[id[j]];
+                std::array<vec3f,4>  dpos4p; //四个点的dpos，也就是待求解的对pos的修正值。
+                for (size_t j = 0; j < 4; j++)
+                    dpos4p[j] = vec3f{0.0,0.0,0.0};
+
+                //这里只传入需要的四个点的数据，求解得到4个dpos
+                dihedralConstraint(pos1, invMass4p, restAng4p, dihedralCompliance, dt,  dpos4p);
+
+                for (size_t j = 0; j < 4; j++)
+                    dpos[id[j]] = dpos4p[j];
+
+                if (isGaussSidel) //高斯赛德尔法在原地修正pos
                     for (size_t j = 0; j < 4; j++)
-                        invMass1[j] = invMass[id[j]];
-                    float restAng1{restAng[i][k]}; // 四个点的原角度
-                    std::array<vec3f,4>  pos1; //四个点的pos
-                    for (size_t j = 0; j < 4; j++)
-                        pos1[j] = pos[id[j]];
-                    std::array<vec3f,4>  dpos1; //四个点的dpos，也就是待求解的对pos的修正值。
-                    for (size_t j = 0; j < 4; j++)
-                        dpos1[j] = vec3f{0.0,0.0,0.0};
-
-                    //这里只传入需要的四个点的数据，求解得到4个dpos
-                    dihedralConstraint(pos1, invMass1, restAng1, dihedralCompliance, dt,  dpos1);
-
-                    for (size_t j = 0; j < 4; j++)
-                    {
-                        dpos[id[j]] = dpos1[j];
-                    }
-
-                    if (isGaussSidel) //高斯赛德尔法在原地修正pos
-                        for (size_t j = 0; j < 4; j++)
-                            pos[id[j]] += dpos[j];
-                }
+                        pos[id[j]] += dpos[j];
             }
         }
+    }
 
 
     /**
@@ -158,10 +156,9 @@ public:
 
         //物理参数
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
         auto isGaussSidel = get_input<zeno::NumericObject>("isGaussSidel")->get<bool>();
         prim->userData().set("dihedralCompliance", std::make_shared<NumericObject>((float)dihedralCompliance));
-        prim->userData().set("dt", std::make_shared<NumericObject>((float)dt));
+        auto dt = prim->userData().getLiterial<float>("dt");
         prim->userData().set("isGaussSidel", std::make_shared<NumericObject>((bool)isGaussSidel));
         
         //求解
@@ -176,7 +173,6 @@ ZENDEFNODE(PBDSolveDihedralConstraint, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
                     {"float", "dihedralCompliance", "0.0"},
-                    {"float", "dt", "0.0016667"},
                     {"bool", "isGaussSidel", "1"},
                 },
                  // outputs:

@@ -1,5 +1,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/types/userData.h>
+
 namespace zeno {
 struct PBDSolveDistanceConstraint : zeno::INode {
 private:
@@ -63,7 +65,8 @@ public:
         auto prim = get_input<PrimitiveObject>("prim");
 
         auto disntanceCompliance = get_input<zeno::NumericObject>("disntanceCompliance")->get<float>();
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+
+        float dt = prim->userData().getLiterial<float>("dt");
 
         auto &pos = prim->verts;
         auto &edge = prim->lines;
@@ -81,8 +84,7 @@ public:
 ZENDEFNODE(PBDSolveDistanceConstraint, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"float", "disntanceCompliance", "100.0"},
-                    {"float", "dt", "0.0016667"}
+                    {"float", "disntanceCompliance", "100.0"}
                 },
                  // outputs:
                  {"outPrim"},

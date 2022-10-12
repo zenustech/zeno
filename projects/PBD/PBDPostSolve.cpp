@@ -1,5 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/types/UserData.h>
 using namespace zeno;
 
 /**
@@ -25,7 +26,7 @@ struct PBDPostSolve : zeno::INode {
      virtual void apply() override{
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        float dt = prim->userData().getLiterial<float>("dt");
 
         auto &pos = prim->verts;
         auto &vel = prim->verts.attr<vec3f>("vel");
@@ -41,7 +42,7 @@ struct PBDPostSolve : zeno::INode {
 ZENDEFNODE(
     PBDPostSolve,
     {
-        {{"prim"},{"float","dt","0.0016667"}},
+        {{"prim"}},
         {"outPrim"},
         {},
         {"PBD"}

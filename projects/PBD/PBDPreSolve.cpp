@@ -1,5 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/types/UserData.h>
 using namespace zeno;
 
 /**
@@ -34,10 +35,17 @@ struct PBDPreSolve : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
 
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        prim->userData().set("dt", std::make_shared<NumericObject>(dt));
+
         auto externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
 
         auto &pos = prim->verts;
         auto &invMass = prim->verts.attr<float>("invMass");
+
+        if(!prim->has_attr("vel"))
+            prim->verts.add_attr<vec3f>("vel");
+        if(!prim->has_attr("prevPos"))
+            prim->verts.add_attr<vec3f>("prevPos");
 
         auto &vel = prim->verts.attr<vec3f>("vel");
         auto &prevPos = prim->verts.attr<vec3f>("prevPos");

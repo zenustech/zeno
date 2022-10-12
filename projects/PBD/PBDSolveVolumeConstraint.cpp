@@ -1,5 +1,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/types/userData.h>
+
 namespace zeno {
 struct PBDSolveVolumeConstraint : zeno::INode {
 private:
@@ -78,7 +80,7 @@ public:
         auto prim = get_input<PrimitiveObject>("prim");
 
         auto volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
-        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        float dt = prim->userData().getLiterial<float>("dt");
 
         auto &pos = prim->verts;
         auto &tet = prim->quads;
@@ -96,8 +98,7 @@ public:
 ZENDEFNODE(PBDSolveVolumeConstraint, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"float", "volumeCompliance", "0.0"},
-                    {"float", "dt", "0.0016667"}
+                    {"float", "volumeCompliance", "0.0"}
                 },
                  // outputs:
                  {"outPos"},
