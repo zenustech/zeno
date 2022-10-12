@@ -183,7 +183,7 @@ static std::optional<float> ray_triangle_intersect(
             v = ca - Project(ca, ab);
             float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
 
-            if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= -1.0f && c <= 1.0f) {
+            if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= 0.0f && c <= 1.0f) {
                 if (res.has_value()) {
                     float v = res.value();
                     if (t < v) {
