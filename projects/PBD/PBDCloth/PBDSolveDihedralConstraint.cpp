@@ -68,19 +68,13 @@ struct PBDSolveDihedralConstraint : zeno::INode {
                 int id3 = tris[i][2];
                 vec4i id{id1,id2,id3,id4};
 
-                vec4f invMass4p; //4个点的invMass
-                for (size_t j = 0; j < 4; j++)
-                    invMass4p[j] = invMass[id[j]];
+                vec4f invMass4p{invMass[id[0]],invMass[id[1]],invMass[id[2]],invMass[id[3]]}; //4个点的invMass
                 float restAng4p{restAng[i][k]}; // 四个点的原角度
-                std::array<vec3f,4>  pos1; //四个点的pos
-                for (size_t j = 0; j < 4; j++)
-                    pos1[j] = pos[id[j]];
-                std::array<vec3f,4>  dpos4p; //四个点的dpos，也就是待求解的对pos的修正值。
-                for (size_t j = 0; j < 4; j++)
-                    dpos4p[j] = vec3f{0.0,0.0,0.0};
+                std::array<vec3f,4>  pos4p{pos[id[0]],pos[id[1]],pos[id[2]],pos[id[3]]}; 
+                std::array<vec3f,4>  dpos4p{vec3f{0.0,0.0,0.0},vec3f{0.0,0.0,0.0},vec3f{0.0,0.0,0.0},vec3f{0.0,0.0,0.0}}; //四个点的dpos，也就是待求解的对pos的修正值。
 
                 //这里只传入需要的四个点的数据，求解得到4个dpos
-                dihedralConstraint(pos1, invMass4p, restAng4p, dihedralCompliance, dt,  dpos4p);
+                dihedralConstraint(pos4p, invMass4p, restAng4p, dihedralCompliance, dt,  dpos4p);
 
                 for (size_t j = 0; j < 4; j++)
                     dpos[id[j]] = dpos4p[j];
@@ -106,9 +100,9 @@ struct PBDSolveDihedralConstraint : zeno::INode {
     void dihedralConstraint(
         const std::array<vec3f,4> & pos,
         const vec4f & invMass,
-        const float  restAng,
-        float dihedralCompliance,
-        float dt,
+        const float restAng,
+        const float dihedralCompliance,
+        const float dt,
         std::array<vec3f,4> & dpos
         )
     {
@@ -117,12 +111,12 @@ struct PBDSolveDihedralConstraint : zeno::INode {
         vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
 
         //计算梯度。先对每个点求相对p1的位置。只是为了准备数据。
-        vec3f p1 = pos[0];
-        vec3f p2 = pos[1] - p1;
-        vec3f p3 = pos[2] - p1;
-        vec3f p4 = pos[3] - p1;
-        vec3f n1 = calcNormal(p2, p3); //p2与p3叉乘所得面法向
-        vec3f n2 = calcNormal(p2, p4);
+        const vec3f& p1 = pos[0];
+        const vec3f& p2 = pos[1] - p1;
+        const vec3f& p3 = pos[2] - p1;
+        const vec3f& p4 = pos[3] - p1;
+        const vec3f& n1 = calcNormal(p2, p3); //p2与p3叉乘所得面法向
+        const vec3f& n2 = calcNormal(p2, p4);
         float d = dot(n1,n2); 
 
         //参考Muller2006附录公式(25)-(28)
@@ -132,14 +126,14 @@ struct PBDSolveDihedralConstraint : zeno::INode {
                         -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
         grad[0] = - grad[1] - grad[2] - grad[3];
 
-        //公式（8）的分母
+        //公式(8)的分母
         float w = 0.0;
         for (int j = 0; j < 4; j++)
             w += invMass[j] * (length(grad[j])) * (length(grad[j]));
         if(w==0.0)
             return; //防止分母为0
         
-        //公式（8）。sqrt(1-d*d)来源请看公式（29），实际上来自grad。
+        //公式(8)。sqrt(1-d*d)来源请看公式(29)，实际上来自grad。
         float ang = acos(d);
         float C = (ang - restAng);
         float s = -C * sqrt(1-d*d) /(w + alpha);
