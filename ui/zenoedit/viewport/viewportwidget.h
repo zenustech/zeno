@@ -84,10 +84,10 @@ private:
     std::unique_ptr<zeno::FakeTransformer> transformer;
 };
 
-class ViewportWidget : public QOpenGLWidget
+class ViewportWidget : public QGLWidget
 {
     Q_OBJECT
-    typedef QOpenGLWidget _base;
+    typedef QGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
