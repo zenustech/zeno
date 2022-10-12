@@ -73,7 +73,7 @@ struct PBDClothInit : zeno::INode {
     void initRestAng(
         const AttrVector<vec3f> &pos,
         const AttrVector<vec3i> &tris,
-        const AttrVector<vec3i> &adjTriId,
+        const AttrVector<vec3i> &adj4th,
         std::vector<vec3f> &restAng
     ) 
     {
@@ -88,11 +88,12 @@ struct PBDClothInit : zeno::INode {
             {
                 //因为可能有-1，所以默认值设置负的很大的数字来表示不存在该角度（因为不存在该邻接面）
                 restAng[i][j] = std::numeric_limits<float>::lowest(); 
-                if(adjTriId[i][j] != -1) //如果是负一证明该边没有邻接面
+                if(adj4th[i][j] != -1) //如果是负一证明该边没有邻接面
                 {
-                    vec3i other = tris[adjTriId[i][j]]; //取出一个邻接三角面
-                    //再找到非本身三个点的那个点，作为第四个点。
-                    pid4 = other[cmp33(self, other)];
+                    // vec3i other = tris[adjTriId[i][j]]; //取出一个邻接三角面
+                    // //再找到非本身三个点的那个点，作为第四个点。
+                    // pid4 = other[cmp33(self, other)];
+                    pid4 = adj4th[i][j];
                     if(pid4==-1)
                         throw std::runtime_error("the adjacent tris failed");
                     restAng[i][j] = computeAng(pos[pid1],pos[pid2],pos[pid3],pos[pid4]);
@@ -161,11 +162,13 @@ public:
         auto &restLen = prim->lines.add_attr<float>("restLen");
         auto &restAng = prim->tris.add_attr<vec3f>("restAng");
 
-        auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
+        // auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
+        auto &adj4th = prim->tris.attr<vec3i>("adj4th");
 
         initInvMass(pos,tris,areaDensity,invMass);
         initRestLen(pos,edge,restLen);
-        initRestAng(pos,tris,adjTriId,restAng);
+        // initRestAng(pos,tris,adjTriId,restAng);
+        initRestAng(pos,tris,adj4th,restAng);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");

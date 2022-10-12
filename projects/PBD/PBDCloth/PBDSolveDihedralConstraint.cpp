@@ -106,6 +106,9 @@ struct PBDSolveDihedralConstraint : zeno::INode {
         std::array<vec3f,4> & dpos
         )
     {
+        if(restAng==std::numeric_limits<float>::lowest())
+            return;
+        
         float alpha = dihedralCompliance / dt / dt;
 
         vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
