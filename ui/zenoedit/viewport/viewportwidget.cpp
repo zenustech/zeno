@@ -18,8 +18,9 @@
 // #include <nodesys/nodesmgr.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <cmath>
-#include <algorithm>
 #include <optional>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -148,9 +149,11 @@ static std::optional<float> ray_triangle_intersect(
     auto &verts = prim->verts;
     auto &pos = ray_pos;
     auto &dir = ray_dir;
-    std::optional<float> res = std::nullopt;
+    tbb::concurrent_vector<float> ts;
 
-    for(int i = 0;i<prim->tris.size();i++) {
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, prim->tris.size()),
+    [&](tbb::blocked_range<size_t> r) {
+    for (size_t i = r.begin(); i < r.end(); i++) {
         auto nor = zeno::cross(verts[tris[i][1]]- verts[tris[i][0]], verts[tris[i][2]] - verts[tris[i][0]]);
         auto normal = nor * (1.0f / zeno::dot(nor, nor));
 
@@ -184,18 +187,22 @@ static std::optional<float> ray_triangle_intersect(
             float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
 
             if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= 0.0f && c <= 1.0f) {
-                if (res.has_value()) {
-                    float v = res.value();
-                    if (t < v) {
-                        res = t;
-                    }
-                } else {
-                    res = t;
-                }
+                ts.push_back(t);
             }
         }
     }
-    return res;
+    });
+    if (ts.empty()) {
+        return std::nullopt;
+    } else {
+        float min_t = ts[0];
+        for (auto t: ts) {
+            if (t < min_t) {
+                min_t = t;
+            }
+        }
+        return min_t;
+    }
 }
 
 static bool test_in_selected_bounding(
