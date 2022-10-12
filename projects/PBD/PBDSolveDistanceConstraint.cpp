@@ -39,12 +39,6 @@ private:
             float w = invMass[id0] + invMass[id1];
             float s = -C / (w + alpha);
 
-            //debug
-            grad1[i] = grad;
-            len[i] = Len;
-            s1[i] = s;
-            dpos1[i] = grad *   s * invMass[id0];
-            dpos2[i] = -grad *   s * invMass[id1];
 
             pos[id0] += grad *   s * invMass[id0];
             pos[id1] += grad * (-s * invMass[id1]);
