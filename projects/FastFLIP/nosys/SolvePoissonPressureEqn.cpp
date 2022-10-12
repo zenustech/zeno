@@ -35,6 +35,11 @@ struct AssembleSolvePPE : zeno::INode {
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto solid_velocity = get_input("SolidVelocity")->as<VDBFloat3Grid>();
 
+    auto curvature = get_input("Curvature")->as<VDBFloatGrid>();
+    auto density = get_input("Density")->as<zeno::NumericObject>()->get<float>();
+    auto tension_coef = get_input("SurfaceTension")->as<zeno::NumericObject>()->get<float>();
+    bool enable_tension = tension_coef > 0? true : false;
+
 #if 0    
     FLIP_vdb::solve_pressure_simd(
         liquid_sdf->m_grid, rhsgrid->m_grid,
@@ -46,9 +51,10 @@ struct AssembleSolvePPE : zeno::INode {
     packed_velocity.from_vec3(velocity->m_grid);
         
     FLIP_vdb::solve_pressure_simd_uaamg(
-        liquid_sdf->m_grid, rhsgrid->m_grid,
-        curr_pressure->m_grid, face_weight->m_grid, packed_velocity,
-        solid_velocity->m_grid, dt, dx);
+        liquid_sdf->m_grid, curvature->m_grid, rhsgrid->m_grid,
+        curr_pressure->m_grid, face_weight->m_grid,
+        packed_velocity, solid_velocity->m_grid,
+        density, tension_coef, enable_tension, dt, dx);
 
     packed_velocity.to_vec3(velocity->m_grid);
 
@@ -58,13 +64,15 @@ struct AssembleSolvePPE : zeno::INode {
 static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>(
     "AssembleSolvePPE", {/* inputs: */ {
                              "dt","Dx",
+                             {"float", "Density", "1000.0"},
+                             {"float", "SurfaceTension", "0.0"},
                              "LiquidSDF",
                              "Divergence",
                              "Pressure",
                              "CellFWeight",
                              "Velocity",
                              "SolidVelocity",
-
+                             "Curvature",
                          },
                          /* outputs: */ {},
                          /* params: */
