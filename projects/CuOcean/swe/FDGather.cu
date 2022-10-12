@@ -330,11 +330,11 @@ struct ZSCheckPrimAttribs : zeno::INode {
                 auto ompPol = omp_exec();
                 constexpr auto space = execspace_e::host;
                 ompPol(range(verts.size()),
-                       [&, verts = proxy<space>({}, verts), tag = SmallString{attribAct}, nchn](int vi) {
+                       [&, verts = proxy<space>({}, verts), tag = SmallString{attribAct}](int vi) {
                            float v, vref;
                            for (int d = 0; d != nchn; ++d) {
                                v = verts(tag, d, vi);
-                               if constexpr (dim == 1)
+                               if constexpr (RM_CVREF_T(dim_v)::value == 1)
                                    vref = gridRef->attr<T>(attrib)[vi];
                                else
                                    vref = gridRef->attr<T>(attrib)[vi][d];

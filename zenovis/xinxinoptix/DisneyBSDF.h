@@ -237,7 +237,7 @@ namespace DisneyBSDF{
         else
             color = baseColor;
 
-        float c = (HoL * HoV) / (NoL * NoV);
+        float c = (HoL * HoV) / (NoL * NoV + 1e-7);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
@@ -289,7 +289,7 @@ namespace DisneyBSDF{
             float fss90 = HoL * HoL * roughness;
             float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
 
-            float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
+            float ss = 1.25f * (fss * (1.0f / (NoL + NoV + 1e-6) - 0.5f) + 0.5f);
             h = ss;
         }
 
@@ -744,20 +744,20 @@ namespace DisneyBSDF{
             //either go out or turn in
             if (rnd(seed) <= subsurface && subsurface > 0.001f)
             {
-                //keep in, no flag change
+                //go out, flag change
                 wi = -wi;
                 isSS = true;
                 if (thin) {
                     color = sqrt(transmittanceColor);
                 } else {
+                    flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(sssColor, scatterDistance);
                     color = vec3(1.0f);//no attenuation happen
                 }
             }else
             {
-                flag = transmissionEvent;
-                color = transmittanceColor;
+                color = vec3(1.0f);
             }
         }
 
@@ -1215,4 +1215,42 @@ static __inline__ __device__ vec3 proceduralSky(
     vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
+}
+
+static __inline__ __device__ vec3 hdrSky(
+        vec3 dir
+){
+    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float v = asin(dir.y) / 3.1415926 + 0.5;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
+    return col * params.sky_strength;
+}
+
+static __inline__ __device__ vec3 envSky(
+    vec3 dir,
+    vec3 sunLightDir,
+    vec3 windDir,
+    int steps,
+    float coverage,
+    float thickness,
+    float absorption,
+    float t
+){
+    if (params.usingProceduralSky) {
+        return proceduralSky(
+            dir,
+            sunLightDir,
+            windDir,
+            steps,
+            coverage,
+            thickness,
+            absorption,
+            t
+        );
+    }
+    else {
+        return hdrSky(
+            dir
+        );
+    }
 }

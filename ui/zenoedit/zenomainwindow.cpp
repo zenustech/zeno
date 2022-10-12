@@ -294,7 +294,9 @@ void ZenoMainWindow::initDocks() {
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    m_pEditor = new ZenoGraphsEditor(this);
+    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
+    // m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
 
     m_logger = new ZenoDockWidget("logger", this);
     m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
@@ -465,7 +467,7 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    setTimelineInfo(pGraphs->timeInfo());
+    resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -594,7 +596,7 @@ void ZenoMainWindow::saveQuit() {
     }
     pGraphsMgm->clear();
     //clear timeline info.
-    setTimelineInfo(TIMELINE_INFO());
+    resetTimeline(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save()
@@ -639,12 +641,12 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     return info;
 }
 
-void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     if (view)
     {
-        view->setTimelineInfo(info);
+        view->resetTimeline(info);
     }
 }
 

@@ -16,6 +16,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zensim/execution/ExecutionPolicy.hpp>
 #include <zensim/physics/ConstitutiveModel.hpp>
@@ -142,7 +143,15 @@ struct ZSParticleNeighborBvhWrangler : INode {
         }
 
         /// symbols
-        auto def_sym = [&opts](const std::string &prefix, const std::string &key, int dim) {
+        auto def_sym = [&opts](const std::string &prefix, std::string key, int dim) {
+            if (key == "x" || key == "v")
+                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
+                               "now on to keep "
+                               "consistent with cpu-side wrangles");
+            if (key == "pos")
+                key = "x";
+            else if (key == "vel")
+                key = "v";
             opts.define_symbol(prefix + key, dim);
         };
 
@@ -232,7 +241,7 @@ struct ZSParticleNeighborBvhWrangler : INode {
                                               (unsigned short)unitBytes,
                                               (unsigned short)tileSize,
                                               (unsigned short)targetParPtr->numChannels(),
-                                              (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
+                                              (unsigned short)(targetParPtr->getPropertyOffset(name) + dimid),
                                               (unsigned short)isNeighborProperty};
         }
         auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

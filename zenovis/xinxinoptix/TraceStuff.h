@@ -29,6 +29,7 @@ struct RadiancePRD
     // TODO: move some state directly into payload registers?
     float3       emitted;
     float3       radiance;
+    float3       emission;
     float3       attenuation;
     float3       attenuation2;
     float3       origin;
@@ -55,8 +56,12 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
+    float3       LP;
+    float3       Ldir;
+    float        Lweight;
     vec3         extinctionQ[8];
     int          curMatIdx;
+    float        CH;
     void         pushMat(vec3 extinction)
     {
         if(curMatIdx<7)

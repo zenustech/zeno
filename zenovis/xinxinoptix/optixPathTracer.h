@@ -45,6 +45,11 @@ struct Params
     ParallelogramLight     *lights;
     OptixTraversableHandle handle;
 
+    int usingProceduralSky;
+    cudaTextureObject_t sky_texture;
+    float sky_rot;
+    float sky_strength;
+
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;
