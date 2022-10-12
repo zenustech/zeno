@@ -97,7 +97,6 @@ static std::optional<float> ray_box_intersect(
     return t_result;
 }
 
-//https://blog.csdn.net/Angelloveyatou/article/details/127247083?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22127247083%22%2C%22source%22%3A%22Angelloveyatou%22%7D
 static zeno::vec3f Project(const zeno::vec3f & length, const zeno::vec3f& direction) {
     float dot = zeno::dot(length, direction);
     float magSq = zeno::dot(direction , direction);
@@ -144,26 +143,21 @@ static std::optional<float> ray_triangle_intersect(
     auto &verts = prim->verts;
     auto &pos = ray_pos;
     auto &dir = ray_dir;
+    std::optional<float> res = std::nullopt;
 
     for(int i = 0;i<prim->tris.size();i++) {
         auto nor = zeno::cross(verts[tris[i][1]]- verts[tris[i][0]], verts[tris[i][2]] - verts[tris[i][0]]);
         auto normal = nor * (1.0f / zeno::dot(nor, nor));
-        zeno::log_info("normal: {}", normal);
 
         auto distance = zeno::dot(normal, verts[tris[i][0]]);
 
         float nd = zeno::dot(dir, normal);
         float pn = zeno::dot(pos, normal);
-        zeno::log_info("dis: {}", distance);
-        zeno::log_info("pn: {}", pn);
-        zeno::log_info("nd: {}", nd);
 
         float t = (distance - pn) / nd;
-        zeno::log_info("t: {}", t);
 
         if (t >= 0.0f) {
             auto p = pos + dir * t; //p：ray在三角形所在平面上的投影
-            zeno::log_info("p: {}", p);
 
             auto ap = p - verts[tris[i][0]];
             auto bp = p - verts[tris[i][1]];
@@ -183,16 +177,20 @@ static std::optional<float> ray_triangle_intersect(
 
             v = ca - Project(ca, ab);
             float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
-            zeno::log_info("a: {}", a);
-            zeno::log_info("b: {}", b);
-            zeno::log_info("c: {}", c);
 
             if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= -1.0f && c <= 1.0f) {
-                return t;
+                if (res.has_value()) {
+                    float v = res.value();
+                    if (t < v) {
+                        res = t;
+                    }
+                } else {
+                    res = t;
+                }
             }
         }
     }
-    return std::nullopt;
+    return res;
 }
 
 static bool test_in_selected_bounding(
