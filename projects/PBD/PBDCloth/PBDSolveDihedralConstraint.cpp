@@ -154,9 +154,10 @@ public:
         //物理参数
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto isGaussSidel = get_input<zeno::NumericObject>("isGaussSidel")->get<bool>();
-        prim->userData().set("dihedralCompliance", std::make_shared<NumericObject>((float)dihedralCompliance));
-        auto dt = prim->userData().getLiterial<float>("dt");
         prim->userData().set("isGaussSidel", std::make_shared<NumericObject>((bool)isGaussSidel));
+        prim->userData().set("dihedralCompliance", std::make_shared<NumericObject>((float)dihedralCompliance));
+        
+        auto dt = prim->userData().getLiterial<float>("dt");
         
         //求解
         solve(prim.get());

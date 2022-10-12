@@ -25,13 +25,6 @@ private:
         const float dt
         )
     {
-        auto & dpos1 = prim->lines.add_attr<vec3f>("dpos1");
-        auto & dpos2 = prim->lines.add_attr<vec3f>("dpos2");
-        auto & len = prim->lines.add_attr<float>("len");
-        auto & s1 = prim->lines.add_attr<float>("s");
-        auto & grad1 = prim->lines.add_attr<vec3f>("grad1");
-
-
         float alpha = disntanceCompliance / dt / dt;
         zeno::vec3f grad{0, 0, 0};
         for (int i = 0; i < edge.size(); i++) 
