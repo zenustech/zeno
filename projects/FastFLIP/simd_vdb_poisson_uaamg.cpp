@@ -43,7 +43,7 @@ struct BuildPoissonRhs {
     void operator()(const openvdb::Int32Tree::LeafNodeType& dofLeaf, openvdb::Index leafpos)  const {
         float invdx = 1.0f / mDx;
         for (auto iter = dofLeaf.beginValueOn(); iter; ++iter) {
-            float rhs = 0;
+            float rhs = 0, weight_sum = 0;
             openvdb::Coord globalCoord = iter.getCoord();
             bool hasNonZeroWeight = false;
             //x+ x- y+ y- z+ z-
@@ -56,6 +56,7 @@ struct BuildPoissonRhs {
 
                 //face weight
                 float weight = mWeightAxr.getValue(nextCoord)[channel];
+                weight_sum += weight;
                 if (weight != 0.f) {
                     hasNonZeroWeight = true;
                 }
@@ -78,7 +79,7 @@ struct BuildPoissonRhs {
                 }
             }//end for 6 faces of this voxel
 
-            if (!hasNonZeroWeight) {
+            if (!hasNonZeroWeight || weight_sum < 0.1) {
                 rhs = 0;
             }
             mRhsLeaves[leafpos]->setValueOn(iter.offset(), rhs);
