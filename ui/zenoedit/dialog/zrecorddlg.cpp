@@ -31,6 +31,18 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
 	m_ui->cbPresets->setCurrentIndex(1);
 
+    connect(m_ui->cbPresets, &QComboBox::textActivated, this, [=](auto res) {
+        auto v = std::map<QString, std::tuple<int, int>> {
+                {"540P", {960, 540}},
+                {"720P", {1280, 720}},
+                {"1080P", {1920, 1080}},
+                {"2K", {2560, 1440}},
+                {"4K", {3840, 2160}},
+        }.at(res);
+        m_ui->lineWidth->setText(QString::number(std::get<0>(v)));
+        m_ui->lineHeight->setText(QString::number(std::get<1>(v)));
+    });
+
 	connect(m_ui->btnOpen, &QPushButton::clicked, this, [=]() {
 		DlgInEventLoopScope;
 		QString path = QFileDialog::getExistingDirectory(nullptr, tr("File to Save"), "");
