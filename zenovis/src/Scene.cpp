@@ -132,9 +132,9 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->num_samples, GL_RGBA, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->num_samples, GL_DEPTH_COMPONENT32, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_DEPTH_COMPONENT32, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
         CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
