@@ -33,6 +33,7 @@ struct VideoRecInfo
     QPair<int, int> frameRange;
     int fps;
     int bitrate;
+    int sampleNumber = 1;
     VideoRecInfo() {
         res = { 0,0 };
         fps = bitrate = 0;
