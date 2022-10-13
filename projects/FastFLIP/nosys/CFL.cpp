@@ -25,6 +25,26 @@ struct CFL : zeno::INode {
   }
 };
 
+struct Tension_dt : zeno::INode {
+
+  virtual void apply() override {
+    float dx = get_param<float>("dx");
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
+    auto density = get_input("Density")->as<zeno::NumericObject>()->get<float>();
+    auto tension_coef = get_input("SurfaceTension")->as<zeno::NumericObject>()->get<float>();
+
+    float dt = std::sqrt(density*dx*dx*dx / (4.0f*M_PI*tension_coef));
+    printf("Surface Tension dt: %f\n", dt);
+
+    auto out_dt = zeno::IObject::make<zeno::NumericObject>();
+    out_dt->set<float>(dt);
+    set_output("tension_dt", out_dt);
+  }
+};
+
 static int defCFL =
     zeno::defNodeClass<CFL>("CFL_dt", {/* inputs: */ {
                                            "Velocity", "Dx",
@@ -42,5 +62,29 @@ static int defCFL =
                                        {
                                            "FLIPSolver",
                                        }});
+
+
+
+static int defSurfaceTension_dt =
+    zeno::defNodeClass<Tension_dt>("SurfaceTension_dt", {
+                                    /* inputs: */ 
+                                    {
+                                      "Dx",
+                                      {"float", "Density", "1000.0"},
+                                      {"float", "SurfaceTension", "0.0"},
+                                    },
+                                    /* outputs: */
+                                    {
+                                        "tension_dt",
+                                    },
+                                    /* params: */
+                                    {
+                                        {"float", "dx", "0.0"},
+                                    },
+
+                                    /* category: */
+                                    {
+                                        "FLIPSolver",
+                                    }});
 
 } // namespace zeno
