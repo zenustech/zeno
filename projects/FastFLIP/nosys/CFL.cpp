@@ -6,6 +6,7 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
+#include <limits>
 namespace zeno {
 
 struct CFL : zeno::INode {
@@ -31,13 +32,17 @@ struct Tension_dt : zeno::INode {
     float dx = get_param<float>("dx");
     if(has_input("Dx"))
     {
-      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+      dx = get_input2<float>("Dx");
     }
-    auto density = get_input("Density")->as<zeno::NumericObject>()->get<float>();
-    auto tension_coef = get_input("SurfaceTension")->as<zeno::NumericObject>()->get<float>();
+    auto density = get_input2<float>("Density");
+    auto tension_coef = get_input2<float>("SurfaceTension");
 
-    float dt = std::sqrt(density*dx*dx*dx / (4.0f*M_PI*tension_coef));
-    printf("Surface Tension dt: %f\n", dt);
+    float dt = std::numeric_limits<float>::max();
+    if (tension_coef > 0.f)
+    {
+      dt = std::sqrt(density*dx*dx*dx / (4.0f*M_PI*tension_coef));
+      printf("Surface Tension dt: %f\n", dt);
+    }
 
     auto out_dt = zeno::IObject::make<zeno::NumericObject>();
     out_dt->set<float>(dt);
