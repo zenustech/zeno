@@ -63,6 +63,7 @@ public:
     QVariant hitOnFloor(float x, float y) const;
     void lookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
 
@@ -101,6 +102,7 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void cameraLookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
 
