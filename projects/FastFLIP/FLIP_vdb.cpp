@@ -2849,12 +2849,15 @@ void FLIP_vdb::apply_pressure_gradient(
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
     packed_FloatGrid3 &velocity, openvdb::Vec3fGrid::Ptr &solid_velocity,
-    float dx, float in_dt) {
+    openvdb::FloatGrid::Ptr &curvature,
+    float density, float tension_coef, bool enable_tension,
+    float dt, float dx) {
 
   auto velocity_update = velocity.deepCopy();
 	velocity_update.setName("Velocity_Update");
 
   const float boundary_friction_coef = 0.f;
+  const float kinematic_viscosity = tension_coef/density;
 
 	//CSim::TimerMan::timer("Step/SIMD/grad/apply").start();
 	for (int channel = 0; channel < 3; channel++) {
@@ -2863,6 +2866,7 @@ void FLIP_vdb::apply_pressure_gradient(
 			auto weight_axr{ face_weight->getConstUnsafeAccessor() };
 			auto solid_vel_axr{ solid_velocity->getConstUnsafeAccessor() };
 			auto pressure_axr{ pressure->getConstUnsafeAccessor() };
+      auto curv_axr{ curvature->getConstUnsafeAccessor() };
 
 			auto update_channel_leaf = velocity_update.v[channel]->tree().probeLeaf(leaf.origin());
 
@@ -2893,14 +2897,25 @@ void FLIP_vdb::apply_pressure_gradient(
 						auto phi_below = phi_axr.getValue(lower_gcoord);
 						float p_this = pressure_axr.getValue(gcoord);
 						float p_below = pressure_axr.getValue(lower_gcoord);
+            float curv_this = curv_axr.getValue(gcoord);
+						float curv_below = curv_axr.getValue(lower_gcoord);
 
 						float theta = 1.0f;
 						if (phi_this >= 0 || phi_below >= 0) {
 							theta = fraction_inside(phi_below, phi_this);
 							if (theta < 0.02f) theta = 0.02f;
+
+              if (enable_tension) {
+								if (phi_this >= 0) {
+									p_this = kinematic_viscosity*(theta*curv_this + (1.f - theta)*curv_below);
+								}
+								else if (phi_below >= 0) {
+									p_below = kinematic_viscosity*(theta*curv_below + (1.f - theta)*curv_this);
+								}
+							}
 						}
 
-						vel_update = -in_dt * (float)(p_this - p_below) / dx / theta;
+						vel_update = -dt * (float)(p_this - p_below) / dx / theta;
 						updated_vel += vel_update;
 						reflected_vel = updated_vel + vel_update;
 
@@ -2998,9 +3013,12 @@ void FLIP_vdb::solve_pressure_simd(
 
 void FLIP_vdb::solve_pressure_simd_uaamg(
     openvdb::FloatGrid::Ptr &liquid_sdf,
+    openvdb::FloatGrid::Ptr &curvature,
     openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
     openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
-    openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
+    openvdb::Vec3fGrid::Ptr &solid_velocity,
+    float density, float tension_coef, bool enable_tension,
+    float dt, float dx) {
 
 	//skip if there is no dof to solve
 	if (liquid_sdf->tree().leafCount() == 0) {
@@ -3015,8 +3033,16 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	simd_solver.mRelativeTolerance = 1e-6;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
-	rhsgrid = lhs_matrix->createPressurePoissonRightHandSide(face_weight, velocity.v[0],
-		velocity.v[1], velocity.v[2], solid_velocity, dt);
+  if (enable_tension) {
+    const float kinematic_viscosity = tension_coef/density;
+    rhsgrid = lhs_matrix->createPressurePoissonRightHandSide_withTension(liquid_sdf, curvature,
+      face_weight, velocity.v[0], velocity.v[1], velocity.v[2], solid_velocity,
+      dt, kinematic_viscosity);
+  }
+  else {
+	  rhsgrid = lhs_matrix->createPressurePoissonRightHandSide(face_weight, velocity.v[0],
+		  velocity.v[1], velocity.v[2], solid_velocity, dt);
+  }
 
 	auto pressure = lhs_matrix->getZeroVectorGrid();
 	pressure->setName("Pressure");
