@@ -31,7 +31,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
 	m_ui->cbPresets->setCurrentIndex(1);
 
-    connect(m_ui->cbPresets, &QComboBox::textActivated, this, [=](auto res) {
+    connect(m_ui->cbPresets, &QComboBox::currentTextChanged, this, [=](auto res) {
         auto v = std::map<QString, std::tuple<int, int>> {
                 {"540P", {960, 540}},
                 {"720P", {1280, 720}},
