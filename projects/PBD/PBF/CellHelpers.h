@@ -58,4 +58,47 @@ inline int PBF::getCellHash(int i, int j, int k)
     return res;
 }
 
+inline void PBF::initData()
+{     
+    //prepare cell data
+    // cell.resize(numCell);
+    for (size_t i = 0; i < numCell; i++)
+    {
+        // //to calculate the x y z coord of cell
+        vec3i xyz = cellID2XYZ(i);
+        int hash = getCellHash(xyz[0],xyz[1],xyz[2]);
+
+        cell[hash].x = xyz[0];
+        cell[hash].y = xyz[1];
+        cell[hash].z = xyz[2];
+        cell[hash].parInCell.reserve(10); //pre-allocate memory to speed up
+    }
+    
+    //prepare neighbor list 
+    neighborList.resize(numParticles);
+    for (size_t i = 0; i < numParticles; i++)
+        neighborList[i].reserve(10);
+}
+
+inline void PBF::initCellData()
+{
+    // dx = 2.51; //default value for test
+    // vec3i bound {40,40,40};
+    dx = get_input<zeno::NumericObject>("dx")->get<float>();
+    bound = get_input<zeno::NumericObject>("bound")->get<vec3i>();
+
+    dxInv = 1.0/dx;
+    int numX = int(bound[0] / dx) + 1;
+    int numY = int(bound[1] / dx) + 1;
+    int numZ = int(bound[2] / dx) + 1;
+    numCellXYZ.resize(3);
+    numCellXYZ[0] = numX;
+    numCellXYZ[1] = numY;
+    numCellXYZ[2] = numZ;
+    numCell = numX * numY * numZ;
+}
+
+
+
+
 }//zeno
