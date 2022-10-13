@@ -24,10 +24,6 @@ public:
     ZenoParamWidget(QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     ~ZenoParamWidget();
 
-    enum {
-        Type = ZTYPE_PARAMWIDGET
-    };
-    int type() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 protected:
@@ -186,7 +182,9 @@ class ZenoParamComboBox : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamComboBox(QGraphicsItem* parent = nullptr);
     ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
+    void setItems(const QStringList& items);
     void setText(const QString& text);
     QString text();
 
@@ -206,13 +204,16 @@ class ZenoParamPushButton : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamPushButton(QGraphicsItem* parent = nullptr);
     ZenoParamPushButton(const QString& name, int width, QSizePolicy::Policy hor, QGraphicsItem* parent = nullptr);
+    void setText(const QString& text);
 
 signals:
     void clicked(bool checked = false);
 
 private:
     int m_width;
+    QPushButton* m_pBtn;
 };
 
 class ZenoParamOpenPath : public ZenoParamWidget
@@ -229,6 +230,7 @@ class ZenoParamMultilineStr : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamMultilineStr(QGraphicsItem* parent = nullptr);
     ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);

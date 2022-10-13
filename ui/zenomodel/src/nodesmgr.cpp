@@ -3,7 +3,7 @@
 #include <zeno/utils/log.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/variantptr.h>
+#include "variantptr.h"
 #include <zenomodel/include/curveutil.h>
 #include "zassert.h"
 

@@ -11,7 +11,7 @@ public:
     ~CameraNode();
 
 protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
     void onEditClicked();

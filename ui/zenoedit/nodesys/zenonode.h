@@ -9,35 +9,24 @@
 #include <zenoui/comctrl/gv/zenosocketitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/modeldata.h>
+#include <zenoui/comctrl/gv/zgraphicslayout.h>
+#include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
+#include <zenoui/comctrl/gv/zsocketlayout.h>
+#include <zenoui/comctrl/gv/zlayoutbackground.h>
 
 
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
 
-class ZenoNode : public QGraphicsWidget
+class ZenoNode : public ZLayoutBackground
 {
     Q_OBJECT
-    typedef QGraphicsWidget _base;
-    struct _socket_ctrl
-    {
-        ZenoSocketItem* socket;
-        QGraphicsItem* socket_text;
-        ZenoParamWidget* socket_control;
-        QGraphicsLinearLayout* ctrl_layout;
-
-        _socket_ctrl()
-            : socket(nullptr)
-            , socket_text(nullptr)
-            , socket_control(nullptr)
-            , ctrl_layout(nullptr)
-        {
-        }
-    };
+    typedef ZLayoutBackground _base;
     struct _param_ctrl
     {
-        ZSimpleTextLayoutItem* param_name;
+        ZSimpleTextItem* param_name;
         ZenoParamWidget* param_control;
-        QGraphicsLinearLayout* ctrl_layout;
+        ZGraphicsLayout* ctrl_layout;
         _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
     };
 
@@ -46,7 +35,6 @@ public:
     virtual ~ZenoNode();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     QRectF boundingRect() const override;
-    void updateWhole();
 
     enum { Type = ZTYPE_NODE };
     int type() const override;
@@ -60,7 +48,6 @@ public:
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
     void setGeometry(const QRectF& rect) override;
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
-    void switchView(bool bPreview);
     void markError(bool isError);
     void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
 
@@ -107,50 +94,42 @@ protected:
     //ZenoNode:
     virtual void onParamEditFinished(const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;
-    virtual ZenoBackgroundWidget *initBodyWidget(ZenoSubGraphScene* pScene);
-    virtual ZenoBackgroundWidget *initHeaderStyle();
-    virtual ZenoBackgroundWidget *initPreview();
-    void adjustPreview(bool bVisible);
-    virtual QGraphicsLayout* initParams(ZenoSubGraphScene* pScene);
-    virtual QGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene);
-    virtual QGraphicsLinearLayout* initCustomParamWidgets();
+    virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
+    virtual ZLayoutBackground* initHeaderWidget();
+    virtual ZGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initCustomParamWidgets();
     virtual QValidator* validateForParams(PARAM_INFO info);
     virtual QValidator* validateForSockets(INPUT_SOCKET inSocket);
 
 protected:
     NodeUtilParam m_renderParams;
 
-    ZenoBackgroundWidget *m_bodyWidget;
-    ZenoBackgroundWidget *m_headerWidget;
-    ZenoBackgroundWidget *m_previewItem;
-    ZenoTextLayoutItem *m_previewText;
+    ZLayoutBackground* m_bodyWidget;
+    ZLayoutBackground* m_headerWidget;
 
 private:
-    QGraphicsLayout* initSockets(ZenoSubGraphScene* pScene);
-    void _initSocketItemPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, QGraphicsItem* pSocketText);
+    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket);
     ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param);
     bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
     void updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET inSocket);
-    void clearInSocketControl(const QString& sockName);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
 
-    FuckQMap<QString, _socket_ctrl> m_inSockets;
+    FuckQMap<QString, ZSocketLayout*> m_inSockets;
     FuckQMap<QString, _param_ctrl> m_params;
-    FuckQMap<QString, _socket_ctrl> m_outSockets;
+    FuckQMap<QString, ZSocketLayout*> m_outSockets;
 
-    ZenoTextLayoutItem* m_NameItem;
+    ZSimpleTextItem* m_NameItem;
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
-    QGraphicsLinearLayout* m_pMainLayout;
-    QGraphicsLinearLayout* m_pSocketsLayout;
-    QGraphicsLinearLayout* m_pInSocketsLayout;
-    QGraphicsLinearLayout* m_pOutSocketsLayout;
     QGraphicsRectItem* m_border;
+    ZGraphicsLayout* m_bodyLayout;
+
+    //when initui, zenonode should not emit any signals.
+    bool m_bUIInited;
 
     bool m_bError;
     bool m_bEnableSnap;

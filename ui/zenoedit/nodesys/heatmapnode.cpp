@@ -18,14 +18,18 @@ MakeHeatMapNode::~MakeHeatMapNode()
 
 }
 
-QGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
 {
     if (param.control == CONTROL_COLOR)
     {
         ZASSERT_EXIT(name == "_RAMPS", nullptr);
 
-        QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-        ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
+        ZGraphicsLayout* pParamLayout = new ZGraphicsLayout(true);
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("color");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
         pParamLayout->addItem(pNameItem);
 
         ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);

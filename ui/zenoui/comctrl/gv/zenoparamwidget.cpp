@@ -16,10 +16,6 @@ ZenoParamWidget::~ZenoParamWidget()
 {
 }
 
-int ZenoParamWidget::type() const
-{
-    return Type;
-}
 
 void ZenoParamWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -430,6 +426,21 @@ void ZenoGvComboBox::paintEvent(QPaintEvent *e)
     QComboBox::paintEvent(e);
 }
 
+
+ZenoParamComboBox::ZenoParamComboBox(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    m_combobox = new ZComboBox(false);
+    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
+    setWidget(m_combobox);
+
+    setZValue(ZVALUE_ELEMENT);
+    connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
+    connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
+    connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
 ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
@@ -443,6 +454,12 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
     connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
     connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+void ZenoParamComboBox::setItems(const QStringList& items)
+{
+    m_combobox->clear();
+    m_combobox->addItems(items);
 }
 
 void ZenoParamComboBox::onBeforeShowPopup()
@@ -474,17 +491,33 @@ void ZenoParamComboBox::onComboItemActivated(int index)
 
 
 ////////////////////////////////////////////////////////////////////////////////////
+ZenoParamPushButton::ZenoParamPushButton(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pBtn(nullptr)
+{
+    m_pBtn = new QPushButton;
+    m_pBtn->setProperty("cssClass", "grayButton");
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
 ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePolicy::Policy hor, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_width(width)
+    , m_pBtn(nullptr)
 {
-    QPushButton* pBtn = new QPushButton(name);
-    pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn = new QPushButton(name);
+    m_pBtn->setProperty("cssClass", "grayButton");
     if (hor == QSizePolicy::Fixed)
-        pBtn->setFixedWidth(width);
-    pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
-    setWidget(pBtn);
-    connect(pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+        m_pBtn->setFixedWidth(width);
+    m_pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
+void ZenoParamPushButton::setText(const QString& text)
+{
+    m_pBtn->setText(text);
 }
 
 
@@ -508,6 +541,24 @@ ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *par
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+
+ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pTextEdit(nullptr)
+{
+    m_pTextEdit = new QTextEdit;
+    setWidget(m_pTextEdit);
+    connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    m_pTextEdit->installEventFilter(this);
+    m_pTextEdit->setFrameShape(QFrame::NoFrame);
+    /*m_pTextEdit->setFont(param.font);*/
+    m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
+
+    QPalette pal;
+    pal.setColor(QPalette::Base, QColor(37, 37, 37));
+    m_pTextEdit->setPalette(pal);
+}
+
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_value(value)

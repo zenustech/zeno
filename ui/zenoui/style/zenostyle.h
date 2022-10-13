@@ -46,6 +46,7 @@ public:
 
     static qreal dpiScaled(qreal value);
     static QSize dpiScaledSize(const QSize &value);
+    static QSizeF dpiScaledSize(const QSizeF& sz);
 
     void drawComplexControl(ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget = nullptr) const override;
     void drawPrimitive(PrimitiveElement pe, const QStyleOption* opt, QPainter* p,

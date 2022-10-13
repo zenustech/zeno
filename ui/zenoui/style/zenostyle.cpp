@@ -35,6 +35,11 @@ QSize ZenoStyle::dpiScaledSize(const QSize &value)
     return QSize(ZenoStyle::dpiScaled(value.width()), ZenoStyle::dpiScaled(value.height()));
 }
 
+QSizeF ZenoStyle::dpiScaledSize(const QSizeF& sz)
+{
+    return QSizeF(ZenoStyle::dpiScaled(sz.width()), ZenoStyle::dpiScaled(sz.height()));
+}
+
 QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const
 {
     return base::sizeFromContents(type, option, size, widget);

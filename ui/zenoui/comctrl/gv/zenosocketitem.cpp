@@ -37,6 +37,11 @@ void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
     m_offsetToName = offsetToName;
 }
 
+void ZenoSocketItem::setup(const QModelIndex& idx)
+{
+    m_index = idx;
+}
+
 void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
 {
     QPointF namePos = mapFromScene(nameScenePos);

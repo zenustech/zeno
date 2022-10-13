@@ -34,20 +34,18 @@ void BlackboardNode::onUpdateParamsNotDesc()
     }
 }
 
-ZenoBackgroundWidget* BlackboardNode::initBodyWidget(ZenoSubGraphScene* pScene)
+ZLayoutBackground* BlackboardNode::initBodyWidget(ZenoSubGraphScene* pScene)
 {
-    ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
-
-    bodyWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    ZLayoutBackground* bodyWidget = new ZLayoutBackground(this);
 
     const auto &bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
     bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal, bodyBg.clr_hovered, bodyBg.clr_selected);
     bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
 
-    QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
+    ZGraphicsLayout* pVLayout = new ZGraphicsLayout(true);
     qreal border = m_renderParams.bodyBg.border_witdh;
-    pVLayout->setContentsMargins(border, border, border, border);
+    pVLayout->setContentsMargin(border, border, border, border);
 
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
@@ -91,28 +89,28 @@ void BlackboardNode::updateBlackboard()
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
 }
 
-ZenoBackgroundWidget* BlackboardNode::initHeaderStyle()
+ZLayoutBackground* BlackboardNode::initHeaderWidget()
 {
-    ZenoBackgroundWidget *headerWidget = new ZenoBackgroundWidget(this);
+    ZLayoutBackground* headerWidget = new ZLayoutBackground(this);
     auto headerBg = m_renderParams.headerBg;
     headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
     headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
     headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
 
-    QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
     ZenoSpacerItem *pSpacerItem = new ZenoSpacerItem(true, 100);
 
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
 
-    m_pTitle = new ZenoTextLayoutItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    m_pTitle = new ZGraphicsTextItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    m_pTitle->setText(blackboard.title);
     m_pTitle->setTextInteractionFlags(Qt::TextEditorInteraction);
     connect(m_pTitle->document(), &QTextDocument::contentsChanged, this, [=]() {
-        m_pTitle->updateGeometry();
-        pHLayout->invalidate();
+        ZGraphicsLayout::updateHierarchy(m_pTitle);
     });
-    connect(m_pTitle, &ZenoTextLayoutItem::editingFinished, this, [=]() {
+    connect(m_pTitle, &ZGraphicsTextItem::editingFinished, this, [=]() {
         PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         if (info.title != m_pTitle->toPlainText()) {
@@ -120,16 +118,16 @@ ZenoBackgroundWidget* BlackboardNode::initHeaderStyle()
         }
     });
 
-    QGraphicsLinearLayout *pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(Qt::Horizontal);
     pNameLayout->addItem(m_pTitle);
-    pNameLayout->setContentsMargins(5, 5, 5, 5);
+    pNameLayout->setContentsMargin(5, 5, 5, 5);
 
     int options = index().data(ROLE_OPTIONS).toInt();
 
-    pHLayout->addItem(pNameLayout);
+    pHLayout->addLayout(pNameLayout);
     pHLayout->addItem(pSpacerItem);
     pHLayout->setSpacing(0);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
+    pHLayout->setContentsMargin(0, 0, 0, 0);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -178,7 +176,7 @@ void BlackboardNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_bDragging) {
         m_bDragging = false;
-        updateWhole();
+        ZGraphicsLayout::updateHierarchy(this);
         updateBlackboard();
         return;
     }

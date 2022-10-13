@@ -4,7 +4,7 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/variantptr.h>
+#include "variantptr.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>

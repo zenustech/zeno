@@ -2,11 +2,18 @@
 #define __ZGVTEXTITEM_H__
 
 #include <QtWidgets>
+#include "zgraphicslayoutitem.h"
+
+
+typedef std::function<void(QString, QString)> Callback_EditContentsChange;
+typedef std::function<void(bool)> Callback_OnClick;
+
 
 class ZGraphicsTextItem : public QGraphicsTextItem
 {
     Q_OBJECT
 public:
+    ZGraphicsTextItem(QGraphicsItem* parent = nullptr);
     ZGraphicsTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent = nullptr);
     void setText(const QString& text);
     void setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM);
@@ -23,6 +30,7 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 
 private:
     QString m_text;
@@ -50,6 +58,7 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
     void setBackground(const QColor& clr);
+    void setText(const QString& text);
     void setRight(bool right);
     void setPadding(int left, int top, int right, int bottom);
     void setAlignment(Qt::Alignment align);
@@ -82,6 +91,7 @@ private:
     bool m_bHovered;
 };
 
+#if 0
 class ZSimpleTextLayoutItem : public ZSimpleTextItem, public QGraphicsLayoutItem
 {
 public:
@@ -93,9 +103,65 @@ public:
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
+};
+#endif
 
+
+class ZenoSocketItem;
+
+class ZSocketGroupItem : public ZSimpleTextItem
+{
+public:
+    explicit ZSocketGroupItem(
+        const QString& text,
+        bool bInput,
+        Callback_OnClick cbSockOnClick,
+        QGraphicsItem* parent = nullptr);
+
+    void setup(const QModelIndex& idx);
+    ZenoSocketItem* socketItem() const;
+    QPointF getPortPos();
+    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
+
+protected:
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
+private:
+    const int cSocketWidth = 16;
+    const int cSocketHeight = 16;
+    ZenoSocketItem* m_socket;
+    QPersistentModelIndex m_index;
+    bool m_bInput;
 };
 
+class ZSocketEditableItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
+{
+    Q_OBJECT
+    typedef ZGraphicsLayoutItem<ZGraphicsTextItem> _base;
+public:
+    explicit ZSocketEditableItem(
+        const QString& text,
+        bool bInput,
+        Callback_OnClick cbSockOnClick,
+        Callback_EditContentsChange cbRename,
+        QGraphicsItem* parent = nullptr);
 
+    void setup(const QModelIndex& idx);
+    void updateSockName(const QString& name);
+    ZenoSocketItem* socketItem() const;
+    QPointF getPortPos();
+    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+
+protected:
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
+private:
+    const int cSocketWidth = 16;
+    const int cSocketHeight = 16;
+    ZenoSocketItem* m_socket;
+    QPersistentModelIndex m_index;
+    bool m_bInput;
+};
 
 #endif

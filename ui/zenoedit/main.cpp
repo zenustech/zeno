@@ -5,11 +5,24 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 
+/* debug cutsom layout: ZGraphicsLayout */
+//#define DEBUG_ZENOGV_LAYOUT
+
+#ifdef DEBUG_ZENOGV_LAYOUT
+#include <zenoui/comctrl/gv/gvtestwidget.h>
+#endif
+
 
 int main(int argc, char *argv[]) 
 {
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+#ifdef DEBUG_ZENOGV_LAYOUT
+    TestGraphicsView view;
+    view.show();
+    return a.exec();
+#endif
 
     startUp();
 

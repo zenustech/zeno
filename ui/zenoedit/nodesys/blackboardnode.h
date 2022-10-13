@@ -13,8 +13,8 @@ public:
     void onUpdateParamsNotDesc() override;
 
 protected:
-    ZenoBackgroundWidget* initBodyWidget(ZenoSubGraphScene* pScene) override;
-    ZenoBackgroundWidget* initHeaderStyle() override;
+    ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene) override;
+    ZLayoutBackground* initHeaderWidget() override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
@@ -31,7 +31,7 @@ private:
     bool isDragArea(QPointF pos);
 
     ZenoParamBlackboard* m_pTextEdit;
-    ZenoTextLayoutItem* m_pTitle;
+    ZGraphicsTextItem* m_pTitle;
     bool m_bDragging;
 };
 

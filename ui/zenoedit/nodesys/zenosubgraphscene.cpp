@@ -147,7 +147,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
 void ZenoSubGraphScene::onZoomed(qreal factor)
 {
     for (auto pair : m_nodes) {
-        pair.second->switchView(factor < 0.3);
+        //pair.second->switchView(factor < 0.3);
     }
 }
 

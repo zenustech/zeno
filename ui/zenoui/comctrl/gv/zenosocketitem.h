@@ -30,6 +30,7 @@ public:
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
     void setOffsetToName(const QPointF& offsetToName);
+    void setup(const QModelIndex& idx);
     QRectF boundingRect() const override;
     QPointF center() const;
     bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
@@ -57,7 +58,7 @@ private:
     QString m_noHoverSvg;
     QString m_hoverSvg;
 
-    const QPersistentModelIndex m_index;
+    QPersistentModelIndex m_index;
     QString m_name;         //should update when meet dynamic socket.
 
     const int sHorLargeMargin;

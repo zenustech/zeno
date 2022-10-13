@@ -3,7 +3,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "zenoedit/util/log.h"
-#include <zenomodel/include/variantptr.h>
+#include "variantptr.h"
 #include "common.h"
 
 using namespace zeno::iotags;

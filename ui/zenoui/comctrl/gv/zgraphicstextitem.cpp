@@ -1,11 +1,17 @@
 #include "zgraphicstextitem.h"
+#include "zenosocketitem.h"
+#include "render/common_id.h"
 
+
+ZGraphicsTextItem::ZGraphicsTextItem(QGraphicsItem* parent)
+    : QGraphicsTextItem(parent)
+{
+}
 
 ZGraphicsTextItem::ZGraphicsTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent)
     : QGraphicsTextItem(parent)
-    , m_text(text)
 {
-
+    setText(text);
 }
 
 void ZGraphicsTextItem::setText(const QString& text)
@@ -16,29 +22,44 @@ void ZGraphicsTextItem::setText(const QString& text)
 
 void ZGraphicsTextItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM)
 {
-
+    QTextFrame* frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setLeftMargin(leftM);
+    format.setRightMargin(rightM);
+    format.setTopMargin(topM);
+    format.setBottomMargin(bottomM);
+    frame->setFrameFormat(format);
 }
 
 void ZGraphicsTextItem::setBackground(const QColor& clr)
 {
-
+    m_bg = clr;
 }
 
 QRectF ZGraphicsTextItem::boundingRect() const
 {
-    //todo
-    return QRectF();
+    return QGraphicsTextItem::boundingRect();
 }
 
 void ZGraphicsTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_HasFocus;
+    if (m_bg.isValid())
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(m_bg);
+        painter->drawRect(boundingRect());
+    }
+    QGraphicsTextItem::paint(painter, option, widget);
 }
 
 QPainterPath ZGraphicsTextItem::shape() const
 {
-    //todo
+    //ensure the hit test was overrided by whole rect, rather than text region.
     QPainterPath path;
+    path.addRect(boundingRect());
     return path;
 }
 
@@ -55,6 +76,20 @@ void ZGraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 void ZGraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     QGraphicsTextItem::mouseReleaseEvent(event);
+}
+
+void ZGraphicsTextItem::focusOutEvent(QFocusEvent* event)
+{
+    QGraphicsTextItem::focusOutEvent(event);
+    emit editingFinished();
+
+    QString newText = document()->toPlainText();
+    if (newText != m_text)
+    {
+        QString oldText = m_text;
+        m_text = newText;
+        emit contentsChanged(oldText, newText);
+    }
 }
 
 
@@ -171,6 +206,12 @@ void ZSimpleTextItem::setBackground(const QColor& clr)
     m_bg = clr;
 }
 
+void ZSimpleTextItem::setText(const QString& text)
+{
+    base::setText(text);
+    updateBoundingRect();
+}
+
 void ZSimpleTextItem::setHoverCursor(Qt::CursorShape cursor)
 {
     m_hoverCursor = cursor;
@@ -273,54 +314,182 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 }
 
 
-ZSimpleTextLayoutItem::ZSimpleTextLayoutItem(const QString& text, QGraphicsItem* parent)
-    : QGraphicsLayoutItem()
-    , ZSimpleTextItem(text, parent)
+ZSocketGroupItem::ZSocketGroupItem(
+        const QString& sockName, 
+        bool bInput,
+        Callback_OnClick cbSockOnClick,
+        QGraphicsItem* parent
+    )
+    : ZSimpleTextItem(sockName, parent)
+    , m_bInput(bInput)
 {
-    setZValue(3);
-    setGraphicsItem(this);
-    setFlags(ItemSendsScenePositionChanges);
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    ImageElement elem;
+    elem.image = ":/icons/socket-off.svg";
+    elem.imageHovered = ":/icons/socket-hover.svg";
+    elem.imageOn = ":/icons/socket-on.svg";
+    elem.imageOnHovered = ":/icons/socket-on-hover.svg";
+
+    m_socket = new ZenoSocketItem(sockName, bInput, QModelIndex(), elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, cbSockOnClick);
+
+    setBrush(QColor(188, 188, 188));
+    QFont font("HarmonyOS Sans Bold", 11);
+    font.setBold(true);
+    setFont(font);
+    updateBoundingRect();
+
+    setFlag(ItemSendsGeometryChanges);
+    setFlag(ItemSendsScenePositionChanges);
 }
 
-void ZSimpleTextLayoutItem::setGeometry(const QRectF& rect)
+void ZSocketGroupItem::setup(const QModelIndex& idx)
 {
-    prepareGeometryChange();
-    QGraphicsLayoutItem::setGeometry(rect);
-    setPos(rect.topLeft());
+    m_index = idx;
+    m_socket->setup(m_index);
 }
 
-QRectF ZSimpleTextLayoutItem::boundingRect() const
+ZenoSocketItem* ZSocketGroupItem::socketItem() const
 {
-    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
-    return rc;
+    return m_socket;
 }
 
-QPainterPath ZSimpleTextLayoutItem::shape() const
+QPointF ZSocketGroupItem::getPortPos()
 {
-    QPainterPath path;
-    path.addRect(boundingRect());
-    return path;
+    return m_socket->sceneBoundingRect().center();
 }
 
-void ZSimpleTextLayoutItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+bool ZSocketGroupItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
 {
-    //painter->fillRect(boundingRect(), QColor(255, 0, 0));
-    ZSimpleTextItem::paint(painter, option, widget);
+    return m_socket->getSocketInfo(bInput, nodeid, sockName);
 }
 
-QSizeF ZSimpleTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-    QRectF rc = ZSimpleTextItem::boundingRect();
-    switch (which)
+    if (change == QGraphicsItem::ItemPositionHasChanged)
     {
-    case Qt::MinimumSize:
-    case Qt::PreferredSize:
-        return rc.size();
-    case Qt::MaximumSize:
-        return QSizeF(3000, rc.height());
-    default:
-        break;
+        //adjust the pos of socket.
+        //the parent of this item pos.
+        QGraphicsItem* parent = this->parentItem();
+        if (parent) {
+            QRectF br = parent->sceneBoundingRect();
+            qreal x = 0, y = 0;
+            y = boundingRect().height() / 2 - cSocketHeight / 2;
+            static int sBorder = 2;
+            if (m_bInput) {
+                x = mapFromScene(br.topLeft()).x() - cSocketWidth / 2 + sBorder;
+            }
+            else {
+                x = mapFromScene(br.bottomRight()).x() - cSocketWidth / 2 - sBorder;
+            }
+            m_socket->setPos(QPointF(x, y));
+        }
     }
-    return constraint;
+    return value;
+}
+
+
+ZSocketEditableItem::ZSocketEditableItem(
+        const QString& sockName,
+        bool bInput,
+        Callback_OnClick cbSockOnClick,
+        Callback_EditContentsChange cbSockRename,
+        QGraphicsItem* parent
+    )
+    : _base(parent)
+    , m_bInput(bInput)
+{
+    setText(sockName);
+
+    ImageElement elem;
+    elem.image = ":/icons/socket-off.svg";
+    elem.imageHovered = ":/icons/socket-hover.svg";
+    elem.imageOn = ":/icons/socket-on.svg";
+    elem.imageOnHovered = ":/icons/socket-on-hover.svg";
+
+    m_socket = new ZenoSocketItem(sockName, bInput, QModelIndex(), elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    m_socket->setZValue(ZVALUE_ELEMENT);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, cbSockOnClick);
+
+    setDefaultTextColor(QColor(188, 188, 188));
+    QFont font("HarmonyOS Sans Bold", 11);
+    font.setBold(true);
+    setFont(font);
+
+    setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    //setData(GVKEY_SIZEHINT, QSizeF(32, 32));
+    setTextInteractionFlags(Qt::TextEditorInteraction);
+
+    QTextFrame* frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setBackground(QColor(37, 37, 37));
+    frame->setFrameFormat(format);
+
+    setFlag(ItemSendsGeometryChanges);
+    setFlag(ItemSendsScenePositionChanges);
+
+    QObject::connect(this, &ZSocketEditableItem::contentsChanged, cbSockRename);
+}
+
+void ZSocketEditableItem::setup(const QModelIndex& idx)
+{
+    m_index = idx;
+    m_socket->setup(m_index);
+}
+
+void ZSocketEditableItem::updateSockName(const QString& name)
+{
+    setPlainText(name);
+
+    //have to reset the text format, which is trivial.
+    QTextFrame* frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setBackground(QColor(37, 37, 37));
+    frame->setFrameFormat(format);
+}
+
+QPointF ZSocketEditableItem::getPortPos()
+{
+    return m_socket->sceneBoundingRect().center();
+}
+
+ZenoSocketItem* ZSocketEditableItem::socketItem() const
+{
+    return m_socket;
+}
+
+bool ZSocketEditableItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
+{
+    return m_socket->getSocketInfo(bInput, nodeid, sockName);
+}
+
+QVariant ZSocketEditableItem::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+    if (change == QGraphicsItem::ItemPositionHasChanged)
+    {
+        //adjust the pos of socket.
+        //the parent of this item pos.
+        QGraphicsItem* parent = parentItem();
+        if (parent) {
+            QRectF br = parent->sceneBoundingRect();
+            qreal x = 0, y = 0;
+            y = boundingRect().height() / 2 - cSocketHeight / 2;
+            static int sBorder = 2;
+            if (m_bInput) {
+                x = mapFromScene(br.topLeft()).x() - cSocketWidth / 2 + sBorder;
+            }
+            else {
+                x = mapFromScene(br.bottomRight()).x() - cSocketWidth / 2 - sBorder;
+            }
+            m_socket->setPos(QPointF(x, y));
+        }
+    }
+    return value;
+}
+
+void ZSocketEditableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_HasFocus;
+    _base::paint(painter, &myOption, widget);
 }
