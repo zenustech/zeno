@@ -22,6 +22,7 @@
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
+#include <viewport/viewportwidget.h>
 
 
 static QString getOpenFileName(
@@ -1710,6 +1711,12 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             {
                 pEditor->onPageActivated(subGraphIndex(), index());
             }
+        }
+        // for temp support to show handler via transform node
+        else if (name.contains("TransformPrimitive"))
+        {
+            auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+            viewport->changeTransformOperation(nodeId());
         }
     }
 }

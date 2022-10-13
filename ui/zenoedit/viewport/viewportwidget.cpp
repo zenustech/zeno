@@ -208,6 +208,21 @@ void CameraControl::clearTransformer() {
     transformer->clear();
 }
 
+void CameraControl::changeTransformOperation(const QString& node) {
+    auto opt = transformer->getTransOpt();
+    transformer->clear();
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    for (auto const &[key, _] : scene->objectsMan->pairs()) {
+        if (key.find(node.toStdString()) != std::string::npos) {
+            scene->selected.insert(key);
+            transformer->addObject(key);
+        }
+    }
+    transformer->setTransOpt(opt);
+    transformer->changeTransOpt();
+    zenoApp->getMainWindow()->updateViewport();
+}
+
 void CameraControl::changeTransformOperation(int mode) {
     switch (mode) {
     case 0:
@@ -695,6 +710,10 @@ void ViewportWidget::cameraLookTo(int dir) {
 
 void ViewportWidget::clearTransformer() {
     m_camera->clearTransformer();
+}
+
+void ViewportWidget::changeTransformOperation(const QString& node) {
+    m_camera->changeTransformOperation(node);
 }
 
 void ViewportWidget::changeTransformOperation(int mode) {

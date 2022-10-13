@@ -42,7 +42,10 @@ class FakeTransformer {
     void toTranslate();
     void toRotate();
     void toScale();
+    void changeTransOpt();
     void changeCoordSys();
+    int getTransOpt();
+    void setTransOpt(int opt);
     bool isTransformMode() const;
     glm::vec3 getCenter() const;
     void clear();
