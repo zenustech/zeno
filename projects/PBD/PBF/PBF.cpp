@@ -22,10 +22,14 @@ void PBF::preSolve()
 
 void PBF::boundaryHandling(vec3f & p)
 {
-    float worldScale = 20.0; //scale from simulation space to real world space.
+    // float worldScale = 20.0; //scale from simulation space to real world space.
     // this is to prevent the kernel from being divergent.
-    float bmin = pRadius/worldScale;
-    vec3f bmax = bounds - pRadius/worldScale;
+    vec3f rBounds;
+    rBounds[0] = (bounds[0]+1.0)*pRadius*10.0,
+    rBounds[1] =  4.0;
+    rBounds[2] = (bounds[2]+1.0)*pRadius*2.0;
+    float bmin = pRadius;
+    vec3f bmax = rBounds - pRadius;
 
     for (size_t dim = 0; dim < 3; dim++)
     {
@@ -88,7 +92,7 @@ void PBF::computeDpos()
             int pj = neighborList[i][j];
             vec3f distVec = pos[i] - pos[pj];
 
-            float sCorr = computeScorr(distVec);
+            float sCorr = computeScorr(distVec, coeffDq, coeffK, h);
             dposI += (lambda[i] + lambda[pj] + sCorr) * kernelSpikyGradient(distVec, h);
         }
         dposI /= rho0;
@@ -97,11 +101,8 @@ void PBF::computeDpos()
 }
 
 //helper for computeDpos()
-inline float PBF::computeScorr(const vec3f& distVec)
+inline float PBF::computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h)
 {
-    float coeffDq = 0.3;
-    float coeffK = 0.001;
-
     float x = kernelPoly6(length(distVec), h) / kernelPoly6(coeffDq * h, h);
     x = x * x;
     x = x * x;
@@ -111,8 +112,8 @@ inline float PBF::computeScorr(const vec3f& distVec)
 
 void PBF::postSolve()
 {
-    for (size_t i = 0; i < numParticles; i++)
-        boundaryHandling(pos[i]);
+    // for (size_t i = 0; i < numParticles; i++)
+    //     boundaryHandling(pos[i]);
     for (size_t i = 0; i < numParticles; i++)
         vel[i] = (pos[i] - oldPos[i]) / dt;
 }
