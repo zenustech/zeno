@@ -1038,9 +1038,9 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
+        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, sampleNumber = 0;
         QString presets, path, filename;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename);
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, sampleNumber);
         //validation.
 
         VideoRecInfo recInfo;
@@ -1050,6 +1050,7 @@ void DisplayWidget::onRecord()
         recInfo.bitrate = bitrate;
         recInfo.fps = fps;
         recInfo.videoname = filename;
+        recInfo.sampleNumber = sampleNumber;
 
         Zenovis::GetInstance().startPlay(true);
 

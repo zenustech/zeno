@@ -23,6 +23,8 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui->lineWidth->setText("1280");
 	m_ui->lineHeight->setValidator(new QIntValidator);
 	m_ui->lineHeight->setText("720");
+    m_ui->sampleNumber->setValidator(new QIntValidator);
+    m_ui->sampleNumber->setText("1");
 
 	m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
 	m_ui->cbPresets->setCurrentIndex(1);
@@ -39,12 +41,13 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn)
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &sampleNumber)
 {
 	frameStart = m_ui->frameStart->text().toInt();
 	frameEnd = m_ui->frameEnd->text().toInt();
 	fps = m_ui->fps->text().toInt();
 	bitrate = m_ui->bitrate->text().toInt();
+    sampleNumber = m_ui->sampleNumber->text().toInt();
 	presets = m_ui->cbPresets->currentText();
 	width = m_ui->lineWidth->text().toInt();
 	height = m_ui->lineHeight->text().toInt();
