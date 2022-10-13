@@ -518,8 +518,10 @@ struct ToZSTetrahedra : INode {
                 if (checkDuplication(key))
                     continue;
                 const auto &k{key};
+                // fmt::print("find key on quads : {}\n",k);
                 match(
                     [&k, &auxElmAttribs](const std::vector<vec3f> &vals) {
+                        // fmt::print("add 3dim attr {}\n",k);
                         auxElmAttribs.push_back(PropertyTag{k, 3});
                     },
                     [&k, &auxElmAttribs](const std::vector<float> &vals) {
@@ -531,8 +533,7 @@ struct ToZSTetrahedra : INode {
             }
         }
         tags.insert(std::end(tags), std::begin(auxVertAttribs), std::end(auxVertAttribs));
-        // eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),
-        // std::end(auxElmAttribs));
+        eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),std::end(auxElmAttribs));
 
         constexpr auto space = zs::execspace_e::openmp;
         zstets->particles = std::make_shared<typename ZenoParticles::particles_t>(tags, pos.size(), zs::memsrc_e::host);

@@ -59,6 +59,10 @@ target_sources(zeno PRIVATE
   fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
+
+  fem/collision_energy/vertex_face_collision.hpp
+  fem/collision_energy/vertex_face_sqrt_collision.hpp
+  fem/FleshDynamicStepping.cu
 )
 
 # geometry
@@ -79,4 +83,5 @@ target_sources(zeno PRIVATE
   geometry/BiharmonicBoundedWeight.cu
   geometry/MeshIO.cu
   geometry/Jiggle.cu
+  geometry/DeformationField.cu
 )

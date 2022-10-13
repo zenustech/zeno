@@ -13,6 +13,7 @@ set(PARAMETERIZATION_SOURCE_FILES
     nrosy.cpp
     read_off.cpp
     lscm_parameterization.cpp
+    MIQ.cpp
 )
 
 target_sources(zeno PRIVATE ${PARAMETERIZATION_SOURCE_FILES})

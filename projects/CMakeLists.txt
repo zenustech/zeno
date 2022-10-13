@@ -13,6 +13,7 @@ set(ZENO_EXTENSIONS
     FastFLIP
     Rigid
     cgmesh
+    LIBIGL
     mesher
     Euler
     FEM
@@ -21,6 +22,7 @@ set(ZENO_EXTENSIONS
     Alembic
     LSystem
     Skinning
+    Parameterization
     SampleModel
     Functional
     TreeSketch
