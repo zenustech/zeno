@@ -16,15 +16,17 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameEnd->setText(QString::number(frameEnd));
 	m_ui->fps->setValidator(new QIntValidator);
-	m_ui->fps->setText("30");
+	m_ui->fps->setText("24");
 	m_ui->bitrate->setValidator(new QIntValidator);
 	m_ui->bitrate->setText("20000");
 	m_ui->lineWidth->setValidator(new QIntValidator);
 	m_ui->lineWidth->setText("1280");
 	m_ui->lineHeight->setValidator(new QIntValidator);
 	m_ui->lineHeight->setText("720");
-    m_ui->sampleNumber->setValidator(new QIntValidator);
-    m_ui->sampleNumber->setText("1");
+    m_ui->msaaSamplerNumber->setValidator(new QIntValidator);
+    m_ui->msaaSamplerNumber->setText("0");
+    m_ui->optixSamplerNumber->setValidator(new QIntValidator);
+    m_ui->optixSamplerNumber->setText("1");
 
 	m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
 	m_ui->cbPresets->setCurrentIndex(1);
@@ -41,13 +43,14 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &sampleNumber)
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &numOptix, int &numMSAA)
 {
 	frameStart = m_ui->frameStart->text().toInt();
 	frameEnd = m_ui->frameEnd->text().toInt();
 	fps = m_ui->fps->text().toInt();
 	bitrate = m_ui->bitrate->text().toInt();
-    sampleNumber = m_ui->sampleNumber->text().toInt();
+    numMSAA = m_ui->msaaSamplerNumber->text().toInt();
+    numOptix = m_ui->optixSamplerNumber->text().toInt();
 	presets = m_ui->cbPresets->currentText();
 	width = m_ui->lineWidth->text().toInt();
 	height = m_ui->lineHeight->text().toInt();

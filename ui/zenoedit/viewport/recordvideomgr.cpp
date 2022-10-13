@@ -71,7 +71,8 @@ void RecordVideoMgr::recordFrame()
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     auto old_num_samples = scene->drawOptions->num_samples;
-    scene->drawOptions->num_samples = m_recordInfo.sampleNumber;
+    scene->drawOptions->num_samples = m_recordInfo.numOptix;
+    scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
     auto [x, y] = Zenovis::GetInstance().getSession()->get_window_size();
 
