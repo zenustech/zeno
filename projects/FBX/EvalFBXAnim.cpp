@@ -252,10 +252,11 @@ struct EvalAnim{
             bool infd = false;
             int bCount = 0;
             for(auto& b: bwe){
-                float bIndex = (float)m_JointCorrespondingIndex[b.first];
-                prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(bIndex);
-                prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(b.second);
-
+                if(jie){
+                    float bIndex = (float)m_JointCorrespondingIndex[b.first];
+                    prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(bIndex);
+                    prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(b.second);
+                }
                 //std::cout << "FBX: Vert " << i << " name " << b.first << " bIndex " << bIndex << std::endl;
                 infd = true;
                 auto& tr = m_Transforms[b.first];
