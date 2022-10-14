@@ -17,13 +17,14 @@ struct NeighborSearch_BVH: INode
         // #pragma omp parallel for
         for (int i = 0; i < pos.size(); i++) 
         {
-            // std::cout<<"good i: "<<i<<"\n";
+            std::cout<<"i: "<<i<<"\n";
             lbvh->iter_neighbors(
-                pos[i], [&](int pid) 
+                pos[i], [&](int j) 
                 {
-                    if (lengthSquared(pos[i] - pos[pid]) < radius2)
+                    if (lengthSquared(pos[i] - pos[j]) < radius2)
                     {
-                        list.value[i].emplace_back(pid);
+                        list.value[i].emplace_back(j);
+                        std::cout<<"j: "<<j<<"\n";
                     }
                 }
             );
@@ -48,7 +49,7 @@ struct NeighborSearch_BVH: INode
         for (size_t i = 0; i < pos.size(); i++)
         {
             numNeighbors[i]=neighborList.value[i].size();
-            std::cout<<"numNei["<<i<<"]: "<<neighborList.value[i].size()<<"\n";
+            // std::cout<<"numNei["<<i<<"]: "<<neighborList.value[i].size()<<"\n";
         }
         
         set_output("outPrim", std::move(prim));

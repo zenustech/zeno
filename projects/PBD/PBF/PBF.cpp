@@ -22,14 +22,19 @@ void PBF::preSolve()
 
 void PBF::boundaryHandling(vec3f & p)
 {
-    // float worldScale = 20.0; //scale from simulation space to real world space.
+    // // float worldScale = 20.0; //scale from simulation space to real world space.
+    // // this is to prevent the kernel from being divergent.
+    // vec3f rBounds;
+    // rBounds[0] = (bounds[0]+1.0)*pRadius*10.0,
+    // rBounds[1] =  4.0;
+    // rBounds[2] = (bounds[2]+1.0)*pRadius*2.0;
+    // float bmin = pRadius;
+    // vec3f bmax = rBounds - pRadius;
+
+    float worldScale = 20.0; //scale from simulation space to real world space.
     // this is to prevent the kernel from being divergent.
-    vec3f rBounds;
-    rBounds[0] = (bounds[0]+1.0)*pRadius*10.0,
-    rBounds[1] =  4.0;
-    rBounds[2] = (bounds[2]+1.0)*pRadius*2.0;
-    float bmin = pRadius;
-    vec3f bmax = rBounds - pRadius;
+    float bmin = pRadius/worldScale;
+    vec3f bmax = bounds - pRadius/worldScale;
 
     for (size_t dim = 0; dim < 3; dim++)
     {
