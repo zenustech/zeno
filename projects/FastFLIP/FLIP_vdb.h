@@ -151,15 +151,20 @@ struct FLIP_vdb {
 
   static void solve_pressure_simd_uaamg(
       openvdb::FloatGrid::Ptr &liquid_sdf,
+      openvdb::FloatGrid::Ptr &curvature,
       openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
       openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
-      openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
+      openvdb::Vec3fGrid::Ptr &solid_velocity,
+      float density, float tension_coef, bool enable_tension,
+      float dt, float dx);
 
   static void apply_pressure_gradient(
       openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
       openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
-      packed_FloatGrid3 &velocity,
-      openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
+      packed_FloatGrid3 &velocity, openvdb::Vec3fGrid::Ptr &solid_velocity,
+      openvdb::FloatGrid::Ptr &curvature,
+      float density, float tension_coef, bool enable_tension,
+      float dt, float dx);
 
   static void field_add_vector(packed_FloatGrid3 &velocity_field,
                                float x, float y, float z, float dt);

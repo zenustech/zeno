@@ -92,6 +92,120 @@ struct BuildPoissonRhs {
     const float mDx, mDt;
 };
 
+struct BuildPoissonRhs_withTension {
+    BuildPoissonRhs_withTension(
+        openvdb::FloatGrid::Ptr vx,
+        openvdb::FloatGrid::Ptr vy,
+        openvdb::FloatGrid::Ptr vz,
+        openvdb::FloatGrid::Ptr liquid_phi,
+        openvdb::FloatGrid::Ptr curvature,
+        openvdb::Vec3fGrid::Ptr weight,
+        openvdb::Vec3fGrid::Ptr solidVel,
+        const std::vector<openvdb::FloatTree::LeafNodeType*>& rhsLeaves,
+        const float dx, const float dt, float tension_coef) :
+        mVelAxr{ vx->tree(),  vy->tree(), vz->tree() },
+        mPhiAxr(liquid_phi->tree()), mCurvAxr(curvature->tree()),
+        mWeightAxr(weight->tree()), mSolidVelAxr(solidVel->tree()),
+        mRhsLeaves(rhsLeaves),
+        mDx(dx), mDt(dt), mTension_coef(tension_coef) {}
+
+    BuildPoissonRhs_withTension(const BuildPoissonRhs_withTension& other) :
+        mVelAxr{ other.mVelAxr[0], other.mVelAxr[1], other.mVelAxr[2] },
+        mPhiAxr(other.mPhiAxr), mCurvAxr(other.mCurvAxr),
+        mWeightAxr(other.mWeightAxr), mSolidVelAxr(other.mSolidVelAxr),
+        mRhsLeaves(other.mRhsLeaves),
+        mDx(other.mDx), mDt(other.mDt), mTension_coef(other.mTension_coef)
+    {
+        //clear the cache
+        for (int i = 0; i < 3; i++) {
+            mVelAxr[i].clear();
+        }
+        mPhiAxr.clear();
+        mCurvAxr.clear();
+        mWeightAxr.clear();
+        mSolidVelAxr.clear();
+    }
+
+    void operator()(const openvdb::Int32Tree::LeafNodeType& dofLeaf, openvdb::Index leafpos)  const {
+        float invdx = 1.0f / mDx;
+        float dtOverDxSqr = mDt / (mDx * mDx);
+
+        for (auto iter = dofLeaf.beginValueOn(); iter; ++iter) {
+            float rhs = 0;
+            openvdb::Coord globalCoord = iter.getCoord();
+            bool hasNonZeroWeight = false;
+
+            float phiThis = mPhiAxr.getValue(globalCoord);;
+            float phiOther = 0.f;
+
+            float curvThis = mCurvAxr.getValue(globalCoord);
+            float curvOther = 0.f;
+
+            float weight = 0.f; //face weight
+
+            //x+ x- y+ y- z+ z-
+            for (int i = 0; i < 6; i++) {
+                int channel = i / 2;
+                bool positiveDirection = (i % 2) == 0;
+
+                auto nextCoord = globalCoord;
+                auto phiCoord = globalCoord;
+
+                if (positiveDirection) {
+                    nextCoord[channel]++;
+                    phiCoord[channel]++;
+                }
+                else {
+                    phiCoord[channel]--;
+                }//end else positive direction
+                weight = mWeightAxr.getValue(nextCoord)[channel];
+                phiOther = mPhiAxr.getValue(phiCoord);
+                curvOther = mCurvAxr.getValue(phiCoord);
+                
+                if (weight != 0.f) {
+                    hasNonZeroWeight = true;
+                }
+
+                //liquid velocity iChannel
+                float vel = mVelAxr[channel].getValue(nextCoord);
+
+                //solid velocity iChannel
+                float svel = mSolidVelAxr.getValue(nextCoord)[channel];
+
+                //all elements there, write the rhs
+                //write to the right hand side part
+                if (positiveDirection) {
+                    rhs -= invdx * (weight * vel
+                        + (1.0f - weight) * svel);
+                }
+                else {
+                    rhs += invdx * (weight * vel
+                        + (1.0f - weight) * svel);
+                }
+
+                //the other cell is an air cell
+                if (phiThis < 0.f && phiOther >= 0.f) {
+                    float theta = fraction_inside(phiThis, phiOther);
+                    if (theta < 0.02f) theta = 0.02f;
+
+                    rhs += dtOverDxSqr*weight*mTension_coef*(theta*curvOther + (1.f - theta)*curvThis)/theta;
+                }
+            }//end for 6 faces of this voxel
+
+            if (!hasNonZeroWeight) {
+                rhs = 0;
+            }
+            mRhsLeaves[leafpos]->setValueOn(iter.offset(), rhs);
+        }//end for all dof 
+    }//end operator
+
+    mutable openvdb::FloatGrid::ConstUnsafeAccessor mVelAxr[3];
+    mutable openvdb::FloatGrid::ConstUnsafeAccessor mPhiAxr, mCurvAxr;
+    mutable openvdb::Vec3fGrid::ConstUnsafeAccessor mWeightAxr, mSolidVelAxr;
+    const std::vector<openvdb::FloatTree::LeafNodeType*>& mRhsLeaves;
+    const float mDx, mDt, mTension_coef;
+};
+
 LaplacianWithLevel::Ptr LaplacianWithLevel::createPressurePoissonLaplacian(openvdb::FloatGrid::Ptr liquidPhi, openvdb::Vec3fGrid::Ptr faceWeight, const float dt)
 {
     float dx = static_cast<float>(liquidPhi->voxelSize()[0]);
@@ -121,6 +235,39 @@ openvdb::FloatGrid::Ptr LaplacianWithLevel::createPressurePoissonRightHandSide(
         faceWeight,
         solidVel,
         rhsLeaves, mDxThisLevel, dt);
+
+    mDofLeafManager->foreach(op);
+    return rhs;
+}
+
+openvdb::FloatGrid::Ptr LaplacianWithLevel::createPressurePoissonRightHandSide_withTension(
+    openvdb::FloatGrid::Ptr liquid_phi,
+    openvdb::FloatGrid::Ptr curvature,
+    openvdb::Vec3fGrid::Ptr faceWeight,
+    openvdb::FloatGrid::Ptr vx, openvdb::FloatGrid::Ptr vy, openvdb::FloatGrid::Ptr vz,
+    openvdb::Vec3fGrid::Ptr solidVel, float dt, float tension_coef)
+{
+    
+    if (mLevel != 0) {
+        return openvdb::FloatGrid::create();
+    }
+
+    auto rhs = getZeroVectorGrid();
+
+    std::vector<openvdb::FloatTree::LeafNodeType*> rhsLeaves;
+    rhsLeaves.reserve(rhs->tree().leafCount());
+    rhs->tree().getNodes(rhsLeaves);
+
+    BuildPoissonRhs_withTension op(
+        vx,
+        vy,
+        vz,
+        liquid_phi,
+        curvature,
+        faceWeight,
+        solidVel,
+        rhsLeaves,
+        mDxThisLevel, dt, tension_coef);
 
     mDofLeafManager->foreach(op);
     return rhs;

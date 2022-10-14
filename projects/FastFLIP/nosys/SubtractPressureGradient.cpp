@@ -38,14 +38,20 @@ struct SubtractPressureGradient : zeno::INode {
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto solid_velocity = get_input("SolidVelocity")->as<VDBFloat3Grid>();
 
+    auto curvature = get_input("Curvature")->as<VDBFloatGrid>();
+    auto density = get_input("Density")->as<zeno::NumericObject>()->get<float>();
+    auto tension_coef = get_input("SurfaceTension")->as<zeno::NumericObject>()->get<float>();
+    bool enable_tension = tension_coef > 0? true : false;
+
     packed_FloatGrid3 packed_velocity;
     packed_velocity.from_vec3(velocity->m_grid);
 
     FLIP_vdb::apply_pressure_gradient(
         liquid_sdf->m_grid, solid_sdf->m_grid,
         curr_pressure->m_grid, face_weight->m_grid,
-        packed_velocity,
-        solid_velocity->m_grid, dx, dt);
+        packed_velocity, solid_velocity->m_grid,
+        curvature->m_grid, density, tension_coef, enable_tension, 
+        dt, dx);
 
     vdb_velocity_extrapolator::union_extrapolate(n,
 		                            packed_velocity.v[0],
@@ -61,12 +67,15 @@ static int defSubtractPressureGradient =
     zeno::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
                                                  {/* inputs: */ {
                                                       "dt","Dx",
+                                                      {"float", "Density", "1000.0"},
+                                                      {"float", "SurfaceTension", "0.0"},
                                                       "LiquidSDF",
                                                       "SolidSDF",
                                                       "Pressure",
                                                       "CellFWeight",
                                                       "Velocity",
                                                       "SolidVelocity",
+                                                      "Curvature",
 
                                                   },
                                                   /* outputs: */ {},
