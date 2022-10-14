@@ -5,26 +5,26 @@
 #include "NeighborListData.h"
 #include <iostream>
 
+
 using namespace zeno;
 
 namespace zeno{
 struct NeighborSearch_BVH: INode
 {
-    void buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, zeno::LBvh *lbvh, NeighborListData & list)
+
+    void buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list)
     {
         auto radius2 = searchRadius*searchRadius;
-        list.value.resize(pos.size());
         // #pragma omp parallel for
         for (int i = 0; i < pos.size(); i++) 
         {
-            std::cout<<"i: "<<i<<"\n";
-            lbvh->iter_neighbors(
-                pos[i], [&](int j) 
+            // std::cout<<"good i: "<<i<<"\n";
+            lbvh->iter_neighbors(pos[i], [&](int j) 
                 {
-                    if (lengthSquared(pos[i] - pos[j]) < radius2)
+                    // std::cout<<"i:"<<i<<"\nj:"<<j<<"\n";
+                    if (lengthSquared(pos[i] - pos[j]) < radius2 && j!=i)
                     {
-                        list.value[i].emplace_back(j);
-                        std::cout<<"j: "<<j<<"\n";
+                        list[i].emplace_back(j);
                     }
                 }
             );
@@ -39,18 +39,14 @@ struct NeighborSearch_BVH: INode
         auto prim = get_input<PrimitiveObject>("prim");
         auto & pos = prim->verts;
         float searchRadius = get_input<NumericObject>("searchRadius")->get<float>();
-        NeighborListData neighborList;
+        // NeighborListData neighborList;
         auto lbvh = get_input<zeno::LBvh>("lbvh");
 
-        buildNeighborList(pos, searchRadius, lbvh.get(), neighborList);
+        std::vector<std::vector<int>> neiList;
+        neiList.resize(pos.size());
 
-        //for debug only
-        auto numNeighbors = prim->add_attr<int>("numNeighbors");
-        for (size_t i = 0; i < pos.size(); i++)
-        {
-            numNeighbors[i]=neighborList.value[i].size();
-            // std::cout<<"numNei["<<i<<"]: "<<neighborList.value[i].size()<<"\n";
-        }
+        std::vector<vec3f> pos1;
+        buildNeighborList(pos1, searchRadius, lbvh.get(), neiList);
         
         set_output("outPrim", std::move(prim));
     }
@@ -60,8 +56,8 @@ ZENDEFNODE(NeighborSearch_BVH,
     {
         {
             {"prim"},
-            {"lbvh"},
-            {"float", "searchRadius",""},
+            {"LBvh","lbvh"},
+            {"float", "searchRadius","1.155"},
         },
         {"outPrim"},
         {},

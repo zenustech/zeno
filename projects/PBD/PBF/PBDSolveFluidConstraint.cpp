@@ -139,21 +139,21 @@ public:
 
 ZENDEFNODE(PBDSolveFluidConstraint, {// inputs:
                  {
-                    // {"float", "dt", "0.005"},
-                    // {"float", "rho0", "1.0"},
-                    // {"float", "h", "0.001"},
-                    // {"float", "mass", "1.0"},
-                    // {"float", "coeffDq", "0.3"},
-                    // {"float", "coeffK", "0.001"},
-                    // {"float", "lambdaEpsilon", "100.0"}
                     {"PrimitiveObject", "prim"},
                     {"float", "dt", "0.005"},
-                    {"float", "rho0", "1000.0"},
-                    {"float", "h", "0.1"},
-                    {"float", "mass", "0.1"},
+                    {"float", "rho0", "1.0"},
+                    {"float", "h", "0.001"},
+                    {"float", "mass", "1.0"},
                     {"float", "coeffDq", "0.3"},
-                    {"float", "coeffK", "0.1"},
-                    {"float", "lambdaEpsilon", "1e-6"}
+                    {"float", "coeffK", "0.001"},
+                    {"float", "lambdaEpsilon", "100.0"}
+                    // {"float", "dt", "0.005"},
+                    // {"float", "rho0", "1000.0"},
+                    // {"float", "h", "0.1"},
+                    // {"float", "mass", "0.1"},
+                    // {"float", "coeffDq", "0.3"},
+                    // {"float", "coeffK", "0.1"},
+                    // {"float", "lambdaEpsilon", "1e-6"}
                 },
                  // outputs:
                  {"outPrim"},
