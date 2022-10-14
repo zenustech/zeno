@@ -84,7 +84,6 @@ std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it) {
     decodeAttrVector(obj->polys, it);
     decodeAttrVector(obj->edges, it);
     decodeAttrVector(obj->uvs, it);
-    decodeAttrVector(obj->loop_uvs, it);
     if (*it++ == '1') {
         obj->mtl = std::make_shared<MaterialObject>();
         obj->mtl->deserialize(it);
@@ -103,7 +102,6 @@ bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator
     encodeAttrVector(obj->polys, it);
     encodeAttrVector(obj->edges, it);
     encodeAttrVector(obj->uvs, it);
-    encodeAttrVector(obj->loop_uvs, it);
     if (obj->mtl) {
         *it++ = '1';
         for (char c: obj->mtl->serialize())

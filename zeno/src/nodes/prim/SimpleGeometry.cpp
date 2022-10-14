@@ -671,10 +671,10 @@ struct CreatePlane : zeno::INode {
         }
 
         if(prim->loops.size()!= 0 ){
-            prim->loop_uvs.resize(prim->loops.size());
+            loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto lo = prim->loops[i];
-                prim->loop_uvs[i] = lo;
+                loops.attr<int>("uvs")[i] = lo;
             }
         }
 
