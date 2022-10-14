@@ -1,6 +1,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include <zeno/types/userData.h>
+#include <iostream>
 
 namespace zeno {
 struct PBDSolveDistanceConstraint : zeno::INode {
@@ -39,9 +40,14 @@ private:
             float w = invMass[id0] + invMass[id1];
             float s = -C / (w + alpha);
 
-
             pos[id0] += grad *   s * invMass[id0];
             pos[id1] += grad * (-s * invMass[id1]);
+
+            if(i==10)
+            {
+                vec3f dpos=grad *s * invMass[id0];
+                std::cout<<"dpos["<<id0<<"]: "<<dpos[id0]<<"\n";
+            }
         }
     }
 

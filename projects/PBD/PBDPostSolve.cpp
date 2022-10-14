@@ -17,7 +17,9 @@ struct PBDPostSolve : zeno::INode {
         for (int i = 0; i < pos.size(); i++) 
         {
             if(invMass[i] == 0)
+            {
                 continue;
+            }
             vel[i] = (pos[i] - prevPos[i]) / dt;
         }
     }

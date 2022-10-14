@@ -1,5 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <iostream>
 namespace zeno {
 struct PBDCloth : zeno::INode {
 private:
@@ -7,18 +8,8 @@ private:
     zeno::vec3f externForce{0, -10.0, 0};
     int numSubsteps = 10;
     float dt = 1.0 / 60.0 / numSubsteps;
-    float edgeCompliance = 100.0;
-    float dihedralCompliance = 1.0;
-
-    std::vector<float> restLen;
-    std::vector<float> restVol;
-    std::vector<float> invMass;
-    std::vector<float> restAng;
-
-    std::vector<zeno::vec3f> prevPos;
-    std::vector<zeno::vec3f> vel;
-
-    int numParticles;
+    float edgeCompliance;
+    float dihedralCompliance;
 
     float computeAng(   const vec3f & p0,
                         const vec3f & p1,
@@ -43,6 +34,23 @@ private:
         return res;
     }
 
+    /**
+     * @brief 计算球SDF(测试用)
+     * 
+     * @param p 当前点的位置
+     * @param normal 返回的sdf的梯度（归一化之后）
+     * @return float 返回的sdf值
+     */
+    float ballSdf(const vec3f& p, vec3f& normal)
+    {
+        vec3f ballCenter{0, 0.2, 0};
+        float ballRadius{0.1};
+
+        const vec3f diff = p-ballCenter;
+        float dist = length(diff) - ballRadius;
+        normal = normalize(diff);
+        return dist;
+    }
 
     void preSolve(  zeno::AttrVector<zeno::vec3f> &pos,
                     std::vector<zeno::vec3f> &prevPos,
@@ -53,12 +61,51 @@ private:
             prevPos[i] = pos[i];
             vel[i] += (externForce) * dt;
             pos[i] += vel[i] * dt;
+
+            //地板碰撞
             if (pos[i][1] < 0.0) 
             {
                 pos[i] = prevPos[i];
                 pos[i][1] = 0.0;
             }
+
+            //球体SDF碰撞
+            vec3f normal;
+            float sdf = ballSdf(pos[i], normal) ;
+            auto loss=0.05;
+            if(sdf < 0.0)
+            {
+                pos[i] = pos[i] - sdf * normal;
+                if(dot(vel[i],normal)<0.0)
+                    vel[i] -= min(dot(vel[i],normal), 0) * normal * loss;
+            }
+
+
+    //         const auto calcNormal = [spls = proxy<zs::execspace_e::host>(spls),
+    //                          eps = dx](const vec3f &x_) {
+    //   zs::vec<float, 3> x{x_[0], x_[1], x_[2]}, diff{};
+    //   /// compute a local partial derivative
+    //   for (int i = 0; i != 3; i++) {
+    //     auto v1 = x;
+    //     auto v2 = x;
+    //     v1[i] = x[i] + eps;
+    //     v2[i] = x[i] - eps;
+    //     diff[i] = (spls.getSignedDistance(v1) - spls.getSignedDistance(v2)) /
+    //               (eps + eps);
+    //   }
+    //   if (math::near_zero(diff.l2NormSqr()))
+    //     return vec3f{0, 0, 0};
+    //   auto r = diff.normalized();
+    //   return vec3f{r[0], r[1], r[2]};
+    // };
         }
+    }
+
+    inline vec3f calcNormal(const vec3f & vec1, const vec3f & vec2)
+    {
+        auto res = cross(vec1, vec2);
+        res = res / length(res);
+        return res;
     }
 
     /**
@@ -99,71 +146,59 @@ private:
         }
     }
 
-    /**
-     * @brief 求解两面夹角约束。注意需要先求出原角度再用。
-     * 
-     * @param pos 点位置
-     * @param quads 一小块布（由四个点组成的两个三角形）的四个顶点编号
-     * @param invMass 点的质量倒数
-     * @param restAng 原角度
-     * @param dihedralCompliance 二面角柔度
-     * @param dt 时间步长
-     */
-    void solveDihedralConstraint(
-        zeno::AttrVector<zeno::vec3f> &pos,
-        const zeno::AttrVector<zeno::vec4i> &quads,
-        const zeno::AttrVector<float> &invMass,
-        const zeno::AttrVector<float> &restAng,
-        const float dihedralCompliance,
-        const float dt
-        )
+
+    void solveDihedralConstraint(PrimitiveObject *prim)
     {
+        vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
         float alpha = dihedralCompliance / dt / dt;
 
-        for (int i = 0; i < quads.size(); i++)
+        auto &tris=prim->tris;
+        auto &pos=prim->verts;
+        auto &adj4th=prim->tris.attr<vec3i>("adj4th");
+        auto &invMass=prim->verts.attr<float>("invMass");
+        auto &restAng=prim->tris.attr<vec3f>("restAng");
+
+        for (int i = 0; i < prim->tris.size(); i++)
         {
-            //get data
-            const auto &invMass1 = invMass[quads[i][0]];
-            const auto &invMass2 = invMass[quads[i][1]];
-            const auto &invMass3 = invMass[quads[i][2]];
-            const auto &invMass4 = invMass[quads[i][3]];
+            for (int j = 0; j < 3; j++) //三个邻接三角面
+            {
+                const int id1=tris[i][0];
+                const int id2=tris[i][1];
+                const int id3=tris[i][2];
+                const int id4=adj4th[i][j];
+                const vec4f invMass_{invMass[id1],invMass[id2],invMass[id3],invMass[id4]};
 
-            vec3f &p1 = pos[quads[i][0]];
-            vec3f &p2 = pos[quads[i][1]];
-            vec3f &p3 = pos[quads[i][2]];
-            vec3f &p4 = pos[quads[i][3]];
+                //计算梯度。先对每个点求相对p1的位置。只是为了准备数据。
+                const vec3f& p1 = pos[id1];
+                const vec3f& p2 = pos[id2] - p1;
+                const vec3f& p3 = pos[id3] - p1;
+                const vec3f& p4 = pos[id4] - p1;
+                const vec3f& n1 = calcNormal(p2, p3); //p2与p3叉乘所得面法向
+                const vec3f& n2 = calcNormal(p2, p4);
+                float d = dot(n1,n2); 
 
-            //compute grads
-            p2 -= p1;
-            p3 -= p1;
-            p4 -= p1;
-            auto n1 = cross(p2, p3);
-            n1 = n1 / length(n1);
-            auto n2 = cross(p1, p3);
-            n2 = n2 / length(n2);
-            float d = computeFaceNormalDot(p1,p2,p3,p4);
-            vec3f grad3 =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
-            vec3f grad4 =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
-            vec3f grad2 = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
-                          -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
-            vec3f grad1 = - grad2 - grad3 - grad4;
+                //参考Muller2006附录公式(25)-(28)
+                grad[2] =  (cross(p2,n2) + cross(n1,p2) * d) / length(cross(p2,p3));
+                grad[3] =  (cross(p2,n1) + cross(n2,p2) * d) / length(cross(p2,p4));
+                grad[1] = -(cross(p3,n2) + cross(n1,p3) * d) / length(cross(p2,p3))
+                                -(cross(p4,n1) + cross(n2,p4) * d) / length(cross(p2,p4));
+                grad[0] = - grad[1] - grad[2] - grad[3];
 
-            //compute denominator
-            float denom = 0.0;  
-            denom += invMass1 * length(grad1)*length(grad1); 
-            denom += invMass2 * length(grad2)*length(grad2); 
-            denom += invMass3 * length(grad3)*length(grad3); 
-            denom += invMass4 * length(grad4)*length(grad4); 
-            
-            //compute scaling factor
-            float ang = computeAng(p1,p2,p3,p4);
-            float C = (ang - restAng[i]);
-            float s = -C * sqrt(1-d*d) /(denom + alpha);
-            
-            p1 += grad1 * s * invMass1;
-            p2 += grad2 * s * invMass2;
-            p3 += grad3 * s * invMass3;
-            p4 += grad4 * s * invMass4;
+                //公式(8)的分母
+                float w = 0.0;
+                for (int j = 0; j < 4; j++)
+                    w += invMass_[j] * (length(grad[j])) * (length(grad[j]));
+                if(w==0.0)
+                    return; //防止分母为0
+                
+                //公式(8)。sqrt(1-d*d)来源请看公式(29)，实际上来自grad。
+                float ang = acos(d);
+                float C = (ang - restAng[i][j]);
+                float s = -C * sqrt(1-d*d) /(w + alpha);
+
+                for (int j = 0; j < 4; j++)
+                    pos[j] += grad[j] * s * invMass[j];
+            }
         }
     }
 
@@ -181,7 +216,6 @@ public:
         auto prim = get_input<PrimitiveObject>("prim");
 
         externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
-
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
         dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
@@ -189,19 +223,19 @@ public:
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
         auto &edge = prim->lines;
-        auto &quads = prim->quads;
-        auto &surf = prim->tris;
+        auto &prevPos = prim->verts.attr<vec3f>("prevPos");
+        auto &vel = prim->verts.attr<vec3f>("vel");
+        auto &invMass=prim->verts.attr<float>("invMass");
+        auto &restLen=prim->lines.attr<float>("restLen");
 
-        for (size_t i = 0; i < 1; i++)
+        for (int steps = 0; steps < numSubsteps; steps++) 
         {
-            for (int steps = 0; steps < numSubsteps; steps++) 
-            {
-                preSolve(pos, prevPos, vel);
-                solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
-                solveDihedralConstraint(pos, quads, invMass, restAng, dihedralCompliance, dt);
-                postSolve(pos, prevPos, vel);
-            }
+            preSolve(pos, prevPos, vel);
+            solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            // solveDihedralConstraint(prim.get());
+            postSolve(pos, prevPos, vel);
         }
+        std::cout<<"good\n";
 
         set_output("outPrim", std::move(prim));
     };
@@ -212,8 +246,8 @@ ZENDEFNODE(PBDCloth, {// inputs:
                     {"PrimitiveObject", "prim"},
                     {"vec3f", "externForce", "0.0, -10.0, 0.0"},
                     {"int", "numSubsteps", "10"},
-                    {"float", "edgeCompliance", "100.0"},
-                    {"float", "dihedralCompliance", "100.0"}
+                    {"float", "edgeCompliance", "0.0"},
+                    {"float", "dihedralCompliance", "1.0"}
                 },
                  // outputs:
                  {"outPrim"},
