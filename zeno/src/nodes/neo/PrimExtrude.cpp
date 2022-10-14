@@ -26,6 +26,7 @@ struct PrimExtrude : INode {
         auto delOldFaces = get_input2<bool>("delOldFaces");
         auto autoFindEdges = get_input2<bool>("autoFindEdges");
         auto averagedExtrude = get_input2<bool>("averagedExtrude");
+        auto flipOldFaces = get_input2<bool>("flipOldFaces");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
 
@@ -139,9 +140,9 @@ struct PrimExtrude : INode {
         //if (flipNewFace) {
             //primFlipFaces(prim2.get());
         //}
-        //if (flipOldFace) {
-            //primFlipFaces(prim.get());
-        //}
+        if (flipOldFaces) {
+            primFlipFaces(prim.get());
+        }
 
         struct segment_less {
             bool operator()(vec2i const &a, vec2i const &b) const {
@@ -266,6 +267,7 @@ ZENDEFNODE(PrimExtrude, {
     {"bool", "delOldFaces", "1"},
     {"bool", "autoFindEdges", "1"},
     {"bool", "averagedExtrude", "1"},
+    {"bool", "flipOldFaces", "0"},
     },
     {
     {"PrimitiveObject", "prim"},
