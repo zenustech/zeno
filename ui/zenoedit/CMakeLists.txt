@@ -14,7 +14,7 @@ add_executable(zenoedit ${source})
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
-set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
+set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
 
 if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     find_package(Threads REQUIRED)

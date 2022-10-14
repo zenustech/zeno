@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <QtWidgets>
 #include <zeno/utils/log.h>
 #include <zeno/utils/Timer.h>
 #include <zeno/core/Graph.h>
@@ -18,7 +19,7 @@
 #include <QTcpSocket>
 #endif
 #include <zeno/utils/scope_exit.h>
-#include "corelaunch.h"
+#include "startup.h"
 #include "viewdecode.h"
 #include "settings/zsettings.h"
 
@@ -159,8 +160,8 @@ static int runner_start(std::string const &progJson, int sessionid) {
 
 }
 
-int runner_main(int sessionid, int port);
-int runner_main(int sessionid, int port) {
+int runner_main(int sessionid, int port, char* path);
+int runner_main(int sessionid, int port, char* path) {
 #ifdef __linux__
     stderr = freopen("/dev/stdout", "w", stderr);
 #endif
@@ -187,10 +188,22 @@ int runner_main(int sessionid, int port) {
     zeno::log_debug("runner started on sessionid={}", sessionid);
 
     std::string progJson;
-    std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;
-    std::back_insert_iterator<std::string> sit(progJson);
-    std::copy(iit, eiit, sit);
-
+    if (path && strlen(path) > 0)
+    {
+        std::string fileName(path);
+        QFile fn(QString::fromStdString(fileName));
+        if (fn.open(QIODevice::ReadOnly))
+        {
+            progJson = fn.readAll().toStdString();
+            fn.close();
+        }
+    }
+    if (progJson.empty())
+    {
+        std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;
+        std::back_insert_iterator<std::string> sit(progJson);
+        std::copy(iit, eiit, sit);
+    }
     return runner_start(progJson, sessionid);
 }
 #endif

@@ -183,6 +183,7 @@ if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
     add_subdirectory(ui/zenoedit)
     add_subdirectory(zenovis)
+    add_subdirectory(ui/zenolaunch)
 endif()
 
 if (ZENO_BUILD_DESIGNER)

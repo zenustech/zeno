@@ -12,6 +12,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
+#include "startup.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "serialize.h"
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
@@ -262,21 +263,4 @@ void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame)
 
 void killProgram() {
     killProgramJSON();
-}
-
-bool initZenCache() {
-    QSettings settings(zsCompanyName, zsEditor);
-    const QString& cachedir = settings.value("zencachedir").toString();
-    const QString& cachenum = settings.value("zencachenum").toString();
-    bool bDiskCache = false;
-    int cnum = cachenum.toInt(&bDiskCache);
-    bDiskCache = bDiskCache && QFileInfo(cachedir).isDir() && cnum > 0;
-    if (bDiskCache) {
-        auto cdir = cachedir.toStdString();
-        zeno::getSession().globalComm->frameCache(cdir.c_str(), cnum);
-    }
-    else {
-        zeno::getSession().globalComm->frameCache("", 0);
-    }
-    return bDiskCache;
 }

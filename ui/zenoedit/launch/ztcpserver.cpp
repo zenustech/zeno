@@ -11,6 +11,19 @@
 #include "settings/zsettings.h"
 
 
+
+struct CmdThread {
+    inline static std::mutex g_mtx;
+    std::string cmd;
+
+    void operator()() const {
+        std::unique_lock lck(g_mtx);
+        std::system(cmd.c_str());
+        //std::system("cmd /K C:\\Users\\Ada51\\source\\repos\\crashapp\\Debug\\crashapp.exe");
+    }
+};
+
+
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
@@ -45,6 +58,8 @@ void ZTcpServer::init(const QHostAddress& address)
     connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 }
 
+#define OPEN_ISOLATE_PROC
+
 void ZTcpServer::startProc(const std::string& progJson)
 {
     ZASSERT_EXIT(m_tcpServer);
@@ -57,6 +72,23 @@ void ZTcpServer::startProc(const std::string& progJson)
     zeno::log_info("launching program...");
     zeno::log_debug("program JSON: {}", progJson);
 
+#ifdef OPEN_ISOLATE_PROC
+    int sessionid = zeno::getSession().globalState->sessionid;
+    QTemporaryFile file("run.json");
+    file.setAutoRemove(false);
+    if (file.open())
+    {
+        file.write(progJson.data());
+        file.autoRemove();
+        file.close();
+    }
+    QString appPath = QCoreApplication::applicationDirPath() + "/" + "zenolaunch.exe";
+    QString cmd = "cmd /K " + appPath + " " + QStringList({"-runner", QString::number(sessionid), "-port", QString::number(m_port), "-path", file.fileName()}).join(" ");
+    std::string sCmd = cmd.toUtf8();
+
+    std::thread thr{ CmdThread{sCmd} };
+    thr.detach();
+#else
     m_proc = std::make_unique<QProcess>();
     m_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
     m_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
@@ -74,6 +106,7 @@ void ZTcpServer::startProc(const std::string& progJson)
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+#endif
 }
 
 void ZTcpServer::killProc()

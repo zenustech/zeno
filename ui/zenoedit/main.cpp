@@ -15,12 +15,12 @@ int main(int argc, char *argv[])
 
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 3 && !strcmp(argv[1], "-runner")) {
-        extern int runner_main(int sessionid, int port);
+        extern int runner_main(int sessionid, int port, char* path);
         int sessionid = atoi(argv[2]);
         int port = -1;
         if (argc >= 5 && !strcmp(argv[3], "-port"))
             port = atoi(argv[4]);
-        return runner_main(sessionid, port);
+        return runner_main(sessionid, port, 0);
     }
 #endif
 
