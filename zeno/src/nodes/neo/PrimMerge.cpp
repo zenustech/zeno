@@ -41,7 +41,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             tritotal += prim->tris.size();
             quadtotal += prim->quads.size();
             looptotal += prim->loops.size();
-            loop_uvtotal += prim->loop_uvs.size();
             uvtotal += prim->uvs.size();
             polytotal += prim->polys.size();
             bases[primIdx + 1] = total;
@@ -60,7 +59,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         outprim->tris.resize(tritotal);
         outprim->quads.resize(quadtotal);
         outprim->loops.resize(looptotal);
-        outprim->loop_uvs.resize(loop_uvtotal);
         outprim->uvs.resize(uvtotal);
         outprim->polys.resize(polytotal);
 
@@ -71,7 +69,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             outprim->tris.add_attr<int>(tagAttr);
             outprim->quads.add_attr<int>(tagAttr);
             outprim->loops.add_attr<int>(tagAttr);
-            outprim->loop_uvs.add_attr<int>(tagAttr);
             outprim->uvs.add_attr<int>(tagAttr);
             outprim->polys.add_attr<int>(tagAttr);
         }
@@ -100,10 +97,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 outprim->loops.add_attr<T>(key);
-            });
-            prim->loop_uvs.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                outprim->loop_uvs.add_attr<T>(key);
             });
             prim->uvs.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
@@ -393,36 +386,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             if (tagAttr.size()) {
                 auto &outarr = outprim->loops.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->loops.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
-        });
-
-        parallel_for(primList.size(), [&] (size_t primIdx) {
-            auto prim = primList[primIdx];
-            auto uvbase = uvbases[primIdx];
-            auto base = loop_uvbases[primIdx];
-            auto core = [&] (auto key, auto const &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                if constexpr (std::is_same_v<decltype(key), std::true_type>) {
-                    auto &outarr = outprim->loop_uvs.values;
-                    size_t n = std::min(arr.size(), prim->loop_uvs.size());
-                    for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = uvbase + arr[i];
-                    }
-                } else {
-                    auto &outarr = outprim->loop_uvs.attr<T>(key);
-                    size_t n = std::min(arr.size(), prim->loop_uvs.size());
-                    for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = arr[i];
-                    }
-                }
-            };
-            core(std::true_type{}, prim->loop_uvs.values);
-            prim->loop_uvs.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->loop_uvs.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->loop_uvs.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }

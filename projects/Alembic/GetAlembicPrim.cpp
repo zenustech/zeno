@@ -42,8 +42,8 @@ void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim) {
         auto [base, cnt] = prim->polys[i];
         for (int j = 0; j < (cnt / 2); j++) {
             std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
-            if (prim->loop_uvs.size()) {
-                std::swap(prim->loop_uvs[base + j], prim->loop_uvs[base + cnt - 1 - j]);
+            if (prim->loops.has_attr("uvs")) {
+                std::swap(prim->loops.attr<int>("uvs")[base + j], prim->loops.attr<int>("uvs")[base + cnt - 1 - j]);
             }
         }
     }

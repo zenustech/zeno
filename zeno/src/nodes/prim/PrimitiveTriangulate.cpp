@@ -41,7 +41,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         prim->tris.resize(tribase + redsum);
     }
 
-    if (!prim->loop_uvs.size() || !with_uv) {
+    if (!prim->loops.has_attr("uvs") || !with_uv) {
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
             if (len >= 3) {
@@ -73,7 +73,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         });
 
     } else {
-        auto &loop_uv = prim->loop_uvs;
+        auto &loop_uv = prim->loops.attr<int>("uvs");
         auto &uvs = prim->uvs;
         auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
@@ -118,7 +118,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     }
     prim->loops.clear();
     prim->polys.clear();
-    prim->loop_uvs.clear();
+    prim->loops.erase_attr("uvs");
     prim->uvs.clear();
   });
 }
