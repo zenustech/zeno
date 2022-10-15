@@ -43,7 +43,6 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMode->addItem("Quads");
     pMode->addItem("Polys");
     pMode->addItem("Loops");
-    pMode->addItem("LoopUVs");
     pMode->addItem("UVs");
     pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
