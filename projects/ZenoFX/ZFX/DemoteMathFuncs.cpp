@@ -69,12 +69,12 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
             auto mask = stm_const(0x80000000);
             return stm("&!", x, mask);
 
-        } else if (name == "%"){
-            ERROR_IF(args.size() != 2);
-            auto a = make_stm(args[0]);
-            auto b = make_stm(args[1]);
-            auto c = a;//stm("/", a, b);
-            return stm("*", stm("-", c, stm("floor", c)), b);
+        //} else if (name == "%"){
+            //ERROR_IF(args.size() != 2);
+            //auto a = make_stm(args[0]);
+            //auto b = make_stm(args[1]);
+            //auto c = a;//stm("/", a, b);
+            //return stm("*", stm("-", c, stm("floor", c)), b);
 
         /*} else if (name == "fsin") {
             ERROR_IF(args.size() != 1);
