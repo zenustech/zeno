@@ -166,6 +166,14 @@ struct FLIP_vdb {
       float density, float tension_coef, bool enable_tension,
       float dt, float dx);
 
+  static void solve_viscosity(
+    packed_FloatGrid3 &velocity,
+    packed_FloatGrid3 &viscosity_velocity,
+    openvdb::FloatGrid::Ptr &liquid_sdf,
+    openvdb::FloatGrid::Ptr &solid_sdf,
+    openvdb::Vec3fGrid::Ptr &solid_velocity,
+    float density, float viscosity, float dt);
+
   static void field_add_vector(packed_FloatGrid3 &velocity_field,
                                float x, float y, float z, float dt);
   static void emit_liquid(openvdb::points::PointDataGrid::Ptr &in_out_particles,
