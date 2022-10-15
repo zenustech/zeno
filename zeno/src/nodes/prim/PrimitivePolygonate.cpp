@@ -33,7 +33,6 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
 
     if (prim->quads.size()) {
         int base = prim->loops.size();
-        log_critical("0");
         for (int i = 0; i < prim->quads.size(); i++) {
             auto const &ind = prim->quads[i];
             prim->loops.push_back(ind[0]);
@@ -43,14 +42,11 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->polys.push_back({base + i * 4, 4});
         }
 
-        log_critical("1");
         prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
-            log_info("{} {} {} {}", key, prim->polys.size(), newarr.size(), arr.size());
             newarr.insert(newarr.end(), arr.begin(), arr.end());
         });
-        log_critical("2");
     }
 
     if (prim->lines.size()) {
@@ -84,6 +80,7 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         });
     }
 
+    prim->loops.update();
     prim->polys.update();
 
     if (!(!prim->tris.has_attr("uv0") || !prim->tris.has_attr("uv1") ||
