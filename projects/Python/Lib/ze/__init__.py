@@ -358,10 +358,6 @@ class ZenoPrimitiveObject(ZenoObject):
     def uvs(self):
         return self._getArray(7)
 
-    @property
-    def loop_uvs(self):
-        return self._getArray(8)
-
     def asObject(self):
         return ZenoObject.fromHandle(self._handle)
 

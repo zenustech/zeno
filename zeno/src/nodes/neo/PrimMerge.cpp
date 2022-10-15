@@ -21,7 +21,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         std::vector<size_t> tribases(primList.size() + 1);
         std::vector<size_t> quadbases(primList.size() + 1);
         std::vector<size_t> loopbases(primList.size() + 1);
-        std::vector<size_t> loop_uvbases(primList.size() + 1);
         std::vector<size_t> uvbases(primList.size() + 1);
         std::vector<size_t> polybases(primList.size() + 1);
         size_t total = 0;
@@ -30,7 +29,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         size_t tritotal = 0;
         size_t quadtotal = 0;
         size_t looptotal = 0;
-        size_t loop_uvtotal = 0;
         size_t uvtotal = 0;
         size_t polytotal = 0;
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -49,7 +47,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             tribases[primIdx + 1] = tritotal;
             quadbases[primIdx + 1] = quadtotal;
             loopbases[primIdx + 1] = looptotal;
-            loop_uvbases[primIdx + 1] = loop_uvtotal;
             uvbases[primIdx + 1] = uvtotal;
             polybases[primIdx + 1] = polytotal;
         }
