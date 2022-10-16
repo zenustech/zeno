@@ -787,7 +787,7 @@ QCheckBox::indicator:checked {
   <customwidget>
    <class>CurveMapView</class>
    <extends>QGraphicsView</extends>
-   <header>curvemap/curvemapview.h</header>
+   <header>curvemapview.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -24,6 +24,7 @@ enum CUSTOM_DATA_KEY
     GVKEY_SIZEPOLICY,
     GVKEY_OWNLAYOUT,
     GVKEY_PARENT_LAYOUT,
+    GVKEY_TYPE,         //socket/param type.
 };
 
 struct SizeInfo

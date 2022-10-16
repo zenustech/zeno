@@ -4,7 +4,7 @@
 #include "curvenodeitem.h"
 #include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/curvemodel.h>
-#include "../util/log.h"
+#include "zassert.h"
 #include <zenoui/style/zenostyle.h>
 
 

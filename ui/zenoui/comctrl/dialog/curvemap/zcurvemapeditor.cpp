@@ -7,7 +7,7 @@
 #include "curvesitem.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
-#include "util/log.h"
+#include "zassert.h"
 
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)

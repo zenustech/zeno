@@ -1,5 +1,5 @@
 #include "heatmapnode.h"
-#include "panel/zenoheatmapeditor.h"
+#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"

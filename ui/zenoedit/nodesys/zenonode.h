@@ -46,7 +46,6 @@ public:
     QPointF getPortPos(bool bInput, const QString& portName);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
-    void setGeometry(const QRectF& rect) override;
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
     void markError(bool isError);
     void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
@@ -90,7 +89,6 @@ protected:
 	void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-    QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
     //ZenoNode:
     virtual void onParamEditFinished(const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;

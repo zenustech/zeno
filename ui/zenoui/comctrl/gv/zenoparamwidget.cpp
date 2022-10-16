@@ -258,7 +258,7 @@ void ZenoParamPathEdit::setPath(const QString& path)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)
+ZenoParamCheckBox::ZenoParamCheckBox(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
     m_pCheckbox = new ZCheckBoxBar;
@@ -343,6 +343,14 @@ void ZenoVecEditItem::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene*
         {
             m_editors[i]->setText(QString::number(vec[i]));
         }
+    }
+}
+
+void ZenoVecEditItem::setVec(const UI_VECTYPE& vec)
+{
+    for (int i = 0; i < vec.size(); i++)
+    {
+        m_editors[i]->setText(QString::number(vec[i]));
     }
 }
 

@@ -3,7 +3,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/nodesys/zenosvgitem.h>
 #include <zenomodel/include/uihelper.h>
-#include "util/log.h"
+#include "zassert.h"
 
 
 ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)

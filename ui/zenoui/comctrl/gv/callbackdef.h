@@ -7,5 +7,8 @@ class ZenoSocketItem;
 
 typedef std::function<void(ZenoSocketItem*)> Callback_OnSockClicked;
 
+typedef std::function<void(QVariant state)> Callback_EditFinished;
+
+typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 
 #endif

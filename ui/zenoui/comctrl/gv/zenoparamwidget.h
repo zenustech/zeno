@@ -111,7 +111,7 @@ class ZenoParamCheckBox : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamCheckBox(const QString &text, QGraphicsItem *parent = nullptr);
+    ZenoParamCheckBox(QGraphicsItem *parent = nullptr);
     Qt::CheckState checkState() const;
     void setCheckState(Qt::CheckState state);
 
@@ -130,6 +130,7 @@ public:
     ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
     UI_VECTYPE vec() const;
     void setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene);
+    void setVec(const UI_VECTYPE& vec);
     bool isFloatType() const;
 
 signals:

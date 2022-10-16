@@ -18,8 +18,8 @@
 #include "util/log.h"
 #include "util/apphelper.h"
 #include <zenomodel/include/curveutil.h>
-#include "curvemap/zcurvemapeditor.h"
-#include "panel/zenoheatmapeditor.h"
+#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenomainwindow.h"
 
 

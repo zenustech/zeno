@@ -4,7 +4,7 @@
 #include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/uihelper.h>
 #include "curvesitem.h"
-#include "util/log.h"
+#include "zassert.h"
 
 using namespace curve_util;
 

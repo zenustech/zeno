@@ -4,7 +4,7 @@
 #include "curvesitem.h"
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/uihelper.h>
-#include "util/log.h"
+#include "zassert.h"
 
 
 CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, QGraphicsItem* parent)

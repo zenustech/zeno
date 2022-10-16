@@ -3,12 +3,14 @@
 
 #include "zgraphicslayoutitem.h"
 #include "zgraphicslayout.h"
+#include <zenomodel/include/modeldata.h>
 
 class ZenoGvHelper
 {
 public:
     static void setSizeInfo(QGraphicsItem* item, const SizeInfo& sz);
     static QSizeF sizehintByPolicy(QGraphicsItem* item);
+    static void setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVariant& value);
 };
 
 
