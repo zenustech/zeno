@@ -53,13 +53,13 @@ public:
 
     QString nodeId() const;
     QString nodeName() const;
-    QPointF nodePos() const;
+    QPointF nodePos() const; 
     INPUT_SOCKETS inputParams() const;
     OUTPUT_SOCKETS outputParams() const;
     virtual void onUpdateParamsNotDesc();
 
 signals:
-    void socketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos, QPersistentModelIndex linkIndex);
+    void socketClicked(ZenoSocketItem*);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
@@ -114,6 +114,7 @@ private:
     ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param);
     bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
     void updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET inSocket);
+    void updateWhole();
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

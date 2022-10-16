@@ -21,20 +21,20 @@ public:
     };
 
     ZenoSocketItem(
+        const QPersistentModelIndex& index,
         const QString& sockName,
         bool bInput,
-        QPersistentModelIndex nodeIdx,
         const ImageElement &elem,
         const QSizeF &sz,
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
     void setOffsetToName(const QPointF& offsetToName);
-    void setup(const QModelIndex& idx);
     QRectF boundingRect() const override;
     QPointF center() const;
+    QString name() const;
+    QModelIndex nodeIndex() const;
     bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
-    void updateSockName(const QString& sockName);
     void setSockStatus(SOCK_STATUS status);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
@@ -58,8 +58,7 @@ private:
     QString m_noHoverSvg;
     QString m_hoverSvg;
 
-    QPersistentModelIndex m_index;
-    QString m_name;         //should update when meet dynamic socket.
+    const QPersistentModelIndex m_index;
 
     const int sHorLargeMargin;
     const int sTopMargin;

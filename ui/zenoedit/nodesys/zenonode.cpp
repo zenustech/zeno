@@ -168,7 +168,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 
-    ZGraphicsLayout::updateHierarchy(this);
+    updateWhole();
 
     m_border->setZValue(ZVALUE_NODE_BORDER);
     m_border->hide();
@@ -654,7 +654,7 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
             }
         }
 
-        ZGraphicsLayout::updateHierarchy(this);
+        updateWhole();
     }
 }
 
@@ -735,26 +735,10 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
         info.oldInfo.name = oldText;
         info.updateWay = SOCKET_UPDATE_NAME;
         bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info, m_subGpIndex, true);
-        //if (!ret) {
-        //    //todo: error hint.
-        //    textItem->blockSignals(true);
-        //    textItem->setText(oldText);
-        //    textItem->blockSignals(false);
-        //}
     };
-    
-    auto cbSockOnClick = [=](bool bInput) {
-        QString sockName;
-        QPointF sockPos;
-        QPersistentModelIndex linkIdx;
 
-        ZenoSocketItem* socket = qobject_cast<ZenoSocketItem*>(QObject::sender());
-        if (socket)
-        {
-            getSocketInfoByItem(socket, sockName, sockPos, bInput, linkIdx);
-            // must use sockName rather than outSock because the sockname is dynamic.
-            emit this->socketClicked(nodeid, bInput, sockName, sockPos, linkIdx);
-        }
+    Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
+        emit socketClicked(pSocketItem);
     };
 
     if (bInput)
@@ -762,7 +746,7 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         if (renameDictKey(true, inputs, OUTPUT_SOCKETS()))
         {
-            ZGraphicsLayout::updateHierarchy(this);
+            updateWhole();
             return;
         }
         for (const INPUT_SOCKET inSocket : inputs)
@@ -772,7 +756,7 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
             {
                 //add socket
                 bool bEditableSock = inSocket.info.control == CONTROL_DICTKEY;
-                ZSocketLayout* pMiniLayout = new ZSocketLayout(inSock, true, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+                ZSocketLayout* pMiniLayout = new ZSocketLayout(m_index, inSock, true, bEditableSock, cbSockOnClick, cbFuncRenameSock);
 
                 const QString &sockType = inSocket.info.type;
                 PARAM_CONTROL ctrl = inSocket.info.control;
@@ -824,7 +808,7 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
             if (m_outSockets.find(outSock) == m_outSockets.end())
             {
                 bool bEditableSock = outSocket.info.control == CONTROL_DICTKEY;
-                ZSocketLayout* pSockLayout = new ZSocketLayout(outSock, false, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+                ZSocketLayout* pSockLayout = new ZSocketLayout(m_index, outSock, false, bEditableSock, cbSockOnClick, cbFuncRenameSock);
 
                 m_outSockets[outSock] = pSockLayout;
 
@@ -860,7 +844,7 @@ void ZenoNode::onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bIni
         }
     }
     if (!bInit)
-        ZGraphicsLayout::updateHierarchy(this);
+        updateWhole();
 }
 
 ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket)
@@ -1169,7 +1153,7 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
         }
     }
 
-    ZGraphicsLayout::updateHierarchy(this);
+    updateWhole();
 }
 
 
@@ -1184,7 +1168,10 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
             pSocket->toggle(bAdded);
             pSocket->setSockStatus(bAdded ? ZenoSocketItem::STATUS_CONNECTED : ZenoSocketItem::STATUS_NOCONN);
             if (m_inSockets[sockName]->control())
+            {
                 m_inSockets[sockName]->control()->setVisible(!bAdded);
+                updateWhole();
+            }
         }
 	}
 	else
@@ -1580,7 +1567,7 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     {
         m_bodyWidget->show();
     }
-    ZGraphicsLayout::updateHierarchy(this);
+    updateWhole();
     update();
 }
 
@@ -1637,4 +1624,11 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         }
     }
     return value;
+}
+
+void ZenoNode::updateWhole()
+{
+    ZGraphicsLayout::updateHierarchy(this);
+    emit inSocketPosChanged();
+    emit outSocketPosChanged();
 }

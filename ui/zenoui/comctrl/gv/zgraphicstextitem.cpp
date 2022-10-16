@@ -315,13 +315,15 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 
 ZSocketGroupItem::ZSocketGroupItem(
+        const QPersistentModelIndex& index,
         const QString& sockName, 
         bool bInput,
-        Callback_OnClick cbSockOnClick,
+        Callback_OnSockClicked cbSockOnClick,
         QGraphicsItem* parent
     )
     : ZSimpleTextItem(sockName, parent)
     , m_bInput(bInput)
+    , m_index(index)
 {
     ImageElement elem;
     elem.image = ":/icons/socket-off.svg";
@@ -329,8 +331,10 @@ ZSocketGroupItem::ZSocketGroupItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(sockName, bInput, QModelIndex(), elem, QSizeF(cSocketWidth, cSocketHeight), this);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, cbSockOnClick);
+    m_socket = new ZenoSocketItem(index, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
+        cbSockOnClick(m_socket);
+    });
 
     setBrush(QColor(188, 188, 188));
     QFont font("HarmonyOS Sans Bold", 11);
@@ -340,12 +344,6 @@ ZSocketGroupItem::ZSocketGroupItem(
 
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
-}
-
-void ZSocketGroupItem::setup(const QModelIndex& idx)
-{
-    m_index = idx;
-    m_socket->setup(m_index);
 }
 
 ZenoSocketItem* ZSocketGroupItem::socketItem() const
@@ -389,14 +387,16 @@ QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant&
 
 
 ZSocketEditableItem::ZSocketEditableItem(
+        const QPersistentModelIndex& index,
         const QString& sockName,
         bool bInput,
-        Callback_OnClick cbSockOnClick,
+        Callback_OnSockClicked cbSockOnClick,
         Callback_EditContentsChange cbSockRename,
         QGraphicsItem* parent
     )
     : _base(parent)
     , m_bInput(bInput)
+    , m_index(index)
 {
     setText(sockName);
 
@@ -406,9 +406,11 @@ ZSocketEditableItem::ZSocketEditableItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(sockName, bInput, QModelIndex(), elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    m_socket = new ZenoSocketItem(index, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, cbSockOnClick);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
+        cbSockOnClick(m_socket);
+    });
 
     setDefaultTextColor(QColor(188, 188, 188));
     QFont font("HarmonyOS Sans Bold", 11);
@@ -428,12 +430,6 @@ ZSocketEditableItem::ZSocketEditableItem(
     setFlag(ItemSendsScenePositionChanges);
 
     QObject::connect(this, &ZSocketEditableItem::contentsChanged, cbSockRename);
-}
-
-void ZSocketEditableItem::setup(const QModelIndex& idx)
-{
-    m_index = idx;
-    m_socket->setup(m_index);
 }
 
 void ZSocketEditableItem::updateSockName(const QString& name)

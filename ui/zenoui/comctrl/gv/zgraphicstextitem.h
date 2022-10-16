@@ -3,10 +3,7 @@
 
 #include <QtWidgets>
 #include "zgraphicslayoutitem.h"
-
-
-typedef std::function<void(QString, QString)> Callback_EditContentsChange;
-typedef std::function<void(bool)> Callback_OnClick;
+#include "callbackdef.h"
 
 
 class ZGraphicsTextItem : public QGraphicsTextItem
@@ -91,21 +88,6 @@ private:
     bool m_bHovered;
 };
 
-#if 0
-class ZSimpleTextLayoutItem : public ZSimpleTextItem, public QGraphicsLayoutItem
-{
-public:
-    ZSimpleTextLayoutItem(const QString& text, QGraphicsItem* parent = nullptr);
-    void setGeometry(const QRectF& rect) override;
-    QRectF boundingRect() const override;
-    QPainterPath shape() const override;
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
-
-protected:
-    QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
-};
-#endif
-
 
 class ZenoSocketItem;
 
@@ -113,12 +95,12 @@ class ZSocketGroupItem : public ZSimpleTextItem
 {
 public:
     explicit ZSocketGroupItem(
+        const QPersistentModelIndex& index,
         const QString& text,
         bool bInput,
-        Callback_OnClick cbSockOnClick,
+        Callback_OnSockClicked cbSockOnClick,
         QGraphicsItem* parent = nullptr);
 
-    void setup(const QModelIndex& idx);
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
     bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
@@ -130,8 +112,8 @@ private:
     const int cSocketWidth = 16;
     const int cSocketHeight = 16;
     ZenoSocketItem* m_socket;
-    QPersistentModelIndex m_index;
-    bool m_bInput;
+    const QPersistentModelIndex m_index;
+    const bool m_bInput;
 };
 
 class ZSocketEditableItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
@@ -140,13 +122,13 @@ class ZSocketEditableItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
     typedef ZGraphicsLayoutItem<ZGraphicsTextItem> _base;
 public:
     explicit ZSocketEditableItem(
+        const QPersistentModelIndex& index,
         const QString& text,
         bool bInput,
-        Callback_OnClick cbSockOnClick,
+        Callback_OnSockClicked cbSockOnClick,
         Callback_EditContentsChange cbRename,
         QGraphicsItem* parent = nullptr);
 
-    void setup(const QModelIndex& idx);
     void updateSockName(const QString& name);
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
@@ -160,8 +142,8 @@ private:
     const int cSocketWidth = 16;
     const int cSocketHeight = 16;
     ZenoSocketItem* m_socket;
-    QPersistentModelIndex m_index;
-    bool m_bInput;
+    const QPersistentModelIndex m_index;
+    const bool m_bInput;
 };
 
 #endif

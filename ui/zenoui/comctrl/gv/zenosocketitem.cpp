@@ -1,19 +1,19 @@
 #include "zenosocketitem.h"
+#include "zgraphicstextitem.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/modelrole.h>
 
 
 ZenoSocketItem::ZenoSocketItem(
+        const QPersistentModelIndex& index,
         const QString& sockName,
         bool bInput,
-        QPersistentModelIndex nodeIdx,
         const ImageElement& elem,
         const QSizeF& sz,
         QGraphicsItem* parent)
     : ZenoImageItem(elem, sz, parent)
     , m_bInput(bInput)
-    , m_name(sockName)
-    , m_index(nodeIdx)
+    , m_index(index)
     , m_status(STATUS_UNKNOWN)
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
@@ -35,11 +35,6 @@ int ZenoSocketItem::type() const
 void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
 {
     m_offsetToName = offsetToName;
-}
-
-void ZenoSocketItem::setup(const QModelIndex& idx)
-{
-    m_index = idx;
 }
 
 void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
@@ -67,6 +62,28 @@ QPointF ZenoSocketItem::center() const
     }
 }
 
+QString ZenoSocketItem::name() const
+{
+    QGraphicsItem* parent = parentItem();
+    if (ZSocketEditableItem* pItem = qgraphicsitem_cast<ZSocketEditableItem*>(parent))
+    {
+        return pItem->toPlainText();
+    }
+    else if (ZSocketGroupItem* pItem = qgraphicsitem_cast<ZSocketGroupItem*>(parent))
+    {
+        return pItem->text();
+    }
+    else
+    {
+        return QString();
+    }
+}
+
+QModelIndex ZenoSocketItem::nodeIndex() const
+{
+    return m_index;
+}
+
 QRectF ZenoSocketItem::boundingRect() const
 {
     QRectF rc = ZenoImageItem::boundingRect();
@@ -79,11 +96,6 @@ QRectF ZenoSocketItem::boundingRect() const
     return rc;
 }
 
-void ZenoSocketItem::updateSockName(const QString& sockName)
-{
-    m_name = sockName;
-}
-
 bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
 {
     Q_ASSERT(m_index.isValid());
@@ -92,7 +104,7 @@ bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockN
 
     bInput = m_bInput;
     nodeid = m_index.data(ROLE_OBJID).toString();
-    sockName = m_name;
+    sockName = name();
     return true;
 }
 
@@ -103,17 +115,18 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
 
     if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
     {
+        QString sockName = name();
         if (m_bInput) {
             INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(m_name) != inputs.end()) {
-                if (!inputs[m_name].linkIndice.isEmpty()) {
+            if (inputs.find(sockName) != inputs.end()) {
+                if (!inputs[sockName].linkIndice.isEmpty()) {
                     status = STATUS_CONNECTED;
                 }
             }
         } else {
             OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (outputs.find(m_name) != outputs.end()) {
-                if (!outputs[m_name].linkIndice.isEmpty()) {
+            if (outputs.find(sockName) != outputs.end()) {
+                if (!outputs[sockName].linkIndice.isEmpty()) {
                     status = STATUS_CONNECTED;
                 }
             }

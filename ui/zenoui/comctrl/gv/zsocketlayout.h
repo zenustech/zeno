@@ -12,10 +12,11 @@ class ZSocketLayout : public ZGraphicsLayout
 {
 public:
     ZSocketLayout(
+            const QPersistentModelIndex& index,
             const QString& sockName,
             bool bInput,
             bool editable,
-            Callback_OnClick cbSock,
+            Callback_OnSockClicked cbSock,
             Callback_EditContentsChange cb
             );
     ~ZSocketLayout();

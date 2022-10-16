@@ -10,6 +10,7 @@
 class ZenoNode;
 class ZenoFullLink;
 class ZenoTempLink;
+class ZenoSocketItem;
 class NodeGridItem;
 
 class ZenoSubGraphScene : public QGraphicsScene
@@ -55,8 +56,7 @@ public slots:
 private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
-    void onSocketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos,
-                         QPersistentModelIndex linkIndex);
+    void onSocketClicked(ZenoSocketItem* pSocketItem);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
