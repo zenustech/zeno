@@ -151,7 +151,8 @@ static std::optional<float> ray_triangle_intersect(
     auto &verts = prim->verts;
     auto &pos = ray_pos;
     auto &dir = ray_dir;
-    tbb::concurrent_vector<float> ts;
+    std::optional<float> res = std::nullopt;
+    std::mutex mtx;
     int tribase = prim->tris.size();
     bool is_poly = prim->polys.size() > 0;
     if (is_poly) {
@@ -175,9 +176,7 @@ static std::optional<float> ray_triangle_intersect(
         }
     }
 
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, prim->tris.size()),
-    [&](tbb::blocked_range<size_t> r) {
-    for (size_t i = r.begin(); i < r.end(); i++) {
+    zeno::parallel_for((size_t)0, prim->tris.size(), [&](size_t i){
         auto nor = zeno::cross(verts[tris[i][1]]- verts[tris[i][0]], verts[tris[i][2]] - verts[tris[i][0]]);
         auto normal = nor * (1.0f / zeno::dot(nor, nor));
 
@@ -211,25 +210,22 @@ static std::optional<float> ray_triangle_intersect(
             float c = 1.0f - (zeno::dot(v, cp) / zeno::dot(v, ca));
 
             if (a >= 0.0f && a <= 1.0f && b >= 0.0f && b <= 1.0f && c >= 0.0f && c <= 1.0f) {
-                ts.push_back(t);
+                std::lock_guard<std::mutex> _(mtx);
+                if (res.has_value()) {
+                    float v = res.value();
+                    if (t < v) {
+                        res = t;
+                    }
+                } else {
+                    res = t;
+                }
             }
         }
-    }
     });
     if (is_poly) {
         prim->tris.resize(tribase);
     }
-    if (ts.empty()) {
-        return std::nullopt;
-    } else {
-        float min_t = ts[0];
-        for (auto t: ts) {
-            if (t < min_t) {
-                min_t = t;
-            }
-        }
-        return min_t;
-    }
+    return res;
 }
 
 static bool test_in_selected_bounding(
