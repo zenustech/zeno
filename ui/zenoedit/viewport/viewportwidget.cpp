@@ -14,6 +14,8 @@
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
 #include <nodesview/zenographseditor.h>
+#include <zeno/para/parallel_for.h>
+#include <zeno/para/parallel_scan.h>
 //#include <zeno/utils/zeno_p.h>
 // #include <nodesys/nodesmgr.h>
 #include <zenomodel/include/nodesmgr.h>
@@ -150,6 +152,28 @@ static std::optional<float> ray_triangle_intersect(
     auto &pos = ray_pos;
     auto &dir = ray_dir;
     tbb::concurrent_vector<float> ts;
+    int tribase = prim->tris.size();
+    bool is_poly = prim->polys.size() > 0;
+    if (is_poly) {
+        std::vector<int> scansum(prim->polys.size());
+
+        auto redsum = zeno::parallel_exclusive_scan_sum(prim->polys.begin(), prim->polys.end(),
+        scansum.begin(), [&] (auto &ind) {
+            return ind[1] >= 3 ? ind[1] - 2 : 0;
+        });
+        prim->tris.resize(tribase + redsum);
+        for(int i = 0;i < prim->polys.size();i++){
+            auto [start, len] = prim->polys[i];
+            if (len >= 3) {
+                int scanbase = scansum[i] + tribase;
+                prim->tris[scanbase++] = zeno::vec3f(prim->loops[start], prim->loops[start + 1], prim->loops[start + 2]);
+                for (int j = 3; j < len; j++) {
+                    prim->tris[scanbase++] =
+                        zeno::vec3f(prim->loops[start], prim->loops[start + j - 1], prim->loops[start + j]);
+                }
+            }
+        }
+    }
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, prim->tris.size()),
     [&](tbb::blocked_range<size_t> r) {
@@ -192,6 +216,9 @@ static std::optional<float> ray_triangle_intersect(
         }
     }
     });
+    if (is_poly) {
+        prim->tris.resize(tribase);
+    }
     if (ts.empty()) {
         return std::nullopt;
     } else {
@@ -647,10 +674,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     }
                 }
                 scene->selected.insert(passed_prim.begin(), passed_prim.end());
-
             }
         }
-
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
         mainWin->onPrimitiveSelected(scene->selected);
     }
