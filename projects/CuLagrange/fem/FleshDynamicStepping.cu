@@ -17,8 +17,10 @@
 
 #include "../geometry/linear_system/mfcg.hpp"
 
-// #include "collision_energy/vertex_face_collision.hpp"
+#include "collision_energy/vertex_face_collision.hpp"
 #include "collision_energy/vertex_face_sqrt_collision.hpp"
+#include "collision_energy/edge_edge_collision.hpp"
+#include "collision_energy/edge_edge_sqrt_collition.hpp"
 
 namespace zeno {
     using T = float;

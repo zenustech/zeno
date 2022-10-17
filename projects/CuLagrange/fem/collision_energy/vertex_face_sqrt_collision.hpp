@@ -10,6 +10,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
     using namespace COLLISION_UTILS;
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+// TODO: for the purpose of consistent energy interface, we use vec4 bary, with bary = vec4{1,tri_bary}
     REAL psi(const std::vector<VECTOR3>& v,const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         // convert to vertices and edges

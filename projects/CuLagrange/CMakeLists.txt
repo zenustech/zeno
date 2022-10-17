@@ -62,6 +62,8 @@ target_sources(zeno PRIVATE
 
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
+  fem/collision_energy/edge_edge_collision.hpp
+  fem/collision_energy/edge_edge_sqrt_collition.hpp
   fem/FleshDynamicStepping.cu
 )
 
