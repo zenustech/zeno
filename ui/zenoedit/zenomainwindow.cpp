@@ -73,6 +73,7 @@ void ZenoMainWindow::initMenu() {
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+N")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
@@ -84,18 +85,21 @@ void ZenoMainWindow::initMenu() {
         pAction = new QAction(tr("Open"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+O")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 
