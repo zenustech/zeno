@@ -650,11 +650,19 @@ struct point_to_counter_reducer2 {
           carried_vel = StaggeredBoxSampler::sample(v_tobe_adv_axr, pIspos);
         }
 
+#if 0
         // update the velocity of the particle
         /*particle_vel = (m_pic_component)*adv_vel + (1.0f - m_pic_component) *
          * (adv_vel - old_vel + particle_vel);*/
 
         particle_vel = adv_vel + flip_component * (-old_vel + particle_vel);
+#endif
+
+        // update the velocity of the particle
+        /*particle_vel = (m_pic_component)*carried_vel + (1.0f - m_pic_component) *
+         * (carried_vel - old_vel + particle_vel);*/
+
+        particle_vel = carried_vel + flip_component * (-old_vel + particle_vel);
 
         pItpos = pIspos;
         movefunc(pItpos, adv_vel);
@@ -3081,7 +3089,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 
 void FLIP_vdb::solve_viscosity(
     packed_FloatGrid3 &velocity,
-    packed_FloatGrid3 &viscosity_velocity,
+    packed_FloatGrid3 &velocity_viscous,
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::Vec3fGrid::Ptr &solid_velocity,
@@ -3113,8 +3121,8 @@ void FLIP_vdb::solve_viscosity(
 	//m_substep_statistics.viscosity_ndof = viscosity_solver.m_matrix_levels[0]->m_ndof;
 	//m_substep_statistics.viscosity_iterations = viscosity_solver.m_iteration;
 
-	viscosity_velocity = result.deepCopy();
-	viscosity_velocity.setName("viscosity_velocity");
+	velocity_viscous = result.deepCopy();
+	velocity_viscous.setName("Velocity_Viscous");
 
 #if 0
 	for (int i = 0; i < 3; i++) {
@@ -3202,14 +3210,15 @@ void FLIP_vdb::Advect(float dt, float dx,
 void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist,
                              openvdb::points::PointDataGrid::Ptr &particles,
                              openvdb::FloatGrid::Ptr &liquid_sdf,
-                             openvdb::Vec3fGrid::Ptr &velocity,
+                             openvdb::Vec3fGrid::Ptr &velocity_adv,
+                             openvdb::Vec3fGrid::Ptr &velocity_viscous,
                              openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                              openvdb::FloatGrid::Ptr &solid_sdf,
                              openvdb::Vec3fGrid::Ptr &solid_vel,
                              float pic_min, float pic_max, int RK_ORDER) {
 
   custom_move_points_and_set_flip_vel(
-      particles, liquid_sdf, velocity, velocity, velocity_after_p2g, solid_sdf,
+      particles, liquid_sdf, velocity_adv, velocity_viscous, velocity_after_p2g, solid_sdf,
       solid_vel, pic_min, pic_max,
       dt, surfacedist, /*RK order*/ RK_ORDER);
 }

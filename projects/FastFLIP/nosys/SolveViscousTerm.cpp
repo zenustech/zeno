@@ -31,26 +31,34 @@ struct SolveViscousTerm : zeno::INode {
     auto density = get_input2<float>("Density");
     auto viscosity = get_input2<float>("Viscosity");
     auto velocity = get_input<VDBFloat3Grid>("Velocity");
-    auto viscous_velocity = get_input<VDBFloat3Grid>("ViscousVelocity");
+    auto velocity_viscous = get_input<VDBFloat3Grid>("ViscousVelocity");
     auto liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF");
     auto solid_sdf = get_input<VDBFloatGrid>("SolidSDF");
     auto solid_velocity = get_input<VDBFloat3Grid>("SolidVelocity");
-    
-    packed_FloatGrid3 packed_velocity, packed_viscous_vel;
-    packed_velocity.from_vec3(velocity->m_grid);
-    packed_viscous_vel.from_vec3(viscous_velocity->m_grid);
 
-    FLIP_vdb::solve_viscosity(packed_velocity, packed_viscous_vel, liquid_sdf->m_grid,
-                              solid_sdf->m_grid, solid_velocity->m_grid,
-                              density, viscosity, dt);
+    if (viscosity > 0)
+    {
+      packed_FloatGrid3 packed_velocity, packed_viscous_vel;
+      packed_velocity.from_vec3(velocity->m_grid);
+      packed_viscous_vel.from_vec3(velocity_viscous->m_grid);
 
-    vdb_velocity_extrapolator::union_extrapolate(n,
-		                            packed_viscous_vel.v[0],
-		                            packed_viscous_vel.v[1],
-		                            packed_viscous_vel.v[2],
-	  	                          &(liquid_sdf->m_grid->tree()));
-    
-    packed_viscous_vel.to_vec3(viscous_velocity->m_grid);
+      FLIP_vdb::solve_viscosity(packed_velocity, packed_viscous_vel, liquid_sdf->m_grid,
+                                solid_sdf->m_grid, solid_velocity->m_grid,
+                                density, viscosity, dt);
+
+      vdb_velocity_extrapolator::union_extrapolate(n,
+  		                            packed_viscous_vel.v[0],
+  		                            packed_viscous_vel.v[1],
+  		                            packed_viscous_vel.v[2],
+  	  	                          &(liquid_sdf->m_grid->tree()));
+
+      packed_viscous_vel.to_vec3(velocity_viscous->m_grid);
+    }
+    else
+    {
+      velocity_viscous->m_grid = velocity->m_grid->deepCopy();
+      velocity_viscous->setName("Velocity_Viscous");
+    }
   }
 };
 

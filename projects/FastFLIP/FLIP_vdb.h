@@ -110,7 +110,8 @@ struct FLIP_vdb {
   static void AdvectSheetty(float dt, float dx, float surfacedist,
                             openvdb::points::PointDataGrid::Ptr &particles,
                             openvdb::FloatGrid::Ptr &liquid_sdf,
-                            openvdb::Vec3fGrid::Ptr &velocity,
+                            openvdb::Vec3fGrid::Ptr &velocity_adv,
+                            openvdb::Vec3fGrid::Ptr &velocity_viscous,
                             openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                             openvdb::FloatGrid::Ptr &solid_sdf,
                             openvdb::Vec3fGrid::Ptr &solid_vel,
@@ -168,7 +169,7 @@ struct FLIP_vdb {
 
   static void solve_viscosity(
     packed_FloatGrid3 &velocity,
-    packed_FloatGrid3 &viscosity_velocity,
+    packed_FloatGrid3 &velocity_viscous,
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::Vec3fGrid::Ptr &solid_velocity,
