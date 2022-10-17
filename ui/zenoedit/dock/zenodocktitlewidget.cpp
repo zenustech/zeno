@@ -198,6 +198,8 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 		pEdit->addAction(createAction(tr("Collaspe")));
 		pEdit->addAction(createAction(tr("Expand")));
         pEdit->addAction(createAction(tr("Easy Subgraph")));
+        pEdit->addAction(createAction(tr("Open View")));
+        pEdit->addAction(createAction(tr("Clear View")));
 	}
 
 	QMenu* pOption = new QMenu(tr("Option"));

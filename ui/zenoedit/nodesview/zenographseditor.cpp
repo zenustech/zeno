@@ -567,6 +567,32 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
     }
 }
 
+void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
+{
+    ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+    if (pView)
+    {
+        ZenoSubGraphScene* pScene = pView->scene();
+        QModelIndexList nodes = pScene->selectNodesIndice();
+        const QModelIndex& subgIdx = pScene->subGraphIndex();
+        for (QModelIndex idx : nodes)
+        {
+            STATUS_UPDATE_INFO info;
+            int options = idx.data(ROLE_OPTIONS).toInt();
+            info.oldValue = options;
+            if (bOn) {
+                options |= OPT_VIEW;
+            }
+            else {
+                options ^= OPT_VIEW;
+            }
+            info.role = ROLE_OPTIONS;
+            info.newValue = options;
+            m_model->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+        }
+    }
+}
+
 void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 {
     const QString& text = pAction->text();
@@ -583,6 +609,14 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
         ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
+    }
+    else if (text == tr("Open View"))
+    {
+        toggleViewForSelected(false);
+    }
+    else if (text == tr("Clear View"))
+    {
+        toggleViewForSelected(false);
     }
     else if (text == tr("Easy Subgraph"))
     {
