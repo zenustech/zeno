@@ -624,6 +624,11 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                                 continue;
                             }
                             if (auto prim = dynamic_cast<zeno::PrimitiveObject*>(ptr)) {
+                                if (prim->tris.size() == 0 && prim->polys.size() == 0) {
+                                    min_t = ret.value();
+                                    name = key;
+                                    continue;
+                                }
                                 if(auto rett = ray_triangle_intersect(prim,ro,rd)) {
                                     float t = *rett;
                                     if (t < min_t) {
