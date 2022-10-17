@@ -215,7 +215,9 @@ struct GraphicsManager {
                     auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
                     auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
                     auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
-
+                    auto &uv_data0 = prim_in->tris.attr<zeno::vec3f>("uv0");
+                    auto &uv_data1 = prim_in->tris.attr<zeno::vec3f>("uv1");
+                    auto &uv_data2 = prim_in->tris.attr<zeno::vec3f>("uv2");
                     for(size_t tid=0;tid<prim_in->tris.size();tid++)
                     {
                         //std::cout<<tid<<std::endl;
@@ -226,9 +228,9 @@ struct GraphicsManager {
                               att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
                               att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
                               att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
-                              att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
-                              att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
-                              att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
+                              att_uv[vid]          = has_uv?uv_data0[tid]:in_uv[prim_in->tris[tid][0]];
+                              att_uv[vid+1]        = has_uv?uv_data1[tid]:in_uv[prim_in->tris[tid][1]];
+                              att_uv[vid+2]        = has_uv?uv_data2[tid]:in_uv[prim_in->tris[tid][2]];
                               att_tan[vid]         = in_tan[prim_in->tris[tid][0]];
                               att_tan[vid+1]       = in_tan[prim_in->tris[tid][1]];
                               att_tan[vid+2]       = in_tan[prim_in->tris[tid][2]];
