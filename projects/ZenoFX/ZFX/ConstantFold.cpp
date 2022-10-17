@@ -105,7 +105,7 @@ struct ConstantFold : Visitor<ConstantFold> {
         _PER_OP(*)
         _PER_OP(/)
 #undef _PER_OP
-        } else if (stmt->op == "%") { ret.f = std::fmod(lhs.f, rhs.f);
+        //} else if (stmt->op == "%") { ret.f = std::fmod(lhs.f, rhs.f);
 #define _PER_OP(x) } else if (stmt->op == #x) { ret.i = lhs.f x rhs.f ? 0xffffffff : 0;
         _PER_OP(==)
         _PER_OP(!=)

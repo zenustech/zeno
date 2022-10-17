@@ -85,7 +85,7 @@ ZENO_DEFNODE(PrimitiveBooleanOp)({
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
     {"string", "faceAttrName", ""},
     {"bool", "calcAnyFrom", "0"},
-    {"bool", "doMeshFix", "1"},
+    {"bool", "doMeshFix", "0"},
     },
     {"cgmesh"},
 });
