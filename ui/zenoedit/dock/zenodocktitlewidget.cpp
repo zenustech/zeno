@@ -300,6 +300,9 @@ void ZenoEditorDockTitleWidget::paintEvent(QPaintEvent* event)
 
 ZenoViewDockTitle::ZenoViewDockTitle(QWidget* parent)
 	: ZenoDockTitleWidget(parent)
+	, m_pSolidMode(nullptr)
+	, m_pShadingMode(nullptr)
+	, m_pOptixMode(nullptr)
 {
 
 }
@@ -383,30 +386,48 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             });
 
         pDisplay->addSeparator();
-        pAction = new QAction(tr("Solid"), this);
-        pAction->setShortcut(QKeySequence("F7"));
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
+        m_pSolidMode = new QAction(tr("Solid"), this);
+        m_pSolidMode->setShortcut(QKeySequence("F7"));
+        m_pSolidMode->setCheckable(true);
+        pDisplay->addAction(m_pSolidMode);
+        connect(m_pSolidMode, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
+
+            if (m_pShadingMode) m_pShadingMode->setChecked(false);
+            if (m_pOptixMode) m_pOptixMode->setChecked(false);
+            m_pSolidMode->setChecked(true);
         });
-        pAction = new QAction(tr("Shading"), this);
-        pAction->setShortcut(QKeySequence("Shift+F7"));
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
+        m_pSolidMode->setChecked(true);     //default mode.
+
+        m_pShadingMode = new QAction(tr("Shading"), this);
+        m_pShadingMode->setShortcut(QKeySequence("Shift+F7"));
+        m_pShadingMode->setCheckable(true);
+        pDisplay->addAction(m_pShadingMode);
+        connect(m_pShadingMode, &QAction::triggered, this, [=]() {
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             //Zenovis::GetInstance().getSession()->set_enable_gi(false);
             zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
+
+            if (m_pSolidMode) m_pSolidMode->setChecked(false);
+            if (m_pOptixMode) m_pOptixMode->setChecked(false);
+            m_pShadingMode->setChecked(true);
         });
-        pAction = new QAction(tr("Optix"), this);
-        pAction->setShortcut(QKeySequence("F8"));
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
+
+        m_pOptixMode = new QAction(tr("Optix"), this);
+        m_pOptixMode->setShortcut(QKeySequence("F8"));
+        m_pOptixMode->setCheckable(true);
+        pDisplay->addAction(m_pOptixMode);
+        connect(m_pOptixMode, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
+
+            if (m_pSolidMode) m_pSolidMode->setChecked(false);
+            if (m_pShadingMode) m_pShadingMode->setChecked(false);
+            m_pOptixMode->setChecked(true);
         });
     }
 
