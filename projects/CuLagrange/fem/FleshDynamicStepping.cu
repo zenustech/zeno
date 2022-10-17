@@ -23,117 +23,600 @@
 #include "collision_energy/edge_edge_sqrt_collition.hpp"
 
 namespace zeno {
+
+struct FleshDynamicStepping : INode {
+
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T, 3>;
     using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
 
-    // struct FEMBackwardEulerSystem {
-    //     constexpr auto dFAdF(const mat3& A) {
-    //         zs::vec<T,9,9> M{};
-    //         M(0,0) = M(1,1) = M(2,2) = A(0,0);
-    //         M(3,0) = M(4,1) = M(5,2) = A(0,1);
-    //         M(6,0) = M(7,1) = M(8,2) = A(0,2);
+    // currently only backward euler integrator is supported
+    struct FEMDynamicSteppingSystem {
+        constexpr auto dFAdF(const mat3& A) {
+            mat9 M{};
+            M(0,0) = M(1,1) = M(2,2) = A(0,0);
+            M(3,0) = M(4,1) = M(5,2) = A(0,1);
+            M(6,0) = M(7,1) = M(8,2) = A(0,2);
 
-    //         M(0,3) = M(1,4) = M(2,5) = A(1,0);
-    //         M(3,3) = M(4,4) = M(5,5) = A(1,1);
-    //         M(6,3) = M(7,4) = M(8,5) = A(1,2);
+            M(0,3) = M(1,4) = M(2,5) = A(1,0);
+            M(3,3) = M(4,4) = M(5,5) = A(1,1);
+            M(6,3) = M(7,4) = M(8,5) = A(1,2);
 
-    //         M(0,6) = M(1,7) = M(2,8) = A(2,0);
-    //         M(3,6) = M(4,7) = M(5,8) = A(2,1);
-    //         M(6,6) = M(7,7) = M(8,8) = A(2,2);
+            M(0,6) = M(1,7) = M(2,8) = A(2,0);
+            M(3,6) = M(4,7) = M(5,8) = A(2,1);
+            M(6,6) = M(7,7) = M(8,8) = A(2,2);
 
-    //         return M;        
-    //     }
+            return M;        
+        }
 
-    //     template<typename Pol,typename Model>
-    //     T be_energy(Pol& pol,const Model& model,const zs::SmallString& tag,dtiles_t& vtemp,dtiles_t& etemp) {
+        // use the energy form of projective dynamics
+        template<typename Pol,typename Model>
+        T energy(Pol& pol,const Model& model,
+            const zs::SmallString& p1_tag,
+            const zs::SmallString& p0_tag,
+            const zs::SmallString& v0_tag,
+            dtiles_t& vtemp,dtiles_t& etemp) {
+                using namespace zs;
+                constexpr auto space = execspace_e::cuda;
+                Vector<T> res{verts.get_allocator(),1};
 
-    //     }
+                bool shouldSync = pol.shouldSync();
+                pol.sync(true);
 
-    //     template <typename Pol, typename Model>
-    //     T energy(Pol &pol, const Model &model, const zs::SmallString& tag, dtiles_t& vtemp,dtiles_t& etemp) {
-    //         using namespace zs;
-    //         constexpr auto space = execspace_e::cuda;
-    //         Vector<T> res{verts.get_allocator(), 1};
-    //         res.setVal(0);
-    //         bool shouldSync = pol.shouldSync();
-    //         pol.sync(true);
-    //         //   elastic potential
-    //         pol(range(eles.size()), [verts = proxy<space>({}, verts),
-    //                                 eles = proxy<space>({}, eles),
-    //                                 vtemp = proxy<space>({}, vtemp),
-    //                                 etemp = proxy<space>({},etemp),
-    //                                 res = proxy<space>(res), tag, model = model,volf = volf] 
-    //                                 ZS_LAMBDA (int ei) mutable {
-    //             auto DmInv = eles.template pack<3, 3>("IB", ei);
-    //             auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
-    //             vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
-    //                         vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
-    //             mat3 FAct{};
-    //             {
-    //             auto x1x0 = xs[1] - xs[0];
-    //             auto x2x0 = xs[2] - xs[0];
-    //             auto x3x0 = xs[3] - xs[0];
-    //             auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
-    //                             x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-    //             FAct = Ds * DmInv;
+                pol(range(eles.size()),[this,
+                            verts = proxy<space>({},verts),
+                            eles = proxy<space>({},eles),
+                            vtemp = proxy<space>({},vtemp),
+                            etemp = proxy<space>({},etemp),
+                            res = proxy<space>(res),p1_tag,p0_tag,v0_tag,model,volf = volf]
+                        ZS_LAMBDA(int ei) mutable {
+                    auto DmInv = eles.template pack<3,3>("IB",ei);
+                    auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
+                    vec3 x1[4] = {vtemp.pack<3>(p1_tag, inds[0]),
+                            vtemp.pack<3>(p1_tag, inds[1]),
+                            vtemp.pack<3>(p1_tag, inds[2]),
+                            vtemp.pack<3>(p1_tag, inds[3])};   
+                    vec3 x0[4] = {vtemp.pack<3>(p0_tag, inds[0]), 
+                            vtemp.pack<3>(p0_tag, inds[1]),
+                            vtemp.pack<3>(p0_tag, inds[2]), 
+                            vtemp.pack<3>(p0_tag, inds[3])};  
 
-    //             FAct = FAct * etemp.template pack<3,3>("ActInv",ei);
+                    vec3 v0[4] = {vtemp.pack<3>(v0_tag, inds[0]), 
+                            vtemp.pack<3>(v0_tag, inds[1]),
+                            vtemp.pack<3>(v0_tag, inds[2]), 
+                            vtemp.pack<3>(v0_tag, inds[3])}; 
+                     
+                    mat3 FAct{};
+                    {
+                        auto x1x0 = x1[1] - x1[0];
+                        auto x2x0 = x1[2] - x1[0];
+                        auto x3x0 = x1[3] - x1[0];
+                        auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                        x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                        FAct = Ds * DmInv;
 
-    //             //   if(ei == 0) {
-    //             //     printf("FAct in energy : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
-    //             //         (float)FAct(0,0),(float)FAct(0,1),(float)FAct(0,2),
-    //             //         (float)FAct(1,0),(float)FAct(1,1),(float)FAct(1,2),
-    //             //         (float)FAct(2,0),(float)FAct(2,1),(float)FAct(2,2));
-    //             //   }
-    //             }
+                        FAct = FAct * etemp.template pack<3,3>("ActInv",ei);
+                    } 
 
-    //             auto psi = model.psi(FAct);
-    //             auto vole = eles("vol", ei);
+                    auto vole = eles("vol",ei);
+                    // elastic energy
+                    auto epsi = vole * model.psi(FAct);
 
-    //             T gpsi = 0;
-    //             for(int i = 0;i != 4;++i)
-    //                 gpsi += (-volf.dot(xs[i])/4); 
+                    // gravity potential energy
+                    T gpsi = 0;
+                    for(int i = 0;i != 4;++i)
+                        gpsi += (-volf.dot(x1[i])/4);
+                    gpsi *= vole;
 
-    //             atomic_add(exec_cuda, &res[0], (T)(vole * (psi + gpsi)));
-    //         });
-    //     // Bone Driven Potential Energy
-    //         T lambda = model.lam;
-    //         T mu = model.mu;
-    //         auto nmEmbedVerts = b_verts.size();
-    //         if(b_bcws.size() != b_verts.size()){
-    //             fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
-    //             throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
-    //         }
-    //         pol(range(nmEmbedVerts), [vtemp = proxy<space>({},vtemp),
-    //             eles = proxy<space>({},eles),
-    //             b_verts = proxy<space>({},b_verts),
-    //             bcws = proxy<space>({},b_bcws),lambda,mu,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
-    //             ZS_LAMBDA(int vi) mutable {
-    //                 auto ei = reinterpret_bits<int>(bcws("inds",vi));
-    //                 if(ei < 0)
-    //                     return;
-    //                 auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-    //                 auto w = bcws.pack<4>("w",vi);
+                    // inertial energy
+                    auto m = eles("m",ei);// element-wise mass
+                    T ipsi = 0;
 
-    //                 auto tpos = vec3::zeros();
-    //                 for(size_t i = 0;i != 4;++i)
-    //                     tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
-    //                 auto pdiff = tpos - b_verts.pack<3>("x",vi);
+                    for(int i = 0;i != 4;++i) {
+                        vec3 diff = x1[i] - x0[i] - dt * v0[i];
+                        ipsi += diff.l2NormSqr();
+                    }
 
-    //                 T stiffness = 2.0066 * mu + 1.0122 * lambda;
-    //                 // if(eles("vol",ei) < 0)
-    //                 //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
-    //                 T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
-    //                     // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
-    //                     // the cnorm here should be the allocated volume of point in embeded tet 
-    //                 atomic_add(exec_cuda, &res[0], (T)bpsi);
-    //         });
-    //         pol.sync(shouldSync);
-    //         return res.getVal();
-    //     }        
-    // };
+                    ipsi *= (m/dt/dt/2);
+
+                    atomic_add(exec_cuda, &res[0], (T)(epsi + gpsi + ipsi));
+                });
+
+            // Bone Driven Potential Energy
+                T lambda = model.lam;
+                T mu = model.mu;
+                auto nmEmbedVerts = b_verts.size();
+                if(b_bcws.size() != b_verts.size()){
+                    fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
+                    throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
+                }
+                pol(range(nmEmbedVerts), [this,
+                                vtemp = proxy<space>({},vtemp),
+                                eles = proxy<space>({},eles),
+                                b_verts = proxy<space>({},b_verts),
+                                bcws = proxy<space>({},b_bcws),lambda,mu,p1_tag,
+                                res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
+                            ZS_LAMBDA(int vi) mutable {
+                        auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                        if(ei < 0)
+                            return;
+                        auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+                        auto w = bcws.pack<4>("w",vi);
+
+                        auto tpos = vec3::zeros();
+                        for(size_t i = 0;i != 4;++i)
+                            tpos += w[i] * vtemp.pack<3>(p1_tag,inds[i]);
+                        auto pdiff = tpos - b_verts.pack<3>("x",vi);
+
+                        T stiffness = 2.0066 * mu + 1.0122 * lambda;
+                        // if(eles("vol",ei) < 0)
+                        //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
+                        T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
+                            // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
+                            // the cnorm here should be the allocated volume of point in embeded tet 
+                        atomic_add(exec_cuda, &res[0], (T)bpsi);
+                });           
+
+                pol.sync(shouldSync);
+                return res.getVal();
+        }
+
+        template <typename Model>
+        void computeGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
+                            const Model& model,
+                            const zs::SmallString& p1_tag,
+                            const zs::SmallString& p0_tag,
+                            const zs::SmallString& v0_tag,
+                            dtiles_t& vtemp,
+                            dtiles_t& etemp) {        
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+            PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+            PCG::fill<144>(cudaPol,etemp,"H",zs::vec<T,144>::zeros());         
+
+            // eval the inertia term gradient
+            cudaPol(zs::range(vtemp.size()), [this,   
+                        vtemp = proxy<space>({},vtemp),
+                        verts = proxy<space>({},verts),
+                        dt = dt,p1_tag,p0_tag,v0_tag] ZS_LAMBDA(int vi) mutable {
+                auto m = verts("m",vi);// nodal mass
+                auto x1 = vtemp.pack<3>(p1_tag,vi);
+                auto x0 = vtemp.pack<3>(p0_tag,vi);
+                auto v0 = vtemp.pack<3>(v0_tag,vi);
+
+                vtemp.template tuple<3>("grad",vi) = m * (x1 - x0 - v0 * dt)/dt/dt;                    
+            });
+
+            cudaPol(zs::range(eles.size()), [this,
+                            vtemp = proxy<space>({}, vtemp),
+                            etemp = proxy<space>({}, etemp),
+                            bcws = proxy<space>({},b_bcws),
+                            b_verts = proxy<space>({},b_verts),
+                            verts = proxy<space>({}, verts),
+                            eles = proxy<space>({}, eles),p1_tag,p0_tag,v0_tag, 
+                            model, volf = volf] ZS_LAMBDA (int ei) mutable {
+                    auto DmInv = eles.template pack<3,3>("IB",ei);
+                    auto dFdX = dFdXMatrix(DmInv);
+                    auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
+                    vec3 x1[4] = {vtemp.pack<3>(p1_tag, inds[0]),
+                            vtemp.pack<3>(p1_tag, inds[1]),
+                            vtemp.pack<3>(p1_tag, inds[2]),
+                            vtemp.pack<3>(p1_tag, inds[3])};   
+                    vec3 x0[4] = {vtemp.pack<3>(p0_tag, inds[0]), 
+                            vtemp.pack<3>(p0_tag, inds[1]),
+                            vtemp.pack<3>(p0_tag, inds[2]), 
+                            vtemp.pack<3>(p0_tag, inds[3])};  
+
+                    vec3 v0[4] = {vtemp.pack<3>(v0_tag, inds[0]), 
+                            vtemp.pack<3>(v0_tag, inds[1]),
+                            vtemp.pack<3>(v0_tag, inds[2]), 
+                            vtemp.pack<3>(v0_tag, inds[3])}; 
+
+
+                    mat3 FAct{};
+                    {
+                        auto x1x0 = x1[1] - x1[0];
+                        auto x2x0 = x1[2] - x1[0];
+                        auto x3x0 = x1[3] - x1[0];
+                        auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                        x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                        FAct = Ds * DmInv;
+
+                        FAct = FAct * etemp.template pack<3,3>("ActInv",ei);
+                    } 
+                    auto dFActdF = dFAdF(etemp.template pack<3,3>("ActInv",ei));
+
+                    // add the force term in gradient
+                    auto P = model.first_piola(FAct);
+                    auto vole = eles("vol", ei);
+                    auto vecP = flatten(P);
+                    vecP = dFActdF.transpose() * vecP;
+                    auto dFdXT = dFdX.transpose();
+                    auto vf = -vole * (dFdXT * vecP);     
+
+                    auto mg = volf * vole / 4;
+                    for (int i = 0; i != 4; ++i) {
+                        auto vi = inds[i];
+                        for (int d = 0; d != 3; ++d)
+                            atomic_add(exec_cuda, &vtemp("grad", d, vi), vf(i * 3 + d) + mg(d));
+                    }
+
+                    // assemble element-wise hessian matrix
+                    auto Hq = model.first_piola_derivative(FAct, true_c);
+                    auto dFdAct_dFdX = dFActdF * dFdX; 
+                    // dFdAct_dFdX = dFdX; 
+                    auto H = dFdAct_dFdX.transpose() * Hq * dFdAct_dFdX * vole;
+                    etemp.tuple<12 * 12>("H", ei) = H;
+
+
+                    auto m = eles("m",ei);// element-wise mass
+                    for(int i = 0;i < 12;++i)
+                        etemp("H",i * 12 + i,ei) = m/dt/dt/4;
+            });
+
+        // Bone Driven Potential Energy
+            T lambda = model.lam;
+            T mu = model.mu;
+            auto nmEmbedVerts = b_verts.size();
+            cudaPol(zs::range(nmEmbedVerts), [this,
+                    bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
+                    eles = proxy<space>({},eles),lambda,mu,p1_tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
+                        auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                        if(ei < 0)
+                            return;
+                        auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+                        auto w = bcws.pack<4>("w",vi);
+                        auto tpos = vec3::zeros();
+                        for(size_t i = 0;i != 4;++i)
+                            tpos += w[i] * vtemp.pack<3>(p1_tag,inds[i]);
+                        auto pdiff = tpos - b_verts.pack<3>("x",vi);
+
+                        T stiffness = 2.0066 * mu + 1.0122 * lambda;
+
+                        for(size_t i = 0;i != 4;++i){
+                            auto tmp = pdiff * (-stiffness * bcws("cnorm",vi) * bone_driven_weight * w[i] * eles("vol",ei)); 
+                            // tmp = pdiff * (-lambda * bcws("cnorm",vi) * bone_driven_weight * w[i]);
+                            for(size_t d = 0;d != 3;++d)
+                                atomic_add(exec_cuda,&vtemp("grad",d,inds[i]),(T)tmp[d]);
+                        }
+                        for(int i = 0;i != 4;++i)
+                            for(int j = 0;j != 4;++j){
+                                T alpha = stiffness * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi) * eles("vol",ei);
+                                // alpha = lambda * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi);
+                                // if(ei == 11221)
+                                //   if(i == 3 && j == 3)
+                                //     printf("alpha : %f\n",alpha);
+                                for(int d = 0;d != 3;++d){
+                                    // etemp("H",(i * 3 + d) * 12 + j * 3 + d,ei) += alpha;
+                                    // if(isnan(alpha)){
+                                    //     printf("nan alpha<%d,%d,%d> %f %f %f %f %f\n",vi,i,j,(float)lambda,(float)bone_driven_weight,(float)w[i],(float)w[j],(float)bcws("cnorm",vi));
+                                    // }
+                                    atomic_add(exec_cuda,&etemp("H",(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
+                                }
+                            }
+
+            });
+
+        }
+
+
+        FEMDynamicSteppingSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf,const T& _dt)
+            : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf},dt{_dt} {dt2 = dt * dt;}
+
+        const tiles_t &verts;
+        const tiles_t &eles;
+        const tiles_t &b_bcws;  // the barycentric interpolation of embeded bones 
+        const tiles_t &b_verts; // the position of embeded bones
+
+        T bone_driven_weight;
+        vec3 volf;
+        T dt;
+        T dt2;
+    };
+
+
+
+    void apply() override {
+        using namespace zs;
+        auto zstets = get_input<ZenoParticles>("ZSParticles");
+        auto gravity = zeno::vec<3,T>(0);
+        if(has_input("gravity"))
+        gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
+        auto armijo = get_param<float>("armijo");
+        auto curvature = get_param<float>("wolfe");
+        auto cg_res = get_param<float>("cg_res");
+        auto btl_res = get_param<float>("btl_res");
+        auto models = zstets->getModel();
+        auto& verts = zstets->getParticles();
+        auto& eles = zstets->getQuadraturePoints();
+        auto zsbones = get_input<ZenoParticles>("driven_bones");
+        auto tag = get_param<std::string>("driven_tag");
+        auto muscle_id_tag = get_param<std::string>("muscle_id_tag");
+        auto bone_driven_weight = get_param<float>("bone_driven_weight");
+        auto newton_res = get_param<float>("newton_res");
+        auto dt = get_param<float>("dt");
+
+        auto volf = vec3::from_array(gravity * models.density);
+
+        // auto nm_acts = get_input<zeno::ListObject>("Acts")->arr.size();
+        // fmt::print("number of activations : {}\n",nm_acts);
+
+        std::vector<float> act_;    
+        std::size_t nm_acts = 0;
+        // auto nm_acts_ = zstets->get().get("NM_MUSCLES");
+        // std::cout << "nm_acts_ : " << std::endl;
+
+        if(has_input("Acts")) {
+        act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
+        nm_acts = act_.size();
+        }
+        // auto act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
+        // initialize on host qs[i] = qs_[i]->get<zeno::vec4f>();
+
+        constexpr auto host_space = zs::execspace_e::openmp;
+        auto ompExec = zs::omp_exec();
+        auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
+        ompExec(range(act_buffer.size()),
+            [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
+                act_buffer("act",i) = act_[i];
+                // fmt::print("act<{}> : {}\n",i,act_buffer("act",i));
+        });
+        act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
+
+        static dtiles_t vtemp{verts.get_allocator(),
+                            {{"grad", 3},
+                            {"P", 9},
+                            {"bou_tag",1},
+                            {"dir", 3},
+                            {"xn", 3},
+                            {"xn0", 3},
+                            {"xp",3},
+                            {"vp",3},
+                            {"temp", 3},
+                            {"r", 3},
+                            {"p", 3},
+                            {"q", 3}},
+                            verts.size()};
+        static dtiles_t etemp{eles.get_allocator(), {{"H", 12 * 12},{"inds",4},{"ActInv",3*3},{"muscle_ID",1},{"fiber",3}}, eles.size()};
+        vtemp.resize(verts.size());
+        etemp.resize(eles.size());
+
+        FEMDynamicSteppingSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf,dt};
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec().sync(false);
+
+        PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+
+
+        if(!eles.hasProperty("fiber")){
+            // fmt::print("The input flesh have no fiber orientations, use the default setting\n");
+            PCG::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
+            // throw std::runtime_error("The input flesh should have fiber orientations");
+
+        }else {
+        if(eles.getChannelSize("fiber") != 3){
+            fmt::print("The input fiber  has wrong channel size\n");
+            throw std::runtime_error("The input fiber has wrong channel size");
+        }
+        PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
+        }
+        if(!eles.hasProperty(muscle_id_tag)) {
+        // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
+        //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+        //     throw std::runtime_error("the quadrature has no muscle id tag");
+        // }
+        // fmt::print("The input flesh have no mosucle_id specified, use the default setting");
+        PCG::fill(cudaPol,etemp,"muscle_ID",-1);
+        }else {
+        PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
+        }
+
+        // apply muscle activation
+        cudaPol(range(etemp.size()),
+            [etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
+                // auto act = eles.template pack<3>("act",ei);
+                auto fiber = etemp.template pack<3>("fiber",ei);
+                
+                vec3 act{0};
+
+                auto nfiber = fiber.norm();
+                auto ID = etemp("muscle_ID",ei);
+                if(nfiber < 0.5 || ID < -1e-6 || nm_acts == 0){ // if there is no local fiber orientaion, use the default act and fiber
+                    fiber = vec3{1.0,0.0,0.0};
+                    act = vec3{1.0,1.0,1.0};
+                }else{
+                    // a test
+                    int id = (int)ID;
+                    float a = 1. - act_buffer("act",id);
+                    act = vec3{1,zs::sqrt(1./a),zs::sqrt(1./a)};
+                    fiber /= nfiber;// in case there is some floating-point error
+
+                    // printf("use act[%d] : %f\n",id,(float)a);
+                }
+
+                vec3 dir[3];
+                dir[0] = fiber;
+                auto tmp = vec3{1.0,0.0,0.0};
+                dir[1] = dir[0].cross(tmp);
+                if(dir[1].length() < 1e-3) {
+                    tmp = vec3{0.0,1.0,0.0};
+                    dir[1] = dir[0].cross(tmp);
+                }
+
+                dir[1] = dir[1] / dir[1].length();
+                dir[2] = dir[0].cross(dir[1]);
+
+                auto R = mat3{};
+                for(int i = 0;i < 3;++i)
+                    for(int j = 0;j < 3;++j)
+                        R(i,j) = dir[j][i];
+
+                auto Act = mat3::zeros();
+                Act(0,0) = act[0];
+                Act(1,1) = act[1];
+                Act(2,2) = act[2];
+
+                Act = R * Act * R.transpose();
+
+                // if(ei == 0) {
+                //     printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+                //         (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
+                //         (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
+                //         (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));                        
+                // }
+
+
+                etemp.template tuple<9>("ActInv",ei) = zs::inverse(Act);
+
+                // if(ei == 0) {
+                //     Act = etemp.template pack<3,3>("ActInv",ei);
+                //     printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+                //         (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
+                //         (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
+                //         (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));  
+
+                //     // auto dFActdF = dFAdF(eles.template pack<3,3>("ActInv",ei));
+                //     // printf("dFActdF : \n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\")
+
+                // }
+
+        });
+
+        // setup initial guess
+        PCG::copy<3>(cudaPol,verts,"x",vtemp,"xp");
+        PCG::copy<3>(cudaPol,verts,"v",vtemp,"vp");
+        if(verts.hasProperty("init_x"))
+            PCG::copy<3>(cudaPol,verts,"init_x",vtemp,"xn");   
+        else
+            PCG::add<3>(cudaPol,vtemp,"xp",1.0,"vp",dt,"xn");  
+        PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+
+        for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
+        match([&](auto &elasticModel) {
+            A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,etemp);
+        })(models.getElasticModel());
+
+        // auto Hn = PCG::dot<144>(cudaPol,etemp,"H","H");
+        // fmt::print("Hn : {}\n",(float)Hn);    
+
+        // break;
+
+        //  Prepare Preconditioning
+        PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
+
+        // if the grad is too small, return the result
+        // Solve equation using PCG
+        PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+        PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
+        PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
+        PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
+        T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+
+        if (res < newton_res) {
+            fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
+                    newtonIter, res);
+            break;
+        }
+        T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+        if(fabs(dg) < btl_res){
+            // fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
+            break;
+        }
+        if(dg < 0){
+            T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
+            T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
+            fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
+            throw std::runtime_error("INVALID DESCENT DIRECTION");
+        }
+        T alpha = 1.;
+        PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
+        T E0;
+        match([&](auto &elasticModel) {
+            E0 = A.energy(cudaPol, elasticModel, "xn0","xp","vp",vtemp,etemp);
+        })(models.getElasticModel());
+
+        dg = -dg;
+
+        T E{E0};
+        //   Backtracking Linesearch
+        int max_line_search = 10;
+        int line_search = 0;
+        std::vector<T> armijo_buffer(max_line_search);
+        do {
+            PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+            match([&](auto &elasticModel) {
+            E = A.energy(cudaPol, elasticModel, "xn","xp","vp",vtemp,etemp);
+            })(models.getElasticModel());
+            armijo_buffer[line_search] = (E - E0)/alpha;
+            // test Armojo condition
+            if (((double)E - (double)E0) < (double)armijo * (double)dg * (double)alpha)
+            break;
+            alpha /= 2;
+            ++line_search;
+        } while (line_search < max_line_search);
+        if(line_search == max_line_search){
+            fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
+            // for(size_t i = 0;i != max_line_search;++i)
+            //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+        }
+
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                            alpha] __device__(int i) mutable {
+            vtemp.tuple<3>("xn", i) =
+                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+        
+        }
+
+        cudaPol(zs::range(verts.size()),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                auto newX = vtemp.pack<3>("xn", vi);
+                verts.tuple<3>("x", vi) = newX;
+                });
+
+        cudaPol.syncCtx();
+
+        // write back muscle activation
+        auto output_act = get_param<int>("output_act");
+        if(output_act) {
+        auto ActTag = get_param<std::string>("actTag");
+        if(!eles.hasProperty(ActTag))
+            eles.append_channels(cudaPol,{{ActTag,1}});
+        PCG::fill(cudaPol,eles,ActTag,0);
+        if(nm_acts > 0) {
+            cudaPol(zs::range(eles.size()),
+            [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
+                act_buffer = proxy<space>({},act_buffer),ActTag = zs::SmallString{ActTag}] __device__(int ei) mutable {
+                auto ID = eles(muscle_id_tag,ei);
+                int id = (int)ID;
+                eles(ActTag,ei) = id > -1 ? act_buffer("act",id) : 0;
+                // eles(ActTag,ei) = id > -1 ? 0.5 : 0;
+            });
+        }
+        }
+
+        cudaPol.syncCtx();
+
+        set_output("ZSParticles", zstets);
+    }
+
+
+};
+
+ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","driven_boudary","gravity","Acts"},
+                                  {"ZSParticles"},
+                                  {{"float","armijo","0.1"},{"float","wolfe","0.9"},
+                                    {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
+                                    {"string","driven_tag","bone_bw"},{"float","bou_driven_weight","0.0"},
+                                    {"string","muscle_id_tag","ms_id_tag"},{"int","output_act","0"},{"string","actTag","Act"},
+                                    {"float","dt","0.03"}
+                                  },
+                                  {"FEM"}});
+
+
 
 };
