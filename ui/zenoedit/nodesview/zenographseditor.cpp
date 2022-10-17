@@ -196,9 +196,9 @@ void ZenoGraphsEditor::onSearchOptionClicked()
     pAnnotation->setCheckable(true);
     pAnnotation->setEnabled(false);
 
-	QAction* pWrangle = new QAction(tr("wrangle snippet"));
+	QAction* pWrangle = new QAction(tr("Parameter"));
     pWrangle->setCheckable(true);
-    pWrangle->setChecked(m_searchOpts & SEARCH_WRANGLE);
+    pWrangle->setChecked(m_searchOpts & SEARCH_ARGS);
 
 	pOptionsMenu->addAction(pNode);
 	pOptionsMenu->addAction(pSubnet);
@@ -228,9 +228,9 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 
 	connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
 		if (bChecked)
-			m_searchOpts |= SEARCH_WRANGLE;
+			m_searchOpts |= SEARCH_ARGS;
 		else
-			m_searchOpts &= (~(int)SEARCH_WRANGLE);
+			m_searchOpts &= (~(int)SEARCH_ARGS);
 		});
 
 	pOptionsMenu->exec(QCursor::pos());
@@ -506,30 +506,30 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
     for (SEARCH_RESULT res : results)
     {
         if (res.type == SEARCH_SUBNET)
-		{
+        {
             QString subgName = res.targetIdx.data(ROLE_OBJNAME).toString();
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
             if (lst.size() == 0)
             {
-				//add subnet
-				QStandardItem* pItem = new QStandardItem(subgName + " (Subnet)");
-				pItem->setData(subgName, ROLE_OBJNAME);
+                //add subnet
+                QStandardItem* pItem = new QStandardItem(subgName + " (Subnet)");
+                pItem->setData(subgName, ROLE_OBJNAME);
                 pItem->setData(res.targetIdx.data(ROLE_OBJID).toString(), ROLE_OBJID);
-				pModel->appendRow(pItem);
+                pModel->appendRow(pItem);
             }
         }
-        else if (res.type == SEARCH_NODECLS)
+        else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS)
         {
             QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
-			QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
+            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
 
             QStandardItem* parentItem = nullptr;
             if (lst.size() == 0)
             {
-				//add subnet
+                //add subnet
                 parentItem = new QStandardItem(subgName + " (Subnet)");
                 parentItem->setData(subgName, ROLE_OBJNAME);
-				pModel->appendRow(parentItem);
+                pModel->appendRow(parentItem);
             }
             else
             {
@@ -538,10 +538,11 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
             }
 
             QString nodeName = res.targetIdx.data(ROLE_OBJNAME).toString();
-            QStandardItem* pItem = new QStandardItem(nodeName);
+            QString nodeIdent = res.targetIdx.data(ROLE_OBJID).toString();
+            QStandardItem* pItem = new QStandardItem(nodeIdent);
             pItem->setData(nodeName, ROLE_OBJNAME);
             pItem->setData(res.targetIdx.data(ROLE_OBJID).toString(), ROLE_OBJID);
-		    parentItem->appendRow(pItem);
+            parentItem->appendRow(pItem);
         }
     }
 
