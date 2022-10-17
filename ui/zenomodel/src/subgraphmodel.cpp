@@ -310,7 +310,7 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     if (paramName == "defl" && (nodeCls == "SubInput" || nodeCls == "SubOutput") && newType)
     {
         param.typeDesc = *newType;
-        param.control = UiHelper::getControlType(param.typeDesc);
+        param.control = UiHelper::getControlType(param.typeDesc, paramName);
     }
 
     setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);

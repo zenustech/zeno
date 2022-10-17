@@ -55,11 +55,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = input_triple[0].GetString();
                 const QString &socketName = input_triple[1].GetString();
                 const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType, socketName);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = getControlType(socketType);
+                inputSocket.info.control = ctrlType;
                 inputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
@@ -73,7 +73,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = param_triple[0].GetString();
                 const QString &socketName = param_triple[1].GetString();
                 const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType, socketName);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
@@ -93,11 +93,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = output_triple[0].GetString();
                 const QString &socketName = output_triple[1].GetString();
                 const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType, socketName);
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
-                outputSocket.info.control = getControlType(socketType);
+                outputSocket.info.control = ctrlType;
                 outputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
@@ -320,6 +320,15 @@ bool UiHelper::parseVecType(const QString& type, int& dim, bool& bFloat)
     {
         return false;
     }
+}
+
+PARAM_CONTROL UiHelper::getControlType(const QString& type, const QString& sockName)
+{
+    if (type == "string" && sockName == "zfxCode")
+    {
+        return CONTROL_MULTILINE_STRING;
+    }
+    return getControlType(type);
 }
 
 PARAM_CONTROL UiHelper::getControlType(const QString &type)
