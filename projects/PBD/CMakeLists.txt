@@ -14,4 +14,4 @@ add_subdirectory(BunnyMesh)
 add_subdirectory(ReadVtkTet)
 
 # please comment out the test source files in production environment
-# add_subdirectory(test)
+add_subdirectory(test)
