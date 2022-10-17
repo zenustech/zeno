@@ -9,7 +9,7 @@
 using namespace zeno;
 
 namespace zeno{
-struct NeighborSearch_BVH: INode
+struct test_NeighborSearch_BVH: INode
 {
 
     void buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list)
@@ -52,7 +52,7 @@ struct NeighborSearch_BVH: INode
     }
 };
 
-ZENDEFNODE(NeighborSearch_BVH,
+ZENDEFNODE(test_NeighborSearch_BVH,
     {
         {
             {"prim"},
