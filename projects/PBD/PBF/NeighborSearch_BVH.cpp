@@ -1,9 +1,9 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "../ZenoFX/LinearBvh.h" //BVH搜索
-#include "NeighborListData.h" // 数据类，用来节点间数据传递
-#include "../Utils/myPrint.h"
-#include "../Utils/readFile.h"
+// #include "NeighborListData.h" // 数据类，用来节点间数据传递
+// #include "../Utils/myPrint.h"
+// #include "../Utils/readFile.h"
 
 
 using namespace zeno;
@@ -39,14 +39,14 @@ struct NeighborSearch_BVH: INode
         auto lbvh = get_input<zeno::LBvh>("lbvh");
 
         auto & pos = prim->verts;
-        pos.clear();
-        readVectorField("pos_input.csv",pos);
+        // pos.clear();
+        // readVectorField("pos_input.csv",pos);
         auto neighborList = std::make_shared<NeighborListData>();
         std::vector<std::vector<int>> &neiList = neighborList->value;
         neiList.resize(pos.size());
 
         buildNeighborList(pos, searchRadius, lbvh.get(), neiList);
-        printVectorField("neighborList_out4.csv",neiList,0);
+        // printVectorField("neighborList_out4.csv",neiList,0);
         
         set_output("neighborList", std::move(neighborList));
     }

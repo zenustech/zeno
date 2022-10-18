@@ -9,4 +9,5 @@ NeighborSearch.cpp
 PBDSolveFluidConstraint.cpp
 PBFPreSolve.cpp
 PBFPostSolve.cpp
+PBFWorld_Setup.cpp
 )
