@@ -22,6 +22,8 @@
 #include "collision_energy/edge_edge_collision.hpp"
 #include "collision_energy/edge_edge_sqrt_collition.hpp"
 
+#define DEBUG_FLESH_DYN_STEPPING 1
+
 namespace zeno {
 
 struct FleshDynamicStepping : INode {
@@ -32,6 +34,7 @@ struct FleshDynamicStepping : INode {
     using vec3 = zs::vec<T, 3>;
     using mat3 = zs::vec<T, 3, 3>;
     using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
 
     // currently only backward euler integrator is supported
     struct FEMDynamicSteppingSystem {
@@ -62,11 +65,12 @@ struct FleshDynamicStepping : INode {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
                 Vector<T> res{verts.get_allocator(),1};
+                res.setVal(0);
 
                 bool shouldSync = pol.shouldSync();
                 pol.sync(true);
 
-                pol(range(eles.size()),[this,
+                pol(range(eles.size()),[dt = dt,dt2 = dt2,
                             verts = proxy<space>({},verts),
                             eles = proxy<space>({},eles),
                             vtemp = proxy<space>({},vtemp),
@@ -120,7 +124,8 @@ struct FleshDynamicStepping : INode {
                         ipsi += diff.l2NormSqr();
                     }
 
-                    ipsi *= (m/dt/dt/2);
+                    ipsi *= (m/dt2/8);
+                    // ipsi = 0;
 
                     atomic_add(exec_cuda, &res[0], (T)(epsi + gpsi + ipsi));
                 });
@@ -128,16 +133,16 @@ struct FleshDynamicStepping : INode {
             // Bone Driven Potential Energy
                 T lambda = model.lam;
                 T mu = model.mu;
+                T stiffness = 2.0066 * mu + 1.0122 * lambda;
                 auto nmEmbedVerts = b_verts.size();
                 if(b_bcws.size() != b_verts.size()){
                     fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
                     throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
                 }
-                pol(range(nmEmbedVerts), [this,
-                                vtemp = proxy<space>({},vtemp),
+                pol(range(nmEmbedVerts), [vtemp = proxy<space>({},vtemp),
                                 eles = proxy<space>({},eles),
                                 b_verts = proxy<space>({},b_verts),
-                                bcws = proxy<space>({},b_bcws),lambda,mu,p1_tag,
+                                bcws = proxy<space>({},b_bcws),stiffness,p1_tag,
                                 res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
                             ZS_LAMBDA(int vi) mutable {
                         auto ei = reinterpret_bits<int>(bcws("inds",vi));
@@ -151,7 +156,7 @@ struct FleshDynamicStepping : INode {
                             tpos += w[i] * vtemp.pack<3>(p1_tag,inds[i]);
                         auto pdiff = tpos - b_verts.pack<3>("x",vi);
 
-                        T stiffness = 2.0066 * mu + 1.0122 * lambda;
+
                         // if(eles("vol",ei) < 0)
                         //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
                         T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
@@ -171,14 +176,43 @@ struct FleshDynamicStepping : INode {
                             const zs::SmallString& p0_tag,
                             const zs::SmallString& v0_tag,
                             dtiles_t& vtemp,
+                            const zs::SmallString& H_tag,
                             dtiles_t& etemp) {        
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
-            PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
-            PCG::fill<144>(cudaPol,etemp,"H",zs::vec<T,144>::zeros());         
 
+            #if DEBUG_FLESH_DYN_STEPPING
+                // std::cout << "CHECK THE PROPERTY CHANNEL" << std::endl;
+                if(!vtemp.hasProperty("grad"))
+                    fmt::print(fg(fmt::color::red),"the vtemp has no 'grad' channel\n");
+                if(!vtemp.hasProperty(p1_tag))
+                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",p1_tag.asString());
+                if(!vtemp.hasProperty(p0_tag))
+                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",p0_tag.asString());
+                if(!vtemp.hasProperty(v0_tag))
+                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",v0_tag.asString());
+
+                if(!etemp.hasProperty(H_tag))
+                    fmt::print(fg(fmt::color::red),"the etemp has no '{}' channel\n",H_tag.asString());
+                if(!etemp.hasProperty("ActInv"))
+                    fmt::print(fg(fmt::color::red),"the etemp has no 'ActInv' channel\n");
+                
+                if(!verts.hasProperty("m"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'm' channel\n");
+
+                if(!eles.hasProperty("IB"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");
+                if(!eles.hasProperty("m"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'm' channel\n");
+                if(!eles.hasProperty("vol"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'vol' channel\n");
+            #endif
+
+            PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+            PCG::fill<144>(cudaPol,etemp,H_tag,zs::vec<T,144>::zeros());         
+            
             // eval the inertia term gradient
-            cudaPol(zs::range(vtemp.size()), [this,   
+            cudaPol(zs::range(vtemp.size()), [dt2 = dt2,   
                         vtemp = proxy<space>({},vtemp),
                         verts = proxy<space>({},verts),
                         dt = dt,p1_tag,p0_tag,v0_tag] ZS_LAMBDA(int vi) mutable {
@@ -187,34 +221,24 @@ struct FleshDynamicStepping : INode {
                 auto x0 = vtemp.pack<3>(p0_tag,vi);
                 auto v0 = vtemp.pack<3>(v0_tag,vi);
 
-                vtemp.template tuple<3>("grad",vi) = m * (x1 - x0 - v0 * dt)/dt/dt;                    
+                vtemp.template tuple<3>("grad",vi) = m * (x1 - x0 - v0 * dt) / dt2;                    
             });
 
-            cudaPol(zs::range(eles.size()), [this,
+            cudaPol(zs::range(eles.size()), [this,dt2 = dt2,
                             vtemp = proxy<space>({}, vtemp),
                             etemp = proxy<space>({}, etemp),
                             bcws = proxy<space>({},b_bcws),
                             b_verts = proxy<space>({},b_verts),
                             verts = proxy<space>({}, verts),
-                            eles = proxy<space>({}, eles),p1_tag,p0_tag,v0_tag, 
+                            eles = proxy<space>({}, eles),p1_tag,p0_tag,v0_tag,H_tag,
                             model, volf = volf] ZS_LAMBDA (int ei) mutable {
                     auto DmInv = eles.template pack<3,3>("IB",ei);
                     auto dFdX = dFdXMatrix(DmInv);
                     auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
-                    vec3 x1[4] = {vtemp.pack<3>(p1_tag, inds[0]),
-                            vtemp.pack<3>(p1_tag, inds[1]),
-                            vtemp.pack<3>(p1_tag, inds[2]),
-                            vtemp.pack<3>(p1_tag, inds[3])};   
-                    vec3 x0[4] = {vtemp.pack<3>(p0_tag, inds[0]), 
-                            vtemp.pack<3>(p0_tag, inds[1]),
-                            vtemp.pack<3>(p0_tag, inds[2]), 
-                            vtemp.pack<3>(p0_tag, inds[3])};  
-
-                    vec3 v0[4] = {vtemp.pack<3>(v0_tag, inds[0]), 
-                            vtemp.pack<3>(v0_tag, inds[1]),
-                            vtemp.pack<3>(v0_tag, inds[2]), 
-                            vtemp.pack<3>(v0_tag, inds[3])}; 
-
+                    vec3 x1[4] = {vtemp.template pack<3>(p1_tag, inds[0]),
+                            vtemp.template pack<3>(p1_tag, inds[1]),
+                            vtemp.template pack<3>(p1_tag, inds[2]),
+                            vtemp.template pack<3>(p1_tag, inds[3])};   
 
                     mat3 FAct{};
                     {
@@ -249,21 +273,23 @@ struct FleshDynamicStepping : INode {
                     auto dFdAct_dFdX = dFActdF * dFdX; 
                     // dFdAct_dFdX = dFdX; 
                     auto H = dFdAct_dFdX.transpose() * Hq * dFdAct_dFdX * vole;
-                    etemp.tuple<12 * 12>("H", ei) = H;
+                    etemp.template tuple<12 * 12>(H_tag, ei) = H;
 
-
+                    // add inertia hessian term
                     auto m = eles("m",ei);// element-wise mass
-                    for(int i = 0;i < 12;++i)
-                        etemp("H",i * 12 + i,ei) = m/dt/dt/4;
+                    for(int i = 0;i < 12;++i){
+                        // Mass(i,i) = 1;
+                        etemp(H_tag,i * 12 + i,ei) += m /dt2/4;
+                    }
             });
-
+// return;
         // Bone Driven Potential Energy
             T lambda = model.lam;
             T mu = model.mu;
             auto nmEmbedVerts = b_verts.size();
             cudaPol(zs::range(nmEmbedVerts), [this,
                     bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
-                    eles = proxy<space>({},eles),lambda,mu,p1_tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
+                    eles = proxy<space>({},eles),lambda,mu,p1_tag,H_tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
                         auto ei = reinterpret_bits<int>(bcws("inds",vi));
                         if(ei < 0)
                             return;
@@ -294,7 +320,7 @@ struct FleshDynamicStepping : INode {
                                     // if(isnan(alpha)){
                                     //     printf("nan alpha<%d,%d,%d> %f %f %f %f %f\n",vi,i,j,(float)lambda,(float)bone_driven_weight,(float)w[i],(float)w[j],(float)bcws("cnorm",vi));
                                     // }
-                                    atomic_add(exec_cuda,&etemp("H",(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
+                                    atomic_add(exec_cuda,&etemp(H_tag,(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
                                 }
                             }
 
@@ -304,7 +330,7 @@ struct FleshDynamicStepping : INode {
 
 
         FEMDynamicSteppingSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf,const T& _dt)
-            : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf},dt{_dt} {dt2 = dt * dt;}
+            : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf},dt{_dt}, dt2{dt * dt} {}
 
         const tiles_t &verts;
         const tiles_t &eles;
@@ -324,7 +350,7 @@ struct FleshDynamicStepping : INode {
         auto zstets = get_input<ZenoParticles>("ZSParticles");
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
-        gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
+            gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
         auto armijo = get_param<float>("armijo");
         auto curvature = get_param<float>("wolfe");
         auto cg_res = get_param<float>("cg_res");
@@ -332,7 +358,7 @@ struct FleshDynamicStepping : INode {
         auto models = zstets->getModel();
         auto& verts = zstets->getParticles();
         auto& eles = zstets->getQuadraturePoints();
-        auto zsbones = get_input<ZenoParticles>("driven_bones");
+        auto zsbones = get_input<ZenoParticles>("driven_boudary");
         auto tag = get_param<std::string>("driven_tag");
         auto muscle_id_tag = get_param<std::string>("muscle_id_tag");
         auto bone_driven_weight = get_param<float>("bone_driven_weight");
@@ -350,8 +376,8 @@ struct FleshDynamicStepping : INode {
         // std::cout << "nm_acts_ : " << std::endl;
 
         if(has_input("Acts")) {
-        act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
-        nm_acts = act_.size();
+            act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
+            nm_acts = act_.size();
         }
         // auto act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
         // initialize on host qs[i] = qs_[i]->get<zeno::vec4f>();
@@ -402,7 +428,7 @@ struct FleshDynamicStepping : INode {
             fmt::print("The input fiber  has wrong channel size\n");
             throw std::runtime_error("The input fiber has wrong channel size");
         }
-        PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
+            PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
         }
         if(!eles.hasProperty(muscle_id_tag)) {
         // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
@@ -410,11 +436,13 @@ struct FleshDynamicStepping : INode {
         //     throw std::runtime_error("the quadrature has no muscle id tag");
         // }
         // fmt::print("The input flesh have no mosucle_id specified, use the default setting");
-        PCG::fill(cudaPol,etemp,"muscle_ID",-1);
+            PCG::fill(cudaPol,etemp,"muscle_ID",-1);
         }else {
-        PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
+            PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
         }
 
+
+        // std::cout << "apply muscle activation" << std::endl;
         // apply muscle activation
         cudaPol(range(etemp.size()),
             [etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
@@ -485,7 +513,7 @@ struct FleshDynamicStepping : INode {
                 // }
 
         });
-
+        // std::cout << "set initial guess" << std::endl;
         // setup initial guess
         PCG::copy<3>(cudaPol,verts,"x",vtemp,"xp");
         PCG::copy<3>(cudaPol,verts,"v",vtemp,"vp");
@@ -495,15 +523,18 @@ struct FleshDynamicStepping : INode {
             PCG::add<3>(cudaPol,vtemp,"xp",1.0,"vp",dt,"xn");  
         PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
 
-        for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
+        for(int newtonIter = 0;newtonIter != 1;++newtonIter){
+
         match([&](auto &elasticModel) {
-            A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,etemp);
+            A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,"H",etemp);
         })(models.getElasticModel());
+
+        // break;
 
         // auto Hn = PCG::dot<144>(cudaPol,etemp,"H","H");
         // fmt::print("Hn : {}\n",(float)Hn);    
 
-        // break;
+
 
         //  Prepare Preconditioning
         PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
@@ -511,7 +542,9 @@ struct FleshDynamicStepping : INode {
         // if the grad is too small, return the result
         // Solve equation using PCG
         PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+        // std::cout << "solve using pcg" << std::endl;
         PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
+        // std::cout << "finish solve pcg" << std::endl;
         PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
         PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
         T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
@@ -521,9 +554,11 @@ struct FleshDynamicStepping : INode {
                     newtonIter, res);
             break;
         }
+        // std::cout << "eval dg" << std::endl;
         T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+        // std::cout << "finish eval dg" << std::endl;
         if(fabs(dg) < btl_res){
-            // fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
+            fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
             break;
         }
         if(dg < 0){
@@ -543,26 +578,26 @@ struct FleshDynamicStepping : INode {
 
         T E{E0};
         //   Backtracking Linesearch
-        int max_line_search = 10;
-        int line_search = 0;
-        std::vector<T> armijo_buffer(max_line_search);
-        do {
-            PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
-            match([&](auto &elasticModel) {
-            E = A.energy(cudaPol, elasticModel, "xn","xp","vp",vtemp,etemp);
-            })(models.getElasticModel());
-            armijo_buffer[line_search] = (E - E0)/alpha;
-            // test Armojo condition
-            if (((double)E - (double)E0) < (double)armijo * (double)dg * (double)alpha)
-            break;
-            alpha /= 2;
-            ++line_search;
-        } while (line_search < max_line_search);
-        if(line_search == max_line_search){
-            fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
-            // for(size_t i = 0;i != max_line_search;++i)
-            //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
-        }
+        // int max_line_search = 10;
+        // int line_search = 0;
+        // std::vector<T> armijo_buffer(max_line_search);
+        // do {
+        //     PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+        //     match([&](auto &elasticModel) {
+        //     E = A.energy(cudaPol, elasticModel, "xn","xp","vp",vtemp,etemp);
+        //     })(models.getElasticModel());
+        //     armijo_buffer[line_search] = (E - E0)/alpha;
+        //     // test Armojo condition
+        //     if (((double)E - (double)E0) < (double)armijo * (double)dg * (double)alpha)
+        //     break;
+        //     alpha /= 2;
+        //     ++line_search;
+        // } while (line_search < max_line_search);
+        // if(line_search == max_line_search){
+        //     fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
+        //     // for(size_t i = 0;i != max_line_search;++i)
+        //     //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+        // }
 
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                             alpha] __device__(int i) mutable {
@@ -573,9 +608,10 @@ struct FleshDynamicStepping : INode {
         }
 
         cudaPol(zs::range(verts.size()),
-                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts)] __device__(int vi) mutable {
-                auto newX = vtemp.pack<3>("xn", vi);
-                verts.tuple<3>("x", vi) = newX;
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
+                    auto newX = vtemp.pack<3>("xn", vi);
+                    verts.tuple<3>("x", vi) = newX;
+                    verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
                 });
 
         cudaPol.syncCtx();
@@ -611,7 +647,7 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","driven_boudary","gravity","Act
                                   {"ZSParticles"},
                                   {{"float","armijo","0.1"},{"float","wolfe","0.9"},
                                     {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
-                                    {"string","driven_tag","bone_bw"},{"float","bou_driven_weight","0.0"},
+                                    {"string","driven_tag","bone_bw"},{"float","bone_driven_weight","0.0"},
                                     {"string","muscle_id_tag","ms_id_tag"},{"int","output_act","0"},{"string","actTag","Act"},
                                     {"float","dt","0.03"}
                                   },
