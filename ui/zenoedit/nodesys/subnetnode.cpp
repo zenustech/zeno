@@ -67,8 +67,3 @@ void SubnetNode::onParamEditFinished(const QString& paramName, const QVariant& t
 
     ZenoNode::onParamEditFinished(paramName, textValue);
 }
-
-QValidator* SubnetNode::validateForParams(PARAM_INFO info)
-{
-    return ZenoNode::validateForParams(info);
-}

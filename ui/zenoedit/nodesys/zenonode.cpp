@@ -304,26 +304,6 @@ QPersistentModelIndex ZenoNode::subGraphIndex() const
     return m_subGpIndex;
 }
 
-QValidator* ZenoNode::validateForParams(PARAM_INFO info)
-{
-    switch (info.control)
-    {
-    case CONTROL_INT:       return new QIntValidator;
-    case CONTROL_FLOAT:     return new QDoubleValidator;
-    }
-    return nullptr;
-}
-
-QValidator* ZenoNode::validateForSockets(INPUT_SOCKET inSocket)
-{
-    switch (inSocket.info.control)
-    {
-    case CONTROL_INT:       return new QIntValidator;
-    case CONTROL_FLOAT:     return new QDoubleValidator;
-    }
-    return nullptr;
-}
-
 void ZenoNode::onParamEditFinished(const QString& paramName, const QVariant& value)
 {
     // graphics item sync to model.

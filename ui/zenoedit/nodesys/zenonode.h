@@ -96,8 +96,6 @@ protected:
     virtual ZLayoutBackground* initHeaderWidget();
     virtual ZGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
-    virtual QValidator* validateForParams(PARAM_INFO info);
-    virtual QValidator* validateForSockets(INPUT_SOCKET inSocket);
 
 protected:
     NodeUtilParam m_renderParams;

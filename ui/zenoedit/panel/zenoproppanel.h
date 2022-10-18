@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenomodel/include/modeldata.h>
+#include <zenoui/comctrl/gv/callbackdef.h>
 
 class IGraphsModel;
 
@@ -19,7 +20,7 @@ class ZenoPropPanel : public QWidget
         QVariant value;
         QString typeDesc;
         bool bkFrame;
-        std::function<void()> fSlot;
+        Callback_EditFinished cbFunc;
     };
 
     struct _PANEL_CONTROL
@@ -30,10 +31,7 @@ class ZenoPropPanel : public QWidget
         _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), controlLayout(nullptr) {}
     };
 
-    struct PANEL_GROUP
-    {
-        QMap<QString, _PANEL_CONTROL> m_ctrls;
-    };
+    typedef QMap<QString, _PANEL_CONTROL> PANEL_GROUP;
 
 public:
     ZenoPropPanel(QWidget* parent = nullptr);
@@ -42,24 +40,13 @@ public:
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
 
-protected:
-    void mousePressEvent(QMouseEvent* event) override;
-
 public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-    void onParamEditFinish();
-    void onInputEditFinish();
-    void onParamColorEdited(const QString& paramName);
-    void onInputColorEdited(const QString& inSock);
-    void onCurveModelEdit(bool bInputSock, const QString& name);
 
 private:
     ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
     ZExpandableSection* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
-    QWidget* initControl(CONTROL_DATA ctrlData);
     void clearLayout();
-    bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl);
-    void updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, const QVariant& value);
     void onInputsCheckUpdate();
     void onParamsCheckUpdate();
     void onGroupCheckUpdated(const QString& groupName, const QMap<QString, CONTROL_DATA>& ctrls);
@@ -68,9 +55,6 @@ private:
     QPersistentModelIndex m_idx;
 
     QMap<QString, PANEL_GROUP> m_groups;
-
-    QMap<QString, _PANEL_CONTROL> m_inputsCtrl;
-    QMap<QString, _PANEL_CONTROL> m_paramsCtrl;
 
     bool m_bReentry;
 };

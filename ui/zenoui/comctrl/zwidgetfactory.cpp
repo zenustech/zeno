@@ -197,7 +197,56 @@ namespace zenoui
                         cbFunc(newValue);
                     });
                 });
+                return pBtn;
             }
+            default:
+                return nullptr;
         }
     }
+
+    bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
+    {
+        if (!pControl)
+            return false;
+
+        switch (ctrl)
+        {
+        case CONTROL_STRING:
+        case CONTROL_INT:
+        case CONTROL_FLOAT:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;    //be careful type changed.
+        case CONTROL_READPATH:
+        case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
+        case CONTROL_BOOL:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
+        case CONTROL_VEC:    return qobject_cast<ZVecEditor*>(pControl) != nullptr;
+        case CONTROL_ENUM:    return qobject_cast<QComboBox*>(pControl) != nullptr;
+        case CONTROL_MULTILINE_STRING:    return qobject_cast<ZTextEdit*>(pControl) != nullptr;
+        case CONTROL_CURVE:
+        case CONTROL_COLOR:    return qobject_cast<QPushButton*>(pControl) != nullptr;
+        }
+    }
+
+    void updateValue(QWidget* pControl, const QVariant& value)
+    {
+        if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl))
+        {
+            pLineEdit->setText(value.toString());
+        }
+        else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(pControl))
+        {
+            pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+        }
+        else if (ZVecEditor* pVecEditor = qobject_cast<ZVecEditor*>(pControl))
+        {
+            pVecEditor->setVec(value.value<UI_VECTYPE>(), pVecEditor->isFloat());
+        }
+        else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pControl))
+        {
+            pTextEdit->setText(value.toString());
+        }
+        else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(pControl))
+        {
+            pCombobox->setCurrentText(value.toString());
+        }
+    }
+
 }

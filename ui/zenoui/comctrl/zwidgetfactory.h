@@ -15,6 +15,9 @@ namespace zenoui
         CALLBACK_SWITCH cbSwitch,
         const QVariant& supply = QVariant()
     );
+
+    bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl);
+    void updateValue(QWidget* pControl, const QVariant& value);
 }
 
 #endif
