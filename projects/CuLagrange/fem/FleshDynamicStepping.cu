@@ -351,18 +351,25 @@ struct FleshDynamicStepping : INode {
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
             gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
-        auto armijo = get_param<float>("armijo");
-        auto curvature = get_param<float>("wolfe");
-        auto cg_res = get_param<float>("cg_res");
-        auto btl_res = get_param<float>("btl_res");
+        // auto armijo = get_param<float>("armijo");
+        T armijo = (T)1e-4;
+        T wolfe = (T)0.9;
+        // auto curvature = get_param<float>("wolfe");
+        // auto cg_res = get_param<float>("cg_res");
+        T cg_res = (T)0.01;
+        // auto btl_res = get_param<float>("btl_res");
+        T btl_res = (T)0.1;
         auto models = zstets->getModel();
         auto& verts = zstets->getParticles();
         auto& eles = zstets->getQuadraturePoints();
         auto zsbones = get_input<ZenoParticles>("driven_boudary");
         auto tag = get_param<std::string>("driven_tag");
         auto muscle_id_tag = get_param<std::string>("muscle_id_tag");
-        auto bone_driven_weight = get_param<float>("bone_driven_weight");
-        auto newton_res = get_param<float>("newton_res");
+        // auto bone_driven_weight = get_param<float>("bone_driven_weight");
+        auto bone_driven_weight = (T)1.0;
+        // auto newton_res = get_param<float>("newton_res");
+        auto newton_res = (T)0.01;
+
         auto dt = get_param<float>("dt");
 
         auto volf = vec3::from_array(gravity * models.density);
@@ -525,85 +532,85 @@ struct FleshDynamicStepping : INode {
 
         for(int newtonIter = 0;newtonIter != 1;++newtonIter){
 
-        match([&](auto &elasticModel) {
-            A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,"H",etemp);
-        })(models.getElasticModel());
+            match([&](auto &elasticModel) {
+                A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,"H",etemp);
+            })(models.getElasticModel());
 
-        // break;
+            // break;
 
-        // auto Hn = PCG::dot<144>(cudaPol,etemp,"H","H");
-        // fmt::print("Hn : {}\n",(float)Hn);    
+            // auto Hn = PCG::dot<144>(cudaPol,etemp,"H","H");
+            // fmt::print("Hn : {}\n",(float)Hn);    
 
 
 
-        //  Prepare Preconditioning
-        PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
+            //  Prepare Preconditioning
+            PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
 
-        // if the grad is too small, return the result
-        // Solve equation using PCG
-        PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
-        // std::cout << "solve using pcg" << std::endl;
-        PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
-        // std::cout << "finish solve pcg" << std::endl;
-        PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
-        PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
-        T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+            // if the grad is too small, return the result
+            // Solve equation using PCG
+            PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+            // std::cout << "solve using pcg" << std::endl;
+            PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
+            // std::cout << "finish solve pcg" << std::endl;
+            PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
+            PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
+            T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
 
-        if (res < newton_res) {
-            fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
-                    newtonIter, res);
-            break;
-        }
-        // std::cout << "eval dg" << std::endl;
-        T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
-        // std::cout << "finish eval dg" << std::endl;
-        if(fabs(dg) < btl_res){
-            fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
-            break;
-        }
-        if(dg < 0){
-            T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
-            T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
-            fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
-            throw std::runtime_error("INVALID DESCENT DIRECTION");
-        }
-        T alpha = 1.;
-        PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
-        T E0;
-        match([&](auto &elasticModel) {
-            E0 = A.energy(cudaPol, elasticModel, "xn0","xp","vp",vtemp,etemp);
-        })(models.getElasticModel());
+            if (res < newton_res) {
+                fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
+                        newtonIter, res);
+                break;
+            }
+            // std::cout << "eval dg" << std::endl;
+            T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+            // std::cout << "finish eval dg" << std::endl;
+            if(fabs(dg) < btl_res){
+                fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
+                break;
+            }
+            if(dg < 0){
+                T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
+                T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
+                fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
+                throw std::runtime_error("INVALID DESCENT DIRECTION");
+            }
+            T alpha = 1.;
+            PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
+            T E0;
+            match([&](auto &elasticModel) {
+                E0 = A.energy(cudaPol, elasticModel, "xn0","xp","vp",vtemp,etemp);
+            })(models.getElasticModel());
 
-        dg = -dg;
+            dg = -dg;
 
-        T E{E0};
-        //   Backtracking Linesearch
-        // int max_line_search = 10;
-        // int line_search = 0;
-        // std::vector<T> armijo_buffer(max_line_search);
-        // do {
-        //     PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
-        //     match([&](auto &elasticModel) {
-        //     E = A.energy(cudaPol, elasticModel, "xn","xp","vp",vtemp,etemp);
-        //     })(models.getElasticModel());
-        //     armijo_buffer[line_search] = (E - E0)/alpha;
-        //     // test Armojo condition
-        //     if (((double)E - (double)E0) < (double)armijo * (double)dg * (double)alpha)
-        //     break;
-        //     alpha /= 2;
-        //     ++line_search;
-        // } while (line_search < max_line_search);
-        // if(line_search == max_line_search){
-        //     fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
-        //     // for(size_t i = 0;i != max_line_search;++i)
-        //     //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
-        // }
+            T E{E0};
+            //   Backtracking Linesearch
+            // int max_line_search = 10;
+            // int line_search = 0;
+            // std::vector<T> armijo_buffer(max_line_search);
+            // do {
+            //     PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+            //     match([&](auto &elasticModel) {
+            //     E = A.energy(cudaPol, elasticModel, "xn","xp","vp",vtemp,etemp);
+            //     })(models.getElasticModel());
+            //     armijo_buffer[line_search] = (E - E0)/alpha;
+            //     // test Armojo condition
+            //     if (((double)E - (double)E0) < (double)armijo * (double)dg * (double)alpha)
+            //     break;
+            //     alpha /= 2;
+            //     ++line_search;
+            // } while (line_search < max_line_search);
+            // if(line_search == max_line_search){
+            //     fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
+            //     // for(size_t i = 0;i != max_line_search;++i)
+            //     //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+            // }
 
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                            alpha] __device__(int i) mutable {
-            vtemp.tuple<3>("xn", i) =
-                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
+            cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                                alpha] __device__(int i) mutable {
+                vtemp.tuple<3>("xn", i) =
+                    vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+            });
         
         }
 
@@ -617,23 +624,24 @@ struct FleshDynamicStepping : INode {
         cudaPol.syncCtx();
 
         // write back muscle activation
-        auto output_act = get_param<int>("output_act");
-        if(output_act) {
-        auto ActTag = get_param<std::string>("actTag");
-        if(!eles.hasProperty(ActTag))
-            eles.append_channels(cudaPol,{{ActTag,1}});
-        PCG::fill(cudaPol,eles,ActTag,0);
-        if(nm_acts > 0) {
-            cudaPol(zs::range(eles.size()),
-            [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
-                act_buffer = proxy<space>({},act_buffer),ActTag = zs::SmallString{ActTag}] __device__(int ei) mutable {
-                auto ID = eles(muscle_id_tag,ei);
-                int id = (int)ID;
-                eles(ActTag,ei) = id > -1 ? act_buffer("act",id) : 0;
-                // eles(ActTag,ei) = id > -1 ? 0.5 : 0;
-            });
-        }
-        }
+        // auto output_act = get_param<int>("output_act");
+        // auto output_act = false;
+        // if(output_act) {
+        //     auto ActTag = get_param<std::string>("actTag");
+        // if(!eles.hasProperty(ActTag))
+        //     eles.append_channels(cudaPol,{{ActTag,1}});
+        // PCG::fill(cudaPol,eles,ActTag,0);
+        // if(nm_acts > 0) {
+        //     cudaPol(zs::range(eles.size()),
+        //     [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
+        //         act_buffer = proxy<space>({},act_buffer),ActTag = zs::SmallString{ActTag}] __device__(int ei) mutable {
+        //         auto ID = eles(muscle_id_tag,ei);
+        //         int id = (int)ID;
+        //         eles(ActTag,ei) = id > -1 ? act_buffer("act",id) : 0;
+        //         // eles(ActTag,ei) = id > -1 ? 0.5 : 0;
+        //     });
+        // }
+        // }
 
         cudaPol.syncCtx();
 
@@ -645,10 +653,11 @@ struct FleshDynamicStepping : INode {
 
 ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","driven_boudary","gravity","Acts"},
                                   {"ZSParticles"},
-                                  {{"float","armijo","0.1"},{"float","wolfe","0.9"},
-                                    {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
-                                    {"string","driven_tag","bone_bw"},{"float","bone_driven_weight","0.0"},
-                                    {"string","muscle_id_tag","ms_id_tag"},{"int","output_act","0"},{"string","actTag","Act"},
+                                  {
+                                    // {"float","armijo","0.1"},{"float","wolfe","0.9"},
+                                    // {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
+                                    {"string","driven_tag","bone_bw"},/*{"float","bone_driven_weight","0.0"},*/
+                                    {"string","muscle_id_tag","ms_id_tag"},/*{"int","output_act","0"},{"string","actTag","Act"},*/
                                     {"float","dt","0.03"}
                                   },
                                   {"FEM"}});
