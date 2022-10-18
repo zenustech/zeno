@@ -480,7 +480,7 @@ struct ToZSTetrahedra : INode {
         std::vector<zs::PropertyTag> tags{
             {"m", 1},       {"x", 3},       {"x0", 3}, {"v", 3}, {"BCbasis", 9} /* normals for slip boundary*/,
             {"BCorder", 1}, {"BCtarget", 3}};
-        std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 9}, {"inds", 4}};
+        std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 9}, {"inds", 4}, {"m", 1}};
 
         std::vector<zs::PropertyTag> auxVertAttribs{};
         std::vector<zs::PropertyTag> auxElmAttribs{};
@@ -592,6 +592,7 @@ struct ToZSTetrahedra : INode {
                     eles("vol", ei) = vol;
                     // vert masses
                     auto vmass = vol * zsmodel->density / 4;
+                    eles("m",ei) = vol * zsmodel->density;
                     for (int d = 0; d != 4; ++d)
                         atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
 
