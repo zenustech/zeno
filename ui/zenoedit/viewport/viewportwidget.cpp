@@ -3,7 +3,6 @@
 #include "zenovis.h"
 #include "camerakeyframe.h"
 #include "timeline/ztimeline.h"
-#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenomainwindow.h"
 #include "dialog/zrecorddlg.h"
@@ -16,13 +15,9 @@
 #include <nodesview/zenographseditor.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/parallel_scan.h>
-//#include <zeno/utils/zeno_p.h>
-// #include <nodesys/nodesmgr.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <cmath>
 #include <optional>
-#include <tbb/concurrent_vector.h>
-#include <tbb/parallel_for.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
