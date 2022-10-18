@@ -58,6 +58,7 @@
     <file>icons/magnet_grid.png</file>
     <file>icons/magnet_point.png</file>
     <file>icons/checked.png</file>
+    <file>icons/checked.svg</file>
     <file>icons/zenus.png</file>
 	<file>icons/downarrow.png</file>
 	<file>icons/search_arrow.svg</file>
@@ -200,5 +201,7 @@
     <file>icons/timeline-loop.svg</file>
     <file>icons/timeline-play-once.svg</file>
     <file>icons/timeline-zig-zag.svg</file>
+    <file>icons/combobox-dropdown.svg</file>
+    <file>icons/combobox-dropdown-on.svg</file>
 </qresource>
 </RCC>

@@ -98,7 +98,7 @@
      <item row="1" column="0">
       <widget class="QComboBox" name="comboBox">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -106,17 +106,41 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>24</height>
+         <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>55</width>
-         <height>24</height>
+         <width>16777215</width>
+         <height>16777215</height>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true"/>
+        <string notr="true">QComboBox {
+    border: 0px;
+    border-radius: 1px;
+    padding: 3px 5px 3px 10px;
+    font: 14px 'HarmonyOS Sans';
+    color: #FFFFFF;
+    background: #24282E;
+}
+
+QComboBox::drop-down {
+    subcontrol-position: center right;
+    border: none;
+    background: transparent;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/combobox-dropdown.svg);
+}
+
+QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
+    image: url(:/icons/combobox-dropdown-on.svg);
+}</string>
+       </property>
+       <property name="editable">
+        <bool>false</bool>
        </property>
       </widget>
      </item>

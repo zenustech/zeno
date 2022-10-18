@@ -5,8 +5,10 @@
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenoui/comctrl/zwidgetfactory.h>
 #include "../viewport/zenovis.h"
 #include "ui_ztimeline.h"
+#include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
 
 
 //////////////////////////////////////////////
@@ -15,6 +17,11 @@ ZTimeline::ZTimeline(QWidget* parent)
 {
     m_ui = new Ui::Timeline;
     m_ui->setupUi(this);
+
+    QStringList items = { "23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps" };
+    m_ui->comboBox->addItems(items);
+    m_ui->comboBox->setItemDelegate(new ZComboBoxItemDelegate2(m_ui->comboBox));
+    m_ui->comboBox->setFixedWidth(ZenoStyle::dpiScaled(110));
  
     setFocusPolicy(Qt::ClickFocus);
     //QPalette pal = palette();
