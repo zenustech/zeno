@@ -203,5 +203,9 @@
     <file>icons/timeline-zig-zag.svg</file>
     <file>icons/combobox-dropdown.svg</file>
     <file>icons/combobox-dropdown-on.svg</file>
+    <file>icons/leftArrow.svg</file>
+    <file>icons/rightArrow.svg</file>
+    <file>icons/leftArrow-on.svg</file>
+    <file>icons/rightArrow-on.svg</file>
 </qresource>
 </RCC>

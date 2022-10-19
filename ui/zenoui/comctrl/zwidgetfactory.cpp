@@ -16,6 +16,7 @@
 #include "view/zcomboboxitemdelegate.h"
 #include "variantptr.h"
 #include "zassert.h"
+#include "zspinboxslider.h"
 
 
 namespace zenoui
@@ -26,7 +27,7 @@ namespace zenoui
         const QString& type,
         Callback_EditFinished cbFunc,
         CALLBACK_SWITCH cbSwitch,
-        const QVariant& supply
+        const CONTROL_PROPERTIES& properties
     )
     {
         switch (ctrl)
@@ -156,10 +157,12 @@ namespace zenoui
             }
             case CONTROL_ENUM:
             {
-                //QStringList items = type.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+                QStringList items = type.mid(QString("enum ").length()).split(QRegExp("\\s+"));
                 QComboBox* pComboBox = new QComboBox;
-
-                const QStringList& items = supply.toStringList();
+                if (properties.find("items") != properties.end())
+                {
+                    items = properties["items"].toStringList();
+                }
                 pComboBox->setProperty("cssClass", "newstyle");
                 pComboBox->addItems(items);
                 pComboBox->setCurrentText(value.toString());
@@ -199,9 +202,110 @@ namespace zenoui
                 });
                 return pBtn;
             }
+            case CONTROL_HSLIDER:
+            {
+                QSlider* pSlider = new QSlider(Qt::Horizontal);
+                pSlider->setStyleSheet("\
+                    QSlider::groove:horizontal {\
+                        height: 4px;\
+                        background: #707D9C;\
+                    }\
+                    \
+                    QSlider::handle:horizontal {\
+                        background: #DFE2E5;\
+                        width: 6px;\
+                        margin: -8px 0;\
+                    }\
+                    QSlider::add-page:horizontal {\
+                        background: #191D21;\
+                    }\
+                    \
+                    QSlider::sub-page:horizontal {\
+                        background: #707D9C;\
+                    }\
+                ");
+                pSlider->setValue(value.toInt());
+                if (properties.find("singleStep") != properties.end())
+                {
+                    int singleStep = properties["singleStep"].toInt();
+                    pSlider->setSingleStep(singleStep);
+                }
+                if (properties.find("from") != properties.end() &&
+                    properties.find("to") != properties.end())
+                {
+                    int from = properties["from"].toInt();
+                    int to = properties["to"].toInt();
+                    pSlider->setRange(from, to);
+                }
+                QObject::connect(pSlider, &QSlider::valueChanged, [=](int value) {
+                    cbFunc(value);
+                });
+                return pSlider;
+            }
+            case CONTROL_HSPINBOX:
+            {
+                QSpinBox* pSpinBox = new QSpinBox;
+                pSpinBox->setStyleSheet("\
+                    QSpinBox {\
+                        background: #191D21;\
+                        height: 28px;\
+                        color: #C3D2DF;\
+                        font: 14px 'Segoe UI';\
+                    }\
+                    \
+                    QSpinBox::down-button  {\
+                        subcontrol-origin: margin;\
+                        subcontrol-position: center left;\
+                        image: url(:/icons/leftArrow.svg);\
+                        background-color: #191D21;\
+                        height: 24px;\
+                        width: 20px;\
+                    }\
+                    \
+                    QSpinBox::down-button:hover {\
+                        image: url(:/icons/leftArrow-on.svg);\
+                    }\
+                    \
+                    QSpinBox::up-button  {\
+                        subcontrol-origin: margin;\
+                        subcontrol-position: center right;\
+                        image: url(:/icons/rightArrow.svg);\
+                        background-color: #191D21;\
+                        height: 24px;\
+                        width: 20px;\
+                    }\
+                    \
+                    QSpinBox::up-button:hover {\
+                        image: url(:/icons/rightArrow-on.svg);\
+                    }\
+                ");
+                pSpinBox->setAlignment(Qt::AlignCenter);
+                return pSpinBox;
+            }
+            case CONTROL_SPINBOX_SLIDER:
+            {
+                ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
+                if (properties.find("singleStep") != properties.end())
+                {
+                    int singleStep = properties["singleStep"].toInt();
+                    pSlider->setSingleStep(singleStep);
+                }
+                if (properties.find("from") != properties.end() &&
+                    properties.find("to") != properties.end())
+                {
+                    int from = properties["from"].toInt();
+                    int to = properties["to"].toInt();
+                    pSlider->setRange(from, to);
+                }
+                QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int value) {
+                    cbFunc(value);
+                });
+                return pSlider;
+            }
             default:
                 return nullptr;
         }
+        return nullptr;
     }
 
     bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)

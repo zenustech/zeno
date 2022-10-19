@@ -221,6 +221,8 @@ int ZenoStyle::styleHint(StyleHint sh, const QStyleOption* opt, const QWidget* w
 	//	return 1;
     if (QStyle::SH_MenuBar_AltKeyNavigation == sh)
         return 0;
+    if (QStyle::SH_Slider_AbsoluteSetButtons == sh)
+        return Qt::LeftButton;
     return QProxyStyle::styleHint(sh, opt, w, shret);
 }
 

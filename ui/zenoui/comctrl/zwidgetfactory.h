@@ -13,7 +13,7 @@ namespace zenoui
         const QString& type,
         Callback_EditFinished cbFunc,
         CALLBACK_SWITCH cbSwitch,
-        const QVariant& supply = QVariant()
+        const CONTROL_PROPERTIES& properties = CONTROL_PROPERTIES()
     );
 
     bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl);
