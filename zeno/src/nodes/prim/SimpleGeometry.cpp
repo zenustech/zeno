@@ -670,11 +670,11 @@ struct CreatePlane : zeno::INode {
             prim->uvs.emplace_back(uvs[i][0], uvs[i][1]);
         }
 
-        if(prim->loops.size()!= 0 ){
-            prim->loop_uvs.resize(prim->loops.size());
+        if(prim->loops.size()!= 0 && get_input2<bool>("hasVertUV")){
+            loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto lo = prim->loops[i];
-                prim->loop_uvs[i] = lo;
+                loops.attr<int>("uvs")[i] = lo;
             }
         }
 

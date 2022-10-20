@@ -111,27 +111,28 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 prim->uvs[i] = {val[0], val[1]};
             }
         }
-        prim->loop_uvs.resize(index_size);
         if (prim->loops.size() == index_size) {
+            prim->loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loop_uvs[i] = (*uvsamp.getIndices())[i];
+                prim->loops.attr<int>("uvs")[i] = (*uvsamp.getIndices())[i];
             }
         }
         else if (prim->verts.size() == index_size) {
+            prim->loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loop_uvs[i] = prim->loops[i];
+                prim->loops.attr<int>("uvs")[i] = prim->loops[i];
             }
         }
     }
-    if (prim->loop_uvs.size() == 0) {
+    if (!prim->loops.has_attr("uvs")) {
         if (!read_done) {
             log_warn("[alembic] Not found uv, auto fill zero.");
         }
         prim->uvs.resize(1);
         prim->uvs[0] = zeno::vec2f(0, 0);
-        prim->loop_uvs.resize(prim->loops.size());
+        prim->loops.add_attr<int>("uvs");
         for (auto i = 0; i < prim->loops.size(); i++) {
-            prim->loop_uvs[i] = 0;
+            prim->loops.attr<int>("uvs")[i] = 0;
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();

@@ -99,15 +99,24 @@ static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
     bool has_uv =
         tris.has_attr("uv0") && tris.has_attr("uv1") && tris.has_attr("uv2");
     //printf("!!has_uv = %d\n", has_uv);
+    const zeno::vec3f *uv0_data = nullptr;
+    const zeno::vec3f *uv1_data = nullptr;
+    const zeno::vec3f *uv2_data = nullptr;
+    if(has_uv)
+    {
+        uv0_data = tris.attr<zeno::vec3f>("uv0").data();
+        uv1_data = tris.attr<zeno::vec3f>("uv1").data();
+        uv2_data = tris.attr<zeno::vec3f>("uv2").data();
+    }
 #pragma omp parallel for
     for (size_t i = 0; i < prim->tris.size(); ++i) {
         if (has_uv) {
             const auto &pos0 = pos[tris[i][0]];
             const auto &pos1 = pos[tris[i][1]];
             const auto &pos2 = pos[tris[i][2]];
-            auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
-            auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
-            auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
+            auto uv0 = uv0_data[i];
+            auto uv1 = uv1_data[i];
+            auto uv2 = uv2_data[i];
 
             auto edge0 = pos1 - pos0;
             auto edge1 = pos2 - pos0;

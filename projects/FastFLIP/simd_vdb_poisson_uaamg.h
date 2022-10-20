@@ -63,6 +63,16 @@ struct LaplacianWithLevel {
         openvdb::FloatGrid::Ptr in_vz,
         openvdb::Vec3fGrid::Ptr in_solid_velocity,
         float in_dt);
+    
+    openvdb::FloatGrid::Ptr createPressurePoissonRightHandSide_withTension(
+        openvdb::FloatGrid::Ptr in_liquid_phi,
+        openvdb::FloatGrid::Ptr in_curvature,
+        openvdb::Vec3fGrid::Ptr in_face_weight,
+        openvdb::FloatGrid::Ptr in_vx,
+        openvdb::FloatGrid::Ptr in_vy,
+        openvdb::FloatGrid::Ptr in_vz,
+        openvdb::Vec3fGrid::Ptr in_solid_velocity,
+        float in_dt, float in_tension_coef);
 
     //Get (row, col, value) triplets for explicit matrix representation.
     void getTriplets(std::vector<Eigen::Triplet<float>>& out_triplets) const;

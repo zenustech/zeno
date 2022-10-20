@@ -33,6 +33,8 @@ struct VideoRecInfo
     QPair<int, int> frameRange;
     int fps;
     int bitrate;
+    int numMSAA = 0;
+    int numOptix = 1;
     VideoRecInfo() {
         res = { 0,0 };
         fps = bitrate = 0;
@@ -63,6 +65,7 @@ public:
     QVariant hitOnFloor(float x, float y) const;
     void lookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
 
@@ -101,6 +104,7 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void cameraLookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
 

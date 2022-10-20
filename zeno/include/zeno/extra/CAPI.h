@@ -29,7 +29,6 @@ enum Zeno_PrimMembType {
     Zeno_PrimMembType_loops,
     Zeno_PrimMembType_polys,
     Zeno_PrimMembType_uvs,
-    Zeno_PrimMembType_loop_uvs,
 };
 
 enum Zeno_PrimDataType {

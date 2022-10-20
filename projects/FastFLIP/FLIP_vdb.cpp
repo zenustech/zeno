@@ -13,6 +13,7 @@
 // intrinsics
 #include "simd_vdb_poisson.h"
 #include "simd_vdb_poisson_uaamg.h"
+#include "simd_viscosity3d.h"
 #include <openvdb/tools/Interpolation.h>
 #include <xmmintrin.h>
 // #include "BPS3D_volume_vel_cache.h" // decouple Datan BEM works for now
@@ -649,11 +650,19 @@ struct point_to_counter_reducer2 {
           carried_vel = StaggeredBoxSampler::sample(v_tobe_adv_axr, pIspos);
         }
 
+#if 0
         // update the velocity of the particle
         /*particle_vel = (m_pic_component)*adv_vel + (1.0f - m_pic_component) *
          * (adv_vel - old_vel + particle_vel);*/
 
         particle_vel = adv_vel + flip_component * (-old_vel + particle_vel);
+#endif
+
+        // update the velocity of the particle
+        /*particle_vel = (m_pic_component)*carried_vel + (1.0f - m_pic_component) *
+         * (carried_vel - old_vel + particle_vel);*/
+
+        particle_vel = carried_vel + flip_component * (-old_vel + particle_vel);
 
         pItpos = pIspos;
         movefunc(pItpos, adv_vel);
@@ -2849,12 +2858,15 @@ void FLIP_vdb::apply_pressure_gradient(
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
     packed_FloatGrid3 &velocity, openvdb::Vec3fGrid::Ptr &solid_velocity,
-    float dx, float in_dt) {
+    openvdb::FloatGrid::Ptr &curvature,
+    float density, float tension_coef, bool enable_tension,
+    float dt, float dx) {
 
   auto velocity_update = velocity.deepCopy();
 	velocity_update.setName("Velocity_Update");
 
   const float boundary_friction_coef = 0.f;
+  const float tension = tension_coef/density;
 
 	//CSim::TimerMan::timer("Step/SIMD/grad/apply").start();
 	for (int channel = 0; channel < 3; channel++) {
@@ -2863,6 +2875,7 @@ void FLIP_vdb::apply_pressure_gradient(
 			auto weight_axr{ face_weight->getConstUnsafeAccessor() };
 			auto solid_vel_axr{ solid_velocity->getConstUnsafeAccessor() };
 			auto pressure_axr{ pressure->getConstUnsafeAccessor() };
+      auto curv_axr{ curvature->getConstUnsafeAccessor() };
 
 			auto update_channel_leaf = velocity_update.v[channel]->tree().probeLeaf(leaf.origin());
 
@@ -2893,14 +2906,25 @@ void FLIP_vdb::apply_pressure_gradient(
 						auto phi_below = phi_axr.getValue(lower_gcoord);
 						float p_this = pressure_axr.getValue(gcoord);
 						float p_below = pressure_axr.getValue(lower_gcoord);
+            float curv_this = curv_axr.getValue(gcoord);
+						float curv_below = curv_axr.getValue(lower_gcoord);
 
 						float theta = 1.0f;
 						if (phi_this >= 0 || phi_below >= 0) {
 							theta = fraction_inside(phi_below, phi_this);
 							if (theta < 0.02f) theta = 0.02f;
+
+              if (enable_tension) {
+								if (phi_this >= 0) {
+									p_this = tension*(theta*curv_this + (1.f - theta)*curv_below);
+								}
+								else if (phi_below >= 0) {
+									p_below = tension*(theta*curv_below + (1.f - theta)*curv_this);
+								}
+							}
 						}
 
-						vel_update = -in_dt * (float)(p_this - p_below) / dx / theta;
+						vel_update = -dt * (float)(p_this - p_below) / dx / theta;
 						updated_vel += vel_update;
 						reflected_vel = updated_vel + vel_update;
 
@@ -2998,9 +3022,12 @@ void FLIP_vdb::solve_pressure_simd(
 
 void FLIP_vdb::solve_pressure_simd_uaamg(
     openvdb::FloatGrid::Ptr &liquid_sdf,
+    openvdb::FloatGrid::Ptr &curvature,
     openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
     openvdb::Vec3fGrid::Ptr &face_weight, packed_FloatGrid3 &velocity,
-    openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
+    openvdb::Vec3fGrid::Ptr &solid_velocity,
+    float density, float tension_coef, bool enable_tension,
+    float dt, float dx) {
 
 	//skip if there is no dof to solve
 	if (liquid_sdf->tree().leafCount() == 0) {
@@ -3015,8 +3042,16 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	simd_solver.mRelativeTolerance = 1e-6;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
-	rhsgrid = lhs_matrix->createPressurePoissonRightHandSide(face_weight, velocity.v[0],
-		velocity.v[1], velocity.v[2], solid_velocity, dt);
+  if (enable_tension) {
+    const float tension = tension_coef/density;
+    rhsgrid = lhs_matrix->createPressurePoissonRightHandSide_withTension(liquid_sdf, curvature,
+      face_weight, velocity.v[0], velocity.v[1], velocity.v[2], solid_velocity,
+      dt, tension);
+  }
+  else {
+	  rhsgrid = lhs_matrix->createPressurePoissonRightHandSide(face_weight, velocity.v[0],
+		  velocity.v[1], velocity.v[2], solid_velocity, dt);
+  }
 
 	auto pressure = lhs_matrix->getZeroVectorGrid();
 	pressure->setName("Pressure");
@@ -3050,6 +3085,50 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
   }
 
 	rhsgrid->setName("RHS");
+}
+
+void FLIP_vdb::solve_viscosity(
+    packed_FloatGrid3 &velocity,
+    packed_FloatGrid3 &velocity_viscous,
+    openvdb::FloatGrid::Ptr &liquid_sdf,
+    openvdb::FloatGrid::Ptr &solid_sdf,
+    openvdb::Vec3fGrid::Ptr &solid_velocity,
+    float density, float viscosity, float dt)
+{
+	auto viscosity_grid = openvdb::FloatGrid::create(viscosity);
+
+	simd_uaamg::simd_viscosity3d viscosity_solver(viscosity_grid,
+		liquid_sdf, solid_sdf, velocity, solid_velocity,
+    dt, density);
+
+	auto result = viscosity_solver.m_matrix_levels[0]->get_zero_vec();
+
+	//warm start
+	for (int i = 0; i < 3; i++) {
+		auto warm_start_setter = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+			auto original_vel_axr = velocity.v[i]->getConstUnsafeAccessor();
+			auto result_leaf = result.v[i]->tree().probeLeaf(leaf.origin());
+			for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+				result_leaf->setValueOnly(iter.offset(), original_vel_axr.getValue(iter.getCoord()));
+			}
+		};
+		viscosity_solver.m_matrix_levels[0]->m_dof_manager[i]->foreach(warm_start_setter);
+	}
+	static int counter = 0;
+	result.setName("result_before_solve");
+
+	viscosity_solver.pcg_solve(result, 1e-4f);
+	//m_substep_statistics.viscosity_ndof = viscosity_solver.m_matrix_levels[0]->m_ndof;
+	//m_substep_statistics.viscosity_iterations = viscosity_solver.m_iteration;
+
+	velocity_viscous = result.deepCopy();
+	velocity_viscous.setName("Velocity_Viscous");
+
+#if 0
+	for (int i = 0; i < 3; i++) {
+		velocity.v[i]->setTree(result.v[i]->treePtr());
+	}
+#endif
 }
 
 void FLIP_vdb::field_add_vector(packed_FloatGrid3 &velocity_field,
@@ -3131,14 +3210,15 @@ void FLIP_vdb::Advect(float dt, float dx,
 void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist,
                              openvdb::points::PointDataGrid::Ptr &particles,
                              openvdb::FloatGrid::Ptr &liquid_sdf,
-                             openvdb::Vec3fGrid::Ptr &velocity,
+                             openvdb::Vec3fGrid::Ptr &velocity_adv,
+                             openvdb::Vec3fGrid::Ptr &velocity_viscous,
                              openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
                              openvdb::FloatGrid::Ptr &solid_sdf,
                              openvdb::Vec3fGrid::Ptr &solid_vel,
                              float pic_min, float pic_max, int RK_ORDER) {
 
   custom_move_points_and_set_flip_vel(
-      particles, liquid_sdf, velocity, velocity, velocity_after_p2g, solid_sdf,
+      particles, liquid_sdf, velocity_adv, velocity_viscous, velocity_after_p2g, solid_sdf,
       solid_vel, pic_min, pic_max,
       dt, surfacedist, /*RK order*/ RK_ORDER);
 }
