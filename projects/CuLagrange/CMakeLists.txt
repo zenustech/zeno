@@ -54,15 +54,18 @@ target_sources(zeno PRIVATE
   # fem/Check.cu
   fem/Generation.cpp
   # fem/test.cpp
-  fem/QuasiStaticStepping.cu
+  # fem/QuasiStaticStepping.cu
 
-  fem/FastQuasiStaticStepping.cu
+  # fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
+  fem/FleshDynamicStepping.cu
 
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
-  fem/FleshDynamicStepping.cu
+  fem/collision_energy/edge_edge_collision.hpp
+  fem/collision_energy/edge_edge_sqrt_collition.hpp
+
 )
 
 # geometry
