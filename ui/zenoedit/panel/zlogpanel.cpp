@@ -13,6 +13,12 @@ LogItemDelegate::LogItemDelegate(QObject* parent)
 
 }
 
+QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    QTextLayout;
+    return _base::sizeHint(option, index);
+}
+
 void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     painter->save();
@@ -40,13 +46,13 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     }
 
     QRect rc = opt.rect;
-
-    if (QListView* pView = qobject_cast<QListView*>(parent()))
+    if (opt.state & QStyle::State_Selected)
     {
-        if (pView->currentIndex() == index)
-        {
-            painter->fillRect(rc, QColor("#3B546D"));
-        }
+        painter->fillRect(rc, QColor("#3B546D"));
+    }
+    else if (opt.state & QStyle::State_MouseOver)
+    {
+        painter->fillRect(rc, QColor("#24282E"));
     }
 
     QPen pen = painter->pen();

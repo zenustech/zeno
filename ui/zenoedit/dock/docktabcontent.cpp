@@ -25,6 +25,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     int marginTop = ZenoStyle::dpiScaled(0);
     int marginBottom = ZenoStyle::dpiScaled(0);
 
+    setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)), icon, iconOn, iconOn, iconOn);
+
     setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
     setRadius(ZenoStyle::dpiScaled(2));
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
@@ -115,13 +117,13 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     pListView->setChecked(true);
 
-    ZToolBarButton* pTreeView = new ZToolBarButton(true, ":/icons/subnet-treeview.svg", ":/icons/subnet-treeview-on.svg");
-    ZToolBarButton* pSubnetMgr = new ZToolBarButton(false, ":/icons/subnet-mgr.svg", ":/icons/subnet-mgr-on.svg");
-    ZToolBarButton* pFold = new ZToolBarButton(false, ":/icons/node-fold.svg", ":/icons/node-fold-on.svg");
-    ZToolBarButton* pUnfold = new ZToolBarButton(false, ":/icons/node-unfold.svg", ":/icons/node-unfold-on.svg");
-    ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/snapgrid.svg", ":/icons/snapgrid-on.svg");
-    ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/blackboard.svg", ":/icons/blackboard-on.svg");
-    ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/full-panel.svg", ":/icons/full-panel-on.svg");
+    ZToolBarButton* pTreeView = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    ZToolBarButton* pSubnetMgr = new ZToolBarButton(false, ":/icons/nodeEditor_subnetManager_unselected.svg", ":/icons/nodeEditor_subnetManager_selected.svg");
+    ZToolBarButton* pFold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeFold_unselected.svg", ":/icons/nodeEditor_nodeFold_selected.svg");
+    ZToolBarButton* pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
+    ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
+    ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
+    ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);

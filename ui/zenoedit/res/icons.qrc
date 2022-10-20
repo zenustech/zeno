@@ -227,5 +227,21 @@
     <file>icons/logger-key-unchecked.svg</file>
     <file>icons/toolbar_delete_idle.svg</file>
     <file>icons/toolbar_delete_light.svg</file>
+    <file>icons/nodeEditor_blackboard_selected.svg</file>
+    <file>icons/nodeEditor_blackboard_unselected.svg</file>
+    <file>icons/nodeEditor_fullScreen_selected.svg</file>
+    <file>icons/nodeEditor_fullScreen_unselected.svg</file>
+    <file>icons/nodeEditor_nodeFold_selected.svg</file>
+    <file>icons/nodeEditor_nodeFold_unselected.svg</file>
+    <file>icons/nodeEditor_nodeTree_selected.svg</file>
+    <file>icons/nodeEditor_nodeTree_unselected.svg</file>
+    <file>icons/nodeEditor_nodeUnfold_selected.svg</file>
+    <file>icons/nodeEditor_nodeUnfold_unselected.svg</file>
+    <file>icons/nodeEditor_snap_selected.svg</file>
+    <file>icons/nodeEditor_snap_unselected.svg</file>
+    <file>icons/nodeEditor_subnetManager_selected.svg</file>
+    <file>icons/nodeEditor_subnetManager_unselected.svg</file>
+    <file>icons/nodeEditor_subnetPanel_selected.svg</file>
+    <file>icons/nodeEditor_subnetPanel_unselected.svg</file>
 </qresource>
 </RCC>
