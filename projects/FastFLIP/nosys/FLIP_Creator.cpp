@@ -24,6 +24,7 @@ struct FLIPCreator : zeno::INode {
     auto velocity_update = zeno::IObject::make<VDBFloat3Grid>();
     auto velocity_snapshot = zeno::IObject::make<VDBFloat3Grid>();
     auto velocity_after_p2g = zeno::IObject::make<VDBFloat3Grid>();
+    auto velocity_viscous = zeno::IObject::make<VDBFloat3Grid>();
     auto solid_velocity = zeno::IObject::make<VDBFloat3Grid>();
     auto velocity_weights = zeno::IObject::make<VDBFloat3Grid>();
     auto liquid_sdf = zeno::IObject::make<VDBFloatGrid>();
@@ -59,22 +60,13 @@ struct FLIPCreator : zeno::INode {
     velocity->m_grid->setName("Velocity");
     velocity_after_p2g->m_grid = velocity->m_grid->deepCopy();
     velocity_after_p2g->m_grid->setName("Velocity_After_P2G");
+    velocity_viscous->m_grid = velocity->m_grid->deepCopy();
+    velocity_viscous->m_grid->setName("Velocity_Viscous");
     velocity_snapshot->m_grid = velocity->m_grid->deepCopy();
     velocity_snapshot->m_grid->setName("Velocity_Snapshot");
     velocity_update->m_grid = velocity->m_grid->deepCopy();
     velocity_update->m_grid->setName("Velocity_Update");
-    /*
-    auto vel_init = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0 });
-	vel_init->setTransform(voxel_center_transform);
-	vel_init->setName("Velocity");
-	vel_init->setGridClass(openvdb::GridClass::GRID_STAGGERED);
 
-	velocity->from_vec3(vel_init, true);
-    velocity_update = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
-    velocity_update->setName("Velocity_Update");
-    velocity_snapshot = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
-    velocity_after_p2g = std::make_shared<packed_FloatGrid3>(velocity->deepCopy());
-    */
     
     solid_velocity->m_grid =
         openvdb::Vec3fGrid::create(openvdb::Vec3f{0, 0, 0});
@@ -114,6 +106,7 @@ struct FLIPCreator : zeno::INode {
     set_output("DeltaVelocity", velocity_update);
     set_output("VelocitySnapshot", velocity_snapshot);
     set_output("PostAdvVelocity", velocity_after_p2g);
+    set_output("ViscousVelocity", velocity_viscous);
     set_output("SolidVelocity", solid_velocity);
     set_output("VelocityWeights", velocity_weights);
     set_output("LiquidSDF", liquid_sdf);
@@ -133,8 +126,8 @@ static int defFLIPCreator = zeno::defNodeClass<FLIPCreator>(
          
          "Particles", "Pressure", "Divergence", "CellFWeight", "PressureDOFID",
          "IsolatedCellDOF", "Velocity", "DeltaVelocity", "VelocitySnapshot",
-         "PostAdvVelocity", "SolidVelocity", "VelocityWeights", "LiquidSDF",
-         "LiquidSDFSnapshot", "ExtractedLiquidSDF", "ErodedLiquidSDF",
+         "PostAdvVelocity", "ViscousVelocity", "SolidVelocity", "VelocityWeights",
+         "LiquidSDF", "LiquidSDFSnapshot", "ExtractedLiquidSDF", "ErodedLiquidSDF",
          "SolidSDF",
          //"acceleration_fields",
          //"domain_solid_sdf",

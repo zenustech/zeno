@@ -135,8 +135,8 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
                 new_uv[b + i * 6 + 5] = uv3[i];
             }
         }
-        if (prim->loops.size() && prim->loop_uvs.size()) {
-            auto &loop_uvs = prim->loop_uvs;
+        if (prim->loops.size() && prim->loops.has_attr("uvs")) {
+            auto &loop_uvs = prim->loops.attr<int>("uvs");
             size_t b = 0;
             std::vector<int> v(loopcount * 3);
             for (size_t i = 0; i < prim->polys.size(); i++) {

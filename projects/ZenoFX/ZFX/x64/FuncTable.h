@@ -25,6 +25,7 @@ DEF_FN1(floor)
 DEF_FN1(ceil)
 DEF_FN2(atan2)
 DEF_FN2(pow)
+static void func_fmod(float *a, float *b) { vcl::Vec4f x, y; x.load(a); y.load(b); x = x - vcl::floor(x / y) * y; x.store(a); }
 #undef DEF_FN1
 #undef DEF_FN2
 
@@ -43,6 +44,7 @@ DEF_FN1(floor)
 DEF_FN1(ceil)
 DEF_FN2(atan2)
 DEF_FN2(pow)
+DEF_FN2(fmod)
 #undef DEF_FN1
 #undef DEF_FN2
     };
@@ -66,6 +68,7 @@ DEF_FN1(floor)
 DEF_FN1(ceil)
 DEF_FN2(atan2)
 DEF_FN2(pow)
+DEF_FN2(fmod)
 #undef DEF_FN1
 #undef DEF_FN2
         }

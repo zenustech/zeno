@@ -114,6 +114,8 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "max",
                     "pow",
                     "atan2",
+                    "fmod",
+                    //"fmodf",
             }, name)) {
             if (stmt->args.size() != 2) {
                 error("function `%s` takes exactly 2 arguments", name.c_str());
@@ -152,12 +154,6 @@ struct TypeCheck : Visitor<TypeCheck> {
                 error("function `%s` takes exactly 5 arguments", name.c_str());
             }
             stmt->dim = 3;
-
-        } else if (contains({"fmod"}, name)) {
-            if (stmt->args.size() != 2) {
-                error("function `%s` takes exactly 2 arguments", name.c_str());
-            }
-            stmt->dim = 1;
 
         } else {
             error("invalid function name `%s` (with %d args)",

@@ -208,6 +208,21 @@ void CameraControl::clearTransformer() {
     transformer->clear();
 }
 
+void CameraControl::changeTransformOperation(const QString& node) {
+    auto opt = transformer->getTransOpt();
+    transformer->clear();
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    for (auto const &[key, _] : scene->objectsMan->pairs()) {
+        if (key.find(node.toStdString()) != std::string::npos) {
+            scene->selected.insert(key);
+            transformer->addObject(key);
+        }
+    }
+    transformer->setTransOpt(opt);
+    transformer->changeTransOpt();
+    zenoApp->getMainWindow()->updateViewport();
+}
+
 void CameraControl::changeTransformOperation(int mode) {
     switch (mode) {
     case 0:
@@ -556,15 +571,15 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QGLWidget(parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
 {
-    QSurfaceFormat fmt;
+    QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setProfile(QGLFormat::CoreProfile);
     setFormat(fmt);
 
     // https://blog.csdn.net/zhujiangm/article/details/90760744
@@ -581,7 +596,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QOpenGLContext *ctx;
+    inline static QGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
@@ -695,6 +710,10 @@ void ViewportWidget::cameraLookTo(int dir) {
 
 void ViewportWidget::clearTransformer() {
     m_camera->clearTransformer();
+}
+
+void ViewportWidget::changeTransformOperation(const QString& node) {
+    m_camera->changeTransformOperation(node);
 }
 
 void ViewportWidget::changeTransformOperation(int mode) {
@@ -1038,9 +1057,9 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
+        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
         QString presets, path, filename;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename);
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA);
         //validation.
 
         VideoRecInfo recInfo;
@@ -1050,6 +1069,8 @@ void DisplayWidget::onRecord()
         recInfo.bitrate = bitrate;
         recInfo.fps = fps;
         recInfo.videoname = filename;
+        recInfo.numOptix = numOptix;
+        recInfo.numMSAA = numMSAA;
 
         Zenovis::GetInstance().startPlay(true);
 
