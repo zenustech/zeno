@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "PBFWorld.h"
+#include "./PBFWorld.h"
+#include "../Utils/myPrint.h"//debug
 
 using namespace zeno;
 
@@ -49,9 +50,9 @@ struct PBFWorld_Setup : INode
 ZENDEFNODE(PBFWorld_Setup, {
     {
         {"PrimitiveObject","prim"},
-        {"float","dt","0.05"},
-        {"float","radius","3.0"},
-        {"vec3f","bounds","40.0, 40.0, 40.0"},
+        {"float","dt"," 0.0025"},
+        {"float","radius","0.025"},
+        {"vec3f","bounds","10.0, 10.0, 10.0"},
         {"vec3f","externForce", "0.0, -10.0, 0.0"},
         {"float","rho0","1000.0"},
         {"float","lambdaEpsilon","1e-6"},

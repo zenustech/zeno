@@ -10,14 +10,14 @@ namespace zeno
 struct PBFWorld:IObject
 {
 //physical params
-    float dt= 0.005;
+    float dt=  0.0025;
     float radius = 0.025;
-    vec3f bounds{15.0, 20.0, 15.0};
+    vec3f bounds;
     vec3f externForce{0, -10.0, 0};
 
     float rho0 = 1000.0;
     float mass; //0.8*diam*diam*diam*rho0
-    float h = 4*radius; // 4*radius
+    float h; // 4*radius
     float neighborSearchRadius; //h * 1.05
     float lambdaEpsilon = 1e-6;
     float coeffDq = 0.3;
