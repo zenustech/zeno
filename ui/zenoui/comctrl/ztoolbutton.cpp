@@ -187,6 +187,8 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
     option->initFrom(this);
     if (isChecked())
         option->state |= QStyle::State_On;
+    if (m_options & Opt_NoBackground)
+        option->bDrawBackground = false;
     if (isDown() || isPressed())
         option->state |= QStyle::State_Sunken;
     if (!isChecked() && !isDown() && !isPressed())

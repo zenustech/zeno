@@ -10,6 +10,7 @@ ZStyleOptionToolButton::ZStyleOptionToolButton()
     , bDown(false)
     , bgBrush(Qt::NoBrush)
     , bTextUnderIcon(false)
+    , bDrawBackground(true)
     , m_arrowOption(NO_ARROW)
     , m_iconOption(NO_ICON)
 {

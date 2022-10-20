@@ -207,5 +207,25 @@
     <file>icons/rightArrow.svg</file>
     <file>icons/leftArrow-on.svg</file>
     <file>icons/rightArrow-on.svg</file>
+    <file>icons/loginfo.svg</file>
+    <file>icons/loginfo-on.svg</file>
+    <file>icons/logwarn.svg</file>
+    <file>icons/logwarn-on.svg</file>
+    <file>icons/logerror.svg</file>
+    <file>icons/logerror-on.svg</file>
+    <file>icons/logger_debug_checked.svg</file>
+    <file>icons/logger_debug_unchecked.svg</file>
+    <file>icons/logger_error_checked.svg</file>
+    <file>icons/logger_error_unchecked.svg</file>
+    <file>icons/logger_info_checked.svg</file>
+    <file>icons/logger_info_unchecked.svg</file>
+    <file>icons/logger_key_checked.svg</file>
+    <file>icons/logger_key_unchecked.svg</file>
+    <file>icons/logger_warning_checked.svg</file>
+    <file>icons/logger_warning_unchecked.svg</file>
+    <file>icons/logger-key-checked.svg</file>
+    <file>icons/logger-key-unchecked.svg</file>
+    <file>icons/toolbar_delete_idle.svg</file>
+    <file>icons/toolbar_delete_light.svg</file>
 </qresource>
 </RCC>

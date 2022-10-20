@@ -322,7 +322,7 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     QRect rcArrow = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonArrow), widget);
 
     //draw the background
-    if (option->buttonEnabled)
+    if (option->bDrawBackground)
     {
         //QRect rect = option->rect.adjusted(0, 0, -1, -1);       //???
         QRect rect = option->rect;

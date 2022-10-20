@@ -45,6 +45,16 @@ public:
     explicit DockContent_View(QWidget* parent = nullptr);
 };
 
+class DockContent_Log : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit DockContent_Log(QWidget* parent = nullptr);
+
+private:
+
+};
+
 
 
 #endif

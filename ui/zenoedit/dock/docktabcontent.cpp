@@ -20,10 +20,10 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
 
     QColor bgOn("#4F5963");
 
-    int marginLeft = ZenoStyle::dpiScaled(5);
-    int marginRight = ZenoStyle::dpiScaled(5);
-    int marginTop = ZenoStyle::dpiScaled(2);
-    int marginBottom = ZenoStyle::dpiScaled(2);
+    int marginLeft = ZenoStyle::dpiScaled(0);
+    int marginRight = ZenoStyle::dpiScaled(0);
+    int marginTop = ZenoStyle::dpiScaled(0);
+    int marginBottom = ZenoStyle::dpiScaled(0);
 
     setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
     setRadius(ZenoStyle::dpiScaled(2));
@@ -166,3 +166,26 @@ DockContent_View::DockContent_View(QWidget* parent)
 {
 
 }
+
+
+DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
+    : QWidget(parent)
+{
+    QHBoxLayout* pToolLayout = new QHBoxLayout;
+    pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
+        ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
+    pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
+
+    QVBoxLayout* pVLayout = new QVBoxLayout;
+    pVLayout->setContentsMargins(0, 0, 0, 0);
+    pVLayout->setSpacing(0);
+
+    pVLayout->addLayout(pToolLayout);
+    //add the seperator line
+    pVLayout->addWidget(new ZPlainLine(1, QColor("#000000")));
+
+    ZlogPanel* logPanel = new ZlogPanel;
+    pVLayout->addWidget(logPanel);
+    setLayout(pVLayout);
+}
+

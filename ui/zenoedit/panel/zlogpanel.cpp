@@ -1,9 +1,10 @@
-#include "zlogpanel.h"
 #include "ui_zlogpanel.h"
+#include "zlogpanel.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/ztoolbutton.h>
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
@@ -15,21 +16,54 @@ LogItemDelegate::LogItemDelegate(QObject* parent)
 void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     painter->save();
+
+    QStyleOptionViewItem opt = option;
+    initStyleOption(&opt, index);
+
     QtMsgType type = (QtMsgType)index.data(ROLE_LOGTYPE).toInt();
     QColor clr;
     if (type == QtFatalMsg) {
-        clr = QColor(200, 84, 79);
+        clr = QColor("#C8544F");
     } else if (type == QtInfoMsg) {
-        clr = QColor(51, 148, 85);
+        clr = QColor("#507CC8");
     } else if (type == QtWarningMsg) {
-        clr = QColor(200, 154, 80);
-    } else {
-        clr = QColor("#858280");
+        clr = QColor("#C89A50");
     }
+    else if (type == QtCriticalMsg) {
+        clr = QColor("#339455");
+    }
+    else if (type == QtDebugMsg) {
+        clr = QColor("#A3B1C0");
+    }
+    else {
+        clr = QColor("#A3B1C0");
+    }
+
+    QRect rc = opt.rect;
+
+    if (QListView* pView = qobject_cast<QListView*>(parent()))
+    {
+        if (pView->currentIndex() == index)
+        {
+            painter->fillRect(rc, QColor("#3B546D"));
+        }
+    }
+
     QPen pen = painter->pen();
     pen.setColor(clr);
+
+    
+
+    QFont font("Consolas", 10);
+    font.setBold(true);
+    painter->setFont(font);
+
     painter->setPen(pen);
-    _base::paint(painter, option, index);
+    painter->drawText(rc.adjusted(4,0,0,0), opt.text);
+
+    painter->setPen(QColor("#24282E"));
+    painter->drawLine(rc.bottomLeft(), rc.bottomRight());
+
     painter->restore();
 }
 
@@ -58,9 +92,64 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
 
-    m_ui->btnClearAll->setIcons(ZenoStyle::dpiScaledSize(QSize(16, 16))
-        , ":/icons/trash.svg"
-        , ":/icons/trashnote-on.svg");
+    m_ui->listView->setItemDelegate(new LogItemDelegate(m_ui->listView));
+
+    m_ui->btnDebug->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnDebug->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger_debug_unchecked.svg",
+        ":/icons/logger_debug_unchecked.svg",
+        ":/icons/logger_debug_checked.svg",
+        ":/icons/logger_debug_checked.svg");
+    m_ui->btnDebug->setChecked(true);
+
+    m_ui->btnInfo->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnInfo->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger_info_unchecked.svg",
+        ":/icons/logger_info_unchecked.svg",
+        ":/icons/logger_info_checked.svg",
+        ":/icons/logger_info_checked.svg");
+    m_ui->btnInfo->setChecked(true);
+
+    m_ui->btnWarn->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnWarn->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger_warning_unchecked.svg",
+        ":/icons/logger_warning_unchecked.svg",
+        ":/icons/logger_warning_checked.svg",
+        ":/icons/logger_warning_checked.svg");
+    m_ui->btnWarn->setChecked(true);
+
+    m_ui->btnError->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnError->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger_error_unchecked.svg",
+        ":/icons/logger_error_unchecked.svg",
+        ":/icons/logger_error_checked.svg",
+        ":/icons/logger_error_checked.svg");
+    m_ui->btnError->setChecked(true);
+
+    m_ui->btnKey->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnKey->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger-key-unchecked.svg",
+        ":/icons/logger-key-unchecked.svg",
+        ":/icons/logger-key-checked.svg",
+        ":/icons/logger-key-checked.svg");
+    m_ui->btnKey->setChecked(true);
+
+    m_ui->editSearch->setProperty("cssClass", "zeno2_2_lineedit");
+    m_ui->editSearch->setPlaceholderText(tr("Search"));
+
+    m_ui->btnDelete->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnDelete->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/toolbar_delete_idle.svg",
+        ":/icons/toolbar_delete_light.svg",
+        "",
+        "");
+
+    m_ui->btnSetting->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnSetting->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/settings.svg",
+        ":/icons/settings-on.svg",
+        "",
+        "");
 
     initSignals();
     initModel();
@@ -77,75 +166,27 @@ void ZlogPanel::initModel()
 
 void ZlogPanel::initSignals()
 {
-    connect(m_ui->cbAll, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-            BlockSignalScope s1(m_ui->cbCritical);
-            BlockSignalScope s2(m_ui->cbDebug);
-            BlockSignalScope s3(m_ui->cbError);
-            BlockSignalScope s4(m_ui->cbInfo);
-            BlockSignalScope s5(m_ui->cbWarning);
-            m_ui->cbCritical->setChecked(true);
-            m_ui->cbDebug->setChecked(true);
-            m_ui->cbError->setChecked(true);
-            m_ui->cbInfo->setChecked(true);
-            m_ui->cbWarning->setChecked(true);
-        } else if (Qt::Unchecked == state) {
-        
-        }
+    connect(m_ui->btnKey, &ZToolButton::toggled, this, [=](bool bOn) {
         onFilterChanged();
     });
 
-    connect(m_ui->cbCritical, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-
-        } else if (Qt::Unchecked == state) {
-            BlockSignalScope scope(m_ui->cbAll);
-            m_ui->cbAll->setChecked(false);
-        }
+    connect(m_ui->btnDebug, &ZToolButton::toggled, this, [=](bool bOn) {
         onFilterChanged();
     });
 
-    connect(m_ui->cbDebug, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-
-        } else if (Qt::Unchecked == state) {
-            BlockSignalScope scope(m_ui->cbAll);
-            m_ui->cbAll->setChecked(false);
-        }
+    connect(m_ui->btnError, &ZToolButton::toggled, this, [=](bool bOn) {
         onFilterChanged();
     });
 
-    connect(m_ui->cbError, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-
-        } else if (Qt::Unchecked == state) {
-            BlockSignalScope scope(m_ui->cbAll);
-            m_ui->cbAll->setChecked(false);
-        }
+    connect(m_ui->btnInfo, &ZToolButton::toggled, this, [=](bool bOn) {
         onFilterChanged();
     });
 
-    connect(m_ui->cbInfo, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-
-        } else if (Qt::Unchecked == state) {
-            BlockSignalScope scope(m_ui->cbAll);
-            m_ui->cbAll->setChecked(false);
-        }
+    connect(m_ui->btnWarn, &ZToolButton::toggled, this, [=](bool bOn) {
         onFilterChanged();
     });
 
-    connect(m_ui->cbWarning, &QCheckBox::stateChanged, this, [=](int state) {
-        if (Qt::Checked == state) {
-
-        } else if (Qt::Unchecked == state) {
-            BlockSignalScope scope(m_ui->cbAll);
-            m_ui->cbAll->setChecked(false);
-        }
-        onFilterChanged();
-    });
-
-    connect(m_ui->btnClearAll, &ZIconLabel::clicked, this, [=]() {
+    connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
         zenoApp->logModel()->clear();
     });
 }
@@ -153,15 +194,15 @@ void ZlogPanel::initSignals()
 void ZlogPanel::onFilterChanged()
 {
     QVector<QtMsgType> filters;
-    if (m_ui->cbWarning->isChecked())
+    if (m_ui->btnWarn->isChecked())
         filters.append(QtWarningMsg);
-    if (m_ui->cbCritical->isChecked())
+    if (m_ui->btnKey->isChecked())
         filters.append(QtCriticalMsg);
-    if (m_ui->cbDebug->isChecked())
+    if (m_ui->btnDebug->isChecked())
         filters.append(QtDebugMsg);
-    if (m_ui->cbError->isChecked())
+    if (m_ui->btnError->isChecked())
         filters.append(QtFatalMsg);
-    if (m_ui->cbInfo->isChecked())
+    if (m_ui->btnInfo->isChecked())
         filters.append(QtInfoMsg);
     m_pFilterModel->setFilters(filters);
 }
@@ -171,7 +212,6 @@ void ZlogPanel::onFilterChanged()
 CustomFilterProxyModel::CustomFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
     , m_filters(0)
-    
 {
 }
 

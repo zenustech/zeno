@@ -26,6 +26,7 @@ public:
     Qt::Orientation orientation;
     bool hideText;
     bool buttonEnabled;
+    bool bDrawBackground;
     bool bDown;
     bool bTextUnderIcon;
     ArrowOption m_arrowOption;
