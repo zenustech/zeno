@@ -1,6 +1,10 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 namespace zeno {
+/**
+ * @brief 这个节点是整个PBD软体仿真。仅为测试，请勿实用。
+ * 
+ */
 struct PBDSoftBody : zeno::INode {
 private:
     //physical param

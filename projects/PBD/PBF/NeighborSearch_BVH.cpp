@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "../ZenoFX/LinearBvh.h" //BVH搜索
-// #include "NeighborListData.h" // 数据类，用来节点间数据传递
+#include "NeighborListData.h" // 数据类，用来节点间数据传递
 // #include "../Utils/myPrint.h"
 // #include "../Utils/readFile.h"
 

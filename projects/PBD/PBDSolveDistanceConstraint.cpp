@@ -42,12 +42,6 @@ private:
 
             pos[id0] += grad *   s * invMass[id0];
             pos[id1] += grad * (-s * invMass[id1]);
-
-            if(i==10)
-            {
-                vec3f dpos=grad *s * invMass[id0];
-                std::cout<<"dpos["<<id0<<"]: "<<dpos[id0]<<"\n";
-            }
         }
     }
 

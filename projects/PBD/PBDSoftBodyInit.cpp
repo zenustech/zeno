@@ -1,7 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
-#include <iostream>
 
 namespace zeno {
 
