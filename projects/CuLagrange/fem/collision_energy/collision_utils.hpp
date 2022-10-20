@@ -656,5 +656,108 @@ namespace COLLISION_UTILS {
 
         return false;
     }
+
+
+///////////////////////////////////////////////////////////////////////
+// compute distance between a point and triangle
+///////////////////////////////////////////////////////////////////////
+    REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
+                                        const VECTOR3& v2, const VECTOR3& v)
+    {
+        // get the barycentric coordinates
+        const VECTOR3 e1 = v1 - v0;
+        const VECTOR3 e2 = v2 - v0;
+        const VECTOR3 n = e1.cross(e2);
+        const VECTOR3 na = (v2 - v1).cross(v - v1);
+        const VECTOR3 nb = (v0 - v2).cross(v - v2);
+        const VECTOR3 nc = (v1 - v0).cross(v - v0);
+        const VECTOR3 barycentric(n.dot(na) / n.l2NormSqr(),
+                                    n.dot(nb) / n.l2NormSqr(),
+                                    n.dot(nc) / n.l2NormSqr());
+                                    
+        const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
+
+        // if the point projects to inside the triangle, it should sum to 1
+        if (barySum - 1.0 < 1e-8)
+        {
+            const VECTOR3 nHat = n / n.norm();
+            const REAL normalDistance = (nHat.dot(v - v0));
+            return fabs(normalDistance);
+        }
+
+        // project onto each edge, find the distance to each edge
+        const VECTOR3 e3 = v2 - v1;
+        const VECTOR3 ev = v - v0;
+        const VECTOR3 ev3 = v - v1;
+        const VECTOR3 e1Hat = e1 / e1.norm();
+        const VECTOR3 e2Hat = e2 / e2.norm();
+        const VECTOR3 e3Hat = e3 / e3.norm();
+        VECTOR3 edgeDistances(1e8, 1e8, 1e8);
+
+        // see if it projects onto the interval of the edge
+        // if it doesn't, then the vertex distance will be smaller,
+        // so we can skip computing anything
+        const REAL e1dot = e1Hat.dot(ev);
+        if (e1dot > 0.0 && e1dot < e1.norm())
+        {
+            const VECTOR3 projected = v0 + e1Hat * e1dot;
+            edgeDistances[0] = (v - projected).norm();
+        }
+        const REAL e2dot = e2Hat.dot(ev);
+        if (e2dot > 0.0 && e2dot < e2.norm())
+        {
+            const VECTOR3 projected = v0 + e2Hat * e2dot;
+            edgeDistances[1] = (v - projected).norm();
+        }
+        const REAL e3dot = e3Hat.dot(ev3);
+        if (e3dot > 0.0 && e3dot < e3.norm())
+        {
+            const VECTOR3 projected = v1 + e3Hat * e3dot;
+            edgeDistances[2] = (v - projected).norm();
+        }
+
+        // get the distance to each vertex
+        const VECTOR3 vertexDistances((v - v0).norm(), 
+                                        (v - v1).norm(), 
+                                        (v - v2).norm());
+
+        // get the smallest of both the edge and vertex distances
+        REAL vertexMin = 1e8;
+        REAL edgeMin = 1e8;
+        for(int i = 0;i < 3;++i){
+            vertexMin = vertexMin > vertexDistances[i] ? vertexDistances[i] : vertexMin;
+            edgeMin = edgeMin > edgeDistances[i] ? edgeDistances[i] : edgeMin;
+        }
+        // return the smallest of those
+        return (vertexMin < edgeMin) ? vertexMin : edgeMin;
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // see if the projection of v onto the plane of v0,v1,v2 is inside 
+    // the triangle formed by v0,v1,v2
+    ///////////////////////////////////////////////////////////////////////
+    bool pointProjectsInsideTriangle(const VECTOR3& v0, const VECTOR3& v1, 
+                                            const VECTOR3& v2, const VECTOR3& v){
+        // get the barycentric coordinates
+        const VECTOR3 e1 = v1 - v0;
+        const VECTOR3 e2 = v2 - v0;
+        const VECTOR3 n = e1.cross(e2);
+        const VECTOR3 na = (v2 - v1).cross(v - v1);
+        const VECTOR3 nb = (v0 - v2).cross(v - v2);
+        const VECTOR3 nc = (v1 - v0).cross(v - v0);
+        const VECTOR3 barycentric(n.dot(na) / n.l2NormSqr(),
+                                    n.dot(nb) / n.l2NormSqr(),
+                                    n.dot(nc) / n.l2NormSqr());
+                                    
+        const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
+
+        // if the point projects to inside the triangle, it should sum to 1
+        if (barySum - 1.0 < 1e-8)
+            return true;
+
+        return false;
+    }
+
 };
 };

@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Structures.hpp"
-#include "Utils.hpp"
-
-#include "zensim/math/VecInterface.hpp"
-
 #include "collision_utils.hpp"
 
 namespace zeno {
