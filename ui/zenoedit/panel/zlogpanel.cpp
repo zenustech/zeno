@@ -15,8 +15,21 @@ LogItemDelegate::LogItemDelegate(QObject* parent)
 
 QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QTextLayout;
-    return _base::sizeHint(option, index);
+    QFontMetrics fm(option.font);
+    const QAbstractItemModel* model = index.model();
+    QString Text = model->data(index, Qt::DisplayRole).toString();
+    QRect neededsize = fm.boundingRect(option.rect, Qt::TextWordWrap, Text);
+    return QSize(option.rect.width(), neededsize.height());
+    //return _base::sizeHint(option, index);
+}
+
+void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
+    const QModelIndex& index) const
+{
+    QStyledItemDelegate::initStyleOption(option, index);
+    QFont font("Consolas", 10);
+    font.setBold(true);
+    option->font = font;
 }
 
 void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -58,14 +71,12 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     QPen pen = painter->pen();
     pen.setColor(clr);
 
-    
-
     QFont font("Consolas", 10);
     font.setBold(true);
     painter->setFont(font);
 
     painter->setPen(pen);
-    painter->drawText(rc.adjusted(4,0,0,0), opt.text);
+    painter->drawText(rc.adjusted(4,0,0,0), Qt::TextWrapAnywhere, opt.text);
 
     painter->setPen(QColor("#24282E"));
     painter->drawLine(rc.bottomLeft(), rc.bottomRight());
@@ -99,6 +110,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     m_ui->setupUi(this);
 
     m_ui->listView->setItemDelegate(new LogItemDelegate(m_ui->listView));
+    m_ui->listView->setWordWrap(true);
 
     m_ui->btnDebug->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnDebug->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
