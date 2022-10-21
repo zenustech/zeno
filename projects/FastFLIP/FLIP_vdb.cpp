@@ -2854,6 +2854,7 @@ fill_idx_tree_from_liquid_sdf(openvdb::Int32Tree::Ptr dof_tree,
 } // end fill idx tree from liquid sdf
 
 } // namespace
+
 void FLIP_vdb::apply_pressure_gradient(
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
@@ -3085,6 +3086,52 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
   }
 
 	rhsgrid->setName("RHS");
+}
+
+void make_non_newton_viscosity_field(
+    openvdb::FloatGrid::Ptr &viscosity,
+    openvdb::Vec3fGrid::Ptr &velocity,
+    float mu_0, float mu_inf, float scale, float alpha, float n,
+    float dx
+) {
+  auto viscosity_setter = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+    auto vel_axr = velocity->getConstUnsafeAccessor();
+    for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+      openvdb::Vec3f gcoord = iter.getCoord().asVec3s();
+      openvdb::Vec3f vel_stencil[3][2];
+      for (int ch = 0; ch < 3; ch++) { // x, y, z
+        for (int dir = -1; dir <= 1; dir += 2) { // -1, 1
+          int i = dir < 0? 0 : 1;
+          openvdb::Vec3f shift{0, 0, 0};
+          shift[ch] += dir*0.5f;
+          vel_stencil[ch][i] = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, gcoord + shift);
+        }
+      }
+
+      float vel_diff[3][3];
+      for (int ch = 0; ch < 3; ch++) { // u_, v_, w_
+        for (int i = 0; i < 3; i++) { //_x, _y, _z
+          vel_diff[ch][i] = (vel_stencil[i][1][ch] - vel_stencil[i][0][ch]) / dx;
+        }
+      }
+
+      float shear_rate = 0.f;
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          float norm = vel_diff[i][j] + vel_diff[j][i];
+          shear_rate += norm*norm;
+        }
+      }
+      shear_rate = std::sqrt(shear_rate);
+      
+      // Carreau-Yasuda model for shear thinning/thickening fluids
+      float mu_this = mu_inf + (mu_inf - mu_0)*std::pow(1.f + std::pow(scale*shear_rate, alpha), (n - 1.)/alpha);
+      iter.setValue(mu_this);
+    }
+  }; //viscosity_setter
+
+  auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(viscosity->tree());
+	visc_leafman.foreach(viscosity_setter);
 }
 
 void FLIP_vdb::solve_viscosity(
