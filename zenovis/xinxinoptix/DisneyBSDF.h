@@ -1236,7 +1236,7 @@ static __inline__ __device__ vec3 envSky(
     float absorption,
     float t
 ){
-    if (params.usingProceduralSky) {
+    if (!params.usingHdrSky) {
         return proceduralSky(
             dir,
             sunLightDir,

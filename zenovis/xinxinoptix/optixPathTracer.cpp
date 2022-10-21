@@ -1293,9 +1293,12 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, float sky_strength) {
-    state.params.usingProceduralSky = 0;
     state.params.sky_rot = sky_rot;
     state.params.sky_strength = sky_strength;
+}
+
+void using_hdr_sky(bool enable) {
+    state.params.usingHdrSky = enable;
 }
 
 void update_procedural_sky(
@@ -1305,7 +1308,6 @@ void update_procedural_sky(
     float timeStart,
     float timeSpeed
 ){
-    state.params.usingProceduralSky = 1;
 
     auto &ud = zeno::getSession().userData();
     sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
