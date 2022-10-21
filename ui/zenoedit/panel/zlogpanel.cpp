@@ -88,6 +88,10 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 LogListView::LogListView(QWidget* parent)
     : _base(parent)
 {
+    setItemDelegate(new LogItemDelegate(this));
+    setWordWrap(true);
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
 }
 
 void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
@@ -101,6 +105,24 @@ void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
     m_timer.start(50);
 }
 
+void LogListView::onCustomContextMenu(const QPoint& point)
+{
+    QModelIndex index = indexAt(point);
+    QString msg = index.data().toString();
+    QMenu* pMenu = new QMenu;
+    pMenu->setAttribute(Qt::WA_DeleteOnClose);
+
+    QAction* pCopy = new QAction(tr("Copy"));
+    pMenu->addAction(pCopy);
+    connect(pCopy, &QAction::triggered, [=]() {
+        QMimeData* pMimeData = new QMimeData;
+        pMimeData->setText(msg);
+        QApplication::clipboard()->setMimeData(pMimeData);
+    });
+
+    pMenu->exec(QCursor::pos());
+}
+
 
 ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
@@ -108,9 +130,6 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 {
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
-
-    m_ui->listView->setItemDelegate(new LogItemDelegate(m_ui->listView));
-    m_ui->listView->setWordWrap(true);
 
     m_ui->btnDebug->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnDebug->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
@@ -204,6 +223,10 @@ void ZlogPanel::initSignals()
         onFilterChanged();
     });
 
+    connect(m_ui->editSearch, &QLineEdit::textChanged, this, [=](const QString& wtf) {
+        onFilterChanged();
+    });
+
     connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
         zenoApp->logModel()->clear();
     });
@@ -222,7 +245,7 @@ void ZlogPanel::onFilterChanged()
         filters.append(QtFatalMsg);
     if (m_ui->btnInfo->isChecked())
         filters.append(QtInfoMsg);
-    m_pFilterModel->setFilters(filters);
+    m_pFilterModel->setFilters(filters, m_ui->editSearch->text());
 }
 
 
@@ -233,10 +256,14 @@ CustomFilterProxyModel::CustomFilterProxyModel(QObject *parent)
 {
 }
 
-void CustomFilterProxyModel::setFilters(const QVector<QtMsgType>& filters)
+void CustomFilterProxyModel::setFilters(const QVector<QtMsgType>& filters, const QString& content)
 {
-    m_filters = filters;
-    invalidate();
+    if (m_filters != filters || m_searchContent != content)
+    {
+        m_filters = filters;
+        m_searchContent = content;
+        invalidate();
+    }
 }
 
 bool CustomFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
@@ -244,7 +271,21 @@ bool CustomFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex 
     QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
     int role = filterRole();
     QtMsgType type = (QtMsgType)index.data(ROLE_LOGTYPE).toInt();
+    QString msg = index.data(Qt::DisplayRole).toString();
     if (m_filters.contains(type))
+    {
+        if (!m_searchContent.isEmpty())
+        {
+            if (msg.contains(m_searchContent, Qt::CaseInsensitive))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
         return true;
+    }
     return false;
 }

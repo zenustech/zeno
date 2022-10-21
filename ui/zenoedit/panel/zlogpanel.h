@@ -30,6 +30,9 @@ class LogListView : public QListView
 public:
     LogListView(QWidget *parent = nullptr);
 
+public slots:
+    void onCustomContextMenu(const QPoint& point);
+
 protected:
     void rowsInserted(const QModelIndex &parent, int start, int end) override;
 
@@ -42,13 +45,14 @@ class CustomFilterProxyModel : public QSortFilterProxyModel
     Q_OBJECT
 public:
     explicit CustomFilterProxyModel(QObject* parnet = nullptr);
-    void setFilters(const QVector<QtMsgType>& filters);
+    void setFilters(const QVector<QtMsgType>& filters, const QString& content);
 
 protected:
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
 
 private:
     QVector<QtMsgType> m_filters;
+    QString m_searchContent;
 };
 
 class ZlogPanel : public QWidget
