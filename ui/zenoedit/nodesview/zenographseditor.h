@@ -56,6 +56,7 @@ private:
     void initSignals();
     void initRecentFiles();
     void initModel();
+    void toggleViewForSelected(bool bOn);
     int tabIndexOfName(const QString& subGraphName);
 
     ZenoMainWindow* m_mainWin;
