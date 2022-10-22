@@ -12,7 +12,8 @@ struct PBFWorld:IObject
 //physical params
     float dt=  0.0025;
     float radius = 0.025;
-    vec3f bounds;
+    vec3f bounds_min;
+    vec3f bounds_max;
     vec3f externForce{0, -10.0, 0};
 
     float rho0 = 1000.0;
@@ -22,6 +23,7 @@ struct PBFWorld:IObject
     float lambdaEpsilon = 1e-6;
     float coeffDq = 0.3;
     float coeffK = 0.1;
+    int numSubsteps =5;
 
     //data for physical fields
     int numParticles;
@@ -31,7 +33,7 @@ struct PBFWorld:IObject
     std::vector<float> lambda;
     std::vector<vec3f> dpos;
 
-    std::shared_ptr<zeno::PrimitiveObject> prim;
+    // std::shared_ptr<zeno::PrimitiveObject> prim;
     
     //neighborList
     std::vector<std::vector<int>> neighborList;

@@ -84,11 +84,10 @@ struct PBFWorld_Solve : zeno::INode {
         return (-coeffK) * x;
     }
 
-
      virtual void apply() override{
         auto data = get_input<PBFWorld>("PBFWorld");
-        solve(data.get());
-
+        for(int i=0; i<data->numSubsteps; i++)
+            solve(data.get());
         set_output("PBFWorld", std::move(data));
     }
 };
