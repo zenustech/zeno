@@ -3,6 +3,7 @@
 #include "./PBFWorld.h"
 #include "../Utils/myPrint.h"//debug
 #include "../Utils/readFile.h"//debug
+#include "./SPHKernels.h"//debug
 
 using namespace zeno;
 
@@ -34,7 +35,7 @@ struct PBFWorld_Setup : INode
 
         //用户自定义参数
         data->dt = get_input<zeno::NumericObject>("dt")->get<float>();
-        data->radius = get_input<zeno::NumericObject>("radius")->get<float>();
+        data->radius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
         data->bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
         data->bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
         data->externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
@@ -47,6 +48,10 @@ struct PBFWorld_Setup : INode
         auto diam = data->radius*2;
         data->mass = 0.8 * diam*diam*diam * data->rho0;
         data->h = 4* data->radius;
+        data->neighborSearchRadius = data->h;
+
+        //初始化Kernel
+        CubicKernel::set(data->h);
 
         //传出数据
         set_output("prim", std::move(prim));
@@ -59,7 +64,7 @@ ZENDEFNODE(PBFWorld_Setup, {
     {
         {"PrimitiveObject","prim"},
         {"float","dt"," 0.0025"},
-        {"float","radius","0.025"},
+        {"float","particle_radius","0.025"},
         {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
         {"vec3f","bounds_max","10.0, 10.0, 10.0"},
         {"vec3f","externForce", "0.0, -10.0, 0.0"},

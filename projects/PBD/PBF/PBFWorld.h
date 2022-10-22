@@ -19,7 +19,7 @@ struct PBFWorld:IObject
     float rho0 = 1000.0;
     float mass; //0.8*diam*diam*diam*rho0
     float h; // 4*radius
-    float neighborSearchRadius; //h * 1.05
+    float neighborSearchRadius; //h
     float lambdaEpsilon = 1e-6;
     float coeffDq = 0.3;
     float coeffK = 0.1;
