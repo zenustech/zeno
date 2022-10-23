@@ -15,7 +15,9 @@ public:
     int numSubsteps = 5;
     float dt= 1.0 / 20.0;
     float pRadius = 3.0;
-    vec3f bounds{40.0, 40.0, 40.0};
+    // vec3f bounds{40.0, 40.0, 40.0};
+    vec3f bounds_min{0,0,0};
+    vec3f bounds_max{40.0, 40.0, 40.0};
     vec3f g{0, -10.0, 0};
 
     float mass = 1.0;
@@ -52,6 +54,7 @@ private:
     std::shared_ptr<zeno::PrimitiveObject> prim;
 
     std::vector<std::vector<int>> neighborList;
+    std::shared_ptr<zeno::LBvh> lbvh;
 
 
     virtual void apply() override{
@@ -72,6 +75,9 @@ private:
             vel.resize(numParticles);
             lambda.resize(numParticles);
             dpos.resize(numParticles);
+
+            //构建BVH
+            lbvh = std::make_shared<zeno::LBvh>(prim,  neighborSearchRadius,zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
         }
 
 
@@ -93,7 +99,7 @@ ZENDEFNODE(PBF2, {
                     {
                         // {"PBFWorld"},
                         {"PrimitiveObject", "prim"},
-                        {"vec3i", "bound", "40, 40, 40"},
+                        {"vec3f", "bounds_max", "40, 40, 40"}
                         // {"int", "numSubsteps", "5"}
                     },
                     {   {"PrimitiveObject", "outPrim"} },
