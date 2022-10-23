@@ -82,10 +82,7 @@ inline void PBF::initData()
 
 inline void PBF::initCellData()
 {
-    // dx = 2.51; //default value for test
-    // vec3i bound {40,40,40};
     dx = get_input<zeno::NumericObject>("dx")->get<float>();
-    // bounds = get_input<zeno::NumericObject>("bounds")->get<vec3f>();
 
     dxInv = 1.0/dx;
     int numX = int(bounds[0] / dx) + 1;

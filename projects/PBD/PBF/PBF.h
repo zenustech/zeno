@@ -88,7 +88,6 @@ public:
 
         // dx = get_input<zeno::NumericObject>("dx")->get<float>();
         
-
         //可以推导出来的参数
         // auto diam = pRadius*2;
         // mass = 0.8 * diam*diam*diam * rho0;
