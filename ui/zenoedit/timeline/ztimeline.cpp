@@ -60,7 +60,7 @@ void ZTimeline::initSignals()
     //m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
     //m_ui->btnForward->setShortcut(QKeySequence("F3"));
     //m_ui->btnPlay->setShortcut(QKeySequence("F4"));
-    connect(m_ui->btnBackward, &ZIconLabel::clicked, this, [=]() {
+    connect(m_ui->btnBackward, &ZToolButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();
         int frameFrom = ft.first, frameTo = ft.second;
@@ -69,7 +69,7 @@ void ZTimeline::initSignals()
             m_ui->timeliner->setSliderValue(frame - 1);
         }
     });
-    connect(m_ui->btnForward, &ZIconLabel::clicked, this, [=]() {
+    connect(m_ui->btnForward, &ZToolButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();
         int frameFrom = ft.first, frameTo = ft.second;
@@ -106,44 +106,103 @@ void ZTimeline::initButtons()
 {
     QSize sz = ZenoStyle::dpiScaledSize(QSize(24, 24));
 
-    m_ui->btnBackToStart->setIcons(sz, ":/icons/start-frame.svg", ":/icons/start-frame-hover.svg");
-    m_ui->btnBackward->setIcons(sz, ":/icons/previous-frame.svg", ":/icons/previous-frame-hover.svg");
-    m_ui->btnPlay->setIcons(sz, ":/icons/pause.svg", ":/icons/pause-hover.svg", ":/icons/play.svg", ":/icons/play-hover.svg");
-    m_ui->btnForward->setIcons(sz, ":/icons/next-frame.svg", ":/icons/next-frame-hover.svg");
-    m_ui->btnForwardToEnd->setIcons(sz, ":/icons/end-frame.svg", ":/icons/end-frame-hover.svg");
-    m_ui->btnRecycle->setIcons(sz, ":/icons/timeline-loop.svg", "");
+    QColor hoverBg("#4F5963");
+
+    m_ui->btnBackToStart->setButtonOptions(ZToolButton::Opt_HasIcon);
+    m_ui->btnBackToStart->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_startFrame_idle.svg",
+        ":/icons/timeline_startFrame_light.svg",
+        "",
+        "");
+    m_ui->btnBackToStart->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnBackToStart->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
+    m_ui->btnBackward->setButtonOptions(ZToolButton::Opt_HasIcon);
+    m_ui->btnBackward->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_previousFrame_idle.svg",
+        ":/icons/timeline_previousFrame_light.svg",
+        "",
+        "");
+    m_ui->btnBackward->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnBackward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
+    m_ui->btnPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
+    m_ui->btnPlay->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_pause_idle.svg",
+        ":/icons/timeline_pause_light.svg",
+        ":/icons/timeline_play_idle.svg",
+        ":/icons/timeline_play_light.svg");
+    m_ui->btnPlay->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnPlay->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
+    m_ui->btnForward->setButtonOptions(ZToolButton::Opt_HasIcon);
+    m_ui->btnForward->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_nextFrame_idle.svg",
+        ":/icons/timeline_nextFrame_light.svg",
+        "",
+        "");
+    m_ui->btnForward->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnForward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
+    m_ui->btnForwardToEnd->setButtonOptions(ZToolButton::Opt_HasIcon);
+    m_ui->btnForwardToEnd->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_endFrame_idle.svg",
+        ":/icons/timeline_endFrame_light.svg",
+        "",
+        "");
+    m_ui->btnForwardToEnd->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
+    m_ui->btnRecycle->setButtonOptions(ZToolButton::Opt_HasIcon);
+    m_ui->btnRecycle->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/timeline_loopMethod_loop.svg",
+        ":/icons/timeline_loopMethod_loop.svg",
+        "",
+        "");
+    m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
     QColor bg(35, 40, 47);
     m_ui->btnAlways->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
-    m_ui->btnAlways->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/always-off.svg", "",
-                             ":/icons/always-on.svg", "");
+    m_ui->btnAlways->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ":/icons/always-off.svg",
+        "",
+        ":/icons/always-on.svg",
+        "");
     m_ui->btnAlways->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnAlways->setBackgroundClr(bg, bg, bg, bg);
+    m_ui->btnAlways->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
     m_ui->btnRun->setButtonOptions(ZToolButton::Opt_HasText);
     m_ui->btnRun->setText(tr("RUN"));
     m_ui->btnRun->setFont(QFont("Segoe UI Bold", 10));
     m_ui->btnRun->setMargins(QMargins(8, 6, 8, 6));
-    m_ui->btnRun->setBackgroundClr(bg, bg, bg, bg);
+    m_ui->btnRun->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
     m_ui->btnKill->setButtonOptions(ZToolButton::Opt_HasText);
     m_ui->btnKill->setText(tr("Kill"));
     m_ui->btnKill->setFont(QFont("Segoe UI Bold", 10));
     m_ui->btnKill->setTextClr(QColor("#C95449"), QColor("#C95449"), QColor("#C95449"), QColor("#C95449"));
     m_ui->btnKill->setMargins(QMargins(8, 6, 8, 6));
-    m_ui->btnKill->setBackgroundClr(bg, bg, bg, bg);
+    m_ui->btnKill->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
     m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",
                              ":/icons/sound-on.svg", "");
     m_ui->btnSound->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnSound->setBackgroundClr(bg, bg, bg, bg);
+    m_ui->btnSound->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
     m_ui->btnSettings->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnSettings->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline-settings.svg", "",
                             ":/icons/timeline-settings.svg", "");
     m_ui->btnSettings->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnSettings->setBackgroundClr(bg, bg, bg, bg);
+    m_ui->btnSettings->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 }
 
 void ZTimeline::initSize()
@@ -167,7 +226,7 @@ void ZTimeline::setSliderValue(int frameid)
 
 void ZTimeline::setPlayButtonToggle(bool bToggle)
 {
-    m_ui->btnPlay->toggle(bToggle);
+    m_ui->btnPlay->setChecked(bToggle);
 }
 
 void ZTimeline::onFrameEditted()

@@ -217,19 +217,19 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
         </widget>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnBackToStart"/>
+        <widget class="ZToolButton" name="btnBackToStart"/>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnBackward"/>
+        <widget class="ZToolButton" name="btnBackward"/>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnPlay"/>
+        <widget class="ZToolButton" name="btnPlay"/>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnForward"/>
+        <widget class="ZToolButton" name="btnForward"/>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnForwardToEnd"/>
+        <widget class="ZToolButton" name="btnForwardToEnd"/>
        </item>
        <item>
         <widget class="QLineEdit" name="editFrame">
@@ -254,7 +254,7 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
         </widget>
        </item>
        <item>
-        <widget class="ZIconLabel" name="btnRecycle"/>
+        <widget class="ZToolButton" name="btnRecycle"/>
        </item>
       </layout>
      </item>

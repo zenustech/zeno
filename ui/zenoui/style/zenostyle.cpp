@@ -329,9 +329,12 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
         if (option->state & (State_MouseOver | State_On))
         {
             QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
-            QPainterPath path;
-            path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
-            painter->fillPath(path, bgBrush);
+            if (bgBrush.color().isValid())
+            {
+                QPainterPath path;
+                path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
+                painter->fillPath(path, bgBrush);
+            }
         }
         else
         {
@@ -391,7 +394,6 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
             painter->save();
             painter->setFont(option->font);
             painter->setPen(text_color);
-            
             painter->restore();
         }
         else

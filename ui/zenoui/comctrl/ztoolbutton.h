@@ -102,9 +102,9 @@ private:
     QIcon m_iconOn;
     QFont m_font;
 
-    QColor m_clrBgHover;
-    QColor m_clrBgDown;
-    QColor m_clrBgChecked;
+    QColor m_clrBgNormalHover;
+    QColor m_clrBgOn;
+    QColor m_clrBgOnHovered;
     QColor m_clrBgNormal;
 
     QColor m_clrText, m_clrTextHover, m_clrTextOn, m_clrTextOnHover;

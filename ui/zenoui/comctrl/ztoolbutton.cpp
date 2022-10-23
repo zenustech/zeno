@@ -218,19 +218,25 @@ QBrush ZToolButton::backgrondColor(QStyle::State state) const
 {
     if (state & QStyle::State_MouseOver)
     {
-        return m_clrBgHover;
-    }
-    else if (state & QStyle::State_On)
-    {
-        return m_clrBgChecked;
-    }
-    else if (state & QStyle::State_Sunken)
-    {
-        return m_clrBgDown;
+        if (state & QStyle::State_On)
+        {
+            return m_clrBgOnHovered;
+        }
+        else
+        {
+            return m_clrBgNormalHover;
+        }
     }
     else
     {
-        return m_clrBgNormal;
+        if (state & QStyle::State_On)
+        {
+            return m_clrBgOn;
+        }
+        else
+        {
+            return m_clrBgNormal;
+        }
     }
 }
 
@@ -257,9 +263,9 @@ QBrush ZToolButton::textColor(QStyle::State state) const
 void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
 {
     m_clrBgNormal = normalClr;
-    m_clrBgHover = hoverClr;
-    m_clrBgDown = downClr;
-    m_clrBgChecked = checkedClr;
+    m_clrBgNormalHover = hoverClr;
+    m_clrBgOn = downClr;
+    m_clrBgOnHovered = checkedClr;
 }
 
 void ZToolButton::setTextClr(const QColor& normal, const QColor& hover, const QColor& normalOn, const QColor& hoverOn)
