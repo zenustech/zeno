@@ -11,7 +11,7 @@ void PBF::preSolve()
     for (int i = 0; i < numParticles; i++)
     {
         vec3f tempVel = vel[i];
-        tempVel += g * dt;
+        tempVel += gravity * dt;
         pos[i] += tempVel * dt;
         boundaryHandling(pos[i]);
     }
@@ -71,7 +71,7 @@ void PBF::computeLambda()
 
         //compute lambda
         sumSqr += dot(gradI, gradI);
-        float lambdaEpsilon = 100.0; // to prevent the singularity
+        // float lambdaEpsilon = 100.0; // to prevent the singularity
         lambda[i] = (-densityCons) / (sumSqr + lambdaEpsilon);
     }
 }

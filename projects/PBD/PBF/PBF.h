@@ -13,7 +13,7 @@ public:
     float dt= 1.0 / 20.0;
     float pRadius = 3.0;
     vec3f bounds{40.0, 40.0, 40.0};
-    vec3f g{0, -10.0, 0};
+    vec3f gravity{0, -10.0, 0};
 
     float mass = 1.0;
     float rho0 = 1.0;
@@ -21,6 +21,7 @@ public:
     float neighborSearchRadius = h * 1.05;
     float coeffDq = 0.3;
     float coeffK = 0.001;
+    float lambdaEpsilon = 100.0; // to prevent the singularity
 
 private:
     void preSolve();
@@ -59,7 +60,7 @@ private:
     int numCell;
     float dx; //cell size
     float dxInv; 
-    vec3i bound;
+    // vec3i bound;
     void initCellData();
     struct Cell
     {
@@ -72,6 +73,30 @@ private:
     std::vector<std::vector<int>> neighborList;
 
 public:
+    void setParams()
+    {
+        //用户自定义参数
+        dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        pRadius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
+        // bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
+        bounds = get_input<zeno::NumericObject>("bounds")->get<vec3f>();
+        gravity = get_input<zeno::NumericObject>("gravity")->get<vec3f>();
+        rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
+        lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
+        coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
+        coeffK = get_input<zeno::NumericObject>("coeffK")->get<float>();
+
+        // dx = get_input<zeno::NumericObject>("dx")->get<float>();
+        
+
+        //可以推导出来的参数
+        // auto diam = pRadius*2;
+        // mass = 0.8 * diam*diam*diam * rho0;
+        // h = 4* pRadius;
+        neighborSearchRadius = h;
+    }
+
+
     virtual void apply() override{
         prim = get_input<PrimitiveObject>("prim");
 
@@ -92,7 +117,9 @@ public:
             lambda.resize(numParticles);
             dpos.resize(numParticles);
 
-            initData();  
+            initData(); 
+
+            setParams();
         }
 
         preSolve();
@@ -113,8 +140,16 @@ ZENDEFNODE(PBF, {
                     {
                         {"PrimitiveObject", "prim"},
                         {"float", "dx", "2.51"},
-                        {"vec3i", "bound", "40, 40, 40"},
-                        // {"int", "numSubsteps", "5"}
+                        {"vec3f", "bounds", "40, 40, 40"},
+                        {"int", "numSubsteps", "5"},
+                        {"float", "particle_radius", "3.0"},
+                        {"float", "dt", "0.05"},
+                        {"vec3f", "gravity", "0, -10, 0"},
+                        {"float", "mass", "1.0"},
+                        {"float", "rho0", "1.0"},
+                        {"float", "coeffDq", "0.3"},
+                        {"float", "coeffK", "0.001"},
+                        {"float", "lambdaEpsilon", "100.0"}
                     },
                     {   {"PrimitiveObject", "outPrim"} },
                     {},

@@ -85,12 +85,12 @@ inline void PBF::initCellData()
     // dx = 2.51; //default value for test
     // vec3i bound {40,40,40};
     dx = get_input<zeno::NumericObject>("dx")->get<float>();
-    bound = get_input<zeno::NumericObject>("bound")->get<vec3i>();
+    // bounds = get_input<zeno::NumericObject>("bounds")->get<vec3f>();
 
     dxInv = 1.0/dx;
-    int numX = int(bound[0] / dx) + 1;
-    int numY = int(bound[1] / dx) + 1;
-    int numZ = int(bound[2] / dx) + 1;
+    int numX = int(bounds[0] / dx) + 1;
+    int numY = int(bounds[1] / dx) + 1;
+    int numZ = int(bounds[2] / dx) + 1;
     numCellXYZ.resize(3);
     numCellXYZ[0] = numX;
     numCellXYZ[1] = numY;
