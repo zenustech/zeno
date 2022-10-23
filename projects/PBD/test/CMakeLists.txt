@@ -1,6 +1,6 @@
-target_sources(zeno PRIVATE 
-test_NeighborSearch_BVH.cpp
-)
+# target_sources(zeno PRIVATE 
+# test_NeighborSearch_BVH.cpp
+# )
 
 # target_compile_definitions(zeno PRIVATE
 # PBD_TEST_PATH="projects/test/"

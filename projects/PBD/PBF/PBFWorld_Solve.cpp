@@ -21,8 +21,8 @@ struct PBFWorld_Solve : zeno::INode {
         computeDpos(data, prim);
 
         //debug
-        printScalarField("lambda.csv",data->lambda);//test
-        printVectorField("dpos.csv",data->dpos);//test
+        // printScalarField("lambda.csv",data->lambda);//test
+        // printVectorField("dpos.csv",data->dpos);//test
 
         //apply the dpos to the pos
         auto & pos = prim->verts;

@@ -1,11 +1,12 @@
 #pragma once
-#include <math.h>
-#include <algorithm>
-#include <zeno/zeno.h>
+
+#include <array>
+#include <cmath>
+
+#include <zeno/utils/vec.h>
 
 struct CubicKernel
 {
-    using vec3f = zeno::vec3f;
 
     static float m_radius;
     static float m_k;
@@ -42,17 +43,17 @@ struct CubicKernel
         return res;
     }
 
-    static vec3f gradW(const vec3f &r)
+    static zeno::vec3f gradW(const zeno::vec3f &r)
     {
-        vec3f res;
+        zeno::vec3f res;
         // const float rl = r.norm();
-        const float rl = length(r);
+        const float rl = zeno::length(r);
         const float q = rl / m_radius;
 
         {
             if (rl > 1.0e-6)
             {
-                const vec3f gradq = r * ( 1.0 / (rl*m_radius));
+                const zeno::vec3f gradq = r * ( 1.0 / (rl*m_radius));
                 if (q <= 0.5)
                 {
                     res = m_l*q*( 3.0*q -  2.0)*gradq;
@@ -70,7 +71,6 @@ struct CubicKernel
 
 struct Poly6Kernel
 {
-    using vec3f = zeno::vec3f;
 
     static float W(float dist, float h=0.1)
     {
@@ -87,13 +87,11 @@ struct Poly6Kernel
 
 struct SpikyKernel
 {
-    using vec3f = zeno::vec3f;
-
-    static vec3f gradW(const vec3f& r, float h=0.1)
+    static zeno::vec3f gradW(const zeno::vec3f& r, float h=0.1)
     {
         float coeff = -45.0 / 3.14159265358979323846;
-        vec3f res{0.0, 0.0, 0.0};
-        float dist = length(r);
+        zeno::vec3f res{0.0, 0.0, 0.0};
+        float dist = zeno::length(r);
         if (dist > 0 && dist < h)
         {
             float x = (h - dist) / (h * h * h);
