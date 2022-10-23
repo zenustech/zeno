@@ -4,6 +4,7 @@ using namespace zeno;
 
 void PBF::preSolve()
 {
+    auto &pos = prim->verts;
     for (int i = 0; i < numParticles; i++)
         oldPos[i] = pos[i];
 
@@ -39,6 +40,8 @@ void PBF::boundaryHandling(vec3f & p)
 
 void PBF::solve()
 {
+    auto &pos = prim->verts;
+
     computeLambda();
 
     computeDpos();
@@ -52,6 +55,8 @@ void PBF::computeLambda()
 {
     lambda.clear();
     lambda.resize(numParticles);
+    auto &pos = prim->verts;
+
     for (size_t i = 0; i < numParticles; i++)
     {
         vec3f gradI{0.0, 0.0, 0.0};
@@ -80,6 +85,8 @@ void PBF::computeDpos()
 {
     dpos.clear();
     dpos.resize(numParticles);
+    auto &pos = prim->verts;
+
     for (size_t i = 0; i < numParticles; i++)
     {
         vec3f dposI{0.0, 0.0, 0.0};
@@ -108,6 +115,7 @@ inline float PBF::computeScorr(const vec3f& distVec, float coeffDq, float coeffK
 
 void PBF::postSolve()
 {
+    auto &pos = prim->verts;
     // for (size_t i = 0; i < numParticles; i++)
     //     boundaryHandling(pos[i]);
     for (size_t i = 0; i < numParticles; i++)

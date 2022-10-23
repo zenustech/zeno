@@ -7,6 +7,7 @@ namespace zeno{
 // which is simple but can be improved
 void PBF::neighborSearch()
 {
+    auto &pos = prim->verts;
     //clear parInCell and neighborList
     for (size_t i = 0; i < numCell; i++)
         cell[i].parInCell.clear();

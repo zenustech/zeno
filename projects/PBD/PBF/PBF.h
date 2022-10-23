@@ -37,7 +37,7 @@ private:
     void readPoints();
     void initData();
     int numParticles;
-    std::vector<vec3f> pos;
+    // std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
     std::vector<vec3f> vel;
     std::vector<float> lambda;
@@ -98,6 +98,7 @@ public:
 
     virtual void apply() override{
         prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->verts;
 
         static bool firstTime = true;
         if(firstTime == true)
@@ -109,7 +110,7 @@ public:
 
             // move pos to local
             numParticles = prim->verts.size();
-            pos = std::move(prim->verts);
+            // pos = std::move(prim->verts);
 
             //prepare physical field data
             oldPos.resize(numParticles);
@@ -126,10 +127,11 @@ public:
             solve(); 
         postSolve();  
 
-
-        prim->verts.resize(pos.size());
-        for (size_t i = 0; i < pos.size(); i++)
-            prim->verts[i] = pos[i]/10.0;//scale to show
+        auto &rad = prim->verts.add_attr<float>("rad");
+        std::fill(rad.begin(),rad.end(),1.0);
+        // prim->verts.resize(pos.size());
+        // for (size_t i = 0; i < pos.size(); i++)
+        //     prim->verts[i] = pos[i]/10.0;//scale to show
 
         set_output("outPrim", std::move(prim));
     }
