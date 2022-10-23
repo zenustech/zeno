@@ -13,5 +13,5 @@ PBFWorld_testCube.cpp
 PBFWorld_Debug.cpp
 PBFWorld_testCube2.cpp
 SPHKernels.cpp
-PBF2.cpp
+PBF_BVH.cpp
 )
