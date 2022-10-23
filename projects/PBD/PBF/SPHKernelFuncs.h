@@ -1,7 +1,7 @@
 #pragma once
 #include <zeno/zeno.h>
 //SPH kernel function
-inline float kernelPoly6(float dist, float h)
+inline float kernelPoly6(float dist, float h=0.1)
 {
     float coeff = 315.0 / 64.0 / 3.14159265358979323846;
     float res = 0.0;
@@ -14,7 +14,7 @@ inline float kernelPoly6(float dist, float h)
 }
 
 //SPH kernel gradient
-inline zeno::vec3f kernelSpikyGradient(const zeno::vec3f& r, float h)
+inline zeno::vec3f kernelSpikyGradient(const zeno::vec3f& r, float h=0.1)
 {
     float coeff = -45.0 / 3.14159265358979323846;
     zeno::vec3f res{0.0, 0.0, 0.0};

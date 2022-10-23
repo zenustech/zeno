@@ -1,12 +1,7 @@
 #pragma once
 #include <math.h>
 #include <algorithm>
-#include <array>
 #include <zeno/zeno.h>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 struct CubicKernel
 {
@@ -20,7 +15,7 @@ struct CubicKernel
     static void set(float val)
     {
         m_radius = val;
-        static const float pi = (M_PI);
+        static const float pi = (3.14159265358979323846);
 
         const float h3 = m_radius*m_radius*m_radius;
         m_k = (8.0) / (pi*h3);
@@ -31,8 +26,6 @@ struct CubicKernel
     static float W(const float rl)
     {
         float res = 0.0;
-        // const float rl = r.norm();
-        // const float rl = length(r);
         const float q = rl/m_radius;
         {
             if (q <= 0.5)
@@ -70,6 +63,42 @@ struct CubicKernel
                     res = m_l*(-factor*factor)*gradq;
                 }
             }
+        }
+        return res;
+    }
+};
+
+struct Poly6Kernel
+{
+    using vec3f = zeno::vec3f;
+
+    static float W(float dist, float h=0.1)
+    {
+        float coeff = 315.0 / 64.0 / 3.14159265358979323846;
+        float res = 0.0;
+        if(dist > 0 && dist < h)
+        {
+            float x = (h * h - dist * dist) / (h * h * h);
+            res = coeff * x * x * x;
+        }
+        return res;
+    }
+};
+
+struct SpikyKernel
+{
+    using vec3f = zeno::vec3f;
+
+    static vec3f gradW(const vec3f& r, float h=0.1)
+    {
+        float coeff = -45.0 / 3.14159265358979323846;
+        vec3f res{0.0, 0.0, 0.0};
+        float dist = length(r);
+        if (dist > 0 && dist < h)
+        {
+            float x = (h - dist) / (h * h * h);
+            float factor = coeff * x * x;
+            res = r * factor / dist;
         }
         return res;
     }

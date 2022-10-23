@@ -20,12 +20,6 @@ struct PBFWorld_Setup : INode
 
         auto prim = get_input<PrimitiveObject>("prim");
         
-        //debug
-        auto &pos = prim->verts;
-        pos.clear();
-        readVectorField("pos_init_PBFWorld.csv",pos);
-        //end debug
-
         //设置物理场
         data->numParticles = prim->verts.size();
         data->vel.resize(data->numParticles);
