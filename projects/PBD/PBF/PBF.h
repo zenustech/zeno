@@ -86,7 +86,7 @@ public:
         coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
         coeffK = get_input<zeno::NumericObject>("coeffK")->get<float>();
 
-        // dx = get_input<zeno::NumericObject>("dx")->get<float>();
+        dx = get_input<zeno::NumericObject>("dx")->get<float>();
         
         //可以推导出来的参数
         // auto diam = pRadius*2;
@@ -103,6 +103,7 @@ public:
         if(firstTime == true)
         {
             firstTime = false;
+            setParams();
 
             initCellData();
 
@@ -118,7 +119,6 @@ public:
 
             initData(); 
 
-            setParams();
         }
 
         preSolve();

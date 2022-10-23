@@ -82,7 +82,7 @@ inline void PBF::initData()
 
 inline void PBF::initCellData()
 {
-    dx = get_input<zeno::NumericObject>("dx")->get<float>();
+    // dx = get_input<zeno::NumericObject>("dx")->get<float>();
 
     dxInv = 1.0/dx;
     int numX = int(bounds[0] / dx) + 1;
