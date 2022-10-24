@@ -21,14 +21,14 @@ void PBF::preSolve()
 
 void PBF::boundaryHandling(vec3f & p)
 {
-    float bmin = pRadius;
-    vec3f bmax = bounds - pRadius;
+    vec3f bmin = bounds_min + pRadius;
+    vec3f bmax = bounds_max - pRadius;
 
     for (size_t dim = 0; dim < 3; dim++)
     {
         float r = ((float) rand() / (RAND_MAX));
-        if (p[dim] <= bmin)
-            p[dim] = bmin + 1e-5 * r;
+        if (p[dim] <= bmin[dim])
+            p[dim] = bmin[dim] + 1e-5 * r;
         else if (p[dim]>= bmax[dim])
             p[dim] = bmax[dim] - 1e-5 * r;
     }

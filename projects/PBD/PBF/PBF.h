@@ -12,7 +12,8 @@ public:
     int numSubsteps = 5;
     float dt= 1.0 / 20.0;
     float pRadius = 3.0;
-    vec3f bounds{40.0, 40.0, 40.0};
+    vec3f bounds_max{40.0, 40.0, 40.0};
+    vec3f bounds_min{0,0,0};
     vec3f gravity{0, -10.0, 0};
 
     float mass = 1.0;
@@ -79,8 +80,8 @@ public:
         //用户自定义参数
         dt = get_input<zeno::NumericObject>("dt")->get<float>();
         pRadius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
-        // bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
-        bounds = get_input<zeno::NumericObject>("bounds")->get<vec3f>();
+        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
+        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
         gravity = get_input<zeno::NumericObject>("gravity")->get<vec3f>();
         rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
         lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
@@ -134,7 +135,8 @@ ZENDEFNODE(PBF, {
                     {
                         {"PrimitiveObject", "prim"},
                         {"float", "dx", "2.51"},
-                        {"vec3f", "bounds", "40, 40, 40"},
+                        {"vec3f", "bounds_max", "40, 40, 40"},
+                        {"vec3f", "bounds_min", "0,0,0"},
                         {"int", "numSubsteps", "5"},
                         {"float", "particle_radius", "3.0"},
                         {"float", "dt", "0.05"},
