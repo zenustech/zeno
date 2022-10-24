@@ -16,14 +16,12 @@ void PBF::preSolve()
         pos[i] += tempVel * dt;
         boundaryHandling(pos[i]);
     }
-
-    neighborSearch();//grid-baed neighborSearch for now
 }
 
 
 void PBF::boundaryHandling(vec3f & p)
 {
-    float worldScale = 20.0; //scale from simulation space to real world space.
+    float worldScale = 1.0; //scale from simulation space to real world space.
     // this is to prevent the kernel from being divergent.
     float bmin = pRadius/worldScale;
     vec3f bmax = bounds - pRadius/worldScale;

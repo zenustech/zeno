@@ -36,6 +36,7 @@ private:
     //data for physical fields
     void readPoints();
     void initData();
+
     int numParticles;
     // std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
@@ -47,15 +48,15 @@ private:
 
     //helpers
     void boundaryHandling(vec3f &p);
+    inline float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
+
+    //data for cells
     inline vec3i getCellXYZ(const vec3f& p);
     inline int getCellID(const vec3f& p);
     inline int getCellHash(int i, int j, int k);
     inline bool isInBound(const vec3i& cell);
     inline int cellXYZ2ID(const vec3i& xyz);
     inline vec3i cellID2XYZ(int i);
-    inline float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
-
-    //data for cells
     std::vector<int> numCellXYZ;
     int numCell;
     float dx; //cell size
@@ -119,6 +120,7 @@ public:
         }
 
         preSolve();
+        neighborSearch();//grid-baed neighborSearch
         for (size_t i = 0; i < numSubsteps; i++)
             solve(); 
         postSolve();  
