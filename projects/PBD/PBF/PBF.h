@@ -7,7 +7,7 @@
 
 namespace zeno{
 struct PBF : INode{
-//physical params
+//params
 public:    
     int numSubsteps = 5;
     float dt= 1.0 / 20.0;
@@ -31,13 +31,9 @@ private:
 
     void computeLambda();
     void computeDpos();
-    void neighborSearch();
 
-//Data preparing
-    //data for physical fields
-    void readPoints();
-    void initData();
 
+    //physical fields
     int numParticles;
     // std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
@@ -63,6 +59,7 @@ private:
     float dx; //cell size
     float dxInv; 
     void initCellData();
+    void initNeighborList();
     struct Cell
     {
         int x,y,z;
@@ -72,6 +69,7 @@ private:
 
     //neighborList
     std::vector<std::vector<int>> neighborList;
+    void neighborSearch();
 
 public:
     void setParams()
@@ -106,17 +104,16 @@ public:
         {
             firstTime = false;
             setParams();
-
-            initCellData();
+            numParticles = prim->verts.size();
 
             //fields
-            numParticles = prim->verts.size();
             oldPos.resize(numParticles);
             vel.resize(numParticles);
             lambda.resize(numParticles);
             dpos.resize(numParticles);
 
-            initData(); 
+            initCellData();
+            initNeighborList(); 
         }
 
         preSolve();
@@ -124,7 +121,6 @@ public:
         for (size_t i = 0; i < numSubsteps; i++)
             solve(); 
         postSolve();  
-
 
         set_output("outPrim", std::move(prim));
     }

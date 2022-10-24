@@ -58,10 +58,29 @@ inline int PBF::getCellHash(int i, int j, int k)
     return res;
 }
 
-inline void PBF::initData()
+inline void PBF::initNeighborList()
 {     
+    //prepare neighbor list 
+    neighborList.resize(numParticles);
+    for (size_t i = 0; i < numParticles; i++)
+        neighborList[i].reserve(10);
+}
+
+inline void PBF::initCellData()
+{
+    //calc cell size
+    dxInv = 1.0/dx;
+    int numX = int((bounds_max[0]-bounds_min[0]) *dxInv) + 1;
+    int numY = int((bounds_max[1]-bounds_min[1]) *dxInv) + 1;
+    int numZ = int((bounds_max[2]-bounds_min[2]) *dxInv) + 1;
+    // numCellXYZ.resize(3);
+    numCellXYZ[0] = numX;
+    numCellXYZ[1] = numY;
+    numCellXYZ[2] = numZ;
+    numCell = numX * numY * numZ;
+
+
     //prepare cell data
-    // cell.resize(numCell);
     for (size_t i = 0; i < numCell; i++)
     {
         // //to calculate the x y z coord of cell
@@ -73,27 +92,6 @@ inline void PBF::initData()
         cell[hash].z = xyz[2];
         cell[hash].parInCell.reserve(10); //pre-allocate memory to speed up
     }
-    
-    //prepare neighbor list 
-    neighborList.resize(numParticles);
-    for (size_t i = 0; i < numParticles; i++)
-        neighborList[i].reserve(10);
 }
-
-inline void PBF::initCellData()
-{
-    dxInv = 1.0/dx;
-    int numX = int((bounds_max[0]-bounds_min[0]) / dx) + 1;
-    int numY = int((bounds_max[1]-bounds_min[1]) / dx) + 1;
-    int numZ = int((bounds_max[2]-bounds_min[2]) / dx) + 1;
-    // numCellXYZ.resize(3);
-    numCellXYZ[0] = numX;
-    numCellXYZ[1] = numY;
-    numCellXYZ[2] = numZ;
-    numCell = numX * numY * numZ;
-}
-
-
-
 
 }//zeno
