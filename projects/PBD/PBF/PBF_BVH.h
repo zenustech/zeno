@@ -4,21 +4,17 @@
 #include <map>
 #include <zeno/types/PrimitiveObject.h>
 #include "SPHKernelFuncs.h"
-#include "../ZenoFX/LinearBvh.h" //BVH搜索
-#include "PBFWorld.h" 
-#include "../Utils/myPrint.h" 
 
 namespace zeno{
-struct PBF2 : INode{
-//physical params
+struct PBF_BVH : INode{
+//params
 public:    
     int numSubsteps = 5;
     float dt= 1.0 / 20.0;
     float pRadius = 3.0;
-    // vec3f bounds{40.0, 40.0, 40.0};
-    vec3f bounds_min{0,0,0};
     vec3f bounds_max{40.0, 40.0, 40.0};
-    vec3f g{0, -10.0, 0};
+    vec3f bounds_min{0,0,0};
+    vec3f gravity{0, -10.0, 0};
 
     float mass = 1.0;
     float rho0 = 1.0;
@@ -26,6 +22,7 @@ public:
     float neighborSearchRadius = h * 1.05;
     float coeffDq = 0.3;
     float coeffK = 0.001;
+    float lambdaEpsilon = 100.0; // to prevent the singularity
 
 private:
     void preSolve();
@@ -35,17 +32,10 @@ private:
     void computeLambda();
     void computeDpos();
 
-    void PBF2::boundaryHandling(vec3f & p);
 
-    float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
-
-    void PBF2::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim);
-    void PBF2::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
-
-//Data preparing
-    //data for physical fields
+    //physical fields
     int numParticles;
-    std::vector<vec3f> pos;
+    // std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
     std::vector<vec3f> vel;
     std::vector<float> lambda;
@@ -53,54 +43,84 @@ private:
 
     std::shared_ptr<zeno::PrimitiveObject> prim;
 
+    //helpers
+    void boundaryHandling(vec3f &p);
+    inline float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
+
+    // void initNeighborList();
+
+    //neighborList
     std::vector<std::vector<int>> neighborList;
-    std::shared_ptr<zeno::LBvh> lbvh;
+    void neighborSearch();
+
+public:
+    void setParams()
+    {
+        //用户自定义参数
+        dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        pRadius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
+        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
+        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
+        gravity = get_input<zeno::NumericObject>("gravity")->get<vec3f>();
+        rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
+        lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
+        coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
+        coeffK = get_input<zeno::NumericObject>("coeffK")->get<float>();
+
+        
+        //可以推导出来的参数
+        // auto diam = pRadius*2;
+        // mass = 0.8 * diam*diam*diam * rho0;
+        // h = 4* pRadius;
+        neighborSearchRadius = h;
+    }
 
 
     virtual void apply() override{
         prim = get_input<PrimitiveObject>("prim");
-        // auto data = get_input<PBFWorld>("PBFWorld");
+        auto &pos = prim->verts;
 
         static bool firstTime = true;
         if(firstTime == true)
         {
             firstTime = false;
-
-            // move pos to local
+            setParams();
             numParticles = prim->verts.size();
-            pos = std::move(prim->verts);
 
-            //prepare physical field data
+            //fields
             oldPos.resize(numParticles);
             vel.resize(numParticles);
             lambda.resize(numParticles);
             dpos.resize(numParticles);
 
-            //构建BVH
-            lbvh = std::make_shared<zeno::LBvh>(prim,  neighborSearchRadius,zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
+            // initCellData();
+            // initNeighborList(); 
         }
 
-
         preSolve();
-        // std::cout<<"good\n";
+        neighborSearch();//grid-baed neighborSearch
         for (size_t i = 0; i < numSubsteps; i++)
             solve(); 
         postSolve();  
-
-        prim->verts.resize(pos.size());
-        for (size_t i = 0; i < pos.size(); i++)
-            prim->verts[i] = pos[i]/10.0;//scale to show
 
         set_output("outPrim", std::move(prim));
     }
 };
 
-ZENDEFNODE(PBF2, {   
+ZENDEFNODE(PBF_BVH, {   
                     {
-                        // {"PBFWorld"},
                         {"PrimitiveObject", "prim"},
-                        {"vec3f", "bounds_max", "40, 40, 40"}
-                        // {"int", "numSubsteps", "5"}
+                        {"vec3f", "bounds_max", "40, 40, 40"},
+                        {"vec3f", "bounds_min", "0,0,0"},
+                        {"int", "numSubsteps", "5"},
+                        {"float", "particle_radius", "3.0"},
+                        {"float", "dt", "0.05"},
+                        {"vec3f", "gravity", "0, -10, 0"},
+                        {"float", "mass", "1.0"},
+                        {"float", "rho0", "1.0"},
+                        {"float", "coeffDq", "0.3"},
+                        {"float", "coeffK", "0.001"},
+                        {"float", "lambdaEpsilon", "100.0"}
                     },
                     {   {"PrimitiveObject", "outPrim"} },
                     {},
