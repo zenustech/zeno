@@ -3088,13 +3088,18 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	rhsgrid->setName("RHS");
 }
 
-void FLIP_vdb::make_non_newton_viscosity_field(
-    openvdb::FloatGrid::Ptr &viscosity,
-    openvdb::Vec3fGrid::Ptr &velocity,
-    float mu_0, float mu_inf, float scale, float alpha, float n,
-    float dx
+void FLIP_vdb::calculate_shear_rate(
+    openvdb::FloatGrid::Ptr &shear_rate,
+    openvdb::Vec3fGrid::Ptr &velocity
 ) {
-  auto viscosity_setter = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+  shear_rate->setTransform(velocity->transformPtr());
+  shear_rate->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
+	shear_rate->setTree(std::make_shared<openvdb::FloatTree>(
+		velocity->tree(), shear_rate->background(), openvdb::TopologyCopy()));
+  
+  float dx = static_cast<float>(velocity->voxelSize()[0]);
+
+  auto shear_rate_setter = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
     auto vel_axr = velocity->getConstUnsafeAccessor();
     for (auto iter = leaf.beginValueOn(); iter; ++iter) {
       openvdb::Vec3f gcoord = iter.getCoord().asVec3s();
@@ -3107,38 +3112,42 @@ void FLIP_vdb::make_non_newton_viscosity_field(
           vel_stencil[ch][i] = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, gcoord + shift);
         }
       }
+
       float vel_diff[3][3];
       for (int ch = 0; ch < 3; ch++) { // u_, v_, w_
         for (int i = 0; i < 3; i++) { //_x, _y, _z
           vel_diff[ch][i] = (vel_stencil[i][1][ch] - vel_stencil[i][0][ch]) / dx;
         }
       }
-      float shear_rate = 0.f;
+
+      float shear_rate_this = 0.f;
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
           float norm = vel_diff[i][j] + vel_diff[j][i];
-          shear_rate += norm*norm;
+          shear_rate_this += norm*norm;
         }
       }
-      shear_rate = std::sqrt(shear_rate);
-      // Carreau-Yasuda model for shear thinning/thickening fluids
-      float mu_this = mu_inf + (mu_inf - mu_0)*std::pow(1.f + std::pow(scale*shear_rate, alpha), (n - 1.)/alpha);
-      iter.setValue(mu_this);
+
+      shear_rate_this = std::sqrt(shear_rate_this);
+
+      iter.setValue(shear_rate_this);
     }
-  }; //viscosity_setter
-  auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(viscosity->tree());
-	visc_leafman.foreach(viscosity_setter);
+  }; //shear_rate_setter
+
+  auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(shear_rate->tree());
+	visc_leafman.foreach(shear_rate_setter);
 }
 
 void FLIP_vdb::solve_viscosity(
     packed_FloatGrid3 &velocity,
     packed_FloatGrid3 &velocity_viscous,
+    openvdb::FloatGrid::Ptr &viscosity_grid,
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::Vec3fGrid::Ptr &solid_velocity,
-    float density, float viscosity, float dt)
+    float density, float dt)
 {
-	auto viscosity_grid = openvdb::FloatGrid::create(viscosity);
+	//auto viscosity_grid = openvdb::FloatGrid::create(viscosity);
 
 	simd_uaamg::simd_viscosity3d viscosity_solver(viscosity_grid,
 		liquid_sdf, solid_sdf, velocity, solid_velocity,

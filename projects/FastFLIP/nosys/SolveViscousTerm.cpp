@@ -32,6 +32,7 @@ struct SolveViscousTerm : zeno::INode {
     auto viscosity = get_input2<float>("Viscosity");
     auto velocity = get_input<VDBFloat3Grid>("Velocity");
     auto velocity_viscous = get_input<VDBFloat3Grid>("ViscousVelocity");
+    auto viscosity_grid = get_input<VDBFloatGrid>("ViscosityGrid");
     auto liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF");
     auto solid_sdf = get_input<VDBFloatGrid>("SolidSDF");
     auto solid_velocity = get_input<VDBFloat3Grid>("SolidVelocity");
@@ -42,9 +43,10 @@ struct SolveViscousTerm : zeno::INode {
       packed_velocity.from_vec3(velocity->m_grid);
       packed_viscous_vel.from_vec3(velocity_viscous->m_grid);
 
-      FLIP_vdb::solve_viscosity(packed_velocity, packed_viscous_vel, liquid_sdf->m_grid,
+      FLIP_vdb::solve_viscosity(packed_velocity, packed_viscous_vel,
+                                viscosity_grid->m_grid, liquid_sdf->m_grid,
                                 solid_sdf->m_grid, solid_velocity->m_grid,
-                                density, viscosity, dt);
+                                density, dt);
 
       vdb_velocity_extrapolator::union_extrapolate(n,
   		                            packed_viscous_vel.v[0],
@@ -70,6 +72,7 @@ ZENDEFNODE(SolveViscousTerm, {
                                  {"float", "Viscosity", "0.0"},
                                  "Velocity",
                                  "ViscousVelocity",
+                                 "ViscosityGrid",
                                  "LiquidSDF",
                                  "SolidSDF",
                                  "SolidVelocity"},

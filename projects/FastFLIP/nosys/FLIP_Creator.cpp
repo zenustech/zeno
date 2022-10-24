@@ -32,7 +32,6 @@ struct FLIPCreator : zeno::INode {
     auto pushed_out_liquid_sdf = zeno::IObject::make<VDBFloatGrid>();
     auto shrinked_liquid_sdf = zeno::IObject::make<VDBFloatGrid>();
     auto solid_sdf = zeno::IObject::make<VDBFloatGrid>();
-    auto viscosity = zeno::IObject::make<VDBFloatGrid>();
     // auto boundary_velocity_volume = zeno::IObject::make<VDBFloat3Grid>();
 
     auto voxel_center_transform =
@@ -98,12 +97,6 @@ struct FLIPCreator : zeno::INode {
     solid_sdf->m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
     solid_sdf->m_grid->setName("Solid_SDF");
 
-    //viscosity grid for non-newtonian fluid
-    viscosity->m_grid = openvdb::FloatGrid::create(0.f);
-    viscosity->m_grid->setTransform(voxel_center_transform);
-    viscosity->m_grid->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
-    viscosity->m_grid->setName("Viscosity");
-
     set_output("Particles", particles);
     set_output("Pressure", pressure);
     set_output("Divergence", rhsgrid);
@@ -122,7 +115,6 @@ struct FLIPCreator : zeno::INode {
     set_output("ExtractedLiquidSDF", pushed_out_liquid_sdf);
     set_output("ErodedLiquidSDF", shrinked_liquid_sdf);
     set_output("SolidSDF", solid_sdf);
-    set_output("ViscosityGrid", viscosity);
     // set_output("boundary_velocity_volume", boundary_velocity_volume);
   }
 };
