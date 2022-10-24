@@ -21,8 +21,8 @@ void PBF::preSolve()
 
 void PBF::boundaryHandling(vec3f & p)
 {
-    float bmin = pRadius
-    vec3f bmax = bounds - pRadius
+    float bmin = pRadius;
+    vec3f bmax = bounds - pRadius;
 
     for (size_t dim = 0; dim < 3; dim++)
     {
