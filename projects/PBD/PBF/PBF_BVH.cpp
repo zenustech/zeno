@@ -1,9 +1,10 @@
 #include "PBF_BVH.h"
-#include "../ZenoFX/LinearBvh.h" //BVH搜索
+// #include "CellHelpers.h"
 using namespace zeno;
 
 void PBF_BVH::preSolve()
 {
+    auto &pos = prim->verts;
     for (int i = 0; i < numParticles; i++)
         oldPos[i] = pos[i];
 
@@ -11,21 +12,17 @@ void PBF_BVH::preSolve()
     for (int i = 0; i < numParticles; i++)
     {
         vec3f tempVel = vel[i];
-        tempVel += g * dt;
+        tempVel += gravity * dt;
         pos[i] += tempVel * dt;
         boundaryHandling(pos[i]);
     }
-
-    neighborhoodSearch(prim);
 }
 
 
 void PBF_BVH::boundaryHandling(vec3f & p)
 {
-    float worldScale = 20.0; //scale from simulation space to real world space.
-    // this is to prevent the kernel from being divergent.
-    vec3f bmin = bounds_min + pRadius/worldScale;
-    vec3f bmax = bounds_max - pRadius/worldScale;
+    vec3f bmin = bounds_min + pRadius;
+    vec3f bmax = bounds_max - pRadius;
 
     for (size_t dim = 0; dim < 3; dim++)
     {
@@ -39,6 +36,8 @@ void PBF_BVH::boundaryHandling(vec3f & p)
 
 void PBF_BVH::solve()
 {
+    auto &pos = prim->verts;
+
     computeLambda();
 
     computeDpos();
@@ -52,6 +51,8 @@ void PBF_BVH::computeLambda()
 {
     lambda.clear();
     lambda.resize(numParticles);
+    auto &pos = prim->verts;
+
     for (size_t i = 0; i < numParticles; i++)
     {
         vec3f gradI{0.0, 0.0, 0.0};
@@ -71,7 +72,6 @@ void PBF_BVH::computeLambda()
 
         //compute lambda
         sumSqr += dot(gradI, gradI);
-        float lambdaEpsilon = 100.0; // to prevent the singularity
         lambda[i] = (-densityCons) / (sumSqr + lambdaEpsilon);
     }
 }
@@ -80,6 +80,8 @@ void PBF_BVH::computeDpos()
 {
     dpos.clear();
     dpos.resize(numParticles);
+    auto &pos = prim->verts;
+
     for (size_t i = 0; i < numParticles; i++)
     {
         vec3f dposI{0.0, 0.0, 0.0};
@@ -108,8 +110,8 @@ inline float PBF_BVH::computeScorr(const vec3f& distVec, float coeffDq, float co
 
 void PBF_BVH::postSolve()
 {
-    // for (size_t i = 0; i < numParticles; i++)
-    //     boundaryHandling(pos[i]);
+    auto &pos = prim->verts;
+
     for (size_t i = 0; i < numParticles; i++)
         vel[i] = (pos[i] - oldPos[i]) / dt;
 }
