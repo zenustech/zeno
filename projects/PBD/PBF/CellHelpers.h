@@ -86,7 +86,7 @@ inline void PBF::initCellData()
     int numX = int((bounds_max[0]-bounds_min[0]) / dx) + 1;
     int numY = int((bounds_max[1]-bounds_min[1]) / dx) + 1;
     int numZ = int((bounds_max[2]-bounds_min[2]) / dx) + 1;
-    numCellXYZ.resize(3);
+    // numCellXYZ.resize(3);
     numCellXYZ[0] = numX;
     numCellXYZ[1] = numY;
     numCellXYZ[2] = numZ;

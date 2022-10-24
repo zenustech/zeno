@@ -58,11 +58,10 @@ private:
     inline bool isInBound(const vec3i& cell);
     inline int cellXYZ2ID(const vec3i& xyz);
     inline vec3i cellID2XYZ(int i);
-    std::vector<int> numCellXYZ;
+    std::array<int, 3> numCellXYZ;
     int numCell;
     float dx; //cell size
     float dxInv; 
-    // vec3i bound;
     void initCellData();
     struct Cell
     {
