@@ -9,15 +9,20 @@ using namespace zeno;
  * 
  */
 struct testPBFCube : INode{
-    std::vector<vec3f> pos;
     std::shared_ptr<zeno::PrimitiveObject> prim;
     void initCubeData()
     {
-        int numParticles = 10000;
+        // int numParticles = 10000;
+        // vec3f initPos{10.0,10.0,10.0};
+        // int cubeSize = 20;
+        // float spacing = 1;
+        auto numParticles = get_input<zeno::NumericObject>("numParticles")->get<int>();
+        auto initPos = get_input<zeno::NumericObject>("initPos")->get<vec3f>();
+        auto cubeSize = get_input<zeno::NumericObject>("cubeSize")->get<float>();
+        auto spacing = get_input<zeno::NumericObject>("spacing")->get<float>();
+
+        auto &pos = prim->verts;
         pos.resize(numParticles);
-        vec3f initPos{10.0,10.0,10.0};
-        int cubeSize = 20;
-        float spacing = 1;
         int num_per_row = (int) (cubeSize / spacing) + 1; //21
         int num_per_floor = num_per_row * num_per_row; //21 * 21 =441
         for (size_t i = 0; i < numParticles; i++)
@@ -27,8 +32,6 @@ struct testPBFCube : INode{
             int col = (i % num_per_floor) % num_per_row ;
             pos[i] = vec3f(col*spacing, floor*spacing, row*spacing) + initPos;
         }
-
-        prim->verts = std::move(pos);
     }
     virtual void apply() override{
 	    prim = std::make_shared<zeno::PrimitiveObject>();
@@ -38,7 +41,12 @@ struct testPBFCube : INode{
 };
 
 ZENDEFNODE(testPBFCube, {
-    {},
+    {
+        {"int", "numParticles", "10000"},
+        {"vec3f", "initPos", "10,10,10"},
+        {"float", "cubeSize", "20"},
+        {"float", "spacing", "1"},
+    },
     {"outPrim"},
     {},
     {"PBD"},
