@@ -76,7 +76,6 @@ void PBF::computeLambda()
 
         //compute lambda
         sumSqr += dot(gradI, gradI);
-        // float lambdaEpsilon = 100.0; // to prevent the singularity
         lambda[i] = (-densityCons) / (sumSqr + lambdaEpsilon);
     }
 }
@@ -116,8 +115,7 @@ inline float PBF::computeScorr(const vec3f& distVec, float coeffDq, float coeffK
 void PBF::postSolve()
 {
     auto &pos = prim->verts;
-    // for (size_t i = 0; i < numParticles; i++)
-    //     boundaryHandling(pos[i]);
+
     for (size_t i = 0; i < numParticles; i++)
         vel[i] = (pos[i] - oldPos[i]) / dt;
 }

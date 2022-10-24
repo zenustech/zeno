@@ -108,18 +108,14 @@ public:
 
             initCellData();
 
-            // move pos to local
+            //fields
             numParticles = prim->verts.size();
-            // pos = std::move(prim->verts);
-
-            //prepare physical field data
             oldPos.resize(numParticles);
             vel.resize(numParticles);
             lambda.resize(numParticles);
             dpos.resize(numParticles);
 
             initData(); 
-
         }
 
         preSolve();
@@ -127,11 +123,6 @@ public:
             solve(); 
         postSolve();  
 
-        auto &rad = prim->verts.add_attr<float>("rad");
-        std::fill(rad.begin(),rad.end(),1.0);
-        // prim->verts.resize(pos.size());
-        // for (size_t i = 0; i < pos.size(); i++)
-        //     prim->verts[i] = pos[i]/10.0;//scale to show
 
         set_output("outPrim", std::move(prim));
     }
