@@ -3088,7 +3088,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	rhsgrid->setName("RHS");
 }
 
-void make_non_newton_viscosity_field(
+void FLIP_vdb::make_non_newton_viscosity_field(
     openvdb::FloatGrid::Ptr &viscosity,
     openvdb::Vec3fGrid::Ptr &velocity,
     float mu_0, float mu_inf, float scale, float alpha, float n,
@@ -3107,14 +3107,12 @@ void make_non_newton_viscosity_field(
           vel_stencil[ch][i] = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, gcoord + shift);
         }
       }
-
       float vel_diff[3][3];
       for (int ch = 0; ch < 3; ch++) { // u_, v_, w_
         for (int i = 0; i < 3; i++) { //_x, _y, _z
           vel_diff[ch][i] = (vel_stencil[i][1][ch] - vel_stencil[i][0][ch]) / dx;
         }
       }
-
       float shear_rate = 0.f;
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
@@ -3123,13 +3121,11 @@ void make_non_newton_viscosity_field(
         }
       }
       shear_rate = std::sqrt(shear_rate);
-      
       // Carreau-Yasuda model for shear thinning/thickening fluids
       float mu_this = mu_inf + (mu_inf - mu_0)*std::pow(1.f + std::pow(scale*shear_rate, alpha), (n - 1.)/alpha);
       iter.setValue(mu_this);
     }
   }; //viscosity_setter
-
   auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(viscosity->tree());
 	visc_leafman.foreach(viscosity_setter);
 }

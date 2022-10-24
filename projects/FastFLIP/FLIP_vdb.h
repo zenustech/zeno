@@ -167,6 +167,12 @@ struct FLIP_vdb {
       float density, float tension_coef, bool enable_tension,
       float dt, float dx);
 
+  static void make_non_newton_viscosity_field(
+    openvdb::FloatGrid::Ptr &viscosity,
+    openvdb::Vec3fGrid::Ptr &velocity,
+    float mu_0, float mu_inf, float scale, float alpha, float n,
+    float dx);
+
   static void solve_viscosity(
     packed_FloatGrid3 &velocity,
     packed_FloatGrid3 &velocity_viscous,
