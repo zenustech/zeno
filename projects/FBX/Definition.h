@@ -1,6 +1,7 @@
 #ifndef ZENO_FBX_DEFINITION_H
 #define ZENO_FBX_DEFINITION_H
 
+#include <limits>
 #include <iostream>
 #include <algorithm>
 #include <zeno/utils/log.h>
@@ -55,6 +56,13 @@ struct SFBXReadOption {
     bool invertOpacity = false;
     bool makePrim = false;
     bool enableUDIM = false;
+    bool generate = false;
+};
+
+struct SFBXEvalOption {
+    bool writeData = false;
+    bool interAnimData = false;
+    float globalScale = 1.0f;
 };
 
 struct SKeyPosition {
@@ -90,7 +98,12 @@ struct SAnimBone {
 
     aiMatrix4x4 m_LocalTransform;
     std::string m_Name;
+    float m_MaxTimeStamp = std::numeric_limits<float>::min();
+    float m_MinTimeStamp = std::numeric_limits<float>::max();
 
+#define GET_TIME_STAMP \
+m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp); \
+m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
     void initBone(std::string name, const aiNodeAnim* channel){
         m_Name = name;
@@ -103,6 +116,8 @@ struct SAnimBone {
             data.position = aiPosition;
             data.timeStamp = timeStamp;
             m_Positions.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         m_NumRotations = channel->mNumRotationKeys;
@@ -114,6 +129,8 @@ struct SAnimBone {
             data.orientation = aiOrientation;
             data.timeStamp = timeStamp;
             m_Rotations.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         m_NumScalings = channel->mNumScalingKeys;
@@ -125,10 +142,14 @@ struct SAnimBone {
             data.scale = scale;
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         //zeno::log_info("----- N {} NP {} NR {} NS {}",
         //               m_Name, m_NumPositions, m_NumRotations, m_NumScalings);
+        //std::cout << "FBX: Anim Bone MaxTimeStamp " << m_MaxTimeStamp
+        //          << " MinTimeStamp " << m_MinTimeStamp << std::endl;
     }
 
     void update(float animationTime) {
@@ -145,7 +166,7 @@ struct SAnimBone {
 
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
-            if (animationTime < m_Positions[index + 1].timeStamp)
+            if (animationTime <= m_Positions[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -153,7 +174,7 @@ struct SAnimBone {
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
-            if (animationTime < m_Rotations[index + 1].timeStamp)
+            if (animationTime <= m_Rotations[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -161,7 +182,7 @@ struct SAnimBone {
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
-            if (animationTime < m_Scales[index + 1].timeStamp)
+            if (animationTime <= m_Scales[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -300,8 +321,23 @@ struct SDefaultMatProp{
         val.emplace("opacity", COMMON_DEFAULT_opacity);
         val.emplace("transmissionColor", COMMON_DEFAULT_transmissionColor);
         val.emplace("specularRoughness", COMMON_DEFAULT_defaultColor);
+        val.emplace("displacement", COMMON_DEFAULT_defaultColor);
         return val;
     }
+};
+
+
+struct SFBXData : zeno::IObjectClone<SFBXData>{
+    int jointIndices_elementSize = 0;
+    std::vector<std::string> jointNames;
+    std::vector<std::string> joints;
+    std::vector<std::string> blendShapes;
+    std::unordered_map<int, std::vector<float>> blendShapeWeights_timeSamples;
+    std::vector<aiMatrix4x4> bindTransforms;
+    std::vector<aiMatrix4x4> restTransforms;
+    std::unordered_map<int, std::vector<zeno::vec4f>> rotations_timeSamples;
+    std::unordered_map<int, std::vector<zeno::vec3f>> scales_timeSamples;
+    std::unordered_map<int, std::vector<zeno::vec3f>> translations_timeSamples;
 };
 
 struct SMaterial : zeno::IObjectClone<SMaterial>{
@@ -320,12 +356,12 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
     SMaterial(){
         // TODO trick - We use some unused tex properties to set some tex
         //
-        val.emplace("basecolor", SMaterialProp{0,           false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}}); // texOk
-        val.emplace("metallic", SMaterialProp{1,            false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
+        val.emplace("basecolor", SMaterialProp{0,           false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}});
+        val.emplace("metallic", SMaterialProp{1,            false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}});
         val.emplace("diffuseRoughness", SMaterialProp{2,    false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,            false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
         val.emplace("subsurface", SMaterialProp{4,          false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
-        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
+        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"",}});
         val.emplace("sssParam", SMaterialProp{6,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("sssColor", SMaterialProp{7,            false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
         val.emplace("foliage", SMaterialProp{8,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
@@ -337,7 +373,7 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("sheenTint", SMaterialProp{14,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("clearcoat", SMaterialProp{15,          false, aiColor4D(), {aiTextureType_AMBIENT}, {"$ai.coat"}});
         val.emplace("clearcoatGloss", SMaterialProp{16,     true, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}}); // texOk
+        val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
         val.emplace("emission", SMaterialProp{18,           false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
         val.emplace("exposure", SMaterialProp{19,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("ao", SMaterialProp{20,                 false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
@@ -348,9 +384,10 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("strokeNoise", SMaterialProp{25,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("shad", SMaterialProp{26,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("strokeTint", SMaterialProp{27,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}}); // texOk
+        val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
         val.emplace("transmissionColor", SMaterialProp{29,  false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$clr.transparent"}});
         val.emplace("specularRoughness", SMaterialProp{30,  false, aiColor4D(), {aiTextureType_HEIGHT}, {"$ai.specularRoughness",}});
+        val.emplace("displacement", SMaterialProp{31,       false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {"",}});
     }
 
     std::vector<std::string> getTexList(){
@@ -371,6 +408,48 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
                   });
         for (auto const &p: val_vec) {
             //zeno::log_info("Pair {} {}", p.first, p.second.order);
+            tl.emplace_back(p.second.texPath);
+        }
+
+        return tl;
+    }
+
+    std::vector<std::string> getSimplestTexList(){
+        std::vector<std::string> tl;
+
+        std::map<std::string, SMaterialProp> val_tmp;
+        val_tmp.emplace("basecolor", val["basecolor"]);                             //0
+        val_tmp.emplace("metallic", val["metallic"]);                               //1
+        val_tmp.emplace("diffuseRoughness", val["diffuseRoughness"]);               //2
+        val_tmp.emplace("specular", val["specular"]);                               //3
+        val_tmp.emplace("subsurface", val["subsurface"]);                           //4
+        val_tmp.emplace("sssColor", val["sssColor"]);                               //5
+        val_tmp.emplace("sheen", val["sheen"]);                                     //6
+        val_tmp.emplace("clearcoat", val["clearcoat"]);                             //7
+        val_tmp.emplace("normal", val["normal"]);                                   //8
+        val_tmp.emplace("emission", val["emission"]);                               //9
+        val_tmp.emplace("ao", val["ao"]);                                           //10
+        val_tmp.emplace("opacity", val["opacity"]);                                 //11
+        val_tmp.emplace("transmissionColor", val["transmissionColor"]);             //12
+        val_tmp.emplace("specularRoughness", val["specularRoughness"]);             //13
+        val_tmp.emplace("displacement", val["displacement"]);                       //14
+
+        std::vector<pair> val_vec_tmp;
+
+        std::copy(val_tmp.begin(),
+                  val_tmp.end(),
+                  std::back_inserter<std::vector<pair>>(val_vec_tmp));
+
+        std::sort(val_vec_tmp.begin(), val_vec_tmp.end(),
+                  [](const pair &l, const pair &r)
+                  {
+                      if (l.second.order != r.second.order) {
+                          return l.second.order < r.second.order;
+                      }
+
+                      return l.first < r.first;
+                  });
+        for (auto const &p: val_vec_tmp) {
             tl.emplace_back(p.second.texPath);
         }
 
@@ -433,6 +512,8 @@ struct BoneTree : zeno::IObjectClone<BoneTree>{
 struct AnimInfo : zeno::IObjectClone<AnimInfo>{
     float duration;
     float tick;
+    float maxTimeStamp;
+    float minTimeStamp;
 };
 
 struct IMaterial : zeno::IObjectClone<IMaterial>{

@@ -10,6 +10,7 @@
 #include <tinyexr.h>
 #include <functional>
 #include <map>
+#include <utility>
 
 namespace zenovis {
 
@@ -35,8 +36,14 @@ Scene* Session::get_scene() const {
     return impl->scene.get();
 }
 void Session::set_window_size(int nx, int ny) {
-    impl->scene->camera->m_nx = nx;
-    impl->scene->camera->m_ny = ny;
+    impl->scene->camera->setResolution(nx, ny);
+}
+
+std::tuple<int, int> Session::get_window_size() {
+    return {
+        impl->scene->camera->m_nx,
+        impl->scene->camera->m_ny,
+    };
 }
 
 void Session::set_show_grid(bool show_grid) {
@@ -136,6 +143,15 @@ void Session::look_perspective(float cx, float cy, float cz, float theta,
     impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
 }
 
+void Session::look_to_dir(float cx, float cy, float cz,
+                          float dx, float dy, float dz,
+                          float ux, float uy, float uz) {
+    auto fov = impl->scene->camera->m_fov;
+    auto fnear = impl->scene->camera->m_near;
+    auto ffar = impl->scene->camera->m_far;
+    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz}, fov, fnear, ffar);
+}
+
 void Session::set_background_color(float r, float g, float b) {
     impl->scene->drawOptions->bgcolor = glm::vec3(r, g, b);
 }
@@ -169,16 +185,8 @@ void Session::set_interactive(bool interactive) {
     impl->scene->drawOptions->interactive = interactive;
 }
 
-void Session::set_hovered_graphic(std::string hovered_graphic_id) {
-    impl->scene->drawOptions->hovered_graphic_id = std::move(hovered_graphic_id);
-}
-
-void Session::set_interactive_graphics(std::map<std::string, std::unique_ptr<IGraphicInteractDraw>> &interactGraphics) {
-    std::swap(impl->scene->drawOptions->interactGraphics, interactGraphics);
-}
-
-void Session::set_interacting_graphics(std::set<std::unique_ptr<IGraphicDraw>> &interactingGraphics) {
-    std::swap(impl->scene->drawOptions->interactingGraphics, interactingGraphics);
+void Session::set_handler(std::shared_ptr<IGraphicHandler> &handler) {
+    impl->scene->drawOptions->handler = handler;
 }
 
 void Session::load_opengl_api(void *procaddr) {

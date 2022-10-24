@@ -61,6 +61,7 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.py_object)
     define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
+    define(ctypes.c_uint32, 'Zeno_InvokeCFunctionPtr', ctypes.py_object, ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
 
 
 class ZenoObject:
@@ -105,21 +106,39 @@ class ZenoObject:
             return ret
 
     @classmethod
-    def _newFunc(cls, func: Callable):
+    def fromFunc(cls, func: Callable):
         @functools.wraps(func)
         def wrappedFunc(**kwargs):
-            ret = func(**kwargs)
+            argObjLits: dict[str, Union[Literial, 'ZenoObject']] = {k: ZenoObject.fromHandle(v).toLiterial() for k, v in kwargs.items()}  # type: ignore
+            ret = func(**argObjLits)
             if ret is None:
                 return {}
             elif isinstance(ret, dict):
-                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret}
-                wrappedFunc._retRAII = retObjs
-                return {k: v.toHandle() for k, v in retObjs}
+                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret.items()}
+                wrappedFunc._wrapRetRAII = retObjs
+                return {k: v.toHandle() for k, v in retObjs.items()}
             else:
                 retObj = ZenoObject.fromLiterial(ret)
-                wrappedFunc._retRAII = retObj
+                wrappedFunc._wrapRetRAII = retObj
                 return {'ret': retObj.toHandle()}
         return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
+
+    def asFunc(self) -> Callable:
+        fetchedHandleVal: int = self._fetchSomeObject('FunctionObject', self._handle)
+        fetchedObjRAII = ZenoObject.fromHandle(fetchedHandleVal)
+        def wrappedFunc(**kwargs: dict[str, Union[Literial, 'ZenoObject']]) -> _MappingProxyWrapper:
+            argObjsRAII = {k: ZenoObject.fromLiterial(v) for k, v in kwargs.items()}  # type: ignore
+            argHandles = {k: v.toHandle() for k, v in argObjsRAII.items()}
+            fetchedHandle = fetchedObjRAII.toHandle()
+            pyHandleAndKwargs_ = (fetchedHandle, argHandles)
+            pyRetHandles_ = ctypes.py_object()
+            api.Zeno_InvokeCFunctionPtr(ctypes.py_object(pyHandleAndKwargs_), ctypes.c_char_p('FunctionObject_call'.encode()), ctypes.pointer(pyRetHandles_))
+            retHandles = pyRetHandles_.value
+            assert retHandles is not None
+            del argObjsRAII
+            retProxy = _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
+            return retProxy
+        return wrappedFunc
 
     @classmethod
     def _newPrim(cls):
@@ -140,7 +159,7 @@ class ZenoObject:
     @classmethod
     def _fetchSomeObject(cls, typeName_: str, handle_: int) -> Any:
         ffiObjRet_ = ctypes.py_object()
-        api.Zeno_InvokeObjectFactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
+        api.Zeno_InvokeObjectDefactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
         return ffiObjRet_.value
 
     @classmethod
@@ -197,6 +216,7 @@ class ZenoObject:
 
     @staticmethod
     def _makeVecInt(value: Iterable[int]) -> int:
+        value = tuple(value)
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -206,6 +226,7 @@ class ZenoObject:
 
     @staticmethod
     def _makeVecFloat(value: Iterable[float]) -> int:
+        value = tuple(value)
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -257,6 +278,43 @@ class ZenoObject:
         return bytes(value_).decode()
 
 
+class _MappingProxyWrapper:
+    _prox: MappingProxyType[str, Union[Literial, ZenoObject]]
+
+    def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
+        self._prox = MappingProxyType(lut)
+
+    def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
+        return self._prox[key]
+
+    def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
+        return self._prox[key]
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._prox
+
+    def to_dict(self) -> dict[str, Union[Literial, ZenoObject]]:
+        return dict(self._prox)
+
+    # def keys(self) -> Iterable[str]:
+        # return self._prox.keys()
+
+    # def values(self) -> Iterable[Union[Literial, ZenoObject]]:
+        # return self._prox.values()
+
+    # def items(self) -> Iterable[tuple[str, Union[Literial, ZenoObject]]]:
+        # return self._prox.items()
+
+    def __iter__(self) -> Iterable[str]:
+        return iter(self._prox)
+
+    def __len__(self) -> int:
+        return len(self._prox)
+
+    def __repr__(self) -> str:
+        return repr(self._prox)
+
+
 class ZenoPrimitiveObject(ZenoObject):
     def _getArray(self, kind: int):
         return _AttrVectorWrapper(self._handle, kind)
@@ -299,10 +357,6 @@ class ZenoPrimitiveObject(ZenoObject):
     @property
     def uvs(self):
         return self._getArray(7)
-
-    @property
-    def loop_uvs(self):
-        return self._getArray(8)
 
     def asObject(self):
         return ZenoObject.fromHandle(self._handle)
@@ -528,26 +582,16 @@ def set_output2(key: str, value: Union[Literial, 'ZenoObject']):
 
 
 class _TempNodeWrapper:
-    class _MappingProxyWrapper:
-        _prox: MappingProxyType
-
-        def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
-            self._prox = MappingProxyType(lut)
-
-        def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
-            return self._prox[key]
-
-        def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
-            return self._prox[key]
-
     def __getattr__(self, key: str):
         def wrapped(**args: dict[str, Union[Literial, ZenoObject]]):
             currGraph = ZenoGraph.current()
-            store_args : dict[str, ZenoObject] = {k: ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
+            def fixParamKey(k):
+                return k[:-1] + ':' if k.endswith('_') else k
+            store_args : dict[str, ZenoObject] = {fixParamKey(k): ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
             inputs : dict[str, int] = {k: ZenoObject.toHandle(v) for k, v in store_args.items()}
             outputs : dict[str, int] = currGraph.callTempNode(key, inputs)
             rets : dict[str, Union[Literial, ZenoObject]] = {k: ZenoObject.toLiterial(ZenoObject.fromHandle(v)) for k, v in outputs.items()}
-            return self._MappingProxyWrapper(rets)
+            return _MappingProxyWrapper(rets)
         wrapped.__name__ = key
         wrapped.__qualname__ = __name__ + '.no.' + key
         setattr(self, key, wrapped)

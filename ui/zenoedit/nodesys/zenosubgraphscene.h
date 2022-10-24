@@ -4,7 +4,7 @@
 #include <QtWidgets>
 #include <zenoui/render/ztfutil.h>
 #include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 
 class ZenoNode;

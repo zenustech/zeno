@@ -2,8 +2,8 @@
 #include "curvenodeitem.h"
 #include "curvemapview.h"
 #include "curvesitem.h"
-#include <zenoui/model/curvemodel.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 
 

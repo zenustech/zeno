@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
@@ -74,6 +75,8 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 }
 
 bool Scene::loadFrameObjects(int frameid) {
+    auto &ud = zeno::getSession().userData();
+    ud.set2<int>("frameid", std::move(frameid));
     bool inserted = false;
     if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
         return inserted;
@@ -129,9 +132,9 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_DEPTH_COMPONENT32, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
         CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
@@ -146,10 +149,30 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         }
 
         if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-            auto bindReadFbo = opengl::scopeGLBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+            int nx = camera->m_nx;
+            int ny = camera->m_ny;
+            // normal buffer as intermedia
+            auto sfbo = opengl::scopeGLGenFramebuffer();
+            auto srbo1 = opengl::scopeGLGenRenderbuffer();
+            auto srbo2 = opengl::scopeGLGenRenderbuffer();
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo1));
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo2));
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, nx, ny));
+
+            auto bindReadSFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, sfbo);
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                                               GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srbo1));
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
+                                               GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, srbo2));
+
+            auto bindDrawBuf = opengl::scopeGLDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+            CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
             CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
                                        camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
                                        GL_NEAREST));
+            CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, sfbo));
 
             auto bindPackBuffer = opengl::scopeGLBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
             auto bindPackAlignment = opengl::scopeGLPixelStorei(GL_PACK_ALIGNMENT, 1);

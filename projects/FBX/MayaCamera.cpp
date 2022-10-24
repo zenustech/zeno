@@ -126,10 +126,10 @@ struct CameraNode: zeno::INode{
         camera->pos = get_input2<zeno::vec3f>("pos");
         camera->up = get_input2<zeno::vec3f>("up");
         camera->view = get_input2<zeno::vec3f>("view");
-        camera->fnear = get_input2<float>("frame");
         camera->fov = get_input2<float>("fov");
         camera->aperture = get_input2<float>("aperture");
         camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+        camera->userData().set2("frame", get_input2<float>("frame"));
 
         set_output("camera", std::move(camera));
     }
@@ -180,15 +180,15 @@ struct CameraEval: zeno::INode {
 
         //zeno::log_info("CameraEval frame {}", frameid);
 
-        // TODO sort CameraObject by fnear(frameId)
+        // TODO sort CameraObject by (frameId)
 
         if(nodelist.size() == 1){
             auto n = nodelist[0];
             SET_CAMERA_DATA
             //zeno::log_info("CameraEval size 1");
         }else{
-            int ff = (int)nodelist[0]->fnear;
-            int lf = (int)nodelist[nodelist.size()-1]->fnear;
+            int ff = (int)nodelist[0]->userData().get2<float>("frame");
+            int lf = (int)nodelist[nodelist.size()-1]->userData().get2<float>("frame");
             if(frameid <= ff){
                 auto n = nodelist[0];
                 SET_CAMERA_DATA
@@ -201,7 +201,7 @@ struct CameraEval: zeno::INode {
                 for(int i=1;i<nodelist.size();i++){
                     auto const & n = nodelist[i];
                     auto const & nm = nodelist[i-1];
-                    int cf = (int)n->fnear;
+                    int cf = (int)n->userData().get2<float>("frame");
                     if(frameid < cf){
                         zeno::vec3f pos;
                         zeno::vec3f up;
@@ -210,9 +210,9 @@ struct CameraEval: zeno::INode {
                         float aperture;
                         float focalPlaneDistance;
 
-                        float factor = (float)(frameid - (int)nm->fnear) / (float)((int)n->fnear - (int)nm->fnear);
-
-                        //zeno::log_info("CameraEval Interval {} {} factor {}", (int)nm->fnear, (int)n->fnear, factor);
+                        float factor = (float)(frameid - (int)nm->userData().get2<float>("frame"))
+                                       / (float)((int)n->userData().get2<float>("frame")
+                                           - (int)nm->userData().get2<float>("frame"));
 
                         // linear interpolation
                         if(inter_mode == "Linear"){
@@ -386,14 +386,15 @@ struct LightNode : INode {
             }
         }
 
-        prim->userData().setLiterial("isL", std::move(isL));
-        prim->userData().setLiterial("ivD", std::move(inverdir));
-        prim->userData().setLiterial("pos", std::move(position));
-        prim->userData().setLiterial("scale", std::move(scale));
-        prim->userData().setLiterial("rotate", std::move(rotate));
-        prim->userData().setLiterial("shape", std::move(shape));
-        prim->userData().setLiterial("color", std::move(color));
-        prim->userData().setLiterial("intensity", std::move(intensity));
+        prim->userData().set2("isRealTimeObject", std::move(isL));
+        prim->userData().set2("isL", std::move(isL));
+        prim->userData().set2("ivD", std::move(inverdir));
+        prim->userData().set2("pos", std::move(position));
+        prim->userData().set2("scale", std::move(scale));
+        prim->userData().set2("rotate", std::move(rotate));
+        prim->userData().set2("shape", std::move(shape));
+        prim->userData().set2("color", std::move(color));
+        prim->userData().set2("intensity", std::move(intensity));
 
         set_output("prim", std::move(prim));
     }

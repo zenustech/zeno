@@ -4,10 +4,13 @@
 #include "../zenoedit/viewport/camerakeyframe.h"
 #include "../zenoedit/launch/corelaunch.h"
 #include "../zenoedit/launch/serialize.h"
-#include "../zenoedit/model/graphsmodel.h"
+
 #include <zenovis/DrawOptions.h>
-#include <zenoui/util/jsonhelper.h>
-#include <graphsmanagment.h>
+#include <zenomodel/include/jsonhelper.h>
+
+#include "igraphsmodel.h"
+#include "graphsmanagment.h"
+
 #include <viewport/zenovis.h>
 #include <cstdlib>
 #include <zeno/core/Session.h>
@@ -346,9 +349,10 @@ void ZenoPlayer::startView(QString filePath) {
         return;
     }
 
-    GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
+    //IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
+    //GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
 
-    launchProgram(pLegacy, m_iFrameCount, m_iMaxFrameCount);
+    launchProgram(pModel, m_iFrameCount, m_iMaxFrameCount);
 
     Zenovis::GetInstance().startPlay(true);
     m_pTimerUpVIew->start(m_iUpdateFeq);

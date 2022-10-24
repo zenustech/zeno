@@ -51,18 +51,23 @@ ZENDEFNODE(PrimitiveTraceTrail,
 
 struct PrimitiveCalcVelocity : zeno::INode {
     std::vector<vec3f> last_pos;
+    bool no_last_pos = true;
 
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto dt = has_input("dt") ? get_input<NumericObject>("dt")->get<float>() : 0.04f;
-        last_pos = prim->attr<vec3f>("pos");
         auto const &pos = prim->attr<vec3f>("pos");
+        if (no_last_pos) {
+            last_pos = pos;
+            no_last_pos = false;
+        }
         auto &vel = prim->add_attr<vec3f>("vel");
 
 #pragma omp parallel for
         for (int i = 0; i < std::min(last_pos.size(), pos.size()); i++) {
             vel[i] = (pos[i] - last_pos[i]) / dt;
         }
+        last_pos = pos;
 
         set_output("prim", std::move(prim));
     }

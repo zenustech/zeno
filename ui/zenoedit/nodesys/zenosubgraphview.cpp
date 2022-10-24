@@ -1,5 +1,5 @@
 #include "zenosubgraphscene.h"
-#include "../graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
@@ -175,7 +175,7 @@ void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool 
         if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
         {
             QRectF rcBounding = pNode->sceneBoundingRect();
-            rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
+            //rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
             fitInView(rcBounding, Qt::KeepAspectRatio);
         }
     }
@@ -528,7 +528,8 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 		IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
 		QModelIndex subgIdx = pModel->index(subGraphName);
 		QModelIndex objIdx = pModel->index(objId, subgIdx);
-		QPointF pos = pModel->data2(subgIdx, objIdx, ROLE_OBJPOS).toPointF();
+        ZASSERT_EXIT(objIdx.isValid());
+		QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();
 		m_view->focusOn(objId, pos, isError);
 	}
 }

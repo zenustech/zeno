@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
@@ -79,18 +80,23 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         });
     }
 
+    prim->loops.update();
     prim->polys.update();
 
     if (!(!prim->tris.has_attr("uv0") || !prim->tris.has_attr("uv1") ||
           !prim->tris.has_attr("uv2") || !with_uv)) {
+        auto old_uvs_base = prim->uvs.size();
+        prim->loops.add_attr<int>("uvs");
         auto &uv0 = prim->tris.attr<vec3f>("uv0");
         auto &uv1 = prim->tris.attr<vec3f>("uv1");
         auto &uv2 = prim->tris.attr<vec3f>("uv2");
-        auto &loop_uv = prim->loops.add_attr<vec3f>("uv");
         for (int i = 0; i < prim->tris.size(); i++) {
-            loop_uv[old_loop_base + i * 3 + 0] = uv0[i];
-            loop_uv[old_loop_base + i * 3 + 1] = uv1[i];
-            loop_uv[old_loop_base + i * 3 + 2] = uv2[i];
+            prim->loops.attr<int>("uvs")[old_loop_base + i * 3 + 0] = old_uvs_base + i * 3 + 0;
+            prim->loops.attr<int>("uvs")[old_loop_base + i * 3 + 1] = old_uvs_base + i * 3 + 1;
+            prim->loops.attr<int>("uvs")[old_loop_base + i * 3 + 2] = old_uvs_base + i * 3 + 2;
+            prim->uvs.emplace_back(uv0[i][0], uv0[i][1]);
+            prim->uvs.emplace_back(uv1[i][0], uv1[i][1]);
+            prim->uvs.emplace_back(uv2[i][0], uv2[i][1]);
         }
     }
 

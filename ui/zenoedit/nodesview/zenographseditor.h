@@ -28,6 +28,7 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
+    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
 
 public slots:
 	void resetModel(IGraphsModel* pModel);
@@ -55,8 +56,8 @@ private:
     void initSignals();
     void initRecentFiles();
     void initModel();
+    void toggleViewForSelected(bool bOn);
     int tabIndexOfName(const QString& subGraphName);
-    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;

@@ -327,10 +327,14 @@ struct IfElse : zeno::INode {
         } else*/ if (evaluate_condition(cond.get())) {
             if (requireInput("true")) {
                 set_output("result", get_input("true"));
+            } else {
+                set_output("result", std::make_shared<DummyObject>());
             }
         } else {
             if (requireInput("false")) {
                 set_output("result", get_input("false"));
+            } else {
+                set_output("result", std::make_shared<DummyObject>());
             }
         }
 

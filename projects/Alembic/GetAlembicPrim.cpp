@@ -42,8 +42,8 @@ void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim) {
         auto [base, cnt] = prim->polys[i];
         for (int j = 0; j < (cnt / 2); j++) {
             std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
-            if (prim->loops.has_attr("uv")) {
-                std::swap(prim->loops.attr<zeno::vec3f>("uv")[base + j], prim->loops.attr<zeno::vec3f>("uv")[base + cnt - 1 - j]);
+            if (prim->loops.has_attr("uvs")) {
+                std::swap(prim->loops.attr<int>("uvs")[base + j], prim->loops.attr<int>("uvs")[base + cnt - 1 - j]);
             }
         }
     }
@@ -184,7 +184,7 @@ struct AllAlembicPrim : INode {
                 prims->arr.push_back(np);
             });
         }
-        auto outprim = prim_merge(prims);
+        auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (get_input2<bool>("flipFrontBack")) {
             flipFrontBack(outprim);
         }

@@ -7,7 +7,7 @@
 #include <rapidjson/document.h>
 
 #include "../acceptor/iacceptor.h"
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 class CurveModel;
 class IGraphsModel;
@@ -17,7 +17,6 @@ class ZsgReader
 public:
     static ZsgReader& getInstance();
     bool openFile(const QString& fn, IAcceptor* pAcceptor);
-    static QVariant _parseToVariant(const QString &type, const rapidjson::Value &val, QObject *parentRef);
     bool importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor);
 
 private:
@@ -35,8 +34,6 @@ private:
     void _parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
-    QVariant _parseDefaultValue(const QString& val, const QString &type);
-    static CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
     NODE_DESCS _parseDescs(const rapidjson::Value& descs);
 };
 

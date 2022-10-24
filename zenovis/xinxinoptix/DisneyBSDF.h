@@ -237,7 +237,7 @@ namespace DisneyBSDF{
         else
             color = baseColor;
 
-        float c = (HoL * HoV) / (NoL * NoV);
+        float c = (HoL * HoV) / (NoL * NoV + 1e-7);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
@@ -289,7 +289,7 @@ namespace DisneyBSDF{
             float fss90 = HoL * HoL * roughness;
             float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
 
-            float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
+            float ss = 1.25f * (fss * (1.0f / (NoL + NoV + 1e-6) - 0.5f) + 0.5f);
             h = ss;
         }
 
@@ -722,28 +722,50 @@ namespace DisneyBSDF{
         float pdf;
 
         flag = scatterEvent;
-
-        if(rnd(seed) <= subsurface && subsurface > 0.001f){
-            wi = -wi;
-            pdf = subsurface;
-            isSS = true;
-            if(thin){
-                color = sqrt(transmittanceColor);
-            }else{
-                flag = transmissionEvent;
-                //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(sssColor, scatterDistance);
-                color = transmittanceColor;
-
+        if(wo.z>0) //we are outside
+        {
+            if (rnd(seed) <= subsurface && subsurface > 0.001f) {
+                wi = -wi;
+                pdf = subsurface;
+                isSS = true;
+                if (thin) {
+                    color = sqrt(transmittanceColor);
+                } else {
+                    flag = transmissionEvent;
+                    //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                    extinction = CalculateExtinction(sssColor, scatterDistance);
+                    color = transmittanceColor;
+                }
+            } else {
+                pdf = 1.0 - subsurface;
             }
-        }else{
-            pdf = 1.0 - subsurface;
+        }else //we are inside
+        {
+            //either go out or turn in
+            if (rnd(seed) <= subsurface && subsurface > 0.001f)
+            {
+                //go out, flag change
+                wi = -wi;
+                isSS = true;
+                if (thin) {
+                    color = sqrt(transmittanceColor);
+                } else {
+                    flag = transmissionEvent;
+                    //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                    extinction = CalculateExtinction(sssColor, scatterDistance);
+                    color = vec3(1.0f);//no attenuation happen
+                }
+            }else
+            {
+                color = vec3(1.0f);
+            }
         }
 
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
-
+        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        if(wi.z<0)
+            diff = 1.0;
         reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
@@ -928,21 +950,19 @@ static __inline__ __device__ float noise( vec3 x )
     return res;
 }
 
-static __inline__ __device__ float fbm( vec3 p )
+static __inline__ __device__ float fbm( vec3 p , int layer=6)
 {
     float f = 0.0;
     mat3 m = mat3( 0.00,  0.80,  0.60,
                   -0.80,  0.36, -0.48,
                   -0.60, -0.48,  0.64 );
     vec3 pp = p;
-    f += 0.5000*noise( pp );
-    pp = m*pp*2.02;
-    f += 0.2500*noise( pp );
-    pp = m*pp*2.03;
-    f += 0.1250*noise( pp );
-    pp = m*pp*2.01;
-    f += 0.0625*noise( pp );
-
+    float coef = 0.5;
+    for(int i=0;i<layer;i++) {
+        f += coef * noise(pp);
+        pp = m * pp *2.02;
+        coef *= 0.5;
+    }
     return f/0.9375;
 }
 static __inline__ __device__
@@ -1027,16 +1047,22 @@ static __inline__ __device__ void intersect_sphere(
 	hit.origin = r.origin + t * r.direction;
 	hit.normal = (hit.origin - s.origin) / s.radius;
 }
-static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t)
+static __inline__ __device__ float softlight(float base, float blend, float c)
+{
+    return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
+}
+static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f, int layer = 6)
 {
 	// signal
-	vec3 p = pos * .0212242 + windDir * t; // test time
-	float dens = fbm(p); //, FBM_FREQ);;
+	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
+        vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
+	float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
 
 	float cov = 1. - coverage;
-	dens *= smoothstep (cov, cov + .05, dens);
-
-	return clamp(dens, 0., 1.);	
+//	dens = smoothstep (cov-0.1, cov + .1, dens);
+//        dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
+        dens *= smoothstep (cov, cov + .1, dens);
+	return pow(clamp(dens, 0., 1.),0.5f);
 }
 static __inline__ __device__ float light(
 	vec3 origin,
@@ -1044,27 +1070,29 @@ static __inline__ __device__ float light(
     vec3 windDir,
     float coverage,
     float absorption,
-    float t
+    float t,
+    float freq = 1.0
 ){
-	const int steps = 8;
-	float march_step = 1.;
+	const int steps = 4;
+	float march_step = 0.5;
 
 	vec3 pos = origin;
-	vec3 dir_step = -sunLightDir * march_step; // reverse shadow?
+	vec3 dir_step = -sunLightDir * march_step;
 	float T = 1.; // transmitance
-
+        float coef = 1.0;
 	for (int i = 0; i < steps; i++) {
-		float dens = density(pos, windDir, coverage, t);
+		float dens = density(pos, windDir, coverage, t, freq,6);
 
-		float T_i = exp(-absorption * dens * march_step);
+		float T_i = exp(-absorption * dens * coef * march_step);
 		T *= T_i;
 		//if (T < .01) break;
 
 		pos = vec3(
-            pos.x + dir_step.x,
-            pos.y + dir_step.y,
-            pos.z + dir_step.z
+            pos.x + coef * dir_step.x,
+            pos.y + coef * dir_step.y,
+            pos.z + coef * dir_step.z
         );
+            coef *= 2.0f;
 	}
 
 	return T;
@@ -1082,14 +1110,15 @@ static __inline__ __device__ vec4 render_clouds(
     float absorption, 
     float t
 ){
+    //r.direction.x = r.direction.x * 2.0f;
     vec3 C = vec3(0, 0, 0);
     float alpha = 0.;
-
-    float march_step = thickness / float(steps);
-	vec3 dir_step = r.direction / r.direction.y * march_step;
+    float s = mix(30, 10, sqrtf(r.direction.y));
+    float march_step = thickness / floor(s) / 2;
+    vec3 dir_step = r.direction / sqrtf(r.direction.y)  * march_step ;
 
     sphere atmosphere = {
-        vec3(0,-350, 0), 
+        vec3(0,-350, 0),
         500., 
         0
     };
@@ -1102,48 +1131,66 @@ static __inline__ __device__ vec4 render_clouds(
 
     intersect_sphere(r, atmosphere, hit);
 	vec3 pos = hit.origin;
-
+    float talpha = 0;
     float T = 1.; // transmitance
-	for (int i = 0; i < steps; i++) {
-		float h = float(i) / float(steps);
-		float dens = density(pos, windDir, coverage, t);
-
-		float T_i = 
-            pow(0.99f, smoothstep(0.0f,0.1f,dens)) * 
-            exp(-absorption * dens * march_step);
-		T *= T_i;
-		if (T < .01) break;
-        float C_i = 
-            T * 
-#ifdef SIMULATE_LIGHT
-			light(
-                pos, 
-                sunLightDir,
-                windDir,
-                coverage,
-                absorption,
-                t
-            ) * 
-#endif
-// #ifdef FAKE_LIGHT
-// 			(exp(h) / 1.75) *
-// #endif
-			dens * 
-            march_step;
-        C = vec3(
-            C.x + C_i,
-            C.y + C_i,
-            C.z + C_i
-        ); 
-        alpha += (1. - T_i) * (1. - alpha);
-		pos = vec3(
-            pos.x + dir_step.x,
-            pos.y + dir_step.y,
-            pos.z + dir_step.z
+    float coef = 1.0;
+    for (int i =0; i < int(s)/2; i++)
+    {
+        float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
+        float dens = density(pos, windDir, coverage, t, freq);
+        dens = mix(0.0f,dens, smoothstep(0.0f, 0.2f, r.direction.y));
+        float T_i = exp(-absorption * dens * coef *  2.0* march_step);
+        T *= T_i;
+        if (T < .01)
+            break;
+        talpha += (1. - T_i) * (1. - talpha);
+        pos = vec3(
+            pos.x + coef * 2.0* dir_step.x,
+            pos.y + coef * 2.0* dir_step.y,
+            pos.z + coef * 2.0* dir_step.z
         );
-		if (length(pos) > 1e3) break;
-	}
+        coef *= 1.0f;
+        if (length(pos) > 1e3) break;
+    }
 
+        //vec3 pos = r.direction * 500.0f;
+    pos = hit.origin;
+        alpha = 0;
+        T = 1.; // transmitance
+        coef = 1.0;
+    if (talpha > 1e-3) {
+        for (int i = 0; i < int(s); i++) {
+            float h = float(i) / float(steps);
+            float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
+            float dens = density(pos, windDir, coverage, t, freq);
+            dens = mix(0.0f, dens, smoothstep(0.0f, 0.2f, r.direction.y));
+            float T_i =
+
+                exp(-absorption * dens * coef * march_step);
+            T *= T_i;
+            if (T < .01)
+                break;
+            float C_i;
+
+                C_i = T *
+#ifdef SIMULATE_LIGHT
+                      light(pos, sunLightDir, windDir, coverage, absorption, t, freq) *
+#endif
+                      // #ifdef FAKE_LIGHT
+                      // 			(exp(h) / 1.75) *
+                      // #endif
+                      dens * march_step;
+
+                C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
+                alpha += (1. - T_i) * (1. - alpha);
+                pos = vec3(pos.x + coef * dir_step.x,
+                           pos.y + coef * dir_step.y,
+                           pos.z + coef * dir_step.z);
+                coef *= 1.0f;
+                if (length(pos) > 1e3)
+                    break;
+            }
+        }
     return vec4(C.x, C.y, C.z, alpha);
 }
 
@@ -1168,4 +1215,42 @@ static __inline__ __device__ vec3 proceduralSky(
     vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
+}
+
+static __inline__ __device__ vec3 hdrSky(
+        vec3 dir
+){
+    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float v = asin(dir.y) / 3.1415926 + 0.5;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
+    return col * params.sky_strength;
+}
+
+static __inline__ __device__ vec3 envSky(
+    vec3 dir,
+    vec3 sunLightDir,
+    vec3 windDir,
+    int steps,
+    float coverage,
+    float thickness,
+    float absorption,
+    float t
+){
+    if (params.usingProceduralSky) {
+        return proceduralSky(
+            dir,
+            sunLightDir,
+            windDir,
+            steps,
+            coverage,
+            thickness,
+            absorption,
+            t
+        );
+    }
+    else {
+        return hdrSky(
+            dir
+        );
+    }
 }

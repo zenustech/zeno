@@ -175,7 +175,7 @@ ZENDEFNODE(PrimCheckTagInRange, {
     {"PrimitiveObject", "prim"},
     {"string", "tagAttr", "index"},
     {"int", "beg", "0"},
-    {"int", "end", "100"},
+    {"int", "end", "0"},
     {"bool", "endExcluded", "0"},
     {"int", "modularBy", "0"},
     {"int", "trueVal", "1"},

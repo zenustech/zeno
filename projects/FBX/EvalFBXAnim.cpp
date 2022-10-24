@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/CameraObject.h>
+#include <zeno/types/UserData.h>
 
 #include "assimp/scene.h"
 
@@ -14,30 +15,34 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <unordered_map>
+
 namespace {
 
 struct EvalAnim{
-    double m_Duration;
-    double m_TicksPerSecond;
     float m_CurrentFrame;
     float m_DeltaTime;
 
+    SFBXEvalOption m_evalOption;
     NodeTree m_RootNode;
+    SFBXData m_FbxData;
+    AnimInfo m_animInfo;
 
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
     std::unordered_map<std::string, aiMatrix4x4> m_LazyTransforms;
     std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
     std::unordered_map<std::string, SAnimBone> m_AnimBones;
-    //std::unordered_map<std::string, std::string> m_MeshCorsName;
+
     std::vector<SVertex> m_Vertices;
     std::vector<unsigned int> m_Indices;
+
+    std::unordered_map<std::string, int> m_JointCorrespondingIndex;
 
     void initAnim(std::shared_ptr<NodeTree>& nodeTree,
                   std::shared_ptr<BoneTree>& boneTree,
                   std::shared_ptr<FBXData>& fbxData,
                   std::shared_ptr<AnimInfo>& animInfo){
-        m_Duration = animInfo->duration;
-        m_TicksPerSecond = animInfo->tick;
+        m_animInfo = *animInfo;
 
         m_Vertices = fbxData->iVertices.value;
         m_Indices = fbxData->iIndices.value;
@@ -49,17 +54,29 @@ struct EvalAnim{
         m_CurrentFrame = 0.0f;
     }
 
-    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float s, float fps) {
+    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float fps) {
         // TODO Use the actual frame number
         float dt = fi / fps;
         m_DeltaTime = dt;
-        m_CurrentFrame += m_TicksPerSecond * dt;
-        m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
+        m_CurrentFrame += m_animInfo.tick * dt;
+        m_CurrentFrame = fmod(m_CurrentFrame, m_animInfo.duration);
 
         //zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
+        //std::cout << "FBX: CurrentFrame " << m_CurrentFrame << " Duration "
+        //          << m_animInfo.duration << " DeltaTime " << m_DeltaTime << std::endl;
+
+        if(m_evalOption.writeData){
+            expandBoneTransform(&m_RootNode, "", aiMatrix4x4());
+            calculateMaxBoneInfluence();
+
+            for(float s = m_animInfo.minTimeStamp; s<=m_animInfo.maxTimeStamp; s+=1.0f){
+                //std::cout << "FBX: Calculate Anim Transform Time " << s << std::endl;
+                calculateAnimTransform(&m_RootNode, s);
+            }
+        }
 
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
-        calculateFinal(prim, s);
+        calculateFinal(prim);
     }
 
     void decomposeAnimation(std::shared_ptr<zeno::DictObject> &t,
@@ -91,9 +108,63 @@ struct EvalAnim{
         }
     }
 
+    void calculateMaxBoneInfluence(){
+        for(unsigned int i=0; i<m_Vertices.size(); i++) {
+            int s = m_Vertices[i].boneWeights.size();
+            m_FbxData.jointIndices_elementSize = std::max(s, m_FbxData.jointIndices_elementSize);
+        }
+        //std::cout << "FBX: MaxJointInfluence " << m_FbxData.jointIndices_elementSize << std::endl;
+    }
+
+    void calculateAnimTransform(const NodeTree *node, float timeCode){
+        std::string nodeName = node->name;
+        aiVector3t<float> trans{0.0f,0.0f,0.0f};
+        aiQuaterniont<float> rotate;
+        aiVector3t<float> scale{1.0f,1.0f,1.0f};
+
+        if (m_AnimBones.find(nodeName) != m_AnimBones.end()) {
+            auto& bone = m_AnimBones[nodeName];
+            bone.update(timeCode);
+            bone.m_LocalTransform.Decompose(scale, rotate, trans);
+        }
+
+        m_FbxData.rotations_timeSamples[timeCode].emplace_back(rotate.x,rotate.y,rotate.z,rotate.w);
+        m_FbxData.translations_timeSamples[timeCode].emplace_back(trans.x,trans.y,trans.z);
+        m_FbxData.scales_timeSamples[timeCode].emplace_back(scale.x,scale.y,scale.z);
+
+        for (int i = 0; i < node->childrenCount; i++)
+            calculateAnimTransform(&node->children[i], timeCode);
+    }
+
+    void expandBoneTransform(const NodeTree *node, std::string pPath, aiMatrix4x4 parentTransform) {
+        std::string nodeName = node->name;
+        std::string cName;
+        pPath.empty() ? cName = nodeName : cName = pPath + "/" + nodeName;
+        aiMatrix4x4 nodeTransform = node->transformation;
+
+        m_FbxData.joints.push_back(cName);
+        m_FbxData.jointNames.push_back(nodeName);
+        m_JointCorrespondingIndex[nodeName] = m_FbxData.joints.size()-1;
+        //std::cout << "FBX: Bone name " << nodeName << " " << cName << " " << m_FbxData.joints.size() << std::endl;
+
+        aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
+        m_FbxData.restTransforms.push_back(globalTransformation);
+        m_FbxData.bindTransforms.push_back(nodeTransform);
+
+        if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
+            std::string boneName = m_BoneOffset[nodeName].name;
+            aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
+            m_Transforms[boneName] = globalTransformation * boneOffset;
+        }
+
+        for (int i = 0; i < node->childrenCount; i++)
+            expandBoneTransform(&node->children[i], cName, globalTransformation);
+    }
+
     void calculateBoneTransform(const NodeTree *node, aiMatrix4x4 parentTransform) {
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
+
         //zeno::log_info("***** {}", nodeName);
         // Any object that just has the key-anim is a bone
         if (m_AnimBones.find(nodeName) != m_AnimBones.end()) {
@@ -102,7 +173,7 @@ struct EvalAnim{
             bone.update(m_CurrentFrame);
             nodeTransform = bone.m_LocalTransform;
 
-            //zeno::log_info("///// {}", nodeName);
+            //std::cout << "FBX: Anim Node Name " << nodeName << std::endl;
             //Helper::printAiMatrix(nodeTransform);
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
@@ -111,13 +182,14 @@ struct EvalAnim{
         if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
             std::string boneName = m_BoneOffset[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
-            //zeno::log_info("----- {}", boneName);
+            //std::cout << "FBX: Bone Node Name " << nodeName << std::endl;
             //Helper::printAiMatrix(boneOffset);
 
             m_Transforms[boneName] = globalTransformation * boneOffset;
         }else{
             // The child is already applied the parent transformation by the tree struct.
             m_LazyTransforms[nodeName] = globalTransformation;
+            //std::cout << "FBX: Lazy Node Name " << nodeName << std::endl;
         }
 
         for (int i = 0; i < node->childrenCount; i++)
@@ -126,8 +198,9 @@ struct EvalAnim{
 
     void updateCameraAndLight(std::shared_ptr<FBXData>& fbxData,
                               std::shared_ptr<ICamera>& iCamera,
-                              std::shared_ptr<ILight>& iLight,
-                              float s){;
+                              std::shared_ptr<ILight>& iLight)
+    {
+        float s = m_evalOption.globalScale;
         for(auto& m: m_LazyTransforms){
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
                 //zeno::log_info("----- LT Camera {}", m.first);
@@ -152,12 +225,20 @@ struct EvalAnim{
         }
     }
 
-    void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim, float s){
+    void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &posb = prim->verts.add_attr<zeno::vec3f>("posb");
+        auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
+        for(int i=0;i<m_FbxData.jointIndices_elementSize;i++){
+            prim->verts.add_attr<float>("jointIndice_" + std::to_string(i));
+            prim->verts.add_attr<float>("jointWeight_" + std::to_string(i));
+        }
+        int jie = m_FbxData.jointIndices_elementSize;
+        prim->userData().set2("jointIndicesElementSize", std::move(jie));
+        float s = m_evalOption.globalScale;
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
@@ -165,13 +246,18 @@ struct EvalAnim{
             auto& uvw = m_Vertices[i].texCoord;
             auto& nor = m_Vertices[i].normal;
             auto& vco = m_Vertices[i].vectexColor;
-            auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
+
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
             bool infd = false;
-
+            int bCount = 0;
             for(auto& b: bwe){
-
+                if(jie){
+                    float bIndex = (float)m_JointCorrespondingIndex[b.first];
+                    prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(bIndex);
+                    prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(b.second);
+                }
+                //std::cout << "FBX: Vert " << i << " name " << b.first << " bIndex " << bIndex << std::endl;
                 infd = true;
                 auto& tr = m_Transforms[b.first];
                 glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
@@ -180,6 +266,12 @@ struct EvalAnim{
                                             tr.a4,tr.b4,tr.c4,tr.d4);
                 glm::vec4 lpos = trans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
                 tpos += lpos * b.second;
+                bCount += 1;
+            }
+            // Supplement, joint index supplement 0, weight 0
+            for(int z=bCount; z<m_FbxData.jointIndices_elementSize; z++){
+                prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(0);
+                prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(0.0f);
             }
             if(! infd)
                 tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
@@ -223,26 +315,26 @@ struct EvalFBXAnim : zeno::INode {
             frameid = getGlobalState()->frameid;
         }
 
+        SFBXEvalOption evalOption;
         auto fbxData = get_input<FBXData>("data");
         auto fps = get_input2<float>("fps");
-        float s = 1.0f;
-        bool u = false;
         auto unit = get_param<std::string>("unit");
-        if (unit == "FROM_MAYA"){
-            s = 0.01f;
-        }
         auto interAnimData = get_param<std::string>("interAnimData");
-        if(interAnimData == "TRUE"){
-            u = true;
-        }
+        auto paramWriteData = get_param<bool>("writeData");
+        unit == "FROM_MAYA" ? evalOption.globalScale = 0.01f : evalOption.globalScale = 1.0f;
+        interAnimData == "TRUE" ? evalOption.interAnimData = true : evalOption.interAnimData = false;
+        paramWriteData == true ? evalOption.writeData = true : evalOption.writeData = false;
 
-        auto nodeTree = u ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
-        auto boneTree = u ? fbxData->boneTree : get_input<BoneTree>("bonetree");
-        auto animInfo = u ? fbxData->animInfo : get_input<AnimInfo>("animinfo");
+        auto nodeTree = evalOption.interAnimData ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
+        auto boneTree = evalOption.interAnimData ? fbxData->boneTree : get_input<BoneTree>("bonetree");
+        auto animInfo = evalOption.interAnimData ? fbxData->animInfo : get_input<AnimInfo>("animinfo");
 
         if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
             zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
         }
+
+        zeno::log_info("FBX: Eval Option InterAnimData {} WriteData {} UnitScale {}",
+                       evalOption.interAnimData, evalOption.writeData, evalOption.globalScale);
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto transDict = std::make_shared<zeno::DictObject>();
@@ -254,12 +346,13 @@ struct EvalFBXAnim : zeno::INode {
         auto outMeshName = std::make_shared<zeno::StringObject>();
 
         EvalAnim anim;
+        anim.m_evalOption = evalOption;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
-        anim.updateAnimation(frameid, prim, s, fps);
-        anim.updateCameraAndLight(fbxData, iCamera, iLight, s);
+        anim.updateAnimation(frameid, prim, fps);
+        anim.updateCameraAndLight(fbxData, iCamera, iLight);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
-        auto prims = std::make_shared<zeno::ListObject>();
+        auto bsPrims = std::make_shared<zeno::ListObject>();
         auto& meshName = fbxData->iMeshName.value_relName;
 
         matName->set(fbxData->iMeshName.value_matName);
@@ -268,6 +361,7 @@ struct EvalFBXAnim : zeno::INode {
         auto& kmValue = fbxData->iKeyMorph.value;
         auto& bsValue = fbxData->iBlendSData.value;
 
+        // TODO FBXData Write BlendShape
         if(bsValue.find(meshName) != bsValue.end()){
             auto& b = bsValue[meshName];
 
@@ -285,7 +379,7 @@ struct EvalFBXAnim : zeno::INode {
                 auto& kd = k[ki];
                 auto& kdn = k[kin];
                 float factor = (anim.m_CurrentFrame - kd.m_Time) / (kdn.m_Time - kd.m_Time);
-
+                float s = evalOption.globalScale;
                 for(unsigned int i=0; i<b.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
                     auto bsprim = std::make_shared<zeno::PrimitiveObject>();
                     auto &ver = bsprim->verts;
@@ -297,6 +391,7 @@ struct EvalFBXAnim : zeno::INode {
                     auto& v = b[i];
                     for(unsigned int j=0; j<v.size(); j++){ // Mesh Vert
                         auto& vpos = v[j].deltaPosition;
+                        //v[j].position;
                         auto& vnor = v[j].deltaNormal;
                         ver.emplace_back(vpos.x*s, vpos.y*s, vpos.z*s);
                         posb.emplace_back(0.0f, 0.0f, 0.0f);
@@ -304,17 +399,20 @@ struct EvalFBXAnim : zeno::INode {
                         norm.emplace_back(vnor.x, vnor.y, vnor.z);
                     }
 
-                    prims->arr.emplace_back(bsprim);
+                    bsPrims->arr.emplace_back(bsprim);
                 }
             }else{
                 zeno::log_info("BlendShape NotFound MorphKey {}", meshName);
             }
         }
 
-        //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, prims->arr.size(), meshName);
+        //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
+
+        auto writeData = std::make_shared<SFBXData>();
+        *writeData = anim.m_FbxData;
 
         set_output("prim", std::move(prim));
-        set_output("bsPrims", std::move(prims));
+        set_output("bsPrims", std::move(bsPrims));
         set_output("camera", std::move(iCamera));
         set_output("light", std::move(iLight));
         set_output("matName", std::move(matName));
@@ -322,6 +420,7 @@ struct EvalFBXAnim : zeno::INode {
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
+        set_output("writeData", std::move(writeData));
     }
 };
 ZENDEFNODE(EvalFBXAnim,
@@ -332,11 +431,14 @@ ZENDEFNODE(EvalFBXAnim,
                    "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "matName", "meshName", "bsPrims", "transDict", "quatDict", "scaleDict"
+                   "prim", "camera", "light", "matName", "meshName", "bsPrims",
+                   "transDict", "quatDict", "scaleDict",
+                   "writeData"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
                    {"enum TRUE FALSE", "interAnimData", "FALSE"},
+                   {"bool", "writeData", "false"},
                },  /* category: */
                {
                    "FBX",

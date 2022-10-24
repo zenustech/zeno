@@ -1,9 +1,8 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
-#include "model/graphsmodel.h"
 #include "nodesview/zenographseditor.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
@@ -18,14 +17,15 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
+#include "nodesys/zenosubgraphscene.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -73,6 +73,7 @@ void ZenoMainWindow::initMenu() {
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+N")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
@@ -84,18 +85,21 @@ void ZenoMainWindow::initMenu() {
         pAction = new QAction(tr("Open"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+O")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 
@@ -294,7 +298,9 @@ void ZenoMainWindow::initDocks() {
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    m_pEditor = new ZenoGraphsEditor(this);
+    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
+    // m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
 
     m_logger = new ZenoDockWidget("logger", this);
     m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
@@ -389,6 +395,12 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
     adjustDockSize();
 }
 
+void ZenoMainWindow::closeEvent(QCloseEvent *event) {
+    this->saveQuit();
+    // todo: event->ignore() when saveQuit returns false?
+    QMainWindow::closeEvent(event);
+}
+
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
     float height = size().height();
@@ -439,14 +451,13 @@ void ZenoMainWindow::exportGraph() {
     QString content;
     {
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-        GraphsModel *model = (GraphsModel *)pModel;
         if (path.endsWith(".cpp")) {
-            content = serializeSceneCpp(model);
+            content = serializeSceneCpp(pModel);
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
             JsonArrayBatch batch(writer);
-            serializeScene(model, writer);
+            serializeScene(pModel, writer);
             content = QString(s.GetString());
         }
     }
@@ -456,9 +467,11 @@ void ZenoMainWindow::exportGraph() {
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
-    IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
+    IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+
+    resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -587,10 +600,11 @@ void ZenoMainWindow::saveQuit() {
     }
     pGraphsMgm->clear();
     //clear timeline info.
-    setTimelineInfo(TIMELINE_INFO());
+    resetTimeline(TIMELINE_INFO());
 }
 
-void ZenoMainWindow::save() {
+void ZenoMainWindow::save()
+{
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
@@ -602,16 +616,12 @@ void ZenoMainWindow::save() {
     }
 }
 
-bool ZenoMainWindow::saveFile(QString filePath) {
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-
+bool ZenoMainWindow::saveFile(QString filePath)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
-
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
-    saveContent(strContent, filePath);
-    pModel->setFilePath(filePath);
-    pModel->clearDirty();
+    zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
 }
@@ -635,12 +645,12 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     return info;
 }
 
-void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     if (view)
     {
-        view->setTimelineInfo(info);
+        view->resetTimeline(info);
     }
 }
 
@@ -670,14 +680,21 @@ void ZenoMainWindow::clearErrorMark()
     //clear all error mark at every scene.
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel* pModel = graphsMgm->currentModel();
     if (!pModel) {
         return;
     }
     const QModelIndexList& lst = pModel->subgraphsIndice();
     for (const QModelIndex& idx : lst)
     {
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(idx));
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(idx, pScene);
+            pScene->initModel(idx);
+        }
+
         if (pScene) {
             pScene->clearMark();
         }
@@ -694,11 +711,10 @@ void ZenoMainWindow::saveAs() {
 
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
-    const QString &initialPath = ".";
+    const QString &initialPath = "";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
-    fileDialog.setDirectory(initialPath);
     if (fileDialog.exec() != QDialog::Accepted)
         return "";
 

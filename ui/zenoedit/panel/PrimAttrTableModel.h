@@ -32,6 +32,8 @@ private:
     QVariant quadsData(const QModelIndex &index) const;
     QVariant polysData(const QModelIndex &index) const;
     QVariant loopsData(const QModelIndex &index) const;
+    QVariant loopUVsData(const QModelIndex &index) const;
+    QVariant uvsData(const QModelIndex &index) const;
 };
 
 

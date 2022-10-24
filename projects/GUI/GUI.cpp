@@ -1,12 +1,16 @@
 #include <SDL2/SDL.h>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/DummyObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/extra/MethodCaller.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <glad/glad.h>
 #include "glutils.h"
+#include <set>
 
 namespace zeno {
 namespace {
@@ -166,12 +170,58 @@ ZENO_DEFNODE(ZGL_ClearColor)({
     {"GUI"},
 });
 
+struct ZGL_StateData : IObjectClone<ZGL_StateData> {
+    std::set<std::string> pressed_keys;
+};
+
+struct ZGL_StateGetKeys : INode {
+    void apply() override {
+        auto state = get_input<ZGL_StateData>("state");
+        auto type = get_input2<std::string>("type");
+        if (type == "STRING") {
+            std::string keys;
+            for (auto const &key: state->pressed_keys) {
+                keys += key;
+                keys += ' ';
+            }
+            if (!keys.empty()) keys.pop_back();
+            set_output2("keys", std::move(keys));
+        } else if (type == "DICT") {
+            auto keys = std::make_shared<DictObject>();
+            for (auto const &key: state->pressed_keys) {
+                keys->lut.emplace(key, std::make_shared<DummyObject>());
+            }
+            set_output("keys", std::move(keys));
+        } else {
+            auto keys = std::make_shared<ListObject>();
+            for (auto const &key: state->pressed_keys) {
+                keys->arr.push_back(std::make_shared<StringObject>(key));
+            }
+            set_output("keys", std::move(keys));
+        }
+    }
+};
+
+ZENO_DEFNODE(ZGL_StateGetKeys)({
+    {
+        {"state"},
+        {"enum DICT LIST STRING", "type", "DICT"},
+    },
+    {
+        {"keys"},
+    },
+    {},
+    {"GUI"},
+});
+
 struct ZGL_Main : INode {
     void apply() override {
         auto title = get_input2<std::string>("title");
         auto resx = get_input2<int>("resx");
         auto resy = get_input2<int>("resy");
+        auto quitOnEsc = get_input2<int>("quitOnEsc");
         auto callbacks = get_input<DictObject>("callbacks");
+        auto state = std::make_shared<ZGL_StateData>();
 
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -194,12 +244,21 @@ struct ZGL_Main : INode {
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_KEYDOWN) {
                     std::string key = SDL_GetKeyName(event.key.keysym.sym);
-                    log_info("key pressed [{}]", key);
+                    log_debug("key pressed [{}]", key);
                     MethodCaller(callbacks, "on_keydown", {}).set2("key", key).call();
+                    state->pressed_keys.insert(key);
+                    if (quitOnEsc && key == "Escape")
+                        quit = true;
+                } else if (event.type == SDL_KEYUP) {
+                    std::string key = SDL_GetKeyName(event.key.keysym.sym);
+                    log_debug("key released [{}]", key);
+                    MethodCaller(callbacks, "on_keyup", {}).set2("key", key).call();
+                    state->pressed_keys.erase(key);
                 } else if (event.type == SDL_QUIT) {
                     quit = true;
                 }
             }
+            MethodCaller(callbacks, "on_update", {}).set("state", state).call();
             MethodCaller(callbacks, "on_draw", {}).call();
             SDL_GL_SwapWindow(window);
             float dt = MethodCaller(callbacks, "calc_dt", {}).get2<float>("ret", 1.f / 60.f);
@@ -216,6 +275,7 @@ ZENO_DEFNODE(ZGL_Main)({
         {"string", "title", "ZenoPlay"},
         {"int", "resx", "400"},
         {"int", "resy", "300"},
+        {"bool", "quitOnEsc", "1"},
         {"DictObject", "callbacks"},
     },
     {},

@@ -25,6 +25,7 @@ struct MatOutput {
     float smoothness;
     vec3  sssColor;
     vec3  sssParam;
+    float displacement;
 
     vec3 nrm;
     vec3 emission;

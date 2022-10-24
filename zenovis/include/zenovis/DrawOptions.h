@@ -16,12 +16,10 @@ struct DrawOptions {
     bool smooth_shading = false;
     bool normal_check = false;
     int num_samples = 1;
+    int msaa_samples = 0;
 
     bool interactive = false;
-    std::string hovered_graphic_id;
-    std::map<std::string, std::unique_ptr<IGraphicInteractDraw>> interactGraphics;
-
-    std::set<std::unique_ptr<IGraphicDraw>> interactingGraphics;
+    std::shared_ptr<IGraphicHandler> handler;
 
     glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
 };
