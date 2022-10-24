@@ -4,6 +4,7 @@
 #include <map>
 #include <zeno/types/PrimitiveObject.h>
 #include "SPHKernelFuncs.h"
+#include "../ZenoFX/LinearBvh.h"
 
 namespace zeno{
 struct PBF_BVH : INode{
@@ -24,20 +25,13 @@ public:
     float coeffK = 0.001;
     float lambdaEpsilon = 100.0; // to prevent the singularity
 
-private:
+
     void preSolve();
     void solve();
     void postSolve();
 
     void computeLambda();
     void computeDpos();
-
-    void PBF_BVH::boundaryHandling(vec3f & p);
-
-    float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
-
-    void PBF_BVH::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim);
-    void PBF_BVH::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
 
 //Data preparing
     //data for physical fields
@@ -54,11 +48,13 @@ private:
     void boundaryHandling(vec3f &p);
     inline float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
 
-    // void initNeighborList();
 
     //neighborList
     std::vector<std::vector<int>> neighborList;
-    void neighborSearch();
+    std::shared_ptr<zeno::LBvh> lbvh;
+    // void initNeighborList();
+    void neighborSearch(std::shared_ptr<PrimitiveObject> prim);
+    void buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
 
 public:
     void setParams()
@@ -102,10 +98,13 @@ public:
 
             // initCellData();
             // initNeighborList(); 
+
+            //构建BVH
+            lbvh = std::make_shared<zeno::LBvh>(prim,  neighborSearchRadius,zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
         }
 
         preSolve();
-        neighborSearch();//grid-baed neighborSearch
+        neighborSearch(prim);//BVH neighborSearch
         for (size_t i = 0; i < numSubsteps; i++)
             solve(); 
         postSolve();  

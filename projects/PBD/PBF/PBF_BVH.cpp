@@ -1,3 +1,4 @@
+#include <iostream>
 #include "PBF_BVH.h"
 // #include "CellHelpers.h"
 using namespace zeno;
@@ -117,7 +118,7 @@ void PBF_BVH::postSolve()
 }
 
 
-void PBF_BVH::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim)
+void PBF_BVH::neighborSearch(std::shared_ptr<PrimitiveObject> prim)
 {
     auto &pos = prim->verts;
 
@@ -129,7 +130,7 @@ void PBF_BVH::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim)
     neighborList.resize(pos.size());
 
     lbvh->refit();
-
+    
     //邻域搜索
     buildNeighborList(pos, neighborSearchRadius, lbvh.get(), neighborList);
 }
