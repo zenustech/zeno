@@ -2,7 +2,7 @@
 #include "../ZenoFX/LinearBvh.h" //BVH搜索
 using namespace zeno;
 
-void PBF2::preSolve()
+void PBF_BVH::preSolve()
 {
     for (int i = 0; i < numParticles; i++)
         oldPos[i] = pos[i];
@@ -20,7 +20,7 @@ void PBF2::preSolve()
 }
 
 
-void PBF2::boundaryHandling(vec3f & p)
+void PBF_BVH::boundaryHandling(vec3f & p)
 {
     float worldScale = 20.0; //scale from simulation space to real world space.
     // this is to prevent the kernel from being divergent.
@@ -37,7 +37,7 @@ void PBF2::boundaryHandling(vec3f & p)
     }
 }
 
-void PBF2::solve()
+void PBF_BVH::solve()
 {
     computeLambda();
 
@@ -48,7 +48,7 @@ void PBF2::solve()
         pos[i] += dpos[i];
 }
 
-void PBF2::computeLambda()
+void PBF_BVH::computeLambda()
 {
     lambda.clear();
     lambda.resize(numParticles);
@@ -76,7 +76,7 @@ void PBF2::computeLambda()
     }
 }
 
-void PBF2::computeDpos()
+void PBF_BVH::computeDpos()
 {
     dpos.clear();
     dpos.resize(numParticles);
@@ -97,7 +97,7 @@ void PBF2::computeDpos()
 }
 
 //helper for computeDpos()
-inline float PBF2::computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h)
+inline float PBF_BVH::computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h)
 {
     float x = kernelPoly6(length(distVec), h) / kernelPoly6(coeffDq * h, h);
     x = x * x;
@@ -106,7 +106,7 @@ inline float PBF2::computeScorr(const vec3f& distVec, float coeffDq, float coeff
 }
 
 
-void PBF2::postSolve()
+void PBF_BVH::postSolve()
 {
     // for (size_t i = 0; i < numParticles; i++)
     //     boundaryHandling(pos[i]);
@@ -115,7 +115,7 @@ void PBF2::postSolve()
 }
 
 
-void PBF2::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim)
+void PBF_BVH::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim)
 {
     auto &pos = prim->verts;
 
@@ -133,7 +133,7 @@ void PBF2::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim)
 }
 
 
-void PBF2::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list)
+void PBF_BVH::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list)
 {
     auto radius2 = searchRadius*searchRadius;
     #pragma omp parallel for

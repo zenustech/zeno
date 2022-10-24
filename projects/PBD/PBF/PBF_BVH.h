@@ -9,7 +9,7 @@
 #include "../Utils/myPrint.h" 
 
 namespace zeno{
-struct PBF2 : INode{
+struct PBF_BVH : INode{
 //physical params
 public:    
     int numSubsteps = 5;
@@ -35,12 +35,12 @@ private:
     void computeLambda();
     void computeDpos();
 
-    void PBF2::boundaryHandling(vec3f & p);
+    void PBF_BVH::boundaryHandling(vec3f & p);
 
     float computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h);
 
-    void PBF2::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim);
-    void PBF2::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
+    void PBF_BVH::neighborhoodSearch(std::shared_ptr<PrimitiveObject> prim);
+    void PBF_BVH::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
 
 //Data preparing
     //data for physical fields
@@ -95,7 +95,7 @@ private:
     }
 };
 
-ZENDEFNODE(PBF2, {   
+ZENDEFNODE(PBF_BVH, {   
                     {
                         // {"PBFWorld"},
                         {"PrimitiveObject", "prim"},
