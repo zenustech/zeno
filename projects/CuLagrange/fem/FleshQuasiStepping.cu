@@ -340,8 +340,8 @@ struct FleshQuasiStaticStepping : INode {
     });
     act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
 
-    if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
-        fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+    if((!eles.hasProperty(muscle_id_tag)) || (eles.getPropertySize(muscle_id_tag) != 1)){
+        fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getPropertySize(muscle_id_tag));
         throw std::runtime_error("the quadrature has no muscle id tag");
     }
 
@@ -374,7 +374,7 @@ struct FleshQuasiStaticStepping : INode {
         throw std::runtime_error("The input flesh should have fiber orientations");
     }
 
-    if(eles.getChannelSize("fiber") != 3){
+    if(eles.getPropertySize("fiber") != 3){
         fmt::print("The input fiber  has wrong channel size\n");
         throw std::runtime_error("The input fiber has wrong channel size");
     }

@@ -34,7 +34,7 @@ namespace zeno{
             if(!etemp.hasProperty(gTag)){
                 throw std::runtime_error("etemp buffer does not contain specified channel");
             }
-            if(eles.getChannelSize("inds") != simplex_size){
+            if(eles.getPropertySize("inds") != simplex_size){
                 throw std::runtime_error("the specified dimension does not match the input simplex size");
             }
 

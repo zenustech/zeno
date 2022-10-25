@@ -8,7 +8,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/utils/logger.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
 namespace zeno {

@@ -195,8 +195,8 @@ namespace zeno { namespace PCG {
         constexpr auto space = execspace_e::cuda;
         Vector<T> res{vtemp.get_allocator(), 1};
         res.setVal(0);
-        // auto tag0Offset=vtemp.getChannelOffset(tag0);
-        // auto tag1Offset=vtemp.getChannelOffset(tag1);
+        // auto tag0Offset=vtemp.getPropertyOffset(tag0);
+        // auto tag1Offset=vtemp.getPropertyOffset(tag1);
         
         // pol.profile(true);
         pol(range(vtemp.size()),
@@ -259,7 +259,7 @@ namespace zeno { namespace PCG {
                              entryG);
               });
 #elif 0
-        auto ps = etemp.getChannelSize(H_tag);
+        auto ps = etemp.getPropertySize(H_tag);
         if (ps != 144 || simplex_dim != 4) {
             printf("????\n");
             getchar();
