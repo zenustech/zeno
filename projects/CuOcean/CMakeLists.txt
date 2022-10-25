@@ -24,3 +24,8 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   swe/FDGather.cu
 )
+
+# level set function
+target_sources(zeno PRIVATE
+  levelset/Grid_creator.cu
+)

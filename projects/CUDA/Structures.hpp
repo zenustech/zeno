@@ -5,6 +5,7 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
+#include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -435,6 +436,15 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
 
   levelset_t levelset;
   std::string transferScheme;
+};
+
+struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
+  using spg_t = zs::SparseGrid<3, zs::f32, 8>;
+
+  auto &getSparseGrid() noexcept { return spg; }
+  const auto &getSparseGrid() const noexcept { return spg; }
+
+  spg_t spg;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {
