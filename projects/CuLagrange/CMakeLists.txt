@@ -78,6 +78,9 @@ target_sources(zeno PRIVATE
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
+  geometry/kernel/compute_characteristic_length.hpp
+  geometry/kernel/topology.hpp
+  geometry/kernel/calculate_facet_normal.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
@@ -87,4 +90,5 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
+  geometry/CollisionVis.cu
 )
