@@ -42,11 +42,14 @@ struct G2PAdvectorSheet : zeno::INode {
       solid_vel = get_input("SolidVelocity")->as<VDBFloat3Grid>()->m_grid;
     else
       solid_vel = nullptr;
+    
+    auto velocity_viscous = get_input("ViscousVelocity")->as<VDBFloat3Grid>();
     auto velocity_after_p2g = get_input("PostAdvVelocity")->as<VDBFloat3Grid>();
 
     FLIP_vdb::AdvectSheetty(dt, dx, (float)surfaceSize * dx, particles->m_grid,
-                            liquidsdf->m_grid, velocity->m_grid, velocity_after_p2g->m_grid,
-                            solid_sdf, solid_vel, smoothness_min, smoothness_max, RK_ORDER);
+                            liquidsdf->m_grid, velocity->m_grid, velocity_viscous->m_grid,
+                            velocity_after_p2g->m_grid, solid_sdf, solid_vel,
+                            smoothness_min, smoothness_max, RK_ORDER);
   }
 };
 
@@ -57,6 +60,7 @@ static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
                                {"float", "pic_max", "0.05"},
                                "Particles",
                                "Velocity",
+                               "ViscousVelocity",
                                "LiquidSDF",
                                "PostAdvVelocity",
                                "SolidSDF",
