@@ -32,7 +32,7 @@ struct ZSMakeSparseGrid : INode {
         auto &spg = zsSPG->spg;
         spg = ZenoSparseGrid::spg_t{{{"sdf", 1}}, numExpectedBlocks, zs::memsrc_e::device, 0};
         spg.scale(dx);
-        spg._background = 0;
+        spg._background = dx;
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;

@@ -28,4 +28,5 @@ target_sources(zeno PRIVATE
 # level set function
 target_sources(zeno PRIVATE
   levelset/Grid_creator.cu
+  levelset/Reinitialization.cu
 )
