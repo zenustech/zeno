@@ -150,7 +150,7 @@ namespace zeno {
 
         // std::cout << "TRY RETRIEVE BOUNDING VOLUMES" << std::endl;
 
-        // std::cout << "QUADS : " << quads.getChannelSize(elm_tag) << "\t" << quads.size() << std::endl;
+        // std::cout << "QUADS : " << quads.getPropertySize(elm_tag) << "\t" << quads.size() << std::endl;
         const int mem = (int)quads.memspace();
         const int did = quads.devid();
         // std::cout << "check location: " << mem << ", " << did << std::endl;
