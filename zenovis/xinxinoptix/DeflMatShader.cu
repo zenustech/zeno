@@ -10,8 +10,6 @@
 #include "IOMat.h"
 
 //COMMON_CODE
-
-
 template<bool isDisplacement>
 static __inline__ __device__ MatOutput evalMat(
 cudaTextureObject_t zenotex0 , 
@@ -45,7 +43,8 @@ cudaTextureObject_t zenotex27,
 cudaTextureObject_t zenotex28, 
 cudaTextureObject_t zenotex29, 
 cudaTextureObject_t zenotex30, 
-cudaTextureObject_t zenotex31, 
+cudaTextureObject_t zenotex31,
+float4* uniforms,
 MatInput const &attrs) {
     /* MODMA */
     auto att_pos = attrs.pos;
@@ -152,6 +151,7 @@ static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0
                                                     cudaTextureObject_t zenotex29,
                                                     cudaTextureObject_t zenotex30,
                                                     cudaTextureObject_t zenotex31,
+                                                    float4* uniforms,
                                                     MatInput const &attrs)
 {
     return evalMat<false>(zenotex0 ,
@@ -186,6 +186,7 @@ static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0
                           zenotex29,
                           zenotex30,
                           zenotex31,
+                          uniforms,
                           attrs);
 }
 
@@ -221,6 +222,7 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0
                                                     cudaTextureObject_t zenotex29,
                                                     cudaTextureObject_t zenotex30,
                                                     cudaTextureObject_t zenotex31,
+                                                    float4* uniforms,
                                                     MatInput const &attrs)
 {
     return evalMat<true>(zenotex0 ,
@@ -255,6 +257,7 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0
                           zenotex29,
                           zenotex30,
                           zenotex31,
+                          uniforms,
                           attrs);
 }
 
@@ -379,7 +382,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                                 zenotex28, 
                                 zenotex29, 
                                 zenotex30, 
-                                zenotex31,attrs);
+                                zenotex31,
+                                rt_data->uniforms,
+                                attrs);
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -606,7 +611,9 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex28, 
                                 zenotex29, 
                                 zenotex30, 
-                                zenotex31,attrs);
+                                zenotex31,
+                                rt_data->uniforms,
+                                attrs);
     float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     n0 = dot(n0, N_0)>(1-mats.smoothness)?n0:N_0;
 
