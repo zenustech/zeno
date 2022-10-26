@@ -10,7 +10,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
-#include "scheme.hpp"
+#include "../scheme.hpp"
 
 namespace zeno {
 struct ZSRenormalizeSDF : INode {
@@ -104,6 +104,6 @@ ZENDEFNODE(ZSRenormalizeSDF, {/* inputs: */
                               /* params: */
                               {{"int", "iterations", "5"}},
                               /* category: */
-                              {"Volume"}});
+                              {"Eulerian"}});
 
 } // namespace zeno

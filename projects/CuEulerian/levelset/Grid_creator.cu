@@ -85,7 +85,7 @@ ZENDEFNODE(ZSMakeSparseGrid, {
                                  /* params: */
                                  {{"float", "dx", "1.0"}},
                                  /* category: */
-                                 {"Volume"}
+                                 {"Eulerian"}
                              });
 
 } // namespace zeno
