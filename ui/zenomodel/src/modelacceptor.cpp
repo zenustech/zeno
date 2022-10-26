@@ -382,7 +382,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 
         const QString& type = params["type"].value.toString();
         PARAM_INFO& defl = params["defl"];
-        defl.control = UiHelper::getControlType(type);
+        defl.control = UiHelper::getControlType(type, defl.name);
         defl.value = UiHelper::parseVarByType(type, defl.value, nullptr);
         defl.typeDesc = type;
         m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);

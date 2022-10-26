@@ -4,8 +4,6 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenomodel/include/igraphsmodel.h>
 
-class SubGraphModel;
-
 class ZenoSearchBar : public QWidget
 {
 	Q_OBJECT
@@ -40,7 +38,6 @@ private:
     QVector<SEARCH_RECORD> m_records;
     QModelIndexList m_results;
     QLineEdit* m_pLineEdit;
-    SubGraphModel* m_model;
     QPersistentModelIndex m_index;
     int m_idx;
 };

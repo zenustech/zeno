@@ -366,7 +366,7 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
 
         const QString& descType = params["type"].value.toString();
         PARAM_INFO& defl = params["defl"];
-        defl.control = UiHelper::getControlType(descType);
+        defl.control = UiHelper::getControlType(descType, defl.name);
         defl.value = UiHelper::parseVarByType(descType, defl.value, nullptr);
         defl.typeDesc = descType;
         data[ROLE_PARAMETERS] = QVariant::fromValue(params);
