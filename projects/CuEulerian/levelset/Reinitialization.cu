@@ -32,7 +32,7 @@ struct ZSRenormalizeSDF : INode {
         constexpr auto space = zs::execspace_e::cuda;
 
         for (int iter = 0; iter < nIter; ++iter) {
-            pol(zs::range(block_cnt * 512),
+            pol(zs::range(block_cnt * sdf.block_size),
                 [sdfv = zs::proxy<space>(sdf), sdf_tmpv = zs::proxy<space>(sdf_tmp)] __device__(int cellno) mutable {
                     auto icoord = sdfv.iCoord(cellno);
                     auto dx = sdfv.voxelSize()[0];

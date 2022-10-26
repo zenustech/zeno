@@ -12,7 +12,7 @@
 
 namespace zeno {
 
-struct ZSMakeSparseGrid : INode {
+struct ZSMakeDenseSDF : INode {
     void apply() override {
         float dx = get_param<float>("dx");
         if (has_input("Dx")) {
@@ -59,7 +59,7 @@ struct ZSMakeSparseGrid : INode {
             auto cellid = RM_CVREF_T(spgv)::local_offset_to_coord(cno);
             auto ccoord = bcoord + cellid;
 #endif
-			auto icoord = spgv.iCoord(cellno);
+            auto icoord = spgv.iCoord(cellno);
             auto dx = spgv.voxelSize()[0]; // spgv._transform(0, 0);
 
             float dist2c = zs::sqrt(float(zs::sqr(icoord[0] - sphere_c[0]) + zs::sqr(icoord[1] - sphere_c[1]) +
@@ -77,15 +77,84 @@ struct ZSMakeSparseGrid : INode {
     }
 };
 
-ZENDEFNODE(ZSMakeSparseGrid, {
-                                 /* inputs: */
-                                 {"Dx", {"int", "nx", "128"}, {"int", "ny", "128"}, {"int", "nz", "128"}},
-                                 /* outputs: */
-                                 {"Grid"},
-                                 /* params: */
-                                 {{"float", "dx", "1.0"}},
-                                 /* category: */
-                                 {"Eulerian"}
-                             });
+ZENDEFNODE(ZSMakeDenseSDF, {/* inputs: */
+                            {"Dx", {"int", "nx", "128"}, {"int", "ny", "128"}, {"int", "nz", "128"}},
+                            /* outputs: */
+                            {"Grid"},
+                            /* params: */
+                            {{"float", "dx", "1.0"}},
+                            /* category: */
+                            {"Eulerian"}});
+
+struct ZSMakeSparseGrid : INode {
+    void apply() override {
+        auto dx = get_input2<float>("Dx");
+        auto bg = get_input2<float>("backgroud");
+        auto type = get_param<std::string>("type");
+        auto structure = get_param<std::string>("structure");
+        auto channel = get_param<std::string>("channelName");
+
+        auto zsSPG = zeno::IObject::make<ZenoSparseGrid>();
+        auto &spg = zsSPG->spg;
+
+        int nc = 1;
+        if (type == "scalar")
+            nc = 1;
+        else if (type == "vector3")
+            nc = 3;
+
+        spg = ZenoSparseGrid::spg_t{{{channel, nc}}, 0, zs::memsrc_e::device, 0};
+        spg.scale(dx);
+        spg._background = bg;
+
+        if (structure == "vertex-centered") {
+            auto trans = zs::vec<float, 3>::uniform(-dx / 2);
+            // zs::vec<float, 3> trans{-dx / 2.f, -dx / 2.f, -dx / 2.f};
+
+            spg.translate(trans);
+        }
+
+        set_output("Grid", zsSPG);
+    }
+};
+
+ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
+                              {{"float", "Dx", "1.0"}, {"float", "background", "0"}},
+                              /* outputs: */
+                              {"Grid"},
+                              /* params: */
+                              {{"enum scaler vector3", "type", "scalar"},
+                               {"enum cell-centered vertex-centered", "structure", "cell-centered "},
+                               {"string", "channelName", ""}},
+                              /* category: */
+                              {"Eulerian"}});
+
+struct ZSGridTopoCopy : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("Grid");
+        auto zs_topo = get_input<ZenoSparseGrid>("Topology");
+
+        auto &grid = zs_grid->spg;
+        auto &topo = zs_topo->spg;
+
+        // topo copy
+        grid._table = topo._table;
+        grid._transform = topo._transform;
+        grid._grid.resize(topo.numBlocks() * topo.block_size);
+
+        set_output("Grid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
+                              {"Grid", "Topology"},
+                              /* outputs: */
+                              {"Grid"},
+                              /* params: */
+                              {},
+                              /* category: */
+                              {"Eulerian"}});
+
+
 
 } // namespace zeno
