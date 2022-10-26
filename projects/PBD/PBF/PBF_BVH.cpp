@@ -1,6 +1,6 @@
-#include <iostream>
 #include "PBF_BVH.h"
-// #include "CellHelpers.h"
+#include "SPHKernels.h"
+#include "../Utils/myPrint.h"
 using namespace zeno;
 
 void PBF_BVH::preSolve()
@@ -13,7 +13,7 @@ void PBF_BVH::preSolve()
     for (int i = 0; i < numParticles; i++)
     {
         vec3f tempVel = vel[i];
-        tempVel += gravity * dt;
+        tempVel += externForce * dt;
         pos[i] += tempVel * dt;
         boundaryHandling(pos[i]);
     }
@@ -43,40 +43,119 @@ void PBF_BVH::solve()
 
     computeDpos();
 
+    // echo(lambda[100]);
+    // echoVec(dpos[100]);
+
     //apply the dpos to the pos
     for (size_t i = 0; i < numParticles; i++)
         pos[i] += dpos[i];
 }
 
+// old way
+// void PBF_BVH::computeLambda()
+// {
+//     lambda.clear();
+//     lambda.resize(numParticles);
+//     auto &pos = prim->verts;
+
+//     for (size_t i = 0; i < numParticles; i++)
+//     {
+//         vec3f gradI{0.0, 0.0, 0.0};
+//         float sumSqr = 0.0;
+//         float densityCons = 0.0;
+
+//         for (size_t j = 0; j < neighborList[i].size(); j++)
+//         {
+//             int pj = neighborList[i][j];
+//             vec3f distVec = pos[i] - pos[pj];
+//             vec3f gradJ = kernelSpikyGradient(distVec, h);
+//             gradI += gradJ;
+//             sumSqr += dot(gradJ, gradJ);
+//             densityCons += kernelPoly6(length(distVec), h);
+//         }
+//         densityCons = (mass * densityCons / rho0) - 1.0;
+
+//         //compute lambda
+//         sumSqr += dot(gradI, gradI);
+//         lambda[i] = (-densityCons) / (sumSqr + lambdaEpsilon);
+//     }
+// }
+
+
+
+
+//new way
 void PBF_BVH::computeLambda()
 {
     lambda.clear();
     lambda.resize(numParticles);
     auto &pos = prim->verts;
+    // std::vector<float> density;
+    float density;
+    float density_err;
 
     for (size_t i = 0; i < numParticles; i++)
     {
-        vec3f gradI{0.0, 0.0, 0.0};
-        float sumSqr = 0.0;
-        float densityCons = 0.0;
-
-        for (size_t j = 0; j < neighborList[i].size(); j++)
+        // 计算粒子i的当前密度和密度误差
+        density = mass* CubicKernel::W(0.0);
+        for (unsigned int j = 0; j < neighborList[i].size(); j++)
         {
-            int pj = neighborList[i][j];
-            vec3f distVec = pos[i] - pos[pj];
-            vec3f gradJ = kernelSpikyGradient(distVec, h);
-            gradI += gradJ;
-            sumSqr += dot(gradJ, gradJ);
-            densityCons += kernelPoly6(length(distVec), h);
+            const unsigned int pj = neighborList[i][j];
+            float dist = zeno::length(pos[i] - pos[pj]);
+            density += mass * CubicKernel::W(dist);
         }
-        densityCons = (mass * densityCons / rho0) - 1.0;
+        density_err = std::max(density, rho0) - rho0;
 
-        //compute lambda
-        sumSqr += dot(gradI, gradI);
-        lambda[i] = (-densityCons) / (sumSqr + lambdaEpsilon);
+        //判断是否密度小于rho0，如果是，那么就不修正，用于防止particle deficiency造成的artifacts
+        const float C = std::max(density / rho0 - 1.0, 0.0);			// clamp to prevent particle clumping at surface
+        if (C == 0.0)
+            continue;
+        
+        // Compute gradients dC/dx_j 
+		float sum_grad_C2 = 0.0;
+		vec3f gradC_i(0.0, 0.0, 0.0);
+
+		for (unsigned int j = 0; j < neighborList[i].size(); j++)
+		{
+			const unsigned int pj = neighborList[i][j]; //neighborIndex
+            const vec3f gradC_j = -mass / rho0 * CubicKernel::gradW(pos[i] - pos[pj]);
+            sum_grad_C2 += lengthSquared(gradC_j);
+            gradC_i -= gradC_j;
+		}
+
+		sum_grad_C2 += lengthSquared(gradC_i);
+
+		// Compute lambda
+		lambda[i] = -C / (sum_grad_C2 + lambdaEpsilon);
+        echo(i);
+        echo(lambda[i]);
     }
 }
 
+// void PBF_BVH::computeDpos()
+// {
+//     dpos.clear();
+//     dpos.resize(numParticles);
+//     auto &pos = prim->verts;
+
+//     for (size_t i = 0; i < numParticles; i++)
+//     {
+//         vec3f dposI{0.0, 0.0, 0.0};
+//         for (size_t j = 0; j < neighborList[i].size(); j++)
+//         {
+//             int pj = neighborList[i][j];
+//             vec3f distVec = pos[i] - pos[pj];
+
+//             float sCorr = computeScorr(distVec, coeffDq, coeffK, h);
+//             dposI += (lambda[i] + lambda[pj] + sCorr) * kernelSpikyGradient(distVec, h);
+//         }
+//         dposI /= rho0;
+//         dpos[i] = dposI;
+//     }
+// }
+
+
+// new way
 void PBF_BVH::computeDpos()
 {
     dpos.clear();
@@ -85,17 +164,14 @@ void PBF_BVH::computeDpos()
 
     for (size_t i = 0; i < numParticles; i++)
     {
-        vec3f dposI{0.0, 0.0, 0.0};
-        for (size_t j = 0; j < neighborList[i].size(); j++)
+        vec3f corr(0,0,0);
+        for (unsigned int j = 0; j < neighborList[i].size(); j++)
         {
-            int pj = neighborList[i][j];
-            vec3f distVec = pos[i] - pos[pj];
-
-            float sCorr = computeScorr(distVec, coeffDq, coeffK, h);
-            dposI += (lambda[i] + lambda[pj] + sCorr) * kernelSpikyGradient(distVec, h);
+            const unsigned int neighborIndex = neighborList[i][j];
+            const vec3f gradC_j = -mass / rho0 * CubicKernel::gradW(pos[i] - pos[neighborIndex]);
+            corr -= (lambda[i] + lambda[neighborIndex]) * gradC_j;
         }
-        dposI /= rho0;
-        dpos[i] = dposI;
+        dpos[i] = corr;
     }
 }
 

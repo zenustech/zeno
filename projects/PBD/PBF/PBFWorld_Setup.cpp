@@ -45,7 +45,7 @@ struct PBFWorld_Setup : INode
         data->neighborSearchRadius = data->h;
 
         //初始化Kernel
-        CubicKernel::set(data->h);
+        // CubicKernel::set(data->h);
 
         //传出数据
         set_output("prim", std::move(prim));
