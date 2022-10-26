@@ -250,4 +250,7 @@ struct CURVE_DATA {
     CURVE_RANGE rg;
 };
 
+typedef QList<QPersistentModelIndex> PARAM_LINKS;
+Q_DECLARE_METATYPE(PARAM_LINKS)
+
 #endif

@@ -653,12 +653,12 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             data = _fork(ssubnetName);
             const QString &subgNewNodeId = data[ROLE_OBJID].toString();
 
-            nodes.insert(snodeId, pModel->itemData(idx));
+            nodes.insert(snodeId, pModel->nodeData(idx));
             oldGraphsToNew.insert(snodeId, data);
         }
         else
         {
-            data = pModel->itemData(idx);
+            data = pModel->nodeData(idx);
             const QString &ident = idx.data(ROLE_OBJID).toString();
             nodes.insert(ident, data);
         }
@@ -945,7 +945,7 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
     {
         QModelIndex idx = pGraph->index(nodeid);
         int row = idx.row();
-        const NODE_DATA& data = pGraph->itemData(idx);
+        const NODE_DATA& data = pGraph->nodeData(idx);
 
         RemoveNodeCommand* pCmd = new RemoveNodeCommand(row, data, this, subGpIdx);
         m_stack->push(pCmd);
@@ -1040,7 +1040,8 @@ void GraphsModel::importNodes(
 
         //resolve pos and links.
         QStringList ids = nodes.keys();
-        QPointF _pos = pGraph->getNodeStatus(ids[0], ROLE_OBJPOS).toPointF();
+        QModelIndex nodeIdx = index(ids[0], subGpIdx);
+        QPointF _pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
         const QPointF offset = pos - _pos;
 
         for (const QString& ident : ids)
@@ -1076,7 +1077,7 @@ void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &
     QMap<QString, NODE_DATA> oldNodes;
     for (QModelIndex idx : srcNodes)
     {
-        NODE_DATA old = srcGraph->itemData(idx);
+        NODE_DATA old = srcGraph->nodeData(idx);
         oldNodes.insert(old[ROLE_OBJID].toString(), old);
     }
     QPointF offset = pos - (*oldNodes.begin())[ROLE_OBJPOS].toPointF();
@@ -1363,21 +1364,6 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     }
 }
 
-void GraphsModel::updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction)
-{
-    if (enableTransaction)
-    {
-
-    }
-    else
-    {
-        m_linkModel->setData(linkIdx, info.newEdge.inputNode, ROLE_INNODE);
-        m_linkModel->setData(linkIdx, info.newEdge.inputSock, ROLE_INSOCK);
-        m_linkModel->setData(linkIdx, info.newEdge.outputNode, ROLE_OUTNODE);
-        m_linkModel->setData(linkIdx, info.newEdge.outputSock, ROLE_OUTSOCK);
-    }
-}
-
 void GraphsModel::setIOProcessing(bool bIOProcessing)
 {
     m_bIOProcessing = bIOProcessing;
@@ -1386,6 +1372,18 @@ void GraphsModel::setIOProcessing(bool bIOProcessing)
 bool GraphsModel::IsIOProcessing() const
 {
     return m_bIOProcessing;
+}
+
+IParamModel* GraphsModel::paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const
+{
+    for (int i = 0; i < m_subGraphs.size(); i++)
+    {
+        if (m_subGraphs[i] == nodeIdx.model())
+        {
+            return m_subGraphs[i]->paramModel(nodeIdx, cls);
+        }
+    }
+    return nullptr;
 }
 
 void GraphsModel::removeSubGraph(const QString& name)
@@ -1482,15 +1480,6 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
             }
         }
     }
-}
-
-void GraphsModel::updateParamNotDesc(const QString &id, PARAM_UPDATE_INFO info, const QModelIndex &subGpIdx,
-    bool enableTransaction)
-{
-    ApiLevelScope batch(this);
-    SubGraphModel *pGraph = subGraph(subGpIdx.row());
-    ZASSERT_EXIT(pGraph);
-    pGraph->updateParamNotDesc(id, info.name, info.newValue);
 }
 
 void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
@@ -1764,7 +1753,7 @@ NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& sub
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
     ZASSERT_EXIT(pGraph, NODE_DATA());
-    return pGraph->itemData(index);
+    return pGraph->nodeData(index);
 }
 
 void GraphsModel::setName(const QString& name, const QModelIndex& subGpIdx)
@@ -1800,7 +1789,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
 
     for (auto i = 0; i < count; i++) {
         auto index = pModel->index(i, 0);
-        auto item = pModel->itemData(index);
+        auto item = pModel->nodeData(index);
         if (item[ROLE_OBJID].toString().contains(objName, Qt::CaseInsensitive)) {
             list.append(index);
         }

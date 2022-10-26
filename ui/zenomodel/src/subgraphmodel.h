@@ -6,6 +6,7 @@
 #include <QObject>
 #include <memory>
 #include "command.h"
+#include "parammodel.h"
 
 
 class GraphsModel;
@@ -15,6 +16,31 @@ class SubGraphModel : public QAbstractItemModel
     Q_OBJECT
     typedef QAbstractItemModel _base;
     friend class AddNodeCommand;
+
+    struct _NodeItem
+    {
+        QString objid;
+        QString objCls;
+        NODE_TYPE type;
+        QPointF viewpos;
+        int options;
+
+        IParamModel* inputsModel;
+        IParamModel* paramsModel;
+        IParamModel* outputsModel;
+
+        bool bCollasped;
+
+        _NodeItem()
+            : options(0)
+            , bCollasped(false)
+            , type(NORMAL_NODE)
+            , inputsModel(nullptr)
+            , paramsModel(nullptr)
+            , outputsModel(nullptr)
+        {
+        }
+    };
 
 public:
 	explicit SubGraphModel(GraphsModel* pGraphsModel, QObject* parent = nullptr);
@@ -28,15 +54,10 @@ public:
     bool hasChildren(const QModelIndex &parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 	bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
-	QVariant headerData(int section, Qt::Orientation orientation,
-                        int role = Qt::DisplayRole) const override;
-    bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value,
-                       int role = Qt::EditRole) override;
 	QModelIndexList match(const QModelIndex &start, int role,
                           const QVariant &value, int hits = 1,
                           Qt::MatchFlags flags =
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
-    QHash<int, QByteArray> roleNames() const override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
     //SubGraphModel
@@ -49,18 +70,17 @@ public:
     void removeNodeByDescName(const QString& descName);
 
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType = nullptr);
-    void updateParamNotDesc(const QString& nodeid, const QString& paramName, const QVariant& var);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
 
     void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);
     void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
-    NODE_DATA itemData(const QModelIndex &index) const override;
+    NODE_DATA nodeData(const QModelIndex &index) const;
 
-    QVariant getNodeStatus(const QString& nodeid, int role);
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
+    IParamModel* paramModel(const QModelIndex& index, PARAM_CLASS cls) const;
 
     QString name() const;
     void setName(const QString& name);
@@ -69,7 +89,6 @@ public:
     void setViewRect(const QRectF& rc);
     QRectF viewRect() const { return m_rect; }
 
-    NODES_DATA nodes();
     void clear();
     void reload();
     void onModelInited();
@@ -84,13 +103,15 @@ private:
     SubGraphModel(const SubGraphModel& rhs);
 
     bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
-    bool itemFromIndex(const QModelIndex &index, NODE_DATA& retNode) const;
+    bool itemFromIndex(const QModelIndex& index, _NodeItem& retNode) const;
     bool _removeRow(const QModelIndex &index);
+    NODE_DATA item2NodeData(const _NodeItem& item) const;
+    _NodeItem nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx);
 
     QString m_name;
     QMap<QString, int> m_key2Row;
     QMap<int, QString> m_row2Key;
-    QMap<QString, NODE_DATA> m_nodes;
+    QMap<QString, _NodeItem> m_nodes;
 
     QMap<uint32_t, QString> m_num2strId;
     QMap<QString, uint32_t> m_str2numId;
