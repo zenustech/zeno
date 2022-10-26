@@ -18,7 +18,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui->fps->setValidator(new QIntValidator);
 	m_ui->fps->setText("24");
 	m_ui->bitrate->setValidator(new QIntValidator);
-	m_ui->bitrate->setText("20000");
+	m_ui->bitrate->setText("200000");
 	m_ui->lineWidth->setValidator(new QIntValidator);
 	m_ui->lineWidth->setText("1280");
 	m_ui->lineHeight->setValidator(new QIntValidator);
