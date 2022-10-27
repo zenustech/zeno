@@ -11,15 +11,15 @@ struct PBF_BVH_v2 : INode{
 //physical params
 public:    
     int numSubsteps = 5;
-    float dt= 1.0 / 20.0;
+    float dt;
     float pRadius = 3.0;
     vec3f bounds_max{40.0, 40.0, 40.0};
     vec3f bounds_min{0,0,0};
     vec3f externForce{0, -10.0, 0};
 
-    float mass = 1.0;
-    float rho0 = 1.0;
-    float h = 1.1;
+    float mass ;
+    float rho0;
+    float h ;
     float neighborSearchRadius = h * 1.05;
     float coeffDq = 0.3;
     float coeffK = 0.001;
@@ -72,9 +72,9 @@ public:
 
         
         //可以推导出来的参数
-        // auto diam = pRadius*2;
-        // mass = 0.8 * diam*diam*diam * rho0;
-        // h = 4* pRadius;
+        auto diam = pRadius*2;
+        mass = 0.8 * diam*diam*diam * rho0;
+        h = 4* pRadius;
         neighborSearchRadius = h;
     }
 
@@ -111,47 +111,47 @@ public:
     }
 };
 
-//old params
-ZENDEFNODE(PBF_BVH_v2, {   
-                    {
-                        {"PrimitiveObject", "prim"},
-                        {"vec3f", "bounds_max", "40, 40, 40"},
-                        {"vec3f", "bounds_min", "0,0,0"},
-                        {"int", "numSubsteps", "5"},
-                        {"float", "particle_radius", "3.0"},
-                        {"float", "dt", "0.05"},
-                        {"vec3f", "externForce", "0, -10, 0"},
-                        {"float", "mass", "1.0"},
-                        {"float", "rho0", "1.0"},
-                        {"float", "coeffDq", "0.3"},
-                        {"float", "coeffK", "0.001"},
-                        {"float", "lambdaEpsilon", "100.0"}
-                    },
-                    {   {"PrimitiveObject", "outPrim"} },
-                    {},
-                    {"PBD"},
-                });
-
-
-// //new params
+// //old params
 // ZENDEFNODE(PBF_BVH_v2, {   
 //                     {
-//                         {"PrimitiveObject","prim"},
-//                         {"float","dt"," 0.05"},
-//                         {"float","particle_radius","0.025"},
-//                         {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
-//                         {"vec3f","bounds_max","10.0, 10.0, 10.0"},
-//                         {"vec3f","externForce", "0.0, -10.0, 0.0"},
-//                         {"float","rho0","1000.0"},
-//                         {"float","lambdaEpsilon","1e-6"},
-//                         {"float","coeffDq","0.3"},
-//                         {"float","coeffK","0.1"},
-//                         {"int","numSubsteps","5"}
+//                         {"PrimitiveObject", "prim"},
+//                         {"vec3f", "bounds_max", "40, 40, 40"},
+//                         {"vec3f", "bounds_min", "0,0,0"},
+//                         {"int", "numSubsteps", "5"},
+//                         {"float", "particle_radius", "3.0"},
+//                         {"float", "dt", "0.05"},
+//                         {"vec3f", "externForce", "0, -10, 0"},
+//                         {"float", "mass", "1.0"},
+//                         {"float", "rho0", "1.0"},
+//                         {"float", "coeffDq", "0.3"},
+//                         {"float", "coeffK", "0.001"},
+//                         {"float", "lambdaEpsilon", "100.0"}
 //                     },
 //                     {   {"PrimitiveObject", "outPrim"} },
 //                     {},
 //                     {"PBD"},
 //                 });
+
+
+//new params
+ZENDEFNODE(PBF_BVH_v2, {   
+                    {
+                        {"PrimitiveObject","prim"},
+                        {"float","dt"," 0.05"},
+                        {"float","particle_radius","0.025"},
+                        {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
+                        {"vec3f","bounds_max","10.0, 10.0, 10.0"},
+                        {"vec3f","externForce", "0.0, -10.0, 0.0"},
+                        {"float","rho0","1000.0"},
+                        {"float","lambdaEpsilon","1e-6"},
+                        {"float","coeffDq","0.3"},
+                        {"float","coeffK","0.1"},
+                        {"int","numSubsteps","5"}
+                    },
+                    {   {"PrimitiveObject", "outPrim"} },
+                    {},
+                    {"PBD"},
+                });
 
 
 
