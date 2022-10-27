@@ -22,10 +22,14 @@ namespace zeno {
     using vec4 = zs::vec<T,4>;
     using mat3 = zs::vec<T,3,3>;
     using mat4 = zs::vec<T,4,4>;
+    // using vec2i = zs::vec<int,2>;
+    // using vec3i = zs::vec<int,3>;
+    // using vec4i = zs::vec<int,4>;
 
 
     // for each triangle, find the three incident triangles
-    struct ZSInitTopoConnect : INode {
+    // TODO: build a half edge structure
+    struct ZSInitSurfaceTopoConnect : INode {
 
         void apply() override {
             using namespace zs;
@@ -39,26 +43,272 @@ namespace zeno {
 
             auto& tris  = (*surf)[ZenoParticles::s_surfTriTag];
             auto& lines = (*surf)[ZenoParticles::s_surfEdgeTag];
+            auto& points = (*surf)[ZenoParticles::s_surfVertTag];
+
+            
+            if(!lines.hasProperty("inds") || lines.getChannelSize("inds") != 2) {
+                throw std::runtime_error("the line has no inds channel");
+            }
+            if(!points.hasProperty("inds") || points.getChannelSize("inds") != 1) {
+                throw std::runtime_error("the point has no inds channel");
+            }
+
             const auto& verts = surf->getParticles();
 
             auto cudaExec = cuda_exec();
-            auto bvh_thickness = (T)5 * compute_average_edge_length(cudaExec,verts,tris);
+            // constexpr auto space = zs::execspace_e::cuda;
 
-            tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3}});
+            // cudaExec(range(lines.size()),
+            //     [lines = proxy<space>({},lines)] ZS_LAMBDA(int li) mutable {
+            //         auto inds = lines.template pack<2>("inds",li).template reinterpret_bits<int>();
+            //             printf("line[%d] : %d %d\n",(int)li,(int)inds[0],(int)inds[1]);
+            // });
+
+            auto bvh_thickness = (T)2 * compute_average_edge_length(cudaExec,verts,tris);
+
+            // std::cout << "bvh_thickness : " << bvh_thickness << std::endl;
+
+            tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3},{"fp_inds",3}});
             lines.append_channels(cudaExec,{{"fe_inds",2}});
             if(!compute_ff_neigh_topo(cudaExec,verts,tris,"ff_inds",bvh_thickness))
-                throw std::runtime_error("ZSInitTopoConnect::compute_face_neight_topo fail");
+                throw std::runtime_error("ZSInitTopoConnect::compute_face_neigh_topo fail");
             if(!compute_fe_neigh_topo(cudaExec,verts,lines,tris,"fe_inds",bvh_thickness))
-                throw std::runtime_error("ZSInitTopoConnect::compute_face_neight_topo fail");
+                throw std::runtime_error("ZSInitTopoConnect::compute_face_neigh_topo fail");
+            if(!compute_fp_neigh_topo(cudaExec,verts,points,tris,"fp_inds",bvh_thickness))
+                throw std::runtime_error("ZSInitTopoConnect::compute_face_point_neigh_topo fail");
 
             set_output("zssurf",surf);
         }
     };
 
-    ZENDEFNODE(ZSInitTopoConnect, {{{"zssurf"}},
+    ZENDEFNODE(ZSInitSurfaceTopoConnect, {{{"zssurf"}},
                                 {{"zssurf"}},
                                 {},
                                 {"ZSGeometry"}});
+
+
+    template<typename VTILEVEC> 
+    constexpr vec3 eval_center(const VTILEVEC& verts,const zs::vec<int,4>& tet) {
+        auto res = vec3::zeros();
+        for(int i = 0;i < 4;++i)
+            res += verts.template pack<3>("x",tet[i]) / (T)4.0;
+        return res;
+    } 
+
+    template<typename VTILEVEC> 
+    constexpr vec3 eval_center(const VTILEVEC& verts,const zs::vec<int,3>& tri) {
+        auto res = vec3::zeros();
+        for(int i = 0;i < 3;++i)
+            res += verts.template pack<3>("x",tri[i]) / (T)3.0;
+        return res;
+    } 
+    template<typename VTILEVEC> 
+    constexpr vec3 eval_center(const VTILEVEC& verts,const zs::vec<int,2>& line) {
+        auto res = vec3::zeros();
+        for(int i = 0;i < 2;++i)
+            res += verts.template pack<3>("x",line[i]) / (T)2.0;
+        return res;
+    } 
+
+    struct VisualizeTopology : INode {
+
+        virtual void apply() override {
+            using namespace zs;
+            
+            auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
+                throw std::runtime_error("the input zsparticles has no surface tris");
+                // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
+                // tris = typename ZenoParticles::particles_t({{"inds",3}});
+            }
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+                throw std::runtime_error("the input zsparticles has no surface lines");
+            }
+
+            auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
+            auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+            auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+
+            if(!tris.hasProperty("ff_inds") || tris.getPropertySize("ff_inds") != 3){
+                throw std::runtime_error("no valid ff_inds detected in tris");
+            }            
+
+            if(!tris.hasProperty("fe_inds") || tris.getPropertySize("fe_inds") != 3) {
+                throw std::runtime_error("no valid fe_inds detected in tris");
+            }
+
+            if(!lines.hasProperty("fe_inds") || lines.getPropertySize("fe_inds") != 2) {
+                throw std::runtime_error("no valid fe_inds detected in lines");
+            }
+
+            const auto& verts = zsparticles->getParticles();
+            std::vector<zs::PropertyTag> tags{{"x",3}};
+
+            int nm_tris = tris.size();
+
+            // output ff topo first
+            auto ff_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
+            auto fe_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
+            auto fp_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
+
+            // transfer the data from gpu to cpu
+            constexpr auto cuda_space = execspace_e::cuda;
+            auto cudaPol = cuda_exec();  
+            cudaPol(zs::range(nm_tris),
+                [ff_topo = proxy<cuda_space>({},ff_topo),
+                    fe_topo = proxy<cuda_space>({},fe_topo),
+                    fp_topo = proxy<cuda_space>({},fp_topo),
+                    tris = proxy<cuda_space>({},tris),
+                    lines = proxy<cuda_space>({},lines),
+                    points = proxy<cuda_space>({},points),
+                    verts = proxy<cuda_space>({},verts)] ZS_LAMBDA(int ti) mutable {
+                        auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
+                        auto ff_inds = tris.template pack<3>("ff_inds",ti).reinterpret_bits(int_c);
+                        auto fe_inds = tris.template pack<3>("fe_inds",ti).reinterpret_bits(int_c);
+                        auto fp_inds = tris.template pack<3>("fp_inds",ti).reinterpret_bits(int_c);
+                        
+                        auto center = eval_center(verts,tri);
+                        ff_topo.template tuple<3>("x",ti * 4 + 0) = center;
+                        fe_topo.template tuple<3>("x",ti * 4 + 0) = center;
+                        fp_topo.template tuple<3>("x",ti * 4 + 0) = center;
+                        for(int i = 0;i != 3;++i) {
+                            auto nti = ff_inds[i];
+                            auto ntri = tris.template pack<3>("inds",nti).reinterpret_bits(int_c);
+                            auto ncenter = eval_center(verts,ntri);
+                            ff_topo.template tuple<3>("x",ti * 4 + i + 1) = ncenter;
+
+                            auto nei = fe_inds[i];
+                            auto nedge = lines.template pack<2>("inds",nei).reinterpret_bits(int_c);
+                            ncenter = eval_center(verts,nedge);
+                            // printf("edge[%d] : %d %d\n",nei,nedge[0],nedge[1]);
+                            fe_topo.template tuple<3>("x",ti * 4 + i + 1) = ncenter;
+
+                            auto pidx = reinterpret_bits<int>(points("inds",fp_inds[i]));
+                            fp_topo.template tuple<3>("x",ti * 4 + i + 1) = verts.template pack<3>("x",pidx);
+                        }
+
+            });   
+
+            ff_topo = ff_topo.clone({zs::memsrc_e::host});
+            fe_topo = fe_topo.clone({zs::memsrc_e::host});
+            fp_topo = fp_topo.clone({zs::memsrc_e::host});
+
+            int ff_size = ff_topo.size();
+            int fe_size = fe_topo.size();
+            int fp_size = fp_topo.size();
+
+            constexpr auto omp_space = execspace_e::openmp;
+            auto ompPol = omp_exec();
+
+            auto ff_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto fe_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto fp_prim = std::make_shared<zeno::PrimitiveObject>();
+
+            auto& ff_verts = ff_prim->verts;
+            auto& ff_lines = ff_prim->lines;
+
+            auto& fe_verts = fe_prim->verts;
+            auto& fe_lines = fe_prim->lines;
+
+            auto& fp_verts = fp_prim->verts;
+            auto& fp_lines = fp_prim->lines;
+
+            int ff_pair_count = nm_tris * 3;
+            int fe_pair_count = nm_tris * 3;
+            int fp_pair_count = nm_tris * 3;
+
+            ff_verts.resize(ff_size);
+            ff_lines.resize(ff_pair_count);
+            fe_verts.resize(fe_size);
+            fe_lines.resize(fe_pair_count);
+            fp_verts.resize(fp_size);
+            fp_lines.resize(fp_pair_count);
+
+            ompPol(zs::range(nm_tris),
+                [&ff_verts,&ff_lines,ff_topo = proxy<omp_space>({},ff_topo)] (int fi) mutable {
+                    auto v = ff_topo.template pack<3>("x",fi * 4 + 0);
+                    ff_verts[fi * 4 + 0] = zeno::vec3f(v[0],v[1],v[2]);
+                    for(int i = 0;i != 3;++i){
+                        auto v = ff_topo.template pack<3>("x",fi * 4 + i + 1);
+                        ff_verts[fi * 4 + i + 1] = zeno::vec3f(v[0],v[1],v[2]);
+                        ff_lines[fi * 3 + i] = zeno::vec2i(fi * 4 + 0,fi * 4 + i + 1);
+                    }
+            });
+
+            ompPol(zs::range(nm_tris),
+                [&fe_verts,&fe_lines,fe_topo = proxy<omp_space>({},fe_topo)] (int fi) mutable {
+                    auto v = fe_topo.template pack<3>("x",fi * 4 + 0);
+                    fe_verts[fi * 4 + 0] = zeno::vec3f(v[0],v[1],v[2]);
+                    for(int i = 0;i != 3;++i){
+                        auto v = fe_topo.template pack<3>("x",fi * 4 + i + 1);
+                        fe_verts[fi * 4 + i + 1] = zeno::vec3f(v[0],v[1],v[2]);
+                        fe_lines[fi * 3 + i] = zeno::vec2i(fi * 4 + 0,fi * 4 + i + 1);
+                    }
+            });
+
+            ompPol(zs::range(nm_tris),
+                [&fp_verts,&fp_lines,fp_topo = proxy<omp_space>({},fp_topo)] (int fi) mutable {
+                    auto v = fp_topo.template pack<3>("x",fi * 4 + 0);
+                    fp_verts[fi * 4 + 0] = zeno::vec3f(v[0],v[1],v[2]);
+                    for(int i = 0;i != 3;++i){
+                        auto v = fp_topo.template pack<3>("x",fi * 4 + i + 1);
+                        fp_verts[fi * 4 + i + 1] = zeno::vec3f(v[0],v[1],v[2]);
+                        fp_lines[fi * 3 + i] = zeno::vec2i(fi * 4 + 0,fi * 4 + i + 1);
+                    }
+            });
+
+            // for(int i = 0;i < fe_lines.size();++i)
+            //     std::cout << "fe_line<" << i << "> : \t" << fe_lines[i][0] << "\t" << fe_lines[i][1] << std::endl;
+            set_output("fp_topo",std::move(fp_prim));
+            set_output("ff_topo",std::move(ff_prim));
+            set_output("fe_topo",std::move(fe_prim));
+        }
+    };
+
+
+    ZENDEFNODE(VisualizeTopology, {{{"ZSParticles"}},
+                                {{"ff_topo"},{"fe_topo"},{"fp_topo"}},
+                                {},
+                                {"ZSGeometry"}});
+
+
+    struct VisualizeSurfaceMesh : INode {
+        virtual void apply() override {
+            using namespace zs;
+            auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
+                throw std::runtime_error("the input zsparticles has no surface tris");
+                // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
+                // tris = typename ZenoParticles::particles_t({{"inds",3}});
+            }
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+                throw std::runtime_error("the input zsparticles has no surface lines");
+            }
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) {
+                throw std::runtime_error("the input zsparticles has no surface points");
+            }
+            const auto& tris    = (*zsparticles)[ZenoParticles::s_surfTriTag];
+            const auto& points  = (*zsparticles)[ZenoParticles::s_surfVertTag];
+            const auto& verts = zsparticles->getParticles();
+
+            if(!tris.hasProperty("fp_inds") || tris.getChannelSize("fp_inds") != 3) {
+                throw std::runtime_error("call ZSInitSurfaceTopology first before VisualizeSurfaceMesh");
+            }
+
+            auto nm_points = points.size();
+            auto nm_tris = tris.size();
+            // output ff topo first
+            auto surf_verts = typename ZenoParticles::particles_t({{"x",3}},nm_tris * 4,zs::memsrc_e::device,0);
+            auto surf_tris = typename ZenoParticles::particles_t({{"inds",3}},nm_tris * 4,zs::memsrc_e::device,0);            
+
+            // transfer the data from gpu to cpu
+            constexpr auto cuda_space = execspace_e::cuda;
+            auto cudaPol = cuda_exec(); 
+
+            // cudaPol(zs::range())     
+        }
+    };
 
     struct ZSCalSurfaceCollisionCell : INode {
         virtual void apply() override {
@@ -120,7 +370,6 @@ namespace zeno {
             set_output("ZSParticles",zsparticles);
         }
 
-
     };
 
     ZENDEFNODE(ZSCalSurfaceCollisionCell, {{{"ZSParticles"}},
@@ -175,9 +424,9 @@ namespace zeno {
                     auto n0 = lines.template pack<3>(ceNrmTag,e0);
                     auto n1 = lines.template pack<3>(ceNrmTag,e1);
 
-                    if(is_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i - 1) % 3)],inds[i]}) == 1)
+                    if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i - 1) % 3)],inds[i]}) == 1)
                         n0 =  (T)-1 * n0;
-                    if(is_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
+                    if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
                         n1 = (T)-1 * n1;
 
                     auto dir = n1.cross(n0).normalized();
@@ -231,7 +480,7 @@ namespace zeno {
     };
 
     ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"}},
-                                {{"zssurf"}},
+                                {{"collision_cell"}},
                                 {{"float","out_offset","0.1"},{"float","in_offset","0.1"},{"string","ceNrmTag","nrm"}},
                                 {"ZSGeometry"}});
 
