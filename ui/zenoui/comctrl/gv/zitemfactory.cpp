@@ -77,6 +77,7 @@ namespace zenoui
     {
         ZtfUtil& inst = ZtfUtil::GetInstance();
         static NodeUtilParam m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
+        ZenoParamWidget* pItemWidget = nullptr;
 
         switch (ctrl)
         {
@@ -98,7 +99,8 @@ namespace zenoui
                     const QVariant& newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
                     cbFunc(newValue);
                     });
-                return pLineEdit;
+                pItemWidget = pLineEdit;
+                break;
             }
             case CONTROL_BOOL:
             {
@@ -113,7 +115,8 @@ namespace zenoui
                 QObject::connect(pCheckbox, &ZenoParamCheckBox::stateChanged, [=](int state) {
                     cbFunc(state);
                     });
-                return pCheckbox;
+                pItemWidget = pCheckbox;
+                break;
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
@@ -147,7 +150,8 @@ namespace zenoui
                 QObject::connect(pPathEditor, &ZenoParamPathEdit::pathValueChanged, [=](QString newPath) {
                     cbFunc(newPath);
                     });
-                return pPathEditor;
+                pItemWidget = pPathEditor;
+                break;
             }
             case CONTROL_MULTILINE_STRING:
             {
@@ -163,7 +167,8 @@ namespace zenoui
                     const QString& newValue = pMultiStrEdit->text();
                     cbFunc(newValue);
                 });
-                return pMultiStrEdit;
+                pItemWidget = pMultiStrEdit;
+                break;
             }
             case CONTROL_COLOR:
             {
@@ -180,7 +185,8 @@ namespace zenoui
                     QLinearGradient newGrad = editor.colorRamps();
                     cbFunc(QVariant::fromValue(newGrad));
                     });
-                return pEditBtn;
+                pItemWidget = pEditBtn;
+                break;
             }
             case CONTROL_DICTKEY:
             {
@@ -204,7 +210,8 @@ namespace zenoui
                     const QVariant& newValue = QVariant::fromValue(vec);
                     cbFunc(newValue);
                 });
-                return pVecEditor;
+                pItemWidget = pVecEditor;
+                break;
             }
             case CONTROL_ENUM:
             {
@@ -223,7 +230,8 @@ namespace zenoui
                     QString oldValue = pComboBox->text();
                     cbFunc(textValue);
                     });
-                return pComboBox;
+                pItemWidget = pComboBox;
+                break;
             }
             case CONTROL_CURVE:
             {
@@ -247,13 +255,19 @@ namespace zenoui
                         cbFunc(newValue);
                         });
                     });
-                return pEditBtn;
+                pItemWidget = pEditBtn;
+                break;
             }
             default:
             {
                 return nullptr;
             }
         }
+        if (pItemWidget)
+        {
+            pItemWidget->setData(GVKEY_CONTROL, ctrl);
+        }
+        return pItemWidget;
     }
 }
 

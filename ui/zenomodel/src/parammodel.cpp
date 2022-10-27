@@ -36,7 +36,6 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             ZASSERT_EXIT(itItem != m_items.end(), false);
             _ItemInfo& item = m_items[name];
 
-            if (item.paramType == PARAM_INPUT)
             {
                 INPUT_SOCKET inSocket;
                 inSocket.info.control = item.ctrl;
@@ -67,7 +66,6 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         ZASSERT_EXIT(itItem != m_items.end(), false);
         _ItemInfo& item = m_items[name];
 
-        if (item.paramType == PARAM_OUTPUT)
         {
             OUTPUT_SOCKET outSocket;
             outSocket.info.control = item.ctrl;
@@ -96,7 +94,6 @@ bool IParamModel::getParams(PARAMS_INFO& params)
         ZASSERT_EXIT(itItem != m_items.end(), false);
         _ItemInfo& item = m_items[name];
 
-        if (item.paramType == PARAM_PARAM)
         {
             PARAM_INFO paramInfo;
             paramInfo.bEnableConnect = false;
@@ -117,7 +114,6 @@ void IParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         _ItemInfo item;
         item.ctrl = inSocket.info.control;
         item.name = inSocket.info.name;
-        item.paramType = PARAM_INPUT;
         item.pConst = inSocket.info.defaultValue;
         item.type = inSocket.info.type;
         item.links = inSocket.linkIndice;
@@ -132,7 +128,6 @@ void IParamModel::setParams(const PARAMS_INFO& params)
         _ItemInfo item;
         item.ctrl = paramInfo.control;
         item.name = paramInfo.name;
-        item.paramType = PARAM_PARAM;
         item.pConst = paramInfo.value;
         item.type = paramInfo.typeDesc;
         appendRow(item.name, item.type, item.pConst, item.ctrl);
@@ -146,7 +141,6 @@ void IParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         _ItemInfo item;
         item.ctrl = outSocket.info.control;
         item.name = outSocket.info.name;
-        item.paramType = PARAM_OUTPUT;
         item.pConst = outSocket.info.defaultValue;
         item.type = outSocket.info.type;
         item.links = outSocket.linkIndice;
@@ -171,7 +165,7 @@ QModelIndex IParamModel::index(int row, int column, const QModelIndex& parent) c
 
 QModelIndex IParamModel::index(const QString& name) const
 {
-    if (m_key2Row.find(name) != m_key2Row.end())
+    if (m_key2Row.find(name) == m_key2Row.end())
         return QModelIndex();
 
     int row = m_key2Row[name];
@@ -230,7 +224,7 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_TYPE:   return item.type;
     case ROLE_PARAM_CTRL:   return item.ctrl;
     case ROLE_PARAM_VALUE:  return item.pConst;
-    //case ROLE_PARAM_LINKS:  return item.links;
+    case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
     }
     return QVariant();
 }
@@ -244,6 +238,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
     auto itItem = m_items.find(name);
     ZASSERT_EXIT(itItem != m_items.end(), false);
     _ItemInfo& item = m_items[name];
+    QVariant oldValue;
 
     switch (role)
     {
@@ -252,6 +247,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             //rename
             QString oldName = item.name;
             QString newName = value.toString();
+            oldValue = oldName;
             if (oldName == newName)
                 return false;
 
@@ -266,7 +262,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             m_items.insert(newName, newItem);
 
             if (m_class != PARAM_INPUT && m_class != PARAM_OUTPUT)
-                return true;
+                return false;
 
             //resolve links.
             for (QPersistentModelIndex linkIdx : newItem.links)
@@ -287,28 +283,44 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                     ZASSERT_EXIT(outSock == oldName, false);
                     outSock = newName;
                 }
-
                 auto pLinkModel = m_model->linkModel();
                 pLinkModel->setData(linkIdx, inNode, ROLE_INNODE);
                 pLinkModel->setData(linkIdx, inSock, ROLE_INSOCK);
                 pLinkModel->setData(linkIdx, outNode, ROLE_OUTNODE);
                 pLinkModel->setData(linkIdx, outSock, ROLE_OUTSOCK);
             }
-            return true;
+            break;
         }
         case ROLE_PARAM_TYPE:
+        {
+            if (item.type == value.toString())
+                return false;
+            oldValue = item.type;
             item.type = value.toString();
-            return true;
+            break;
+        }
         case ROLE_PARAM_CTRL:
+        {
+            if (item.ctrl == value.toInt())
+                return false;
+            oldValue = item.ctrl;
             item.ctrl = (PARAM_CONTROL)value.toInt();
-            return true;
+            break;
+        }
         case ROLE_PARAM_VALUE:
+        {
+            if (item.pConst == value)
+                return false;
+            oldValue = item.pConst;
             item.pConst = value;
-            return true;
+            break;
+        }
         default:
             return false;
     }
-    emit dataChanged(index, index, QVector<int>{role});
+    emit dataChanged(index, index, QVector<int>{role});     //legacy signal
+    emit mock_dataChanged(index, oldValue, role);   //custom signal.
+    return true;
 }
 
 QVariant IParamModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -352,7 +364,7 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     ZASSERT_EXIT(itItem != m_items.end(), false);
     _ItemInfo& item = m_items[name];
 
-    if (item.paramType == PARAM_INPUT || item.paramType == PARAM_OUTPUT)
+    if (m_class == PARAM_INPUT || m_class == PARAM_OUTPUT)
     {
         for (const QPersistentModelIndex& linkIdx : item.links)
         {
@@ -386,6 +398,13 @@ void IParamModel::appendRow(const QString& name, const QString& type, const QVar
 {
     int n = rowCount();
     insertRow(n, name, type, deflValue, ctrl);
+}
+
+void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl)
+{
+    setData(idx, type, ROLE_PARAM_TYPE);
+    setData(idx, deflValue, ROLE_PARAM_VALUE);
+    setData(idx, ctrl, ROLE_PARAM_CTRL);
 }
 
 bool IParamModel::_insertRow(

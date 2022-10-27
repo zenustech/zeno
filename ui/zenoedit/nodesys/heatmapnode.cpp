@@ -18,29 +18,18 @@ MakeHeatMapNode::~MakeHeatMapNode()
 
 }
 
-ZGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
 {
-    if (param.control == CONTROL_COLOR)
-    {
-        ZASSERT_EXIT(name == "_RAMPS", nullptr);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-        ZGraphicsLayout* pParamLayout = new ZGraphicsLayout(true);
-        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("color");
-        pNameItem->setBrush(m_renderParams.socketClr.color());
-        pNameItem->setFont(m_renderParams.socketFont);
-        pNameItem->updateBoundingRect();
+    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    pHLayout->addItem(pNameItem);
 
-        pParamLayout->addItem(pNameItem);
+    ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+    pHLayout->addItem(pEditBtn);
+    connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
-        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-        pParamLayout->addItem(pEditBtn);
-        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
-        return pParamLayout;
-    }
-    else
-    {
-        return ZenoNode::initParam(ctrl, name, param, pScene);
-    }
+    return pHLayout;
 }
 
 void MakeHeatMapNode::onEditClicked()

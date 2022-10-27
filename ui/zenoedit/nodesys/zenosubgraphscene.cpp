@@ -164,19 +164,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 	    QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
         m_nodes[id]->setPos(pos);
 	}
-    if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
-    {
-	    //it's diffcult to detect which input/output socket has changed on this method.
-        //unless:
-        //1. add a member to INPUT_SOCKS/OUTPUT_SOCKS, to specify which key had changed.
-        //2. update all control value associated with input socket anyway.
-        //
-        //now we choose the second.
-        if (m_nodes.find(id) != m_nodes.end())
-        {
-            m_nodes[id]->onSocketsUpdate(this, role == ROLE_INPUTS, false);
-        }
-	}
     if (role == ROLE_OPTIONS)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
@@ -189,12 +176,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 		bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
 		m_nodes[id]->onCollaspeUpdated(bCollasped);
 	}
-    if (role == ROLE_MODIFY_PARAM)
-    {
-        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        PARAM_INFO info = idx.data(ROLE_MODIFY_PARAM).value<PARAM_INFO>();
-        m_nodes[id]->onParamUpdated(this, info.name, info.value);
-    }
     if (role == ROLE_OBJNAME)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());

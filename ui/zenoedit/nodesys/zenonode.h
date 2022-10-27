@@ -71,10 +71,7 @@ public slots:
     void onCollaspeUpdated(bool);
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
-    void onParamUpdated(ZenoSubGraphScene* pScene, const QString &paramName, const QVariant &val);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
-    void onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bInit);
-    void updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& textValue);
     void onNameUpdated(const QString& newName);
 
 protected:
@@ -90,11 +87,11 @@ protected:
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     //ZenoNode:
-    virtual void onParamEditFinished(const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
     virtual ZLayoutBackground* initHeaderWidget();
-    virtual ZGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene);
+    virtual void initSockets(const bool bInput, ZenoSubGraphScene* pScene);
+    virtual void initParams(ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
 
 protected:
@@ -106,11 +103,11 @@ protected:
 private:
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket);
-    ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param);
-    bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
-    void updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET inSocket);
+    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
+    ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
+    ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
+    void addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

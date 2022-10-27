@@ -396,7 +396,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     )
     : _base(parent)
     , m_bInput(bInput)
-    , m_index(index)
+    , m_paramIdx(index)
 {
     setText(sockName);
 
@@ -455,6 +455,7 @@ ZenoSocketItem* ZSocketEditableItem::socketItem() const
 
 bool ZSocketEditableItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
 {
+    //todo: get from m_paramIdx;
     return m_socket->getSocketInfo(bInput, nodeid, sockName);
 }
 

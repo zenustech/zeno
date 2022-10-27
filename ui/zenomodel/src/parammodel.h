@@ -18,7 +18,6 @@ public:
         QString type;
         QVariant pConst;    //const (default) value on socket or param.
         //CurveModel* pVar;   //variable on time frame.
-        PARAM_CLASS paramType;
         PARAM_CONTROL ctrl;
         PARAM_LINKS links;
     };
@@ -70,9 +69,18 @@ public:
         const QVariant& deflValue = QVariant(),
         PARAM_CONTROL ctrl = CONTROL_NONE);
 
+    void setItem(
+        const QModelIndex& idx,
+        const QString& type,
+        const QVariant& deflValue,
+        PARAM_CONTROL ctrl);
+
     QModelIndex index(const QString& name) const;
 
     void clear();
+
+signals:
+    void mock_dataChanged(const QModelIndex& idx, const QVariant& oldValue, int role);
 
 private:
     QString nameFromRow(int row) const;

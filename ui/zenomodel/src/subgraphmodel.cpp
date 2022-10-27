@@ -385,6 +385,10 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     {
                         item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
                     }
+                    else
+                    {
+                        item.inputsModel->setItem(idx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
+                    }
                 }
                 break;
             }
@@ -400,6 +404,10 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     {
                         item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
                     }
+                    else
+                    {
+                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
+                    }
                 }
                 break;
             }
@@ -414,6 +422,10 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     if (!idx.isValid())
                     {
                         item.paramsModel->appendRow(name, param.typeDesc, param.value, param.control);
+                    }
+                    else
+                    {
+                        item.paramsModel->setItem(idx, param.typeDesc, param.value, param.control);
                     }
                 }
                 break;

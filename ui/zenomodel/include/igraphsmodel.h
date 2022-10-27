@@ -4,7 +4,9 @@
 #include <QtWidgets>
 #include "common.h"
 #include "modeldata.h"
+#include "modelrole.h"
 
+class IParamModel;
 
 class IGraphsModel : public QAbstractItemModel
 {

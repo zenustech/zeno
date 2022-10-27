@@ -142,7 +142,7 @@ private:
     const int cSocketWidth = 16;
     const int cSocketHeight = 16;
     ZenoSocketItem* m_socket;
-    const QPersistentModelIndex m_index;
+    const QPersistentModelIndex m_paramIdx;
     const bool m_bInput;
 };
 

@@ -6,7 +6,7 @@
 
 
 ZSocketLayout::ZSocketLayout(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& sockName,
         bool bInput,
         bool editable,
@@ -20,10 +20,10 @@ ZSocketLayout::ZSocketLayout(
     , m_bEditable(editable)
 {
     if (m_bEditable) {
-        m_text = new ZSocketEditableItem(index, sockName, bInput, cbSock, cb);
+        m_text = new ZSocketEditableItem(paramIdx, sockName, bInput, cbSock, cb);
     }
     else {
-        m_text = new ZSocketGroupItem(index, sockName, bInput, cbSock);
+        m_text = new ZSocketGroupItem(paramIdx, sockName, bInput, cbSock);
     }
     if (m_bInput)
         addItem(m_text, Qt::AlignVCenter);
