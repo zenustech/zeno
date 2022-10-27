@@ -18,4 +18,8 @@ template <typename T> constexpr T HJ_WENO3(T fm, T fi, T fp, T fpp, T u, T dh) {
     return dfc + df3 / ((T)1.0 + (T)2.0 * r * r);
 }
 
+template <typename T> constexpr T central_diff_2nd(T fm, T f, T fp, T dh) {
+    return (fp - (T)2.0 * f + fm) / (dh * dh);
+}
+
 } // namespace scheme

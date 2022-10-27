@@ -40,11 +40,11 @@ struct ZSRenormalizeSDF : INode {
 
                     float ls_x[5], ls_y[5], ls_z[5];
                     for (int i = -2; i <= 2; ++i) {
-                        ls_x[i + 2] = sdfv("sdf", icoord + zs::vec<int, 3>(i, 0, 0));
-                        ls_y[i + 2] = sdfv("sdf", icoord + zs::vec<int, 3>(0, i, 0));
-                        ls_z[i + 2] = sdfv("sdf", icoord + zs::vec<int, 3>(0, 0, i));
+                        ls_x[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0));
+                        ls_y[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0));
+                        ls_z[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i));
                     }
-                    float ls_this = sdfv("sdf", icoord);
+                    float ls_this = sdfv.value("sdf", icoord);
 
                     float lx_w = scheme::HJ_WENO3(ls_x[3], ls_x[2], ls_x[1], ls_x[0], 1.0f, dx);
                     float lx_e = scheme::HJ_WENO3(ls_x[1], ls_x[2], ls_x[3], ls_x[4], -1.0f, dx);
