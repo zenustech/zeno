@@ -1051,14 +1051,65 @@ static __inline__ __device__ float softlight(float base, float blend, float c)
 {
     return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
 }
+static __inline__ __device__ vec3 hash33(vec3 p3)
+{
+	p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    float d = dot(p3, vec3(p3.y+33.33, p3.x+33.33, p3.z+33.33));
+    p3 = vec3(
+        p3.x+d,
+        p3.y+d,
+        p3.z+d
+    );
+    return fract(vec3(
+        (p3.x+p3.y)*p3.z,
+        (p3.x+p3.x)*p3.y,
+        (p3.y+p3.x)*p3.x
+    ));
+
+}
+static __inline__ __device__ float worleyNoise(vec3 uv)
+{    
+    vec3 id = floor(uv);
+    vec3 p = fract(uv);
+    
+    float minDist = 10000.;
+    for (float x = -1.; x <= 1.; ++x)
+    {
+        for(float y = -1.; y <= 1.; ++y)
+        {
+            for(float z = -1.; z <= 1.; ++z)
+            {
+                vec3 offset = vec3(x, y, z);
+            	vec3 h = hash33(id + offset) // modified hash
+                    * .5 + .5;
+    			h = vec3(
+                    h.x + offset.x,
+                    h.y + offset.y,
+                    h.z + offset.z
+                );
+            	vec3 d = p - h;
+           		minDist = min(minDist, dot(d, d));
+            }
+        }
+    }
+    
+    // inverted worley noise
+    return 1. - minDist;
+}
+static __inline__ __device__ float remap(float x, float a, float b, float c, float d)
+{
+    return (((x - a) / (b - a)) * (d - c)) + c;
+}
 static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f, int layer = 6)
 {
 	// signal
 	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
         vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
-	float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
+	// float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
+    float dens = worleyNoise(p + pertb + windDir * t);
+    dens = remap( fbm(p + pertb + windDir * t, layer),  0., 1., dens, 1.);
 
-	float cov = 1. - coverage;
+	float cov = 1. - coverage * (sin(t)+1.)/2;
 //	dens = smoothstep (cov-0.1, cov + .1, dens);
 //        dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
         dens *= smoothstep (cov, cov + .1, dens);
@@ -1118,8 +1169,8 @@ static __inline__ __device__ vec4 render_clouds(
     vec3 dir_step = r.direction / sqrtf(r.direction.y)  * march_step ;
 
     sphere atmosphere = {
-        vec3(0,-350, 0),
-        500., 
+        vec3(0,-49950, 0),
+        50000., 
         0
     };
     hit_record hit = {
