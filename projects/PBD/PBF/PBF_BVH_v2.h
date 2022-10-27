@@ -7,7 +7,7 @@
 #include "../ZenoFX/LinearBvh.h"
 
 namespace zeno{
-struct PBF_BVH : INode{
+struct PBF_BVH_v2 : INode{
 //physical params
 public:    
     int numSubsteps = 5;
@@ -36,6 +36,7 @@ public:
 //Data preparing
     //data for physical fields
     int numParticles;
+    // std::vector<vec3f> pos;
     std::vector<vec3f> oldPos;
     std::vector<vec3f> vel;
     std::vector<float> lambda;
@@ -51,6 +52,7 @@ public:
     //neighborList
     std::vector<std::vector<int>> neighborList;
     std::shared_ptr<zeno::LBvh> lbvh;
+    // void initNeighborList();
     void neighborSearch(std::shared_ptr<PrimitiveObject> prim);
     void buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list);
 
@@ -64,11 +66,15 @@ public:
         bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
         externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
         rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
-        h = get_input<zeno::NumericObject>("h")->get<float>();
         lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
         coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
         coeffK = get_input<zeno::NumericObject>("coeffK")->get<float>();
 
+        
+        //可以推导出来的参数
+        // auto diam = pRadius*2;
+        // mass = 0.8 * diam*diam*diam * rho0;
+        // h = 4* pRadius;
         neighborSearchRadius = h;
     }
 
@@ -90,6 +96,7 @@ public:
             lambda.resize(numParticles);
             dpos.resize(numParticles);
 
+
             //构建BVH
             lbvh = std::make_shared<zeno::LBvh>(prim,  neighborSearchRadius,zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
         }
@@ -104,8 +111,8 @@ public:
     }
 };
 
-
-ZENDEFNODE(PBF_BVH, {   
+//old params
+ZENDEFNODE(PBF_BVH_v2, {   
                     {
                         {"PrimitiveObject", "prim"},
                         {"vec3f", "bounds_max", "40, 40, 40"},
@@ -116,7 +123,6 @@ ZENDEFNODE(PBF_BVH, {
                         {"vec3f", "externForce", "0, -10, 0"},
                         {"float", "mass", "1.0"},
                         {"float", "rho0", "1.0"},
-                        {"float", "h", "1.1"},
                         {"float", "coeffDq", "0.3"},
                         {"float", "coeffK", "0.001"},
                         {"float", "lambdaEpsilon", "100.0"}
@@ -126,4 +132,29 @@ ZENDEFNODE(PBF_BVH, {
                     {"PBD"},
                 });
 
+
+// //new params
+// ZENDEFNODE(PBF_BVH_v2, {   
+//                     {
+//                         {"PrimitiveObject","prim"},
+//                         {"float","dt"," 0.05"},
+//                         {"float","particle_radius","0.025"},
+//                         {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
+//                         {"vec3f","bounds_max","10.0, 10.0, 10.0"},
+//                         {"vec3f","externForce", "0.0, -10.0, 0.0"},
+//                         {"float","rho0","1000.0"},
+//                         {"float","lambdaEpsilon","1e-6"},
+//                         {"float","coeffDq","0.3"},
+//                         {"float","coeffK","0.1"},
+//                         {"int","numSubsteps","5"}
+//                     },
+//                     {   {"PrimitiveObject", "outPrim"} },
+//                     {},
+//                     {"PBD"},
+//                 });
+
+
+
+
+            
 }//namespace zeno
