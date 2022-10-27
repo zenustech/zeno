@@ -529,6 +529,11 @@ void IPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T 
 }
 void IPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi) {
     using namespace zs;
+
+    if (!needFricPrecompute)
+        return;
+    needFricPrecompute = false;
+
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     nFPP.setVal(0);
@@ -2533,6 +2538,7 @@ struct StepIPCSystem : INode {
 
             int numFricSolve = A->s_enableFriction && A->fricMu != 0 ? 2 : 1;
         for_fric:
+            A->needFricPrecompute = true;
 
             A->newtonKrylov(cudaPol);
 
