@@ -456,8 +456,9 @@ void ZenoMainWindow::exportGraph() {
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
-            JsonArrayBatch batch(writer);
+            writer.StartArray();
             serializeScene(pModel, writer);
+            writer.EndArray();
             content = QString(s.GetString());
         }
     }
