@@ -2,6 +2,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/LevelSetUtils.tpp"
 #include "zensim/geometry/SparseGrid.hpp"
+#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
@@ -9,6 +10,8 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+
+#include <zeno/VDBGrid.h>
 
 namespace zeno {
 
@@ -84,7 +87,7 @@ ZENDEFNODE(ZSMakeDenseSDF, {/* inputs: */
                             /* params: */
                             {{"float", "dx", "1.0"}},
                             /* category: */
-                            {"Eulerian"}});
+                            {"deprecated"}});
 
 struct ZSMakeSparseGrid : INode {
     void apply() override {
@@ -147,14 +150,55 @@ struct ZSGridTopoCopy : INode {
 };
 
 ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
-                              {"Grid", "Topology"},
-                              /* outputs: */
-                              {"Grid"},
-                              /* params: */
-                              {},
-                              /* category: */
-                              {"Eulerian"}});
+                            {"Grid", "Topology"},
+                            /* outputs: */
+                            {"Grid"},
+                            /* params: */
+                            {},
+                            /* category: */
+                            {"Eulerian"}});
 
+struct ZSSparseGridToVDB : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto &spg = zs_grid->spg;
 
+        auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg);
+        auto vdb_grid = std::make_shared<VDBFloatGrid>();
+        vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
+
+        set_output("VDB", vdb_grid);
+    }
+};
+
+ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
+                               {"SparseGrid"},
+                               /* outputs: */
+                               {"VDB"},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
+
+struct ZSVDBToSparseGrid :INode {
+    void apply() override {
+        auto vdb = get_input<VDBFloatGrid>("VDB");
+        auto spg = zs::convert_floatgrid_to_sparse_grid(vdb->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
+        
+        auto zsSPG = std::make_shared<ZenoSparseGrid>();
+        zsSPG->spg = std::move(spg);
+
+        set_output("SparseGrid", zsSPG);
+    }
+};
+
+ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
+                               {"VDB"},
+                               /* outputs: */
+                               {"SparseGrid"},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
 
 } // namespace zeno
