@@ -444,7 +444,26 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
   auto &getSparseGrid() noexcept { return spg; }
   const auto &getSparseGrid() const noexcept { return spg; }
 
+  template <typename T>
+  decltype(auto) setMeta(const std::string &tag, T &&val) {
+    return metas[tag] = FWD(val);
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  bool hasMeta(const std::string &tag) const {
+    if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+
   spg_t spg;
+  std::map<std::string, std::any> metas;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {

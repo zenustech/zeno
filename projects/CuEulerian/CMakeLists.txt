@@ -30,3 +30,8 @@ target_sources(zeno PRIVATE
   levelset/Grid_creator.cu
   levelset/Reinitialization.cu
 )
+
+# navier stokes
+target_sources(zeno PRIVATE
+  navierstokes/NS_pipeline.cu
+)
