@@ -7,7 +7,6 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
-#include "zeno/utils/log.h"
 
 namespace zeno {
 
@@ -49,14 +48,12 @@ struct MakeShaderUniform : zeno::INode {
                 auto index = std::stoi(key);
                 if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
                     auto value = num->get<vec3f>();
-                    zeno::log_info("fuck: {}", value);
                     std::vector<vec3f>& attr_arr = prim->add_attr<vec3f>("pos");
                     if (index < attr_arr.size()) {
                         attr_arr[index] = value;
                     }
                 }
                 else {
-                    zeno::log_info("Not NumericObject");
                     throw Exception("Not NumericObject");
                 }
             }
