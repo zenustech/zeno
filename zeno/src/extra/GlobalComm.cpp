@@ -161,6 +161,7 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
                         // seems that objs will not be modified when load_objects called later.
                         // so, there is no need to dump.
                         //toDisk(cacheFramePath, i, m_frames[i - beginFrameNumber].view_objects);
+                        m_frames[i - beginFrameNumber].view_objects.clear();
                         m_inCacheFrames.erase(i);
                         break;
                     }
