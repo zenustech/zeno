@@ -80,12 +80,12 @@ struct ZSNavierStokesDt : INode {
 
         // CFL dt
         const float CFL = 0.8f;
-        float dt_v = CFL * dx / v_max;
+        float dt_v = CFL * dx / (v_max + 1e-10);
 
         // Viscosity dt
-        float nu = mu / rho; // kinematic viscosity
+        float nu = mu / (rho + 1e-10); // kinematic viscosity
         int dim = 3;
-        float dt_nu = CFL * 0.5f * dim * dx * dx / nu;
+        float dt_nu = CFL * 0.5f * dim * dx * dx / (nu + 1e-10);
 
         float dt = dt_v < dt_nu ? dt_v : dt_nu;
 
@@ -333,5 +333,61 @@ ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
                                  {{"int", "iterations", "10"}},
                                  /* category: */
                                  {"Eulerian"}});
+
+struct ZSNSNaiveSolidWall : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto Solid = get_input<ZenoSparseGrid>("SolidSDF");
+
+        auto &sdf = Solid->spg;
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf),
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
+                                                                                             int cellno) mutable {
+                auto wcoord = spgv.wCoord(blockno, cellno);
+                auto solid_sdf = sdfv.wSample("sdf", wcoord);
+
+#if 0
+                // error : query of hash table currently must be synchronized
+                if (solid_sdf < 0) {
+                    for (int ch = 0; ch < 3; ++ch)
+                        spgv(vSrcTag, ch, blockno, cellno) = 0.f;
+                }
+#else
+                float vel[3];
+                for (int ch = 0; ch < 3; ++ch) {
+                    vel[ch] = spgv.value("v", ch, blockno, cellno);
+                }
+
+                if (solid_sdf < 0) {
+                    vel[0] = 0;
+                    vel[1] = 0;
+                    vel[2] = 0;
+                }
+                
+                for (int ch = 0; ch < 3; ++ch) {
+                    spgv(vSrcTag, ch, blockno, cellno) = vel[ch];
+                }
+#endif
+            });
+    }
+};
+
+ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
+                                {"NSGrid", "SolidSDF"},
+                                /* outputs: */
+                                {},
+                                /* params: */
+                                {},
+                                /* category: */
+                                {"Eulerian"}});
 
 } // namespace zeno
