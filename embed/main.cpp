@@ -3,7 +3,7 @@
 
 int main() {
     const char *json = "json here";
-    zeno::Graph *g = zeno::getSession().createGraph();
+    auto g = zeno::getSession().createGraph();
     g->addSubnetNode("custom")->loadGraph(json);
     std::map<std::string, std::shared_ptr<zeno::IObject>> inputs, outputs;
     outputs = g->callTempNode("custom", std::move(inputs));
