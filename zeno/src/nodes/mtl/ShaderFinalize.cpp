@@ -144,6 +144,7 @@ struct ShaderFinalize : INode {
 
 ZENDEFNODE(ShaderFinalize, {
     {
+        {"string", "mtlid", "Mat1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -189,7 +190,6 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "isVoxelDomain", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
     },
     {
