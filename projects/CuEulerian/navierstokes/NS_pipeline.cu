@@ -14,6 +14,7 @@
 #include <zeno/VDBGrid.h>
 
 #include "../scheme.hpp"
+#include "../utils.cuh"
 
 namespace zeno {
 
@@ -40,6 +41,68 @@ ZENDEFNODE(ZSVDBToNavierStokesGrid, {/* inputs: */
                                      {},
                                      /* category: */
                                      {"Eulerian"}});
+
+struct ZSNavierStokesDt : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto rho = get_input2<float>("Density");
+        auto mu = get_input2<float>("Viscosity");
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+        auto dx = spg.voxelSize()[0];
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        size_t cell_cnt = block_cnt * spg.block_size;
+        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
+        zs::memset(zs::mem_device, res.data(), 0, sizeof(float) * count_warps(cell_cnt));
+
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        // maximum velocity
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
+                                                                                             int cellno) mutable {
+                float u = spgv.value(vSrcTag, 0, blockno, cellno);
+                float v = spgv.value(vSrcTag, 1, blockno, cellno);
+                float w = spgv.value(vSrcTag, 2, blockno, cellno);
+
+                size_t cellno_glb = blockno * spgv.block_size + cellno;
+
+                float v_mag = zs::abs(u) + zs::abs(v) + zs::abs(w);
+
+                reduce_max(cellno_glb, cell_cnt, v_mag, res[cellno_glb / 32]);
+            });
+        float v_max = reduce(pol, res, thrust::maximum<float>{});
+
+        // CFL dt
+        const float CFL = 0.8f;
+        float dt_v = CFL * dx / v_max;
+
+        // Viscosity dt
+        float nu = mu / rho; // kinematic viscosity
+        int dim = 3;
+        float dt_nu = CFL * 0.5f * dim * dx * dx / nu;
+
+        float dt = dt_v < dt_nu ? dt_v : dt_nu;
+
+        fmt::print(fg(fmt::color::blue_violet), "time step : {} sec\n", dt);
+
+        set_output("dt", std::make_shared<NumericObject>(dt));
+    }
+};
+
+ZENDEFNODE(ZSNavierStokesDt, {/* inputs: */
+                              {"NSGrid", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
+                              /* outputs: */
+                              {"dt"},
+                              /* params: */
+                              {},
+                              /* category: */
+                              {"Eulerian"}});
 
 struct ZSNSAdvectDiffuse : INode {
     void apply() override {
@@ -151,11 +214,12 @@ struct ZSNSExternalForce : INode {
         int &v_cur = NSGrid->readMeta<int &>("v_cur");
 
         // add force (accelaration)
-        pol(zs::range(block_cnt * spg.block_size),
+        pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), force, dt,
-             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int cellno) mutable {
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
+                                                                                             int cellno) mutable {
                 for (int ch = 0; ch < 3; ++ch)
-                    spgv(vSrcTag, ch, cellno) += force[ch] * dt;
+                    spgv(vSrcTag, ch, blockno, cellno) += force[ch] * dt;
             });
     }
 };
