@@ -47,11 +47,11 @@ struct ZSMakeDenseSDF : INode {
                 nb -= i * (nby * nbz);
                 int j = nb / nbz;
                 int k = nb - j * nbz;
-                table.insert(ivec3{i * 8, j * 8, k * 8});
+                table.insert(ivec3{int(i - nbx / 2) * 8, int(j - nby / 2) * 8, int(k - nbz / 2) * 8});
             });
 
-        ivec3 sphere_c{nx / 2, ny / 2, nz / 2};
-        float sphere_r = 10.f;
+        ivec3 sphere_c{0, 0, 0};
+        int sphere_r = 10; // 10*dx
 
         auto bcnt = spg.numBlocks();
         pol(zs::range(bcnt * 512), [spgv = zs::proxy<space>(spg), sphere_c, sphere_r] __device__(int cellno) mutable {
@@ -67,9 +67,16 @@ struct ZSMakeDenseSDF : INode {
 
             float dist2c = zs::sqrt(float(zs::sqr(icoord[0] - sphere_c[0]) + zs::sqr(icoord[1] - sphere_c[1]) +
                                           zs::sqr(icoord[2] - sphere_c[2])));
+            float dist2s = dist2c - sphere_r;
+
+            float init_sdf = dist2s;
+            if (dist2s > 2. * dx)
+                init_sdf = 2. * dx;
+            else if (dist2s < -2. * dx)
+                init_sdf = -2. * dx;
 
             //spgv("sdf", bno, cno) = ;
-            spgv("sdf", icoord) = dist2c > sphere_r ? dx : -dx;
+            spgv("sdf", icoord) = init_sdf;
         });
 
         // spg.resize(numExpectedBlocks);
@@ -87,7 +94,7 @@ ZENDEFNODE(ZSMakeDenseSDF, {/* inputs: */
                             /* params: */
                             {{"float", "dx", "1.0"}},
                             /* category: */
-                            {"deprecated"}});
+                            {"Eulerian"}});
 
 struct ZSMakeSparseGrid : INode {
     void apply() override {
@@ -180,11 +187,11 @@ ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
                                /* category: */
                                {"Eulerian"}});
 
-struct ZSVDBToSparseGrid :INode {
+struct ZSVDBToSparseGrid : INode {
     void apply() override {
         auto vdb = get_input<VDBFloatGrid>("VDB");
         auto spg = zs::convert_floatgrid_to_sparse_grid(vdb->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
-        
+
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
 

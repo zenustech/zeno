@@ -102,7 +102,7 @@ ZENDEFNODE(ZSRenormalizeSDF, {/* inputs: */
                               /* outputs: */
                               {"SDF"},
                               /* params: */
-                              {{"int", "iterations", "5"}},
+                              {{"int", "iterations", "10"}},
                               /* category: */
                               {"Eulerian"}});
 
