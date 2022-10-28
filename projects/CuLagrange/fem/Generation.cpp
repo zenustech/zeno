@@ -213,7 +213,7 @@ struct ExtractMeshSurface : INode {
                     else if (x[d] > y[d])
                         return 0;
                 }
-                return 1;
+                return 0;
             };
             std::set<vec3i, RM_CVREF_T(comp_v3)> surfs(comp_v3);
             auto hastri = [&surfs](const vec3i &tri, int i, int j, int k) {

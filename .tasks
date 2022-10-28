@@ -2,7 +2,7 @@
 build_type=Release
 ;build_type=RelWithDebInfo
 ;build_type=Debug
-build_target=zenoedit
+build_target=zenoembedtest
 run_environ=ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg ZENO_SAMPLES=1
 build_dir=build
 run_target="$(VIM:build_dir)/bin/$(VIM:build_target)"
