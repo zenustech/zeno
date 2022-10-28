@@ -1245,21 +1245,13 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
         const QModelIndex& outIdx = pGraph->index(outNode);
         const QModelIndex& inIdx = pGraph->index(inNode);
 
-        OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        if (outputs.find(outSock) != outputs.end())
-        {
-            outputs[outSock].linkIndice.removeOne(linkIdx);
-            pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-        }
+        IParamModel* pInputs = pGraph->paramModel(inIdx, PARAM_INPUT);
+        IParamModel* pOutputs = pGraph->paramModel(outIdx, PARAM_OUTPUT);
+        ZASSERT_EXIT(pInputs && pOutputs);
 
-        INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-        if (inputs.find(inSock) != inputs.end())
-        {
-            inputs[inSock].linkIndice.removeOne(linkIdx);
-            pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-        }
-
-		m_linkModel->removeRow(linkIdx.row());
+        pOutputs->removeLink(outSock, linkIdx);
+        pInputs->removeLink(inSock, linkIdx);
+        m_linkModel->removeRow(linkIdx.row());
     }
 }
 
@@ -1278,7 +1270,7 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     {
         ApiLevelScope batch(this);
 
-		SubGraphModel* pGraph = subGraph(subGpIdx.row());
+        SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph, QModelIndex());
 
         QStandardItem* pItem = new QStandardItem;
@@ -1288,20 +1280,20 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
         pItem->setData(info.outputNode, ROLE_OUTNODE);
         pItem->setData(info.outputSock, ROLE_OUTSOCK);
 
-        ZASSERT_EXIT(pGraph->index(info.inputNode).isValid() && pGraph->index(info.outputNode).isValid(), QModelIndex());
+        const QModelIndex& inIdx = pGraph->index(info.inputNode);
+        const QModelIndex& outIdx = pGraph->index(info.outputNode);
+
+        ZASSERT_EXIT(inIdx.isValid() && outIdx.isValid(), QModelIndex());
 
         m_linkModel->appendRow(pItem);
         QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
 
-        const QModelIndex& inIdx = pGraph->index(info.inputNode);
-        const QModelIndex& outIdx = pGraph->index(info.outputNode);
+        IParamModel* pInputs = pGraph->paramModel(inIdx, PARAM_INPUT);
+        IParamModel* pOutputs = pGraph->paramModel(outIdx, PARAM_OUTPUT);
+        ZASSERT_EXIT(pInputs && pOutputs, QModelIndex());
 
-        INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-        outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-        pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-        pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+        pInputs->addLink(info.inputSock, linkIdx);
+        pOutputs->addLink(info.outputSock, linkIdx);
 
         //todo: encapsulation when case grows.
         if (bAddDynamicSock)
@@ -1310,19 +1302,16 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
             const QString& outNodeName = outIdx.data(ROLE_OBJNAME).toString();
             if (inNodeName == "MakeList" || inNodeName == "MakeDict")
             {
-                const INPUT_SOCKETS _inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-                QList<QString> lst = _inputs.keys();
+                QStringList lst = pInputs->sockNames();
                 int maxObjId = UiHelper::getMaxObjId(lst);
                 if (maxObjId == -1)
                     maxObjId = 0;
                 QString maxObjSock = QString("obj%1").arg(maxObjId);
-                QString lastKey = inputs.lastKey();
+                QString lastKey = lst.last();
                 if (info.inputSock == lastKey)
                 {
                     //add a new
                     const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                    INPUT_SOCKET inSockObj;
-                    inSockObj.info.name = newObjName;
 
                     //need transcation.
                     SOCKET_UPDATE_INFO sockUpdateinfo;
@@ -1338,18 +1327,16 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
             }
             if (outNodeName == "ExtractDict")
             {
-                QList<QString> lst = outputs.keys();
+                QList<QString> lst = pOutputs->sockNames();
                 int maxObjId = UiHelper::getMaxObjId(lst);
                 if (maxObjId == -1)
                     maxObjId = 0;
                 QString maxObjSock = QString("obj%1").arg(maxObjId);
-                QString lastKey = outputs.lastKey();
+                QString lastKey = lst.last();
                 if (info.outputSock == lastKey)
                 {
                     //add a new
                     const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                    OUTPUT_SOCKET outSockObj;
-                    outSockObj.info.name = newObjName;
 
                     SOCKET_UPDATE_INFO sockUpdateinfo;
                     sockUpdateinfo.bInput = false;

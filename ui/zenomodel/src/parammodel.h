@@ -61,19 +61,28 @@ public:
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE);
+        PARAM_CONTROL ctrl = CONTROL_NONE,
+        const PARAM_LINKS& links = PARAM_LINKS());
 
     void appendRow(
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE);
+        PARAM_CONTROL ctrl = CONTROL_NONE,
+        const PARAM_LINKS& links = PARAM_LINKS());
 
     void setItem(
         const QModelIndex& idx,
         const QString& type,
         const QVariant& deflValue,
-        PARAM_CONTROL ctrl);
+        PARAM_CONTROL ctrl,
+        const PARAM_LINKS& links = PARAM_LINKS());
+
+    bool addLink(const QString& sockName, const QModelIndex& linkIdx);
+
+    bool removeLink(const QString& sockName, const QModelIndex& linkIdx);
+
+    QStringList sockNames() const;
 
     QModelIndex index(const QString& name) const;
 
@@ -88,7 +97,8 @@ private:
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE);
+        PARAM_CONTROL ctrl = CONTROL_NONE,
+        const PARAM_LINKS& links = PARAM_LINKS());
     bool _removeRow(const QModelIndex& index);
 
     const QPersistentModelIndex m_nodeIdx;

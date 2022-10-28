@@ -495,7 +495,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 {
     ZASSERT_EXIT(pSocketItem);
 
-    QModelIndex nodeIdx = pSocketItem->nodeIndex();
+    QModelIndex nodeIdx = pSocketItem->paramIndex();
     QString nodeid, sockName;
     bool bInput = false;
     pSocketItem->getSocketInfo(bInput, nodeid, sockName);
@@ -503,9 +503,8 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     QPointF socketPos = pSocketItem->center();
 
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
-    ZenoNode* pNode = m_nodes[nodeid];
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pNode && pGraphsModel);
+    ZASSERT_EXIT(pGraphsModel);
 
     QList<QPersistentModelIndex> linkIndice;
     INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();

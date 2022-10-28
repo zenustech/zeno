@@ -315,7 +315,7 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 
 ZSocketGroupItem::ZSocketGroupItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& sockName, 
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,
@@ -323,7 +323,7 @@ ZSocketGroupItem::ZSocketGroupItem(
     )
     : ZSimpleTextItem(sockName, parent)
     , m_bInput(bInput)
-    , m_index(index)
+    , m_paramIdx(paramIdx)
 {
     ImageElement elem;
     elem.image = ":/icons/socket-off.svg";
@@ -331,7 +331,7 @@ ZSocketGroupItem::ZSocketGroupItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(index, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    m_socket = new ZenoSocketItem(paramIdx, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
     });

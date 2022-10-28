@@ -36,16 +36,14 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             ZASSERT_EXIT(itItem != m_items.end(), false);
             _ItemInfo& item = m_items[name];
 
-            {
-                INPUT_SOCKET inSocket;
-                inSocket.info.control = item.ctrl;
-                inSocket.info.defaultValue = item.pConst;
-                inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
-                inSocket.info.name = name;
-                inSocket.info.type = item.type;
-                inSocket.linkIndice = item.links;
-                inputs.insert(name, inSocket);
-            }
+            INPUT_SOCKET inSocket;
+            inSocket.info.control = item.ctrl;
+            inSocket.info.defaultValue = item.pConst;
+            inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
+            inSocket.info.name = name;
+            inSocket.info.type = item.type;
+            inSocket.linkIndice = item.links;
+            inputs.insert(name, inSocket);
         }
         return true;
     }
@@ -225,6 +223,9 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_CTRL:   return item.ctrl;
     case ROLE_PARAM_VALUE:  return item.pConst;
     case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
+    case ROLE_OBJID:
+        //return nodeid:
+        return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
     }
     return QVariant();
 }
@@ -315,6 +316,12 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             item.pConst = value;
             break;
         }
+        case ROLE_PARAM_LINKS:
+        {
+            oldValue = QVariant::fromValue(item.links);
+            item.links = value.value<PARAM_LINKS>();
+            break;
+        }
         default:
             return false;
     }
@@ -387,24 +394,74 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     return true;
 }
 
-void IParamModel::insertRow(int row, const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl)
+void IParamModel::insertRow(int row, const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
 {
     beginInsertRows(QModelIndex(), row, row);
-    bool ret = _insertRow(row, name, type, deflValue, ctrl);
+    bool ret = _insertRow(row, name, type, deflValue, ctrl, links);
     endInsertRows();
 }
 
-void IParamModel::appendRow(const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl)
+void IParamModel::appendRow(const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
 {
     int n = rowCount();
-    insertRow(n, name, type, deflValue, ctrl);
+    insertRow(n, name, type, deflValue, ctrl, links);
 }
 
-void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl)
+void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
 {
     setData(idx, type, ROLE_PARAM_TYPE);
     setData(idx, deflValue, ROLE_PARAM_VALUE);
     setData(idx, ctrl, ROLE_PARAM_CTRL);
+    setData(idx, QVariant::fromValue(links), ROLE_PARAM_LINKS);
+}
+
+bool IParamModel::addLink(const QString& sockName, const QModelIndex& linkIdx)
+{
+    QModelIndex idx = index(sockName);
+    if (!idx.isValid())
+        return false;
+
+    QString name = nameFromRow(idx.row());
+    auto itItem = m_items.find(name);
+    ZASSERT_EXIT(itItem != m_items.end(), false);
+    _ItemInfo& item = m_items[name];
+
+    QVariant oldValue = QVariant::fromValue(item.links);
+
+    item.links.append(linkIdx);
+
+    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});     //legacy signal
+    emit mock_dataChanged(idx, oldValue, ROLE_PARAM_LINKS);   //custom signal.
+}
+
+bool IParamModel::removeLink(const QString& sockName, const QModelIndex& linkIdx)
+{
+    QModelIndex idx = index(sockName);
+    if (!idx.isValid())
+        return false;
+
+    QString name = nameFromRow(idx.row());
+    auto itItem = m_items.find(name);
+    ZASSERT_EXIT(itItem != m_items.end(), false);
+    _ItemInfo& item = m_items[name];
+
+    QVariant oldValue = QVariant::fromValue(item.links);
+
+    item.links.removeOne(linkIdx);
+
+    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});     //legacy signal
+    emit mock_dataChanged(idx, oldValue, ROLE_PARAM_LINKS);   //custom signal.
+}
+
+QStringList IParamModel::sockNames() const
+{
+    QStringList names;
+    for (int r = 0; r < rowCount(); r++)
+    {
+        ZASSERT_EXIT(m_row2Key.find(r) != m_row2Key.end(), names);
+        names.append(m_row2Key[r]);
+    }
+    return names;
 }
 
 bool IParamModel::_insertRow(
@@ -412,7 +469,8 @@ bool IParamModel::_insertRow(
     const QString& name,
     const QString& type,
     const QVariant& deflValue,
-    PARAM_CONTROL ctrl)
+    PARAM_CONTROL ctrl,
+    const PARAM_LINKS& links)
 {
     ZASSERT_EXIT(m_items.find(name) == m_items.end(), false);
     int nRows = m_items.size();
@@ -422,6 +480,7 @@ bool IParamModel::_insertRow(
     item.ctrl = ctrl;
     item.pConst = deflValue;
     item.type = type;
+    item.links = links;
 
     if (row == nRows)
     {

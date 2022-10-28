@@ -5,7 +5,7 @@
 
 
 ZenoSocketItem::ZenoSocketItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& sockName,
         bool bInput,
         const ImageElement& elem,
@@ -13,7 +13,7 @@ ZenoSocketItem::ZenoSocketItem(
         QGraphicsItem* parent)
     : ZenoImageItem(elem, sz, parent)
     , m_bInput(bInput)
-    , m_index(index)
+    , m_paramIdx(paramIdx)
     , m_status(STATUS_UNKNOWN)
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
@@ -64,24 +64,12 @@ QPointF ZenoSocketItem::center() const
 
 QString ZenoSocketItem::name() const
 {
-    QGraphicsItem* parent = parentItem();
-    if (ZSocketEditableItem* pItem = qgraphicsitem_cast<ZSocketEditableItem*>(parent))
-    {
-        return pItem->toPlainText();
-    }
-    else if (ZSocketGroupItem* pItem = qgraphicsitem_cast<ZSocketGroupItem*>(parent))
-    {
-        return pItem->text();
-    }
-    else
-    {
-        return QString();
-    }
+    return m_paramIdx.isValid() ? m_paramIdx.data(ROLE_PARAM_NAME).toString() : "";
 }
 
-QModelIndex ZenoSocketItem::nodeIndex() const
+QModelIndex ZenoSocketItem::paramIndex() const
 {
-    return m_index;
+    return m_paramIdx;
 }
 
 QRectF ZenoSocketItem::boundingRect() const
@@ -98,12 +86,12 @@ QRectF ZenoSocketItem::boundingRect() const
 
 bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
 {
-    Q_ASSERT(m_index.isValid());
-    if (!m_index.isValid())
+    Q_ASSERT(m_paramIdx.isValid(), false);
+    if (!m_paramIdx.isValid())
         return false;
 
     bInput = m_bInput;
-    nodeid = m_index.data(ROLE_OBJID).toString();
+    nodeid = m_paramIdx.data(ROLE_OBJID).toString();
     sockName = name();
     return true;
 }
@@ -116,20 +104,11 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
     {
         QString sockName = name();
-        if (m_bInput) {
-            INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(sockName) != inputs.end()) {
-                if (!inputs[sockName].linkIndice.isEmpty()) {
-                    status = STATUS_CONNECTED;
-                }
-            }
-        } else {
-            OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (outputs.find(sockName) != outputs.end()) {
-                if (!outputs[sockName].linkIndice.isEmpty()) {
-                    status = STATUS_CONNECTED;
-                }
-            }
+        if (m_paramIdx.isValid())
+        {
+            PARAM_LINKS links = m_paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            if (!links.isEmpty())
+                status = STATUS_CONNECTED;
         }
     }
 

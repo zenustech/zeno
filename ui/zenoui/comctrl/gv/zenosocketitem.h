@@ -21,7 +21,7 @@ public:
     };
 
     ZenoSocketItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& sockName,
         bool bInput,
         const ImageElement &elem,
@@ -33,7 +33,7 @@ public:
     QRectF boundingRect() const override;
     QPointF center() const;
     QString name() const;
-    QModelIndex nodeIndex() const;
+    QModelIndex paramIndex() const;
     bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
     void setSockStatus(SOCK_STATUS status);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
@@ -58,7 +58,7 @@ private:
     QString m_noHoverSvg;
     QString m_hoverSvg;
 
-    const QPersistentModelIndex m_index;
+    const QPersistentModelIndex m_paramIdx;
 
     const int sHorLargeMargin;
     const int sTopMargin;

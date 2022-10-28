@@ -85,12 +85,33 @@ void ModelAcceptor::EndSubgraph()
     if (!m_currentGraph)
         return;
 
-    //init output ports for each node.
-    int n = m_currentGraph->rowCount();
-    for (int r = 0; r < n; r++)
+    //add links on this subgraph.
+    for (EdgeInfo link : m_subgLinks)
     {
-        const QModelIndex& idx = m_currentGraph->index(r, 0);
-        generateLink(idx);
+        const QModelIndex& inIdx = m_currentGraph->index(link.inputNode);
+        const QModelIndex& outIdx = m_currentGraph->index(link.outputNode);
+        if (inIdx.isValid() && outIdx.isValid())
+        {
+            //check whether the socket exists.
+            IParamModel* pInputs = m_currentGraph->paramModel(inIdx, PARAM_INPUT);
+            IParamModel* pOutputs = m_currentGraph->paramModel(outIdx, PARAM_OUTPUT);
+            if (!pInputs || !pInputs->index(link.inputSock).isValid())
+            {
+                const QString& nodeName = inIdx.data(ROLE_OBJNAME).toString();
+                zeno::log_warn("no such input socket {} in {}", link.outputSock.toStdString(), nodeName.toStdString());
+                continue;
+            }
+            if (!pOutputs || !pOutputs->index(link.outputSock).isValid())
+            {
+                const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
+                zeno::log_warn("no such input socket {} in {}", link.outputSock.toStdString(), nodeName.toStdString());
+                continue;
+            }
+
+            GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
+            const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
+            pGraphsModel->addLink(link, subgIdx, false);
+        }
     }
 
     m_currentGraph->onModelInited();
@@ -99,6 +120,7 @@ void ModelAcceptor::EndSubgraph()
 
 void ModelAcceptor::generateLink(const QModelIndex& idx)
 {
+    //legacy way.
     const QString& inNode = idx.data(ROLE_OBJID).toString();
     INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     foreach(const QString & inSockName, inputs.keys())
@@ -235,7 +257,6 @@ void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
     const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
     if (nodeName == "MakeDict")
     {
-        INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
         for (auto keyName : keys)
         {
             addDictKey(id, keyName, true);
@@ -243,7 +264,6 @@ void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
     }
     else if (nodeName == "ExtractDict")
     {
-        OUTPUT_SOCKETS outputs = m_currentGraph->data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         for (auto keyName : keys)
         {
             addDictKey(id, keyName, false);
@@ -321,39 +341,40 @@ void ModelAcceptor::setInputSocket(
     QModelIndex idx = m_currentGraph->index(id);
     ZASSERT_EXIT(idx.isValid());
 
-    //standard inputs desc by latest descriptors. 
-    INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+    //the layout should be standard inputs desc by latest descriptors. 
+    IParamModel* pInputsModel = m_currentGraph->paramModel(idx, PARAM_INPUT);
+    ZASSERT_EXIT(pInputsModel);
 
-    if (inputs.find(inSock) != inputs.end())
+    QModelIndex paramIdx = pInputsModel->index(inSock);
+    if (paramIdx.isValid())
     {
         if (!defaultValue.isNull())
-            inputs[inSock].info.defaultValue = defaultValue;
-        //if (defaultValue.type() == QVariant::Int)
-            //zeno::log_critical("rehappy {}", defaultValue.toInt());
+        {
+            pInputsModel->setData(paramIdx, defaultValue, ROLE_PARAM_VALUE);
+        }
         if (!outId.isEmpty() && !outSock.isEmpty())
         {
-            inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
+            //collect edge.
+            EdgeInfo edge(outId, id, outSock, inSock);
+            m_subgLinks.append(edge);
         }
-        m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
     }
     else
     {
         //Dynamic socket
         if (nodeCls == "MakeList" || nodeCls == "MakeDict")
         {
-            INPUT_SOCKET inSocket;
-            inSocket.info.name = inSock;
+            const QString& sockName = inSock;
+            PARAM_CONTROL ctrl = CONTROL_NONE;
             if (nodeCls == "MakeDict")
             {
-                inSocket.info.control = CONTROL_DICTKEY;
+                ctrl = CONTROL_DICTKEY;
             }
-            inputs[inSock] = inSocket;
-
             if (!outId.isEmpty() && !outSock.isEmpty())
             {
-                inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
+                m_subgLinks.append(EdgeInfo(outId, id, outSock, inSock));
             }
-            m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            pInputsModel->appendRow(sockName, "", "", ctrl);
         }
         else
         {

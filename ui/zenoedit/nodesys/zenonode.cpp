@@ -193,11 +193,6 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setSpacing(5);
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
-
-    IParamModel* paramsModel = pGraphsModel->paramModel(m_index, PARAM_PARAM);
-
     //params.
     initParams(pScene);
     initSockets(true, pScene);
@@ -278,7 +273,8 @@ void ZenoNode::initParams(ZenoSubGraphScene* pScene)
     ZASSERT_EXIT(pGraphsModel && m_index.isValid());
 
     IParamModel* paramsModel = pGraphsModel->paramModel(m_index, PARAM_PARAM);
-    ZASSERT_EXIT(paramsModel);
+    if (!paramsModel)
+        return;
 
     for (int r = 0; r < paramsModel->rowCount(); r++)
     {
@@ -359,6 +355,9 @@ void ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
     ZASSERT_EXIT(pGraphsModel && m_index.isValid());
 
     IParamModel* paramsModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+    if (!paramsModel)
+        return;
+
     for (int r = 0; r < paramsModel->rowCount(); r++)
     {
         const QModelIndex& idx = paramsModel->index(r, 0);

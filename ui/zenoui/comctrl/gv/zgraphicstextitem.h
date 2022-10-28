@@ -95,7 +95,7 @@ class ZSocketGroupItem : public ZSimpleTextItem
 {
 public:
     explicit ZSocketGroupItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& text,
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,
@@ -112,7 +112,7 @@ private:
     const int cSocketWidth = 16;
     const int cSocketHeight = 16;
     ZenoSocketItem* m_socket;
-    const QPersistentModelIndex m_index;
+    const QPersistentModelIndex m_paramIdx;
     const bool m_bInput;
 };
 
@@ -122,7 +122,7 @@ class ZSocketEditableItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
     typedef ZGraphicsLayoutItem<ZGraphicsTextItem> _base;
 public:
     explicit ZSocketEditableItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& paramIdx,
         const QString& text,
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,

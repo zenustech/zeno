@@ -141,13 +141,29 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
-    item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
-    item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
-    item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
-    item.inputsModel->setInputSockets(data[ROLE_INPUTS].value<INPUT_SOCKETS>());
-    item.paramsModel->setParams(data[ROLE_PARAMETERS].value<PARAMS_INFO>());
-    item.outputsModel->setOutputSockets(data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>());
+    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+    OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+
+    if (!inputs.isEmpty())
+    {
+        if (!item.inputsModel)
+            item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+        item.inputsModel->setInputSockets(inputs);
+    }
+    if (!params.isEmpty())
+    {
+        if (!item.paramsModel)
+            item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
+        item.paramsModel->setParams(params);
+    }
+    if (!outputs.isEmpty())
+    {
+        if (!item.outputsModel)
+            item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+        item.outputsModel->setOutputSockets(outputs);
+    }
 
     return item;
 }
@@ -328,21 +344,27 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         case ROLE_INPUTS:
         {
             //legacy interface.
-            ZASSERT_EXIT(item.inputsModel, QVariant());
+            if (!item.inputsModel)
+                return QVariant();
+
             INPUT_SOCKETS inputs;
             item.inputsModel->getInputSockets(inputs);
             return QVariant::fromValue(inputs);
         }
         case ROLE_OUTPUTS:
         {
-            ZASSERT_EXIT(item.outputsModel, QVariant());
+            if (!item.outputsModel)
+                return QVariant();
+
             OUTPUT_SOCKETS outputs;
             item.outputsModel->getOutputSockets(outputs);
             return QVariant::fromValue(outputs);
         }
         case ROLE_PARAMETERS:
         {
-            ZASSERT_EXIT(item.paramsModel, QVariant());
+            if (!item.paramsModel)
+                return QVariant();
+
             PARAMS_INFO params;
             item.paramsModel->getParams(params);
             return QVariant::fromValue(params);
@@ -375,46 +397,61 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
         {
             case ROLE_INPUTS:
             {
-                ZASSERT_EXIT(item.inputsModel, false);
                 INPUT_SOCKETS inputs = value.value<INPUT_SOCKETS>();
+                if (inputs.empty())
+                    return false;
+
+                if (!item.inputsModel)
+                    item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
-                    QModelIndex idx = item.inputsModel->index(name);
-                    if (!idx.isValid())
+                    QModelIndex paramIdx = item.inputsModel->index(name);
+                    if (!paramIdx.isValid())
                     {
-                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
+                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control, inSocket.linkIndice);
                     }
                     else
                     {
-                        item.inputsModel->setItem(idx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
+                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control, inSocket.linkIndice);
                     }
                 }
                 break;
             }
             case ROLE_OUTPUTS:
             {
-                ZASSERT_EXIT(item.outputsModel, false);
                 OUTPUT_SOCKETS outputs = value.value<OUTPUT_SOCKETS>();
+                if (outputs.empty())
+                    return false;
+
+                if (!item.outputsModel)
+                    item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
                     QModelIndex idx = item.outputsModel->index(name);
                     if (!idx.isValid())
                     {
-                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
+                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control, outSocket.linkIndice);
                     }
                     else
                     {
-                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
+                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control, outSocket.linkIndice);
                     }
                 }
                 break;
             }
             case ROLE_PARAMETERS:
             {
-                ZASSERT_EXIT(item.paramsModel, false);
                 PARAMS_INFO params = value.value<PARAMS_INFO>();
+                if (params.empty())
+                    return false;
+
+                if (!item.paramsModel)
+                    item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
