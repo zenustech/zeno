@@ -6,6 +6,6 @@ int main() {
     auto g = zeno::getSession().createGraph();
     g->addSubnetNode("custom")->loadGraph(json);
     std::map<std::string, std::shared_ptr<zeno::IObject>> inputs, outputs;
-    outputs = g->callTempNode("custom", std::move(inputs));
+    outputs = g->callSubnetNode("custom", std::move(inputs));
     return 0;
 }
