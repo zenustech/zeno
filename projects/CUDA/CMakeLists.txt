@@ -54,5 +54,6 @@ target_sources(zeno PRIVATE
   wrangle/PNW.cu
   wrangle/PNBVHW.cu
   wrangle/PPW.cu
+  wrangle/TVW.cu
 )
 

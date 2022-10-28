@@ -160,7 +160,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 }
 
 void CameraControl::lookTo(int dir) {
-    if (dir < 0 || dir > 5) return;
+    if (dir < 0 || dir > 6) return;
     auto x_axis = QVector3D(1, 0, 0);
     auto y_axis = QVector3D(0, 1, 0);
     auto z_axis = QVector3D(0, 0, 1);
@@ -195,6 +195,10 @@ void CameraControl::lookTo(int dir) {
         m_theta = glm::pi<float>() / 2; m_phi = 0.f;
         Zenovis::GetInstance().updateCameraFront(m_center - y_axis * m_radius, y_axis, z_axis);
         break;
+    case 6:
+        m_center = {0, 0, 0};
+        m_theta = 0.f; m_phi = 0.f;
+        Zenovis::GetInstance().updateCameraFront(m_center, -z_axis, y_axis);
     default:
         break;
     }
@@ -1024,6 +1028,8 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
         this->cameraLookTo(1);
     if (event->key() == Qt::Key_7)
         this->cameraLookTo(2);
+    if (event->key() == Qt::Key_0)
+        this->cameraLookTo(6);
 
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     if (ctrl_pressed && event->key() == Qt::Key_1)

@@ -1415,8 +1415,16 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
         if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
         {
             const QString& subgName = subGpIdx.data(ROLE_OBJNAME).toString();
-            QString correctName = UiHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
-            info.newValue = correctName;
+            if (subgName.compare("main", Qt::CaseInsensitive) == 0)
+            {
+                //no desc about main, so pass the value directly.
+                info.newValue = info.newValue.toString();
+            }
+            else
+            {
+                QString correctName = UiHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
+                info.newValue = correctName;
+            }
         }
 
         UpdateDataCommand* pCmd = new UpdateDataCommand(id, info, this, subGpIdx);
@@ -1644,6 +1652,10 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
 
 void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo)
 {
+    //there is not "main" subgraph node need to be updated.
+    if (descName.compare("main", Qt::CaseInsensitive) == 0)
+        return;
+
     ZASSERT_EXIT(m_subgsDesc.find(descName) != m_subgsDesc.end());
 	NODE_DESC& desc = m_subgsDesc[descName];
 	switch (updateInfo.updateWay)

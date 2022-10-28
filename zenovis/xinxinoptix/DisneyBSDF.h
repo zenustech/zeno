@@ -61,6 +61,13 @@ namespace DisneyBSDF{
         v = normalize(vec3(dot(T,v), dot(B,v), dot(N,v)));
     }
 
+    static __inline__ __device__
+    void world2localWithRotate(vec3& v, vec3 _T, vec3 _B, vec3 N, float rotInRadian) {
+        vec3 T = normalize(cos(rotInRadian) * _T - sin(rotInRadian) * _B);
+        vec3 B = normalize(sin(rotInRadian) * _T + cos(rotInRadian) * _B);
+        v = normalize(vec3(dot(T,v), dot(B,v), dot(N,v)));
+    }
+
     static __inline__ __device__ 
     void pdf(
         float metallic,
@@ -309,6 +316,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -332,8 +340,8 @@ namespace DisneyBSDF{
 
     {
         //Onb tbn = Onb(N);
-        world2local(wi, T ,B, N);
-        world2local(wo, T ,B, N);
+        world2localWithRotate(wi, T ,B, N, anisoRotation * 2.f * 3.1415926);
+        world2localWithRotate(wo, T ,B, N, anisoRotation * 2.f * 3.1415926);
         vec3 wm = normalize(wo+wi);
 
         float NoL = wi.z;
@@ -845,6 +853,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -871,7 +880,7 @@ namespace DisneyBSDF{
         bool& isSS
             )
     {
-        world2local(wo, T, B, N);
+        world2localWithRotate(wo, T, B, N, anisoRotation * 2.f * 3.1415926);
         float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
 
         pdf(metallic, specTrans, clearCoat, pSpecular, pDiffuse, pClearcoat, pSpecTrans);
@@ -1236,7 +1245,7 @@ static __inline__ __device__ vec3 envSky(
     float absorption,
     float t
 ){
-    if (params.usingProceduralSky) {
+    if (!params.usingHdrSky) {
         return proceduralSky(
             dir,
             sunLightDir,

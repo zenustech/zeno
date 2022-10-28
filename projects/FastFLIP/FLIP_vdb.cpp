@@ -2866,7 +2866,7 @@ void FLIP_vdb::apply_pressure_gradient(
 	velocity_update.setName("Velocity_Update");
 
   const float boundary_friction_coef = 0.f;
-  const float tension = tension_coef/density;
+  const float tension = 2*tension_coef/density;
 
 	//CSim::TimerMan::timer("Step/SIMD/grad/apply").start();
 	for (int channel = 0; channel < 3; channel++) {
@@ -3043,7 +3043,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
   if (enable_tension) {
-    const float tension = tension_coef/density;
+    const float tension = 2*tension_coef/density;
     rhsgrid = lhs_matrix->createPressurePoissonRightHandSide_withTension(liquid_sdf, curvature,
       face_weight, velocity.v[0], velocity.v[1], velocity.v[2], solid_velocity,
       dt, tension);

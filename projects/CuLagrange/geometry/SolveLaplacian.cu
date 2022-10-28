@@ -49,7 +49,7 @@ struct ZSSolveLaplacian : zeno::INode {
         }
 
         const auto& eles = zspars->getQuadraturePoints();
-        auto cdim = eles.getChannelSize("inds");
+        auto cdim = eles.getPropertySize("inds");
         if(cdim != 4 && cdim != 3){
             fmt::print("INVALID SIMPLEX SIZE : {}\n",cdim);
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
@@ -303,7 +303,7 @@ struct ZSSolveBiHarmonicEqua : zeno::INode {
         }
 
         const auto& eles = zspars->getQuadraturePoints();
-        auto cdim = eles.getChannelSize("inds");
+        auto cdim = eles.getPropertySize("inds");
         if(cdim != 4 || cdim != 3)
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
 
