@@ -43,6 +43,22 @@ void RecordVideoMgr::recordFrame()
     {
         m_timer->stop();
         Zenovis::GetInstance().blockSignals(false);
+
+        {
+            QString dir_path = m_recordInfo.record_path + "/P/";
+            QDir qDir = QDir(dir_path);
+            qDir.setNameFilters(QStringList("*.png"));
+            QStringList fileList = qDir.entryList(QDir::Files);
+            fileList.removeOne(".");
+            fileList.removeOne("..");
+            fileList.sort();
+            for (auto i = 0; i < fileList.size(); i++) {
+                auto new_name = dir_path + zeno::format("{:06d}.png", i).c_str();
+                auto old_name = dir_path + fileList.at(i);
+                QFile::rename(old_name,new_name);
+            }
+        }
+
         QString path = m_recordInfo.record_path + "/P/%06d.png";
         QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
         QStringList cmd = { "ffmpeg", "-y", "-r", QString::number(m_recordInfo.fps), "-i", path, "-c:v", "mpeg4", "-b:v", QString::number(m_recordInfo.bitrate) + "k", outPath};
