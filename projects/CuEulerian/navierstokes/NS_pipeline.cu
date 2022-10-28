@@ -22,7 +22,7 @@ struct ZSVDBToNavierStokesGrid : INode {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
 
         auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
-        spg.append_channels(zs::cuda_exec(), {{"v0", 3}, {"v1", 3}, {"p0", 1}, {"p1", 1}});
+        spg.append_channels(zs::cuda_exec(), {{"v0", 3}, {"v1", 3}, {"p0", 1}, {"p1", 1}, {"div_v", 1}});
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
         zsSPG->setMeta("v_cur", 0);
@@ -63,17 +63,20 @@ struct ZSNSAdvectDiffuse : INode {
              vDstTag = zs::SmallString{std::string("v") + std::to_string(v_cur ^ 1)}] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
 
-                for (int offset = 0; offset != 3; ++offset) {
-                    int x = offset;
-                    int y = (offset + 1) % 3;
-                    int z = (offset + 2) % 3;
+                for (int ch = 0; ch < 3; ++ch) {
+                    int x = ch;
+                    int y = (ch + 1) % 3;
+                    int z = (ch + 2) % 3;
 
-                    float u_x[5], u_y[5], u_z[5];
-                    for (int i = -2; i <= 2; ++i) {
-                        u_x[i + 2] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(i, 0, 0));
-                        u_y[i + 2] = spgv.value(vSrcTag, y, icoord + zs::vec<int, 3>(0, i, 0));
-                        u_z[i + 2] = spgv.value(vSrcTag, z, icoord + zs::vec<int, 3>(0, 0, i));
+                    const int stcl = 2; // stencil point in each side
+                    float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
+
+                    for (int i = -stcl; i <= stcl; ++i) {
+                        u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(i, 0, 0));
+                        u_y[i + stcl] = spgv.value(vSrcTag, y, icoord + zs::vec<int, 3>(0, i, 0));
+                        u_z[i + stcl] = spgv.value(vSrcTag, z, icoord + zs::vec<int, 3>(0, 0, i));
                     }
+
                     float u_adv = spgv.value(vSrcTag, x, icoord);
                     float v_adv = spgv.value(vSrcTag, y, icoord);
                     float w_adv = spgv.value(vSrcTag, z, icoord);
@@ -102,11 +105,13 @@ struct ZSNSAdvectDiffuse : INode {
                 auto icoord = spgv.iCoord(cellno);
 
                 for (int ch = 0; ch < 3; ++ch) {
-                    float u_x[3], u_y[3], u_z[3];
-                    for (int i = -1; i <= 1; ++i) {
-                        u_x[i + 2] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(i, 0, 0));
-                        u_y[i + 2] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(0, i, 0));
-                        u_z[i + 2] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(0, 0, i));
+                    const int stcl = 1; // stencil point in each side
+                    float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
+
+                    for (int i = -stcl; i <= stcl; ++i) {
+                        u_x[i + stcl] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(i, 0, 0));
+                        u_y[i + stcl] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(0, i, 0));
+                        u_z[i + stcl] = spgv.value(vSrcTag, ch, icoord + zs::vec<int, 3>(0, 0, i));
                     }
 
                     float u_xx = scheme::central_diff_2nd(u_x[0], u_x[1], u_x[2], dx);
@@ -123,7 +128,7 @@ struct ZSNSAdvectDiffuse : INode {
 };
 
 ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
-                               {"NSGrid", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
+                               {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
                                /* outputs: */
                                {},
                                /* params: */
@@ -131,11 +136,43 @@ ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
                                /* category: */
                                {"Eulerian"}});
 
-struct ZSNSPressureEvolve : INode {
+struct ZSNSExternalForce : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto dt = get_input2<float>("dt");
+        auto force = get_input2<zeno::vec3f>("Force");
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        // add force (accelaration)
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg), force, dt,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int cellno) mutable {
+                for (int ch = 0; ch < 3; ++ch)
+                    spgv(vSrcTag, ch, cellno) += force[ch] * dt;
+            });
+    }
+};
+
+ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
+                               {"NSGrid", "dt", {"vec3f", "Force", "0, 0, 0"}},
+                               /* outputs: */
+                               {},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
+
+struct ZSNSPressureProject : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
-        auto Cs = get_input2<float>("Cs");
         auto dt = get_input2<float>("dt");
         int nIter = get_param<int>("iterations");
 
@@ -146,18 +183,91 @@ struct ZSNSPressureEvolve : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        int &p_cur = NSGrid->readMeta<int &>("p_cur");
-        // pressure evolution
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        // velocity divergence
         pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), dx, dt, rho, Cs,
-             pSrcTag = zs::SmallString{std::string("p") + std::to_string(p_cur)},
-             pDstTag = zs::SmallString{std::string("p") + std::to_string(p_cur ^ 1)}] __device__(int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), dx, dt,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
 
-                
+                float u_x[2], u_y[2], u_z[2];
+                for (int i = 0; i <= 1; ++i) {
+                    u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
+                    u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
+                    u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
+                }
+
+                float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx;
+
+                spgv("div_v", icoord) = div_term;
             });
-        p_cur ^= 1;
+
+        int &p_cur = NSGrid->readMeta<int &>("p_cur");
+
+        float dxSqrOverDt = dx * dx / dt;
+
+        // pressure Poisson equation - point Jacobi iteration
+        for (int iter = 0; iter < nIter; ++iter) {
+            pol(zs::range(block_cnt * spg.block_size),
+                [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho,
+                 pSrcTag = zs::SmallString{std::string("p") + std::to_string(p_cur)},
+                 pDstTag =
+                     zs::SmallString{std::string("p") + std::to_string(p_cur ^ 1)}] __device__(int cellno) mutable {
+                    auto icoord = spgv.iCoord(cellno);
+
+                    float div = spgv.value("div_v", icoord);
+
+                    const int stcl = 1; // stencil point in each side
+                    float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+
+                    for (int i = -stcl; i <= stcl; ++i) {
+                        p_x[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
+                        p_y[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
+                        p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                    }
+
+                    float p_this =
+                        -(div * dxSqrOverDt * rho - (p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2])) / 6.f;
+
+                    spgv(pDstTag, icoord) = p_this;
+                });
+            p_cur ^= 1;
+        }
+
+        // pressure projection
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg), dx, dt, rho,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)},
+             vDstTag = zs::SmallString{std::string("v") + std::to_string(v_cur ^ 1)},
+             pSrcTag = zs::SmallString{std::string("p") + std::to_string(p_cur)}] __device__(int cellno) mutable {
+                auto icoord = spgv.iCoord(cellno);
+                float p_this = spgv.value(pSrcTag, icoord);
+
+                for (int ch = 0; ch < 3; ++ch) {
+                    float u = spgv.value(vSrcTag, ch, icoord);
+
+                    zs::vec<int, 3> offset{0, 0, 0};
+                    offset[ch] = -1;
+
+                    float p_m = spgv.value(pSrcTag, icoord + offset);
+
+                    u -= (p_this - p_m) / dx * dt / rho;
+
+                    spgv(vDstTag, ch, icoord) = u;
+                }
+            });
+        v_cur ^= 1;
     }
 };
+
+ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
+                                 {"NSGrid", "dt", {"float", "Density", "1.0"}},
+                                 /* outputs: */
+                                 {},
+                                 /* params: */
+                                 {{"int", "iterations", "10"}},
+                                 /* category: */
+                                 {"Eulerian"}});
 
 } // namespace zeno
