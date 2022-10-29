@@ -25,7 +25,7 @@ namespace zeno {
                 auto e01 = v1 - v0;
                 auto e02 = v2 - v0;
 
-                auto nrm = e01.cross(e02);
+                auto nrm = e02.cross(e01);
                 auto nrm_norm = nrm.norm();
                 if(nrm_norm < 1e-8)
                     nrm = zs::vec<T,3>::zeros();
