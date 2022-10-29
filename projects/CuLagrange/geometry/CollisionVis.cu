@@ -12,6 +12,7 @@
 #include "kernel/calculate_facet_normal.hpp"
 #include "kernel/topology.hpp"
 #include "kernel/compute_characteristic_length.hpp"
+#include "kernel/calculate_bisector_normal.hpp"
 
 #include <iostream>
 
@@ -546,6 +547,10 @@ namespace zeno {
 
             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
             auto ceNrmTag = get_param<std::string>("ceNrmTag");
+            auto out_offset = get_input2<float>("out_offset");
+            auto in_offset = get_input2<float>("in_offset");
+            auto nrm_offset = get_input2<float>("nrm_offset");
+
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
                 throw std::runtime_error("the input zsparticles has no surface tris");
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
@@ -559,7 +564,7 @@ namespace zeno {
                 throw std::runtime_error("please call ZSCalSurfaceCollisionCell first before this node"); 
             auto& verts = zsparticles->getParticles();
             // cell data per facet
-            std::vector<zs::PropertyTag> tags{{"x",9},{"dir",9}};
+            std::vector<zs::PropertyTag> tags{{"x",9},{"dir",9},{"nrm",9},{"center",3}};
             auto cell_buffer = typename ZenoParticles::particles_t(tags,tris.size(),zs::memsrc_e::device,0);
             // auto cell_buffer = typename ZenoParticles::particles_t(tags,1,zs::memsrc_e::device,0);
             // transfer the data from gpu to cpu
@@ -571,7 +576,8 @@ namespace zeno {
                     verts = proxy<cuda_space>({},verts),
                     lines = proxy<cuda_space>({},lines),
                     tris = proxy<cuda_space>({},tris),
-                    ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ci) mutable {
+                    ceNrmTag = zs::SmallString(ceNrmTag),
+                    out_offset,in_offset] ZS_LAMBDA(int ci) mutable {
                 auto inds       = tris.template pack<3>("inds",ci).template reinterpret_bits<int>();
                 auto fe_inds    = tris.template pack<3>("fe_inds",ci).template reinterpret_bits<int>();
 
@@ -579,51 +585,71 @@ namespace zeno {
 
                 #ifdef COLLISION_VIS_DEBUG
                 
-                zs::vec<T,3> vs[3];
-                for(int i = 0;i != 3;++i)
-                    vs[i] = verts.template pack<3>("x",inds[i]);
-                auto vc = (vs[0] + vs[1] + vs[2]) / (T)3.0;
+                    zs::vec<T,3> vs[3];
+                    for(int i = 0;i != 3;++i)
+                        vs[i] = verts.template pack<3>("x",inds[i]);
+                    auto vc = (vs[0] + vs[1] + vs[2]) / (T)3.0;
 
-                zs::vec<T,3> ec[3];
-                for(int i = 0;i != 3;++i)
-                    ec[i] = (vs[i] + vs[(i+1)%3])/2.0;
+                    zs::vec<T,3> ec[3];
+                    for(int i = 0;i != 3;++i)
+                        ec[i] = (vs[i] + vs[(i+1)%3])/2.0;
 
-                // make sure all the bisector facet orient in-ward
-                for(int i = 0;i != 3;++i){
-                    auto ec_vc = vc - ec[i];
-                    auto e1 = fe_inds[i];
-                    auto n1 = lines.template pack<3>(ceNrmTag,e1);
-                    if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
-                        n1 = (T)-1 * n1;
-                    auto check_dir = n1.dot(ec_vc);
-                    if(check_dir < 0) {
-                        printf("invalid check dir %f %d %d\n",(float)check_dir,ci,i);
-                    }
-                }
+                    // make sure all the bisector facet orient in-ward
+                    // for(int i = 0;i != 3;++i){
+                    //     auto ec_vc = vc - ec[i];
+                    //     auto e1 = fe_inds[i];
+                    //     auto n1 = lines.template pack<3>(ceNrmTag,e1);
+                    //     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
+                    //         n1 = (T)-1 * n1;
+                    //     auto check_dir = n1.dot(ec_vc);
+                    //     if(check_dir < 0) {
+                    //         printf("invalid check dir %f %d %d\n",(float)check_dir,ci,i);
+                    //     }
+                    // }
+
+                    auto cell_center = vec3::zeros();
+                    cell_center = (vs[0] + vs[1] + vs[2])/(T)3.0;
+                    T check_dist{};
+                    auto check_intersect = is_inside_the_cell(verts,lines,tris,ceNrmTag,ci,cell_center,in_offset,out_offset,check_dist);
+                    if(check_intersect == 1)
+                        printf("invalid cell intersection check offset and inset : %d %f %f %f\n",ci,(float)check_dist,(float)out_offset,(float)in_offset);
+                    if(check_intersect == 2)
+                        printf("invalid cell intersection check bisector : %d\n",ci);
+
 
                 #endif
 
+                cell_buffer.template tuple<3>("center",ci) = vec3::zeros();
                 for(int i = 0;i < 3;++i){
                     auto vert = verts.template pack<3>("x",inds[i]);
-                    for(int j = 0;j < 3;++j)
+                    cell_buffer.template tuple<3>("center",ci) = cell_buffer.template pack<3>("center",ci) + vert/(T)3.0;
+                    for(int j = 0;j < 3;++j) {
                         cell_buffer("x",i * 3 + j,ci) = vert[j];
+                    }
                     
+#if 0
                     auto e0 = fe_inds[(i + 3 -1) % 3];
                     auto e1 = fe_inds[i];
 
                     auto n0 = lines.template pack<3>(ceNrmTag,e0);
                     auto n1 = lines.template pack<3>(ceNrmTag,e1);
 
+                    for(int j = 0;j != 3;++j)
+                        cell_buffer("nrm",i*3 + j,ci) = n1[j];
+
                     if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i + 3 - 1) % 3)],inds[i]}) == 1)
                         n0 =  (T)-1 * n0;
                     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
                         n1 = (T)-1 * n1;
+#else
 
-                    // if(d0 < 0)
-                    //     n0 =  (T)-1 * n0;
-                    // if(d1 < 0) 
-                    //     n1 = (T)-1 * n1;
+                    auto n0 = get_bisector_orient(lines,tris,ceNrmTag,ci,(i + 3 - 1) % 3);
+                    auto n1 = get_bisector_orient(lines,tris,ceNrmTag,ci,i);
 
+                    for(int j = 0;j != 3;++j)
+                        cell_buffer("nrm",i*3 + j,ci) = n1[j];
+
+#endif
                     auto dir = n1.cross(n0).normalized();
 
                     // do some checking
@@ -647,9 +673,6 @@ namespace zeno {
                 }
             });  
 
-            auto out_offset = get_input2<float>("out_offset");
-            auto in_offset = get_input2<float>("in_offset");
-
             cell_buffer = cell_buffer.clone({zs::memsrc_e::host});   
             constexpr auto omp_space = execspace_e::openmp;
             auto ompPol = omp_exec();            
@@ -663,12 +686,17 @@ namespace zeno {
             cell_lines.resize(cell_buffer.size() * 9);
             cell_tris.resize(cell_buffer.size() * 6);
 
+
+            auto offset_ratio = get_input2<float>("offset_ratio");
+
             ompPol(zs::range(cell_buffer.size()),
                 [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &cell_verts,&cell_lines,&cell_tris,&out_offset,&in_offset] (int ci) mutable {
+                    &cell_verts,&cell_lines,&cell_tris,&out_offset,&in_offset,&offset_ratio] (int ci) mutable {
 
                 auto vs_ = cell_buffer.template pack<9>("x",ci);
                 auto ds_ = cell_buffer.template pack<9>("dir",ci);
+
+                auto center = cell_buffer.template pack<3>("center",ci);
 
                 for(int i = 0;i < 3;++i) {
                     auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
@@ -676,6 +704,15 @@ namespace zeno {
 
                     auto p0 = p - dp * in_offset;
                     auto p1 = p + dp * out_offset;
+
+                    auto dp0 = p0 - center;
+                    auto dp1 = p1 - center;
+
+                    dp0 *= offset_ratio;
+                    dp1 *= offset_ratio;
+
+                    p0 = dp0 + center;
+                    p1 = dp1 + center;
 
                     // printf("ci = %d \t dp = %f %f %f\n",ci,(float)dp[0],(float)dp[1],(float)dp[2]);
 
@@ -696,15 +733,15 @@ namespace zeno {
             });
             cell_lines.resize(0);
 
-            auto ncell = std::make_shared<zeno::PrimitiveObject>();
-            // ncell->resize(cell_buffer.size() * 6);
-            auto& ncell_verts = ncell->verts;
-            ncell_verts.resize(cell_buffer.size() * 6);
-            auto& ncell_lines = ncell->lines;
-            ncell_lines.resize(cell_buffer.size() * 3);
+            auto tcell = std::make_shared<zeno::PrimitiveObject>();
+            // tcell->resize(cell_buffer.size() * 6);
+            auto& tcell_verts = tcell->verts;
+            tcell_verts.resize(cell_buffer.size() * 6);
+            auto& tcell_lines = tcell->lines;
+            tcell_lines.resize(cell_buffer.size() * 3);
             ompPol(zs::range(cell_buffer.size()),
                 [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &ncell_verts,&ncell_lines,&out_offset,&in_offset] (int ci) mutable {
+                    &tcell_verts,&tcell_lines,&out_offset,&in_offset,&offset_ratio] (int ci) mutable {
 
                 auto vs_ = cell_buffer.template pack<9>("x",ci);
                 auto ds_ = cell_buffer.template pack<9>("dir",ci);
@@ -722,6 +759,8 @@ namespace zeno {
                 //     (float)ds_[6],(float)ds_[7],(float)ds_[8]
                 // );
 
+                auto center = cell_buffer.template pack<3>("center",ci);
+
                 for(int i = 0;i < 3;++i) {
                     auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
                     auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
@@ -729,24 +768,66 @@ namespace zeno {
                     auto p0 = p - dp * in_offset;
                     auto p1 = p + dp * out_offset;
 
+                    auto dp0 = p0 - center;
+                    auto dp1 = p1 - center;
+
+                    dp0 *= offset_ratio;
+                    dp1 *= offset_ratio;
+
+                    p0 = dp0 + center;
+                    p1 = dp1 + center;
+
+                    tcell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
+                    tcell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
+
+                    tcell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
+                }
+            });
+
+
+            auto ncell = std::make_shared<zeno::PrimitiveObject>();
+            auto& ncell_verts = ncell->verts;
+            auto& ncell_lines = ncell->lines;
+            ncell_verts.resize(cell_buffer.size() * 6);
+            ncell_lines.resize(cell_buffer.size() * 3);
+            ompPol(zs::range(cell_buffer.size()),
+                [cell_buffer = proxy<omp_space>({},cell_buffer),
+                    &ncell_verts,&ncell_lines,&nrm_offset,&offset_ratio] (int ci) mutable {    
+                auto vs_ = cell_buffer.template pack<9>("x",ci);
+                auto nrm_ = cell_buffer.template pack<9>("nrm",ci);
+
+                auto center = cell_buffer.template pack<3>("center",ci);
+                for(int i = 0;i != 3;++i)   {
+                    auto edge_center = vec3::zeros();
+                    for(int j = 0;j != 3;++j)
+                        edge_center[j] = (vs_[i * 3 + j] + vs_[((i + 1) % 3) * 3 + j])/(T)2.0;
+                    auto nrm = vec3{nrm_[i*3 + 0],nrm_[i*3 + 1],nrm_[i*3 + 2]};
+                    auto dp = edge_center - center;
+                    dp *= offset_ratio;
+                    edge_center = dp + center;
+
+                    auto p0 = edge_center;
+                    auto p1 = edge_center + nrm * nrm_offset;
 
                     ncell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
                     ncell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
 
                     ncell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
+
                 }
             });
 
 
-            set_output("collision_cell",std::move(cell));
 
-            set_output("ncollision_cell",std::move(ncell));
+            set_output("collision_cell",std::move(cell));
+            set_output("ccell_tangent",std::move(tcell));
+            set_output("ccell_normal",std::move(ncell));
 
         }
     };
 
-    ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"},{"float","out_offset","0.1"},{"float","in_offset","0.1"}},
-                                {{"collision_cell"},{"ncollision_cell"}},
+    ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"},{"float","out_offset","0.1"},{"float","in_offset","0.1"},{"float","nrm_offset","0.1"},{"float","offset_ratio","0.8"}},
+                                {{"collision_cell"},{"ccell_tangent"},{"ccell_normal"}},
                                 {{"string","ceNrmTag","nrm"}},
                                 {"ZSGeometry"}});
 
