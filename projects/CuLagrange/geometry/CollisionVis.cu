@@ -15,6 +15,9 @@
 
 #include <iostream>
 
+
+#define COLLISION_VIS_DEBUG
+
 namespace zeno {
 
     using T = float;
@@ -272,43 +275,200 @@ namespace zeno {
                                 {"ZSGeometry"}});
 
 
-    struct VisualizeSurfaceMesh : INode {
+    // struct VisualizeSurfaceMesh : INode {
+    //     virtual void apply() override {
+    //         using namespace zs;
+    //         auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+
+    //         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
+    //             throw std::runtime_error("the input zsparticles has no surface tris");
+    //             // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
+    //             // tris = typename ZenoParticles::particles_t({{"inds",3}});
+    //         }
+    //         if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+    //             throw std::runtime_error("the input zsparticles has no surface lines");
+    //         }
+    //         if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) {
+    //             throw std::runtime_error("the input zsparticles has no surface points");
+    //         }
+    //         const auto& tris    = (*zsparticles)[ZenoParticles::s_surfTriTag];
+    //         const auto& points  = (*zsparticles)[ZenoParticles::s_surfVertTag];
+    //         const auto& verts = zsparticles->getParticles();
+
+    //         if(!tris.hasProperty("fp_inds") || tris.getChannelSize("fp_inds") != 3) {
+    //             throw std::runtime_error("call ZSInitSurfaceTopology first before VisualizeSurfaceMesh");
+    //         }
+
+    //         auto nm_points = points.size();
+    //         auto nm_tris = tris.size();
+    //         // output ff topo first
+    //         auto surf_verts = typename ZenoParticles::particles_t({{"x",3}},nm_tris * 4,zs::memsrc_e::device,0);
+    //         auto surf_tris = typename ZenoParticles::particles_t({{"inds",3}},nm_tris * 4,zs::memsrc_e::device,0);            
+
+    //         // transfer the data from gpu to cpu
+    //         constexpr auto cuda_space = execspace_e::cuda;
+    //         auto cudaPol = cuda_exec(); 
+
+    //         // cudaPol(zs::range())     
+    //     }
+    // };
+
+
+    struct VisualizeSurfaceNormal : INode {
         virtual void apply() override {
             using namespace zs;
             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
-
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
                 throw std::runtime_error("the input zsparticles has no surface tris");
                 // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
                 // tris = typename ZenoParticles::particles_t({{"inds",3}});
             }
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
-                throw std::runtime_error("the input zsparticles has no surface lines");
-            }
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) {
-                throw std::runtime_error("the input zsparticles has no surface points");
-            }
-            const auto& tris    = (*zsparticles)[ZenoParticles::s_surfTriTag];
-            const auto& points  = (*zsparticles)[ZenoParticles::s_surfVertTag];
+
+            auto cudaExec = cuda_exec();
+            constexpr auto space = zs::execspace_e::cuda;
+
             const auto& verts = zsparticles->getParticles();
+            auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
+            if(!tris.hasProperty("nrm"))
+                tris.append_channels(cudaExec,{{"nrm",3}});
 
-            if(!tris.hasProperty("fp_inds") || tris.getChannelSize("fp_inds") != 3) {
-                throw std::runtime_error("call ZSInitSurfaceTopology first before VisualizeSurfaceMesh");
-            }
+            if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
+                throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
 
-            auto nm_points = points.size();
-            auto nm_tris = tris.size();
-            // output ff topo first
-            auto surf_verts = typename ZenoParticles::particles_t({{"x",3}},nm_tris * 4,zs::memsrc_e::device,0);
-            auto surf_tris = typename ZenoParticles::particles_t({{"inds",3}},nm_tris * 4,zs::memsrc_e::device,0);            
+            auto buffer = typename ZenoParticles::particles_t({{"dir",3},{"x",3}},tris.size(),zs::memsrc_e::device,0);
 
-            // transfer the data from gpu to cpu
-            constexpr auto cuda_space = execspace_e::cuda;
-            auto cudaPol = cuda_exec(); 
+            cudaExec(zs::range(tris.size()),
+                [tris = proxy<space>({},tris),
+                        buffer = proxy<space>({},buffer),
+                        verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) mutable {
+                    auto inds = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
+                    zs::vec<T,3> tp[3];
+                    for(int i = 0;i != 3;++i)
+                        tp[i] = verts.template pack<3>("x",inds[i]);
+                    auto center = (tp[0] + tp[1] + tp[2]) / (T)3.0;
 
-            // cudaPol(zs::range())     
+                    buffer.template tuple<3>("dir",ti) = tris.template pack<3>("nrm",ti);
+                    buffer.template tuple<3>("x",ti) = center;
+            });                        
+
+            buffer = buffer.clone({zs::memsrc_e::host});
+            auto prim = std::make_shared<zeno::PrimitiveObject>();
+            auto& pverts = prim->verts;
+            pverts.resize(buffer.size() * 2);
+            auto& lines = prim->lines;
+            lines.resize(buffer.size());
+
+            auto ompExec = omp_exec();
+            constexpr auto ompSpace = zs::execspace_e::openmp;
+
+            auto extrude_offset = get_param<float>("offset");
+
+            ompExec(zs::range(buffer.size()),
+                [buffer = proxy<ompSpace>({},buffer),&pverts,&lines,extrude_offset] (int ti) mutable {
+                    auto xs = buffer.template pack<3>("x",ti);
+                    auto dir = buffer.template pack<3>("dir",ti);
+                    auto xe = xs + extrude_offset * dir;
+                    pverts[ti * 2 + 0] = zeno::vec3f(xs[0],xs[1],xs[2]);
+                    pverts[ti * 2 + 1] = zeno::vec3f(xe[0],xe[1],xe[2]);
+
+                    lines[ti] = zeno::vec2i(ti * 2 + 0,ti * 2 + 1);
+            });
+
+            set_output("prim",std::move(prim));
         }
     };
+
+    ZENDEFNODE(VisualizeSurfaceNormal, {{{"ZSParticles"}},
+                                {{"prim"}},
+                                {{"float","offset","1"}},
+                                {"ZSGeometry"}});
+
+
+    struct VisualizeSurfaceEdgeNormal : INode {
+        virtual void apply() override {
+            using namespace zs;
+
+            auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
+                throw std::runtime_error("the input zsparticles has no surface tris");
+            }
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+                throw std::runtime_error("the input zsparticles has no surface lines");
+            }   
+
+            auto& tris      = (*zsparticles)[ZenoParticles::s_surfTriTag];
+            if(!tris.hasProperty("ff_inds") || !tris.hasProperty("fe_inds"))
+                throw std::runtime_error("please call ZSInitTopoConnect first before this node");           
+            auto& lines     = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+            if(!lines.hasProperty("fe_inds"))
+                throw std::runtime_error("please call ZSInitTopoConnect first before this node");             
+
+            const auto& verts = zsparticles->getParticles();
+            auto cudaExec = cuda_exec();
+            constexpr auto space = zs::execspace_e::cuda;
+
+            if(!tris.hasProperty("nrm"))
+                tris.append_channels(cudaExec,{{"nrm",3}});
+
+            // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
+
+            if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
+                throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
+
+
+            auto buffer = typename ZenoParticles::particles_t({{"nrm",3},{"x",3}},lines.size(),zs::memsrc_e::device,0);  
+
+            cudaExec(zs::range(lines.size()),[
+                    buffer = proxy<space>({},buffer),
+                    lines = proxy<space>({},lines),
+                    tris = proxy<space>({},tris),
+                    verts = proxy<space>({},verts)] ZS_LAMBDA(int ei) mutable {
+                        auto linds = lines.template pack<2>("inds",ei).reinterpret_bits(int_c);
+                        auto fe_inds = lines.template pack<2>("fe_inds",ei).reinterpret_bits(int_c);
+
+                        auto n0 = tris.template pack<3>("nrm",fe_inds[0]);
+                        auto n1 = tris.template pack<3>("nrm",fe_inds[1]);
+
+                        auto v0 = verts.template pack<3>("x",linds[0]);
+                        auto v1 = verts.template pack<3>("x",linds[1]);
+
+                        // buffer.template tuple<3>("nrm",ei) = (n0 + n1).normalized();
+                        buffer.template tuple<3>("nrm",ei) = lines.template pack<3>("nrm",ei);
+                        buffer.template tuple<3>("x",ei) = (v0 + v1) / (T)2.0;
+            }); 
+
+            buffer = buffer.clone({zs::memsrc_e::host});
+
+            auto prim = std::make_shared<zeno::PrimitiveObject>();
+            auto& pverts = prim->verts;
+            auto& plines = prim->lines;
+            pverts.resize(buffer.size() * 2);
+            plines.resize(buffer.size());
+
+            auto ompExec = omp_exec();
+            constexpr auto omp_space = execspace_e::openmp;
+
+            auto offset = get_param<float>("offset");
+
+            ompExec(zs::range(buffer.size()),
+                [buffer = proxy<omp_space>({},buffer),&pverts,&plines,offset] (int li) mutable {
+                    auto ps = buffer.template pack<3>("x",li);
+                    auto dp = buffer.template pack<3>("nrm",li);
+                    auto pe = ps + dp * offset;
+                    pverts[li * 2 + 0] = zeno::vec3f(ps[0],ps[1],ps[2]);
+                    pverts[li * 2 + 1] = zeno::vec3f(pe[0],pe[1],pe[2]);
+
+                    plines[li] = zeno::vec2i(li * 2 + 0,li * 2 + 1);
+            });
+
+            set_output("prim",std::move(prim));
+        }
+    };
+
+    ZENDEFNODE(VisualizeSurfaceEdgeNormal, {{{"ZSParticles"}},
+                                {{"prim"}},
+                                {{"float","offset","1"}},
+                                {"ZSGeometry"}});
 
     struct ZSCalSurfaceCollisionCell : INode {
         virtual void apply() override {
@@ -338,15 +498,15 @@ namespace zeno {
             if(!tris.hasProperty("nrm"))
                 tris.append_channels(cudaExec,{{"nrm",3}});
 
-            std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
+            // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
 
             if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
                 throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
-            std::cout << "FINISH CALCULATE SURFACE NORMAL" << std::endl;
+            // std::cout << "FINISH CALCULATE SURFACE NORMAL" << std::endl;
 
             auto ceNrmTag = get_param<std::string>("ceNrmTag");
             if(!lines.hasProperty(ceNrmTag))
-                lines.append_channels(cudaExec,{{ceNrmTag,9}});
+                lines.append_channels(cudaExec,{{ceNrmTag,3}});
             
             // evalute the normal of edge plane
             cudaExec(range(lines.size()),
@@ -401,6 +561,7 @@ namespace zeno {
             // cell data per facet
             std::vector<zs::PropertyTag> tags{{"x",9},{"dir",9}};
             auto cell_buffer = typename ZenoParticles::particles_t(tags,tris.size(),zs::memsrc_e::device,0);
+            // auto cell_buffer = typename ZenoParticles::particles_t(tags,1,zs::memsrc_e::device,0);
             // transfer the data from gpu to cpu
             constexpr auto cuda_space = execspace_e::cuda;
             auto cudaPol = cuda_exec();      
@@ -413,46 +574,99 @@ namespace zeno {
                     ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ci) mutable {
                 auto inds       = tris.template pack<3>("inds",ci).template reinterpret_bits<int>();
                 auto fe_inds    = tris.template pack<3>("fe_inds",ci).template reinterpret_bits<int>();
+
+                auto nrm = tris.template pack<3>("nrm",ci);
+
+                #ifdef COLLISION_VIS_DEBUG
+                
+                zs::vec<T,3> vs[3];
+                for(int i = 0;i != 3;++i)
+                    vs[i] = verts.template pack<3>("x",inds[i]);
+                auto vc = (vs[0] + vs[1] + vs[2]) / (T)3.0;
+
+                zs::vec<T,3> ec[3];
+                for(int i = 0;i != 3;++i)
+                    ec[i] = (vs[i] + vs[(i+1)%3])/2.0;
+
+                // make sure all the bisector facet orient in-ward
+                for(int i = 0;i != 3;++i){
+                    auto ec_vc = vc - ec[i];
+                    auto e1 = fe_inds[i];
+                    auto n1 = lines.template pack<3>(ceNrmTag,e1);
+                    if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
+                        n1 = (T)-1 * n1;
+                    auto check_dir = n1.dot(ec_vc);
+                    if(check_dir < 0) {
+                        printf("invalid check dir %f %d %d\n",(float)check_dir,ci,i);
+                    }
+                }
+
+                #endif
+
                 for(int i = 0;i < 3;++i){
                     auto vert = verts.template pack<3>("x",inds[i]);
                     for(int j = 0;j < 3;++j)
-                        cell_buffer("x",j,i) = vert[j];
+                        cell_buffer("x",i * 3 + j,ci) = vert[j];
                     
-                    auto e0 = fe_inds[(i-1) % 3];
+                    auto e0 = fe_inds[(i + 3 -1) % 3];
                     auto e1 = fe_inds[i];
 
                     auto n0 = lines.template pack<3>(ceNrmTag,e0);
                     auto n1 = lines.template pack<3>(ceNrmTag,e1);
 
-                    if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i - 1) % 3)],inds[i]}) == 1)
+                    if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i + 3 - 1) % 3)],inds[i]}) == 1)
                         n0 =  (T)-1 * n0;
                     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
                         n1 = (T)-1 * n1;
 
+                    // if(d0 < 0)
+                    //     n0 =  (T)-1 * n0;
+                    // if(d1 < 0) 
+                    //     n1 = (T)-1 * n1;
+
                     auto dir = n1.cross(n0).normalized();
-                    for(int j = 0;j < 3;++j)
-                        cell_buffer("dir",j,i) = dir[j];
+
+                    // do some checking
+                    // #ifdef COLLISION_VIS_DEBUG
+
+                    // #endif
+
+
+                    // auto orient = dir.dot(nrm);
+                    // if(orient > 0) {
+                    //     printf("invalid normal dir %f on %d\n",(float)orient,ci);
+                    // }
+                    // printf("dir = %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
+                    // printf("n0 = %f %f %f\n",(float)n0[0],(float)n0[1],(float)n0[2]);
+                    // printf("n1 = %f %f %f\n",(float)n1[0],(float)n1[1],(float)n1[2]);
+                    for(int j = 0;j < 3;++j){
+                        cell_buffer("dir",i * 3 + j,ci) = dir[j];
+                        // cell_buffer("dir",i * 3 + j,ci) = nrm[j];
+                    }
                     
                 }
             });  
+
+            auto out_offset = get_input2<float>("out_offset");
+            auto in_offset = get_input2<float>("in_offset");
 
             cell_buffer = cell_buffer.clone({zs::memsrc_e::host});   
             constexpr auto omp_space = execspace_e::openmp;
             auto ompPol = omp_exec();            
 
             auto cell = std::make_shared<zeno::PrimitiveObject>();
-            cell->resize(cell_buffer.size() * 6);
 
-            auto out_offset = get_param<float>("out_offset");
-            auto in_offset = get_param<float>("in_offset");
-
-            auto& cell_verts = cell->attr<zeno::vec3f>("pos");
+            auto& cell_verts = cell->verts;
             auto& cell_lines = cell->lines;
+            auto& cell_tris = cell->tris;
+            cell_verts.resize(cell_buffer.size() * 6);
             cell_lines.resize(cell_buffer.size() * 9);
+            cell_tris.resize(cell_buffer.size() * 6);
 
             ompPol(zs::range(cell_buffer.size()),
                 [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &cell_verts,&cell_lines,&out_offset,&in_offset] (int ci) mutable {
+                    &cell_verts,&cell_lines,&cell_tris,&out_offset,&in_offset] (int ci) mutable {
+
                 auto vs_ = cell_buffer.template pack<9>("x",ci);
                 auto ds_ = cell_buffer.template pack<9>("dir",ci);
 
@@ -460,8 +674,10 @@ namespace zeno {
                     auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
                     auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
 
-                    auto p0 = p + dp * in_offset;
+                    auto p0 = p - dp * in_offset;
                     auto p1 = p + dp * out_offset;
+
+                    // printf("ci = %d \t dp = %f %f %f\n",ci,(float)dp[0],(float)dp[1],(float)dp[2]);
 
                     cell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
                     cell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
@@ -472,16 +688,66 @@ namespace zeno {
                 for(int i = 0;i < 3;++i) {
                     cell_lines[ci * 9 + 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + ((i+1)%3) * 2 + 0};
                     cell_lines[ci * 9 + 6 + i] = zeno::vec2i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1}; 
+
+                    cell_tris[ci * 6 + i * 2 + 0] = zeno::vec3i{ci * 6 + i * 2 + 0,ci * 6 + i* 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
+                    cell_tris[ci * 6 + i * 2 + 1] = zeno::vec3i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
+                }
+
+            });
+            cell_lines.resize(0);
+
+            auto ncell = std::make_shared<zeno::PrimitiveObject>();
+            // ncell->resize(cell_buffer.size() * 6);
+            auto& ncell_verts = ncell->verts;
+            ncell_verts.resize(cell_buffer.size() * 6);
+            auto& ncell_lines = ncell->lines;
+            ncell_lines.resize(cell_buffer.size() * 3);
+            ompPol(zs::range(cell_buffer.size()),
+                [cell_buffer = proxy<omp_space>({},cell_buffer),
+                    &ncell_verts,&ncell_lines,&out_offset,&in_offset] (int ci) mutable {
+
+                auto vs_ = cell_buffer.template pack<9>("x",ci);
+                auto ds_ = cell_buffer.template pack<9>("dir",ci);
+
+
+                // printf("vs[%d] : %f %f %f %f %f %f %f %f %f\n",ci,
+                //     (float)vs_[0],(float)vs_[1],(float)vs_[2],
+                //     (float)vs_[3],(float)vs_[4],(float)vs_[5],
+                //     (float)vs_[6],(float)vs_[7],(float)vs_[8]
+                // );
+
+                // printf("ds[%d] : %f %f %f %f %f %f %f %f %f\n",ci,
+                //     (float)ds_[0],(float)ds_[1],(float)ds_[2],
+                //     (float)ds_[3],(float)ds_[4],(float)ds_[5],
+                //     (float)ds_[6],(float)ds_[7],(float)ds_[8]
+                // );
+
+                for(int i = 0;i < 3;++i) {
+                    auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
+                    auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
+
+                    auto p0 = p - dp * in_offset;
+                    auto p1 = p + dp * out_offset;
+
+
+                    ncell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
+                    ncell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
+
+                    ncell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
                 }
             });
 
+
             set_output("collision_cell",std::move(cell));
+
+            set_output("ncollision_cell",std::move(ncell));
+
         }
     };
 
-    ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"}},
-                                {{"collision_cell"}},
-                                {{"float","out_offset","0.1"},{"float","in_offset","0.1"},{"string","ceNrmTag","nrm"}},
+    ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"},{"float","out_offset","0.1"},{"float","in_offset","0.1"}},
+                                {{"collision_cell"},{"ncollision_cell"}},
+                                {{"string","ceNrmTag","nrm"}},
                                 {"ZSGeometry"}});
 
 }
