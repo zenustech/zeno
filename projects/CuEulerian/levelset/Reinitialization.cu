@@ -41,14 +41,10 @@ struct ZSRenormalizeSDF : INode {
                     float ls_this = sdfv.value("sdf", icoord);
                     float ls_x[5], ls_y[5], ls_z[5];
                     for (int i = -2; i <= 2; ++i) {
-                        ls_x[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0));
-                        ls_y[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0));
-                        ls_z[i + 2] = sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i));
-                        
-                        // nuemann boundary condition
-                        ls_x[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0)) ? ls_x[i + 2] : ls_this;
-                        ls_y[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0)) ? ls_y[i + 2] : ls_this;
-                        ls_z[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i)) ? ls_z[i + 2] : ls_this;
+                        // stencil with nuemann boundary condition
+                        ls_x[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0)) : ls_this;
+                        ls_y[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0)) : ls_this;
+                        ls_z[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i)) : ls_this;
                     }
 
                     float lx_w = scheme::HJ_WENO3(ls_x[3], ls_x[2], ls_x[1], ls_x[0], 1.0f, dx);

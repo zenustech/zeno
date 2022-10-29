@@ -355,28 +355,10 @@ struct ZSNSNaiveSolidWall : INode {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto solid_sdf = sdfv.wSample("sdf", wcoord);
 
-#if 0
-                // error : query of hash table currently must be synchronized
                 if (solid_sdf < 0) {
                     for (int ch = 0; ch < 3; ++ch)
                         spgv(vSrcTag, ch, blockno, cellno) = 0.f;
                 }
-#else
-                float vel[3];
-                for (int ch = 0; ch < 3; ++ch) {
-                    vel[ch] = spgv.value("v", ch, blockno, cellno);
-                }
-
-                if (solid_sdf < 0) {
-                    vel[0] = 0;
-                    vel[1] = 0;
-                    vel[2] = 0;
-                }
-                
-                for (int ch = 0; ch < 3; ++ch) {
-                    spgv(vSrcTag, ch, blockno, cellno) = vel[ch];
-                }
-#endif
             });
     }
 };
