@@ -646,9 +646,10 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
             bInput = true;
             sockName = name;
             scenePos = pSocketItem->center();
-            INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (!inputs[name].linkIndice.isEmpty())
-                linkIdx = inputs[name].linkIndice[0];
+            const QModelIndex& paramIdx = pSocketItem->paramIndex();
+            const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            if (!links.isEmpty())
+                linkIdx = links[0];
             return;
         }
     }
@@ -660,9 +661,10 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
             bInput = false;
             sockName = name;
             scenePos = pSocketItem->center();
-            OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (!outputs[name].linkIndice.isEmpty())
-                linkIdx = outputs[name].linkIndice[0];
+            const QModelIndex& paramIdx = pSocketItem->paramIndex();
+            const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            if (!links.isEmpty())
+                linkIdx = links[0];
             return;
         }
     }

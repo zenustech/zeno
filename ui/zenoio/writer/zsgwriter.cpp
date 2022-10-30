@@ -142,20 +142,18 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			QVariant deflVal = inSock.info.defaultValue;
 			const QString& sockType = inSock.info.type;
 			bool bValid = UiHelper::validateVariant(deflVal, sockType);
-			if (!inSock.linkIndice.isEmpty())
+			if (!inSock.info.links.isEmpty())
 			{
-				for (QPersistentModelIndex linkIdx : inSock.linkIndice)
+				for (const EdgeInfo& link : inSock.info.links)
 				{
-					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-					AddVariantList({ outNode, outSock, deflVal }, sockType, writer, true);
+					AddVariantList({ link.outputNode, link.outputSock, deflVal }, sockType, writer, true);
 				}
 			}
 			else
 			{
 				if (!bValid)
 					deflVal = QVariant();
-				AddVariantList({ QVariant(), QVariant(), deflVal}, sockType, writer, true);
+				AddVariantList({ QVariant(), QVariant(), deflVal }, sockType, writer, true);
 			}
 		}
 	}

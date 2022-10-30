@@ -7,6 +7,7 @@
 #include "modelrole.h"
 
 class IParamModel;
+class LinkModel;
 
 class IGraphsModel : public QAbstractItemModel
 {
@@ -85,7 +86,7 @@ public:
 	virtual bool IsIOProcessing() const = 0;
     virtual void beginTransaction(const QString& name) = 0;
     virtual void endTransaction() = 0;
-	virtual QStandardItemModel* linkModel() const = 0;
+	virtual LinkModel* linkModel() const = 0;
 	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
 
 signals:

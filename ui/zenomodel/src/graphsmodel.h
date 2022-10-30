@@ -6,6 +6,7 @@
 
 #include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
+#include "linkmodel.h"
 #include "modeldata.h"
 #include <stack>
 
@@ -102,7 +103,7 @@ public:
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
-    QStandardItemModel* linkModel() const override;
+    LinkModel* linkModel() const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
@@ -142,8 +143,6 @@ private:
     NODE_DESCS getCoreDescs();
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
-    void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
-    void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
                    bool enableTrans = false);
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;
@@ -161,7 +160,7 @@ private:
     QMap<uint32_t, QString> m_id2name;
     QMap<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
-    QStandardItemModel* m_linkModel;
+    LinkModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
     NODE_CATES m_nodesCate;

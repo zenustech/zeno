@@ -40,38 +40,6 @@ void SubGraphModel::onModelInited()
 {
 }
 
-void SubGraphModel::setInputSocket(const QString& inNode, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
-{
-	QModelIndex idx = index(inNode);
-    ZASSERT_EXIT(idx.isValid());
-	INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-	if (inputs.find(inSock) != inputs.end())
-	{
-		if (!defaultValue.isNull())
-			inputs[inSock].info.defaultValue = defaultValue;	//default value?
-		if (!outId.isEmpty() && !outSock.isEmpty())
-		{
-            SOCKET_INFO info(outId, outSock);
-
-            //because of initialization, we had to add index to input socket first,
-            //later the index will be appended into output socket.
-            QStandardItemModel* pModel = m_pGraphsModel->linkModel();   //it's not a good habit to expose linkModel
-
-            QStandardItem* pItem = new QStandardItem;
-            pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
-            pItem->setData(inNode, ROLE_INNODE);
-            pItem->setData(inSock, ROLE_INSOCK);
-            pItem->setData(outId, ROLE_OUTNODE);
-            pItem->setData(outSock, ROLE_OUTSOCK);
-            pModel->appendRow(pItem);
-
-            QModelIndex linkIdx = pModel->indexFromItem(pItem);
-            inputs[inSock].linkIndice.push_back(QPersistentModelIndex(linkIdx));
-			setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-		}
-	}
-}
-
 void SubGraphModel::collaspe()
 {
 	for (int i = 0; i < rowCount(); i++)
@@ -410,11 +378,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     QModelIndex paramIdx = item.inputsModel->index(name);
                     if (!paramIdx.isValid())
                     {
-                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control, inSocket.linkIndice);
+                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
                     }
                     else
                     {
-                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control, inSocket.linkIndice);
+                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
                     }
                 }
                 break;
@@ -434,11 +402,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     QModelIndex idx = item.outputsModel->index(name);
                     if (!idx.isValid())
                     {
-                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control, outSocket.linkIndice);
+                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
                     }
                     else
                     {
-                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control, outSocket.linkIndice);
+                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
                     }
                 }
                 break;
@@ -492,6 +460,103 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     {
         return false;
     }
+}
+
+bool SubGraphModel::setParamValue(
+        PARAM_CLASS cls,
+        const QModelIndex& idx,
+        const QString& sockName,
+        const QVariant& value,
+        const QString& type,
+        PARAM_CONTROL ctrl,
+        bool bAddIfNotExist)
+{
+    _NodeItem item;
+    if (!itemFromIndex(idx, item))
+        return false;
+
+    if (cls == PARAM_INPUT)
+    {
+        if (!item.inputsModel)
+        {
+            if (bAddIfNotExist)
+                item.inputsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
+            else
+                return false;
+        }
+        const QModelIndex& paramIdx = item.inputsModel->index(sockName);
+        if (paramIdx.isValid())
+        {
+            item.inputsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
+        }
+        else
+        {
+            if (bAddIfNotExist)
+            {
+                item.inputsModel->appendRow(sockName, type, value, ctrl);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (cls == PARAM_PARAM)
+    {
+        if (!item.paramsModel)
+        {
+            if (bAddIfNotExist)
+                item.paramsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
+            else
+                return false;
+        }
+        const QModelIndex& paramIdx = item.paramsModel->index(sockName);
+        if (paramIdx.isValid())
+        {
+            item.paramsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
+        }
+        else
+        {
+            if (bAddIfNotExist)
+            {
+                item.paramsModel->appendRow(sockName, type, value, ctrl);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (cls == PARAM_OUTPUT)
+    {
+        if (!item.outputsModel)
+        {
+            if (bAddIfNotExist)
+                item.outputsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
+            else
+                return false;
+        }
+        const QModelIndex& paramIdx = item.outputsModel->index(sockName);
+        if (paramIdx.isValid())
+        {
+            item.outputsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
+        }
+        else
+        {
+            if (bAddIfNotExist)
+            {
+                item.outputsModel->appendRow(sockName, type, value, ctrl);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 SubGraphModel* SubGraphModel::clone(GraphsModel* parent)

@@ -48,7 +48,6 @@ public:
 	void endParams(const QString& id, const QString& nodeCls) override;
 
 private:
-    void generateLink(const QModelIndex& idx);
 
 	TIMELINE_INFO m_timeInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.

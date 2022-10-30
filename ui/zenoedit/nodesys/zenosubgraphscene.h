@@ -59,7 +59,6 @@ private slots:
     void onSocketClicked(ZenoSocketItem* pSocketItem);
 
 private:
-    void updateLinkPos(ZenoNode *pNode, QPointF newPos);
     void onSocketAbsorted(const QPointF mousePos);
     void viewAddLink(const QModelIndex& linkIdx);
     void viewRemoveLink(const QModelIndex& linkIdx);

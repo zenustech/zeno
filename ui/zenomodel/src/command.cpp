@@ -43,9 +43,13 @@ RemoveNodeCommand::RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pMode
     OUTPUT_SOCKETS outputs = m_data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
     INPUT_SOCKETS inputs = m_data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     for (auto it = outputs.begin(); it != outputs.end(); it++)
-        it->second.linkIndice.clear();
+    {
+        it->second.info.links.clear();
+    }
     for (auto it = inputs.begin(); it != inputs.end(); it++)
-        it->second.linkIndice.clear();
+    {
+        it->second.info.links.clear();
+    }
     m_data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     m_data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
 }

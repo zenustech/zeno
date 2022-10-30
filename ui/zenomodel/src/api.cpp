@@ -236,10 +236,10 @@ ZENO_ERROR Zeno_GetOutNodes(
     }
 
     OUTPUT_SOCKET output = outputs[qsOutSock];
-    for (auto linkIdx : output.linkIndice)
+    for (auto link : output.info.links)
     {
-        QString inNode = linkIdx.data(ROLE_INNODE).toString();
-        QString inSock = linkIdx.data(ROLE_INSOCK).toString();
+        const QString& inNode = link.inputNode;
+        const QString& inSock = link.inputSock;
         QModelIndex inIdx = pModel->index(inSock, subgIdx);
 
         ZENO_HANDLE hdl = inIdx.internalId();
@@ -273,11 +273,11 @@ ZENO_ERROR Zeno_GetInput(
     const QModelIndex& subgIdx = pModel->subgByNodeId(hNode);
     INPUT_SOCKET input = inputs[qsInSock];
 
-    if (1 == input.linkIndice.size())
+    if (1 == input.info.links.size())
     {
-        QModelIndex linkIdx = input.linkIndice[0];
-        const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-        const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+        EdgeInfo link = input.info.links[0];
+        const QString& outNode = link.outputNode;
+        const QString& outSock = link.outputSock;
         
         QModelIndex outIdx = pModel->index(outNode, subgIdx);
         ret.first = outIdx.internalId();

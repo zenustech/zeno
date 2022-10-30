@@ -1,6 +1,7 @@
 #include "parammodel.h"
 #include "zassert.h"
 #include "igraphsmodel.h"
+#include "linkmodel.h"
 #include <zenomodel/include/uihelper.h>
 
 
@@ -42,7 +43,17 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
             inSocket.info.name = name;
             inSocket.info.type = item.type;
-            inSocket.linkIndice = item.links;
+
+            for (auto linkIdx : item.links)
+            {
+                EdgeInfo link;
+                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
+                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
+                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
+                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                inSocket.info.links.append(link);
+            }
+
             inputs.insert(name, inSocket);
         }
         return true;
@@ -71,7 +82,15 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
             outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
             outSocket.info.name = name;
             outSocket.info.type = item.type;
-            outSocket.linkIndice = item.links;
+            for (auto linkIdx : item.links)
+            {
+                EdgeInfo link;
+                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
+                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
+                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
+                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                outSocket.info.links.append(link);
+            }
             outputs.insert(name, outSocket);
         }
     }
@@ -114,7 +133,6 @@ void IParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         item.name = inSocket.info.name;
         item.pConst = inSocket.info.defaultValue;
         item.type = inSocket.info.type;
-        item.links = inSocket.linkIndice;
         appendRow(item.name, item.type, item.pConst, item.ctrl);
     }
 }
@@ -141,7 +159,6 @@ void IParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         item.name = outSocket.info.name;
         item.pConst = outSocket.info.defaultValue;
         item.type = outSocket.info.type;
-        item.links = outSocket.linkIndice;
         appendRow(item.name, item.type, item.pConst, item.ctrl);
     }
 }
@@ -274,21 +291,21 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                 QString inNode = linkIdx.data(ROLE_INNODE).toString();
                 QString inSock = linkIdx.data(ROLE_INSOCK).toString();
 
+                auto pLinkModel = m_model->linkModel();
                 if (m_class == PARAM_INPUT)
                 {
                     ZASSERT_EXIT(inSock == oldName, false);
                     inSock = newName;
+                    pLinkModel->setInputSocket(linkIdx, index);
+                    //emit signal?
                 }
                 else
                 {
                     ZASSERT_EXIT(outSock == oldName, false);
                     outSock = newName;
+                    pLinkModel->setOutputSocket(linkIdx, index);
+                    //emit signal?
                 }
-                auto pLinkModel = m_model->linkModel();
-                pLinkModel->setData(linkIdx, inNode, ROLE_INNODE);
-                pLinkModel->setData(linkIdx, inSock, ROLE_INSOCK);
-                pLinkModel->setData(linkIdx, outNode, ROLE_OUTNODE);
-                pLinkModel->setData(linkIdx, outSock, ROLE_OUTSOCK);
             }
             break;
         }
@@ -480,7 +497,9 @@ bool IParamModel::_insertRow(
     item.ctrl = ctrl;
     item.pConst = deflValue;
     item.type = type;
-    item.links = links;
+
+    //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
+    //and we will import the links by method GraphsModel::addLink.
 
     if (row == nRows)
     {

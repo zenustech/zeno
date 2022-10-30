@@ -204,8 +204,8 @@ void TransferAcceptor::setInputSocket(
             inputs[inSock].info.defaultValue = defaultValue;
         if (!outId.isEmpty() && !outSock.isEmpty())
         {
-            inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
             EdgeInfo info(outId, id, outSock, inSock);
+            inputs[inSock].info.links.append(info);
             m_links.append(info);
         }
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -225,8 +225,8 @@ void TransferAcceptor::setInputSocket(
 
             if (!outId.isEmpty() && !outSock.isEmpty())
             {
-                inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
                 EdgeInfo info(outId, id, outSock, inSock);
+                inputs[inSock].info.links.append(info);
                 m_links.append(info);
             }
             data[ROLE_INPUTS] = QVariant::fromValue(inputs);

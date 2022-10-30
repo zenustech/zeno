@@ -18,6 +18,7 @@
 #include "util/log.h"
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
+#include <zenomodel/include/iparammodel.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -69,12 +70,17 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     {
         ZenoNode *inNode = it.second;
         const QString& id = inNode->nodeId();
-        const INPUT_SOCKETS& inputs = inNode->inputParams();
-        for (QString inSock : inputs.keys())
+        const QModelIndex& idx = pGraphsModel->index(id, m_subgIdx);
+
+        IParamModel* inputsModel = pGraphsModel->paramModel(idx, PARAM_INPUT);
+        if (!inputsModel)
+            continue;
+        for (int r = 0; r < inputsModel->rowCount(); r++)
         {
-            QPointF inSockPos = inNode->getPortPos(true, inSock);
-            const INPUT_SOCKET& inputSocket = inputs[inSock];
-            for (const QPersistentModelIndex& linkIdx : inputSocket.linkIndice)
+            const QModelIndex& paramIdx = inputsModel->index(r, 0);
+            const QString& inSock = paramIdx.data(ROLE_PARAM_NAME).toString();
+            PARAM_LINKS links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            for (const QPersistentModelIndex& linkIdx : links)
             {
                 const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
                 const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
@@ -84,7 +90,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
 
                 const QPointF& outSockPos = outNode->getPortPos(false, outSock);
 
-                ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
+                ZenoFullLink* pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
                 outNode->toggleSocket(false, outSock, true);
@@ -380,8 +386,7 @@ void ZenoSubGraphScene::copy()
         INPUT_SOCKETS inputs = newNode[ROLE_INPUTS].value<INPUT_SOCKETS>();
         for (INPUT_SOCKET& inSocket : inputs)
         {
-            inSocket.linkIndice.clear();
-            inSocket.outNodes.clear();
+            inSocket.info.links.clear();
             inSocket.info.nodeid = newId;
         }
         newNode[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -389,8 +394,7 @@ void ZenoSubGraphScene::copy()
         OUTPUT_SOCKETS outputs = newNode[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         for (OUTPUT_SOCKET& outSocket : outputs)
         {
-            outSocket.linkIndice.clear();
-            outSocket.linkIndice.clear();
+            outSocket.info.links.clear();
             outSocket.info.nodeid = newId;
         }
         newNode[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
@@ -436,8 +440,13 @@ void ZenoSubGraphScene::copy()
             QModelIndex linkIdx = tempLinkModel.indexFromItem(pItem);
             QPersistentModelIndex persistIdx(linkIdx);
 
-            inputSocket.linkIndice.append(persistIdx);
-            outputSocket.linkIndice.append(persistIdx);
+            EdgeInfo newEdge(newOutNode, newInNode, outSock, inSock);
+
+            inputSocket.info.links.append(newEdge);
+            outputSocket.info.links.append(newEdge);
+
+            //inputSocket.linkIndice.append(persistIdx);
+            //outputSocket.linkIndice.append(persistIdx);
 
             inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
             outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
@@ -495,7 +504,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 {
     ZASSERT_EXIT(pSocketItem);
 
-    QModelIndex nodeIdx = pSocketItem->paramIndex();
+    QModelIndex paramIdx = pSocketItem->paramIndex();
     QString nodeid, sockName;
     bool bInput = false;
     pSocketItem->getSocketInfo(bInput, nodeid, sockName);
@@ -506,11 +515,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
 
-    QList<QPersistentModelIndex> linkIndice;
-    INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    if (inputs.find(sockName) != inputs.end())
-        linkIndice = inputs[sockName].linkIndice;
-
+    PARAM_LINKS linkIndice = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
     if (bInput && !linkIndice.isEmpty())
     {
         //todo: multiple link
@@ -781,46 +786,6 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
-}
-
-void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
-{
-    if (!pNode)
-        return;
-    pNode->setPos(newPos);
-    const QString& currNode = pNode->nodeId();
-    const INPUT_SOCKETS& inputs = pNode->inputParams();
-    for (QString inSock : inputs.keys())
-    {
-        const QPointF& inputPos = pNode->getPortPos(true, inSock);
-        for (QPersistentModelIndex index : inputs[inSock].linkIndice)
-        {
-            const QString& linkId = index.data(ROLE_OBJID).toString();
-            const QString& outNode = index.data(ROLE_OUTNODE).toString();
-            const QString& outSock = index.data(ROLE_OUTSOCK).toString();
-
-            const QPointF& outputPos = m_nodes[outNode]->getPortPos(false, outSock);
-
-            ZenoFullLink* pLink = m_links[linkId];
-            ZASSERT_EXIT(pLink);
-        }
-    }
-
-    const OUTPUT_SOCKETS &outputs = pNode->outputParams();
-    for (QString outputPort : outputs.keys())
-    {
-        const QPointF &outputPos = pNode->getPortPos(false, outputPort);
-
-        for (QPersistentModelIndex index : outputs[outputPort].linkIndice)
-        {
-            const QString& linkId = index.data(ROLE_OBJID).toString();
-            const QString& inNode = index.data(ROLE_INNODE).toString();
-            const QString& inSock = index.data(ROLE_INSOCK).toString();
-
-            QPointF inputPos = m_nodes[inNode]->getPortPos(true, inSock);
-            ZenoFullLink* pLink = m_links[linkId];
-        }
-    }
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

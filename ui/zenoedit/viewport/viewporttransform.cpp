@@ -308,9 +308,9 @@ void FakeTransformer::endTransform(bool moved) {
             auto node_index = search_result[0].targetIdx;
             auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
             if (node_id.contains("TransformPrimitive")  &&
-                inputs["translation"].linkIndice.empty() &&
-                inputs["quatRotation"].linkIndice.empty() &&
-                inputs["scaling"].linkIndice.empty()) {
+                inputs["translation"].info.links.empty() &&
+                inputs["quatRotation"].info.links.empty() &&
+                inputs["scaling"].info.links.empty()) {
                 syncToTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
             }
             else {
@@ -525,9 +525,9 @@ QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelI
     auto output_sockets = node_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
     QString node_name = node_id.section("-", 1);
     std::string out_sock = getNodePrimSockName(node_name.toStdString());
-    auto linked_edges = output_sockets[out_sock.c_str()].linkIndice;
+    auto linked_edges = output_sockets[out_sock.c_str()].info.links;
     for (const auto& linked_edge : linked_edges) {
-        auto next_node_id = linked_edge.data(ROLE_INNODE).toString();
+        const QString& next_node_id = linked_edge.inputNode;
         if (next_node_id.contains("TransformPrimitive")) {
             auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
             auto linked_node_index = search_result[0].targetIdx;

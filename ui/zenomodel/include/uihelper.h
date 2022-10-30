@@ -45,8 +45,6 @@ public:
     static NODE_TYPE nodeType(const QString& name);
 
     //todo: place at other helper.
-    static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
-        const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
     static int getMaxObjId(const QList<QString>& lst);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);

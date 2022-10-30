@@ -82,6 +82,15 @@ public:
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
     IParamModel* paramModel(const QModelIndex& index, PARAM_CLASS cls) const;
 
+    bool setParamValue(
+        PARAM_CLASS cls,
+        const QModelIndex& idx,
+        const QString& sockName,
+        const QVariant& value,
+        const QString& type = "",
+        PARAM_CONTROL ctrl = CONTROL_NONE,
+        bool bAddIfNotExist = true);
+
     QString name() const;
     void setName(const QString& name);
 
@@ -92,7 +101,6 @@ public:
     void clear();
     void reload();
     void onModelInited();
-    void setInputSocket(const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue);
     void collaspe();
     void expand();
 

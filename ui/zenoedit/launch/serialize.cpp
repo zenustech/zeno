@@ -82,7 +82,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
 
-            if (input.linkIndice.isEmpty())
+            if (input.info.links.isEmpty())
             {
                 QVariant defl = input.info.defaultValue;
                 const QString& sockType = input.info.type;
@@ -92,11 +92,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                for (QPersistentModelIndex linkIdx : input.linkIndice)
+                for (EdgeInfo link : input.info.links)
                 {
-                    ZASSERT_EXIT(linkIdx.isValid());
-                    QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                    QString outId = linkIdx.data(ROLE_OUTNODE).toString();
+                    QString outSock = link.outputSock;
+                    QString outId = link.outputNode;
                     const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
                     outId = nameMangling(graphIdPrefix, outId);
                     AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
