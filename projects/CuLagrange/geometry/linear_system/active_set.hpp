@@ -76,8 +76,8 @@ namespace zeno {
             constexpr auto space = execspace_e::cuda;
 
             // evaluate the lagrangian l = S(-Ax + b)
-            PCG::multiply(pol,vtemp,etemp,H_tag,inds_tag,sol_tag,lagrangian_tag);
-            PCG::add(pol,vtemp,lagrangian_tag,(T)-1.0,rhs_tag,(T)1.0,lagrangian_tag);
+            TILEVEC_OPS::multiply(pol,vtemp,etemp,H_tag,inds_tag,sol_tag,lagrangian_tag);
+            TILEVEC_OPS::add(pol,vtemp,lagrangian_tag,(T)-1.0,rhs_tag,(T)1.0,lagrangian_tag);
             cudaPol(range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),lagrangian_tag,fix_tag,active_set_threshold] __device__(int vi) mutable {
                     auto fix = vtemp(fix_tag,vi);
@@ -130,15 +130,15 @@ namespace zeno {
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
-        PCG::copy(pol,vert_buffer,sol_tag,vtemp,"sol");
-        PCG::fill(pol,vtemp,"sol_old",vtemp,zs::vec<T,1>{std::numeric_limits<T>::max()});
-        PCG::copy(pol,vert_buffer,ub_tag,vtemp,"ub");
-        PCG::copy(pol,vert_buffer,lb_tag,vtemp,"lb");
+        TILEVEC_OPS::copy(pol,vert_buffer,sol_tag,vtemp,"sol");
+        TILEVEC_OPS::fill(pol,vtemp,"sol_old",vtemp,zs::vec<T,1>{std::numeric_limits<T>::max()});
+        TILEVEC_OPS::copy(pol,vert_buffer,ub_tag,vtemp,"ub");
+        TILEVEC_OPS::copy(pol,vert_buffer,lb_tag,vtemp,"lb");
         // bou == 1 means boundary point
-        PCG::copy(pol,vert_buffer,bou_tag,vtemp,"bou");
-        PCG::copy(pol,vert_buffer,bou_tag,vtemp,"fix");
-        PCG::copy(pol,vert_buffer,rhs_tag,vtemp,"rhs");
-        PCG::copy(pol,vert_buffer,P_tag,vtemp,"P");
+        TILEVEC_OPS::copy(pol,vert_buffer,bou_tag,vtemp,"bou");
+        TILEVEC_OPS::copy(pol,vert_buffer,bou_tag,vtemp,"fix");
+        TILEVEC_OPS::copy(pol,vert_buffer,rhs_tag,vtemp,"rhs");
+        TILEVEC_OPS::copy(pol,vert_buffer,P_tag,vtemp,"P");
 
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
@@ -151,11 +151,11 @@ namespace zeno {
         while(active_set_iters < max_active_set_iters){
             // find the breaches of bounding constraints
             mark_fix_dofs(pol,vtemp,"sol","ub","lb","bou","fix");
-            PCG::add(pol,vtemp,"sol",(T)1.0,"sol_old",(T)-1.0,"tmp");
-            auto diff = std::sqrt(PCG::dot(pol,vtemp,"tmp","tmp"));
+            TILEVEC_OPS::add(pol,vtemp,"sol",(T)1.0,"sol_old",(T)-1.0,"tmp");
+            auto diff = std::sqrt(TILEVEC_OPS::dot(pol,vtemp,"tmp","tmp"));
             if(diff < solution_thresh_hold)
                 break;
-            PCG::copy(pol,vtemp,"sol",vtemp,"sol_old");
+            TILEVEC_OPS::copy(pol,vtemp,"sol",vtemp,"sol_old");
             project_constraints(pol,vtemp,"sol","ub","lb","fix");
 
             pcg_with_fixed_sol_solve(pol,vtemp,etemp,"sol","fix","rhs","P","inds","H",cg_rel_accuracy,cg_max_iters,cg_recal_iter);
