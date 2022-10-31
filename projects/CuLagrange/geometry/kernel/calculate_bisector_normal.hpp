@@ -62,7 +62,7 @@ namespace zeno {
 
     template<typename VTileVec,typename ETileVec,typename TTileVec>
     constexpr int is_inside_the_cell(const VTileVec& verts,const ETileVec& lines,const TTileVec& tris,
-            const zs::SmallString& bisector_normal_tag,
+            const zs::SmallString& bisector_normal_tag,const zs::SmallString& x_tag,
             int cell_id,const zs::vec<T,3>& p,T inset,T offset,T& dist) {
         using namespace zs;
 
@@ -70,7 +70,7 @@ namespace zeno {
         auto nrm = tris.template pack<3>("nrm",cell_id);
         
         auto inds = tris.template pack<3>("inds",cell_id).reinterpret_bits(int_c);
-        auto seg = p - verts.template pack<3>("x",inds[0]);    
+        auto seg = p - verts.template pack<3>(x_tag,inds[0]);    
 
         dist = seg.dot(nrm);
         if(dist < -(inset + 1e-6) || dist > (offset + 1e-6))
@@ -85,11 +85,23 @@ namespace zeno {
             // auto tline = zs::vec<int,2>(inds[i],inds[(i+1)%3]);
             // if(is_edge_edge_match(line,tline) == 1)
             //     ne =  (T)-1 * ne;
-            seg = p - verts.template pack<3>("x",inds[i]);
+            seg = p - verts.template pack<3>(x_tag,inds[i]);
             if(bisector_normal.dot(seg) < 0)
                 return 2;
         }
 
         return 0;
     } 
+
+    template<typename VTileVec,typename ETileVec,typename TTileVec>
+    constexpr int is_inside_the_cell(const VTileVec& verts,const ETileVec& lines,const TTileVec& tris,
+            const zs::SmallString& bisector_normal_tag,const zs::SmallString& x_tag,
+            int cell_id,const zs::vec<T,3>& p,T inset,T offset) {
+        using namespace zs;
+
+        T dist{};
+        return is_inside_the_cell(verts,lines,tris,bisector_normal_tag,x_tag,cell_id,p,inset,offset,dist);
+    } 
+
+
 }
