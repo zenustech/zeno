@@ -94,8 +94,8 @@ struct ZSIsotropicTensionField : INode {
                 const auto& x1 = verts.template pack<3>(def_channel,inds[1]);
                 const auto& x2 = verts.template pack<3>(def_channel,inds[2]);
                 
-                auto A = LSL_GEO::area<float>(X0,X1,X2);
-                auto a = LSL_GEO::area<float>(x0,x1,x2);
+                auto A = LSL_GEO::area(X0,X1,X2);
+                auto a = LSL_GEO::area(x0,x1,x2);
 
                 etemp("A",ti) = A;
                 etemp("a",ti) = a;
