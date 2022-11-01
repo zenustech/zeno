@@ -22,7 +22,7 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // should we reverse the direction of the force?
     ///////////////////////////////////////////////////////////////////////
-    bool reverse(const std::vector<VECTOR3>& v,const std::vector<VECTOR3>& e)
+    constexpr bool reverse(const VECTOR3 v[3],const VECTOR3 e[3])
     {
         // get the normal
         VECTOR3 n = e[2].cross(e[0]);
@@ -35,7 +35,7 @@ namespace COLLISION_UTILS {
     }
 
 
-    VECTOR12 flatten(const std::vector<VECTOR3>& v) {
+    constexpr VECTOR12 flatten(const std::vector<VECTOR3>& v) {
         auto res = VECTOR12::zeros();
         for(size_t i = 0;i < 4;++i)
             for(size_t j = 0;j < 3;++j)
@@ -43,12 +43,12 @@ namespace COLLISION_UTILS {
         return res;
     }
 
-    void setCol(MATRIX3x12& m,int col,const VECTOR3& v) {
+    constexpr void setCol(MATRIX3x12& m,int col,const VECTOR3& v) {
         for(int i = 0;i < 3;++i)
             m[i][col] = v[i];
     }
 
-    VECTOR3 getCol(MATRIX3x12& m,int col) {
+    constexpr VECTOR3 getCol(MATRIX3x12& m,int col) {
         VECTOR3 res{0};
         for(int i = 0;i < 3;++i)
             res[i] = m[i][col];
@@ -59,7 +59,7 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // partial of (va - vb)
     ///////////////////////////////////////////////////////////////////////
-    MATRIX3x12 vDiffPartial(const VECTOR2& a, const VECTOR2& b)
+    constexpr MATRIX3x12 vDiffPartial(const VECTOR2& a, const VECTOR2& b)
     {
         auto tPartial = MATRIX3x12::zeros();
         tPartial(0,0) = tPartial(1,1)  = tPartial(2,2) = -a[0];
@@ -74,9 +74,9 @@ namespace COLLISION_UTILS {
     // gradient of the cross product used to compute the normal,
     // edge-edge case
     ///////////////////////////////////////////////////////////////////////
-    MATRIX3x12 crossGradientEE(const std::vector<VECTOR3>& e)
+    constexpr MATRIX3x12 crossGradientEE(const VECTOR3 e[3])
     {
-        MATRIX3x12 crossMatrix;
+        MATRIX3x12 crossMatrix{};
 
         const REAL e0x = e[0][0];
         const REAL e0y = e[0][1];
@@ -109,15 +109,15 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // gradient of the normal, edge-edge case
     ///////////////////////////////////////////////////////////////////////
-    MATRIX3x12 normalGradientEE(const std::vector<VECTOR3>& e)
+    constexpr MATRIX3x12 normalGradientEE(const VECTOR3 e[3])
     {
         VECTOR3 crossed = e[1].cross(e[0]);
         const REAL crossNorm = crossed.norm();
         const REAL crossNormInv = (crossNorm > 1e-8) ? 1.0 / crossed.norm() : 0.0;
-        const REAL crossNormCubedInv = (crossNorm > 1e-8) ? 1.0 / pow(crossed.dot(crossed), 1.5) : 0.0;
+        const REAL crossNormCubedInv = (crossNorm > 1e-8) ? 1.0 / zs::pow(crossed.dot(crossed), (REAL)1.5) : 0.0;
         MATRIX3x12 crossMatrix = crossGradientEE(e);
 
-        MATRIX3x12 result;
+        MATRIX3x12 result{};
         for (int i = 0; i < 12; i++)
         {
             VECTOR3 crossColumn = getCol(crossMatrix,i);
@@ -132,7 +132,7 @@ namespace COLLISION_UTILS {
     // one entry of the rank-3 hessian of the cross product used to compute 
     // the triangle normal, edge-edge case
     ///////////////////////////////////////////////////////////////////////
-    VECTOR3 crossHessianEE(const int iIn, const int jIn)
+    constexpr VECTOR3 crossHessianEE(const int iIn, const int jIn)
     {
         int i = iIn;
         int j = jIn;
@@ -168,11 +168,11 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // hessian of the triangle normal, edge-edge case
     ///////////////////////////////////////////////////////////////////////
-    std::vector<MATRIX12> normalHessianEE(const std::vector<VECTOR3>& e)
+    constexpr void normalHessianEE(const VECTOR3 e[3],MATRIX12 H[3])
     {
-        using namespace std;
+        // using namespace std;
 
-        std::vector<MATRIX12> H(3);
+        // MATRIX12 H[3];
         for (int i = 0; i < 3; i++)
             H[i] = MATRIX12::zeros();
 
@@ -181,8 +181,8 @@ namespace COLLISION_UTILS {
         const VECTOR3& z = crossed;
         
         //denom15 = (z' * z) ^ (1.5);
-        REAL denom15 = pow(crossed.dot(crossed), 1.5);
-        REAL denom25 = pow(crossed.dot(crossed), 2.5);
+        REAL denom15 = zs::pow(crossed.dot(crossed), (REAL)1.5);
+        REAL denom25 = zs::pow(crossed.dot(crossed), (REAL)2.5);
 
         for (int j = 0; j < 12; j++)
             for (int i = 0; i < 12; i++)
@@ -213,14 +213,14 @@ namespace COLLISION_UTILS {
                 H[1](i,j) = entry[1];
                 H[2](i,j) = entry[2];
             }
-        return H;
+        // return H;
     }
 
 
 
-    MATRIX3x12 crossGradientVF(const std::vector<VECTOR3>& e)
+    constexpr MATRIX3x12 crossGradientVF(const VECTOR3 e[3])
     {
-        MATRIX3x12 crossMatrix;
+        MATRIX3x12 crossMatrix{};
 
         const REAL e0x = e[0][0];
         const REAL e0y = e[0][1];
@@ -246,12 +246,12 @@ namespace COLLISION_UTILS {
         return crossMatrix;
     }
 
-    MATRIX3x12 normalGradientVF(const std::vector<VECTOR3>& e)
+    constexpr MATRIX3x12 normalGradientVF(const VECTOR3 e[3])
     {
         //crossed = cross(e2, e0);
         VECTOR3 crossed = e[2].cross(e[0]);
         REAL crossNorm = crossed.norm();
-        const REAL crossNormCubedInv = 1.0 / pow(crossed.dot(crossed), 1.5);
+        const REAL crossNormCubedInv = 1.0 / zs::pow(crossed.dot(crossed), (REAL)1.5);
         MATRIX3x12 crossMatrix = crossGradientVF(e);
 
         //final = zeros(3,12);
@@ -259,7 +259,7 @@ namespace COLLISION_UTILS {
         //  crossColumn = crossMatrix(:,i);
         //  final(:,i) = (1 / crossNorm) * crossColumn - ((crossed' * crossColumn) / crossNormCubed) * crossed;
         //end
-        MATRIX3x12 result;
+        MATRIX3x12 result{};
         for (int i = 0; i < 12; i++)
         {
             auto crossColumn = VECTOR3(crossMatrix[0][i],
@@ -275,7 +275,7 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // gradient of spring length, n' * (va - vb)
     ///////////////////////////////////////////////////////////////////////
-    VECTOR12 springLengthGradient(const std::vector<VECTOR3>& e,
+    constexpr VECTOR12 springLengthGradient(const VECTOR3 e[3],
                                                 const VECTOR3& n,
                                                 const VECTOR3& diff,
                                                 const VECTOR2& a,
@@ -286,7 +286,7 @@ namespace COLLISION_UTILS {
         return sign * nPartial.transpose() * diff + tPartial.transpose() * (sign * n);
     }
 
-    VECTOR12 springLengthGradient(const std::vector<VECTOR3>& v,const std::vector<VECTOR3>& e,const VECTOR3& n)
+    constexpr VECTOR12 springLengthGradient(const VECTOR3 v[3],const VECTOR3 e[3],const VECTOR3& n)
     {
         const MATRIX3x12 nPartial = normalGradientVF(e);
         const VECTOR3 tvf = v[0] - v[2];
@@ -302,7 +302,7 @@ namespace COLLISION_UTILS {
 // one entry of the rank-3 hessian of the cross product used to compute 
 // the triangle normal, vertex-face case
 ///////////////////////////////////////////////////////////////////////
-    VECTOR3 crossHessianVF(const int iIn, const int jIn)
+    constexpr VECTOR3 crossHessianVF(const int iIn, const int jIn)
     {
         int i = iIn;
         int j = jIn;
@@ -338,11 +338,11 @@ namespace COLLISION_UTILS {
 ///////////////////////////////////////////////////////////////////////
 // hessian of the triangle normal, vertex-face case
 ///////////////////////////////////////////////////////////////////////
-    std::vector<MATRIX12> normalHessianVF(const std::vector<VECTOR3>& e)
+    constexpr void normalHessianVF(const VECTOR3 e[3],MATRIX12 H[3])
     {
-        using namespace std;
+        // using namespace std;
 
-        std::vector<MATRIX12> H(3);
+        // MATRIX12 H[3];
         for (int i = 0; i < 3; i++)
             H[i] = MATRIX12::zeros();
 
@@ -381,14 +381,14 @@ namespace COLLISION_UTILS {
             H[1](i,j) = entry[1];
             H[2](i,j) = entry[2];
             }
-        return H;
+        // return H;
     }
 
 
     ///////////////////////////////////////////////////////////////////////
     // hessian of spring length, n' * (v[2] - v[0])
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 springLengthHessian(const std::vector<VECTOR3>& e,
+    constexpr MATRIX12 springLengthHessian(const VECTOR3 e[3],
                                                 const VECTOR3& n,
                                                 const VECTOR3& diff,
                                                 const VECTOR2& a,
@@ -400,7 +400,8 @@ namespace COLLISION_UTILS {
         //% mode-3 contraction
         //[nx ny nz] = normal_hessian(x);
         //final = nx * delta(1) + ny * delta(2) + nz * delta(3);
-        std::vector<MATRIX12> normalH = normalHessianEE(e);
+        MATRIX12 normalH[3] = {};
+        normalHessianEE(e,normalH);
 
         MATRIX12 contracted = diff[0] * normalH[0] + 
                                 diff[1] * normalH[1] + 
@@ -422,8 +423,8 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // hessian of spring length, n' * (v[0] - v[2])
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 springLengthHessian(const std::vector<VECTOR3>& v,
-                                                        const std::vector<VECTOR3>& e,
+    constexpr MATRIX12 springLengthHessian(const VECTOR3 v[3],
+                                                        const VECTOR3 e[3],
                                                         const VECTOR3& n){
         const VECTOR3 tvf = v[0] - v[2];
 
@@ -435,7 +436,8 @@ namespace COLLISION_UTILS {
         //% mode-3 contraction
         //[nx ny nz] = normal_hessian(x);
         //final = nx * tvf(1) + ny * tvf(2) + nz * tvf(3);
-        const std::vector<MATRIX12> normalH = normalHessianVF(e);
+        MATRIX12 normalH[3]={};
+        normalHessianVF(e,normalH);
         const MATRIX12 contracted = tvf[0] * normalH[0] + tvf[1] * normalH[1] + 
                                     tvf[2] * normalH[2];
         
@@ -451,7 +453,7 @@ namespace COLLISION_UTILS {
     // get the linear interpolation coordinates from v0 to the line segment
     // between v1 and v2
     ///////////////////////////////////////////////////////////////////////
-    VECTOR2 getLerp(const VECTOR3 v0, const VECTOR3& v1, const VECTOR3& v2)
+    constexpr VECTOR2 getLerp(const VECTOR3 v0, const VECTOR3& v1, const VECTOR3& v2)
     {
         const VECTOR3 e0 = v0 - v1;
         const VECTOR3 e1 = v2 - v1;
@@ -472,7 +474,7 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // find the distance from a line segment (v1, v2) to a point (v0)
     ///////////////////////////////////////////////////////////////////////
-    REAL pointLineDistance(const VECTOR3 v0, const VECTOR3& v1, const VECTOR3& v2)
+    constexpr REAL pointLineDistance(const VECTOR3 v0, const VECTOR3& v1, const VECTOR3& v2)
     {
         const VECTOR3 e0 = v0 - v1;
         const VECTOR3 e1 = v2 - v1;
@@ -498,7 +500,7 @@ namespace COLLISION_UTILS {
     // get the barycentric coordinate of the projection of v[0] onto the triangle
     // formed by v[1], v[2], v[3]
     ///////////////////////////////////////////////////////////////////////
-    VECTOR3 getBarycentricCoordinates(const std::vector<VECTOR3>& vertices)
+    constexpr VECTOR3 getBarycentricCoordinates(const VECTOR3 vertices[4])
     {
         const VECTOR3 v0 = vertices[1];
         const VECTOR3 v1 = vertices[2];
@@ -529,7 +531,7 @@ namespace COLLISION_UTILS {
     // but, if the projection is actually outside, project to all of the
     // edges and find the closest point that's still inside the triangle
     ///////////////////////////////////////////////////////////////////////
-    VECTOR3 getInsideBarycentricCoordinates(const std::vector<VECTOR3>& vertices)
+    constexpr VECTOR3 getInsideBarycentricCoordinates(const VECTOR3 vertices[4])
     {
         VECTOR3 barycentric = getBarycentricCoordinates(vertices);
 
@@ -578,7 +580,7 @@ namespace COLLISION_UTILS {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    MATRIX3x12 tDiffPartial(const VECTOR3& bary)
+    constexpr MATRIX3x12 tDiffPartial(const VECTOR3& bary)
     {
         MATRIX3x12 tPartial{0};
         tPartial(0,0) = tPartial(1,1)  = tPartial(2,2) = 1.0;
@@ -592,7 +594,7 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // are the two edges nearly parallel?
     ///////////////////////////////////////////////////////////////////////
-    bool nearlyParallel(const std::vector<VECTOR3> e){
+    constexpr bool nearlyParallel(const VECTOR3 e[3]){
         const VECTOR3 e0 = e[0].normalized();
         const VECTOR3 e1 = e[1].normalized();
         const REAL dotted = zs::abs(e0.dot(e1));
@@ -619,11 +621,11 @@ namespace COLLISION_UTILS {
     ///////////////////////////////////////////////////////////////////////
     // does this face and edge intersect?
     ///////////////////////////////////////////////////////////////////////
-    bool faceEdgeIntersection(const std::vector<VECTOR3>& triangleVertices, 
-                            const std::vector<VECTOR3>& edgeVertices)
+    constexpr bool faceEdgeIntersection(const VECTOR3 triangleVertices[3], 
+                            const VECTOR3 edgeVertices[2])
     {
-        assert(triangleVertices.size() == 3);
-        assert(edgeVertices.size() == 2);
+        // assert(triangleVertices.size() == 3);
+        // assert(edgeVertices.size() == 2);
 
         const VECTOR3& a = triangleVertices[0];
         const VECTOR3& b = triangleVertices[1];
@@ -661,7 +663,7 @@ namespace COLLISION_UTILS {
 ///////////////////////////////////////////////////////////////////////
 // compute distance between a point and triangle
 ///////////////////////////////////////////////////////////////////////
-    REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
+    constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
                                         const VECTOR3& v2, const VECTOR3& v)
     {
         // get the barycentric coordinates
@@ -737,7 +739,7 @@ namespace COLLISION_UTILS {
     // see if the projection of v onto the plane of v0,v1,v2 is inside 
     // the triangle formed by v0,v1,v2
     ///////////////////////////////////////////////////////////////////////
-    bool pointProjectsInsideTriangle(const VECTOR3& v0, const VECTOR3& v1, 
+    constexpr bool pointProjectsInsideTriangle(const VECTOR3& v0, const VECTOR3& v1, 
                                             const VECTOR3& v2, const VECTOR3& v){
         // get the barycentric coordinates
         const VECTOR3 e1 = v1 - v0;
@@ -758,6 +760,10 @@ namespace COLLISION_UTILS {
 
         return false;
     }
+
+
+
+
 
 };
 };

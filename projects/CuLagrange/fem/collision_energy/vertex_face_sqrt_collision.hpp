@@ -11,13 +11,13 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 // TODO: for the purpose of consistent energy interface, we use vec4 bary, with bary = vec4{1,tri_bary}
-    REAL psi(const std::vector<VECTOR3>& v,const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr REAL psi(const VECTOR3 v[4],const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        zs::vec<REAL,3> e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
-        e[2] = v[1] - v[2];
+        e[2] = v[1] - v[2]; 
 
         const bool reversal = reverse(v,e);
 
@@ -31,7 +31,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    REAL psi(const std::vector<VECTOR3>& v,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr REAL psi(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         const VECTOR3 bary = getInsideBarycentricCoordinates(v);
         return psi(v,bary,_mu,_nu,_eps);
@@ -39,15 +39,15 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-    VECTOR12 gradient(const std::vector<VECTOR3>& v, const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr VECTOR12 gradient(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         REAL _inverseEps = 1e-8;
 
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        zs::vec<REAL,3> e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
-        e[2] = v[1] - v[2];
+        e[2] = v[1] - v[2]; 
         const bool reversal = reverse(v,e);
         
         // remember we had to reorder vertices in a wonky way
@@ -69,25 +69,14 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         // but consistency is not guaranteed, so let's just zero it out at the first
         // sign of trouble
         //const REAL tMagnitudeInv = (fabs(tMagnitude) > _inverseEps) ? 1.0 / tMagnitude : 0.0;
-        //const VECTOR12 result = 2.0 * _mu * springDiff * tMagnitudeInv * tDiff.transpose() * t;
-
-        #if ENABLE_DEBUG_TRAPS
-        if (result.hasNaN())
-        {
-            std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " : " << std::endl;
-            cout << " springDiff: " << springDiff << endl;
-            cout << " tMagnitude: " << tMagnitude << endl;
-            cout << " tDiff: " << endl << tDiff << endl;
-            cout << " result: " << result << endl;
-        }
-        #endif
+        //const VECTOR12 result = 2.0 * _mu * springDiff * tMagnitudeInv * tDiff.transpose() * t
 
         return result;
     }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    VECTOR12 gradient(const std::vector<VECTOR3>& v,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr VECTOR12 gradient(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         const VECTOR3 bary = getInsideBarycentricCoordinates(v);
         return gradient(v, bary, _mu, _nu, _eps);
@@ -95,22 +84,22 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 hessian(const std::vector<VECTOR3>& v, const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr MATRIX12 hessian(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         REAL _inverseEps = 1e-8;
 
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        zs::vec<REAL,3> e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
-        e[2] = v[1] - v[2];
+        e[2] = v[1] - v[2]; 
         const bool reversal = reverse(v,e);
         
         // remember we had to reorder vertices in a wonky way
         const VECTOR3 xs = bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3];
         const VECTOR3 t = v[0] - xs;
         const REAL tDott = t.dot(t);
-        const REAL tMagnitude = sqrt(tDott);
+        const REAL tMagnitude = zs::sqrt(tDott);
         //const REAL springDiff = tMagnitude - _eps;
         const REAL springDiff = (reversal) ? tMagnitude + _eps : tMagnitude - _eps;
         const MATRIX3x12 tDiff = tDiffPartial(bary); 
@@ -136,7 +125,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 hessian(const std::vector<VECTOR3>& v,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr MATRIX12 hessian(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
         const VECTOR3 bary = getInsideBarycentricCoordinates(v);
         return hessian(v, bary,_mu,_nu,_eps);
