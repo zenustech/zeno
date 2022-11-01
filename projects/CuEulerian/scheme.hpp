@@ -22,4 +22,16 @@ template <typename T> constexpr T central_diff_2nd(T fm, T f, T fp, T dh) {
     return (fp - (T)2.0 * f + fm) / (dh * dh);
 }
 
+template <typename T> constexpr T minmod(const T a, const T b) {
+    const T sgn = a >= 0. ? 1.0 : -1.0;
+    return sgn * fmax(0.0, fmin(sgn * a, sgn * b));
+}
+
+template <typename T> constexpr T TVD_MUSCL3(const T fdw, const T fup, const T fup2) {
+    const T b = (T)4.0;
+    const T dfp = fup2 - fup;
+    const T dfm = fup - fdw;
+    return fup - (T)0.25 * ((T)4.0 / (T)3.0 * minmod(dfm, dfp * b) + (T)2.0 / (T)3.0 * minmod(dfp, dfm * b));
+}
+
 } // namespace scheme

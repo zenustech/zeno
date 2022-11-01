@@ -23,7 +23,14 @@ struct ZSVDBToNavierStokesGrid : INode {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
 
         auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
-        spg.append_channels(zs::cuda_exec(), {{"v0", 3}, {"v1", 3}, {"p0", 1}, {"p1", 1}, {"div_v", 1}});
+        spg.append_channels(zs::cuda_exec(), {{"v0", 3},
+                                              {"v1", 3},
+                                              {"p0", 1},
+                                              {"p1", 1},
+                                              {"div_v", 1},
+                                              {"rho", 1}, // smoke density
+                                              {"T", 1},   // smoke temperature
+                                              {"flux", 3}});
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
         zsSPG->setMeta("v_cur", 0);
@@ -337,9 +344,11 @@ ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
 struct ZSNSNaiveSolidWall : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
-        auto Solid = get_input<ZenoSparseGrid>("SolidSDF");
+        auto SolidSDF = get_input<ZenoSparseGrid>("SolidSDF");
+        auto SolidVel = get_input<ZenoSparseGrid>("SolidVel");
 
-        auto &sdf = Solid->spg;
+        auto &sdf = SolidSDF->spg;
+        auto &vel = SolidVel->spg;
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
 
@@ -349,27 +358,128 @@ struct ZSNSNaiveSolidWall : INode {
         int &v_cur = NSGrid->readMeta<int &>("v_cur");
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf),
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
              vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
                                                                                              int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto solid_sdf = sdfv.wSample("sdf", wcoord);
 
                 if (solid_sdf < 0) {
-                    for (int ch = 0; ch < 3; ++ch)
-                        spgv(vSrcTag, ch, blockno, cellno) = 0.f;
+                    auto vel_s = velv.wStaggeredPack("v", wcoord);
+                    auto block = spgv.block(blockno);
+                    block.template tuple<3>(vSrcTag, cellno) = vel_s;
                 }
             });
     }
 };
 
 ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
-                                {"NSGrid", "SolidSDF"},
+                                {"NSGrid", "SolidSDF", "SolidVel"},
                                 /* outputs: */
                                 {},
                                 /* params: */
                                 {},
                                 /* category: */
                                 {"Eulerian"}});
+
+struct ZSTracerAdvectDiffuse : INode {
+    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, ZenoSparseGrid *NSGrid) {
+
+        constexpr auto space = zs::execspace_e::cuda;
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto dx = spg.voxelSize()[0];
+
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        // Finite Volume Method (FVM)
+        // numrtical flux of tracer
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), diffuse, dx, tag,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
+                                                                                             int cellno) mutable {
+                auto icoord = spgv.iCoord(blockno, cellno);
+
+                const int stcl = 2; // stencil point in each side
+                float trc[3][2 * stcl];
+
+                // | i - 2 | i - 1 | i | i + 1 |
+                for (int i = -stcl; i < stcl; ++i) {
+                    trc[0][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(i, 0, 0));
+                    trc[1][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, i, 0));
+                    trc[2][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, 0, i));
+                }
+
+                float u_adv[3];
+                for (int ch = 0; ch < 3; ++ch)
+                    u_adv[ch] = spgv.value(vSrcTag, ch, icoord);
+
+                // approximate value at i - 1/2
+                float flux[3];
+                for (int ch = 0; ch < 3; ++ch) {
+                    // convection flux
+                    if (u_adv[ch] < 0)
+                        flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
+                    else
+                        flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
+
+                    // diffusion flux
+                    flux[ch] -= diffuse * (trc[ch][2] - trc[ch][1]) / dx;
+                }
+
+                for (int ch = 0; ch < 3; ++ch) {
+                    spgv("flux", ch, blockno, cellno) = flux[ch];
+                }
+            });
+
+        // time integration of tracer
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), dx, dt, tag] __device__(int blockno, int cellno) mutable {
+                auto icoord = spgv.iCoord(blockno, cellno);
+
+                float flux[3][2];
+                for (int ch = 0; ch < 3; ++ch) {
+                    zs::vec<int, 3> offset{0, 0, 0};
+                    offset[ch] = 1;
+
+                    flux[ch][0] = spgv.value("flux", ch, icoord);
+                    flux[ch][1] = spgv.value("flux", ch, icoord + offset);
+                }
+
+                float dtrc = 0;
+                for (int ch = 0; ch < 3; ++ch) {
+                    dtrc += (flux[ch][0] - flux[ch][1]) / dx;
+                }
+                dtrc *= dt;
+
+                spgv(tag, blockno, cellno) += dtrc;
+            });
+    }
+
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto diffuse = get_input2<float>("Diffusion");
+        auto dt = get_input2<float>("dt");
+
+        auto pol = zs::cuda_exec();
+        ///
+        if (get_input2<bool>("Density"))
+            compute(pol, "rho", diffuse, dt, NSGrid.get());
+        if (get_input2<bool>("Temperature"))
+            compute(pol, "T", diffuse, dt, NSGrid.get());
+    }
+};
+
+ZENDEFNODE(ZSTracerAdvectDiffuse,
+           {/* inputs: */
+            {"NSGrid", "dt", {"float", "Diffusion", "0.0"}, {"bool", "Density", "0"}, {"bool", "Temperature", "0"}},
+            /* outputs: */
+            {},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
 
 } // namespace zeno
