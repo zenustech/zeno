@@ -109,13 +109,11 @@ public:
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
-    bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
     bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name) override;
 	void endTransaction() override;
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
-    void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
     IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
@@ -142,7 +140,11 @@ public slots:
 private:
     NODE_DESCS getCoreDescs();
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
-    void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
+    bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
+    void onSubIOUpdate(SubGraphModel* pGraph, const QModelIndex& nodeIdx, PARAM_UPDATE_INFO info);
+    bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
+
+    QModelIndexList findSubgraphNode(const QString& subgName);
     void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
                    bool enableTrans = false);
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;

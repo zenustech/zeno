@@ -108,20 +108,6 @@ private:
     GraphsModel* m_pModel;
 };
 
-class UpdateSocketCommand : public QUndoCommand
-{
-public:
-    UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    SOCKET_UPDATE_INFO m_info;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
-};
-
 class UpdateBlackboardCommand : public QUndoCommand
 {
 public:
@@ -136,20 +122,6 @@ private:
     QString m_nodeid;
     QPersistentModelIndex m_subgIdx;
     GraphsModel *m_pModel;
-};
-
-class UpdateNotDescSockNameCommand : public QUndoCommand
-{
-public:
-    UpdateNotDescSockNameCommand(const QString& nodeid, const SOCKET_UPDATE_INFO& updateInfo, GraphsModel* pModel,                                 QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    SOCKET_UPDATE_INFO m_info;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
 };
 
 class ImportNodesCommand : public QUndoCommand

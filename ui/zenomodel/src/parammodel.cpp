@@ -278,35 +278,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             newItem.name = newName;
             m_items.remove(oldName);
             m_items.insert(newName, newItem);
-
-            if (m_class != PARAM_INPUT && m_class != PARAM_OUTPUT)
-                return false;
-
-            //resolve links.
-            for (QPersistentModelIndex linkIdx : newItem.links)
-            {
-                //modify link info.
-                QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-                QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                QString inNode = linkIdx.data(ROLE_INNODE).toString();
-                QString inSock = linkIdx.data(ROLE_INSOCK).toString();
-
-                auto pLinkModel = m_model->linkModel();
-                if (m_class == PARAM_INPUT)
-                {
-                    ZASSERT_EXIT(inSock == oldName, false);
-                    inSock = newName;
-                    pLinkModel->setInputSocket(linkIdx, index);
-                    //emit signal?
-                }
-                else
-                {
-                    ZASSERT_EXIT(outSock == oldName, false);
-                    outSock = newName;
-                    pLinkModel->setOutputSocket(linkIdx, index);
-                    //emit signal?
-                }
-            }
             break;
         }
         case ROLE_PARAM_TYPE:
@@ -411,17 +382,17 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     return true;
 }
 
-void IParamModel::insertRow(int row, const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
+void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
 {
     beginInsertRows(QModelIndex(), row, row);
-    bool ret = _insertRow(row, name, type, deflValue, ctrl, links);
+    bool ret = _insertRow(row, sockName, type, deflValue, ctrl, links);
     endInsertRows();
 }
 
-void IParamModel::appendRow(const QString& name, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
+void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
 {
     int n = rowCount();
-    insertRow(n, name, type, deflValue, ctrl, links);
+    insertRow(n, sockName, type, deflValue, ctrl, links);
 }
 
 void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
@@ -432,7 +403,7 @@ void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVa
     setData(idx, QVariant::fromValue(links), ROLE_PARAM_LINKS);
 }
 
-bool IParamModel::addLink(const QString& sockName, const QModelIndex& linkIdx)
+bool IParamModel::addLinkToParam(const QString& sockName, const QModelIndex& linkIdx)
 {
     QModelIndex idx = index(sockName);
     if (!idx.isValid())
@@ -483,17 +454,17 @@ QStringList IParamModel::sockNames() const
 
 bool IParamModel::_insertRow(
     int row,
-    const QString& name,
+    const QString& sockName,
     const QString& type,
     const QVariant& deflValue,
     PARAM_CONTROL ctrl,
     const PARAM_LINKS& links)
 {
-    ZASSERT_EXIT(m_items.find(name) == m_items.end(), false);
+    ZASSERT_EXIT(m_items.find(sockName) == m_items.end(), false);
     int nRows = m_items.size();
 
     _ItemInfo item;
-    item.name = name;
+    item.name = sockName;
     item.ctrl = ctrl;
     item.pConst = deflValue;
     item.type = type;
@@ -504,9 +475,9 @@ bool IParamModel::_insertRow(
     if (row == nRows)
     {
         //append
-        m_items[name] = item;
-        m_row2Key[nRows] = name;
-        m_key2Row[name] = nRows;
+        m_items[sockName] = item;
+        m_row2Key[nRows] = sockName;
+        m_key2Row[sockName] = nRows;
     }
     else if (row < nRows)
     {
@@ -519,9 +490,9 @@ bool IParamModel::_insertRow(
             m_row2Key[r] = key;
             m_key2Row[key] = r;
         }
-        m_items[name] = item;
-        m_row2Key[row] = name;
-        m_key2Row[name] = row;
+        m_items[sockName] = item;
+        m_row2Key[row] = sockName;
+        m_key2Row[sockName] = row;
     }
     else
     {

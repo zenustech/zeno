@@ -1,5 +1,6 @@
 #include "linkmodel.h"
 #include "modelrole.h"
+#include <zenomodel/include/uihelper.h>
 
 
 LinkModel::LinkModel(QObject* parent)
@@ -59,6 +60,7 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
 
     switch (role)
     {
+    case ROLE_OBJID:   return m_items[r].ident;
     case ROLE_OUTNODE: return fromSock.data(ROLE_OBJID).toString();  //IParamModel::data(ROLE_OBJID)
     case ROLE_OUTSOCK: return fromSock.data(ROLE_PARAM_NAME).toString();
     case ROLE_INNODE:  return toSock.data(ROLE_OBJID).toString();
@@ -125,10 +127,10 @@ int LinkModel::addLink(const QModelIndex& fromSock, const QModelIndex& toSock)
     _linkItem item;
     item.fromSock = fromSock;
     item.toSock = toSock;
+    item.ident = UiHelper::generateUuid();
     m_items.append(item);
 
     endInsertRows();
-
     return row;
 }
 

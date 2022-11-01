@@ -50,7 +50,6 @@ public:
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-	virtual bool updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
 	virtual void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction) = 0;
 

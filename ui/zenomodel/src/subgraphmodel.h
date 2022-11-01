@@ -72,7 +72,6 @@ public:
     void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType = nullptr);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
 
-    void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);
     void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
     //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA nodeData(const QModelIndex &index) const;
@@ -110,7 +109,7 @@ public slots:
 private:
     SubGraphModel(const SubGraphModel& rhs);
 
-    bool _insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
+    bool _insertNode(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
     bool itemFromIndex(const QModelIndex& index, _NodeItem& retNode) const;
     bool _removeRow(const QModelIndex &index);
     NODE_DATA item2NodeData(const _NodeItem& item) const;

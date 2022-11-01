@@ -90,8 +90,8 @@ protected:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
     virtual ZLayoutBackground* initHeaderWidget();
-    virtual void initSockets(const bool bInput, ZenoSubGraphScene* pScene);
-    virtual void initParams(ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initSockets(const bool bInput, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initParams(ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
 
 protected:
@@ -107,7 +107,7 @@ private:
     ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
-    void addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
+    ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

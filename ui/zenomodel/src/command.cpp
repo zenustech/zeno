@@ -186,41 +186,6 @@ void UpdateStateCommand::undo()
 }
 
 
-UpdateSocketCommand::UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
-    : m_nodeid(nodeid)
-    , m_info(info)
-    , m_pModel(pModel)
-    , m_subgIdx(subgIdx)
-{
-}
-
-void UpdateSocketCommand::redo()
-{
-    m_pModel->updateSocket(m_nodeid, m_info, m_subgIdx);
-}
-
-void UpdateSocketCommand::undo()
-{
-    SOCKET_UPDATE_INFO revertInfo;
-    revertInfo.bInput = m_info.bInput;
-    revertInfo.newInfo = m_info.oldInfo;
-    revertInfo.oldInfo = m_info.newInfo;
-    switch (m_info.updateWay)
-    {
-    case SOCKET_INSERT:
-        revertInfo.updateWay = SOCKET_REMOVE;
-        break;
-    case SOCKET_REMOVE:
-        revertInfo.updateWay = SOCKET_INSERT;
-        break;
-    default:
-        revertInfo.updateWay = m_info.updateWay;
-        break;
-    }
-    m_pModel->updateSocket(m_nodeid, revertInfo, m_subgIdx);
-}
-
-
 UpdateBlackboardCommand::UpdateBlackboardCommand(
         const QString& nodeid,
         BLACKBOARD_INFO newInfo,
@@ -243,41 +208,6 @@ void UpdateBlackboardCommand::redo()
 void UpdateBlackboardCommand::undo()
 {
     m_pModel->updateBlackboard(m_nodeid, m_oldInfo, m_subgIdx, false);
-}
-
-
-UpdateNotDescSockNameCommand::UpdateNotDescSockNameCommand(const QString& nodeid, const SOCKET_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx)
-    : m_nodeid(nodeid)
-    , m_info(updateInfo)
-    , m_pModel(pModel)
-    , m_subgIdx(subgIdx)
-{
-}
-
-void UpdateNotDescSockNameCommand::redo()
-{
-    m_pModel->updateSocketNameNotDesc(m_nodeid, m_info, m_subgIdx, false);
-}
-
-void UpdateNotDescSockNameCommand::undo()
-{
-    SOCKET_UPDATE_INFO revertInfo;
-    revertInfo.bInput = m_info.bInput;
-    revertInfo.newInfo = m_info.oldInfo;
-    revertInfo.oldInfo = m_info.newInfo;
-    switch (m_info.updateWay)
-    {
-    case SOCKET_INSERT:
-        revertInfo.updateWay = SOCKET_REMOVE;
-        break;
-    case SOCKET_REMOVE:
-        revertInfo.updateWay = SOCKET_INSERT;
-        break;
-    default:
-        revertInfo.updateWay = m_info.updateWay;
-        break;
-    }
-    m_pModel->updateSocketNameNotDesc(m_nodeid, revertInfo, m_subgIdx, false);
 }
 
 

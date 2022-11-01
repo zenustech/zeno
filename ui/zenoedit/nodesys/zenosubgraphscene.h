@@ -47,11 +47,8 @@ public slots:
     void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);
     void onViewTransformChanged(qreal factor);
 
-	void onLinkDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-	void onLinkAboutToBeInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
-	void onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
-	void onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
-	void onLinkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
+    void onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
+    void onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
 
 private slots:
     void reload(const QModelIndex& subGpIdx);

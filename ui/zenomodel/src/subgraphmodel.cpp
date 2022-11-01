@@ -109,6 +109,9 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
+    item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+    item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
+    item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -116,20 +119,14 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
 
     if (!inputs.isEmpty())
     {
-        if (!item.inputsModel)
-            item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
         item.inputsModel->setInputSockets(inputs);
     }
     if (!params.isEmpty())
     {
-        if (!item.paramsModel)
-            item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
         item.paramsModel->setParams(params);
     }
     if (!outputs.isEmpty())
     {
-        if (!item.outputsModel)
-            item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
         item.outputsModel->setOutputSockets(outputs);
     }
 
@@ -417,6 +414,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (params.empty())
                     return false;
 
+                //todo: always create model, because there will be custom param and it's convient to catch the signal if the model exists.
                 if (!item.paramsModel)
                     item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
 
@@ -585,80 +583,10 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     //correct the control type and desc type according to the type of real value.
     if (paramName == "defl" && (nodeCls == "SubInput" || nodeCls == "SubOutput") && newType)
     {
-        setData(paramIdx, *newType, ROLE_PARAM_TYPE);
-        setData(paramIdx, UiHelper::getControlType(*newType), ROLE_PARAM_CTRL);
+        pModel->setData(paramIdx, *newType, ROLE_PARAM_TYPE);
+        pModel->setData(paramIdx, UiHelper::getControlType(*newType), ROLE_PARAM_CTRL);
     }
-    setData(paramIdx, var, ROLE_PARAM_VALUE);
-}
-
-void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)
-{
-    QModelIndex idx = index(nodeid);
-    ZASSERT_EXIT(idx.isValid());
-
-    _NodeItem item;
-    if (!itemFromIndex(idx, item))
-    {
-        ZASSERT_EXIT(false);
-        return;
-    }
-
-    IParamModel* pModel = info.bInput ? item.inputsModel : item.outputsModel;
-    ZASSERT_EXIT(pModel);
-
-    //INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-    const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
-    const QString& oldName = info.oldInfo.name;
-    const QString& newName = info.newInfo.name;
-    switch (info.updateWay)
-    {
-        case SOCKET_INSERT:
-        {
-            if (nodeName == "MakeDict" || nodeName == "ExtractDict" || nodeName == "MakeList")
-            {
-                //dynamic socket in dict grows by bottom direction.
-                pModel->appendRow(newName, info.newInfo.type, info.newInfo.defaultValue, info.newInfo.control);
-            }
-            else
-            {
-                pModel->insertRow(0, newName, info.newInfo.type, info.newInfo.defaultValue, info.newInfo.control);
-            }
-            break;
-        }
-        case SOCKET_REMOVE:
-        {
-            QModelIndex paramIdx = pModel->index(oldName);
-            ZASSERT_EXIT(paramIdx.isValid());
-            bool ret = pModel->removeRow(paramIdx.row());
-            ZASSERT_EXIT(ret);
-            break;
-        }
-        case SOCKET_UPDATE_NAME:
-        {
-            QModelIndex paramIdx = pModel->index(oldName);
-            ZASSERT_EXIT(paramIdx.isValid());
-            bool ret = pModel->setData(paramIdx, newName, ROLE_PARAM_NAME);
-            ZASSERT_EXIT(ret);
-            break;
-        }
-        case SOCKET_UPDATE_TYPE:
-        {
-            QModelIndex paramIdx = pModel->index(oldName);
-            ZASSERT_EXIT(paramIdx.isValid());
-            //todo: unify the operation together.
-            pModel->setData(paramIdx, info.newInfo.type, ROLE_PARAM_TYPE);
-            pModel->setData(paramIdx, info.newInfo.control, ROLE_PARAM_CTRL);
-            pModel->setData(paramIdx, info.newInfo.defaultValue, ROLE_PARAM_VALUE);
-            break;
-        }
-        case SOCKET_UPDATE_DEFL:
-        {
-            QModelIndex paramIdx = pModel->index(oldName);
-            ZASSERT_EXIT(paramIdx.isValid());
-            pModel->setData(paramIdx, info.newInfo.defaultValue, ROLE_PARAM_VALUE);
-            break;
-        }
-    }
+    pModel->setData(paramIdx, var, ROLE_PARAM_VALUE);
 }
 
 void SubGraphModel::updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info)
@@ -749,7 +677,7 @@ bool SubGraphModel::itemFromIndex(const QModelIndex &index, _NodeItem& retNode) 
     }
 }
 
-bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelIndex &parent)
+bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModelIndex &parent)
 {
     //pure insert logic, without transaction and notify stuffs.
     const QString& id = nodeData[ROLE_OBJID].toString();
@@ -800,7 +728,7 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
 bool SubGraphModel::insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent)
 {
     beginInsertRows(QModelIndex(), row, row);
-    bool ret = _insertRow(row, nodeData);
+    bool ret = _insertNode(row, nodeData);
     endInsertRows();
     return ret;
 }

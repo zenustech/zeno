@@ -109,12 +109,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     connect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
     //link sync:
-    connect(pGraphsModel, &IGraphsModel::linkDataChanged, this, &ZenoSubGraphScene::onLinkDataChanged);
-    connect(pGraphsModel, &IGraphsModel::linkAboutToBeInserted, this, &ZenoSubGraphScene::onLinkAboutToBeInserted);
     connect(pGraphsModel, &IGraphsModel::linkInserted, this, &ZenoSubGraphScene::onLinkInserted);
     connect(pGraphsModel, &IGraphsModel::linkAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
-    connect(pGraphsModel, &IGraphsModel::linkRemoved, this, &ZenoSubGraphScene::onLinkRemoved);
-
 }
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
@@ -194,18 +190,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
 }
 
-void ZenoSubGraphScene::onLinkDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
-{
-	if (subGpIdx != m_subgIdx)
-		return;
-}
-
-void ZenoSubGraphScene::onLinkAboutToBeInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
-{
-	if (subGpIdx != m_subgIdx)
-		return;
-}
-
 void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
 {
 	if (subGpIdx != m_subgIdx)
@@ -267,12 +251,6 @@ void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
 	    m_nodes[inId]->onSocketLinkChanged(inSock, true, false);
     if (m_nodes.find(outId) != m_nodes.end())
 	    m_nodes[outId]->onSocketLinkChanged(outSock, false, false);
-}
-
-void ZenoSubGraphScene::onLinkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
-{
-	if (subGpIdx != m_subgIdx)
-		return;
 }
 
 QRectF ZenoSubGraphScene::nodesBoundingRect() const

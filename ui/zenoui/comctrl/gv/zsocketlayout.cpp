@@ -95,6 +95,12 @@ void ZSocketLayout::updateSockName(const QString& name)
         if (pEdit)
             pEdit->updateSockName(name);
     }
+    else
+    {
+        ZSocketGroupItem* pGroup = static_cast<ZSocketGroupItem*>(m_text);
+        if (pGroup)
+            pGroup->setText(name);
+    }
 }
 
 void ZSocketLayout::setValue(const QVariant& value)

@@ -194,9 +194,9 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
     //params.
-    initParams(pScene);
-    initSockets(true, pScene);
-    initSockets(false, pScene);
+    m_bodyLayout->addLayout(initParams(pScene));
+    m_bodyLayout->addLayout(initSockets(true, pScene));
+    m_bodyLayout->addLayout(initSockets(false, pScene));
 
     bodyWidget->setLayout(m_bodyLayout);
 
@@ -267,30 +267,32 @@ void ZenoNode::onNameUpdated(const QString& newName)
     }
 }
 
-void ZenoNode::initParams(ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::initParams(ZenoSubGraphScene* pScene)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid());
+    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
 
     IParamModel* paramsModel = pGraphsModel->paramModel(m_index, PARAM_PARAM);
-    if (!paramsModel)
-        return;
+    ZASSERT_EXIT(paramsModel, nullptr);
+
+    ZGraphicsLayout* paramsLayout = new ZGraphicsLayout(false);
+    paramsLayout->setSpacing(5);
 
     for (int r = 0; r < paramsModel->rowCount(); r++)
     {
         const QModelIndex& idx = paramsModel->index(r, 0);
-        addParam(idx, pScene);
+        paramsLayout->addLayout(addParam(idx, pScene));
     }
 
     ZGraphicsLayout* pCustomParams = initCustomParamWidgets();
     if (pCustomParams)
     {
-        m_bodyLayout->addLayout(pCustomParams);
+        paramsLayout->addLayout(pCustomParams);
     }
 
     connect(paramsModel, &IParamModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
         const QModelIndex& idx = paramsModel->index(first, 0, parent);
-        addParam(idx, pScene);
+        paramsLayout->addLayout(addParam(idx, pScene));
     });
 
     connect(paramsModel, &IParamModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
@@ -307,10 +309,11 @@ void ZenoNode::initParams(ZenoSubGraphScene* pScene)
 
     connect(paramsModel, &IParamModel::mock_dataChanged, this, [=](const QModelIndex& idx, const QVariant& oldValue, int role)
     {
-        if (role == ROLE_PARAM_TYPE)
+        if (role == ROLE_PARAM_TYPE || role == ROLE_PARAM_CTRL)
         {
             const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
             const QString& newType = idx.data(ROLE_PARAM_TYPE).toString();
+            PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
 
             ZASSERT_EXIT(m_params.find(sockName) != m_params.end());
             const auto& paramCtrl = m_params[sockName];
@@ -324,10 +327,6 @@ void ZenoNode::initParams(ZenoSubGraphScene* pScene)
                 m_params[sockName].param_control = pNewControl;
             }
             updateWhole();
-        }
-        else if (role == ROLE_PARAM_CTRL)
-        {
-            //todo: custom control for specific node param.
         }
         else if (role == ROLE_PARAM_VALUE)
         {
@@ -347,41 +346,46 @@ void ZenoNode::initParams(ZenoSubGraphScene* pScene)
             //todo: rename parameter name.
         }
     });
+
+    return paramsLayout;
 }
 
-void ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid());
+    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
 
-    IParamModel* paramsModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-    if (!paramsModel)
-        return;
+    IParamModel* socketModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+    ZASSERT_EXIT(socketModel, nullptr);
 
-    for (int r = 0; r < paramsModel->rowCount(); r++)
+    ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
+    pSocketsLayout->setSpacing(5);
+
+    for (int r = 0; r < socketModel->rowCount(); r++)
     {
-        const QModelIndex& idx = paramsModel->index(r, 0);
+        const QModelIndex& idx = socketModel->index(r, 0);
         ZSocketLayout* pSocketLayout = addSocket(idx, bInput, pScene);
-        m_bodyLayout->addLayout(pSocketLayout);
+        pSocketsLayout->addLayout(pSocketLayout);
     }
 
-    connect(paramsModel, &IParamModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = paramsModel->index(first, 0, parent);
+    connect(socketModel, &IParamModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        const QModelIndex& idx = socketModel->index(first, 0, parent);
         ZSocketLayout* pSocketLayout = addSocket(idx, bInput, pScene);
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (pModel->IsSubGraphNode(m_index))
         {
             //dynamic socket added, ensure that the key is above the SRC key.
-            m_bodyLayout->insertLayout(0, pSocketLayout);
+            pSocketsLayout->insertLayout(0, pSocketLayout);
         }
         else
         {
-            m_bodyLayout->addLayout(pSocketLayout);
+            pSocketsLayout->addLayout(pSocketLayout);
         }
+        updateWhole();
     });
 
-    connect(paramsModel, &IParamModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = paramsModel->index(first, 0, parent);
+    connect(socketModel, &IParamModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
+        const QModelIndex& idx = socketModel->index(first, 0, parent);
         const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
         ZSocketLayout* pSocketLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
         if (bInput)
@@ -392,7 +396,7 @@ void ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
         pParentLayout->removeLayout(pSocketLayout);
     });
 
-    connect(paramsModel, &IParamModel::mock_dataChanged, this, [=](const QModelIndex& idx, const QVariant& oldValue, int role)
+    connect(socketModel, &IParamModel::mock_dataChanged, this, [=](const QModelIndex& idx, const QVariant& oldValue, int role)
     {
         const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
         const PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
@@ -474,38 +478,40 @@ void ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
                 pControl->setVisible(links.isEmpty());
         }
     });
+
+    return pSocketsLayout;
 }
 
-ZSocketLayout* ZenoNode::addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene)
+ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
     auto cbFuncRenameSock = [=](QString oldText, QString newText) {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphsModel);
-        SOCKET_UPDATE_INFO info;
-        info.bInput = bInput;
-        info.newInfo.name = newText;
-        info.oldInfo.name = oldText;
-        info.updateWay = SOCKET_UPDATE_NAME;
-        bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info, m_subGpIndex, true);
+        IParamModel* pModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+        ZASSERT_EXIT(pModel);
+        bool ret = pModel->setData(paramIdx, newText, ROLE_PARAM_NAME);
     };
 
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
         emit socketClicked(pSocketItem);
     };
 
-    const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
-    PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-    const QString& sockType = idx.data(ROLE_PARAM_TYPE).toString();
-    const QVariant& deflVal = idx.data(ROLE_PARAM_VALUE);
-    const PARAM_LINKS& links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+    const QString& sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
+    const QString& sockType = paramIdx.data(ROLE_PARAM_TYPE).toString();
+    const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
+    const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
 
     bool bEditableSock = ctrl == CONTROL_DICTKEY;
-    ZSocketLayout* pMiniLayout = new ZSocketLayout(idx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+    ZSocketLayout* pMiniLayout = new ZSocketLayout(paramIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
 
-    ZenoParamWidget* pSocketControl = initSocketWidget(pScene, idx);
-    pMiniLayout->setControl(pSocketControl);
-    if (pSocketControl)
-        pSocketControl->setVisible(links.isEmpty());
+    if (bInput)
+    {
+        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, paramIdx);
+        pMiniLayout->setControl(pSocketControl);
+        if (pSocketControl)
+            pSocketControl->setVisible(links.isEmpty());
+    }
 
     if (bInput)
         m_inSockets.insert(sockName, pMiniLayout);
@@ -515,7 +521,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& idx, bool bInput, ZenoSubG
     return pMiniLayout;
 }
 
-void ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene)
 {
     const QString& paramName = idx.data(ROLE_PARAM_NAME).toString();
     PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
@@ -523,7 +529,7 @@ void ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene)
     const QVariant& value = idx.data(ROLE_PARAM_VALUE);
 
     if (ctrl == CONTROL_NONVISIBLE)
-        return;
+        return nullptr;
 
     _param_ctrl paramCtrl;
     paramCtrl.ctrl_layout = new ZGraphicsLayout(true);
@@ -555,18 +561,12 @@ void ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene)
         }
         default:
         {
-            //zeno::log_warn("got undefined control type {}", param.control);
-            const QString& value = UiHelper::variantToString(value);
-            QGraphicsTextItem* pValueItem = new QGraphicsTextItem(value);
-            pValueItem->setFont(m_renderParams.paramFont);
-            pValueItem->setDefaultTextColor(m_renderParams.paramClr.color());
-            paramCtrl.ctrl_layout->addItem(pValueItem);
             break;
         }
     }
 
     m_params.insert(paramName, paramCtrl);
-    m_bodyLayout->addLayout(paramCtrl.ctrl_layout);
+    return paramCtrl.ctrl_layout;
 }
 
 ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)

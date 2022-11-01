@@ -9,6 +9,7 @@ class LinkModel : public QAbstractItemModel
 
     struct _linkItem
     {
+        QString ident;
         QPersistentModelIndex fromSock;
         QPersistentModelIndex toSock;
     };

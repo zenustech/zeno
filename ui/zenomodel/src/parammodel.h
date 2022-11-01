@@ -58,14 +58,14 @@ public:
 
     //ParamModel
     void insertRow(int row,
-        const QString& name,
+        const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
         PARAM_CONTROL ctrl = CONTROL_NONE,
         const PARAM_LINKS& links = PARAM_LINKS());
 
     void appendRow(
-        const QString& name,
+        const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
         PARAM_CONTROL ctrl = CONTROL_NONE,
@@ -78,7 +78,7 @@ public:
         PARAM_CONTROL ctrl,
         const PARAM_LINKS& links = PARAM_LINKS());
 
-    bool addLink(const QString& sockName, const QModelIndex& linkIdx);
+    bool addLinkToParam(const QString& sockName, const QModelIndex& linkIdx);
 
     bool removeLink(const QString& sockName, const QModelIndex& linkIdx);
 
