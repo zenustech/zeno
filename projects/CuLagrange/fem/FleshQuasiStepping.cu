@@ -139,8 +139,8 @@ struct FleshQuasiStaticStepping : INode {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // fmt::print("check here 0");
-        PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
-        PCG::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
+        TILEVEC_OPS::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+        TILEVEC_OPS::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
         cudaPol(zs::range(eles.size()), [this,
                                         vtemp = proxy<space>({}, vtemp),
                                         etemp = proxy<space>({}, etemp),
@@ -366,12 +366,12 @@ struct FleshQuasiStaticStepping : INode {
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec().sync(false);
 
-    PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+    TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
 
 
     if(!eles.hasProperty("fiber")){
         // fmt::print("The input flesh have no fiber orientations, use the default setting\n");
-        PCG::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
+        TILEVEC_OPS::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
         // throw std::runtime_error("The input flesh should have fiber orientations");
 
     }else {
@@ -379,7 +379,7 @@ struct FleshQuasiStaticStepping : INode {
           fmt::print("The input fiber  has wrong channel size\n");
           throw std::runtime_error("The input fiber has wrong channel size");
       }
-      PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
+      TILEVEC_OPS::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
     }
     if(!eles.hasProperty(muscle_id_tag)) {
       // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
@@ -387,9 +387,9 @@ struct FleshQuasiStaticStepping : INode {
       //     throw std::runtime_error("the quadrature has no muscle id tag");
       // }
       // fmt::print("The input flesh have no mosucle_id specified, use the default setting");
-      PCG::fill(cudaPol,etemp,"muscle_ID",-1);
+      TILEVEC_OPS::fill(cudaPol,etemp,"muscle_ID",-1);
     }else {
-      PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
+      TILEVEC_OPS::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
     }
 
     // apply muscle activation
@@ -464,15 +464,15 @@ struct FleshQuasiStaticStepping : INode {
     });
 
     // setup initial guess
-    PCG::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
-    PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+    TILEVEC_OPS::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
+    TILEVEC_OPS::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
 
     for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
       match([&](auto &elasticModel) {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
 
-    // auto Hn = PCG::dot<144>(cudaPol,etemp,"He","He");
+    // auto Hn = TILEVEC_OPS::dot<144>(cudaPol,etemp,"He","He");
     // fmt::print("Hn : {}\n",(float)Hn);    
 
     // break;
@@ -482,30 +482,30 @@ struct FleshQuasiStaticStepping : INode {
 
       // if the grad is too small, return the result
       // Solve equation using PCG
-      PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+      TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
       PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","He",cg_res,1000,50);
       PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
       PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
-      T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+      T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
 
       if (res < newton_res) {
         fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
                    newtonIter, res);
         break;
       }
-      T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+      T dg = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","dir");
       if(fabs(dg) < btl_res){
         // fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
         break;
       }
       if(dg < 0){
-          T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
-          T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
+          T gradn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","grad"));
+          T dirn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"dir","dir"));
           fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
           throw std::runtime_error("INVALID DESCENT DIRECTION");
       }
       T alpha = 1.;
-      PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
+      TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
       T E0;
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0",vtemp,etemp);
@@ -519,7 +519,7 @@ struct FleshQuasiStaticStepping : INode {
       int line_search = 0;
       std::vector<T> armijo_buffer(max_line_search);
       do {
-        PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+        TILEVEC_OPS::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn",vtemp,etemp);
         })(models.getElasticModel());
@@ -558,7 +558,7 @@ struct FleshQuasiStaticStepping : INode {
       auto ActTag = get_param<std::string>("actTag");
       if(!eles.hasProperty(ActTag))
         eles.append_channels(cudaPol,{{ActTag,1}});
-      PCG::fill(cudaPol,eles,ActTag,0);
+      TILEVEC_OPS::fill(cudaPol,eles,ActTag,0);
       if(nm_acts > 0) {
         cudaPol(zs::range(eles.size()),
           [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
