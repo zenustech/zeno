@@ -17,7 +17,7 @@
 #include <iostream>
 
 
-#define COLLISION_VIS_DEBUG
+// #define COLLISION_VIS_DEBUG
 
 namespace zeno {
 
@@ -44,7 +44,6 @@ namespace zeno {
                 throw std::runtime_error("the input zsparticles has no surface tris");
             if(!surf->hasAuxData(ZenoParticles::s_surfEdgeTag))
                 throw std::runtime_error("the input zsparticles has no surface lines");
-
             auto& tris  = (*surf)[ZenoParticles::s_surfTriTag];
             auto& lines = (*surf)[ZenoParticles::s_surfEdgeTag];
             auto& points = (*surf)[ZenoParticles::s_surfVertTag];
@@ -68,7 +67,7 @@ namespace zeno {
             //             printf("line[%d] : %d %d\n",(int)li,(int)inds[0],(int)inds[1]);
             // });
 
-            auto bvh_thickness = (T)2 * compute_average_edge_length(cudaExec,verts,tris);
+            auto bvh_thickness = (T)2 * compute_average_edge_length(cudaExec,verts,"x",tris);
 
             // std::cout << "bvh_thickness : " << bvh_thickness << std::endl;
 
@@ -122,11 +121,12 @@ namespace zeno {
             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
                 throw std::runtime_error("the input zsparticles has no surface tris");
-                // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
-                // tris = typename ZenoParticles::particles_t({{"inds",3}});
             }
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
                 throw std::runtime_error("the input zsparticles has no surface lines");
+            }
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) {
+                throw std::runtime_error("the input zsparticles has no surface points");
             }
 
             auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
@@ -333,7 +333,7 @@ namespace zeno {
             if(!tris.hasProperty("nrm"))
                 tris.append_channels(cudaExec,{{"nrm",3}});
 
-            if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
+            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
                 throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
 
             auto buffer = typename ZenoParticles::particles_t({{"dir",3},{"x",3}},tris.size(),zs::memsrc_e::device,0);
@@ -413,7 +413,7 @@ namespace zeno {
 
             // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
 
-            if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
+            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
                 throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
 
 
@@ -433,8 +433,8 @@ namespace zeno {
                         auto v0 = verts.template pack<3>("x",linds[0]);
                         auto v1 = verts.template pack<3>("x",linds[1]);
 
-                        // buffer.template tuple<3>("nrm",ei) = (n0 + n1).normalized();
-                        buffer.template tuple<3>("nrm",ei) = lines.template pack<3>("nrm",ei);
+                        buffer.template tuple<3>("nrm",ei) = (n0 + n1).normalized();
+                        // buffer.template tuple<3>("nrm",ei) = lines.template pack<3>("nrm",ei);
                         buffer.template tuple<3>("x",ei) = (v0 + v1) / (T)2.0;
             }); 
 
@@ -501,7 +501,7 @@ namespace zeno {
 
             // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
 
-            if(!calculate_facet_normal(cudaExec,verts,tris,"nrm"))
+            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
                 throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
             // std::cout << "FINISH CALCULATE SURFACE NORMAL" << std::endl;
 
@@ -510,23 +510,30 @@ namespace zeno {
                 lines.append_channels(cudaExec,{{ceNrmTag,3}});
             
             // evalute the normal of edge plane
-            cudaExec(range(lines.size()),
-                [verts = proxy<space>({},verts),
-                    tris = proxy<space>({},tris),
-                    lines = proxy<space>({},lines),
-                    ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ei) mutable {
-                        auto e_inds = lines.template pack<2>("inds",ei).template reinterpret_bits<int>();
-                        auto fe_inds = lines.template pack<2>("fe_inds",ei).template reinterpret_bits<int>();
-                        auto n0 = tris.template pack<3>("nrm",fe_inds[0]);
-                        auto n1 = tris.template pack<3>("nrm",fe_inds[1]);
+            // cudaExec(range(lines.size()),
+            //     [verts = proxy<space>({},verts),
+            //         tris = proxy<space>({},tris),
+            //         lines = proxy<space>({},lines),
+            //         ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ei) mutable {
+            //             auto e_inds = lines.template pack<2>("inds",ei).template reinterpret_bits<int>();
+            //             auto fe_inds = lines.template pack<2>("fe_inds",ei).template reinterpret_bits<int>();
+            //             auto n0 = tris.template pack<3>("nrm",fe_inds[0]);
+            //             auto n1 = tris.template pack<3>("nrm",fe_inds[1]);
 
-                        auto ne = (n0 + n1).normalized();
-                        auto e0 = verts.template pack<3>("x",e_inds[0]);
-                        auto e1 = verts.template pack<3>("x",e_inds[1]);
-                        auto e10 = e1 - e0;
+            //             auto ne = (n0 + n1).normalized();
+            //             auto e0 = verts.template pack<3>("x",e_inds[0]);
+            //             auto e1 = verts.template pack<3>("x",e_inds[1]);
+            //             auto e10 = e1 - e0;
 
-                        lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
-            });
+            //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
+            // });
+
+            COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
+                verts,"x",
+                lines,
+                tris,"nrm",
+                lines,ceNrmTag);
+
 
             set_output("ZSParticles",zsparticles);
         }
@@ -610,7 +617,11 @@ namespace zeno {
                     auto cell_center = vec3::zeros();
                     cell_center = (vs[0] + vs[1] + vs[2])/(T)3.0;
                     T check_dist{};
-                    auto check_intersect = is_inside_the_cell(verts,lines,tris,ceNrmTag,ci,cell_center,in_offset,out_offset,check_dist);
+                    auto check_intersect = is_inside_the_cell(verts,"x",
+                        lines,tris,
+                        tris,"nrm",
+                        lines,ceNrmTag,
+                        ci,cell_center,in_offset,out_offset);
                     if(check_intersect == 1)
                         printf("invalid cell intersection check offset and inset : %d %f %f %f\n",ci,(float)check_dist,(float)out_offset,(float)in_offset);
                     if(check_intersect == 2)
@@ -643,8 +654,11 @@ namespace zeno {
                         n1 = (T)-1 * n1;
 #else
 
-                    auto n0 = get_bisector_orient(lines,tris,ceNrmTag,ci,(i + 3 - 1) % 3);
-                    auto n1 = get_bisector_orient(lines,tris,ceNrmTag,ci,i);
+                    auto n0 = COLLISION_UTILS::get_bisector_orient(lines,tris,
+                        lines,ceNrmTag,
+                        ci,(i + 3 - 1) % 3);
+                    auto n1 = COLLISION_UTILS::get_bisector_orient(lines,tris,
+                        lines,ceNrmTag,ci,i);
 
                     for(int j = 0;j != 3;++j)
                         cell_buffer("nrm",i*3 + j,ci) = n1[j];
