@@ -474,7 +474,7 @@ struct ZSTracerAdvectDiffuse : INode {
 
 ZENDEFNODE(ZSTracerAdvectDiffuse,
            {/* inputs: */
-            {"NSGrid", "dt", {"float", "Diffusion", "0.0"}, {"bool", "Density", "0"}, {"bool", "Temperature", "0"}},
+            {"NSGrid", "dt", {"float", "Diffusion", "0.0"}, {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
             /* outputs: */
             {},
             /* params: */

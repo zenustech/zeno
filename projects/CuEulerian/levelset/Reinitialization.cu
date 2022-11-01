@@ -15,7 +15,7 @@
 namespace zeno {
 struct ZSRenormalizeSDF : INode {
     void apply() override {
-        int nIter = get_param<int>("iterations");
+        int nIter = get_input2<int>("iterations");
         auto sdfGrid = get_input<ZenoSparseGrid>("SDF");
 
         auto &sdf = sdfGrid->spg;
@@ -99,11 +99,11 @@ struct ZSRenormalizeSDF : INode {
 };
 
 ZENDEFNODE(ZSRenormalizeSDF, {/* inputs: */
-                              {"SDF"},
+                              {"SDF", {"int", "iterations", "10"}},
                               /* outputs: */
                               {"SDF"},
                               /* params: */
-                              {{"int", "iterations", "10"}},
+                              {},
                               /* category: */
                               {"Eulerian"}});
 

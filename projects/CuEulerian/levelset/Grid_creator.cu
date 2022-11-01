@@ -17,11 +17,11 @@ namespace zeno {
 
 struct ZSMakeSparseGrid : INode {
     void apply() override {
+        auto attr = get_input2<std::string>("Attribute");
         auto dx = get_input2<float>("Dx");
         auto bg = get_input2<float>("backgroud");
         auto type = get_param<std::string>("type");
         auto structure = get_param<std::string>("structure");
-        auto channel = get_param<std::string>("channelName");
 
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         auto &spg = zsSPG->spg;
@@ -32,7 +32,7 @@ struct ZSMakeSparseGrid : INode {
         else if (type == "vector3")
             nc = 3;
 
-        spg = ZenoSparseGrid::spg_t{{{channel, nc}}, 0, zs::memsrc_e::device, 0};
+        spg = ZenoSparseGrid::spg_t{{{attr, nc}}, 0, zs::memsrc_e::device, 0};
         spg.scale(dx);
         spg._background = bg;
 
@@ -48,13 +48,12 @@ struct ZSMakeSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
-                              {{"float", "Dx", "1.0"}, {"float", "background", "0"}},
+                              {{"string", "Attribute", ""}, {"float", "Dx", "1.0"}, {"float", "background", "0"}},
                               /* outputs: */
                               {"Grid"},
                               /* params: */
-                              {{"enum scaler vector3", "type", "scalar"},
-                               {"enum cell-centered vertex-centered", "structure", "cell-centered "},
-                               {"string", "channelName", ""}},
+                              {{"enum scalar vector3", "type", "scalar"},
+                               {"enum cell-centered vertex-centered", "structure", "cell-centered "}},
                               /* category: */
                               {"Eulerian"}});
 
@@ -87,29 +86,77 @@ ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
 struct ZSSparseGridToVDB : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attr = get_input2<std::string>("Attribute");
+        auto VDBGridClass = get_param<std::string>("VDBGridClass");
+
+        if (attr.empty())
+            attr = "sdf";
+
         auto &spg = zs_grid->spg;
 
-        auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg);
-        auto vdb_grid = std::make_shared<VDBFloatGrid>();
-        vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
+        std::string attrTag = attr;
+        std::string metaTag = attr + "_cur";
+        if (zs_grid->hasMeta(metaTag)) {
+            int &attr_cur = zs_grid->readMeta<int &>(metaTag);
+            attrTag += std::to_string(attr_cur);
+        }
 
-        set_output("VDB", vdb_grid);
+        if (attr == "v") {
+            auto vdb_ = zs::convert_sparse_grid_to_float3grid(spg, attrTag);
+            auto vdb_grid = std::make_shared<VDBFloat3Grid>();
+            vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
+
+            set_output("VDB", vdb_grid);
+        } else {
+            zs::u32 gridClass = 0;
+            if (VDBGridClass == "UNKNOWN")
+                gridClass = 0;
+            else if (VDBGridClass == "LEVEL_SET")
+                gridClass = 1;
+            else if (VDBGridClass == "FOG_VOLUME")
+                gridClass = 2;
+            else if (VDBGridClass == "STAGGERED")
+                gridClass = 3;
+
+            auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg, attrTag, gridClass);
+
+            auto vdb_grid = std::make_shared<VDBFloatGrid>();
+            vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
+
+            set_output("VDB", vdb_grid);
+        }
     }
 };
 
 ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
-                               {"SparseGrid"},
+                               {"SparseGrid", {"string", "Attribute", ""}},
                                /* outputs: */
                                {"VDB"},
                                /* params: */
-                               {},
+                               {{"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
                                /* category: */
                                {"Eulerian"}});
 
 struct ZSVDBToSparseGrid : INode {
     void apply() override {
-        auto vdb = get_input<VDBFloatGrid>("VDB");
-        auto spg = zs::convert_floatgrid_to_sparse_grid(vdb->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
+        auto vdb = get_input<VDBGrid>("VDB");
+        auto attr = get_input2<std::string>("Attribute");
+
+        if (attr.empty())
+            attr = "sdf";
+
+        ZenoSparseGrid::spg_t spg;
+
+        auto vdbType = vdb->getType();
+        if (vdbType == "FloatGrid") {
+            auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
+            spg = zs::convert_floatgrid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+        } else if (vdbType == "Vec3fGrid") {
+            auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
+            spg = zs::convert_float3grid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+        } else {
+            throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+        }
 
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
@@ -119,7 +166,7 @@ struct ZSVDBToSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
-                               {"VDB"},
+                               {"VDB", {"string", "Attribute", ""}},
                                /* outputs: */
                                {"SparseGrid"},
                                /* params: */
