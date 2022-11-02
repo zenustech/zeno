@@ -215,7 +215,6 @@ struct ExtractMeshSurface : INode {
                     else if (x[d] > y[d])
                         return 0;
                 }
-                // return 1;
                 return 0;
             };
             std::set<vec3i, RM_CVREF_T(comp_v3)> surfs(comp_v3);
@@ -249,6 +248,7 @@ struct ExtractMeshSurface : INode {
                 ist2(tri[1], tri[2]);
                 ist2(tri[2], tri[0]);
             }
+            lineAreas.resize(sedges.size(), 0.f);
 
             /// surf verts
             std::set<int> spoints;
@@ -262,6 +262,7 @@ struct ExtractMeshSurface : INode {
                 ist(line[0]);
                 ist(line[1]);
             }
+            pointAreas.resize(spoints.size(), 0.f);
         }
 #endif
         if (includeTris)

@@ -320,6 +320,7 @@ struct GraphicsManager {
             }
         }
         xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        return true;
     }
     // return if find sky
     bool load_lights(std::string key, zeno::IObject *obj){

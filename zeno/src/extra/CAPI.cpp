@@ -130,6 +130,12 @@ ZENO_CAPI Zeno_Error Zeno_GraphIncReference(Zeno_Graph graph_) ZENO_CAPI_NOEXCEP
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_GraphGetSubGraph(Zeno_Graph graph_, Zeno_Graph *retGraph_, const char *subName_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        *retGraph_ = lutGraph.create(lutGraph.access(graph_)->getSubnetGraph(subName_)->shared_from_this());
+    });
+}
+
 ZENO_CAPI Zeno_Error Zeno_GraphLoadJson(Zeno_Graph graph_, const char *jsonStr_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         lutGraph.access(graph_)->loadGraph(jsonStr_);

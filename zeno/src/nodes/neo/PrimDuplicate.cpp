@@ -157,6 +157,9 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     advanceinds(prim->quads, meshPrim->quads, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
     advanceinds(prim->polys, meshPrim->polys, dummyVec, parsPrim->verts.size(), meshPrim->loops.size());
     advanceinds(prim->loops, meshPrim->loops, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
+    tg.add([&] {
+        prim->uvs = meshPrim->uvs;
+    });
 
     tg.run();
 

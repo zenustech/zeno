@@ -270,6 +270,7 @@ struct IPCSystem : IObject {
     T kappa = kappa0;
     bool projectDBC = false;
     bool BCsatisfied = false;
+    bool needFricPrecompute = true;
     T updateZoneTol = 1e-1;
     T consTol = 1e-2;
     T armijoParam = 1e-4;
