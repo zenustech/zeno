@@ -245,7 +245,7 @@ struct ZSNSPressureProject : INode {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
-        int nIter = get_param<int>("iterations");
+        int nIter = get_input2<int>("iterations");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -333,11 +333,11 @@ struct ZSNSPressureProject : INode {
 };
 
 ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
-                                 {"NSGrid", "dt", {"float", "Density", "1.0"}},
+                                 {"NSGrid", "dt", {"int", "iterations", "10"}, {"float", "Density", "1.0"}},
                                  /* outputs: */
                                  {},
                                  /* params: */
-                                 {{"int", "iterations", "10"}},
+                                 {},
                                  /* category: */
                                  {"Eulerian"}});
 

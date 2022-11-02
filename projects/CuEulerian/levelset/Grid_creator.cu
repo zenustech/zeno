@@ -20,8 +20,8 @@ struct ZSMakeSparseGrid : INode {
         auto attr = get_input2<std::string>("Attribute");
         auto dx = get_input2<float>("Dx");
         auto bg = get_input2<float>("backgroud");
-        auto type = get_param<std::string>("type");
-        auto structure = get_param<std::string>("structure");
+        auto type = get_input2<std::string>("type");
+        auto structure = get_input2<std::string>("structure");
 
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         auto &spg = zsSPG->spg;
@@ -48,12 +48,15 @@ struct ZSMakeSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
-                              {{"string", "Attribute", ""}, {"float", "Dx", "1.0"}, {"float", "background", "0"}},
+                              {{"string", "Attribute", ""},
+                               {"float", "Dx", "1.0"},
+                               {"float", "background", "0"},
+                               {"enum scalar vector3", "type", "scalar"},
+                               {"enum cell-centered vertex-centered", "structure", "cell-centered "}},
                               /* outputs: */
                               {"Grid"},
                               /* params: */
-                              {{"enum scalar vector3", "type", "scalar"},
-                               {"enum cell-centered vertex-centered", "structure", "cell-centered "}},
+                              {},
                               /* category: */
                               {"Eulerian"}});
 
@@ -87,7 +90,7 @@ struct ZSSparseGridToVDB : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
         auto attr = get_input2<std::string>("Attribute");
-        auto VDBGridClass = get_param<std::string>("VDBGridClass");
+        auto VDBGridClass = get_input2<std::string>("VDBGridClass");
 
         if (attr.empty())
             attr = "sdf";
@@ -129,11 +132,13 @@ struct ZSSparseGridToVDB : INode {
 };
 
 ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
-                               {"SparseGrid", {"string", "Attribute", ""}},
+                               {"SparseGrid",
+                                {"string", "Attribute", ""},
+                                {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
                                /* outputs: */
                                {"VDB"},
                                /* params: */
-                               {{"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
+                               {},
                                /* category: */
                                {"Eulerian"}});
 
@@ -176,10 +181,7 @@ ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
 
 struct ZSMakeDenseSDF : INode {
     void apply() override {
-        float dx = get_param<float>("dx");
-        if (has_input("Dx")) {
-            dx = get_input2<float>("Dx");
-        }
+        float dx = get_input2<float>("dx");
         int nx = get_input2<int>("nx");
         int ny = get_input2<int>("ny");
         int nz = get_input2<int>("nz");
@@ -247,11 +249,11 @@ struct ZSMakeDenseSDF : INode {
 };
 
 ZENDEFNODE(ZSMakeDenseSDF, {/* inputs: */
-                            {"Dx", {"int", "nx", "128"}, {"int", "ny", "128"}, {"int", "nz", "128"}},
+                            {{"float", "dx", "1.0"}, {"int", "nx", "128"}, {"int", "ny", "128"}, {"int", "nz", "128"}},
                             /* outputs: */
                             {"Grid"},
                             /* params: */
-                            {{"float", "dx", "1.0"}},
+                            {},
                             /* category: */
                             {"deprecated"}});
 
