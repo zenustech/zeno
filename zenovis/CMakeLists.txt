@@ -12,6 +12,12 @@ target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glad/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>)
 
+if(ZENO_ENABLE_USD)
+    message(STATUS "zenovis PXR_LIBRARIES: ${PXR_LIBRARIES}")
+    target_link_libraries(zenovis PRIVATE ${PXR_LIBRARIES})
+    target_compile_definitions(zenovis PRIVATE -DZENO_USD)
+endif()
+
 option(ZENO_ENABLE_ZHXXVIS "Enable Zhxx Real-time Rendering Engine" ON)
 if (ZENO_ENABLE_ZHXXVIS)
     add_subdirectory(zhxxvis)

@@ -36,6 +36,7 @@
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
+#include <utility>
 
 #include "Definition.h"
 
@@ -47,6 +48,7 @@ struct Mesh{
     FBXData fbxData;
     std::filesystem::path fbxPath;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
+    std::unordered_map<std::string, std::string> m_MeshPaths;
     std::unordered_map<std::string, std::vector<std::string>> m_MatMeshNames;
     std::unordered_map<std::string, std::string> m_MeshCorsName;
     std::unordered_map<std::string, std::string> m_LoadedMeshName;
@@ -76,7 +78,7 @@ struct Mesh{
 
         createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
-        processNode(scene->mRootNode, scene);
+        processNode(scene->mRootNode, scene, "/");
         // TODO read Animation of Camera property and Light property,
         // e.g. FocalLength LightIntensity
         processCamera(scene);
@@ -146,7 +148,7 @@ struct Mesh{
         return meshName;
     }
 
-    void processMesh(aiMesh *mesh, const aiScene *scene) {
+    void processMesh(aiMesh *mesh, const aiScene *scene, std::string path) {
         std::string meshName = getFixedMeshName(mesh);
 
         auto numAnimMesh = mesh->mNumAnimMeshes;
@@ -261,18 +263,25 @@ struct Mesh{
                  m_IndicesIncrease,  // Indices Start
                  static_cast<unsigned int>(m_IndicesIncrease + offsetIndices)  // Indices End
                  };
+        m_MeshPaths[meshName] = std::move(path);
 
         m_IndicesIncrease += offsetIndices;
         m_VerticesIncrease += mesh->mNumVertices;
     }
 
-    void processNode(aiNode *node, const aiScene *scene){
+    void processNode(aiNode *node, const aiScene *scene, std::string path){
 
         //zeno::log_info("Node: Name {}", node->mName.data);
-        for(unsigned int i = 0; i < node->mNumMeshes; i++)
-            processMesh(scene->mMeshes[node->mMeshes[i]], scene);
-        for(unsigned int i = 0; i < node->mNumChildren; i++)
-            processNode(node->mChildren[i], scene);
+        for(unsigned int i = 0; i < node->mNumMeshes; i++) {
+            processMesh(scene->mMeshes[node->mMeshes[i]], scene, path);
+        }
+        for(unsigned int i = 0; i < node->mNumChildren; i++) {
+            std::string curNodePath = node->mChildren[i]->mName.data;
+            curNodePath += "/";
+            std::string fullNodePath = path+curNodePath;
+            processNode(node->mChildren[i], scene, fullNodePath);
+            //zeno::log_trace("FBX: NodePath {}", fullNodePath);
+        }
     }
 
     void processNodeMat(aiNode *node, const aiScene *scene){
@@ -679,6 +688,7 @@ struct Mesh{
 
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
+            std::string meshPath = m_MeshPaths[iter.first];
             std::string relMeshName = m_MeshCorsName[iter.first];
 
             std::vector<unsigned int> verSlice = iter.second;
@@ -716,6 +726,8 @@ struct Mesh{
 
             // Sub-prims (applied node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto &clr0 = sub_prim->verts.add_attr<zeno::vec3f>("clr0");
+            sub_prim->userData().set2("path", std::move(meshPath));
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_indices;
@@ -734,6 +746,8 @@ struct Mesh{
                 sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
                                              fbxData.iVertices.value[i].position.y,
                                              fbxData.iVertices.value[i].position.z);
+                auto& vc = fbxData.iVertices.value[i].vectexColor;
+                clr0.emplace_back(vc.r, vc.g, vc.b);
                 sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
 

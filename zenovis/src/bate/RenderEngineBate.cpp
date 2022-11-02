@@ -2,6 +2,7 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/StageManager.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
@@ -36,7 +37,9 @@ struct RenderEngineBate : RenderEngine {
 
     void update() override {
         if (scene->drawOptions->interactive) graphicsMan->graphics.clear();
-        graphicsMan->load_objects(scene->objectsMan->pairsShared());
+        // USD
+        //graphicsMan->load_objects(scene->objectsMan->pairsShared());
+        graphicsMan->load_objects(scene->stageMan->pairsShared());
     }
 
     void draw() override {

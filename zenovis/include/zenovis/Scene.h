@@ -13,6 +13,7 @@ namespace zenovis {
 
 struct Camera;
 struct DrawOptions;
+struct StageManager;
 struct ShaderManager;
 struct GraphicsManager;
 struct ObjectsManager;
@@ -25,6 +26,7 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<ObjectsManager> objectsMan;
+    std::unique_ptr<StageManager> stageMan;
     std::unique_ptr<RenderManager> renderMan;
 
     Scene();

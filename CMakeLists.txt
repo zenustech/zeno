@@ -168,6 +168,24 @@ if (ZENO_USE_FAST_MATH)
 endif()
 ## --- end cihou perf-geeks
 
+## --- USD ---
+
+if(DEFINED ZENO_WITH_USD)
+    if(DEFINED PXR_USD_LOCATION)
+        set(TBB_ROOT_DIR ${PXR_USD_LOCATION})
+        find_package(USD REQUIRED HINTS ${PXR_USD_LOCATION} NAMES pxr)
+        find_package(MaterialX REQUIRED HINTS ${PXR_USD_LOCATION})
+        find_package(TBB REQUIRED COMPONENTS tbb)
+        set(ZENO_ENABLE_USD ON)
+    else()
+        message(FATAL_ERROR "PXR_USD_LOCATION not set.")
+    endif()
+else()
+    message(STATUS "USD support is not enabled")
+endif()
+
+## --- end USD ---
+
 add_subdirectory(zeno)
 add_subdirectory(projects)
 

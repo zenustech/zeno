@@ -8,6 +8,7 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/StageManager.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
@@ -30,6 +31,7 @@ Scene::Scene()
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
       objectsMan(std::make_unique<ObjectsManager>()),
+      stageMan(std::make_unique<StageManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
     auto version = (const char *)glGetString(GL_VERSION);
@@ -84,7 +86,10 @@ bool Scene::loadFrameObjects(int frameid) {
     auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
+
+        // USD
+        //inserted = this->objectsMan->load_objects(viewObjs->m_curr);
+        inserted = this->stageMan->load_objects(viewObjs->m_curr);
     } else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         inserted = this->objectsMan->load_objects({});
