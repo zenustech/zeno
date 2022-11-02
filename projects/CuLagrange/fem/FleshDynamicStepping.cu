@@ -627,7 +627,7 @@ struct FleshDynamicStepping : INode {
         //         stBvh,
         //         seBvh,
         //         bvh_thickness);
-        // })(models.getElasticModel());
+        })(models.getElasticModel());
 
 
         PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
