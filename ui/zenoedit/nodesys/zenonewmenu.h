@@ -7,6 +7,13 @@
 class ZenoGvLineEdit;
 class IGraphsModel;
 
+class ZenoNewnodeAction : public QWidgetAction
+{
+	Q_OBJECT
+public:
+	ZenoNewnodeAction(const QString& name, const QVector<int>& matchIndices, QWidget* parent = nullptr);
+};
+
 class ZenoNewnodeMenu : public QMenu
 {
 	Q_OBJECT
