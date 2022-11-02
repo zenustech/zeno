@@ -7,6 +7,7 @@
 #include <memory>
 #include "command.h"
 #include "parammodel.h"
+#include "viewparammodel.h"
 
 
 class GraphsModel;
@@ -29,6 +30,8 @@ class SubGraphModel : public QAbstractItemModel
         IParamModel* paramsModel;
         IParamModel* outputsModel;
 
+        ViewParamModel* viewParams;
+
         bool bCollasped;
 
         _NodeItem()
@@ -38,6 +41,7 @@ class SubGraphModel : public QAbstractItemModel
             , inputsModel(nullptr)
             , paramsModel(nullptr)
             , outputsModel(nullptr)
+            , viewParams(nullptr)
         {
         }
     };

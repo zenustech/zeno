@@ -8,6 +8,7 @@
 #include "zenonewmenu.h"
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/comctrl/ziconbutton.h>
+#include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
@@ -205,6 +206,7 @@ void _ZenoSubGraphView::gentle_zoom(qreal factor)
 	centerOn(mapToScene(viewport_center.toPoint()));
 
 	qreal factor_i_want = transform().m11();
+	editor_factor = factor_i_want;	//temp: test factor
 	emit zoomed(factor_i_want);
 	emit viewChanged(m_factor);
 }

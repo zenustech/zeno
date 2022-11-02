@@ -3,6 +3,9 @@
 #include "render/common_id.h"
 
 
+qreal editor_factor = 1.0;
+
+
 ZGraphicsTextItem::ZGraphicsTextItem(QGraphicsItem* parent)
     : QGraphicsTextItem(parent)
 {
@@ -270,6 +273,9 @@ void ZSimpleTextItem::keyPressEvent(QKeyEvent* event)
 
 void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+    if (editor_factor < 0.2)
+        return;
+
     if (m_bg.isValid())
     {
         painter->save();

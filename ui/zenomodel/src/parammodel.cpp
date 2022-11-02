@@ -163,6 +163,11 @@ void IParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
     }
 }
 
+PARAM_CLASS IParamModel::paramClass() const
+{
+    return m_class;
+}
+
 QModelIndex IParamModel::index(int row, int column, const QModelIndex& parent) const
 {
     if (row < 0 || row >= rowCount())
@@ -318,16 +323,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
     return true;
 }
 
-QVariant IParamModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
-    return QVariant();
-}
-
-bool IParamModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
-{
-    return false;
-}
-
 QModelIndexList IParamModel::match(
     const QModelIndex& start,
     int role,
@@ -336,11 +331,6 @@ QModelIndexList IParamModel::match(
     Qt::MatchFlags flags) const
 {
     return QModelIndexList();
-}
-
-QHash<int, QByteArray> IParamModel::roleNames() const
-{
-    return _base::roleNames();
 }
 
 bool IParamModel::removeRows(int row, int count, const QModelIndex& parent)

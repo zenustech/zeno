@@ -6,6 +6,9 @@
 #include "callbackdef.h"
 
 
+extern qreal editor_factor;		//temp: global editor zoom factor.
+
+
 class ZGraphicsTextItem : public QGraphicsTextItem
 {
     Q_OBJECT

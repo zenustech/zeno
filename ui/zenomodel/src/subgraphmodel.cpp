@@ -112,6 +112,12 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+    item.viewParams = new ViewParamModel(this);
+
+    connect(item.inputsModel, &IParamModel::rowsInserted, item.viewParams, &ViewParamModel::onParamsInserted);
+    connect(item.paramsModel, &IParamModel::rowsInserted, item.viewParams, &ViewParamModel::onParamsInserted);
+    connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
+    connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -366,8 +372,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (inputs.empty())
                     return false;
 
-                if (!item.inputsModel)
-                    item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+                ZASSERT_EXIT(item.inputsModel, false);
+                item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
 
                 for (QString name : inputs.keys())
                 {
@@ -390,8 +396,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (outputs.empty())
                     return false;
 
-                if (!item.outputsModel)
-                    item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+                ZASSERT_EXIT(item.outputsModel, false);
+                item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
 
                 for (QString name : outputs.keys())
                 {
@@ -414,9 +420,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (params.empty())
                     return false;
 
-                //todo: always create model, because there will be custom param and it's convient to catch the signal if the model exists.
-                if (!item.paramsModel)
-                    item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
+                ZASSERT_EXIT(item.paramsModel, false);
+                item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
 
                 for (QString name : params.keys())
                 {
