@@ -531,7 +531,7 @@ struct ZSExtendSparseGrid : INode {
 
     void apply() override {
         auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
-        auto tag = get_input2<std::string>("prop");
+        auto tag = get_input2<std::string>("Attribute");
         auto nlayers = get_input2<int>("layers");
 
         while (nlayers-- > 0)
@@ -542,7 +542,7 @@ struct ZSExtendSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
-                                {"NSGrid", {"enum rho sdf", "prop", "rho"}, {"int", "layers", "2"}},
+                                {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"int", "layers", "2"}},
                                 /* outputs: */
                                 {"NSGrid"},
                                 /* params: */
