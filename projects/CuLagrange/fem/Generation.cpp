@@ -13,6 +13,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
@@ -247,6 +248,8 @@ struct ExtractMeshSurface : INode {
                 ist2(tri[2], tri[0]);
             }
 
+            lineAreas.resize(sedges.size(), 0.f);
+
             /// surf verts
             std::set<int> spoints;
             auto ist = [&spoints, &points](int i) {
@@ -259,6 +262,7 @@ struct ExtractMeshSurface : INode {
                 ist(line[0]);
                 ist(line[1]);
             }
+            pointAreas.resize(spoints.size(), 0.f);
         }
 #endif
         if (includeTris)
