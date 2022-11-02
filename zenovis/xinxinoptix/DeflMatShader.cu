@@ -10,8 +10,6 @@
 #include "IOMat.h"
 
 //COMMON_CODE
-
-
 template<bool isDisplacement>
 static __inline__ __device__ MatOutput evalMat(
 cudaTextureObject_t zenotex0 , 
@@ -45,7 +43,8 @@ cudaTextureObject_t zenotex27,
 cudaTextureObject_t zenotex28, 
 cudaTextureObject_t zenotex29, 
 cudaTextureObject_t zenotex30, 
-cudaTextureObject_t zenotex31, 
+cudaTextureObject_t zenotex31,
+float4* uniforms,
 MatInput const &attrs) {
     /* MODMA */
     auto att_pos = attrs.pos;
@@ -63,6 +62,7 @@ MatInput const &attrs) {
     float mat_specular = 0;
     float mat_specularTint = 0.0;
     float mat_anisotropic = 0.0;
+    float mat_anisoRotation = 0.0;
     float mat_sheen = 0.0;
     float mat_sheenTint = 0.0;
     float mat_clearcoat = 0.0;
@@ -97,6 +97,7 @@ MatInput const &attrs) {
         mats.specular = mat_specular;
         mats.specularTint = mat_specularTint;
         mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
+        mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
         mats.sheen = mat_sheen;
         mats.sheenTint = mat_sheenTint;
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
@@ -150,6 +151,7 @@ static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0
                                                     cudaTextureObject_t zenotex29,
                                                     cudaTextureObject_t zenotex30,
                                                     cudaTextureObject_t zenotex31,
+                                                    float4* uniforms,
                                                     MatInput const &attrs)
 {
     return evalMat<false>(zenotex0 ,
@@ -184,6 +186,7 @@ static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0
                           zenotex29,
                           zenotex30,
                           zenotex31,
+                          uniforms,
                           attrs);
 }
 
@@ -219,6 +222,7 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0
                                                     cudaTextureObject_t zenotex29,
                                                     cudaTextureObject_t zenotex30,
                                                     cudaTextureObject_t zenotex31,
+                                                    float4* uniforms,
                                                     MatInput const &attrs)
 {
     return evalMat<true>(zenotex0 ,
@@ -253,6 +257,7 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0
                           zenotex29,
                           zenotex30,
                           zenotex31,
+                          uniforms,
                           attrs);
 }
 
@@ -377,7 +382,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                                 zenotex28, 
                                 zenotex29, 
                                 zenotex30, 
-                                zenotex31,attrs);
+                                zenotex31,
+                                rt_data->uniforms,
+                                attrs);
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -604,7 +611,9 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex28, 
                                 zenotex29, 
                                 zenotex30, 
-                                zenotex31,attrs);
+                                zenotex31,
+                                rt_data->uniforms,
+                                attrs);
     float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     n0 = dot(n0, N_0)>(1-mats.smoothness)?n0:N_0;
 
@@ -647,6 +656,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
     auto anisotropic = mats.anisotropic;
+    auto anisoRotation = mats.anisoRotation;
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
     auto clearcoat = mats.clearcoat;
@@ -740,6 +750,7 @@ extern "C" __global__ void __closesthit__radiance()
                 roughness,
                 specularTint,
                 anisotropic,
+                anisoRotation,
                 sheen,
                 sheenTint,
                 clearcoat,
@@ -935,7 +946,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->Lweight = weight;
 
                 float3 lbrdf = DisneyBSDF::EvaluateDisney(
-                    basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, sheen, sheenTint,
+                    basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
                     clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
                     dot(N, L));
@@ -965,7 +976,7 @@ extern "C" __global__ void __closesthit__radiance()
 //                       1e16f, // tmax,
 //                       &shadow_prd2);
         lbrdf = DisneyBSDF::EvaluateDisney(
-            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, sheen, sheenTint,
+            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));

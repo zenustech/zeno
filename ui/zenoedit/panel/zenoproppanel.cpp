@@ -12,6 +12,7 @@
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
+#include <zenoui/comctrl/ztextedit.h>
 #include "util/log.h"
 #include "util/apphelper.h"
 
@@ -89,10 +90,12 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 	pTitleLayout->setContentsMargins(15, 15, 15, 15);
 	QLabel* pLabel = new QLabel(m_idx.data(ROLE_OBJNAME).toString());
 	pLabel->setProperty("cssClass", "proppanel-nodename");
+	pLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	pTitleLayout->addWidget(pLabel);
 	pTitleLayout->addStretch();
 	QLabel* pWiki = new QLabel(tr("Wiki"));
 	pWiki->setProperty("cssClass", "proppanel");
+	pWiki->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	pTitleLayout->addWidget(pWiki);
 
 	pMainLayout->addLayout(pTitleLayout);
@@ -111,7 +114,6 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 		pMainLayout->addWidget(box);
 	}
 
-	pMainLayout->addStretch();
 	pMainLayout->setSpacing(0);
 
 	update();
@@ -188,6 +190,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->setObjectName(paramName);
 				pComboBox->setProperty("control", param.control);
 				pComboBox->setCurrentText(param.value.toString());
+				pComboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
 				//todo: unify
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
@@ -238,21 +241,20 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
                 ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
                 pVecEdit->setObjectName(paramName);
 				pVecEdit->setProperty("control", param.control);
-                connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
+                connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onParamEditFinish);
 
                 pLayout->addWidget(pVecEdit, r++, 1);
                 break;
             }
 			case CONTROL_MULTILINE_STRING:
 			{
-				QTextEdit* pTextEdit = new QTextEdit;
+				ZTextEdit* pTextEdit = new ZTextEdit;
 				pTextEdit->setFrameShape(QFrame::NoFrame);
 				pTextEdit->setProperty("cssClass", "proppanel");
 				pTextEdit->setObjectName(paramName);
 				pTextEdit->setProperty("control", param.control);
 				pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
-
-				//todo: ztextedit impl.
+				pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
 				QTextCharFormat format;
 				QFont font("HarmonyOS Sans", 12);
@@ -263,6 +265,8 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				QPalette pal = pTextEdit->palette();
 				pal.setColor(QPalette::Base, QColor(37, 37, 37));
 				pTextEdit->setPalette(pal);
+
+				QObject::connect(pTextEdit, &ZTextEdit::editFinished, this, &ZenoPropPanel::onParamEditFinish);
 
 				pLayout->addWidget(pTextEdit, r++, 1);
 				break;
@@ -290,6 +294,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 		}
 	}
 
+	pLayout->setRowStretch(pLayout->rowCount(), 1);
 	pParamsBox->setContentLayout(pLayout);
 	return pParamsBox;
 }
@@ -398,6 +403,31 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pComboBox, r++, 1);
 				break;
 			}
+			case CONTROL_MULTILINE_STRING:
+			{
+				ZTextEdit* pTextEdit = new ZTextEdit;
+				pTextEdit->setFrameShape(QFrame::NoFrame);
+				pTextEdit->setProperty("cssClass", "proppanel");
+				pTextEdit->setObjectName(inputSock);
+				pTextEdit->setProperty("control", input.info.control);
+				pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
+				pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+				QTextCharFormat format;
+				QFont font("HarmonyOS Sans", 12);
+				format.setFont(font);
+				pTextEdit->setCurrentFont(font);
+				pTextEdit->setText(input.info.defaultValue.toString());
+
+				QPalette pal = pTextEdit->palette();
+				pal.setColor(QPalette::Base, QColor(37, 37, 37));
+				pTextEdit->setPalette(pal);
+
+				QObject::connect(pTextEdit, &ZTextEdit::editFinished, this, &ZenoPropPanel::onInputEditFinish);
+
+				pLayout->addWidget(pTextEdit, r++, 1);
+				break;
+			}
 		}
 	}
 
@@ -406,6 +436,8 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 		delete pLayout;
 		return nullptr;
 	}
+
+	pLayout->setRowStretch(pLayout->rowCount(), 1);
 
 	ZExpandableSection* pInputsBox = new ZExpandableSection("SOCKET IN");
 	pInputsBox->setContentLayout(pLayout);
@@ -451,6 +483,10 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 	}
+    else if (QTextEdit* pTextEdit = qobject_cast<QTextEdit*>(pSender))
+    {
+		info.newValue = pTextEdit->toPlainText();
+    }
 
 	if (info.oldValue != info.newValue)
 	{
@@ -635,6 +671,16 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						QComboBox* pComboBox = lst[0];
 						pComboBox->setCurrentText(inSocket.info.defaultValue.toString());
+					}
+					break;
+				}
+				case CONTROL_MULTILINE_STRING:
+				{
+					auto lst = findChildren<QTextEdit*>(inSock, Qt::FindChildrenRecursively);
+					if (lst.size() == 1)
+					{
+						QTextEdit* pTextEdit = lst[0];
+						pTextEdit->setText(inSocket.info.defaultValue.toString());
 					}
 					break;
 				}

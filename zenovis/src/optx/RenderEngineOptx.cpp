@@ -184,7 +184,8 @@ struct GraphicsManager {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
-                if(isRealTimeObject == 0){
+                auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
+                if(isRealTimeObject == 0 && isUniformCarrier == 0){
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
                         zeno::primTriangulateQuads(prim_in);
@@ -301,6 +302,26 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
+    bool load_shader_uniforms(std::vector<std::pair<std::string, zeno::IObject *>> const &objs)
+    {
+        std::vector<float4> shaderUniforms;
+        shaderUniforms.resize(0);
+        for (auto const &[key, obj] : objs) {
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)){
+                if ( prim_in->userData().get2<int>("ShaderUniforms", 0)==1 )
+                {
+
+                    shaderUniforms.resize(prim_in->verts.size());
+                    for(int i=0;i<prim_in->verts.size();i++)
+                    {
+                        shaderUniforms[i] = make_float4(prim_in->verts[i][0],prim_in->verts[i][1],prim_in->verts[i][2],0);
+                    }
+                }
+            }
+        }
+        xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        return true;
+    }
     // return if find sky
     bool load_lights(std::string key, zeno::IObject *obj){
         bool sky_found = false;
@@ -355,9 +376,11 @@ struct GraphicsManager {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::using_hdr_sky(enableHdr);
             }
         }
         return sky_found;
@@ -455,6 +478,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
+
     bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
@@ -496,6 +520,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
             meshNeedUpdate = matNeedUpdate = true;
         }
+        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
@@ -590,7 +615,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                                      cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
-
         if(lightNeedUpdate){
             //zeno::log_debug("[zeno-optix] updating light");
             xinxinoptix::optixupdatelight();
