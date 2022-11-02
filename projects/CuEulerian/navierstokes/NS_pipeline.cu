@@ -369,6 +369,8 @@ struct ZSNSNaiveSolidWall : INode {
                     auto block = spgv.block(blockno);
                     block.template tuple<3>(vSrcTag, cellno) = vel_s;
                 }
+
+                spgv("sdf", blockno, cellno) = solid_sdf;
             });
     }
 };
