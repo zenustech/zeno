@@ -506,26 +506,27 @@ struct ZSExtendSparseGrid : INode {
                 auto bno = i / spg._table.bucket_size;
                 auto cellno = tile.thread_rank();
                 // searching for active voxels within this block
-                while (tile.ballot(pred(spg(tagOffset, bno, cellno))) == 0)
+                while (tile.ballot(pred(spg(tagOffset, bno, cellno))) == 0 && cellno < spg.block_size)
                     cellno += spg._table.bucket_size;
                 if (tile.thread_rank() == 0 && cellno < spg.block_size) {
                     auto bcoord = spg.iCoord(bno, 0);
                     for (auto loc : ndrange<3>(3)) {
                         auto dir = make_vec<int>(loc) - 1;
-                        spg._table.insert(bcoord + dir);
+                        spg._table.insert(bcoord + dir * spg.side_length);
                     }
                 }
             });
         auto newNbs = spg.numBlocks();
-        if (newNbs > nbs)
-            zs::memset(mem_device, (void *)spg._grid.tileOffset(nbs), 0,
-                       (std::size_t)(newNbs - nbs) * spg._grid.tileBytes());
-
         newNbs -= nbs;
+        if (newNbs > 0)
+            zs::memset(mem_device, (void *)spg._grid.tileOffset(nbs), 0, (std::size_t)newNbs * spg._grid.tileBytes());
+
         if (tag == "sdf")
             pol(range(newNbs * spg.block_size),
                 [dx = spg.voxelSize()[0], spg = proxy<space>(spg), sdfOffset = spg._grid.getPropertyOffset("sdf"),
-                 nbs] __device__(std::size_t cellno) mutable { spg(sdfOffset, cellno) = 3 * dx; });
+                 blockOffset = nbs * spg.block_size] __device__(std::size_t cellno) mutable {
+                    spg(sdfOffset, blockOffset + cellno) = 3 * dx;
+                });
     }
 
     void apply() override {
