@@ -29,6 +29,19 @@ QLabel[cssClass="numslider"]
 	text-align: center;
 }
 
+QLabel[cssClass="nodeAction"]
+{
+	font: 14px "HarmonyOS Sans";
+    padding: 4px 85px 4px 20px;
+    color: rgb(210, 203, 197);
+}
+
+QLabel[cssClass="nodeAction"]:hover
+{
+    background: rgb(9,71,113);
+    color: rgb(255,255,255);
+}
+
 QTableView[cssClass="proppanel"]
 {
     border:0px solid white;
