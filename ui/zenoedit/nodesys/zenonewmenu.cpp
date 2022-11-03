@@ -5,28 +5,6 @@
 #include "fuzzy_search.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 
-ZenoNewnodeAction::ZenoNewnodeAction(const QString& name, const QVector<int>& matchIndices, QWidget* parent)
-    : QWidgetAction(parent)
-{
-    QString text;
-    // matchIndices is sorted, so here can use index++
-    int index = 0;
-    for (int i = 0; i < name.size(); ++i) {
-        if (index >= matchIndices.size() || i != matchIndices[index]) {
-            text += name[i];
-        }
-        else {
-            text += "<b><font color=DeepSkyBlue>";
-            text += name[i];
-            text += "</font></b>";
-            index++;
-        }
-    }
-    auto label = new QLabel(text);
-    label->setProperty("cssClass", "nodeAction");
-    this->setDefaultWidget(label);
-}
-
 
 ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent)
     : QMenu(parent)
@@ -132,9 +110,8 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
                 condidates.push_back(name);
             }
         }
-        
-        for(const auto& [name, matchIndices]: fuzzy_search(filter, condidates)) {
-            QAction* pAction = new ZenoNewnodeAction(name, matchIndices, this);
+        for(const QString& name: fuzzy_search(filter, condidates)) {
+            QAction* pAction = new QAction(name);
             connect(pAction, &QAction::triggered, [=]() {
                 NodesMgr::createNewNode(pModel, subgIdx, name, scenePos);
             });
