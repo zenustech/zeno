@@ -42,6 +42,7 @@ class FakeTransformer {
     void toTranslate();
     void toRotate();
     void toScale();
+    void resizeHandler(int dir);
     void changeTransOpt();
     void changeCoordSys();
     int getTransOpt();
@@ -112,6 +113,7 @@ class FakeTransformer {
     int m_operation;
     int m_operation_mode;
     int m_coord_sys;
+    float m_handler_scale;
 
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
 

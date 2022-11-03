@@ -249,6 +249,11 @@ void CameraControl::changeTransformCoordSys() {
     zenoApp->getMainWindow()->updateViewport();
 }
 
+void CameraControl::resizeTransformHandler(int dir) {
+    transformer->resizeHandler(dir);
+    zenoApp->getMainWindow()->updateViewport();
+}
+
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 {
     auto session = Zenovis::GetInstance().getSession();
@@ -1038,6 +1043,13 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
         this->cameraLookTo(4);
     if (ctrl_pressed && event->key() == Qt::Key_7)
         this->cameraLookTo(5);
+
+    if (event->key() == Qt::Key_Backspace)
+        m_camera->resizeTransformHandler(0);
+    if (event->key() == Qt::Key_Plus)
+        m_camera->resizeTransformHandler(1);
+    if (event->key() == Qt::Key_Minus)
+        m_camera->resizeTransformHandler(2);
 }
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent* event) {

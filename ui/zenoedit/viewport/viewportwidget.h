@@ -68,6 +68,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void resizeTransformHandler(int dir);
 
 private:
     bool m_mmb_pressed;
