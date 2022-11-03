@@ -63,7 +63,7 @@ ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
 struct ZSGridTopoCopy : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("Grid");
-        auto zs_topo = get_input<ZenoSparseGrid>("Topology");
+        auto zs_topo = get_input<ZenoSparseGrid>("TopologyGrid");
 
         auto &grid = zs_grid->spg;
         auto &topo = zs_topo->spg;
@@ -78,7 +78,7 @@ struct ZSGridTopoCopy : INode {
 };
 
 ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
-                            {"Grid", "Topology"},
+                            {"Grid", "TopologyGrid"},
                             /* outputs: */
                             {"Grid"},
                             /* params: */
@@ -178,6 +178,25 @@ ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
                                {},
                                /* category: */
                                {"Eulerian"}});
+
+struct ZSGridVoxelSize : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+
+        float dx = zs_grid->getSparseGrid().voxelSize()[0];
+
+        set_output("dx", std::make_shared<NumericObject>(dx));
+    }
+};
+
+ZENDEFNODE(ZSGridVoxelSize, {/* inputs: */
+                             {"SparseGrid"},
+                             /* outputs: */
+                             {"dx"},
+                             /* params: */
+                             {},
+                             /* category: */
+                             {"Eulerian"}});
 
 struct ZSMakeDenseSDF : INode {
     void apply() override {
