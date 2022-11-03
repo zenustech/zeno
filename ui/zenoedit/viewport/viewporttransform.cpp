@@ -395,15 +395,12 @@ void FakeTransformer::resizeHandler(int dir) {
     switch (dir) {
     case 0:
         m_handler_scale = 1.f;
-        qDebug() << "current handler scale: " << m_handler_scale;
         break;
     case 1:
         m_handler_scale /= 0.89;
-        qDebug() << "current handler scale: " << m_handler_scale;
         break;
     case 2:
         m_handler_scale *= 0.89;
-        qDebug() << "current handler scale: " << m_handler_scale;
         break;
     default:
         break;
