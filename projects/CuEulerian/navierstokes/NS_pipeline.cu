@@ -604,8 +604,8 @@ struct ZSExtendSparseGrid : INode {
         // worst case is that all candidate blocks activate all surrounding neighbors
         spg.resize(pol, nbs * 26 + nbsOffset);
 
-        zeno::log_info("currently {} blocks (offset {}), resizing to {}\n", nbsOffset + nbs, nbsOffset,
-                       nbs * 26 + nbsOffset);
+        // zeno::log_info("currently {} blocks (offset {}), resizing to {}\n", nbsOffset + nbs, nbsOffset,
+        //                nbs * 26 + nbsOffset);
 
         if (!spg._grid.hasProperty(tag))
             throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
