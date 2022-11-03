@@ -29,7 +29,15 @@ ZScrollArea::ZScrollArea(QWidget* parent)
 
 QSize ZScrollArea::minimumSizeHint() const
 {
-    return QSize(0, 0);
+    if (QWidget* pWidget = this->widget())
+    {
+        int cnt = pWidget->layout()->count();
+        if (cnt == 0)
+        {
+            return QSize(0, 0);
+        }
+    }
+    return QScrollArea::minimumSizeHint();
 }
 
 QSize ZScrollArea::sizeHint() const
@@ -44,8 +52,7 @@ QSize ZScrollArea::sizeHint() const
         int cnt = pWidget->layout()->count();
         if (cnt > 0)
         {
-            if (!widgetSize.isValid())
-                widgetSize = widgetResizable() ? pWidget->sizeHint() : pWidget->size();
+            widgetSize = widgetResizable() ? pWidget->sizeHint() : pWidget->size();
             sz += widgetSize;
         }
     }

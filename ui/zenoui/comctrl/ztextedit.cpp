@@ -5,16 +5,12 @@ ZTextEdit::ZTextEdit(QWidget* parent)
     : QTextEdit(parent)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 }
 
 ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
     : QTextEdit(text, parent)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 }
 
 QSize ZTextEdit::minimumSizeHint() const
@@ -29,8 +25,8 @@ QSize ZTextEdit::sizeHint() const
     /*
      * Make sure width and height have `usable' values.
      */
-    s.rwidth() = std::max(100, s.width());
-    s.rheight() = std::max(100, s.height());
+    s.rwidth() = std::max(256, s.width());
+    s.rheight() = std::max(256, s.height());
     return s;
 }
 
