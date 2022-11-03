@@ -31,6 +31,8 @@ struct ZSVDBToNavierStokesGrid : INode {
                                               {"rho", 1}, // smoke density
                                               {"T", 1},   // smoke temperature
                                               {"flux", 3}});
+        spg._background = 0.f;
+        
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
         zsSPG->setMeta("v_cur", 0);
@@ -92,11 +94,11 @@ struct ZSNavierStokesDt : INode {
         // Viscosity dt
         float nu = mu / (rho + 1e-10); // kinematic viscosity
         int dim = 3;
-        float dt_nu = CFL * 0.5f * dim * dx * dx / (nu + 1e-10);
+        float dt_nu = CFL * dx * dx / ((2.f * dim * nu) + 1e-10);
 
         float dt = dt_v < dt_nu ? dt_v : dt_nu;
 
-        fmt::print(fg(fmt::color::blue_violet), "time step : {} sec\n", dt);
+        fmt::print(fg(fmt::color::blue_violet), "CFL time step : {} sec\n", dt);
 
         set_output("dt", std::make_shared<NumericObject>(dt));
     }
@@ -483,6 +485,108 @@ ZENDEFNODE(ZSTracerAdvectDiffuse,
             {},
             /* category: */
             {"Eulerian"}});
+
+struct ZSTracerEmission : INode {
+    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
+        constexpr auto space = zs::execspace_e::cuda;
+
+        auto &spg = NSGrid->spg;
+        auto &sdf = EmitSDF->spg;
+
+        auto block_cnt = spg.numBlocks();
+
+        pol(zs::Collapse{block_cnt, spg.block_size}, [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf),
+                                                      tag] __device__(int blockno, int cellno) mutable {
+            auto wcoord = spgv.wCoord(blockno, cellno);
+            auto emit_sdf = sdfv.wSample("sdf", wcoord);
+
+            if (emit_sdf <= 0.) {
+                // fix me: naive emission
+                spgv(tag, blockno, cellno) = 1.0;
+            }
+        });
+    }
+
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto EmitSDF = get_input<ZenoSparseGrid>("EmitterSDF");
+
+        auto pol = zs::cuda_exec();
+
+        if (get_input2<bool>("Density"))
+            compute(pol, "rho", NSGrid.get(), EmitSDF.get());
+        if (get_input2<bool>("Temperature"))
+            compute(pol, "T", NSGrid.get(), EmitSDF.get());
+    }
+};
+
+ZENDEFNODE(ZSTracerEmission, {/* inputs: */
+                              {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
+                              /* outputs: */
+                              {},
+                              /* params: */
+                              {},
+                              /* category: */
+                              {"Eulerian"}});
+
+struct ZSSmokeBuoyancy : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto dt = get_input2<float>("dt");
+        auto gravity = get_input2<zeno::vec3f>("Gravity");
+        auto alpha = get_input2<float>("DensityCoef");
+        auto beta = get_input2<float>("TemperatureCoef");
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+
+        // add force (accelaration)
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), gravity, alpha, beta, dt,
+             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
+                                                                                             int cellno) mutable {
+                auto icoord = spgv.iCoord(blockno, cellno);
+
+                float rho_this = spgv.value("rho", blockno, cellno);
+                float T_this = spgv.value("T", blockno, cellno);
+
+                float T_amb = 0.f;
+
+                for (int ch = 0; ch < 3; ++ch) {
+                    zs::vec<int, 3> offset{0, 0, 0};
+                    offset[ch] = -1;
+
+                    float rho_face = spgv.value("rho", icoord + icoord);
+                    float T_face = spgv.value("T", icoord + icoord);
+
+                    rho_face = 0.5f * (rho_this + rho_face);
+                    T_face = 0.5f * (T_this + T_face);
+
+                    float G_scale = alpha * rho_face - beta * (T_face - T_amb);
+
+                    spgv(vSrcTag, ch, blockno, cellno) += G_scale * gravity[ch] * dt;
+                }
+            });
+    }
+};
+
+ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
+                             {"NSGrid",
+                              "dt",
+                              {"vec3f", "Gravity", "0, -9.8, 0"},
+                              {"float", "DensityCoef", "0.0"},
+                              {"float", "TemperatureCoef", "0.0"}},
+                             /* outputs: */
+                             {},
+                             /* params: */
+                             {},
+                             /* category: */
+                             {"Eulerian"}});
 
 struct ZSExtendSparseGrid : INode {
     void extend(ZenoSparseGrid *nsgridPtr, std::string tag, std::size_t &nbsOffset, nvstd::function<bool(float)> pred) {
