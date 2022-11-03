@@ -589,7 +589,8 @@ ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
                              {"Eulerian"}});
 
 struct ZSExtendSparseGrid : INode {
-    void extend(ZenoSparseGrid *nsgridPtr, std::string tag, std::size_t &nbsOffset, nvstd::function<bool(float)> pred) {
+    template <typename PredT>
+    void extend(ZenoSparseGrid *nsgridPtr, std::string tag, std::size_t &nbsOffset, PredT pred) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
@@ -600,26 +601,38 @@ struct ZSExtendSparseGrid : INode {
         auto nbs = spg.numBlocks() - nbsOffset;
         if (nbs == 0)
             return;
-        // worst case is all candidate blocks activate all surrounding neighbors
+        // worst case is that all candidate blocks activate all surrounding neighbors
         spg.resize(pol, nbs * 26 + nbsOffset);
 
-        pol(range(nbs * spg._table.bucket_size), [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag), pred,
-                                                  nbsOffset] __device__(std::size_t i) mutable {
-            auto tile = cg::tiled_partition<RM_CVREF_T(spg._table)::bucket_size>(cg::this_thread_block());
-            auto bno = i / spg._table.bucket_size + nbsOffset;
-            auto cellno = tile.thread_rank();
-            // searching for active voxels within this block
-            while (tile.ballot(pred(spg(tagOffset, bno, cellno))) == 0 && cellno < spg.block_size)
-                cellno += spg._table.bucket_size;
-            if (cellno < spg.block_size) {
-                auto bcoord = spg.iCoord(bno, 0);
-                for (auto loc : ndrange<3>(3)) {
-                    auto dir = make_vec<int>(loc) - 1;
-                    spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
-                                           true);
+        zeno::log_info("currently {} blocks (offset {}), resizing to {}\n", nbsOffset + nbs, nbsOffset,
+                       nbs * 26 + nbsOffset);
+
+        if (!spg._grid.hasProperty(tag))
+            throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
+
+        pol(range(nbs * spg._table.bucket_size),
+            [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag), nbsOffset, pred, dx = spg.voxelSize()[0],
+             totalNbs = nbsOffset + nbs] __device__(std::size_t i) mutable {
+                auto tile = cg::tiled_partition<RM_CVREF_T(spg._table)::bucket_size>(cg::this_thread_block());
+                auto bno = i / spg._table.bucket_size + nbsOffset;
+                auto cellno = tile.thread_rank();
+                // searching for active voxels within this block
+
+                while (cellno < spg.block_size) {
+                    if (tile.ballot(pred(spg(tagOffset, bno, cellno))))
+                        break;
+                    cellno += spg._table.bucket_size;
                 }
-            }
-        });
+                if (cellno < spg.block_size) {
+                    auto bcoord = spg.iCoord(bno, 0);
+                    for (auto loc : ndrange<3>(3)) {
+                        auto dir = make_vec<int>(loc) - 1;
+                        // spg._table.insert(bcoord + dir * spg.side_length);
+                        spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
+                                               true);
+                    }
+                }
+            });
         // [ nbsOffset | nbsOffset + nbs | spg.numBlocks() ]
         nbsOffset += nbs;
         auto newNbs = spg.numBlocks();
@@ -642,17 +655,22 @@ struct ZSExtendSparseGrid : INode {
         auto nlayers = get_input2<int>("layers");
 
         std::size_t nbs = 0;
-        nvstd::function<bool(float)> pred;
+        int opt = 0;
         if (tag == "rho")
-            pred = [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; };
+            opt = 1;
         else if (tag == "sdf")
-            pred = [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; };
-        else
-            pred = [] __device__(float v) { return true; };
+            opt = 2;
 
         while (nlayers-- > 0) {
-            extend(zsSPG.get(), tag, nbs, pred);
-            pred = [] __device__(float v) { return true; }; // always active since
+            if (opt == 0)
+                extend(zsSPG.get(), tag, nbs, [] __device__(float v) { return true; });
+            else if (opt == 1)
+                extend(zsSPG.get(), tag, nbs,
+                       [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; });
+            else if (opt == 2)
+                extend(zsSPG.get(), tag, nbs,
+                       [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; });
+            opt = 0; // always active since
         }
 
         set_output("NSGrid", zsSPG);
