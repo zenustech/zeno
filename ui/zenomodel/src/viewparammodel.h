@@ -20,6 +20,7 @@ enum ROLE_VPARAM
 {
     ROLE_VPARAM_TYPE = Qt::UserRole + 1,
     ROLE_VPARAM_NAME,
+    ROLE_VPARAM_VALUE,      //real value on idx.
 };
 
 
@@ -35,6 +36,7 @@ struct VParamItem : public QStandardItem
     VParamItem(VPARAM_TYPE vType);
 
     QVariant data(int role = Qt::UserRole + 1) const override;
+    void setData(const QVariant& value, int role) override;
 };
 
 class ViewParamModel : public QStandardItemModel

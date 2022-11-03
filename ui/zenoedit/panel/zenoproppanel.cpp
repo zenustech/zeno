@@ -22,6 +22,48 @@
 #include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenomainwindow.h"
+#include <zenomodel/include/viewparammodel.h>
+
+
+static QString initTabWidgetQss()
+{
+    return QString::fromUtf8("\
+            QTabBar {\
+                background-color: #22252C;\
+                border-bottom: 1px solid rgb(24, 29, 33);\
+                border-right: 0px;\
+            }\
+            \
+            QTabBar::tab {\
+                background: #22252C;\
+                color: #737B85;\
+                border-top: 1px solid rgb(24,29,33);\
+                border-right: 1px solid rgb(24, 29, 33);\
+                border-bottom: 1px solid rgb(24, 29, 33);\
+                padding: 2px 16px 3px 16px;\
+            }\
+            \
+            QTabBar::tab:top {\
+                padding: 2px 16px 3px 16px;\
+            }\
+            \
+            QTabBar::tab:selected {\
+                background: #2D3239;\
+                color: #C3D2DF;\
+                border-bottom: 0px;\
+                /*only way to disable the padding when selected*/\
+                padding: 0px 16px 3px 16px;\
+            }\
+            \
+            QTabBar::close-button {\
+                image: url(:/icons/closebtn.svg);\
+                subcontrol-position: right;\
+            }\
+            QTabBar::close-button:hover {\
+                image: url(:/icons/closebtn_on.svg);\
+        }");
+}
+
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -70,6 +112,8 @@ void ZenoPropPanel::clearLayout()
     update();
 }
 
+//#define LEGACY_PROPPANEL
+
 void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
     clearLayout();
@@ -80,6 +124,8 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
         update();
         return;
     }
+
+#ifdef LEGACY_PROPPANEL
 
     connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
     connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
@@ -103,12 +149,101 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     {
         pMainLayout->addWidget(box);
     }
+#else
+    m_subgIdx = subgIdx;
+    m_idx = nodes[0];
 
-    pMainLayout->addStretch();
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    if (!viewParams)
+        return;
+
+    QStandardItem* root = viewParams->invisibleRootItem();
+    if (!root) return;
+
+    QStandardItem* pRoot = root->child(0);
+    if (!pRoot) return;
+
+    QTabWidget* pTabWidget = new QTabWidget;
+    pTabWidget->setStyleSheet(initTabWidgetQss());
+    pTabWidget->setDocumentMode(true);
+    pTabWidget->setTabsClosable(false);
+    pTabWidget->setMovable(false);
+    pTabWidget->setFont(QFont("Segoe UI Bold", 10));  //bug in qss font setting.
+    pTabWidget->tabBar()->setDrawBase(false);
+
+    for (int i = 0; i < pRoot->rowCount(); i++)
+    {
+        QStandardItem* pTab = pRoot->child(i);
+        const QString& tabName = pTab->data(Qt::DisplayRole).toString();
+
+        QWidget* pTabWid = new QWidget;
+        QVBoxLayout* pTabLayout = new QVBoxLayout;
+        pTabLayout->setContentsMargins(QMargins(0, 0, 0, 0));
+        pTabLayout->setSpacing(0);
+
+        for (int j = 0; j < pTab->rowCount(); j++)
+        {
+            QStandardItem* pGroup = pTab->child(j);
+            const QString& groupName = pGroup->data(Qt::DisplayRole).toString();
+
+            ZExpandableSection* pInputsBox = new ZExpandableSection(groupName);
+            pInputsBox->setObjectName(groupName);
+            QGridLayout* pLayout = new QGridLayout;
+            pLayout->setContentsMargins(10, 15, 0, 15);
+            pLayout->setColumnStretch(0, 1);
+            pLayout->setColumnStretch(1, 3);
+            pLayout->setSpacing(10);
+
+            for (int k = 0; k < pGroup->rowCount(); k++)
+            {
+                QStandardItem* paramItem = pGroup->child(k);
+
+                const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
+                const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
+                const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+
+                Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
+                    //trick implementation:
+                    //todo: api scoped and transaction: undo/redo problem.
+                    paramItem->setData(newValue, ROLE_PARAM_VALUE);
+                };
+
+                auto cbSwitch = [=](bool bOn) {
+                    zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
+                };
+
+                QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
+                if (!pControl)
+                    continue;
+
+                QLabel* pLabel = new QLabel(paramName);
+                pLabel->setProperty("cssClass", "proppanel");
+
+                int n = pLayout->rowCount();
+                pLayout->addWidget(pLabel, n, 0, Qt::AlignLeft);
+                pLayout->addWidget(pControl, n, 1);
+            }
+
+            pInputsBox->setContentLayout(pLayout);
+            //pLayout->setRowStretch(pLayout->rowCount(), 1);
+            pTabLayout->addWidget(pInputsBox);
+        }
+
+        pTabLayout->addStretch();
+        pTabWid->setLayout(pTabLayout);
+        pTabWidget->addTab(pTabWid, tabName);
+    }
+    pTabWidget->addTab(new QWidget, "Custom Tab");
+
+    pMainLayout->addWidget(pTabWidget);
+#endif
     pMainLayout->setSpacing(0);
 
+#ifdef LEGACY_PROPPANEL
     onInputsCheckUpdate();
     onParamsCheckUpdate();
+#endif
 
     update();
 }

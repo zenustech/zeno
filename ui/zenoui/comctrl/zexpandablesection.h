@@ -14,6 +14,18 @@ public:
     virtual QSize minimumSizeHint() const override;
 };
 
+class ZScrollArea : public QScrollArea
+{
+    Q_OBJECT
+public:
+    ZScrollArea(QWidget* parent = nullptr);
+    virtual QSize sizeHint() const override;
+	virtual QSize minimumSizeHint() const override;
+
+private:
+    mutable QSize widgetSize;
+};
+
 
 class ZExpandableSection : public QWidget
 {
@@ -25,14 +37,18 @@ public:
 	virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
 
+protected:
+    void mousePressEvent(QMouseEvent* event) override;
+
 public slots:
 	void toggle(bool collasped);
 
 private:
 	QWidget* initTitleWidget(const QString& title/* other ui params*/);
+	QString m_title;
 
 	QVBoxLayout* m_mainLayout;
-	QScrollArea* m_contentArea;
+	ZScrollArea* m_contentArea;
 	QWidget* m_contentWidget;
 };
 

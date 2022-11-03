@@ -6,6 +6,7 @@
 #include "uihelper.h"
 #include "zassert.h"
 #include "parammodel.h"
+#include "variantptr.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
@@ -301,6 +302,14 @@ IParamModel* SubGraphModel::paramModel(const QModelIndex& index, PARAM_CLASS cls
     }
 }
 
+ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
+{
+    _NodeItem item;
+    if (!itemFromIndex(index, item))
+        return nullptr;
+    return item.viewParams;
+}
+
 QVariant SubGraphModel::data(const QModelIndex& index, int role) const
 {
     _NodeItem item;
@@ -351,6 +360,10 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         case ROLE_OBJPOS:
         {
             return item.viewpos;
+        }
+        case ROLE_VIEWPARAMS:
+        {
+            return QVariantPtr<ViewParamModel>::asVariant(item.viewParams);
         }
         default:
             return QVariant();

@@ -8,6 +8,7 @@
 
 class IParamModel;
 class LinkModel;
+class ViewParamModel;
 
 class IGraphsModel : public QAbstractItemModel
 {

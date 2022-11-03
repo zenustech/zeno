@@ -107,6 +107,7 @@ namespace zenoui
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
                 pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
+                pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
                 QTextCharFormat format;
                 QFont font("HarmonyOS Sans", 12);

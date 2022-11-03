@@ -25,6 +25,7 @@ enum MODEL_ROLE
 	ROLE_INPUT_MODEL,		//input socket model
 	ROLE_PARAM_MODEL,		//param model
 	ROLE_OUTPUT_MODEL,		//output socket model.
+	ROLE_VIEWPARAMS,		// all viewed parameters.
 
 	//synchronize link change, param
 	ROLE_ADDLINK,

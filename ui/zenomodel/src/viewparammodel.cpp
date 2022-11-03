@@ -33,8 +33,34 @@ QVariant VParamItem::data(int role) const
     case ROLE_VPARAM_NAME:  return name;
     case ROLE_VPARAM_TYPE:  return vType;
     case ROLE_PARAM_CTRL:   return ctrl;
+    case ROLE_PARAM_VALUE:
+    {
+        if (!m_index.isValid()) return QVariant();
+        return m_index.data(ROLE_PARAM_VALUE);
+    }
+    case ROLE_PARAM_TYPE:
+    {
+        if (!m_index.isValid()) return QVariant();
+        return m_index.data(ROLE_PARAM_TYPE);
+    }
     default:
         return QVariant();
+    }
+}
+
+void VParamItem::setData(const QVariant& value, int role)
+{
+    switch (role)
+    {
+        case ROLE_PARAM_VALUE:
+        {
+            if (m_index.isValid())
+            {
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                pModel->setData(m_index, value, role);
+            }
+            break;
+        }
     }
 }
 
@@ -131,14 +157,56 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
     if (cls == PARAM_INPUT)
     {
         QList<QStandardItem*> lst = findItems("In Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        for (QStandardItem* pItem : lst)
+        {
+            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
+            {
+                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
+                const QString& displayName = realName;  //todo: mapping name.
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                paramItem->ctrl = ctrl;
+                paramItem->m_index = idx;
+                pItem->appendRow(paramItem);
+                break;
+            }
+        }
     }
     else if (cls == PARAM_PARAM)
     {
-
+        QList<QStandardItem*> lst = findItems("Parameters", Qt::MatchRecursive | Qt::MatchExactly);
+        for (QStandardItem* pItem : lst)
+        {
+            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
+            {
+                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
+                const QString& displayName = realName;  //todo: mapping name.
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                paramItem->ctrl = ctrl;
+                paramItem->m_index = idx;
+                pItem->appendRow(paramItem);
+                break;
+            }
+        }
     }
     else if (cls == PARAM_OUTPUT)
     {
-
+        QList<QStandardItem*> lst = findItems("Out Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        for (QStandardItem* pItem : lst)
+        {
+            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
+            {
+                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
+                const QString& displayName = realName;  //todo: mapping name.
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                paramItem->ctrl = ctrl;
+                paramItem->m_index = idx;
+                pItem->appendRow(paramItem);
+                break;
+            }
+        }
     }
 }
 

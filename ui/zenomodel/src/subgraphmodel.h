@@ -84,6 +84,7 @@ public:
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
     IParamModel* paramModel(const QModelIndex& index, PARAM_CLASS cls) const;
+    ViewParamModel* viewParams(const QModelIndex& index);
 
     bool setParamValue(
         PARAM_CLASS cls,
