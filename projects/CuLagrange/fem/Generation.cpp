@@ -246,6 +246,7 @@ struct ExtractMeshSurface : INode {
                 ist2(tri[1], tri[2]);
                 ist2(tri[2], tri[0]);
             }
+            lineAreas.resize(sedges.size(), 0.f);
 
             /// surf verts
             std::set<int> spoints;
@@ -259,6 +260,7 @@ struct ExtractMeshSurface : INode {
                 ist(line[0]);
                 ist(line[1]);
             }
+            pointAreas.resize(spoints.size(), 0.f);
         }
 #endif
         if (includeTris)
