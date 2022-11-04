@@ -42,6 +42,7 @@ public:
 
 public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
+    void onSettings();
 
 private:
     ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);

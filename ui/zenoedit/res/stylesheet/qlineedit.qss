@@ -1,4 +1,4 @@
-QLineEdit {
+QLineEdit[cssClass="dark"] {
     border: 1px solid #252525;
     padding: 0 4px;
     background: #252525;
@@ -7,7 +7,7 @@ QLineEdit {
     color: rgba(255,255,255,0.40);
 }
 
-QLineEdit:focus
+QLineEdit[cssClass="dark"]:focus
 {
     color: rgba(255,255,255,1.0);
 }
@@ -17,6 +17,8 @@ QLineEdit[cssClass="searchEditor"]
     border: 1px solid #252525;
     padding: 0 4px;
     background: rgb(60, 60, 60);
+    selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
     color: rgba(255,255,255,0.40);
 }
 
@@ -28,6 +30,7 @@ QLineEdit[cssClass="searchEdit"]:focus
 
 QLineEdit[cssClass="proppanel"]
 {
+    border: 1px solid #252525;
     padding: 0 4px;
     background: rgb(28, 28, 28);
     selection-background-color: #4B9EF4;
@@ -43,8 +46,10 @@ QLineEdit[cssClass="proppanel"]:focus
 
 QLineEdit[cssClass="zenonode"]
 {
+    border: 1px solid #252525;
     padding: 0 4px;
     background: rgb(36,37,36);
+    selection-background-color: #4B9EF4;
     font: 14px 'HarmonyOS Sans';
     color: rgba(255,255,255,0.40);
 }
@@ -55,7 +60,10 @@ QLineEdit[cssClass="zenonode"]:focus
 }
 
 QLineEdit[cssClass="FCurve-lineedit"] {
+    border: 1px solid #252525;
     background-color: rgb(23, 23, 26);
+    selection-background-color: #4B9EF4;
+    font: 14px 'HarmonyOS Sans';
     color: #CCCCCC;
 }
 
@@ -64,7 +72,9 @@ QLineEdit[cssClass="FCurve-lineedit"]:focus {
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"] {
+    border: 1px solid #252525;
     background-color: #191D21;
+    selection-background-color: #4B9EF4;
     color: #C3D2DF;
 }
 

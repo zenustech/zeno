@@ -23,6 +23,7 @@
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenomainwindow.h"
 #include <zenomodel/include/viewparammodel.h>
+#include "../dialog/zeditparamlayoutdlg.h"
 
 
 static QString initTabWidgetQss()
@@ -247,6 +248,28 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
     update();
 }
+
+void ZenoPropPanel::onSettings()
+{
+    QMenu* pMenu = new QMenu(this);
+    pMenu->setAttribute(Qt::WA_DeleteOnClose);
+
+    QAction* pEditLayout = new QAction(tr("Edit Parameter Layout"));
+    pMenu->addAction(pEditLayout);
+    connect(pEditLayout, &QAction::triggered, [=]() {
+        if (!m_idx.isValid())   return;
+
+        ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+        ZASSERT_EXIT(viewParams);
+
+        ZEditParamLayoutDlg dlg(viewParams, this);
+        dlg.exec();
+    });
+
+    pMenu->exec(QCursor::pos());
+}
+
+
 
 ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {

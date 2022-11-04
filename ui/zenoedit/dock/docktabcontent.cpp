@@ -54,6 +54,7 @@ DockContent_Parameter::DockContent_Parameter(QWidget* parent)
     m_pLineEdit->setText("");
     m_pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
     m_pLineEdit->setReadOnly(true);
+    m_pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(20));
 
     ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
@@ -76,6 +77,8 @@ DockContent_Parameter::DockContent_Parameter(QWidget* parent)
     ZenoPropPanel* prop = new ZenoPropPanel;
     pVLayout->addWidget(prop);
     setLayout(pVLayout);
+
+    connect(pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
 }
 
 void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)

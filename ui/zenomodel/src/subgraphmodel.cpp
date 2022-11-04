@@ -386,8 +386,6 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     return false;
 
                 ZASSERT_EXIT(item.inputsModel, false);
-                item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
-
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
@@ -410,8 +408,6 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     return false;
 
                 ZASSERT_EXIT(item.outputsModel, false);
-                item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
-
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
@@ -434,8 +430,6 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     return false;
 
                 ZASSERT_EXIT(item.paramsModel, false);
-                item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), index, this);
-
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
