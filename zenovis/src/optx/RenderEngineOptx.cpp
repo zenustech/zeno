@@ -8,6 +8,7 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/StageManager.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/utils/fileio.h>
 #include <zenovis/Scene.h>
@@ -506,7 +507,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void update() override {
 
-        if(graphicsMan->need_update_light(scene->objectsMan->pairs())
+        // USD
+        //auto pairs = scene->objectsMan->pairs();
+        auto pairs = scene->stageMan->pairs();
+
+        if(graphicsMan->need_update_light(pairs)
             || scene->objectsMan->needUpdateLight)
         {
             graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
@@ -514,13 +519,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             scene->objectsMan->needUpdateLight = false;
         }
 
-        if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
+        if (graphicsMan->load_static_objects(pairs)) {
             staticNeedUpdate = true;
         }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
+        if (graphicsMan->load_objects(pairs)) {
             meshNeedUpdate = matNeedUpdate = true;
         }
-        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+        graphicsMan->load_shader_uniforms(pairs);
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture

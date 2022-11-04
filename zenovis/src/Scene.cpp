@@ -88,7 +88,7 @@ bool Scene::loadFrameObjects(int frameid) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
 
         // USD
-        //inserted = this->objectsMan->load_objects(viewObjs->m_curr);
+//        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
         inserted = this->stageMan->load_objects(viewObjs->m_curr);
     } else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);

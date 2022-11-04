@@ -691,6 +691,9 @@ struct Mesh{
             std::string meshPath = m_MeshPaths[iter.first];
             std::string relMeshName = m_MeshCorsName[iter.first];
 
+            // Remove the trailing slash "/"
+            meshPath.resize(meshPath.size()-1);
+
             std::vector<unsigned int> verSlice = iter.second;
             unsigned int verStart = verSlice[0];
             unsigned int verEnd = verSlice[1];
@@ -725,9 +728,11 @@ struct Mesh{
             }
 
             // Sub-prims (applied node transform)
+            // USD
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             auto &clr0 = sub_prim->verts.add_attr<zeno::vec3f>("clr0");
-            sub_prim->userData().set2("path", std::move(meshPath));
+            sub_prim->userData().set2("P_Path", std::move(meshPath));
+            sub_prim->userData().set2("P_Type", "UsdGeomMesh");
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_indices;
