@@ -1,5 +1,10 @@
 #pragma once
 
+// Include first for avoid error WinSock.h has already been included
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/enable_shared_from_this.hpp>
+
 #include <boost/predef/os.h>
 #include <pxr/base/gf/camera.h>
 #include <pxr/base/js/json.h>
@@ -21,10 +26,22 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <functional>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace zenovis {
+
+struct ConfigurationInfo{
+    std::string cRepo = "http://test1:12345@192.168.3.11:8000/r/zeno_usd_test.git";
+    std::string cPath = "C:/Users/Public/zeno_usd_test";
+    std::string cRoot = "test.usda";
+    std::string cGit = "C:/Users/AMD/scoop/shims";
+    std::string cServer = "192.168.3.11";
+};
 
 struct PrimInfo{
     std::string pPath;
@@ -35,7 +52,11 @@ struct StageManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<
         std::map<std::string, std::shared_ptr<zeno::IObject>>>> zenoObjects;
 
-    UsdStageRefPtr stagePtr;
+    UsdStageRefPtr cStagePtr;
+    UsdStageRefPtr sStagePtr;
+    ConfigurationInfo confInfo;
+
+    std::string pathEnv;
 
     StageManager();
     ~StageManager();
@@ -51,6 +72,7 @@ struct StageManager : zeno::disable_copy {
     }
 
     bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
+    void update();
 
     int _UsdGeomMesh(const PrimInfo& primInfo);
 
@@ -59,7 +81,7 @@ struct StageManager : zeno::disable_copy {
         if (path == SdfPath::AbsoluteRootPath())
             return;
         _CreateUSDHierarchy(path.GetParentPath());
-        UsdGeomXform::Define(stagePtr, path);
+        UsdGeomXform::Define(cStagePtr, path);
     }
 };
 }
