@@ -494,6 +494,8 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
             QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
             ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
             pComboBox->setText(value);
+            if (scene)
+                scene->addScrollControl(pComboBox);
 
             connect(pComboBox, &ZenoParamComboBox::textActivated, this, [paramName, this](const QString& textValue) {
                 onParamEditFinished(paramName, textValue);
