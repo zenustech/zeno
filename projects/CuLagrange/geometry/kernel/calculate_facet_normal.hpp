@@ -9,15 +9,25 @@ namespace zeno {
     using T = float;
 
     template<typename Pol,typename PosTileVec,typename SurfTriTileVec,typename SurfNrmTileVec>
-    constexpr bool calculate_facet_normal(Pol& pol,const PosTileVec& verts,const zs::SmallString& xTag,SurfTriTileVec& tris,SurfNrmTileVec& tri_nrm_buffer,const zs::SmallString& nrmTag) {
+    bool calculate_facet_normal(Pol& pol,const PosTileVec& verts,const zs::SmallString& xTag,SurfTriTileVec& tris,SurfNrmTileVec& tri_nrm_buffer,const zs::SmallString& nrmTag) {
         using namespace zs;
-        if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) 
+        if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) {
+            if(!tris.hasProperty("inds"))
+                fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
+            else if(tris.getChannelSize("inds") != 3)
+                fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
             return false;
+        }
+        if(tris.size() != tri_nrm_buffer.size()) {
+            fmt::print(fg(fmt::color::red),"the tris's size {} does not match that of tri_nrm_buffer {}\n",
+                tris.size(),tri_nrm_buffer.size());
+            return false;
+        }
 
         constexpr auto space = execspace_e::cuda;
         pol(zs::range(tris.size()),
             [verts = proxy<space>({},verts),tris = proxy<space>({},tris),tri_nrm_buffer = proxy<space>({},tri_nrm_buffer),xTag,nrmTag] ZS_LAMBDA(int ti) mutable {
-                auto tri = tris.template pack<3>("inds",ti).template reinterpret_bits<int>();
+                auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
                 auto v0 = verts.template pack<3>(xTag,tri[0]);
                 auto v1 = verts.template pack<3>(xTag,tri[1]);
                 auto v2 = verts.template pack<3>(xTag,tri[2]);
@@ -25,7 +35,7 @@ namespace zeno {
                 auto e01 = v1 - v0;
                 auto e02 = v2 - v0;
 
-                auto nrm = e02.cross(e01);
+                auto nrm = e01.cross(e02);
                 auto nrm_norm = nrm.norm();
                 if(nrm_norm < 1e-8)
                     nrm = zs::vec<T,3>::zeros();
