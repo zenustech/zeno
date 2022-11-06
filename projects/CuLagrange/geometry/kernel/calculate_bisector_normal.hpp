@@ -7,14 +7,17 @@
 
 #include "topology.hpp"
 
+#include "../../fem/collision_energy/collision_utils.hpp"
+
 namespace zeno { namespace COLLISION_UTILS { 
 
     using T = float;
 
-    template<typename Pol,typename PosTileVec,typename SurfLineTileVec,typename BisectorTileVec,typename SurfNormalTileVec>
+    template<typename Pol,typename PosTileVec,typename SurfTriTileVec,typename SurfLineTileVec,typename BisectorTileVec,typename SurfNormalTileVec>
     bool calculate_cell_bisector_normal(Pol& pol,
             const PosTileVec& verts,const zs::SmallString& xTag,
             const SurfLineTileVec& lines,
+            const SurfTriTileVec& tris,
             const SurfNormalTileVec& tri_nrm_buffer,const zs::SmallString& triNrmTag,
             BisectorTileVec& bis_nrm_buffer,const zs::SmallString& biNrmTag) {
         using namespace zs;
@@ -22,11 +25,15 @@ namespace zeno { namespace COLLISION_UTILS {
 
         if(!verts.hasProperty(xTag))
             return false;
-        if(!lines.hasProperty("fe_inds"))
+        if(!lines.hasProperty("fe_inds") || !lines.hasProperty("inds"))
             return false;
         if(!tri_nrm_buffer.hasProperty(triNrmTag))
             return false;
         if(!bis_nrm_buffer.hasProperty(biNrmTag))
+            return false;
+        if(bis_nrm_buffer.size() != lines.size())
+            return false;
+        if(tri_nrm_buffer.size() != tris.size())
             return false;
 
         pol(range(lines.size()),
@@ -45,7 +52,7 @@ namespace zeno { namespace COLLISION_UTILS {
                     auto e1 = verts.template pack<3>(xTag,e_inds[1]);
                     auto e10 = e1 - e0;
 
-                    bis_nrm_buffer.template tuple<3>(biNrmTag,ei) = e10.cross(ne).normalized();
+                    bis_nrm_buffer.template tuple<3>(biNrmTag,ei) = ne.cross(e10).normalized();
         });        
 
         return true;
@@ -73,27 +80,44 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T inset,T offset,T& dist) {
+            int cell_id,const zs::vec<T,3>& p,T inset_ratio,T outset_ratio,T& dist) {
         using namespace zs;
 
-        auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
+        // auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
         auto nrm = surf_nrm_buffer.template pack<3>("nrm",cell_id);
         
         auto inds = tris.template pack<3>("inds",cell_id).reinterpret_bits(int_c);
         auto seg = p - verts.template pack<3>(x_tag,inds[0]);    
 
+        // evaluate the avg edge length
+        auto t0 = verts.template pack<3>(x_tag,inds[0]);
+        auto t1 = verts.template pack<3>(x_tag,inds[1]);
+        auto t2 = verts.template pack<3>(x_tag,inds[2]);
+
+        auto e01 = (t0 - t1).norm();
+        auto e02 = (t0 - t2).norm();
+        auto e12 = (t1 - t2).norm();
+
+        auto avge = (e01 + e02 + e12)/(T)3.0;
+
+        T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p);
+        auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
+
+        if(distance > max_ratio * avge)
+            return 0;
+
         dist = seg.dot(nrm);
-        if(dist < -(inset + 1e-6) || dist > (offset + 1e-6))
-            return 1;
+        if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+            return 0;
         
         for(int i = 0;i != 3;++i) {
             auto bisector_normal = get_bisector_orient(lines,tris,bis_nrm_buffer,bisector_normal_tag,cell_id,i);
             seg = p - verts.template pack<3>(x_tag,inds[i]);
             if(bisector_normal.dot(seg) < 0)
-                return 2;
+                return 0;
         }
 
-        return 0;
+        return 1;
     } 
 
     template<typename PosTileVec,typename SurfLineTileVec,typename SurfTriTileVec,typename BisectorTileVec,typename SurfNrmTileVec>
@@ -101,11 +125,11 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T inset,T offset) {
+            int cell_id,const zs::vec<T,3>& p,T inset_ratio,T offset_ratio) {
         using namespace zs;
 
         T dist{};
-        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,inset,offset,dist);
+        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,inset_ratio,offset_ratio,dist);
     } 
 
 
