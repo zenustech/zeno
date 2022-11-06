@@ -15,11 +15,15 @@ class ZEditParamLayoutDlg : public QDialog
 public:
     ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent = nullptr);
 
+private slots:
+    void onBtnAdd();
+
 private:
-    ViewParamModel* m_clone;
+    ViewParamModel* m_proxyModel;
+
+    QMap<QString, PARAM_CONTROL> m_ctrls;
 
     Ui::EditParamLayoutDlg* m_ui;
-
 };
 
 

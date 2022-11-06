@@ -532,6 +532,17 @@ int UiHelper::getMaxObjId(const QList<QString> &lst)
     return maxObjId;
 }
 
+QString UiHelper::getUniqueName(const QList<QString>& existNames, const QString& prefix)
+{
+    int n = 1;
+    QString name;
+    do
+    {
+        name = prefix + QString::number(n++);
+    } while (existNames.contains(name));
+    return name;
+}
+
 std::pair<qreal, qreal> UiHelper::getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize)
 {
     if (AbsoluteSize) {

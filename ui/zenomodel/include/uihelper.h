@@ -46,6 +46,7 @@ public:
 
     //todo: place at other helper.
     static int getMaxObjId(const QList<QString>& lst);
+    static QString getUniqueName(const QList<QString>& existNames, const QString& prefix);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
     static QString nthSerialNumName(QString name);
