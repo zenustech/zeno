@@ -70,13 +70,27 @@ namespace zeno {
                 cal_lines = true;
             }
 
+            if(!tris.hasProperty("area"))
+                tris.append_channels(cudaPol,{{"area",1}});
+            // std::cout << "cal tri area" << std::endl;
             calculate_tris_area(cudaPol,verts,tris,"x","area");
-            if(cal_points)
+            if(cal_points){
+                if(!points.hasProperty("area"))
+                    points.append_channels(cudaPol,{{"area",1}});
+                points.append_channels(cudaPol,{{"area",1}});
+                // std::cout << "cal point area" << std::endl;
                 calculate_points_one_ring_area(cudaPol,tris,points,"area","area");
-            if(cal_lines)
-                calculate_lines_area(cudaPol,verts,lines,tris,"area","area");
-            
+            }
+            if(cal_lines){
+                if(!lines.hasProperty("area"))
+                    lines.append_channels(cudaPol,{{"area",1}});
 
+                lines.append_channels(cudaPol,{{"area",1}});
+                // std::cout << "cal line area" << std::endl;
+                calculate_lines_area(cudaPol,verts,lines,tris,"area","area");
+            }
+            
+            // std::cout << "finish computing" << std::endl; 
             set_output("ZSParticles",zsparticles);
         }
     };
@@ -84,7 +98,7 @@ namespace zeno {
 
     ZENDEFNODE(ZSCalcSurfaceArea, {{{"ZSParticles"}},
                                 {{"ZSParticles"}},
-                                {},
+                                {{"enum point line tri all","type","all"}},
                                 {"ZSGeometry"}});
 
 };
