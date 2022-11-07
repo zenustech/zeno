@@ -80,7 +80,7 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T inset_ratio,T outset_ratio,T& dist) {
+            int cell_id,const zs::vec<T,3>& p,T collisionEps,T& dist) {
         using namespace zs;
 
         // auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
@@ -98,17 +98,20 @@ namespace zeno { namespace COLLISION_UTILS {
         auto e02 = (t0 - t2).norm();
         auto e12 = (t1 - t2).norm();
 
-        auto avge = (e01 + e02 + e12)/(T)3.0;
+        // auto avge = (e01 + e02 + e12)/(T)3.0;
 
         T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p);
-        auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
-
-        if(distance > max_ratio * avge)
+        // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
+        // collisionEps = avge * max_ratio;
+        if(distance > collisionEps)
             return 0;
+        // dist = seg.dot(nrm);
+        // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+        //     return 0;
 
-        dist = seg.dot(nrm);
-        if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
-            return 0;
+        if(pointProjectsInsideTriangle(t0,t1,t2,p))
+            return 1;
+
         
         for(int i = 0;i != 3;++i) {
             auto bisector_normal = get_bisector_orient(lines,tris,bis_nrm_buffer,bisector_normal_tag,cell_id,i);
@@ -125,11 +128,11 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T inset_ratio,T offset_ratio) {
+            int cell_id,const zs::vec<T,3>& p,T collisionEps) {
         using namespace zs;
 
         T dist{};
-        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,inset_ratio,offset_ratio,dist);
+        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,collisionEps,dist);
     } 
 
 
