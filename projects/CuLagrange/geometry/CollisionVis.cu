@@ -906,7 +906,7 @@ namespace zeno {
         virtual void apply() override {
             using namespace zs;
 
-            #define MAX_FP_COLLSION_PAIRS 6
+            #define MAX_FP_COLLISION_PAIRS 6
 
             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
 
@@ -951,7 +951,7 @@ namespace zeno {
             // dtiles_t sptemp(lines.get_allocator(),
             //     {
             //         {"nrm",3},
-            //         {"fp_collision_pairs",MAX_FP_COLLSION_PAIRS}
+            //         {"fp_collision_pairs",MAX_FP_COLLISION_PAIRS}
             //     },points.size()
             // );
 
@@ -959,16 +959,16 @@ namespace zeno {
                 {
                     {"inds",4},
                     {"area",1}
-                },points.size() * MAX_FP_COLLSION_PAIRS);
+                },points.size() * MAX_FP_COLLISION_PAIRS);
 
 
             constexpr auto space = execspace_e::cuda;
             auto cudaPol = cuda_exec().sync(false);
 
             std::vector<zs::PropertyTag> cv_tags{{"xs",3},{"xe",3}};
-            auto cv_buffer = typename ZenoParticles::particles_t(cv_tags,points.size() * MAX_FP_COLLSION_PAIRS,zs::memsrc_e::device,0);
+            auto cv_buffer = typename ZenoParticles::particles_t(cv_tags,points.size() * MAX_FP_COLLISION_PAIRS,zs::memsrc_e::device,0);
             std::vector<zs::PropertyTag> cv_pt_tags{{"p",3},{"t0",3},{"t1",3},{"t2",3}};
-            auto cv_pt_buffer = typename ZenoParticles::particles_t(cv_pt_tags,points.size() * MAX_FP_COLLSION_PAIRS,zs::memsrc_e::device,0);
+            auto cv_pt_buffer = typename ZenoParticles::particles_t(cv_pt_tags,points.size() * MAX_FP_COLLISION_PAIRS,zs::memsrc_e::device,0);
 
 #if 0
 
@@ -998,7 +998,7 @@ namespace zeno {
             auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
             auto bvh_thickness = 5 * avgl;
 
-            TILEVEC_OPS::fill<MAX_FP_COLLSION_PAIRS>(cudaPol,sptemp,"fp_collision_pairs",zs::vec<int,MAX_FP_COLLSION_PAIRS>::uniform(-1).template reinterpret_bits<T>());
+            TILEVEC_OPS::fill<MAX_FP_COLLISION_PAIRS>(cudaPol,sptemp,"fp_collision_pairs",zs::vec<int,MAX_FP_COLLISION_PAIRS>::uniform(-1).template reinterpret_bits<T>());
             cudaPol(zs::range(points.size()),[collisionEps = collisionEps,
                             verts = proxy<space>({},verts),
                             sttemp = proxy<space>({},sttemp),
@@ -1043,7 +1043,7 @@ namespace zeno {
                     if(!collide)
                         return;
 
-                    if(nm_collision_pairs  < MAX_FP_COLLSION_PAIRS) {
+                    if(nm_collision_pairs  < MAX_FP_COLLISION_PAIRS) {
                         sptemp("fp_collision_pairs",nm_collision_pairs++,svi) = reinterpret_bits<T>(stI);
                     }
                 };
@@ -1054,20 +1054,20 @@ namespace zeno {
            cudaPol(zs::range(points.size()),
                 [cv_buffer = proxy<space>({},cv_buffer),cv_pt_buffer = proxy<space>({},cv_pt_buffer),
                         sptemp = proxy<space>({},sptemp),verts = proxy<space>({},verts),points = proxy<space>({},points),tris = proxy<space>({},tris)] ZS_LAMBDA(int pi) mutable {
-                    auto collision_pairs = sptemp.template pack<MAX_FP_COLLSION_PAIRS>("fp_collision_pairs",pi).reinterpret_bits(int_c);
+                    auto collision_pairs = sptemp.template pack<MAX_FP_COLLISION_PAIRS>("fp_collision_pairs",pi).reinterpret_bits(int_c);
                     auto vi = reinterpret_bits<int>(points("inds",pi));
                     auto pvert = verts.template pack<3>("x",vi);
 
-                    for(int i = 0;i != MAX_FP_COLLSION_PAIRS;++i){
+                    for(int i = 0;i != MAX_FP_COLLISION_PAIRS;++i){
                         auto sti = collision_pairs[i];
                         if(sti < 0){
-                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
+                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
                             
-                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
 
                         }else {
                             auto tri = tris.template pack<3>("inds",sti).reinterpret_bits(int_c);
@@ -1076,26 +1076,26 @@ namespace zeno {
                             auto t2 = verts.template pack<3>("x",tri[2]);
                             auto center = (t0 + t1 + t2) / (T)3.0;
 
-                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLSION_PAIRS * pi + i) = center;
+                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = center;
 
-                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLSION_PAIRS * pi + i) = t0;
-                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLSION_PAIRS * pi + i) = t1;
-                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLSION_PAIRS * pi + i) = t2;
+                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = t0;
+                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = t1;
+                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = t2;
 
                         }
                     }
             });
 
 #else
-            auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
-            stBvh.refit(cudaPol,stbvs);
+        auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
+        stBvh.refit(cudaPol,stbvs);
 
             auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
             auto bvh_thickness = 5 * avgl;
 
-            COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLSION_PAIRS>(cudaPol,
+            COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
                 verts,"x",
                 points,
                 lines,
@@ -1111,8 +1111,8 @@ namespace zeno {
                     cv_buffer = proxy<space>({},cv_buffer),
                     cv_pt_buffer = proxy<space>({},cv_pt_buffer),
                     points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
-                        for(int i = 0;i != MAX_FP_COLLSION_PAIRS;++i) {
-                            auto inds = cptemp.template pack<4>("inds",pi * MAX_FP_COLLSION_PAIRS + i).reinterpret_bits(int_c);
+                        for(int i = 0;i != MAX_FP_COLLISION_PAIRS;++i) {
+                            auto inds = cptemp.template pack<4>("inds",pi * MAX_FP_COLLISION_PAIRS + i).reinterpret_bits(int_c);
                             bool contact = true;
                             auto pvert = zs::vec<T,3>::zeros();
                             for(int j = 0;j != 4;++j)
@@ -1125,21 +1125,21 @@ namespace zeno {
                                 auto t2 = verts.template pack<3>("x",inds[3]);
                                 auto center = (t0 + t1 + t2) / (T)3.0;
 
-                                cv_buffer.template tuple<3>("xs",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_buffer.template tuple<3>("xe",MAX_FP_COLLSION_PAIRS * pi + i) = center;
+                                cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = center;
 
-                                cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLSION_PAIRS * pi + i) = t0;
-                                cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLSION_PAIRS * pi + i) = t1;
-                                cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLSION_PAIRS * pi + i) = t2;                                
+                                cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = t0;
+                                cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = t1;
+                                cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = t2;                                
                             }else{
-                                cv_buffer.template tuple<3>("xs",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_buffer.template tuple<3>("xe",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
+                                cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
                                 
-                                cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;
-                                cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLSION_PAIRS * pi + i) = pvert;                                
+                                cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                                cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;                                
                             }
                         }
             });
@@ -1153,8 +1153,8 @@ namespace zeno {
             auto collisionVis = std::make_shared<zeno::PrimitiveObject>();
             auto& cv_verts = collisionVis->verts;
             auto& cv_lines = collisionVis->lines;
-            cv_verts.resize(points.size() * 2 * MAX_FP_COLLSION_PAIRS);
-            cv_lines.resize(points.size() * MAX_FP_COLLSION_PAIRS);
+            cv_verts.resize(points.size() * 2 * MAX_FP_COLLISION_PAIRS);
+            cv_lines.resize(points.size() * MAX_FP_COLLISION_PAIRS);
 
             auto ompPol = omp_exec();  
             constexpr auto omp_space = execspace_e::openmp;
@@ -1218,7 +1218,7 @@ struct VisualizeCollisionForce : zeno::INode {
     virtual void apply() override {
         using namespace zs;
 
-        #define MAX_FP_COLLSION_PAIRS 6
+        #define MAX_FP_COLLISION_PAIRS 6
 
         auto zsparticles = get_input<ZenoParticles>("ZSParticles");
 
@@ -1263,11 +1263,26 @@ struct VisualizeCollisionForce : zeno::INode {
         dtiles_t sptemp(points.get_allocator(),
             {
                 {"nrm",3},
-                // {"fp_collision_pairs",MAX_FP_COLLSION_PAIRS},
+                // {"fp_collision_pairs",MAX_FP_COLLISION_PAIRS},
                 {"cf",3},
                 {"x",3}
             },points.size()
         );
+
+        dtiles_t cptemp(points.get_allocator(),
+            {
+                {"inds",4},
+                {"area",1},
+                {"grad",12},
+                {"H",12 * 12}
+            },points.size() * MAX_FP_COLLISION_PAIRS);
+
+        
+        dtiles_t vtemp(verts.get_allocator(),
+            {
+                {"x",3},
+                {"dir",3},
+            },verts.size());
 
 
         constexpr auto space = execspace_e::cuda;
@@ -1284,6 +1299,7 @@ struct VisualizeCollisionForce : zeno::INode {
         auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
         auto bvh_thickness = 5 * avgl;
 
+#if 1
         if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
             verts,"x",
             lines,
@@ -1454,6 +1470,48 @@ struct VisualizeCollisionForce : zeno::INode {
 
 
         set_output("stprim",std::move(stprim));
+
+#else
+
+        auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
+        stBvh.refit(cudaPol,stbvs);
+        auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
+        auto bvh_thickness = 5 * avgl;
+
+        COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
+            verts,"x",
+            points,
+            lines,
+            tris,
+            sttemp,
+            setemp,
+            cptemp,
+            stBvh,
+            bvh_thickness,collisionEps);
+
+
+        COLLISION_UTILS::evaluate_collision_grad_and_hessian<MAX_FP_COLLISION_PAIRS>(cudaPol,
+            verts,"x",
+            cptemp,
+            collisionEps,
+            (T)1.0,
+            (T)1.0,(T)1.0);
+
+        TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"x");
+        TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",vtemp,"dir");
+
+        auto scale = get_input2<float>("scale");
+
+        auto ompPol = omp_exec();  
+        constexpr auto omp_space = execspace_e::openmp;
+        
+        vtemp = vtemp.clone({zs::memsrc_e::host});
+
+
+
+#endif 
+
     }
 
 };
