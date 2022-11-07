@@ -388,8 +388,8 @@ ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
 
 struct ZSTracerAdvectDiffuse : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, ZenoSparseGrid *NSGrid) {
-
-        constexpr auto space = zs::execspace_e::cuda;
+        
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -488,7 +488,8 @@ ZENDEFNODE(ZSTracerAdvectDiffuse,
 
 struct ZSTracerEmission : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
-        constexpr auto space = zs::execspace_e::cuda;
+        
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
         auto &sdf = EmitSDF->spg;
