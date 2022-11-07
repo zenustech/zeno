@@ -2536,7 +2536,7 @@ struct StepIPCSystem : INode {
         for (int subi = 0; subi != nSubsteps; ++subi) {
             A->advanceSubstep(cudaPol, (typename IPCSystem::T)1 / nSubsteps);
 
-            int numFricSolve = A->s_enableFriction && A->fricMu != 0 ? 2 : 1;
+            int numFricSolve = A->s_enableFriction && A->fricMu != 0 ? 4 : 1;
         for_fric:
             A->needFricPrecompute = true;
 
