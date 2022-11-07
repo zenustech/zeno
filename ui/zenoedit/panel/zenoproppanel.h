@@ -8,6 +8,7 @@
 class IGraphsModel;
 
 class ZExpandableSection;
+class ViewParamModel;
 
 class ZenoPropPanel : public QWidget
 {
@@ -42,6 +43,11 @@ public:
 
 public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
+
+    void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onViewParamInserted(const QModelIndex& parent, int first, int last);
+    void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+
     void onSettings();
 
 private:
@@ -57,6 +63,8 @@ private:
 
     QMap<QString, PANEL_GROUP> m_groups;
 
+    ViewParamModel* m_paramsModel;
+    QTabWidget* m_tabWidget;
     bool m_bReentry;
 };
 

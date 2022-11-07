@@ -175,6 +175,11 @@ QSize ZExpandableSection::minimumSizeHint() const
     return sz;
 }
 
+QString ZExpandableSection::title() const
+{
+    return m_title;
+}
+
 void ZExpandableSection::mousePressEvent(QMouseEvent* event)
 {
     //hit test.

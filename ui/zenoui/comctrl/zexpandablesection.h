@@ -36,6 +36,7 @@ public:
 	QLayout* contentLayout() const;
 	virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
+	QString title() const;
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

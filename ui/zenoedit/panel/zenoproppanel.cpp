@@ -70,6 +70,8 @@ static QString initTabWidgetQss()
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
     , m_bReentry(false)
+    , m_paramsModel(nullptr)
+    , m_tabWidget(nullptr)
 {
     QVBoxLayout* pVLayout = new QVBoxLayout;
     pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -110,6 +112,7 @@ void ZenoPropPanel::clearLayout()
     }
     setUpdatesEnabled(true);
     m_groups.clear();
+    m_tabWidget = nullptr;
     update();
 }
 
@@ -154,23 +157,33 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     m_subgIdx = subgIdx;
     m_idx = nodes[0];
 
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
-    if (!viewParams)
+    if (m_paramsModel)
+    {
+        disconnect(m_paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+        disconnect(m_paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+        disconnect(m_paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    }
+    m_paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    if (!m_paramsModel)
         return;
 
-    QStandardItem* root = viewParams->invisibleRootItem();
+    connect(m_paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+    connect(m_paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+    connect(m_paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+
+    QStandardItem* root = m_paramsModel->invisibleRootItem();
     if (!root) return;
 
     QStandardItem* pRoot = root->child(0);
     if (!pRoot) return;
 
-    QTabWidget* pTabWidget = new QTabWidget;
-    pTabWidget->setStyleSheet(initTabWidgetQss());
-    pTabWidget->setDocumentMode(true);
-    pTabWidget->setTabsClosable(false);
-    pTabWidget->setMovable(false);
-    pTabWidget->setFont(QFont("Segoe UI Bold", 10));  //bug in qss font setting.
-    pTabWidget->tabBar()->setDrawBase(false);
+    m_tabWidget = new QTabWidget;
+    m_tabWidget->setStyleSheet(initTabWidgetQss());
+    m_tabWidget->setDocumentMode(true);
+    m_tabWidget->setTabsClosable(false);
+    m_tabWidget->setMovable(false);
+    m_tabWidget->setFont(QFont("Segoe UI Bold", 10));  //bug in qss font setting.
+    m_tabWidget->tabBar()->setDrawBase(false);
 
     for (int i = 0; i < pRoot->rowCount(); i++)
     {
@@ -232,10 +245,10 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
         pTabLayout->addStretch();
         pTabWid->setLayout(pTabLayout);
-        pTabWidget->addTab(pTabWid, tabName);
+        m_tabWidget->addTab(pTabWid, tabName);
     }
 
-    pMainLayout->addWidget(pTabWidget);
+    pMainLayout->addWidget(m_tabWidget);
 #endif
     pMainLayout->setSpacing(0);
 
@@ -245,6 +258,106 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 #endif
 
     update();
+}
+
+void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    ZASSERT_EXIT(m_paramsModel);
+
+}
+
+void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
+{
+    ZASSERT_EXIT(m_paramsModel && m_tabWidget);
+    QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    QStandardItem* newItem = parentItem->child(first);
+    int vType = newItem->data(ROLE_VPARAM_TYPE).toInt();
+    const QString& name = newItem->data(ROLE_VPARAM_NAME).toString();
+    if (vType == VPARAM_TAB)
+    {
+        m_tabWidget->addTab(new QWidget, name);
+    }
+    else if (vType == VPARAM_GROUP)
+    {
+        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+        const QString& tabName = parentItem->data(ROLE_VPARAM_NAME).toString();
+        int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
+        QWidget* tabWid = m_tabWidget->widget(idx);
+        QVBoxLayout* pTabLayout = qobject_cast<QVBoxLayout*>(tabWid->layout());
+        if (pTabLayout == nullptr)
+        {
+            pTabLayout = new QVBoxLayout;
+            pTabLayout->addStretch();
+            tabWid->setLayout(pTabLayout);
+        }
+
+        ZExpandableSection* pGroupWidget = new ZExpandableSection(name);
+        pGroupWidget->setObjectName(name);
+        QGridLayout* pLayout = new QGridLayout;
+        pLayout->setContentsMargins(10, 15, 0, 15);
+        pLayout->setColumnStretch(0, 1);
+        pLayout->setColumnStretch(1, 3);
+        pLayout->setSpacing(10);
+        pGroupWidget->setContentLayout(pLayout);
+
+        pTabLayout->insertWidget(first, pGroupWidget);
+    }
+    else if (vType == VPARAM_PARAM)
+    {
+        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+
+        QStandardItem* pTabItem = parentItem->parent();
+        ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+
+        const QString& tabName = pTabItem->data(ROLE_VPARAM_NAME).toString();
+        const QString& groupName = parentItem->data(ROLE_VPARAM_NAME).toString();
+        const QString& paramName = name;
+
+        QWidget* tabWid = m_tabWidget->widget(UiHelper::tabIndexOfName(m_tabWidget, tabName));
+        ZASSERT_EXIT(tabWid);
+        auto lst = tabWid->findChildren<ZExpandableSection*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZExpandableSection* pGroupWidget : lst)
+        {
+            QGridLayout* pGroupLayout = qobject_cast<QGridLayout*>(pGroupWidget->contentLayout());
+            ZASSERT_EXIT(pGroupLayout);
+            if (pGroupWidget->title() == groupName)
+            {
+                QStandardItem* paramItem = parentItem->child(first);
+                const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
+                const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
+                const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+
+                Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
+                    //trick implementation:
+                    //todo: api scoped and transaction: undo/redo problem.
+                    paramItem->setData(newValue, ROLE_PARAM_VALUE);
+                };
+
+                auto cbSwitch = [=](bool bOn) {
+                    zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
+                };
+
+                QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
+                if (!pControl)
+                    continue;
+
+                QLabel* pLabel = new QLabel(paramName);
+                pLabel->setProperty("cssClass", "proppanel");
+
+                pGroupLayout->addWidget(pLabel, first, 0, Qt::AlignLeft);
+                pGroupLayout->addWidget(pControl, first, 1);
+
+                break;
+            }
+        }
+    }
+}
+
+void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    ZASSERT_EXIT(m_paramsModel);
+    QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
 }
 
 void ZenoPropPanel::onSettings()

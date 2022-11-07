@@ -1057,3 +1057,17 @@ QVariant UiHelper::getParamValue(const QModelIndex& idx, const QString& name)
         return QVariant();
     return params[name].value;
 }
+
+int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
+{
+    if (!pTabWidget)
+        return -1;
+    for (int i = 0; i < pTabWidget->count(); i++)
+    {
+        if (pTabWidget->tabText(i) == name)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
