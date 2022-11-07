@@ -188,8 +188,6 @@ struct ExtractMaterialShader : zeno::INode
             }
 
             obj->userData().set2("isRealTimeObject", std::move(isL));
-            obj->userData().set2("isL", std::move(isL));
-            obj->userData().set2("ivD", std::move(inverdir));
             set_output("object", std::move(obj));
         }
     };

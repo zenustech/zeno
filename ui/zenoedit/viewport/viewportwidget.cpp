@@ -10,6 +10,7 @@
 #include "dialog/zrecprogressdlg.h"
 #include <zeno/utils/log.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/StageManager.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
@@ -216,7 +217,9 @@ void CameraControl::changeTransformOperation(const QString& node) {
     auto opt = transformer->getTransOpt();
     transformer->clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    for (auto const &[key, _] : scene->objectsMan->pairs()) {
+    // USD
+    //for (auto const &[key, _] : scene->objectsMan->pairs()) {
+    for (auto const &[key, _] : scene->stageMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
             transformer->addObject(key);
@@ -355,7 +358,9 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
     auto rdir = screenToWorldRay(x, y);
     float min_t = std::numeric_limits<float>::max();
     std::string name;
-    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+    // USD
+    //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+    for (auto const &[key, ptr] : scene->stageMan->pairs()) {
         zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
         zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
         zeno::vec3f bmin, bmax;
@@ -499,7 +504,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 auto rdir = screenToWorldRay(x, y);
                 float min_t = std::numeric_limits<float>::max();
                 std::string name("");
-                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                // USD
+                //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                for (auto const &[key, ptr] : scene->stageMan->pairs()) {
                     zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
                     zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
                     zeno::vec3f bmin,bmax;
@@ -539,7 +546,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 auto down_normWS = QVector3D::crossProduct(right_down, left_down);
 
                 std::vector<std::string> passed_prim;
-                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                // USD
+                //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                for (auto const &[key, ptr] : scene->stageMan->pairs()) {
                     zeno::vec3f c;
                     float radius;
                     if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
@@ -644,7 +653,9 @@ void ViewportWidget::paintGL()
     if(updateLightOnce){
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
 
-        if(scene->objectsMan->lightObjects.size() > 0){
+        // USD
+        //if(scene->objectsMan->lightObjects.size() > 0){
+        if(scene->stageMan->zenoLightObjects.size() > 0){
             zenoApp->getMainWindow()->updateLightList();
             updateLightOnce = false;
         }
@@ -1007,7 +1018,9 @@ void DisplayWidget::onRun()
 
     m_view->updateLightOnce = true;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    // USD
+    //scene->objectsMan->lightObjects.clear();
+    scene->stageMan->zenoLightObjects.clear();
 }
 
 void ViewportWidget::keyPressEvent(QKeyEvent* event) {

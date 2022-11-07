@@ -10,6 +10,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/StageManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
 
@@ -104,7 +105,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     });
     connect(write_all_btn, &QPushButton::clicked, this, [&](){
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+        // USD
+        //for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+        for (auto const &[key, ptr]: scene->stageMan->zenoLightObjects) {
             if (key.find("LightNode") != std::string::npos) {
                 QString primid = QString(key.c_str());
                 write_param_into_node(primid);
@@ -113,7 +116,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     });
     connect(procedural_sky_btn, &QPushButton::clicked, this, [&](){
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+        // USD
+        //for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+        for (auto const &[key, ptr]: scene->stageMan->zenoLightObjects) {
             if (key.find("ProceduralSky") != std::string::npos) {
                 QString primid = QString(key.c_str());
                 write_param_into_node(primid);
@@ -139,7 +144,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        std::shared_ptr<zeno::IObject> ptr = scene->objectsMan->lightObjects[name];
+        // USD
+        //std::shared_ptr<zeno::IObject> ptr = scene->objectsMan->lightObjects[name];
+        std::shared_ptr<zeno::IObject> ptr = scene->stageMan->zenoLightObjects[name];
 
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(ptr.get())){
             zeno::vec3f pos = ptr->userData().getLiterial<zeno::vec3f>("pos", zeno::vec3f(0.0f));
@@ -473,7 +480,9 @@ void ZenoLights::modifyLightData() {
     auto verts = computeLightPrim(pos, rotate, scale);
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
+    // USD
+    //std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
+    std::shared_ptr<zeno::IObject> obj = scene->stageMan->zenoLightObjects[name];
     auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
 
     if(prim_in){
@@ -515,7 +524,9 @@ void ZenoLights::modifySunLightDir() {
     bool found = false;
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
+    // USD
+    //for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
+    for (auto const &[key, obj] : scene->stageMan->zenoLightObjects) {
         if (key.find("ProceduralSky") != std::string::npos) {
             found = true;
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
@@ -548,10 +559,14 @@ void ZenoLights::modifySunLightDir() {
 
 void ZenoLights::write_param_into_node(const QString& primid) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
+    // USD
+    //if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
+    if (scene->stageMan->zenoLightObjects.find(primid.toStdString()) == scene->stageMan->zenoLightObjects.end()) {
         return;
     }
-    auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
+    // USD
+    //auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
+    auto realtime_obj = scene->stageMan->zenoLightObjects[primid.toStdString()];
     auto ud = realtime_obj->userData();
     IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (pIGraphsModel == nullptr) {
@@ -565,7 +580,7 @@ void ZenoLights::write_param_into_node(const QString& primid) {
             const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
-                if (ud.get2<int>("isL", 0)) {
+                if (ud.get2<int>("isRealTimeObject", 0)) {
                     auto p = ud.get2<zeno::vec3f>("pos");
                     auto s = ud.get2<zeno::vec3f>("scale");
                     auto r = ud.get2<zeno::vec3f>("rotate");

@@ -331,9 +331,8 @@ struct GraphicsManager {
             if (isRealTimeObject == 0) {
                 return false;
             }
-            if (prim_in->userData().get2<int>("isL", 0) == 1) {
+            if (prim_in->userData().get2<int>("isRealTimeObject", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
-                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
                 auto prim = std::make_shared<zeno::PrimitiveObject>();
                 prim->verts.resize(5);
@@ -514,7 +513,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(graphicsMan->need_update_light(pairs)
             || scene->objectsMan->needUpdateLight)
         {
-            graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
+            // USD
+            //graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
+            graphicsMan->load_light_objects(scene->stageMan->zenoLightObjects);
             lightNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
         }

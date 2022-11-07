@@ -387,8 +387,6 @@ struct LightNode : INode {
         }
 
         prim->userData().set2("isRealTimeObject", std::move(isL));
-        prim->userData().set2("isL", std::move(isL));
-        prim->userData().set2("ivD", std::move(inverdir));
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
