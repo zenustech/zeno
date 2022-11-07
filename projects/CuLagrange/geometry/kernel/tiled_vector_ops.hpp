@@ -11,6 +11,9 @@ namespace zeno { namespace TILEVEC_OPS {
     void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+        // if(src.size() != dst.size())
+        //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
+
         pol(zs::range(src.size()),
             [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
                 dst.template tuple<width>(dst_tag,vi) = src.template pack<width>(src_tag,vi);
@@ -21,6 +24,8 @@ namespace zeno { namespace TILEVEC_OPS {
     void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+        // if(src.size() != dst.size())
+        //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
         pol(zs::range(src.size()),
             [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
                 dst(dst_tag,vi) = src(src_tag,vi);
@@ -69,6 +74,23 @@ namespace zeno { namespace TILEVEC_OPS {
         });
     }
 
+    template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
+    void assemble(Pol& pol,
+        const SrcTileVec& src,zs::SmallString& src_tag,
+        const DstTileVec& dst,zs::SmallString& dst_tag) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            pol(range(src.size()),
+                [src = proxy<space>({},src),dst = proxy<space>({},dst),src_tag,dst_tag] __device__(int si) mutable {
+                    auto inds = src.template pack<space_dim>("inds",si);
+                    auto data = src.template pack<space_dim * simplex_size>(src_tag,si);
+                    for(int i = 0;i != simplex_size;++i)
+                            for(int d = 0;d != space_dim;++d)
+                                atomic_add(exec_cuda,&dst(dst_tag,d,inds[i]),data[i*space_dim + d]);
+            });
+    }
+
     template<int space_dim,typename Pol,typename VTileVec>
     void square(Pol& pol,VTileVec& vtemp,const zs::SmallString& src,const zs::SmallString& dst) {
         using namespace zs;
@@ -98,36 +120,36 @@ namespace zeno { namespace TILEVEC_OPS {
         return res.getVal();
     }    
 
-    template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
-    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
-                constexpr int block_size = space_dim * space_dim;
-                vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
-        });
-        pol(zs::range(etemp.size()),
-                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
-                        ZS_LAMBDA(int ei) mutable{
-            constexpr int h_width = space_dim * simplex_dim;
-            auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
-            auto H = etemp.template pack<h_width,h_width>(HTag,ei);
+    // template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
+    // void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
+    //     using namespace zs;
+    //     constexpr auto space = execspace_e::cuda;
+    //     pol(zs::range(vtemp.size()),
+    //         [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
+    //             constexpr int block_size = space_dim * space_dim;
+    //             vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
+    //     });
+    //     pol(zs::range(etemp.size()),
+    //                 [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
+    //                     ZS_LAMBDA(int ei) mutable{
+    //         constexpr int h_width = space_dim * simplex_dim;
+    //         auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+    //         auto H = etemp.template pack<h_width,h_width>(HTag,ei);
 
-            for(int vi = 0;vi != simplex_dim;++vi)
-                for(int j = 0;j != space_dim;++j){
-                    if(use_block)
-                        for(int k = 0;k != space_dim;++k)
-                            atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + k,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + k));
-                    else
-                        atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + j));
-                }
-        });
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
-                vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
-        });            
-    }
+    //         for(int vi = 0;vi != simplex_dim;++vi)
+    //             for(int j = 0;j != space_dim;++j){
+    //                 if(use_block)
+    //                     for(int k = 0;k != space_dim;++k)
+    //                         atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + k,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + k));
+    //                 else
+    //                     atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + j));
+    //             }
+    //     });
+    //     pol(zs::range(vtemp.size()),
+    //         [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
+    //             vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
+    //     });            
+    // }
 
     static constexpr std::size_t count_warps(std::size_t n) noexcept {
       return (n + 31) / 32;
