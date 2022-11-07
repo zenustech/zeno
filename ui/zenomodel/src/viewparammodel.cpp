@@ -64,6 +64,83 @@ void VParamItem::setData(const QVariant& value, int role)
     }
 }
 
+VParamItem* VParamItem::getItem(const QString& uniqueName) const
+{
+    for (int r = 0; r < rowCount(); r++)
+    {
+        VParamItem* pChild = static_cast<VParamItem*>(child(r));
+        if (pChild->name == uniqueName)
+            return pChild;
+    }
+    return nullptr;
+}
+
+QStandardItem* VParamItem::clone() const
+{
+    VParamItem* pItem = new VParamItem(vType);
+    pItem->name = name;
+    pItem->ctrl = ctrl;
+    pItem->m_index = m_index;
+    QStandardItem::clone();
+    return pItem;
+}
+
+void VParamItem::cloneFrom(VParamItem* rItem)
+{
+    if (!rItem) return;
+
+    if (rItem->vType == VPARAM_PARAM)
+    {
+        if (m_index != rItem->m_index)
+        {
+            m_index = rItem->m_index;
+        }
+        if (ctrl != rItem->ctrl)
+        {
+            setData(rItem->ctrl, ROLE_PARAM_CTRL);
+        }
+        return;
+    }
+
+    //remove the old items first.
+    QVector<int> deleteRows;
+    for (int r = 0; r < rowCount(); r++)
+    {
+        VParamItem* lChild = static_cast<VParamItem*>(child(r));
+        VParamItem* rChild = rItem->getItem(lChild->name);
+        if (!rChild)
+        {
+            deleteRows.append(r);
+        }
+    }
+    for (int r : deleteRows)
+    {
+        removeRow(r);
+    }
+
+    for (int r = 0; r < rItem->rowCount(); r++)
+    {
+        VParamItem* rChild = static_cast<VParamItem*>(rItem->child(r));
+        VParamItem* lChild = getItem(rChild->name);
+        if (!lChild)
+        {
+            //insert new child.
+            VParamItem* newItem = static_cast<VParamItem*>(rChild->clone());
+            newItem->cloneFrom(rChild);
+            insertRow(r, newItem);
+            continue;
+        }
+        lChild->cloneFrom(rChild);
+    }
+}
+
+bool VParamItem::operator==(VParamItem* rItem) const
+{
+    //only itself.
+    if (!rItem) return false;
+    return (rItem->name == name && rItem->ctrl == ctrl && rItem->vType == vType && rItem->m_index == m_index);
+}
+
 
 
 ViewParamModel::ViewParamModel(QObject* parent)
@@ -102,7 +179,7 @@ void ViewParamModel::setup(const QString& customUI)
         */
         VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
 
-        VParamItem* pTab = new VParamItem(VPARAM_DEFAULT_TAB, "Default");
+        VParamItem* pTab = new VParamItem(VPARAM_TAB, "Default");
         {
             VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
             VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
@@ -216,6 +293,14 @@ void ViewParamModel::onParamsAboutToBeRemoved(const QModelIndex& parent, int fir
     ZASSERT_EXIT(pModel);
     const QModelIndex& idx = pModel->index(first, 0, parent);
     if (!idx.isValid()) return;
+}
 
+void ViewParamModel::clone(ViewParamModel* pModel)
+{
+    QStandardItem* pRoot = invisibleRootItem();
+    ZASSERT_EXIT(pRoot);
 
+    VParamItem* pLeft = static_cast<VParamItem*>(pRoot->child(0));
+    VParamItem* pRight = static_cast<VParamItem*>(pModel->invisibleRootItem()->child(0));
+    pLeft->cloneFrom(pRight);
 }

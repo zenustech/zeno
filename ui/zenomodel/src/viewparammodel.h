@@ -7,7 +7,6 @@
 enum VPARAM_TYPE
 {
     VPARAM_ROOT,
-    VPARAM_DEFAULT_TAB,
     VPARAM_TAB,
     VPARAM_GROUP,
     VPARAM_INPUTS,
@@ -37,6 +36,10 @@ struct VParamItem : public QStandardItem
 
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
+    QStandardItem* clone() const override;
+    void cloneFrom(VParamItem* pItem);
+    VParamItem* getItem(const QString& uniqueName) const;
+    bool operator==(VParamItem* rItem) const;
 };
 
 class ViewParamModel : public QStandardItemModel
@@ -46,6 +49,7 @@ public:
     explicit ViewParamModel(QObject* parent = nullptr);
     explicit ViewParamModel(const QString& customXml, QObject* parent = nullptr);
     QString exportUI() const;
+    void clone(ViewParamModel* pModel);
 
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);

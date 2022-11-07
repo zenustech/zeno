@@ -6,6 +6,7 @@
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent)
     : QDialog(parent)
+    , m_model(pModel)
     , m_proxyModel(nullptr)
 {
     m_ui = new Ui::EditParamLayoutDlg;
@@ -36,7 +37,9 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
 
     m_ui->listConctrl->addItems(lstCtrls);
 
-    m_proxyModel = pModel;
+    m_proxyModel = new ViewParamModel(this);
+    m_proxyModel->clone(m_model);
+
     m_ui->paramsView->setModel(m_proxyModel);
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
@@ -46,6 +49,9 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
     m_ui->paramsView->expandAll();
 
     connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onBtnAdd()));
+    connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
+    connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
+    connect(m_ui->btnCancel, SIGNAL(clicked()), this, SLOT(onCancel()));
 }
 
 void ZEditParamLayoutDlg::onBtnAdd()
@@ -84,7 +90,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
     }
     else if (ctrlName == "Group")
     {
-        if (type != VPARAM_TAB && type != VPARAM_DEFAULT_TAB)
+        if (type != VPARAM_TAB)
         {
             QMessageBox::information(this, "Error ", "create group needs to place under the tab");
             return;
@@ -110,4 +116,20 @@ void ZEditParamLayoutDlg::onBtnAdd()
         pNewItem->ctrl = ctrl;
         pItem->appendRow(pNewItem);
     }
+}
+
+void ZEditParamLayoutDlg::onApply()
+{
+    m_model->clone(m_proxyModel);
+}
+
+void ZEditParamLayoutDlg::onOk()
+{
+    onApply();
+    accept();
+}
+
+void ZEditParamLayoutDlg::onCancel()
+{
+    reject();
 }

@@ -17,9 +17,13 @@ public:
 
 private slots:
     void onBtnAdd();
+    void onApply();
+    void onOk();
+    void onCancel();
 
 private:
     ViewParamModel* m_proxyModel;
+    ViewParamModel* m_model;
 
     QMap<QString, PARAM_CONTROL> m_ctrls;
 

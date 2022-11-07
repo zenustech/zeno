@@ -187,8 +187,8 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
             QStandardItem* pGroup = pTab->child(j);
             const QString& groupName = pGroup->data(Qt::DisplayRole).toString();
 
-            ZExpandableSection* pInputsBox = new ZExpandableSection(groupName);
-            pInputsBox->setObjectName(groupName);
+            ZExpandableSection* pGroupWidget = new ZExpandableSection(groupName);
+            pGroupWidget->setObjectName(groupName);
             QGridLayout* pLayout = new QGridLayout;
             pLayout->setContentsMargins(10, 15, 0, 15);
             pLayout->setColumnStretch(0, 1);
@@ -226,16 +226,14 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
                 pLayout->addWidget(pControl, n, 1);
             }
 
-            pInputsBox->setContentLayout(pLayout);
-            //pLayout->setRowStretch(pLayout->rowCount(), 1);
-            pTabLayout->addWidget(pInputsBox);
+            pGroupWidget->setContentLayout(pLayout);
+            pTabLayout->addWidget(pGroupWidget);
         }
 
         pTabLayout->addStretch();
         pTabWid->setLayout(pTabLayout);
         pTabWidget->addTab(pTabWid, tabName);
     }
-    pTabWidget->addTab(new QWidget, "Custom Tab");
 
     pMainLayout->addWidget(pTabWidget);
 #endif
