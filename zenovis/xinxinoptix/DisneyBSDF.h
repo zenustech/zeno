@@ -1106,8 +1106,12 @@ static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverag
 	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
         vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
 	// float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
+
     float dens = worleyNoise(p + pertb + windDir * t);
-    dens = remap( fbm(p + pertb + windDir * t, layer),  0., 1., dens, 1.);
+    // dens = 
+    // // remap( 
+    // fbm(p + pertb + windDir * t, layer)
+    // // , 0., 1., dens, 1.);
 
 	float cov = 1. - coverage * (sin(t)+1.)/2;
 //	dens = smoothstep (cov-0.1, cov + .1, dens);
@@ -1234,9 +1238,10 @@ static __inline__ __device__ vec4 render_clouds(
 
                 C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
                 alpha += (1. - T_i) * (1. - alpha);
-                pos = vec3(pos.x + coef * dir_step.x,
-                           pos.y + coef * dir_step.y,
-                           pos.z + coef * dir_step.z);
+                // pos = vec3(pos.x + coef * dir_step.x,
+                //            pos.y + coef * dir_step.y,
+                //            pos.z + coef * dir_step.z);
+                pos += coef * dir_step.z; // testing operator+=
                 coef *= 1.0f;
                 if (length(pos) > 1e3)
                     break;
@@ -1269,7 +1274,7 @@ static __inline__ __device__ vec3 proceduralSky(
 }
 
 static __inline__ __device__ vec3 hdrSky(
-        vec3 dir
+    vec3 dir
 ){
     float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
     float v = asin(dir.y) / 3.1415926 + 0.5;

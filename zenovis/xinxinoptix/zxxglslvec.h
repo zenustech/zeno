@@ -80,7 +80,7 @@ struct vec2{
         return make_float2(x, y);
     }
 };
-//////////////// + - * /////////////////////////////////////////////
+//////////////// + - * / ////////////////////////////////////////////
 __forceinline__ __device__ vec2 operator+(vec2 a, float b)
 {
     return vec2(a.x+b, a.y+b);
@@ -243,8 +243,157 @@ __forceinline__ __device__ vec4 operator-(vec4 a)
 {
     return vec4(-a.x, -a.y, -a.z, -a.w);
 }
-////////////////end of + - * /////////////////////////////////////////////
+////////////////end of + - * / ////////////////////////////////////////////
 
+//////////////// += -= *= /= ////////////////////////////////////////////
+__forceinline__ __device__ void operator+=(vec2 &a, float b)
+{
+    a.x += b;
+    a.y += b;
+}
+__forceinline__ __device__ void operator+=(vec3 &a, float b)
+{
+    a.x += b; 
+    a.y += b; 
+    a.z += b;
+}
+__forceinline__ __device__ void operator+=(vec4 &a, float b)
+{
+    a.x += b;
+    a.y += b;
+    a.z += b;
+    a.w += b;
+}
+__forceinline__ __device__ void operator+=(vec2 &a, vec2 b)
+{
+    a.x += b.x; 
+    a.y += b.y;
+}
+__forceinline__ __device__ void operator+=(vec3 &a, vec3 b)
+{
+    a.x += b.x; 
+    a.y += b.y;
+    a.z += b.z;
+}
+__forceinline__ __device__ void operator+=(vec4 &a, vec4 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+    a.w += b.w;
+}
+
+__forceinline__ __device__ void operator-=(vec2 &a, float b)
+{
+    a.x -= b;
+    a.y -= b;
+}
+__forceinline__ __device__ void operator-=(vec3 &a, float b)
+{
+    a.x -= b;
+    a.y -= b;
+    a.z -= b;
+}
+__forceinline__ __device__ void operator-=(vec4 &a, float b)
+{
+    a.x -= b;
+    a.y -= b;
+    a.z -= b;
+    a.w -= b;
+}
+__forceinline__ __device__ void operator-=(vec2 &a, vec2 b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+}
+__forceinline__ __device__ void operator-=(vec3 &a, vec3 b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+}
+__forceinline__ __device__ void operator-=(vec4 &a, vec4 b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+    a.w -= b.w;
+}
+
+__forceinline__ __device__ void operator*=(vec2 &a, float b)
+{
+    a.x *= b;
+    a.y *= b;
+}
+__forceinline__ __device__ void operator*=(vec3 &a, float b)
+{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+}
+__forceinline__ __device__ void operator*=(vec4 &a, float b)
+{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+    a.w *= b;
+}
+__forceinline__ __device__ void operator*=(vec2 &a, vec2 b)
+{
+    a.x *= b.x;
+    a.y *= b.y;
+}
+__forceinline__ __device__ void operator*=(vec3 &a, vec3 b)
+{
+    a.x *= b.x; 
+    a.y *= b.y; 
+    a.z *= b.z;
+}
+__forceinline__ __device__ void operator*=(vec4 &a, vec4 b)
+{
+    a.x *= b.x;
+    a.y *= b.y;
+    a.z *= b.z;
+    a.w *= b.w;
+}
+
+__forceinline__ __device__ void operator/=(vec2 &a, float b)
+{
+    a.x /= b;
+    a.y /= b;
+}
+__forceinline__ __device__ void operator/=(vec3 &a, float b)
+{
+    a.x /= b;
+    a.y /= b;
+    a.z /= b;
+}
+__forceinline__ __device__ void operator/=(vec4 &a, float b)
+{
+    a.x /= b;
+    a.y /= b;
+    a.z /= b;
+    a.w /= b;
+}
+__forceinline__ __device__ void operator/=(vec2 &a, vec2 b)
+{
+    a.x /= b.x;
+    a.y /= b.y;
+}
+__forceinline__ __device__ void operator/=(vec3 &a, vec3 b)
+{
+    a.x /= b.x;
+    a.y /= b.y;
+    a.z /= b.z;
+}
+__forceinline__ __device__ void operator/=(vec4 &a, vec4 b)
+{
+    a.x /= b.x;
+    a.y /= b.y;
+    a.z /= b.z;
+    a.w /= b.w;
+}
+////////////////end of += -= *= /= ////////////////////////////////////////////
 
 /////////////////trig func//////////////////////////////////////////////////
 __forceinline__ __device__ float sin(float a)
