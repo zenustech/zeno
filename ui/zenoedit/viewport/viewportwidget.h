@@ -7,40 +7,10 @@
 #include "comctrl/zmenu.h"
 #include "common.h"
 #include "viewporttransform.h"
+#include "recordvideomgr.h"
 
 class ZTimeline;
 class ZenoMainWindow;
-
-#if 0
-class QDMDisplayMenu : public ZMenu
-{
-public:
-    QDMDisplayMenu();
-};
-
-class QDMRecordMenu : public ZMenu
-{
-public:
-    QDMRecordMenu();
-};
-#endif
-
-struct VideoRecInfo
-{
-    QString record_path;
-    QString videoname;
-    QVector2D res;
-    QPair<int, int> frameRange;
-    int fps;
-    int bitrate;
-    int numMSAA = 0;
-    int numOptix = 1;
-    VideoRecInfo() {
-        res = { 0,0 };
-        fps = bitrate = 0;
-        frameRange = { -1, -1 };
-    }
-};
 
 class CameraControl : public QWidget
 {
@@ -97,7 +67,6 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void checkRecord(std::string a_record_file, QVector2D a_record_res);
     QVector2D cameraRes() const;
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
@@ -122,7 +91,6 @@ protected:
 
 private:
     std::shared_ptr<CameraControl> m_camera;
-    std::string record_path;
     QVector2D record_res;
     QPointF m_lastPos;
 
@@ -165,7 +133,7 @@ private:
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
-    QThread m_recThread;
+    RecordVideoMgr m_recordMgr;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
 };

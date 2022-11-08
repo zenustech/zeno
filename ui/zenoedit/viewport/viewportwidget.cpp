@@ -24,9 +24,11 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/uihelper.h>
-#include "recordvideomgr.h"
+
 #define CMP(x, y) \
 	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
+
+
 
 static std::optional<float> ray_sphere_intersect(
     zeno::vec3f const &ray_pos,
@@ -649,29 +651,6 @@ void ViewportWidget::paintGL()
             updateLightOnce = false;
         }
     }
-
-    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
-    {
-        int f = Zenovis::GetInstance().getCurrentFrameId();
-        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
-        checkRecord(record_file, record_res);
-    }
-}
-
-void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res)
-{
-    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
-    {
-        QVector2D oldRes = m_camera->res();
-        m_camera->setRes(a_record_res);
-        m_camera->updatePerspective();
-        auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
-        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname);
-        m_camera->setRes(oldRes);
-        m_camera->updatePerspective();
-        //if f == self.frame_end:
-        //    self.parent_widget.record_video.finish_record()
-    }
 }
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
@@ -733,68 +712,6 @@ void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setDisPlane(disPlane);
     updatePerspective();
 }
-
-/*
-QDMDisplayMenu::QDMDisplayMenu()r("Show Grid")
-{
-    setTitle(tr("Display"));
-    QAction* pAction = new QAction(tr("Show Grid"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(true);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Background Color"), this);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Smooth Shading"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Wireframe"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Enable PBR"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Enable GI"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Camera Keyframe"), this);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("English / Chinese"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(true);
-    addAction(pAction);
-}
-
-QDMRecordMenu::QDMRecordMenu()
-{
-    setTitle(tr("Record"));
-
-    QAction* pAction = new QAction(tr("Screenshot"), this);
-    pAction->setShortcut(QKeySequence("F12"));
-    addAction(pAction);
-
-    pAction = new QAction(tr("Record Video"), this);
-    pAction->setShortcut(QKeySequence(tr("Shift+F12")));
-    addAction(pAction);
-}
-*/
 
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
@@ -1048,24 +965,28 @@ void DisplayWidget::onRecord()
 {
     auto& inst = Zenovis::GetInstance();
 
-    auto& ptr = zeno::getSession().globalComm;
-    ZASSERT_EXIT(ptr);
+    auto& pGlobalComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(pGlobalComm);
 
-    if (ptr->maxPlayFrames() == 0) {
-        //run.
-        QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
-        return;
+    int frameLeft = 0, frameRight = 0;
+    if (pGlobalComm->maxPlayFrames() > 0)
+    {
+        frameLeft = pGlobalComm->beginFrameNumber;
+        frameRight = pGlobalComm->endFrameNumber;
     }
-
-    int frameLeft = ptr->beginFrameNumber;
-    int frameRight = ptr->endFrameNumber;
+    else
+    {
+        frameLeft = 0;
+        frameRight = 0;
+    }
 
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
         int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
         QString presets, path, filename;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA);
+        bool bRecordOnRun = false;
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA, bRecordOnRun);
         //validation.
 
         VideoRecInfo recInfo;
@@ -1077,20 +998,41 @@ void DisplayWidget::onRecord()
         recInfo.videoname = filename;
         recInfo.numOptix = numOptix;
         recInfo.numMSAA = numMSAA;
+        recInfo.bRecordRun = bRecordOnRun;
 
-        Zenovis::GetInstance().startPlay(true);
+        m_recordMgr.setRecordInfo(recInfo);
 
-        RecordVideoMgr recordMgr(m_view, recInfo, nullptr);
-        ZRecordProgressDlg dlgProc(recInfo);
-        connect(&recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
-        connect(&recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
-        connect(&recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
-        if (QDialog::Accepted == dlgProc.exec())
+        if (recInfo.bRecordRun)
         {
+            connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
+                ZRecordProgressDlg dlgProc(recInfo);
+                dlgProc.onRecordFinished();
+                dlgProc.exec();
+            });
         }
         else
         {
-            recordMgr.cancelRecord();
+            if (pGlobalComm->maxPlayFrames() == 0)
+            {
+                QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
+                return;
+            }
+
+            Zenovis::GetInstance().startPlay(true);
+
+            ZRecordProgressDlg dlgProc(recInfo);
+            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+            connect(&m_recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
+            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+
+            dlgProc.show();
+            if (QDialog::Accepted == dlgProc.exec())
+            {
+            }
+            else
+            {
+                m_recordMgr.cancelRecord();
+            }
         }
     }
 }

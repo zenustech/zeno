@@ -3,6 +3,7 @@
 #include <QFileDialog>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "zassert.h"
 
 
 ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
@@ -11,9 +12,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui = new Ui::RecordVideoDlg;
 	m_ui->setupUi(this);
 
-	m_ui->frameStart->setValidator(new QIntValidator(frameStart, frameEnd));
+	//m_ui->frameStart->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameStart->setText(QString::number(frameStart));
-	m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
+	//m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameEnd->setText(QString::number(frameEnd));
 	m_ui->fps->setValidator(new QIntValidator);
 	m_ui->fps->setText("24");
@@ -55,7 +56,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &numOptix, int &numMSAA)
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bRecordWhenRun)
 {
 	frameStart = m_ui->frameStart->text().toInt();
 	frameEnd = m_ui->frameEnd->text().toInt();
@@ -67,12 +68,18 @@ bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bit
 	width = m_ui->lineWidth->text().toInt();
 	height = m_ui->lineHeight->text().toInt();
 	path = m_ui->linePath->text();
+	bRecordWhenRun = m_ui->cbRunRecord->checkState() == Qt::Checked;
 	if (path.isEmpty())
 	{
 		QTemporaryDir dir;
 		dir.setAutoRemove(false);
 		path = dir.path();
 	}
+    //create directory to store screenshot pngs.
+    QDir dir(path);
+    ZASSERT_EXIT(dir.exists(), false);
+    dir.mkdir("P");
+
 	fn = m_ui->lineName->text();
 	if (fn.isEmpty())
 	{
