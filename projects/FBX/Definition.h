@@ -57,6 +57,7 @@ struct SFBXReadOption {
     bool makePrim = false;
     bool enableUDIM = false;
     bool generate = false;
+    std::string primPath;
 };
 
 struct SFBXEvalOption {

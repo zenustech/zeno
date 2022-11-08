@@ -305,7 +305,12 @@ void FakeTransformer::endTransform(bool moved) {
         // sync to node system
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         for (auto &[obj_name, obj] : m_objects) {
-            QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
+            auto scene = Zenovis::GetInstance().getSession()->get_scene();
+            auto zInfo = scene->stageMan->nameComparison[obj_name];
+            auto oName = zInfo.oName;
+
+            //QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
+            QString node_id(oName.substr(0, oName.find_first_of(':')).c_str());
             auto search_result = pModel->search(node_id, SEARCH_NODEID);
             auto subgraph_index = search_result[0].subgIdx;
             auto node_index = search_result[0].targetIdx;

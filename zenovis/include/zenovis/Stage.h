@@ -19,12 +19,13 @@
 #include <pxr/usd/usdGeom/camera.h>
 
 #include <zeno/core/IObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
+    _primTokens,
     // light
     (UsdLuxDiskLight)
     (UsdLuxCylinderLight)
@@ -42,6 +43,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdGeomCube)
     (UsdGeomSphere)
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _typeTokens,
+    // type
+    (Mesh)
 );
 
 struct ConfigurationInfo{
@@ -65,22 +72,23 @@ struct ZenoStage{
     UsdStageRefPtr fStagePtr;
     UsdStageRefPtr sStagePtr;
     ConfigurationInfo confInfo;
-
+    TfRefPtr<SdfLayer> composLayer;
     std::string pathEnv;
 
     ZenoStage();
 
     void update();
 
+    int CompositionArcsStage();
+    int TraverseStageObjects(UsdStageRefPtr stage, std::map<std::string, UPrimInfo>& consis);
+    int RemoveStagePrims();
+    int CheckPathConflict();
+    int CheckAttrVisibility(const UsdPrim& prim);
+    void CreateUSDHierarchy(const SdfPath &path);
+
     int Convert2UsdGeomMesh(const ZPrimInfo& primInfo);
     int Convert2ZenoPrimitive(const UPrimInfo& primInfo);
 
-    void CreateUSDHierarchy(const SdfPath &path)
-    {
-        if (path == SdfPath::AbsoluteRootPath())
-            return;
-        CreateUSDHierarchy(path.GetParentPath());
-        UsdGeomXform::Define(cStagePtr, path);
-    }
+
 
 };

@@ -154,7 +154,7 @@ struct Mesh{
         auto numAnimMesh = mesh->mNumAnimMeshes;
         float uv_scale = 1.0f;
 
-        zeno::log_info("FBX: Mesh name {}, vert count {}", meshName, mesh->mNumVertices);
+        //zeno::log_info("FBX: Mesh name {}, vert count {}", meshName, mesh->mNumVertices);
 
         // Material
         if(mesh->mNumVertices)
@@ -788,12 +788,14 @@ struct Mesh{
 
     }
 
-    void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim){
+    void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim, std::string path){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
+        prim->userData().set2("P_Path", path);
+        prim->userData().set2("P_Type", "UsdGeomMesh");
 
         for(unsigned int i=0; i<fbxData.iVertices.value.size(); i++){
             auto& vpos = fbxData.iVertices.value[i].position;
@@ -1023,7 +1025,7 @@ void readFBXFile(
     data->nodeTree = nodeTree;
 
     if(readOption.makePrim){
-        mesh.processPrim(prim);
+        mesh.processPrim(prim, readOption.primPath);
         if(prim->verts->empty()){
             zeno::log_error("empty prim");
             prim->verts.emplace_back(zeno::vec3f(0.0f, 0.0f, 0.0f));
@@ -1041,6 +1043,7 @@ struct ReadFBXPrim : zeno::INode {
 
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
+        auto primPath = get_input<zeno::StringObject>("primPath")->get();
         std::shared_ptr<zeno::DictObject> datas = std::make_shared<zeno::DictObject>();
         auto nodeTree = std::make_shared<NodeTree>();
         auto animInfo = std::make_shared<AnimInfo>();
@@ -1070,6 +1073,7 @@ struct ReadFBXPrim : zeno::INode {
             readOption.makePrim = true;
         if(generate)
             readOption.generate = true;
+        readOption.primPath = primPath;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
@@ -1110,7 +1114,8 @@ ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
                    {"readpath", "path"},
-                   {"bool", "generate", "false"}
+                   {"bool", "generate", "false"},
+                   {"string", "primPath", "/geom/readfbx1"}
                },  /* outputs: */
                {
                    "prim", "prims", "data", "datas", "mats",

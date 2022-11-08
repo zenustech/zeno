@@ -23,18 +23,26 @@ StageManager::~StageManager(){
 
 bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared_ptr<zeno::IObject>> &objs) {
     auto zins = zenoObjects.insertPass();
-    increase_count++;
 
-    bool inserted = false;
-
+    // #########################################################
+    bool changed = false;
     for (auto const &[key, obj] : objs) {
         if (zins.may_emplace(key)) {
-            zenoLightObjects.clear();
+            changed = true;
             break;
         }
     }
 
+    if(changed){
+        zenoStage->RemoveStagePrims();
+        convertObjects.clear();
+        objectConsistent.clear();
+        zenoObjects.clear();
+        zenoLightObjects.clear();
+    }
+
     // #########################################################
+    bool inserted = false;
     for (auto const &[key, obj] : objs) {
         if (zins.may_emplace(key)) {
             // Legacy Light
@@ -44,24 +52,30 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
                 zenoLightObjects[key] = obj;
             }
 
+            // TODO Save userData to Usd Stage, Currently it is a local conversion
             // Prim
             std::string p_path, p_type;
             ZPrimInfo primInfo;
             obj->userData().has("P_Path") ? p_path = obj->userData().get2<std::string>("P_Path") : p_path = "";
             obj->userData().has("P_Type") ? p_type = obj->userData().get2<std::string>("P_Type") : p_type = "";
             primInfo.pPath = p_path; primInfo.iObject = obj;
-            zeno::log_info("USD: StageManager Emplace {}, P_Type {}, P_Path {}", key, p_type, p_path);
+            //std::cout << "USD: StageManager Emplace " << key << " Type " << p_type << " Path " << p_path << std::endl;
 
-            if(p_type == _tokens->UsdGeomMesh.GetString()){
+            if(p_type == _primTokens->UsdGeomMesh.GetString()){
                 zenoStage->Convert2UsdGeomMesh(primInfo);
             }
-            else if(p_type == _tokens->UsdGeomCube.GetString()){
+            else if(p_type == _primTokens->UsdGeomCube.GetString()){
                 zenoStage->Convert2UsdGeomMesh(primInfo);
             }
-            else if(p_type == _tokens->UsdLuxDiskLight.GetString()){
+            else if(p_type == _primTokens->UsdLuxDiskLight.GetString()){
 
             }else{
-                zeno::log_info("USD: Unsupported type {}, name {}", p_type, key);
+                zeno::log_warn("USD: Unsupported type {}, name {}", p_type, key);
+            }
+
+            if(! p_path.empty()){
+                ZOriginalInfo oriInfo; oriInfo.oName = key; oriInfo.oUserData = obj->userData();
+                nameComparison[p_path] = oriInfo;
             }
 
             zins.try_emplace(key, std::move(obj));
@@ -69,37 +83,41 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         }
     }
 
-    zenoStage->cStagePtr->Save();
-
     // #########################################################
-    auto cins = convertObjects.insertPass();
     if(inserted){
-        zeno::log_info("USD: Convert USD Object To ZenoObject");
-        for (UsdPrim prim: zenoStage->cStagePtr->TraverseAll()) {
-            // Visibility
-            UsdAttribute attr_visibility = prim.GetAttribute(TfToken("visibility"));
-            TfToken visibility;
-            attr_visibility.Get(&visibility, 0.0);
-            if (visibility == UsdGeomTokens->invisible)
-                continue;
+        // Stage C is synthesized with stage S and output to the Layer,
+        // and stage F layered the Layer
+        zenoStage->CompositionArcsStage();
+        zenoStage->cStagePtr->Save();
+        zenoStage->fStagePtr->Reload();
 
-            // Mesh
-            if(prim.GetTypeName() == "Mesh"){
-                UPrimInfo primInfo{prim, std::make_shared<zeno::PrimitiveObject>()};
-                std::string primPath = prim.GetPrimPath().GetAsString();
-                consistent[primPath] = primInfo;
-                zenoStage->Convert2ZenoPrimitive(primInfo);
-            }
-        }
+        // TODO Handle path conflict situations, perhaps over, priorities, etc
+        zenoStage->CheckPathConflict();
+        zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
+
+        increase_count++;
     }
 
     // #########################################################
+    auto cins = convertObjects.insertPass();
     bool converted = false;
-    for(auto const&[k ,p]: consistent){
-        if(cins.may_emplace(k)){
-            cins.try_emplace(k, std::move(p.iObject));
+    for(auto const&[k ,p]: objectConsistent){
+        std::string nk = k+":"+std::to_string(increase_count);
+        if(cins.may_emplace(nk)){
+            // Comparison
+            // If zInfo is empty that mean the object is from AnotherStage
+            auto zInfo = nameComparison[k];
+            nameComparison[nk] = nameComparison[k];
+            nameComparison.erase(k);
+            if(! zInfo.oName.empty())
+                p.iObject->userData() = zInfo.oUserData;
+
+            cins.try_emplace(nk, std::move(p.iObject));
             converted = true;
         }
+    }
+    if(converted){
+        std::cout << "USD: Consistent Size " << objectConsistent.size() << std::endl;
     }
 
     return converted;

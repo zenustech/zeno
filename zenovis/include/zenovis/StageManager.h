@@ -3,6 +3,7 @@
 #include <zenovis/Scene.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/logger.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/MapStablizer.h>
 #include <zeno/utils/PolymorphicMap.h>
 
@@ -18,6 +19,11 @@ struct ZenoStage;
 struct UPrimInfo;
 
 namespace zenovis {
+
+struct ZOriginalInfo{
+    std::string oName;
+    zeno::UserData oUserData;
+};
 
 struct StageManager : zeno::disable_copy {
     /// ZenoObject (Editor) ---> UsdObject ---> ZenoObject (Convert)
@@ -53,6 +59,7 @@ struct StageManager : zeno::disable_copy {
     bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
     std::optional<zeno::IObject*> get(std::string nid);
 
-    std::map<std::string, UPrimInfo> consistent;
+    std::map<std::string, UPrimInfo> objectConsistent;
+    std::map<std::string, ZOriginalInfo> nameComparison;
 };
 }

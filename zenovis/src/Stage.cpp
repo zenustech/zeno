@@ -3,6 +3,10 @@
 #include "zeno/types/UserData.h"
 #include "zeno/utils/logger.h"
 
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdUtils/flattenLayerStack.h>
@@ -13,6 +17,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -152,6 +157,130 @@ std::string Execute( std::string cmd )
     return { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() } ;
 }
 
+/// ######################################################
+
+ZenoStage::ZenoStage() {
+    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
+
+    //cStagePtr = UsdStage::CreateInMemory();
+    cStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_stage.usda");
+    fStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_final.usda");
+    sStagePtr = UsdStage::Open(confInfo.cPath + "/test.usda");
+
+    UsdStage::CreateNew(confInfo.cPath + "/_inter_compLayer.usda");  // making sure the file exists
+    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
+    fStagePtr->Save();
+
+    pxr::UsdGeomSetStageUpAxis(cStagePtr, pxr::TfToken("Y"));
+    pxr::UsdGeomSetStageUpAxis(fStagePtr, pxr::TfToken("Y"));
+
+    std::thread([&]() {
+        try
+        {
+            std::cout << "USD: StageManager Server Running.\n";
+            boost::asio::io_service io_service;
+            Server server(io_service);
+            io_service.run();
+        }
+        catch(std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }).detach();
+}
+
+void ZenoStage::CreateUSDHierarchy(const SdfPath &path)
+{
+    if (path == SdfPath::AbsoluteRootPath())
+        return;
+    CreateUSDHierarchy(path.GetParentPath());
+    UsdGeomXform::Define(cStagePtr, path);
+}
+
+int ZenoStage::RemoveStagePrims(){
+    std::vector<std::string> primPaths;
+    for (UsdPrim prim: cStagePtr->TraverseAll()) {
+        primPaths.emplace_back(prim.GetPrimPath().GetAsString());
+    }
+    for(auto const &p: primPaths){
+        cStagePtr->RemovePrim(SdfPath(p));
+    }
+    if(! cStagePtr->TraverseAll().empty()){
+        std::cout << "USD: ERROR Didn't clean out\n";
+    }
+}
+
+int ZenoStage::CheckPathConflict(){
+    std::vector<SdfPath> primPaths;
+    for (UsdPrim prim: cStagePtr->TraverseAll()) {
+        auto at = _typeTokens->allTokens;
+        auto it = std::find(at.begin(), at.end(), prim.GetTypeName());
+        if(it != at.end())
+            primPaths.emplace_back(prim.GetPrimPath());
+    }
+    for (UsdPrim prim: sStagePtr->TraverseAll()) {
+        auto it = std::find(primPaths.begin(), primPaths.end(), prim.GetPrimPath());
+        if(it != primPaths.end()){
+            zeno::log_warn("USD: Path Conflict {}", prim.GetPrimPath());
+        }
+    }
+}
+
+int ZenoStage::CheckAttrVisibility(const UsdPrim& prim){
+    UsdAttribute attr_visibility = prim.GetAttribute(TfToken("visibility"));
+    TfToken visibility;
+    attr_visibility.Get(&visibility, 0.0);
+    if (visibility == UsdGeomTokens->invisible)
+        return 1;
+    return 0;
+}
+
+int ZenoStage::TraverseStageObjects(UsdStageRefPtr stage, std::map<std::string, UPrimInfo>& consis) {
+    for (UsdPrim prim: stage->TraverseAll()){
+        // Visibility
+        if(CheckAttrVisibility(prim))
+            continue;
+
+        UPrimInfo primInfo{prim, std::make_shared<zeno::PrimitiveObject>()};
+        std::string primPath = prim.GetPrimPath().GetAsString();
+
+        // Mesh
+        if(prim.GetTypeName() == _typeTokens->Mesh){
+            consis[primPath] = primInfo;
+            Convert2ZenoPrimitive(primInfo);
+        }
+    }
+}
+
+int ZenoStage::CompositionArcsStage(){
+    auto roots = std::vector<pxr::SdfLayerHandle> {};
+    roots.reserve(1);
+    roots.push_back(sStagePtr->GetRootLayer());
+    std::vector<std::string> identifiers;
+    identifiers.reserve(roots.size());
+    for (auto const &root : roots) {
+        identifiers.push_back(root->GetIdentifier());
+    }
+
+    pxr::UsdUtilsResolveAssetPathFn anonymous_path_remover =
+        [&identifiers](pxr::SdfLayerHandle const &sourceLayer, std::string const &path) {
+            if (std::find(std::begin(identifiers), std::end(identifiers), path) != std::end(identifiers)) {
+                return std::string {};
+            }
+
+            return std::string {path.c_str()};
+        };
+
+    composLayer = pxr::UsdUtilsFlattenLayerStack(cStagePtr, anonymous_path_remover);
+    for (auto const &root : roots) {
+        pxr::UsdUtilsStitchLayers(composLayer, root);
+    }
+
+    // Output
+    composLayer->Export(confInfo.cPath + "/_inter_compLayer.usda");
+    return 0;
+}
+
 void ZenoStage::update() {
     // TODO Use webhook instead of timed update
     std::string cmd = "git -C " + confInfo.cPath + " pull";
@@ -166,38 +295,19 @@ void ZenoStage::update() {
         std::cout << "USD: Update Dirty Stage" << std::endl;
 
         sStagePtr->Reload();  // The effect is same as layers.reload
-        auto roots = std::vector<pxr::SdfLayerHandle> {};
-        roots.reserve(1);
-        roots.push_back(sStagePtr->GetRootLayer());
-        std::vector<std::string> identifiers;
-        identifiers.reserve(roots.size());
-        for (auto const &root : roots) {
-            identifiers.push_back(root->GetIdentifier());
-        }
+        CompositionArcsStage();
+        fStagePtr->Reload();
 
-        pxr::UsdUtilsResolveAssetPathFn anonymous_path_remover =
-            [&identifiers](pxr::SdfLayerHandle const &sourceLayer, std::string const &path) {
-                if (std::find(std::begin(identifiers), std::end(identifiers), path) != std::end(identifiers)) {
-                    return std::string {};
-                }
-
-                return std::string {path.c_str()};
-            };
-
-        auto layer = pxr::UsdUtilsFlattenLayerStack(cStagePtr, anonymous_path_remover);
-        for (auto const &root : roots) {
-            pxr::UsdUtilsStitchLayers(layer, root);
-        }
-
-        layer->Export(confInfo.cPath + "/_inter_compLayer.usda");
-        cStagePtr->Save();
+        std::string stageString;
+        fStagePtr->ExportToString(&stageString);
+        std::cout << "USD: Stage " << std::endl << stageString << std::endl;
     }
 }
 
 int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
     auto zenoPrim = dynamic_cast<zeno::PrimitiveObject *>(primInfo.iObject.get());
     std::filesystem::path p(primInfo.pPath); std::string nodeName = p.filename().string();
-    zeno::log_info("USD: Convert2UsdGeomMesh {}", nodeName);
+    //std::cout << "USD: Convert2UsdGeomMesh " << nodeName << std::endl;
     SdfPath objPath(primInfo.pPath);
     CreateUSDHierarchy(objPath);
 
@@ -243,32 +353,6 @@ int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
     mesh.GetDisplayColorPrimvar().SetInterpolation(UsdGeomTokens->vertex);
 }
 
-ZenoStage::ZenoStage() {
-    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
-
-    //cStagePtr = UsdStage::CreateInMemory();
-    cStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_stage.usda");
-    fStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_final.usda");
-    sStagePtr = UsdStage::Open(confInfo.cPath + "/test.usda");
-
-    UsdStage::CreateNew(confInfo.cPath + "/_inter_compLayer.usda");  // making sure the file exists
-    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
-    fStagePtr->Save();
-
-    std::thread([&]() {
-        try
-        {
-            std::cout << "USD: StageManager Server Running.\n";
-            boost::asio::io_service io_service;
-            Server server(io_service);
-            io_service.run();
-        }
-        catch(std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }).detach();
-}
 int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
     auto obj = primInfo.iObject;
     auto prim = primInfo.usdPrim;
@@ -322,3 +406,4 @@ int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
 
     return 0;
 }
+
