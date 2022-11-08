@@ -276,12 +276,14 @@ struct ZSNSPressureProject : INode {
                 spgv("div_v", icoord) = div_term;
             });
 
+        const float dxSqrOverDt = dx * dx / dt;
+
         int &p_cur = NSGrid->readMeta<int &>("p_cur");
 
-        float dxSqrOverDt = dx * dx / dt;
-
-        // pressure Poisson equation - point Jacobi iteration
+        // pressure Poisson equation
         for (int iter = 0; iter < nIter; ++iter) {
+#if 0
+            // point Jacobi iteration
             pol(zs::range(block_cnt * spg.block_size),
                 [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho,
                  pSrcTag = zs::SmallString{std::string("p") + std::to_string(p_cur)},
@@ -306,6 +308,52 @@ struct ZSNSPressureProject : INode {
                     spgv(pDstTag, icoord) = p_this;
                 });
             p_cur ^= 1;
+#else
+            // red-black SOR iteration
+            const float sor = 1.2f; // over relaxation rate
+
+            for (int clr = 0; clr != 2; ++clr) {
+
+                pol(zs::range(block_cnt * 32), [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho, clr,
+                                                sor] __device__(int tid) mutable {
+                    auto blockno = tid / 32;
+
+                    auto bcoord = spgv._table._activeKeys[blockno];
+                    if ((((bcoord[0] & 8) ^ (bcoord[1] & 8) ^ (bcoord[2] & 8)) >> 3) == clr)
+                        return;
+
+                    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                    for (int c_clr = 0; c_clr != 2; ++c_clr) {
+
+                        for (int cno = tile.thread_rank(); cno < 256; cno += tile.num_threads()) {
+                            auto cellno = (cno << 1) | c_clr;
+
+                            auto ccoord = spgv.local_offset_to_coord(cellno);
+                            auto icoord = bcoord + ccoord;
+
+                            float div = spgv.value("div_v", blockno, cellno);
+
+                            const int stcl = 1; // stencil point in each side
+                            float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+
+                            for (int i = -stcl; i <= stcl; ++i) {
+                                p_x[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(i, 0, 0));
+                                p_y[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, i, 0));
+                                p_z[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, 0, i));
+                            }
+
+                            float p_this =
+                                (1.f - sor) * p_x[stcl] +
+                                sor *
+                                    ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dxSqrOverDt * rho) /
+                                    6.f;
+
+                            spgv("p0", blockno, cellno) = p_this;
+                        }
+                    }
+                });
+            }
+#endif
         }
 
         // pressure projection
@@ -503,7 +551,7 @@ struct ZSTracerEmission : INode {
             auto wcoord = spgv.wCoord(blockno, cellno);
             auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
-            if (emit_sdf <= 1.5f*dx) {
+            if (emit_sdf <= 1.5f * dx) {
                 // fix me: naive emission
                 spgv(tag, blockno, cellno) = 1.0;
             }
