@@ -219,6 +219,10 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, svOffset};
     exclSes = Vector<u8>{vtemp.get_allocator(), seOffset};
     exclSts = Vector<u8>{vtemp.get_allocator(), sfOffset};
+    std::size_t nBouSes = 0;
+    if (coEdges)
+        nBouSes = coEdges->size();
+    exclBouSes = Vector<u8>{vtemp.get_allocator(), nBouSes};
 
     auto deduce_node_cnt = [](std::size_t numLeaves) {
         if (numLeaves <= 2)

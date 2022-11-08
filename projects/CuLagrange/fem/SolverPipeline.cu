@@ -7,6 +7,7 @@
 #include "zensim/profile/CppTimers.hpp"
 #include "zensim/types/SmallVector.hpp"
 #include <cooperative_groups.h>
+#include <zeno/utils/log.h>
 
 #define PROFILE_IPC 0
 
@@ -91,6 +92,7 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
     constexpr auto space = execspace_e::cuda;
     exclSes.reset(0);
     exclSts.reset(0);
+    exclBouSes.reset(0);
 
     Vector<int> cnt{vtemp.get_allocator(), 1};
     cnt.setVal(0);
@@ -126,7 +128,43 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
         if (triIntersected)
             exclSts[sti] = 1;
     });
-    fmt::print("{} et intersections\n", cnt.getVal());
+    zeno::log_info("{} self et intersections\n", cnt.getVal());
+
+    if (coEdges) {
+        cnt.setVal(0);
+        edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
+        bouSeBvh.refit(pol, edgeBvs);
+        pol(range(stInds.size()),
+            [vtemp = proxy<space>({}, vtemp), stInds = proxy<space>({}, stInds), seInds = proxy<space>({}, *coEdges),
+             exclBouSes = proxy<space>(exclBouSes), exclSts = proxy<space>(exclSts), bvh = proxy<space>(bouSeBvh),
+             cnt = proxy<space>(cnt), dHat = dHat, voffset = coOffset] __device__(int sti) mutable {
+                auto tri = stInds.pack(dim_c<3>, "inds", sti).reinterpret_bits(int_c);
+                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+                auto bv = bv_t{get_bounding_box(t0, t1)};
+                merge(bv, t2);
+                bool allFixed =
+                    vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3;
+                bool triIntersected = false;
+                bvh.iter_neighbors(bv, [&](int sei) {
+                    auto line = seInds.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c) + voffset;
+                    // no need to check common vertices here
+                    if (allFixed && vtemp("BCorder", line[0]) == 3 && vtemp("BCorder", line[1]) == 3)
+                        return;
+                    if (et_intersected(vtemp.pack(dim_c<3>, "xn", line[0]), vtemp.pack(dim_c<3>, "xn", line[1]), t0, t1,
+                                       t2)) {
+                        triIntersected = true;
+                        exclBouSes[sei] = 1;
+
+                        atomic_add(exec_cuda, &cnt[0], 1);
+                    }
+                });
+                if (triIntersected)
+                    exclSts[sti] = 1;
+            });
+        zeno::log_info("{} boundary et intersections\n", cnt.getVal());
+    }
     return;
 }
 
