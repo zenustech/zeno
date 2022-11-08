@@ -4,6 +4,23 @@
 #include <zenomodel/include/uihelper.h>
 
 
+static CONTROL_ITEM_INFO controlList[] = {
+    {"Integer",             CONTROL_INT,    "int"},
+    {"Float",               CONTROL_FLOAT,  "float"},
+    {"String",              CONTROL_STRING, "string"},
+    {"Boolean",             CONTROL_BOOL,   "bool"},
+    {"Multiline String",    CONTROL_MULTILINE_STRING, "string"},
+    {"Float Vector 4",      CONTROL_VEC4_FLOAT, "vec4f"},
+    {"Float Vector 3",      CONTROL_VEC3_FLOAT, "vec3f"},
+    {"Float Vector 2",      CONTROL_VEC2_FLOAT, "vec2f"},
+    {"Integer Vector 4",    CONTROL_VEC4_INT,   "vec4i"},
+    {"Integer Vector 3",    CONTROL_VEC3_INT,   "vec3i"},
+    {"Integer Vector 2",    CONTROL_VEC2_INT,   "vec2i"},
+    {"Color",   CONTROL_COLOR,  "color"},
+    {"Curve",   CONTROL_CURVE,  "curve"},
+};
+
+
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent)
     : QDialog(parent)
     , m_model(pModel)
@@ -14,26 +31,12 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
 
     QStringList lstCtrls = {
         "Tab",
-        "Group",
-        "Integer",
-        "Float",
-        "String",
-        "Boolean",
-        "Multiline String",
-        "Float Vector 4",
-        "Float Vector 3",
-        "Float Vector 2",
-        "Integer Vector 4",
-        "Integer Vector 3",
-        "Integer Vector 2",
-        "Color",
-        "Curve",
+        "Group"
     };
-
-    m_ctrls["Float"] = CONTROL_FLOAT;
-    m_ctrls["String"] = CONTROL_STRING;
-    m_ctrls["Boolean"] = CONTROL_BOOL;
-    m_ctrls["Multiline String"] = CONTROL_MULTILINE_STRING;
+    for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
+    {
+        lstCtrls.append(controlList[i].name);
+    }
 
     m_ui->listConctrl->addItems(lstCtrls);
 
@@ -108,12 +111,21 @@ void ZEditParamLayoutDlg::onBtnAdd()
         }
 
         PARAM_CONTROL ctrl = CONTROL_NONE;
-        if (m_ctrls.find(ctrlName) != m_ctrls.end())
-            ctrl = m_ctrls[ctrlName];
+        QString typeDesc;
+        for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
+        {
+            if (controlList[i].name == ctrlName)
+            {
+                ctrl = controlList[i].ctrl;
+                typeDesc = controlList[i].defaultType;
+                break;
+            }
+        }
 
         QString newItem = UiHelper::getUniqueName(existNames, "Param");
         VParamItem* pNewItem = new VParamItem(VPARAM_PARAM, newItem);
-        pNewItem->ctrl = ctrl;
+        pNewItem->m_info.control = ctrl;
+        pNewItem->m_info.typeDesc = typeDesc;
         pItem->appendRow(pNewItem);
     }
 }

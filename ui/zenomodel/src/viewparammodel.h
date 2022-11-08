@@ -26,8 +26,8 @@ enum ROLE_VPARAM
 struct VParamItem : public QStandardItem
 {
     QPersistentModelIndex m_index;      //index to real param.
-    QString name;       //display name.
-    PARAM_CONTROL ctrl;
+    PARAM_INFO m_info;
+
     VPARAM_TYPE vType;
 
     VParamItem(VPARAM_TYPE vType, const QString& text);

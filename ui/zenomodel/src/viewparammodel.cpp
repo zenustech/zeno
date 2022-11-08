@@ -5,24 +5,24 @@
 
 VParamItem::VParamItem(VPARAM_TYPE type, const QString& text)
     : QStandardItem(text)
-    , ctrl(CONTROL_NONE)
     , vType(type)
-    , name(text)
 {
+    m_info.control = CONTROL_NONE;
+    m_info.name = text;
 }
 
 VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text)
     : QStandardItem(icon, text)
-    , ctrl(CONTROL_NONE)
     , vType(type)
-    , name(text)
 {
+    m_info.control = CONTROL_NONE;
+    m_info.name = text;
 }
 
 VParamItem::VParamItem(VPARAM_TYPE type)
-    : ctrl(CONTROL_NONE)
-    , vType(type)
+    : vType(type)
 {
+    m_info.control = CONTROL_NONE;
 }
 
 QVariant VParamItem::data(int role) const
@@ -30,17 +30,19 @@ QVariant VParamItem::data(int role) const
     switch (role)
     {
     case Qt::DisplayRole:
-    case ROLE_VPARAM_NAME:  return name;
+    case ROLE_VPARAM_NAME:  return m_info.name;
     case ROLE_VPARAM_TYPE:  return vType;
-    case ROLE_PARAM_CTRL:   return ctrl;
+    case ROLE_PARAM_CTRL:   return m_info.control;
     case ROLE_PARAM_VALUE:
     {
-        if (!m_index.isValid()) return QVariant();
+        if (!m_index.isValid())
+            return m_info.value;
         return m_index.data(ROLE_PARAM_VALUE);
     }
     case ROLE_PARAM_TYPE:
     {
-        if (!m_index.isValid()) return QVariant();
+        if (!m_index.isValid())
+            return m_info.typeDesc;
         return m_index.data(ROLE_PARAM_TYPE);
     }
     default:
@@ -59,6 +61,10 @@ void VParamItem::setData(const QVariant& value, int role)
                 QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
                 pModel->setData(m_index, value, role);
             }
+            else
+            {
+                m_info.value = value;
+            }
             break;
         }
     }
@@ -69,7 +75,7 @@ VParamItem* VParamItem::getItem(const QString& uniqueName) const
     for (int r = 0; r < rowCount(); r++)
     {
         VParamItem* pChild = static_cast<VParamItem*>(child(r));
-        if (pChild->name == uniqueName)
+        if (pChild->m_info.name == uniqueName)
             return pChild;
     }
     return nullptr;
@@ -78,10 +84,8 @@ VParamItem* VParamItem::getItem(const QString& uniqueName) const
 QStandardItem* VParamItem::clone() const
 {
     VParamItem* pItem = new VParamItem(vType);
-    pItem->name = name;
-    pItem->ctrl = ctrl;
+    pItem->m_info = this->m_info;
     pItem->m_index = m_index;
-    QStandardItem::clone();
     return pItem;
 }
 
@@ -95,9 +99,13 @@ void VParamItem::cloneFrom(VParamItem* rItem)
         {
             m_index = rItem->m_index;
         }
-        if (ctrl != rItem->ctrl)
+        if (m_info.control != rItem->m_info.control)
         {
-            setData(rItem->ctrl, ROLE_PARAM_CTRL);
+            setData(rItem->m_info.control, ROLE_PARAM_CTRL);
+        }
+        if (m_info.value != rItem->m_info.value)
+        {
+            setData(rItem->m_info.value, ROLE_PARAM_VALUE);
         }
         return;
     }
@@ -107,7 +115,7 @@ void VParamItem::cloneFrom(VParamItem* rItem)
     for (int r = 0; r < rowCount(); r++)
     {
         VParamItem* lChild = static_cast<VParamItem*>(child(r));
-        VParamItem* rChild = rItem->getItem(lChild->name);
+        VParamItem* rChild = rItem->getItem(lChild->m_info.name);
         if (!rChild)
         {
             deleteRows.append(r);
@@ -121,7 +129,7 @@ void VParamItem::cloneFrom(VParamItem* rItem)
     for (int r = 0; r < rItem->rowCount(); r++)
     {
         VParamItem* rChild = static_cast<VParamItem*>(rItem->child(r));
-        VParamItem* lChild = getItem(rChild->name);
+        VParamItem* lChild = getItem(rChild->m_info.name);
         if (!lChild)
         {
             //insert new child.
@@ -138,7 +146,11 @@ bool VParamItem::operator==(VParamItem* rItem) const
 {
     //only itself.
     if (!rItem) return false;
-    return (rItem->name == name && rItem->ctrl == ctrl && rItem->vType == vType && rItem->m_index == m_index);
+    return (rItem->m_info.name == m_info.name &&
+            rItem->m_info.control == m_info.control &&
+            rItem->vType == vType &&
+            rItem->m_info.typeDesc == m_info.typeDesc &&
+            rItem->m_index == m_index);
 }
 
 
@@ -242,7 +254,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
-                paramItem->ctrl = ctrl;
+                paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
                 pItem->appendRow(paramItem);
                 break;
@@ -260,7 +272,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
-                paramItem->ctrl = ctrl;
+                paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
                 pItem->appendRow(paramItem);
                 break;
@@ -278,7 +290,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
-                paramItem->ctrl = ctrl;
+                paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
                 pItem->appendRow(paramItem);
                 break;

@@ -9,6 +9,14 @@ namespace Ui
     class EditParamLayoutDlg;
 }
 
+struct CONTROL_ITEM_INFO
+{
+    QString name;
+    PARAM_CONTROL ctrl;
+    QString defaultType;
+};
+
+
 class ZEditParamLayoutDlg : public QDialog
 {
     Q_OBJECT
@@ -24,8 +32,6 @@ private slots:
 private:
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
-
-    QMap<QString, PARAM_CONTROL> m_ctrls;
 
     Ui::EditParamLayoutDlg* m_ui;
 };

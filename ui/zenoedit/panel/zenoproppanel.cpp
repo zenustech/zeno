@@ -111,12 +111,9 @@ void ZenoPropPanel::clearLayout()
         pMainLayout->removeItem(pItem);
     }
     setUpdatesEnabled(true);
-    m_groups.clear();
     m_tabWidget = nullptr;
     update();
 }
-
-//#define LEGACY_PROPPANEL
 
 void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
@@ -129,31 +126,6 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
         return;
     }
 
-#ifdef LEGACY_PROPPANEL
-
-    connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
-    connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
-        clearLayout();
-    });
-    connect(pModel, &IGraphsModel::modelClear, this, [=]() {
-        clearLayout();
-    });
-
-    m_subgIdx = subgIdx;
-    m_idx = nodes[0];
-
-    auto box = inputsBox(pModel, subgIdx, nodes);
-    if (box)
-    {
-        pMainLayout->addWidget(box);
-    }
-
-    box = paramsBox(pModel, subgIdx, nodes);
-    if (box)
-    {
-        pMainLayout->addWidget(box);
-    }
-#else
     m_subgIdx = subgIdx;
     m_idx = nodes[0];
 
@@ -187,75 +159,12 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
     for (int i = 0; i < pRoot->rowCount(); i++)
     {
-        QStandardItem* pTab = pRoot->child(i);
-        const QString& tabName = pTab->data(Qt::DisplayRole).toString();
-
-        QWidget* pTabWid = new QWidget;
-        QVBoxLayout* pTabLayout = new QVBoxLayout;
-        pTabLayout->setContentsMargins(QMargins(0, 0, 0, 0));
-        pTabLayout->setSpacing(0);
-
-        for (int j = 0; j < pTab->rowCount(); j++)
-        {
-            QStandardItem* pGroup = pTab->child(j);
-            const QString& groupName = pGroup->data(Qt::DisplayRole).toString();
-
-            ZExpandableSection* pGroupWidget = new ZExpandableSection(groupName);
-            pGroupWidget->setObjectName(groupName);
-            QGridLayout* pLayout = new QGridLayout;
-            pLayout->setContentsMargins(10, 15, 0, 15);
-            pLayout->setColumnStretch(0, 1);
-            pLayout->setColumnStretch(1, 3);
-            pLayout->setSpacing(10);
-
-            for (int k = 0; k < pGroup->rowCount(); k++)
-            {
-                QStandardItem* paramItem = pGroup->child(k);
-
-                const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
-                const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
-                const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
-
-                Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
-                    //trick implementation:
-                    //todo: api scoped and transaction: undo/redo problem.
-                    paramItem->setData(newValue, ROLE_PARAM_VALUE);
-                };
-
-                auto cbSwitch = [=](bool bOn) {
-                    zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
-                };
-
-                QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
-                if (!pControl)
-                    continue;
-
-                QLabel* pLabel = new QLabel(paramName);
-                pLabel->setProperty("cssClass", "proppanel");
-
-                int n = pLayout->rowCount();
-                pLayout->addWidget(pLabel, n, 0, Qt::AlignLeft);
-                pLayout->addWidget(pControl, n, 1);
-            }
-
-            pGroupWidget->setContentLayout(pLayout);
-            pTabLayout->addWidget(pGroupWidget);
-        }
-
-        pTabLayout->addStretch();
-        pTabWid->setLayout(pTabLayout);
-        m_tabWidget->addTab(pTabWid, tabName);
+        QStandardItem* pTabItem = pRoot->child(i);
+        syncAddTab(m_tabWidget, pTabItem, i);
     }
 
     pMainLayout->addWidget(m_tabWidget);
-#endif
     pMainLayout->setSpacing(0);
-
-#ifdef LEGACY_PROPPANEL
-    onInputsCheckUpdate();
-    onParamsCheckUpdate();
-#endif
 
     update();
 }
@@ -275,7 +184,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     const QString& name = newItem->data(ROLE_VPARAM_NAME).toString();
     if (vType == VPARAM_TAB)
     {
-        m_tabWidget->addTab(new QWidget, name);
+        syncAddTab(m_tabWidget, newItem, first);
     }
     else if (vType == VPARAM_GROUP)
     {
@@ -290,17 +199,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             pTabLayout->addStretch();
             tabWid->setLayout(pTabLayout);
         }
-
-        ZExpandableSection* pGroupWidget = new ZExpandableSection(name);
-        pGroupWidget->setObjectName(name);
-        QGridLayout* pLayout = new QGridLayout;
-        pLayout->setContentsMargins(10, 15, 0, 15);
-        pLayout->setColumnStretch(0, 1);
-        pLayout->setColumnStretch(1, 3);
-        pLayout->setSpacing(10);
-        pGroupWidget->setContentLayout(pLayout);
-
-        pTabLayout->insertWidget(first, pGroupWidget);
+        syncAddGroup(pTabLayout, newItem, first);
     }
     else if (vType == VPARAM_PARAM)
     {
@@ -323,35 +222,82 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             if (pGroupWidget->title() == groupName)
             {
                 QStandardItem* paramItem = parentItem->child(first);
-                const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
-                const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
-                const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
-
-                Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
-                    //trick implementation:
-                    //todo: api scoped and transaction: undo/redo problem.
-                    paramItem->setData(newValue, ROLE_PARAM_VALUE);
-                };
-
-                auto cbSwitch = [=](bool bOn) {
-                    zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
-                };
-
-                QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
-                if (!pControl)
-                    continue;
-
-                QLabel* pLabel = new QLabel(paramName);
-                pLabel->setProperty("cssClass", "proppanel");
-
-                pGroupLayout->addWidget(pLabel, first, 0, Qt::AlignLeft);
-                pGroupLayout->addWidget(pControl, first, 1);
-
+                syncAddControl(pGroupLayout, paramItem, first);
                 break;
             }
         }
     }
+}
+
+bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)
+{
+    const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
+    const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
+    const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+
+    Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
+        //trick implementation:
+        //todo: api scoped and transaction: undo/redo problem.
+        paramItem->setData(newValue, ROLE_PARAM_VALUE);
+    };
+
+    auto cbSwitch = [=](bool bOn) {
+        zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
+    };
+
+    QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
+    if (!pControl)
+        return false;
+
+    QLabel* pLabel = new QLabel(paramName);
+    pLabel->setProperty("cssClass", "proppanel");
+
+    pGroupLayout->addWidget(pLabel, row, 0, Qt::AlignLeft);
+    pGroupLayout->addWidget(pControl, row, 1);
+    return true;
+}
+
+bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row)
+{
+    const QString& groupName = pGroupItem->data(Qt::DisplayRole).toString();
+    ZExpandableSection* pGroupWidget = new ZExpandableSection(groupName);
+    pGroupWidget->setObjectName(groupName);
+    QGridLayout* pLayout = new QGridLayout;
+    pLayout->setContentsMargins(10, 15, 0, 15);
+    pLayout->setColumnStretch(0, 1);
+    pLayout->setColumnStretch(1, 3);
+    pLayout->setSpacing(10);
+    for (int k = 0; k < pGroupItem->rowCount(); k++)
+    {
+        QStandardItem* paramItem = pGroupItem->child(k);
+        int n = pLayout->rowCount();
+        syncAddControl(pLayout, paramItem, n);
+    }
+    pGroupWidget->setContentLayout(pLayout);
+    pTabLayout->addWidget(pGroupWidget);
+    return true;
+}
+
+bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row)
+{
+    const QString& tabName = pTabItem->data(Qt::DisplayRole).toString();
+
+    QWidget* pTabWid = new QWidget;
+    QVBoxLayout* pTabLayout = new QVBoxLayout;
+    pTabLayout->setContentsMargins(QMargins(0, 0, 0, 0));
+    pTabLayout->setSpacing(0);
+
+    for (int j = 0; j < pTabItem->rowCount(); j++)
+    {
+        QStandardItem* pGroupItem = pTabItem->child(j);
+        syncAddGroup(pTabLayout, pGroupItem, j);
+    }
+
+    pTabLayout->addStretch();
+    pTabWid->setLayout(pTabLayout);
+    pTabWidget->insertTab(row, pTabWid, tabName);
+    return true;
 }
 
 void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
@@ -376,194 +322,5 @@ void ZenoPropPanel::onSettings()
         ZEditParamLayoutDlg dlg(viewParams, this);
         dlg.exec();
     });
-
     pMenu->exec(QCursor::pos());
-}
-
-
-
-ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
-{
-    if (nodes.isEmpty())
-        return nullptr;
-
-    PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();    if (params.isEmpty())
-        return nullptr;
-
-    ZExpandableSection* pParamsBox = new ZExpandableSection(tr("NODE PARAMETERS"));
-    pParamsBox->setObjectName(tr("NODE PARAMETERS"));
-    QGridLayout* pLayout = new QGridLayout;
-    pLayout->setContentsMargins(10, 15, 0, 15);
-    pLayout->setColumnStretch(0, 1);
-    pLayout->setColumnStretch(1, 3);
-    pLayout->setSpacing(10);
-    pParamsBox->setContentLayout(pLayout);
-    return pParamsBox;
-}
-
-ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
-{
-    ZASSERT_EXIT(m_idx.isValid(), nullptr);
-    INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    if (inputs.isEmpty())
-        return nullptr;
-
-    const QString& groupName = tr("SOCKET IN");
-    ZExpandableSection* pInputsBox = new ZExpandableSection(groupName);
-    pInputsBox->setObjectName(groupName);
-    QGridLayout* pLayout = new QGridLayout;
-    pLayout->setContentsMargins(10, 15, 0, 15);
-    pLayout->setColumnStretch(0, 1);
-    pLayout->setColumnStretch(1, 3);
-    pLayout->setSpacing(10);
-    pInputsBox->setContentLayout(pLayout);
-    return pInputsBox;
-}
-
-void ZenoPropPanel::onInputsCheckUpdate()
-{
-    ZASSERT_EXIT(m_idx.isValid());
-    INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    QMap<QString, CONTROL_DATA> ctrls;
-    for (const QString& inSock : inputs.keys())
-    {
-        const INPUT_SOCKET& inSocket = inputs[inSock];
-        CONTROL_DATA ctrl;
-        ctrl.ctrl = inSocket.info.control;
-        ctrl.name = inSock;
-        ctrl.typeDesc = inSocket.info.type;
-        ctrl.value = inSocket.info.defaultValue;
-        ctrl.cbFunc = [=](QVariant newValue)
-        {
-            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            ZASSERT_EXIT(pGraphsModel);
-
-            const QString& nodeid = m_idx.data(ROLE_OBJID).toString();
-            const INPUT_SOCKETS& inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(inSock) == inputs.end())
-                return;
-
-            const INPUT_SOCKET& inSocket = inputs[inSock];
-
-            PARAM_UPDATE_INFO info;
-            info.name = inSock;
-            info.oldValue = inSocket.info.defaultValue;
-            info.newValue = newValue;
-            zeno::scope_exit se([this]() { m_bReentry = false; });
-            m_bReentry = true;
-            pGraphsModel->updateSocketDefl(nodeid, info, m_subgIdx, true);
-        };
-        ctrls.insert(inSock, ctrl);
-    }
-    onGroupCheckUpdated(tr("SOCKET IN"), ctrls);
-}
-
-void ZenoPropPanel::onParamsCheckUpdate()
-{
-    ZASSERT_EXIT(m_idx.isValid());
-    const QString& nodeid = m_idx.data(ROLE_OBJID).toString();
-    PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    QMap<QString, CONTROL_DATA> ctrls;
-    for (const QString& name : params.keys())
-    {
-        const PARAM_INFO& param = params[name];
-        CONTROL_DATA ctrl;
-        ctrl.ctrl = param.control;
-        ctrl.name = name;
-        ctrl.typeDesc = param.typeDesc;
-        ctrl.value = param.value;
-        ctrl.bkFrame = (CONTROL_INT == ctrl.ctrl || CONTROL_FLOAT == ctrl.ctrl || CONTROL_VEC == ctrl.ctrl); //temp: todo: kframe.
-
-        ctrl.cbFunc = [=](QVariant newValue) {
-            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            ZASSERT_EXIT(pGraphsModel);
-            zeno::scope_exit se([this]() { m_bReentry = false; });
-            m_bReentry = true;
-
-            PARAM_UPDATE_INFO info;
-            info.oldValue = UiHelper::getParamValue(m_idx, name);
-            info.newValue = newValue;
-            info.name = name;
-            if (info.oldValue != info.newValue)
-                pGraphsModel->updateParamInfo(nodeid, info, m_subgIdx, true);
-        };
-        ctrls.insert(name, ctrl);
-    }
-    onGroupCheckUpdated(tr("NODE PARAMETERS"), ctrls);
-}
-
-void ZenoPropPanel::onGroupCheckUpdated(const QString& groupName, const QMap<QString, CONTROL_DATA>& ctrls)
-{
-    if (ctrls.isEmpty())
-        return;
-
-    PANEL_GROUP& group = m_groups[groupName];
-
-    ZExpandableSection* pExpand = findChild<ZExpandableSection*>(groupName);
-    ZASSERT_EXIT(pExpand);
-
-    auto cbSwith = [=](bool bOn) {
-        zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
-    };
-
-    QGridLayout* pLayout = qobject_cast<QGridLayout*>(pExpand->contentLayout());
-    ZASSERT_EXIT(pLayout);
-    for (CONTROL_DATA ctrldata : ctrls)
-    {
-        const QString& name = ctrldata.name;
-        _PANEL_CONTROL& item = group[ctrldata.name];
-        if (!zenoui::isMatchControl(ctrldata.ctrl, item.pControl))
-        {
-            if (item.pControl)
-            {
-                //remove the dismatch control
-                pLayout->removeWidget(item.pControl);
-                delete item.pControl;
-                item.pControl = nullptr;
-            }
-
-            item.pControl = zenoui::createWidget(ctrldata.value, ctrldata.ctrl, ctrldata.typeDesc, ctrldata.cbFunc, cbSwith);
-            if (!item.pControl)
-                continue;
-
-            int n = pLayout->rowCount();
-            if (!item.pLabel)
-            {
-                item.pLabel = new QLabel(ctrldata.name);
-                item.pLabel->setProperty("cssClass", "proppanel");
-                pLayout->addWidget(item.pLabel, n, 0, Qt::AlignLeft);
-            }
-            pLayout->addWidget(item.pControl, n, 1);
-        }
-        zenoui::updateValue(item.pControl, ctrldata.value);
-    }
-}
-
-void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
-{
-    //may be called frequently
-    if (m_subgIdx != subGpIdx || m_idx != idx || m_bReentry)
-        return;
-
-    QLayout* pLayout = this->layout();
-    if (!pLayout || pLayout->isEmpty())
-        return;
-
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    if (!pModel)
-        return;
-
-    if (role == ROLE_PARAMETERS)
-    {
-        onParamsCheckUpdate();
-    }
-    else if (role == ROLE_INPUTS)
-    {
-        onInputsCheckUpdate();
-    }
-    else
-    {
-        //other custom ui role.
-        //onCustomUiUpdate();
-    }
 }

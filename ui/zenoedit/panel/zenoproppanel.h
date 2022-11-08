@@ -12,18 +12,7 @@ class ViewParamModel;
 
 class ZenoPropPanel : public QWidget
 {
-	Q_OBJECT
-
-    struct CONTROL_DATA
-    {
-        QString name;
-        PARAM_CONTROL ctrl;
-        QVariant value;
-        QString typeDesc;
-        bool bkFrame;
-        Callback_EditFinished cbFunc;
-    };
-
+    Q_OBJECT
     struct _PANEL_CONTROL
     {
         QWidget* pControl;
@@ -31,7 +20,6 @@ class ZenoPropPanel : public QWidget
         QLayout* controlLayout;
         _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), controlLayout(nullptr) {}
     };
-
     typedef QMap<QString, _PANEL_CONTROL> PANEL_GROUP;
 
 public:
@@ -42,26 +30,19 @@ public:
     virtual QSize minimumSizeHint() const override;
 
 public slots:
-    void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-
     void onSettings();
 
 private:
-    ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
-    ZExpandableSection* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
     void clearLayout();
-    void onInputsCheckUpdate();
-    void onParamsCheckUpdate();
-    void onGroupCheckUpdated(const QString& groupName, const QMap<QString, CONTROL_DATA>& ctrls);
+    bool syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row);
+    bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
+    bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
 
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;
-
-    QMap<QString, PANEL_GROUP> m_groups;
 
     ViewParamModel* m_paramsModel;
     QTabWidget* m_tabWidget;
