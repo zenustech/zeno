@@ -217,6 +217,8 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, svOffset};
+    exclSes = Vector<u8>{vtemp.get_allocator(), seOffset};
+    exclSts = Vector<u8>{vtemp.get_allocator(), sfOffset};
 
     auto deduce_node_cnt = [](std::size_t numLeaves) {
         if (numLeaves <= 2)
@@ -383,6 +385,13 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         if (kappa0 != 0) {
             // zeno::log_info("manual kappa: {}\n", this->kappa);
         }
+    }
+
+    {
+        // check initial self intersections
+        // including proximity pairs
+        // do once
+        markSelfIntersectionPrimitives(cudaPol);
     }
 
     // output adaptive setups

@@ -85,6 +85,51 @@ __forceinline__ __device__ int atomicAggInc(int *ctr) noexcept {
 }
 #define USE_COALESCED 1
 
+void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
+    //exclSes, exclSts, stInds, seInds, seBvh
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    exclSes.reset(0);
+    exclSts.reset(0);
+
+    Vector<int> cnt{vtemp.get_allocator(), 1};
+    cnt.setVal(0);
+
+    auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, wrapv<2>{}, 0);
+    seBvh.refit(pol, edgeBvs);
+    pol(range(stInds.size()), [vtemp = proxy<space>({}, vtemp), stInds = proxy<space>({}, stInds),
+                               seInds = proxy<space>({}, seInds), exclSes = proxy<space>(exclSes),
+                               exclSts = proxy<space>(exclSts), bvh = proxy<space>(seBvh), cnt = proxy<space>(cnt),
+                               dHat = dHat] __device__(int sti) mutable {
+        auto tri = stInds.pack(dim_c<3>, "inds", sti).reinterpret_bits(int_c);
+        auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+        auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+        auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+        auto bv = bv_t{get_bounding_box(t0, t1)};
+        merge(bv, t2);
+        bool allFixed = vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3;
+        bool triIntersected = false;
+        bvh.iter_neighbors(bv, [&](int sei) {
+            auto line = seInds.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c);
+            if (tri[0] == line[0] || tri[0] == line[1] || tri[1] == line[0] || tri[1] == line[1] || tri[2] == line[0] ||
+                tri[2] == line[1])
+                return;
+            if (allFixed && vtemp("BCorder", line[0]) == 3 && vtemp("BCorder", line[1]) == 3)
+                return;
+            if (et_intersected(vtemp.pack(dim_c<3>, "xn", line[0]), vtemp.pack(dim_c<3>, "xn", line[1]), t0, t1, t2)) {
+                triIntersected = true;
+                exclSes[sei] = 1;
+
+                atomic_add(exec_cuda, &cnt[0], 1);
+            }
+        });
+        if (triIntersected)
+            exclSts[sti] = 1;
+    });
+    fmt::print("{} et intersections\n", cnt.getVal());
+    return;
+}
+
 void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi) {
     nPP.setVal(0);
     nPE.setVal(0);
