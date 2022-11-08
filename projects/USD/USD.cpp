@@ -97,13 +97,13 @@ struct USDLight : zeno::INode {
 ZENO_DEFNODE(USDLight)
 ({
     {
+        {"string", "path", "/lights/light"},
         {"vec3f", "translate", "0, 0, 0"},
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec3f", "scale", "1, 1, 1"},
         {"float", "intensity", "1"},
         {"float", "exposure", "0"},
         {"vec3f", "color", "1, 1, 1"},
-        {"string", "path", "/lights/light"},
     },
     {"prim"},
     {

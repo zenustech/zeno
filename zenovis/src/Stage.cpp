@@ -194,10 +194,10 @@ void ZenoStage::update() {
     }
 }
 
-int ZenoStage::Convert2UsdGeomMesh(const PrimInfo& primInfo){
+int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
     auto zenoPrim = dynamic_cast<zeno::PrimitiveObject *>(primInfo.iObject.get());
     std::filesystem::path p(primInfo.pPath); std::string nodeName = p.filename().string();
-    zeno::log_info("USD: GeomMesh {}", nodeName);
+    zeno::log_info("USD: Convert2UsdGeomMesh {}", nodeName);
     SdfPath objPath(primInfo.pPath);
     CreateUSDHierarchy(objPath);
 
@@ -223,10 +223,15 @@ int ZenoStage::Convert2UsdGeomMesh(const PrimInfo& primInfo){
             FaceVertexCounts.emplace_back(3);
         }
     }
-    // DisplayColor
+    // DisplayColor  (clr0 - FBX, clr - ZENO)
+    // TODO Order of reading
     if(zenoPrim->verts.has_attr("clr0")){
         for(auto const& clr0:zenoPrim->verts.attr<zeno::vec3f>("clr0")){
             DisplayColor.emplace_back(clr0[0], clr0[1], clr0[2]);
+        }
+    }else if(zenoPrim->verts.has_attr("clr")){
+        for(auto const& clr:zenoPrim->verts.attr<zeno::vec3f>("clr")){
+            DisplayColor.emplace_back(clr[0], clr[1], clr[2]);
         }
     }
 
@@ -263,4 +268,57 @@ ZenoStage::ZenoStage() {
             std::cerr << e.what() << std::endl;
         }
     }).detach();
+}
+int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
+    auto obj = primInfo.iObject;
+    auto prim = primInfo.usdPrim;
+    auto timeCode = 0.0;
+
+    TfToken tf_displayColor("primvars:displayColor");
+
+    UsdGeomMesh processGeom(prim);
+    UsdAttribute attr_geoHole = processGeom.GetHoleIndicesAttr();
+    UsdAttribute attr_faceVertexIndices = prim.GetAttribute(UsdGeomTokens->faceVertexIndices);
+    UsdAttribute attr_points = prim.GetAttribute(UsdGeomTokens->points);
+    UsdAttribute attr_displayColor = prim.GetAttribute(tf_displayColor);
+    UsdAttribute attr_faceVertexCounts = prim.GetAttribute(TfToken("faceVertexCounts"));
+
+    VtArray<int> vt_faceVertexCounts, vt_faceVertexIndices;
+    VtArray<GfVec3f> vt_points, vt_displayColor;
+    VtArray<int> vt_holeIndices;
+    UsdGeomXformable xformable(prim);
+    GfMatrix4d ModelTransform = xformable.ComputeLocalToWorldTransform(timeCode);
+
+    attr_faceVertexIndices.Get(&vt_faceVertexIndices, timeCode);
+    attr_points.Get(&vt_points, timeCode);
+    attr_displayColor.Get(&vt_displayColor, timeCode);
+    attr_geoHole.Get(&vt_holeIndices, timeCode);
+    attr_faceVertexCounts.Get(&vt_faceVertexCounts, timeCode);
+
+    int index_start = 0;
+
+    auto & verts = obj->verts;
+    auto & loops = obj->loops;
+    auto & polys  = obj->polys;
+    for(int i=0; i<vt_points.size(); i++){
+        auto g_point = ModelTransform.Transform(vt_points[i]);
+        verts.emplace_back(g_point[0],g_point[1],g_point[2]);
+    }
+    for(int i=0;i<vt_faceVertexCounts.size();i++){
+        int count = vt_faceVertexCounts[i];
+        for(int j=index_start;j<index_start+count;j++){
+            loops.emplace_back(vt_faceVertexIndices[j]);
+        }
+        polys.push_back({i * count, count});
+        index_start+=count;
+    }
+    if(! vt_displayColor.empty()){
+        auto & clr = obj->verts.add_attr<zeno::vec3f>("clr");
+        for(int i=0;i<vt_displayColor.size();i++){
+            auto color = vt_displayColor[i];
+            clr[i] = {color[0],color[1],color[2]};
+        }
+    }
+
+    return 0;
 }

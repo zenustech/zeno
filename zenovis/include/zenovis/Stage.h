@@ -4,13 +4,14 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
-
 #include <boost/predef/os.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/primRange.h>
 #include <pxr/base/gf/camera.h>
 #include <pxr/base/js/json.h>
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/tf/fileUtils.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usd/inherits.h>
 #include <pxr/usd/usd/stage.h>
@@ -18,6 +19,7 @@
 #include <pxr/usd/usdGeom/camera.h>
 
 #include <zeno/core/IObject.h>
+#include <zeno/types/PrimitiveObject.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,6 +39,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdGeomPoints)
     (UsdVolume)
     (UsdGeomCamera)
+
+    (UsdGeomCube)
+    (UsdGeomSphere)
 );
 
 struct ConfigurationInfo{
@@ -45,9 +50,14 @@ struct ConfigurationInfo{
     std::string cServer = "192.168.3.11";
 };
 
-struct PrimInfo{
+struct ZPrimInfo{
     std::string pPath;
     std::shared_ptr<zeno::IObject> iObject;
+};
+
+struct UPrimInfo{
+    UsdPrim usdPrim;
+    std::shared_ptr<zeno::PrimitiveObject> iObject;
 };
 
 struct ZenoStage{
@@ -62,7 +72,8 @@ struct ZenoStage{
 
     void update();
 
-    int Convert2UsdGeomMesh(const PrimInfo& primInfo);
+    int Convert2UsdGeomMesh(const ZPrimInfo& primInfo);
+    int Convert2ZenoPrimitive(const UPrimInfo& primInfo);
 
     void CreateUSDHierarchy(const SdfPath &path)
     {

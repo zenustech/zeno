@@ -458,12 +458,17 @@ struct CreateCube : zeno::INode {
         }
 
         NORMUV_CIHOU
+
+        auto path = get_input2<std::string>("path");
+        prim->userData().set2("P_Type", std::move("UsdGeomCube"));
+        prim->userData().set2("P_Path", std::move(path));
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(CreateCube, {
     {
+        {"string", "path", "/geom/cube1"},
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM

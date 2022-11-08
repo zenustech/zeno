@@ -15,6 +15,7 @@
 #include <functional>
 
 struct ZenoStage;
+struct UPrimInfo;
 
 namespace zenovis {
 
@@ -42,14 +43,16 @@ struct StageManager : zeno::disable_copy {
     template <class T = void>
     auto pairs() const {
         // XXX
-        return zenoObjects.pairs<T>();
+        return convertObjects.pairs<T>();
     }
     template <class T = void>
     auto pairsShared() const {
-        return zenoObjects.pairsShared<T>();
+        return convertObjects.pairsShared<T>();
     }
 
     bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
     std::optional<zeno::IObject*> get(std::string nid);
+
+    std::map<std::string, UPrimInfo> consistent;
 };
 }
