@@ -32,7 +32,7 @@ struct ZSVDBToNavierStokesGrid : INode {
                                               {"T", 1},   // smoke temperature
                                               {"flux", 3}});
         spg._background = 0.f;
-        
+
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         zsSPG->spg = std::move(spg);
         zsSPG->setMeta("v_cur", 0);
@@ -145,8 +145,8 @@ struct ZSNSAdvectDiffuse : INode {
 
                     for (int i = -stcl; i <= stcl; ++i) {
                         u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(i, 0, 0));
-                        u_y[i + stcl] = spgv.value(vSrcTag, y, icoord + zs::vec<int, 3>(0, i, 0));
-                        u_z[i + stcl] = spgv.value(vSrcTag, z, icoord + zs::vec<int, 3>(0, 0, i));
+                        u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(0, i, 0));
+                        u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(0, 0, i));
                     }
 
                     float u_adv = spgv.value(vSrcTag, x, icoord);
@@ -388,7 +388,7 @@ ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
 
 struct ZSTracerAdvectDiffuse : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, ZenoSparseGrid *NSGrid) {
-        
+
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
@@ -488,7 +488,7 @@ ZENDEFNODE(ZSTracerAdvectDiffuse,
 
 struct ZSTracerEmission : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
-        
+
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
@@ -496,12 +496,14 @@ struct ZSTracerEmission : INode {
 
         auto block_cnt = spg.numBlocks();
 
-        pol(zs::Collapse{block_cnt, spg.block_size}, [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf),
+        auto dx = spg.voxelSize()[0];
+
+        pol(zs::Collapse{block_cnt, spg.block_size}, [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx,
                                                       tag] __device__(int blockno, int cellno) mutable {
             auto wcoord = spgv.wCoord(blockno, cellno);
             auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
-            if (emit_sdf <= 0.) {
+            if (emit_sdf <= 1.5f*dx) {
                 // fix me: naive emission
                 spgv(tag, blockno, cellno) = 1.0;
             }
@@ -761,13 +763,14 @@ struct ZSExtendSparseGrid : INode {
     }
 };
 
-ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
-                                {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"bool", "refit", "1"}, {"int", "layers", "2"}},
-                                /* outputs: */
-                                {"NSGrid"},
-                                /* params: */
-                                {},
-                                /* category: */
-                                {"Eulerian"}});
+ZENDEFNODE(ZSExtendSparseGrid,
+           {/* inputs: */
+            {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"bool", "refit", "1"}, {"int", "layers", "2"}},
+            /* outputs: */
+            {"NSGrid"},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
 
 } // namespace zeno
