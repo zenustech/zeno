@@ -331,7 +331,7 @@ struct IPCSystem : IObject {
 
     template <int dim>
     using table_t = zs::bcht<zs::vec<int, dim>, int, true, zs::universal_hash<zs::vec<int, dim>>, 16>;
-    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes; // mark exclusion
+    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
     zs::Vector<T> temp;

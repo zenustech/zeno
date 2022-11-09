@@ -93,6 +93,7 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
     exclSes.reset(0);
     exclSts.reset(0);
     exclBouSes.reset(0);
+    exclBouSts.reset(0);
 
     Vector<int> cnt{vtemp.get_allocator(), 1};
     cnt.setVal(0);
@@ -162,6 +163,36 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
                 });
                 if (triIntersected)
                     exclSts[sti] = 1;
+            });
+
+        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
+        bouStBvh.refit(pol, triBvs);
+        pol(range(seInds.size()),
+            [vtemp = proxy<space>({}, vtemp), seInds = proxy<space>({}, seInds), coTris = proxy<space>({}, *coEles),
+             exclBouSts = proxy<space>(exclBouSts), exclSes = proxy<space>(exclSes), bvh = proxy<space>(bouStBvh),
+             cnt = proxy<space>(cnt), dHat = dHat, voffset = coOffset] __device__(int sei) mutable {
+                auto line = seInds.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c);
+                auto e0 = vtemp.pack(dim_c<3>, "xn", line[0]);
+                auto e1 = vtemp.pack(dim_c<3>, "xn", line[1]);
+                auto bv = bv_t{get_bounding_box(e0, e1)};
+                bool allFixed = vtemp("BCorder", line[0]) == 3 && vtemp("BCorder", line[1]) == 3;
+                bool edgeIntersected = false;
+                bvh.iter_neighbors(bv, [&](int sti) {
+                    auto tri = coTris.pack(dim_c<3>, "inds", sti).reinterpret_bits(int_c) + voffset;
+                    // no need to check common vertices here
+                    if (allFixed && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
+                        vtemp("BCorder", tri[2]) == 3)
+                        return;
+                    if (et_intersected(e0, e1, vtemp.pack(dim_c<3>, "xn", tri[0]), vtemp.pack(dim_c<3>, "xn", tri[1]),
+                                       vtemp.pack(dim_c<3>, "xn", tri[2]))) {
+                        edgeIntersected = true;
+                        exclBouSts[sti] = 1;
+
+                        atomic_add(exec_cuda, &cnt[0], 1);
+                    }
+                });
+                if (edgeIntersected)
+                    exclSes[sei] = 1;
             });
         zeno::log_info("{} boundary et intersections\n", cnt.getVal());
     }
