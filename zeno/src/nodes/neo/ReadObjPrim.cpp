@@ -57,8 +57,11 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
-        if (*nit == '\r')
-            --nit;
+        if (nit != it) {
+            if (nit[-1] == '\r') {
+                nit--;
+            }
+        }
 
         if (match(it, "v ")) {
             float x = takef(it);
