@@ -197,13 +197,15 @@ struct ZSNSAdvectDiffuse : INode {
                 }
             });
         v_cur ^= 1;
+
+        set_output("NSGrid", NSGrid);
     }
 };
 
 ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
                                {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
                                /* outputs: */
-                               {},
+                               {"NSGrid"},
                                /* params: */
                                {},
                                /* category: */
@@ -231,13 +233,15 @@ struct ZSNSExternalForce : INode {
                 for (int ch = 0; ch < 3; ++ch)
                     spgv(vSrcTag, ch, blockno, cellno) += force[ch] * dt;
             });
+        
+        set_output("NSGrid", NSGrid);
     }
 };
 
 ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
                                {"NSGrid", "dt", {"vec3f", "Force", "0, 0, 0"}},
                                /* outputs: */
-                               {},
+                               {"NSGrid"},
                                /* params: */
                                {},
                                /* category: */
@@ -383,13 +387,15 @@ struct ZSNSPressureProject : INode {
                 }
             });
         v_cur ^= 1;
+
+        set_output("NSGrid", NSGrid);
     }
 };
 
 ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
                                  {"NSGrid", "dt", {"int", "iterations", "10"}, {"float", "Density", "1.0"}},
                                  /* outputs: */
-                                 {},
+                                 {"NSGrid"},
                                  /* params: */
                                  {},
                                  /* category: */
@@ -426,13 +432,15 @@ struct ZSNSNaiveSolidWall : INode {
 
                 spgv("sdf", blockno, cellno) = solid_sdf;
             });
+        
+        set_output("NSGrid", NSGrid);
     }
 };
 
 ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
                                 {"NSGrid", "SolidSDF", "SolidVel"},
                                 /* outputs: */
-                                {},
+                                {"NSGrid"},
                                 /* params: */
                                 {},
                                 /* category: */
@@ -525,6 +533,8 @@ struct ZSTracerAdvectDiffuse : INode {
             compute(pol, "rho", diffuse, dt, NSGrid.get());
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", diffuse, dt, NSGrid.get());
+        
+        set_output("NSGrid", NSGrid);
     }
 };
 
@@ -532,7 +542,7 @@ ZENDEFNODE(ZSTracerAdvectDiffuse,
            {/* inputs: */
             {"NSGrid", "dt", {"float", "Diffusion", "0.0"}, {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
             /* outputs: */
-            {},
+            {"NSGrid"},
             /* params: */
             {},
             /* category: */
@@ -572,13 +582,15 @@ struct ZSTracerEmission : INode {
             compute(pol, "rho", NSGrid.get(), EmitSDF.get());
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", NSGrid.get(), EmitSDF.get());
+        
+        set_output("NSGrid", NSGrid);
     }
 };
 
 ZENDEFNODE(ZSTracerEmission, {/* inputs: */
                               {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
                               /* outputs: */
-                              {},
+                              {"NSGrid"},
                               /* params: */
                               {},
                               /* category: */
@@ -627,6 +639,8 @@ struct ZSSmokeBuoyancy : INode {
                     spgv(vSrcTag, ch, blockno, cellno) += G_scale * gravity[ch] * dt;
                 }
             });
+        
+        set_output("NSGrid", NSGrid);
     }
 };
 
@@ -639,7 +653,7 @@ ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
                               {"float", "AmbientTemp", "273.0"},
                               {"float", "ReferenceTemp", "3000.0"}},
                              /* outputs: */
-                             {},
+                             {"NSGrid"},
                              /* params: */
                              {},
                              /* category: */
