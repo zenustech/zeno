@@ -250,6 +250,8 @@ struct IPCSystem : IObject {
     bool enableGround = false;
     bool enableContact = true;
     bool enableMollification = true;
+    bool enableContactEE = true;
+    bool enableContactSelf = true;
     bool s_enableFriction = true;
     bool s_enableSelfFriction = true;
     vec3 s_groundNormal{0, 1, 0};

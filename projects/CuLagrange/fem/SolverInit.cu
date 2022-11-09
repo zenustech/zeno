@@ -773,6 +773,8 @@ struct MakeIPCSystem : INode {
         auto input_withGround = get_input2<bool>("with_ground");
         auto input_withContact = get_input2<bool>("with_contact");
         auto input_withMollification = get_input2<bool>("with_mollification");
+        auto input_contactEE = get_input2<bool>("contact_with_ee");
+        auto input_contactSelf = get_input2<bool>("contact_with_self");
         auto input_dHat = get_input2<float>("dHat");
         auto input_epsv = get_input2<float>("epsv");
         auto input_kappa0 = get_input2<float>("kappa0");
@@ -797,6 +799,8 @@ struct MakeIPCSystem : INode {
             (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000), input_withGround, input_withContact,
             input_withMollification, input_aug_coeff, input_pn_rel, input_cg_rel, input_pn_cap, input_cg_cap,
             input_ccd_cap, input_kappa0, input_fric_mu, input_dHat, input_epsv, groundNormal, input_gravity);
+        A->enableContactEE = input_contactEE;
+        A->enableContactSelf = input_contactSelf;
 
         set_output("ZSIPCSystem", A);
     }
@@ -809,6 +813,8 @@ ZENDEFNODE(MakeIPCSystem, {{
                                {"bool", "with_ground", "0"},
                                {"bool", "with_contact", "1"},
                                {"bool", "with_mollification", "1"},
+                               {"bool", "contact_with_ee", "1"},
+                               {"bool", "contact_with_self", "1"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
                                {"vec3f", "ground_normal", "0,1,0"},
