@@ -212,18 +212,19 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         const QString& groupName = parentItem->data(ROLE_VPARAM_NAME).toString();
         const QString& paramName = name;
 
-        QWidget* tabWid = m_tabWidget->widget(UiHelper::tabIndexOfName(m_tabWidget, tabName));
-        ZASSERT_EXIT(tabWid);
-        auto lst = tabWid->findChildren<ZExpandableSection*>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZExpandableSection* pGroupWidget : lst)
+        ZExpandableSection* pGroupWidget = findGroup(tabName, groupName);
+        if (!pGroupWidget)
+            return;
+
+        QGridLayout* pGroupLayout = qobject_cast<QGridLayout*>(pGroupWidget->contentLayout());
+        ZASSERT_EXIT(pGroupLayout);
+        if (pGroupWidget->title() == groupName)
         {
-            QGridLayout* pGroupLayout = qobject_cast<QGridLayout*>(pGroupWidget->contentLayout());
-            ZASSERT_EXIT(pGroupLayout);
-            if (pGroupWidget->title() == groupName)
+            QStandardItem* paramItem = parentItem->child(first);
+            bool ret = syncAddControl(pGroupLayout, paramItem, first);
+            if (ret)
             {
-                QStandardItem* paramItem = parentItem->child(first);
-                syncAddControl(pGroupLayout, paramItem, first);
-                break;
+                pGroupWidget->updateGeometry();
             }
         }
     }
@@ -304,6 +305,78 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
 {
     ZASSERT_EXIT(m_paramsModel);
     QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    QStandardItem* removeItem = parentItem->child(first);
+    int vType = removeItem->data(ROLE_VPARAM_TYPE).toInt();
+    const QString& name = removeItem->data(ROLE_VPARAM_NAME).toString();
+
+    if (VPARAM_TAB == vType)
+    {
+        int idx = UiHelper::tabIndexOfName(m_tabWidget, name);
+        m_tabWidget->removeTab(idx);
+    }
+    else if (VPARAM_GROUP == vType)
+    {
+        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+        const QString& tabName = parentItem->data(ROLE_VPARAM_NAME).toString();
+        int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
+        QWidget* tabWid = m_tabWidget->widget(idx);
+        QVBoxLayout* pTabLayout = qobject_cast<QVBoxLayout*>(tabWid->layout());
+        for (int i = 0; i < pTabLayout->count(); i++)
+        {
+            QLayoutItem* pLayoutItem = pTabLayout->itemAt(i);
+            if (ZExpandableSection* pGroup = qobject_cast<ZExpandableSection*>(pLayoutItem->widget()))
+            {
+                if (pGroup->title() == name)
+                {
+                    delete pGroup;
+                    pTabLayout->removeItem(pLayoutItem);
+                    break;
+                }
+            }
+        }
+    }
+    else if (VPARAM_PARAM == vType)
+    {
+        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+
+        QStandardItem* pTabItem = parentItem->parent();
+        ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+
+        const QString& tabName = pTabItem->data(ROLE_VPARAM_NAME).toString();
+        const QString& groupName = parentItem->data(ROLE_VPARAM_NAME).toString();
+        const QString& paramName = name;
+
+        ZExpandableSection* pGroupWidget = findGroup(tabName, groupName);
+        if (!pGroupWidget)  return;
+
+        QGridLayout* pGroupLayout = qobject_cast<QGridLayout*>(pGroupWidget->contentLayout());
+        ZASSERT_EXIT(pGroupLayout);
+        if (pGroupWidget->title() == groupName)
+        {
+            QStandardItem* paramItem = parentItem->child(first);
+            QLayoutItem* pLabelItem = pGroupLayout->itemAtPosition(first, 0);
+            QLayoutItem* pControlItem = pGroupLayout->itemAtPosition(first, 1);
+            delete pLabelItem->widget();
+            delete pControlItem->widget();
+            pGroupLayout->removeItem(pLabelItem);
+            pGroupLayout->removeItem(pControlItem);
+        }
+    }
+}
+
+ZExpandableSection* ZenoPropPanel::findGroup(const QString& tabName, const QString& groupName)
+{
+    QWidget* tabWid = m_tabWidget->widget(UiHelper::tabIndexOfName(m_tabWidget, tabName));
+    ZASSERT_EXIT(tabWid, nullptr);
+    auto lst = tabWid->findChildren<ZExpandableSection*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZExpandableSection* pGroupWidget : lst)
+    {
+        if (pGroupWidget->title() == groupName)
+        {
+            return pGroupWidget;
+        }
+    }
+    return nullptr;
 }
 
 void ZenoPropPanel::onSettings()

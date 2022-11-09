@@ -16,6 +16,19 @@ struct CONTROL_ITEM_INFO
     QString defaultType;
 };
 
+class ParamTreeItemDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    explicit ParamTreeItemDelegate(QObject* parent = nullptr);
+    ~ParamTreeItemDelegate();
+
+    // editing
+    QWidget* createEditor(QWidget* parent,
+        const QStyleOptionViewItem& option,
+        const QModelIndex& index) const override;
+};
+
 
 class ZEditParamLayoutDlg : public QDialog
 {
@@ -28,6 +41,10 @@ private slots:
     void onApply();
     void onOk();
     void onCancel();
+    void onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onNameEditFinished();      //name lineedit.
+    void onLabelEditFinished();
+    void onHintEditFinished();
 
 private:
     ViewParamModel* m_proxyModel;

@@ -3,32 +3,32 @@
 #include "zassert.h"
 
 
-VParamItem::VParamItem(VPARAM_TYPE type, const QString& text)
+VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
     : QStandardItem(text)
     , vType(type)
+    , m_bMappedCore(bMapCore)
+    , m_bEditable(true)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
 }
 
-VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text)
+VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text, bool bMapCore)
     : QStandardItem(icon, text)
     , vType(type)
+    , m_bMappedCore(bMapCore)
+    , m_bEditable(true)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
-}
-
-VParamItem::VParamItem(VPARAM_TYPE type)
-    : vType(type)
-{
-    m_info.control = CONTROL_NONE;
 }
 
 QVariant VParamItem::data(int role) const
 {
     switch (role)
     {
+    case Qt::EditRole:  return m_info.name;
+    case ROLE_VAPRAM_EDITTABLE: return m_bEditable;
     case Qt::DisplayRole:
     case ROLE_VPARAM_NAME:  return m_info.name;
     case ROLE_VPARAM_TYPE:  return vType;
@@ -45,6 +45,10 @@ QVariant VParamItem::data(int role) const
             return m_info.typeDesc;
         return m_index.data(ROLE_PARAM_TYPE);
     }
+    case ROLE_VPARAM_IS_COREPARAM:
+    {
+        return m_bMappedCore;
+    }
     default:
         return QVariant();
     }
@@ -54,6 +58,20 @@ void VParamItem::setData(const QVariant& value, int role)
 {
     switch (role)
     {
+        case Qt::EditRole:
+        {
+            if (value == m_info.name || m_bMappedCore)
+                return;
+            m_info.name = value.toString();
+            break;
+        }
+        case ROLE_VPARAM_NAME:
+        {
+            if (m_bMappedCore)
+                return;
+            m_info.name = value.toString();
+            break;
+        }
         case ROLE_PARAM_VALUE:
         {
             if (m_index.isValid())
@@ -68,6 +86,7 @@ void VParamItem::setData(const QVariant& value, int role)
             break;
         }
     }
+    QStandardItem::setData(value, role);
 }
 
 VParamItem* VParamItem::getItem(const QString& uniqueName) const
@@ -83,9 +102,10 @@ VParamItem* VParamItem::getItem(const QString& uniqueName) const
 
 QStandardItem* VParamItem::clone() const
 {
-    VParamItem* pItem = new VParamItem(vType);
+    VParamItem* pItem = new VParamItem(vType, m_info.name, m_bMappedCore);
     pItem->m_info = this->m_info;
     pItem->m_index = m_index;
+    pItem->m_bEditable = m_bEditable;
     return pItem;
 }
 
@@ -197,11 +217,18 @@ void ViewParamModel::setup(const QString& customUI)
             VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
             VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
 
+            pInputsGroup->m_bEditable = false;
+            paramsGroup->m_bEditable = false;
+            pOutputsGroup->m_bEditable = false;
+
             pTab->appendRow(pInputsGroup);
             pTab->appendRow(paramsGroup);
             pTab->appendRow(pOutputsGroup);
         }
+        pTab->m_bEditable = false;
+
         pRoot->appendRow(pTab);
+        pRoot->m_bEditable = false;
 
         appendRow(pRoot);
     }
@@ -253,9 +280,10 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
+                paramItem->m_bEditable = false;
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -271,9 +299,10 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
+                paramItem->m_bEditable = false;
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -289,9 +318,10 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName);
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
+                paramItem->m_bEditable = false;
                 pItem->appendRow(paramItem);
                 break;
             }

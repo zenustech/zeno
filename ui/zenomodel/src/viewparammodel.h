@@ -20,6 +20,8 @@ enum ROLE_VPARAM
     ROLE_VPARAM_TYPE = Qt::UserRole + 1,
     ROLE_VPARAM_NAME,
     ROLE_VPARAM_VALUE,      //real value on idx.
+    ROLE_VPARAM_IS_COREPARAM,   //is mapped from core param.
+    ROLE_VAPRAM_EDITTABLE,       //edittable for name and content.
 };
 
 
@@ -29,10 +31,11 @@ struct VParamItem : public QStandardItem
     PARAM_INFO m_info;
 
     VPARAM_TYPE vType;
+    const bool m_bMappedCore;     //mapped to core param.
+    bool m_bEditable;
 
-    VParamItem(VPARAM_TYPE vType, const QString& text);
-    VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text);
-    VParamItem(VPARAM_TYPE vType);
+    VParamItem(VPARAM_TYPE vType, const QString& text, bool bMapCore = false);
+    VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text, bool bMapCore = false);
 
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;

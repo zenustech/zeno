@@ -20,6 +20,49 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Curve",   CONTROL_CURVE,  "curve"},
 };
 
+static QString getControlName(PARAM_CONTROL ctrl)
+{
+    for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
+    {
+        if (controlList[i].ctrl == ctrl)
+        {
+            return controlList[i].name;
+        }
+    }
+    return "";
+}
+
+static PARAM_CONTROL getControlByName(const QString& name)
+{
+    for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
+    {
+        if (controlList[i].name == name)
+        {
+            return controlList[i].ctrl;
+        }
+    }
+    return CONTROL_NONE;
+}
+
+
+ParamTreeItemDelegate::ParamTreeItemDelegate(QObject* parent)
+    : QStyledItemDelegate(parent)
+{
+}
+
+ParamTreeItemDelegate::~ParamTreeItemDelegate()
+{
+}
+
+QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    bool bEditable = index.data(ROLE_VAPRAM_EDITTABLE).toBool();
+    if (!bEditable)
+        return nullptr;
+    return QStyledItemDelegate::createEditor(parent, option, index);
+}
+
+
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent)
     : QDialog(parent)
@@ -36,6 +79,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         lstCtrls.append(controlList[i].name);
+        m_ui->cbControl->addItem(controlList[i].name);
     }
 
     m_ui->listConctrl->addItems(lstCtrls);
@@ -44,6 +88,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);
+    m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_ui->paramsView));
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
     QModelIndex selIdx = selModel->currentIndex();
@@ -51,10 +96,49 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
     selModel->setCurrentIndex(wtfIdx, QItemSelectionModel::SelectCurrent);
     m_ui->paramsView->expandAll();
 
+    connect(selModel, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)),
+            this, SLOT(onTreeCurrentChanged(const QModelIndex&, const QModelIndex&)));
+    connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
     connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onBtnAdd()));
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
     connect(m_ui->btnCancel, SIGNAL(clicked()), this, SLOT(onCancel()));
+}
+
+void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
+{
+    QStandardItem* pCurrentItem = m_proxyModel->itemFromIndex(current);
+    if (!pCurrentItem)  return;
+
+    const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
+    m_ui->editName->setText(name);
+    bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+    m_ui->editName->setEnabled(bEditable);
+
+    VPARAM_TYPE type = (VPARAM_TYPE)pCurrentItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (type == VPARAM_TAB)
+    {
+        m_ui->cbControl->setEnabled(false);
+    }
+    else if (type == VPARAM_GROUP)
+    {
+        m_ui->cbControl->setEnabled(false);
+    }
+    else if (type == VPARAM_PARAM)
+    {
+        if (!bEditable)
+        {
+            m_ui->cbControl->setEnabled(false);
+            return;
+        }
+
+        const QString& paramName = name;
+        PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrentItem->data(ROLE_PARAM_CTRL).toInt();
+        const QString& ctrlName = getControlName(ctrl);
+
+        m_ui->cbControl->setEnabled(true);
+        m_ui->cbControl->setCurrentText(ctrlName);
+    }
 }
 
 void ZEditParamLayoutDlg::onBtnAdd()
@@ -128,6 +212,26 @@ void ZEditParamLayoutDlg::onBtnAdd()
         pNewItem->m_info.typeDesc = typeDesc;
         pItem->appendRow(pNewItem);
     }
+}
+
+void ZEditParamLayoutDlg::onNameEditFinished()
+{
+    const QModelIndex& currIdx = m_ui->paramsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
+
+    QStandardItem* pItem = m_proxyModel->itemFromIndex(currIdx);
+    pItem->setData(m_ui->editName->text(), ROLE_VPARAM_NAME);
+}
+
+void ZEditParamLayoutDlg::onLabelEditFinished()
+{
+
+}
+
+void ZEditParamLayoutDlg::onHintEditFinished()
+{
+
 }
 
 void ZEditParamLayoutDlg::onApply()

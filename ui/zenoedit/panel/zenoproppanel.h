@@ -40,6 +40,7 @@ private:
     bool syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row);
     bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
     bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
+    ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
 
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;

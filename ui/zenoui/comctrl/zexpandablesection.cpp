@@ -97,6 +97,10 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
 }
 
+ZExpandableSection::~ZExpandableSection()
+{
+}
+
 void ZExpandableSection::setContentLayout(QLayout* contentLayout)
 {
     ZContentWidget* contentWidget = new ZContentWidget;
