@@ -115,6 +115,12 @@ void ZExpandableSection::setContentLayout(QLayout* contentLayout)
     update();
 }
 
+void ZExpandableSection::updateGeo()
+{
+    m_contentArea->updateGeometry();
+    updateGeometry();
+}
+
 QWidget* ZExpandableSection::initTitleWidget(const QString& title)
 {
 	QWidget* pWidget = new QWidget;

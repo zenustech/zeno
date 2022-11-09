@@ -38,6 +38,7 @@ public:
 	virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
 	QString title() const;
+	void updateGeo();
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

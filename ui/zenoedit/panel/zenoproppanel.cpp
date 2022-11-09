@@ -224,7 +224,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             bool ret = syncAddControl(pGroupLayout, paramItem, first);
             if (ret)
             {
-                pGroupWidget->updateGeometry();
+                pGroupWidget->updateGeo();
             }
         }
     }

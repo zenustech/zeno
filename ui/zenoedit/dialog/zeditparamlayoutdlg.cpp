@@ -241,8 +241,8 @@ void ZEditParamLayoutDlg::onApply()
 
 void ZEditParamLayoutDlg::onOk()
 {
-    onApply();
     accept();
+    onApply();
 }
 
 void ZEditParamLayoutDlg::onCancel()
