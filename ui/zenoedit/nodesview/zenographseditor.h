@@ -58,6 +58,7 @@ private:
     void initModel();
     void toggleViewForSelected(bool bOn);
     int tabIndexOfName(const QString& subGraphName);
+    void importMaterialX();
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;

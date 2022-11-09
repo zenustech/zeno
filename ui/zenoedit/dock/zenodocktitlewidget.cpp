@@ -206,6 +206,7 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
     {
         pOption->addAction(createAction(tr("Set NASLOC")));
         pOption->addAction(createAction(tr("Set ZENCACHE")));
+        pOption->addAction(createAction(tr("MaterialX")));
     }
 
 	//QMenu* pGo = new QMenu(tr("Go"));
