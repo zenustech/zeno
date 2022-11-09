@@ -246,6 +246,7 @@ struct ExtractMeshSurface : INode {
                 ist2(tri[1], tri[2]);
                 ist2(tri[2], tri[0]);
             }
+            lineAreas.resize(lines.size(), 0.f);
 
             /// surf verts
             std::set<int> spoints;
@@ -259,6 +260,7 @@ struct ExtractMeshSurface : INode {
                 ist(line[0]);
                 ist(line[1]);
             }
+            pointAreas.resize(points.size(), 0.f);
         }
 #endif
         if (includeTris)
@@ -1006,11 +1008,11 @@ struct ToZSSurfaceMesh : INode {
           {
           auto sv = proxy<execspace_e::host>({}, surfEdges);
               for (int i = 0; i != 10; ++i) {
-                auto se = sv.template pack<2>("inds", i).template reinterpret_bits<int>();
+                auto se = sv.pack(dim_c<2>, "inds", i).template reinterpret_bits<int>();
                 fmt::print("checking surf edge! {}-th se<{}, {}>\n", i, se[0],
                          se[1]);
                   auto ii = sedges.size() - 1 - i;
-                  se = sv.template pack<2>("inds", ii)
+                  se = sv.pack(dim_c<2>, "inds", ii)
                             .template reinterpret_bits<int>();
                   fmt::print("checking surf edge! {}-th se<{}, {}>\n", ii,
                              se[0], se[1]);
