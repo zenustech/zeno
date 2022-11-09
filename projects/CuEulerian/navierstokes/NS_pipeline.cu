@@ -4,6 +4,7 @@
 #include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
+#include "zensim/profile/CppTimers.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 
@@ -280,6 +281,8 @@ struct ZSNSPressureProject : INode {
 
         int &p_cur = NSGrid->readMeta<int &>("p_cur");
 
+        // zs::CppTimer timer;
+        // timer.tick();
         // pressure Poisson equation
         for (int iter = 0; iter < nIter; ++iter) {
 #if 0
@@ -355,6 +358,7 @@ struct ZSNSPressureProject : INode {
             }
 #endif
         }
+        // timer.tock("jacobi/sor iterations");
 
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
