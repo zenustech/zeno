@@ -258,6 +258,7 @@ struct IPCSystem : IObject {
     T augLagCoeff = 1e4;
     T pnRel = 1e-2;
     T cgRel = 1e-2;
+    int fricIterCap = 2;
     int PNCap = 1000;
     int CGCap = 500;
     int CCDCap = 20000;

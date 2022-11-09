@@ -778,6 +778,7 @@ struct MakeIPCSystem : INode {
         auto input_dHat = get_input2<float>("dHat");
         auto input_epsv = get_input2<float>("epsv");
         auto input_kappa0 = get_input2<float>("kappa0");
+        auto input_fricIterCap = get_input2<int>("fric_iter_cap");
         auto input_fric_mu = get_input2<float>("fric_mu");
         auto input_aug_coeff = get_input2<float>("aug_coeff");
         auto input_pn_rel = get_input2<float>("pn_rel");
@@ -801,6 +802,7 @@ struct MakeIPCSystem : INode {
             input_ccd_cap, input_kappa0, input_fric_mu, input_dHat, input_epsv, groundNormal, input_gravity);
         A->enableContactEE = input_contactEE;
         A->enableContactSelf = input_contactSelf;
+        A->fricIterCap = input_fricIterCap;
 
         set_output("ZSIPCSystem", A);
     }
@@ -820,10 +822,11 @@ ZENDEFNODE(MakeIPCSystem, {{
                                {"vec3f", "ground_normal", "0,1,0"},
                                {"float", "epsv", "0.0"},
                                {"float", "kappa0", "0"},
+                               {"int", "fric_iter_cap", "2"},
                                {"float", "fric_mu", "0"},
                                {"float", "aug_coeff", "1e2"},
                                {"float", "pn_rel", "0.01"},
-                               {"float", "cg_rel", "0.0001"},
+                               {"float", "cg_rel", "0.001"},
                                {"int", "pn_iter_cap", "1000"},
                                {"int", "cg_iter_cap", "1000"},
                                {"int", "ccd_iter_cap", "20000"},
