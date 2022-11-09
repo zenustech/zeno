@@ -19,7 +19,7 @@ struct ZSMakeSparseGrid : INode {
     void apply() override {
         auto attr = get_input2<std::string>("Attribute");
         auto dx = get_input2<float>("Dx");
-        auto bg = get_input2<float>("backgroud");
+        auto bg = get_input2<float>("background");
         auto type = get_input2<std::string>("type");
         auto structure = get_input2<std::string>("structure");
 
