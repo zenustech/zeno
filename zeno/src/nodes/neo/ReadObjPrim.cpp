@@ -101,7 +101,12 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             //std::string_view o_name(it, nit - it);
 
         }
-        it = nit + 1;
+        if (*nit == '\r') {
+            it = nit + 2;
+        }
+        else {
+            it = nit + 1;
+        }
     }
 
     if (loop_uvs.size() == prim->loops.size()) {
