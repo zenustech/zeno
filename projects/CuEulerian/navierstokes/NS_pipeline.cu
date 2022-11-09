@@ -233,7 +233,7 @@ struct ZSNSExternalForce : INode {
                 for (int ch = 0; ch < 3; ++ch)
                     spgv(vSrcTag, ch, blockno, cellno) += force[ch] * dt;
             });
-        
+
         set_output("NSGrid", NSGrid);
     }
 };
@@ -432,7 +432,7 @@ struct ZSNSNaiveSolidWall : INode {
 
                 spgv("sdf", blockno, cellno) = solid_sdf;
             });
-        
+
         set_output("NSGrid", NSGrid);
     }
 };
@@ -533,7 +533,7 @@ struct ZSTracerAdvectDiffuse : INode {
             compute(pol, "rho", diffuse, dt, NSGrid.get());
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", diffuse, dt, NSGrid.get());
-        
+
         set_output("NSGrid", NSGrid);
     }
 };
@@ -582,7 +582,7 @@ struct ZSTracerEmission : INode {
             compute(pol, "rho", NSGrid.get(), EmitSDF.get());
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", NSGrid.get(), EmitSDF.get());
-        
+
         set_output("NSGrid", NSGrid);
     }
 };
@@ -616,7 +616,8 @@ struct ZSSmokeBuoyancy : INode {
 
         // add force (accelaration)
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), dt, gravity, alpha, beta, T_amb, T_ref,
+            [spgv = zs::proxy<space>(spg), dt, alpha, beta, T_amb, T_ref,
+             gravity = zs::vec<float, 3>::from_array(gravity),
              vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)}] __device__(int blockno,
                                                                                              int cellno) mutable {
                 auto icoord = spgv.iCoord(blockno, cellno);
@@ -639,7 +640,7 @@ struct ZSSmokeBuoyancy : INode {
                     spgv(vSrcTag, ch, blockno, cellno) += G_scale * gravity[ch] * dt;
                 }
             });
-        
+
         set_output("NSGrid", NSGrid);
     }
 };
