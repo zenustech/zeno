@@ -14,6 +14,7 @@
 #include "../../geometry/kernel/compute_characteristic_length.hpp"
 #include "../../geometry/kernel/calculate_bisector_normal.hpp"
 #include "../../geometry/kernel/tiled_vector_ops.hpp"
+#include "../../geometry/kernel/geo_math.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
@@ -106,6 +107,22 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                     return;
 
                 T dist = (T)0.0;
+
+                // we should also neglect over deformed facet
+                auto triRestArea = tris("area",stI);
+
+                if(triRestArea < 1e-8)
+                    return;
+
+                auto triDeformedArea = LSL_GEO::area(
+                    verts.template pack<3>(xtag,tri[0]),
+                    verts.template pack<3>(xtag,tri[1]),
+                    verts.template pack<3>(xtag,tri[2]));
+
+
+                auto areaDeform = triDeformedArea / triRestArea;
+                if(areaDeform < 1e-1)
+                    return;
 
                 if(COLLISION_UTILS::is_inside_the_cell(verts,xtag,
                         lines,tris,

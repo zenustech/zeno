@@ -100,10 +100,14 @@ namespace zeno { namespace COLLISION_UTILS {
 
         // auto avge = (e01 + e02 + e12)/(T)3.0;
 
-        T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p);
+        T barySum = (T)1.0;
+        T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p,barySum);
         // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
         // collisionEps = avge * max_ratio;
         auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
+
+        if(barySum > 3)
+            return 0;
 
         if(distance > collisionEps)
             return 0;
@@ -111,15 +115,21 @@ namespace zeno { namespace COLLISION_UTILS {
         // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
         //     return 0;
 
+        // if the triangle cell is too degenerate
         if(pointProjectsInsideTriangle(t0,t1,t2,p))
             return 1;
 
         
+        // bool is_inside_the_cell = true;
+
         for(int i = 0;i != 3;++i) {
             auto bisector_normal = get_bisector_orient(lines,tris,bis_nrm_buffer,bisector_normal_tag,cell_id,i);
+            // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+
             seg = p - verts.template pack<3>(x_tag,inds[i]);
             if(bisector_normal.dot(seg) < 0)
                 return 0;
+
         }
 
         return 1;
