@@ -167,10 +167,20 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     QModelIndex outIdx = pModel->nodeIndex(hOutnode);
     if (!outIdx.isValid())
         return Err_NodeNotExist;
+    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    const QString& qsOutSock = QString::fromStdString(outSock);
+    if (!outputs.contains(qsOutSock)) {
+        return Err_SockNotExist;
+    }
 
     QModelIndex inIdx = pModel->nodeIndex(hInnode);
     if (!inIdx.isValid())
         return Err_NodeNotExist;
+    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    const QString qsInSock = QString::fromStdString(inSock);
+    if (!inputs.contains(qsInSock)) {
+        return Err_SockNotExist;
+    }
 
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
