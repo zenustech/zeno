@@ -22,6 +22,20 @@
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
 
+#include <chrono>
+
+#include "zenovis/StageCommon.h"
+
+#define TIMER_START(NAME) \
+    auto start_##NAME = std::chrono::high_resolution_clock::now();
+
+#define TIMER_END(NAME) \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now(); \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME); \
+    std::cout << "USD: Timer " << #NAME << " "                          \
+              << duration_##NAME.count()*0.001f << " Milliseconds" << std::endl;
+
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -51,12 +65,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Mesh)
 );
 
-struct ConfigurationInfo{
-    std::string cRepo = "http://test1:12345@192.168.2.106:8000/r/zeno_usd_test.git";
-    std::string cPath = "C:/Users/Public/zeno_usd_test";
-    std::string cServer = "192.168.2.106";
-};
-
 struct ZPrimInfo{
     std::string pPath;
     std::shared_ptr<zeno::IObject> iObject;
@@ -72,14 +80,17 @@ struct ZenoStage{
     UsdStageRefPtr fStagePtr;
     UsdStageRefPtr sStagePtr;
 
-    ConfigurationInfo confInfo;
+    HandleStateInfo *stateInfo;
     SdfLayerRefPtr composLayer;
     std::map<SdfPath, std::shared_ptr<zeno::PrimitiveObject>> convertedObject;
 
     ZenoStage();
 
+    void init();
     void update();
 
+    int PrintStageString(UsdStageRefPtr stage);
+    int PrintLayerString(SdfLayerRefPtr layer);
     int CompositionArcsStage();
     int TraverseStageObjects(UsdStageRefPtr stage, std::map<std::string, UPrimInfo>& consis);
     int RemoveStagePrims();

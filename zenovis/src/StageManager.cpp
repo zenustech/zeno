@@ -9,26 +9,19 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
-#include <chrono>
-
-#define TIMER_START(NAME) \
-    auto start_##NAME = std::chrono::high_resolution_clock::now();
-
-#define TIMER_END(NAME) \
-    auto stop_##NAME = std::chrono::high_resolution_clock::now(); \
-    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME); \
-    std::cout << "USD: " << #NAME << " "                          \
-              << duration_##NAME.count()*0.001f << " Milliseconds" << std::endl;
 
 namespace zenovis {
 
 StageManager::StageManager(){
     zeno::log_info("USD: StageManager Constructed");
+    stateInfo = new HandleStateInfo;
     zenoStage = std::make_shared<ZenoStage>();
-
+    zenoStage->stateInfo = stateInfo;
+    zenoStage->init();
 };
 StageManager::~StageManager(){
     zeno::log_info("USD: StageManager Destroyed");
+    delete stateInfo;
 };
 
 bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared_ptr<zeno::IObject>> &objs) {
@@ -99,16 +92,27 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     if(inserted){
         // Stage C is synthesized with stage S and output to the Layer,
         // and stage F layered the Layer
+        TIMER_START(CompositionArcsStage)
         zenoStage->CompositionArcsStage();
-        zenoStage->cStagePtr->Save();
         zenoStage->fStagePtr->Reload();
 
         // TODO Handle path conflict situations, perhaps over, priorities, etc
         zenoStage->CheckPathConflict();
+        TIMER_END(CompositionArcsStage)
     }
     TIMER_START(TraverseStage)
     zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
     TIMER_END(TraverseStage)
+
+    {
+        //auto prim = std::make_shared<zeno::PrimitiveObject>();
+        //prim->verts.emplace_back(zeno::vec3f(debug_count/2.0f,0,0));
+        //prim->verts.emplace_back(zeno::vec3f(0,0,0));
+        //prim->verts.emplace_back(zeno::vec3f(0,1,0));
+        //prim->tris.emplace_back(zeno::vec3f(0,1,2));
+        //UPrimInfo info;
+        //objectConsistent["___debug"+std::to_string(debug_count)] = prim;
+    }
 
     // #########################################################
     // FIXME Run the same scene several times and the polygon will get a few errors
@@ -132,6 +136,8 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     if(converted){
         std::cout << "USD: Consistent Size " << objectConsistent.size() << std::endl;
     }
+
+    debug_count++;
 
     return converted;
 }

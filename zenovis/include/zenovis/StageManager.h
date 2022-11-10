@@ -15,8 +15,11 @@
 #include <thread>
 #include <functional>
 
+#include "zenovis/StageCommon.h"
+
 struct ZenoStage;
 struct UPrimInfo;
+struct HandleStateInfo;
 
 namespace zenovis {
 
@@ -40,8 +43,10 @@ struct StageManager : zeno::disable_copy {
     std::map<std::string, std::shared_ptr<zeno::IObject>> zenoLightObjects;
 
     std::shared_ptr<ZenoStage> zenoStage;
+    HandleStateInfo *stateInfo;
 
     int increase_count = 0;
+    int debug_count = 0;
 
     StageManager();
     ~StageManager();

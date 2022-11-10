@@ -588,6 +588,8 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
 {
+    updateCallbackFunction = std::bind(&ViewportWidget::_update, this);
+
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
@@ -622,6 +624,7 @@ void ViewportWidget::initializeGL()
     OpenGLProcAddressHelper::ctx = context();
     Zenovis::GetInstance().loadGLAPI((void *)OpenGLProcAddressHelper::getProcAddress);
     Zenovis::GetInstance().initializeGL();
+    Zenovis::GetInstance().getSession()->get_scene()->stageMan->stateInfo->cUpdateFunction = updateCallbackFunction;
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)
@@ -645,6 +648,11 @@ void ViewportWidget::setCameraRes(const QVector2D& res)
 void ViewportWidget::updatePerspective()
 {
     m_camera->updatePerspective();
+}
+
+void ViewportWidget::_update(){
+    std::cout << "ViewportWidget update\n";
+    update();
 }
 
 void ViewportWidget::paintGL()

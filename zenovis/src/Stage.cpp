@@ -160,33 +160,7 @@ std::string Execute( std::string cmd )
 /// ######################################################
 
 ZenoStage::ZenoStage() {
-    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
 
-    //cStagePtr = UsdStage::CreateInMemory();
-    cStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_stage.usda");
-    fStagePtr = UsdStage::CreateNew(confInfo.cPath + "/_inter_final.usda");
-    sStagePtr = UsdStage::Open(confInfo.cPath + "/test.usda");
-
-    UsdStage::CreateNew(confInfo.cPath + "/_inter_compLayer.usda");  // making sure the file exists
-    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
-    fStagePtr->Save();
-
-    pxr::UsdGeomSetStageUpAxis(cStagePtr, pxr::TfToken("Y"));
-    pxr::UsdGeomSetStageUpAxis(fStagePtr, pxr::TfToken("Y"));
-
-    std::thread([&]() {
-        try
-        {
-            std::cout << "USD: StageManager Server Running.\n";
-            boost::asio::io_service io_service;
-            Server server(io_service);
-            io_service.run();
-        }
-        catch(std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }).detach();
 }
 
 void ZenoStage::CreateUSDHierarchy(const SdfPath &path)
@@ -208,6 +182,18 @@ int ZenoStage::RemoveStagePrims(){
     if(! cStagePtr->TraverseAll().empty()){
         std::cout << "USD: ERROR Didn't clean out\n";
     }
+}
+
+int ZenoStage::PrintStageString(UsdStageRefPtr stage){
+    std::string result;
+    stage->ExportToString(&result);
+    std::cout << "USD: Stage\n" << result << "\n";
+}
+
+int ZenoStage::PrintLayerString(SdfLayerRefPtr layer){
+    std::string result;
+    layer->ExportToString(&result);
+    std::cout << "USD: Layer\n" << result << "\n";
 }
 
 int ZenoStage::CheckPathConflict(){
@@ -293,16 +279,52 @@ int ZenoStage::CompositionArcsStage(){
     }
 
     // Output
-    composLayer->Export(confInfo.cPath + "/_inter_compLayer.usda");
-    //std::string result;
-    //composLayer->ExportToString(&result);
-    //std::cout << "USD: Stage\n" << result << "\n";
+    bool exportResult = composLayer->Export(stateInfo->cPath + "/_inter_compLayer.usda");
+    // Debug
+    //PrintLayerString(composLayer);
+
+    if(! exportResult){
+        zeno::log_error("USD: ComposLayer Export Error");
+    }
+
     return 0;
+}
+
+void ZenoStage::init(){
+    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
+    composLayer = SdfLayer::CreateAnonymous();
+
+    cStagePtr = UsdStage::CreateInMemory();
+    //cStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_stage.usda");
+    fStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_final.usda");
+    sStagePtr = UsdStage::Open(stateInfo->cPath + "/test.usda");
+
+    // Create a placeholder usd file
+    UsdStage::CreateNew(stateInfo->cPath + "/_inter_compLayer.usda");  // making sure the file exists
+    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
+    fStagePtr->Save();
+
+    pxr::UsdGeomSetStageUpAxis(cStagePtr, pxr::TfToken("Y"));
+    pxr::UsdGeomSetStageUpAxis(fStagePtr, pxr::TfToken("Y"));
+
+    std::thread([&]() {
+        try
+        {
+            std::cout << "USD: StageManager Server Running.\n";
+            boost::asio::io_service io_service;
+            Server server(io_service);
+            io_service.run();
+        }
+        catch(std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }).detach();
 }
 
 void ZenoStage::update() {
     // TODO Use webhook instead of timed update
-    std::string cmd = "git -C " + confInfo.cPath + " pull";
+    std::string cmd = "git -C " + stateInfo->cPath + " pull";
 
     // XXX git and cmd (on Windows) environment variables need to be set up in PATH
     std::string res = Execute(cmd);
@@ -313,13 +335,13 @@ void ZenoStage::update() {
     if(res.find("Already up to date") == std::string::npos) {
         std::cout << "USD: Update Dirty Stage" << std::endl;
 
+        TIMER_START(StageUpdate)
         sStagePtr->Reload();  // The effect is same as layers.reload
         CompositionArcsStage();
         fStagePtr->Reload();
+        TIMER_END(StageUpdate)
 
-        //std::string stageString;
-        //fStagePtr->ExportToString(&stageString);
-        //std::cout << "USD: Stage " << std::endl << stageString << std::endl;
+        stateInfo->cUpdateFunction();
     }
 }
 

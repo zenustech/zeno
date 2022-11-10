@@ -108,6 +108,7 @@ public:
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
 
+    void _update();
 signals:
     void frameRecorded(int);
 
@@ -128,6 +129,7 @@ private:
 
 public:
     bool updateLightOnce;
+    std::function<void()> updateCallbackFunction;
 };
 
 class CameraKeyframeWidget;
