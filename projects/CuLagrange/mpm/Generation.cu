@@ -54,7 +54,7 @@ struct ConfigConstitutiveModel : INode {
             using T = typename RM_CVREF_T(type)::type;
             std::optional<T> ret{};
             if (auto it = params->lut.find(tag); it != params->lut.end())
-                ret = safe_any_cast<T>(it->second);
+                ret = objectToLiterial<T>(it->second);
             return ret;
         };
         auto anisoTypeStr = get_input2<std::string>("aniso");
@@ -1274,8 +1274,8 @@ struct MakeZSLevelSet : INode {
         std::vector<zs::PropertyTag> tags{{"sdf", 1}};
 
         auto ls = std::make_shared<ZenoLevelSet>();
-        ls->transferScheme = get_param<std::string>("transfer");
-        auto cateStr = get_param<std::string>("category");
+        ls->transferScheme = get_input2<std::string>("transfer");
+        auto cateStr = get_input2<std::string>("category");
 
         // default is "cellcentered"
         if (cateStr == "staggered")
@@ -1332,10 +1332,12 @@ struct MakeZSLevelSet : INode {
     }
 };
 ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"}, "aux"},
-                               {"ZSLevelSet"},
-                               {{"enum unknown apic flip aflip boundary", "transfer", "unknown"},
+                               {{"float", "dx", "0.1"},
+                                "aux",
+                                {"enum unknown apic flip aflip boundary", "transfer", "unknown"},
                                 {"enum cellcentered collocated staggered const_velocity", "category", "cellcentered"}},
+                               {"ZSLevelSet"},
+                               {},
                                {"SOP"},
                            });
 
@@ -1344,7 +1346,7 @@ struct ToZSBoundary : INode {
         fmt::print(fg(fmt::color::green), "begin executing ToZSBoundary\n");
         auto boundary = std::make_shared<ZenoBoundary>();
 
-        auto type = get_param<std::string>("type");
+        auto type = get_input2<std::string>("type");
         auto queryType = [&type]() -> zs::collider_e {
             if (type == "sticky" || type == "Sticky")
                 return zs::collider_e::Sticky;
@@ -1392,9 +1394,15 @@ struct ToZSBoundary : INode {
     }
 };
 ZENDEFNODE(ToZSBoundary, {
-                             {"ZSLevelSet", "translation", "translation_rate", "scale", "scale_rate", "ypr_angles"},
+                             {"ZSLevelSet",
+                              "translation",
+                              "translation_rate",
+                              "scale",
+                              "scale_rate",
+                              "ypr_angles",
+                              {"string", "type", "sticky"}},
                              {"ZSBoundary"},
-                             {{"string", "type", "sticky"}},
+                             {},
                              {"MPM"},
                          });
 
@@ -1555,7 +1563,7 @@ struct WriteZSParticles : zeno::INode {
     void apply() override {
         fmt::print(fg(fmt::color::green), "begin executing WriteZSParticles\n");
         auto &pars = get_input<ZenoParticles>("ZSParticles")->getParticles();
-        auto path = get_param<std::string>("path");
+        auto path = get_input2<std::string>("path");
         auto cudaExec = zs::cuda_exec().device(0);
         zs::Vector<zs::vec<float, 3>> pos{pars.size(), zs::memsrc_e::um, 0};
         zs::Vector<float> vms{pars.size(), zs::memsrc_e::um, 0};
@@ -1576,9 +1584,9 @@ struct WriteZSParticles : zeno::INode {
 };
 
 ZENDEFNODE(WriteZSParticles, {
-                                 {"ZSParticles"},
+                                 {"ZSParticles", {"string", "path", ""}},
                                  {},
-                                 {{"string", "path", ""}},
+                                 {},
                                  {"MPM"},
                              });
 
