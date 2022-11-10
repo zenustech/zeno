@@ -18,12 +18,16 @@ struct ZSPrimitiveToSparseGrid : INode {
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
         auto &spg = zsSPG->getSparseGrid();
-        auto tag = zs::SmallString{get_input2<std::string>("Attribute")};
+        auto attrTag = get_input2<std::string>("Attribute");
         bool isStaggered = get_input2<bool>("staggered");
         bool needMark = get_input2<bool>("mark");
         bool needClear = get_input2<bool>("clear");
 
-        bool hasDoubleBuffer = false; // TBD
+        std::string metaTag = attrTag + "_cur";
+        if (zsSPG->hasMeta(metaTag)) {
+            attrTag += std::to_string(zsSPG->readMeta<int &>(metaTag));
+        }
+        auto tag = zs::SmallString{attrTag};
 
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -33,9 +37,11 @@ struct ZSPrimitiveToSparseGrid : INode {
             throw std::runtime_error("the size of the target staggered property is not 3!");
         ///
         auto cudaPol = cuda_exec().device(0);
+        std::vector<PropertyTag> tags{{"w", isStaggered ? 3 : 1}};
         if (needMark) {
-            spg.append_channels(cudaPol, {{"w", isStaggered ? 3 : 1}, {"mark", 1}});
+            tags.push_back(PropertyTag{"mark", 1});
         }
+        spg.append_channels(cudaPol, tags);
         // clear weight, target property and mark (if required)
         if (needClear) {
             cudaPol(range(spg.numBlocks() * spg.block_size),
