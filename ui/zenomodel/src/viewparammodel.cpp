@@ -50,7 +50,7 @@ QVariant VParamItem::data(int role) const
         return m_bMappedCore;
     }
     default:
-        return QVariant();
+        return QStandardItem::data(role);
     }
 }
 

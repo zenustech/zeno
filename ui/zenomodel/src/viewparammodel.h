@@ -22,6 +22,8 @@ enum ROLE_VPARAM
     ROLE_VPARAM_VALUE,      //real value on idx.
     ROLE_VPARAM_IS_COREPARAM,   //is mapped from core param.
     ROLE_VAPRAM_EDITTABLE,       //edittable for name and content.
+    ROLE_VPARAM_ACTIVE_TABINDEX,    //active tab index
+    ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 };
 
 

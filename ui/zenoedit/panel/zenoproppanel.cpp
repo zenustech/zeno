@@ -172,7 +172,49 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     ZASSERT_EXIT(m_paramsModel);
+    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
 
+    QStandardItem* paramItem = m_paramsModel->itemFromIndex(topLeft);
+    ZASSERT_EXIT(paramItem);
+
+    QStandardItem* groupItem = paramItem->parent();
+    ZASSERT_EXIT(groupItem);
+
+    QStandardItem* tabItem = groupItem->parent();
+    ZASSERT_EXIT(tabItem);
+
+    const QString& tabName = tabItem->data(ROLE_VPARAM_NAME).toString();
+    const QString& groupName = groupItem->data(ROLE_VPARAM_NAME).toString();
+
+    for (int r = topLeft.row(); r <= bottomRight.row(); r++)
+    {
+        QStandardItem* param = groupItem->child(r);
+        const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
+        const QVariant& value = param->data(ROLE_PARAM_VALUE).toString();
+        _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+        if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
+        {
+            pLineEdit->setText(value.toString());
+        }
+        else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
+        {
+            pCombobox->setCurrentText(value.toString());
+        }
+        else if (QTextEdit* pTextEidt = qobject_cast<QTextEdit*>(ctrl.pControl))
+        {
+            pTextEidt->setText(value.toString());
+        }
+        else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
+        {
+
+        }
+        else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
+        {
+            pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+        }
+        //...
+    }
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
@@ -294,8 +336,10 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
 bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row)
 {
     const QString& groupName = pGroupItem->data(Qt::DisplayRole).toString();
+    bool bCollaspe = pGroupItem->data(ROLE_VPARAM_COLLASPED).toBool();
     ZExpandableSection* pGroupWidget = new ZExpandableSection(groupName);
     pGroupWidget->setObjectName(groupName);
+    pGroupWidget->setCollasped(bCollaspe);
     QGridLayout* pLayout = new QGridLayout;
     pLayout->setContentsMargins(10, 15, 0, 15);
     pLayout->setColumnStretch(0, 1);
@@ -308,6 +352,11 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     }
     pGroupWidget->setContentLayout(pLayout);
     pTabLayout->addWidget(pGroupWidget);
+
+    connect(pGroupWidget, &ZExpandableSection::stateChanged, this, [=](bool bCollasped)
+    {
+        pGroupItem->setData(bCollasped, ROLE_VPARAM_COLLASPED);
+    });
     return true;
 }
 

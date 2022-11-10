@@ -43,8 +43,12 @@ public:
 protected:
     void mousePressEvent(QMouseEvent* event) override;
 
+signals:
+	void stateChanged(bool);
+
 public slots:
 	void toggle(bool collasped);
+	void setCollasped(bool bOn);
 
 private:
 	QWidget* initTitleWidget(const QString& title/* other ui params*/);
@@ -53,6 +57,7 @@ private:
 	QVBoxLayout* m_mainLayout;
 	ZScrollArea* m_contentArea;
 	QWidget* m_contentWidget;
+	ZIconLabel* m_collaspBtn;
 };
 
 #endif

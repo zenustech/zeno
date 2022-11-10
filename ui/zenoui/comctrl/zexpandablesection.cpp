@@ -76,6 +76,7 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	, m_contentArea(nullptr)
 	, m_contentWidget(nullptr)
 	, m_title(title)
+    , m_collaspBtn(nullptr)
 {
 	m_contentArea = new ZScrollArea(this);
 	m_mainLayout = new QVBoxLayout(this);
@@ -136,11 +137,11 @@ QWidget* ZExpandableSection::initTitleWidget(const QString& title)
 	QLabel* plblTitle = new QLabel(title);
 	plblTitle->setProperty("cssClass", "proppanel-sectionname");
 
-	ZIconLabel* collaspBtn = new ZIconLabel;
-	collaspBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/ic_parameter_fold.svg", "", ":/icons/ic_parameter_unfold.svg");
-	collaspBtn->toggle();
+    m_collaspBtn = new ZIconLabel;
+    m_collaspBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/ic_parameter_fold.svg", "", ":/icons/ic_parameter_unfold.svg");
+    m_collaspBtn->toggle();
 
-	titleLayout->addWidget(collaspBtn);
+	titleLayout->addWidget(m_collaspBtn);
 	titleLayout->addWidget(plblTitle);
 	titleLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -154,7 +155,7 @@ QWidget* ZExpandableSection::initTitleWidget(const QString& title)
 	pWidget->setPalette(pal);
 	pWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-	connect(collaspBtn, &ZIconLabel::toggled, this, &ZExpandableSection::toggle);
+	connect(m_collaspBtn, &ZIconLabel::toggled, this, &ZExpandableSection::toggle);
 
 	return pWidget;
 }
@@ -171,6 +172,13 @@ void ZExpandableSection::toggle(bool)
     bool bCollasped = m_contentArea->isVisible();
     m_contentArea->setVisible(!bCollasped);
     updateGeometry();
+    emit stateChanged(bCollasped);
+}
+
+void ZExpandableSection::setCollasped(bool bOn)
+{
+    m_collaspBtn->toggle(!bOn);
+    m_contentArea->setVisible(!bOn);
 }
 
 QSize ZExpandableSection::sizeHint() const
