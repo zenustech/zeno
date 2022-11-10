@@ -45,11 +45,17 @@ void do_facet_point_collision_detection(Pol& cudaPol,
     SurfTriNrmVec& sttemp,
     SurfLineNrmVec& setemp,
     CollisionBuffer& cptemp,
-    const bvh_t& stBvh,
-    T bvh_thickness,
-    T collisionEps) {
+    // const bvh_t& stBvh,
+    T in_collisionEps,T out_collisionEps) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+
+        auto stBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,xtag);
+        stBvh.build(cudaPol,bvs);
+
+        auto avgl = compute_average_edge_length(cudaPol,verts,xtag,tris);
+        auto bvh_thickness = 5 * avgl;
 
         if(!calculate_facet_normal(cudaPol,verts,xtag,tris,sttemp,"nrm")){
             throw std::runtime_error("fail updating facet normal");
@@ -63,8 +69,10 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 throw std::runtime_error("fail calculate cell bisector normal");
         }       
         TILEVEC_OPS::fill<4>(cudaPol,cptemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
-        cudaPol(zs::range(points.size()),[collisionEps = collisionEps,
-                        verts = proxy<space>({},verts),
+        TILEVEC_OPS::fill(cudaPol,cptemp,"inverted",reinterpret_bits<T>((int)0));
+        cudaPol(zs::range(points.size()),[in_collisionEps = in_collisionEps,
+                        out_collisionEps = out_collisionEps,
+                        verts = proxy<space>({},verts),xtag,
                         sttemp = proxy<space>({},sttemp),
                         setemp = proxy<space>({},setemp),
                         points = proxy<space>({},points),
@@ -73,7 +81,11 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                         cptemp = proxy<space>({},cptemp),
                         stbvh = proxy<space>(stBvh),thickness = bvh_thickness] ZS_LAMBDA(int svi) mutable {
             auto vi = reinterpret_bits<int>(points("inds",svi));
-            auto p = verts.template pack<3>("x",vi);
+            auto active = verts("active",vi);
+            if(active < 1e-6)
+                return;
+
+            auto p = verts.template pack<3>(xtag,vi);
             auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
 
             int nm_collision_pairs = 0;
@@ -85,15 +97,29 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
                     return;
 
-                if(COLLISION_UTILS::is_inside_the_cell(verts,"x",
+                bool is_active_tri = true;
+                for(int i = 0;i != 3;++i)
+                    if(verts("active",tri[i]) < 1e-6)
+                        is_active_tri = false;
+                if(!is_active_tri)
+                    return;
+
+                T dist = (T)0.0;
+
+                if(COLLISION_UTILS::is_inside_the_cell(verts,xtag,
                         lines,tris,
                         sttemp,"nrm",
                         setemp,"nrm",
-                        stI,p,collisionEps)) {
+                        stI,p,in_collisionEps,out_collisionEps,dist)) {
                     cptemp.template tuple<4>("inds",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = zs::vec<int,4>(vi,tri[0],tri[1],tri[2]).template reinterpret_bits<T>();
                     auto vertexFaceCollisionAreas = tris("area",stI) + points("area",svi); 
-                    cptemp("area",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = vertexFaceCollisionAreas;                   
-                    nm_collision_pairs++;
+                    cptemp("area",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = vertexFaceCollisionAreas;   
+                    if(vertexFaceCollisionAreas < 0)
+                        printf("negative face area detected\n");  
+                    int is_inverted = dist > (T)0.0 ? 1 : 0;  
+                    cptemp("inverted",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = reinterpret_bits<T>(is_inverted);            
+                    nm_collision_pairs++;  
+
                 }
             };
             stbvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
@@ -108,19 +134,22 @@ template<int MAX_FP_COLLISION_PAIRS,
 void evaluate_collision_grad_and_hessian(Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
     CollisionBuffer& cptemp,
-    T collisionEps,
+    T in_collisionEps,T out_collisionEps,
     T collisionStiffness,
     T mu,T lambda) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
         TILEVEC_OPS::fill<12>(cudaPol,cptemp,"grad",zs::vec<T,12>::zeros());  
+        // TILEVEC_OPS::fill(cudaPol,cptemp,"area",(T)0.0);
 
+#if 0
         int nm_points = cptemp.size() / MAX_FP_COLLISION_PAIRS;
         cudaPol(zs::range(nm_points),
             [verts = proxy<space>({},verts),xtag,
                 cptemp = proxy<space>({},cptemp),
-                ceps = collisionEps,
+                in_collisionEps = in_collisionEps,
+                out_collisionEps = out_collisionEps,
                 stiffness = collisionStiffness,
                 mu = mu,lam = lambda] ZS_LAMBDA(int pi) mutable {
             for(int i = 0;i != MAX_FP_COLLISION_PAIRS;++i)  {
@@ -128,18 +157,59 @@ void evaluate_collision_grad_and_hessian(Pol& cudaPol,
                 for(int j = 0;j != 4;++j)
                     if(inds[j] < 0)
                         return;
+
+                for(int j = 0;j != 4;++j){
+                    auto active = verts("active",inds[j]);
+                    if(active < 1e-6)
+                        return;
+                }
                 vec3 cv[4] = {};
                 for(int j = 0;j != 4;++j)
                     cv[j] = verts.template pack<3>(xtag,inds[j]);
+            
+                
+
+                auto is_inverted = reinterpret_bits<int>(cptemp("inverted",pi * MAX_FP_COLLISION_PAIRS + i));
+                auto ceps = is_inverted ? in_collisionEps : out_collisionEps;
 
                 auto alpha = stiffness;
                 auto beta = cptemp("area",pi * MAX_FP_COLLISION_PAIRS + i);
                 cptemp.template tuple<12>("grad",pi * MAX_FP_COLLISION_PAIRS + i) = alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps);
                 cptemp.template tuple<12*12>("H",pi * MAX_FP_COLLISION_PAIRS + i) = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps);
             }
-        });    
-}
+        });
+#else
+        cudaPol(zs::range(cptemp.size()),
+            [verts = proxy<space>({},verts),xtag,
+                cptemp = proxy<space>({},cptemp),
+                in_collisionEps = in_collisionEps,
+                out_collisionEps = out_collisionEps,
+                stiffness = collisionStiffness,
+                mu = mu,lam = lambda] ZS_LAMBDA(int cpi) mutable {
+                auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+                for(int j = 0;j != 4;++j)
+                    if(inds[j] < 0)
+                        return;
+                vec3 cv[4] = {};
+                for(int j = 0;j != 4;++j)
+                    cv[j] = verts.template pack<3>(xtag,inds[j]);
+            
+                auto is_inverted = reinterpret_bits<int>(cptemp("inverted",cpi));
+                auto ceps = is_inverted ? in_collisionEps : out_collisionEps;
+                // ceps += (T)1e-2 * ceps;
 
+                auto alpha = stiffness;
+                auto beta = cptemp("area",cpi);
+                cptemp.template tuple<12>("grad",cpi) = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps);
+                cptemp.template tuple<12*12>("H",cpi) = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps);           
+
+                // printf("cpi[%d] : %f %f %f\n",cpi,(float)alpha,(float)beta,(float)cptemp.template pack<12>("grad",cpi).norm());   
+
+        });
+
+#endif
+
+    }
 
 
 // template<int MAX_FP_COLLISION_PAIRS,
@@ -267,4 +337,5 @@ void evaluate_collision_grad_and_hessian(Pol& cudaPol,
 //     }
 
 };
+
 };

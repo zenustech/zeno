@@ -65,6 +65,8 @@ target_sources(zeno PRIVATE
   fem/collision_energy/vertex_face_sqrt_collision.hpp
   fem/collision_energy/edge_edge_collision.hpp
   fem/collision_energy/edge_edge_sqrt_collition.hpp
+  fem/collision_energy/evaluate_collision.hpp
+  fem/collision_energy/collision_utils.hpp
 
 )
 
@@ -93,4 +95,6 @@ target_sources(zeno PRIVATE
   geometry/Jiggle.cu
   geometry/DeformationField.cu
   geometry/CollisionVis.cu
+  geometry/CalcSurfaceArea.cu
+  geometry/MarkSurfaceTag.cu
 )

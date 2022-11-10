@@ -23,6 +23,8 @@
 
 #define COLLISION_VIS_DEBUG
 
+#define MAX_FP_COLLISION_PAIRS 6
+
 namespace zeno {
 
     using T = float;
@@ -906,8 +908,6 @@ namespace zeno {
         virtual void apply() override {
             using namespace zs;
 
-            #define MAX_FP_COLLISION_PAIRS 6
-
             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
 
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
@@ -916,15 +916,15 @@ namespace zeno {
                 throw std::runtime_error("the input zsparticles has no surface lines");
             if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
                 throw std::runtime_error("the input zsparticles has no surface points");
-            if(!zsparticles->hasBvh(ZenoParticles::s_surfTriTag)) {
-                throw std::runtime_error("the input zsparticles has no surface tris's spacial structure");
-            }
-            if(!zsparticles->hasBvh(ZenoParticles::s_surfEdgeTag)) {
-                throw std::runtime_error("the input zsparticles has no surface edge's spacial structure");
-            }
-            if(!zsparticles->hasBvh(ZenoParticles::s_surfVertTag))  {
-                throw std::runtime_error("the input zsparticles has no surface vert's spacial structure");
-            }
+            // if(!zsparticles->hasBvh(ZenoParticles::s_surfTriTag)) {
+            //     throw std::runtime_error("the input zsparticles has no surface tris's spacial structure");
+            // }
+            // if(!zsparticles->hasBvh(ZenoParticles::s_surfEdgeTag)) {
+            //     throw std::runtime_error("the input zsparticles has no surface edge's spacial structure");
+            // }
+            // if(!zsparticles->hasBvh(ZenoParticles::s_surfVertTag))  {
+            //     throw std::runtime_error("the input zsparticles has no surface vert's spacial structure");
+            // }
 
             const auto& verts = zsparticles->getParticles();
 
@@ -932,10 +932,11 @@ namespace zeno {
             auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
             auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
 
-            auto& stBvh = zsparticles->bvh(ZenoParticles::s_surfTriTag);
-            auto& seBvh = zsparticles->bvh(ZenoParticles::s_surfEdgeTag);
+            // auto& stBvh = zsparticles->bvh(ZenoParticles::s_surfTriTag);
+            // auto& seBvh = zsparticles->bvh(ZenoParticles::s_surfEdgeTag);
 
-            auto collisionEps = get_input2<float>("collisionEps");
+            auto in_collisionEps = get_input2<float>("in_collisionEps");
+            auto out_collisionEps = get_input2<float>("out_collisionEps");
 
             dtiles_t sttemp(tris.get_allocator(),
                 {
@@ -948,22 +949,16 @@ namespace zeno {
                 },lines.size()
             );
             
-            // dtiles_t sptemp(lines.get_allocator(),
-            //     {
-            //         {"nrm",3},
-            //         {"fp_collision_pairs",MAX_FP_COLLISION_PAIRS}
-            //     },points.size()
-            // );
-
             dtiles_t cptemp(points.get_allocator(),
                 {
                     {"inds",4},
-                    {"area",1}
+                    {"area",1},
+                    {"inverted",1}
                 },points.size() * MAX_FP_COLLISION_PAIRS);
 
 
             constexpr auto space = execspace_e::cuda;
-            auto cudaPol = cuda_exec().sync(false);
+            auto cudaPol = cuda_exec();
 
             std::vector<zs::PropertyTag> cv_tags{{"xs",3},{"xe",3}};
             auto cv_buffer = typename ZenoParticles::particles_t(cv_tags,points.size() * MAX_FP_COLLISION_PAIRS,zs::memsrc_e::device,0);
@@ -1089,11 +1084,8 @@ namespace zeno {
             });
 
 #else
-        auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
-        stBvh.refit(cudaPol,stbvs);
-
-            auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
-            auto bvh_thickness = 5 * avgl;
+            // auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
+            // stBvh.refit(cudaPol,stbvs);
 
             COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
                 verts,"x",
@@ -1103,8 +1095,10 @@ namespace zeno {
                 sttemp,
                 setemp,
                 cptemp,
-                stBvh,
-                bvh_thickness,collisionEps);
+                // stBvh,
+                in_collisionEps,out_collisionEps);
+
+
 
             cudaPol(zs::range(points.size()),
                 [cptemp = proxy<space>({},cptemp),verts = proxy<space>({},verts),
@@ -1146,13 +1140,13 @@ namespace zeno {
             
 
 #endif
-            cudaPol.syncCtx();
+            // cudaPol.syncCtx();
 
 
             cv_buffer = cv_buffer.clone({zs::memsrc_e::host});
-            auto collisionVis = std::make_shared<zeno::PrimitiveObject>();
-            auto& cv_verts = collisionVis->verts;
-            auto& cv_lines = collisionVis->lines;
+            auto collisionFacetVis = std::make_shared<zeno::PrimitiveObject>();
+            auto& cv_verts = collisionFacetVis->verts;
+            auto& cv_lines = collisionFacetVis->lines;
             cv_verts.resize(points.size() * 2 * MAX_FP_COLLISION_PAIRS);
             cv_lines.resize(points.size() * MAX_FP_COLLISION_PAIRS);
 
@@ -1168,14 +1162,14 @@ namespace zeno {
                     cv_lines[pi] = zeno::vec2i(pi * 2 + 0,pi * 2 + 1);
             });
 
-            set_output("collisionVis",std::move(collisionVis));
+            set_output("collisionFacetVis",std::move(collisionFacetVis));
 
 
 
             cv_pt_buffer = cv_pt_buffer.clone({zs::memsrc_e::host});
-            auto collisionPTVis = std::make_shared<zeno::PrimitiveObject>();
-            auto& cv_pt_verts = collisionPTVis->verts;
-            auto& cv_pt_tris = collisionPTVis->tris;
+            auto colPointFacetPairVis = std::make_shared<zeno::PrimitiveObject>();
+            auto& cv_pt_verts = colPointFacetPairVis->verts;
+            auto& cv_pt_tris = colPointFacetPairVis->tris;
 
             cv_pt_verts.resize(cv_pt_buffer.size() * 4);
             cv_pt_tris.resize(cv_pt_buffer.size());
@@ -1191,14 +1185,14 @@ namespace zeno {
             });
 
 
-            set_output("collisionPTVis",std::move(collisionPTVis));
+            set_output("colPointFacetPairVis",std::move(colPointFacetPairVis));
 
         }
     };
 
 
-ZENDEFNODE(VisualizeFacetPointIntersection, {{"ZSParticles",{"float","collisionEps","0.01"}},
-                                  {"collisionVis","collisionPTVis"},
+ZENDEFNODE(VisualizeFacetPointIntersection, {{"ZSParticles",{"float","in_collisionEps","0.01"},{"float","out_collisionEps","0.01"}},
+                                  {"collisionFacetVis","colPointFacetPairVis"},
                                   {
                                   },
                                   {"ZSGeometry"}});
@@ -1218,8 +1212,6 @@ struct VisualizeCollisionForce : zeno::INode {
     virtual void apply() override {
         using namespace zs;
 
-        #define MAX_FP_COLLISION_PAIRS 6
-
         auto zsparticles = get_input<ZenoParticles>("ZSParticles");
 
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
@@ -1228,15 +1220,15 @@ struct VisualizeCollisionForce : zeno::INode {
             throw std::runtime_error("the input zsparticles has no surface lines");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
             throw std::runtime_error("the input zsparticles has no surface points");
-        if(!zsparticles->hasBvh(ZenoParticles::s_surfTriTag)) {
-            throw std::runtime_error("the input zsparticles has no surface tris's spacial structure");
-        }
-        if(!zsparticles->hasBvh(ZenoParticles::s_surfEdgeTag)) {
-            throw std::runtime_error("the input zsparticles has no surface edge's spacial structure");
-        }
-        if(!zsparticles->hasBvh(ZenoParticles::s_surfVertTag))  {
-            throw std::runtime_error("the input zsparticles has no surface vert's spacial structure");
-        }
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfTriTag)) {
+        //     throw std::runtime_error("the input zsparticles has no surface tris's spacial structure");
+        // }
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfEdgeTag)) {
+        //     throw std::runtime_error("the input zsparticles has no surface edge's spacial structure");
+        // }
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfVertTag))  {
+        //     throw std::runtime_error("the input zsparticles has no surface vert's spacial structure");
+        // }
 
         const auto& verts = zsparticles->getParticles();
 
@@ -1244,13 +1236,12 @@ struct VisualizeCollisionForce : zeno::INode {
         auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
         auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
 
-        auto& stBvh = zsparticles->bvh(ZenoParticles::s_surfTriTag);
-        auto& seBvh = zsparticles->bvh(ZenoParticles::s_surfEdgeTag);
+        // auto& stBvh = zsparticles->bvh(ZenoParticles::s_surfTriTag);
+        // auto& seBvh = zsparticles->bvh(ZenoParticles::s_surfEdgeTag);
 
         dtiles_t sttemp(tris.get_allocator(),
             {
                 {"nrm",3},
-                {"cf",3},
                 {"x",3}
             },tris.size()
         );
@@ -1263,8 +1254,6 @@ struct VisualizeCollisionForce : zeno::INode {
         dtiles_t sptemp(points.get_allocator(),
             {
                 {"nrm",3},
-                // {"fp_collision_pairs",MAX_FP_COLLISION_PAIRS},
-                {"cf",3},
                 {"x",3}
             },points.size()
         );
@@ -1274,7 +1263,8 @@ struct VisualizeCollisionForce : zeno::INode {
                 {"inds",4},
                 {"area",1},
                 {"grad",12},
-                {"H",12 * 12}
+                {"H",12 * 12},
+                {"inverted",1}
             },points.size() * MAX_FP_COLLISION_PAIRS);
 
         
@@ -1285,21 +1275,22 @@ struct VisualizeCollisionForce : zeno::INode {
             },verts.size());
 
 
+        auto in_collisionEps = get_input2<float>("in_collisionEps");
+        auto out_collisionEps = get_input2<float>("out_collisionEps");
+
         constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec().sync(false);
+        auto cudaPol = cuda_exec();
     
 
-        if(!calculate_facet_normal(cudaPol,verts,"x",tris,sttemp,"nrm")){
-                throw std::runtime_error("fail updating facet normal");
-        }
+        // if(!calculate_facet_normal(cudaPol,verts,"x",tris,sttemp,"nrm")){
+        //         throw std::runtime_error("fail updating facet normal");
+        // }
 
 
-        // TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+        // auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
+        // auto bvh_thickness = 5 * avgl;
 
-        auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
-        auto bvh_thickness = 5 * avgl;
-
-#if 1
+#if 0
         if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
             verts,"x",
             lines,
@@ -1425,10 +1416,10 @@ struct VisualizeCollisionForce : zeno::INode {
         sptemp = sptemp.clone({zs::memsrc_e::host});
         // sttemp = sttemp.clone({zs::memsrc_e::host});
 
-        auto spprim = std::make_shared<zeno::PrimitiveObject>();
-        auto& spverts = spprim->verts;
+        auto nodalForceVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& spverts = nodalForceVis->verts;
         spverts.resize(sptemp.size() * 2);
-        auto& splines = spprim->lines;
+        auto& splines = nodalForceVis->lines;
         splines.resize(sptemp.size());
 
 
@@ -1444,14 +1435,14 @@ struct VisualizeCollisionForce : zeno::INode {
                 splines[pi] = zeno::vec2i(pi * 2 + 0,pi * 2 + 1);
         });
 
-        set_output("spprim",std::move(spprim));
+        set_output("nodalForceVis",std::move(nodalForceVis));
 
 
 
         sttemp = sttemp.clone({zs::memsrc_e::host});
-        auto stprim = std::make_shared<zeno::PrimitiveObject>();
-        auto& stverts = stprim->verts;
-        auto& stlines = stprim->lines;
+        auto facetForceVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& stverts = facetForceVis->verts;
+        auto& stlines = facetForceVis->lines;
 
         stverts.resize(sttemp.size() * 2);
         stlines.resize(sttemp.size());
@@ -1469,14 +1460,13 @@ struct VisualizeCollisionForce : zeno::INode {
         });
 
 
-        set_output("stprim",std::move(stprim));
+        set_output("facetForceVis",std::move(facetForceVis));
 
 #else
 
-        auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
-        stBvh.refit(cudaPol,stbvs);
-        auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
-        auto bvh_thickness = 5 * avgl;
+        // auto stbvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
+        // stBvh.refit(cudaPol,stbvs);
+
 
         COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
             verts,"x",
@@ -1486,29 +1476,183 @@ struct VisualizeCollisionForce : zeno::INode {
             sttemp,
             setemp,
             cptemp,
-            stBvh,
-            bvh_thickness,collisionEps);
+            // stBvh,
+            in_collisionEps,out_collisionEps);
+
+
+
+        std::vector<zs::PropertyTag> cv_tags{{"xs",3},{"xe",3}};
+        auto cv_buffer = typename ZenoParticles::particles_t(cv_tags,points.size() * MAX_FP_COLLISION_PAIRS,zs::memsrc_e::device,0);
+        std::vector<zs::PropertyTag> cv_pt_tags{{"p",3},{"t0",3},{"t1",3},{"t2",3}};
+        auto cv_pt_buffer = typename ZenoParticles::particles_t(cv_pt_tags,points.size() * MAX_FP_COLLISION_PAIRS,zs::memsrc_e::device,0);
+
+
+        cudaPol(zs::range(points.size()),
+            [cptemp = proxy<space>({},cptemp),verts = proxy<space>({},verts),
+                cv_buffer = proxy<space>({},cv_buffer),
+                cv_pt_buffer = proxy<space>({},cv_pt_buffer),
+                points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
+                    for(int i = 0;i != MAX_FP_COLLISION_PAIRS;++i) {
+                        auto inds = cptemp.template pack<4>("inds",pi * MAX_FP_COLLISION_PAIRS + i).reinterpret_bits(int_c);
+                        bool contact = true;
+                        auto pvert = zs::vec<T,3>::zeros();
+                        for(int j = 0;j != 4;++j)
+                            if(inds[j] < 0)
+                                contact = false;
+                        if(contact) {
+                            pvert = verts.template pack<3>("x",inds[0]);
+                            auto t0 = verts.template pack<3>("x",inds[1]);
+                            auto t1 = verts.template pack<3>("x",inds[2]);
+                            auto t2 = verts.template pack<3>("x",inds[3]);
+                            auto center = (t0 + t1 + t2) / (T)3.0;
+
+                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = center;
+
+                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = t0;
+                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = t1;
+                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = t2;                                
+                        }else{
+                            cv_buffer.template tuple<3>("xs",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_buffer.template tuple<3>("xe",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            
+                            cv_pt_buffer.template tuple<3>("p",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t0",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t1",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;
+                            cv_pt_buffer.template tuple<3>("t2",MAX_FP_COLLISION_PAIRS * pi + i) = pvert;                                
+                        }
+                    }
+        });
+        
+        cv_buffer = cv_buffer.clone({zs::memsrc_e::host});
+        auto collisionFacetVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& cv_verts = collisionFacetVis->verts;
+        auto& cv_lines = collisionFacetVis->lines;
+        cv_verts.resize(points.size() * 2 * MAX_FP_COLLISION_PAIRS);
+        cv_lines.resize(points.size() * MAX_FP_COLLISION_PAIRS);
+
+        auto ompPol = omp_exec();  
+        constexpr auto omp_space = execspace_e::openmp;
+
+        ompPol(zs::range(cv_buffer.size()),
+            [cv_buffer = proxy<omp_space>({},cv_buffer),&cv_verts,&cv_lines] (int pi) mutable {
+                auto xs = cv_buffer.template pack<3>("xs",pi);
+                auto xe = cv_buffer.template pack<3>("xe",pi);
+                cv_verts[pi * 2 + 0] = zeno::vec3f(xs[0],xs[1],xs[2]);
+                cv_verts[pi * 2 + 1] = zeno::vec3f(xe[0],xe[1],xe[2]);
+                cv_lines[pi] = zeno::vec2i(pi * 2 + 0,pi * 2 + 1);
+        });
+
+        set_output("collisionFacetVis",std::move(collisionFacetVis));
+
+        cv_pt_buffer = cv_pt_buffer.clone({zs::memsrc_e::host});
+        auto colPointFacetPairVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& cv_pt_verts = colPointFacetPairVis->verts;
+        auto& cv_pt_tris = colPointFacetPairVis->tris;
+
+        cv_pt_verts.resize(cv_pt_buffer.size() * 4);
+        cv_pt_tris.resize(cv_pt_buffer.size());
+
+        ompPol(zs::range(cv_pt_buffer.size()),
+            [&cv_pt_verts,&cv_pt_tris,cv_pt_buffer = proxy<omp_space>({},cv_pt_buffer)] (int pi) mutable {
+                cv_pt_verts[pi * 4 + 0] = cv_pt_buffer.template pack<3>("p",pi).to_array();
+                cv_pt_verts[pi * 4 + 1] = cv_pt_buffer.template pack<3>("t0",pi).to_array();
+                cv_pt_verts[pi * 4 + 2] = cv_pt_buffer.template pack<3>("t1",pi).to_array();
+                cv_pt_verts[pi * 4 + 3] = cv_pt_buffer.template pack<3>("t2",pi).to_array();
+
+                cv_pt_tris[pi] = zeno::vec3i(pi * 4 + 1,pi * 4 + 2,pi * 4 + 3);
+        });
+
+
+        set_output("colPointFacetPairVis",std::move(colPointFacetPairVis));
+
+
 
 
         COLLISION_UTILS::evaluate_collision_grad_and_hessian<MAX_FP_COLLISION_PAIRS>(cudaPol,
             verts,"x",
             cptemp,
-            collisionEps,
+            in_collisionEps,
+            out_collisionEps,
             (T)1.0,
             (T)1.0,(T)1.0);
 
         TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"x");
         TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+        
+        // TILEVEC_OPS::fill<12>(cudaPol,cptemp,"grad",zs::vec<T,12>{1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0});
+        // auto gradN = TILEVEC_OPS::inf_norm<12>(cudaPol,cptemp,"grad");
+
+        // cudaPol(zs::range(cptemp.size()),
+        //     [cptemp = proxy<space>({},cptemp),verts = proxy<space>({},verts)] ZS_LAMBDA(int cpi) mutable {
+        //         auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+        //         bool in_active = false;
+        //         for(int i = 0;i != 4;++i) {
+        //             if(inds[i] < 0)
+        //                 in_active = false;
+        //             else{
+        //                 auto active = verts("active",inds[i]);
+        //                 if(active < 1e-6)
+        //                     in_active = false;
+        //             }
+        //         }
+        //         if(in_active)
+        //             cptemp.template tuple<12>("grad",cpi) = zs::vec<T,12>::zeros();
+        // });
+
+
         TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",vtemp,"dir");
+
+        // cudaPol(zs::range(verts.size()),
+        //     [verts = proxy<space>({},verts),vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //         auto active = verts("active",vi);
+        //         if(active < 1e-6)
+        //             vtemp.template tuple<3>("dir",vi) = zs::vec<T,3>::zeros();
+        // });
+
+        // cudaPol.syncCtx();
+
+        // fmt::print(fg(fmt::color::dark_cyan),
+        //     "gradN = {}\n",gradN);
+
 
         auto scale = get_input2<float>("scale");
 
-        auto ompPol = omp_exec();  
-        constexpr auto omp_space = execspace_e::openmp;
+        // auto ompPol = omp_exec();  
+        // constexpr auto omp_space = execspace_e::openmp;
         
+        auto nodalForceVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& spverts = nodalForceVis->verts;
+        spverts.resize(vtemp.size() * 2);
+        auto& splines = nodalForceVis->lines;
+        splines.resize(vtemp.size());
+
+        // auto scale = get_input2<float>("scale");
+
         vtemp = vtemp.clone({zs::memsrc_e::host});
+        ompPol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),&spverts,&splines,scale] (int vi) mutable {
+                auto xs = vtemp.template pack<3>("x",vi);
+                auto dir = vtemp.template pack<3>("dir",vi);
 
+                auto xe = xs + scale * dir;
 
+                spverts[vi * 2 + 0] = xs.to_array();
+                spverts[vi * 2 + 1] = xe.to_array();
+                splines[vi] = zeno::vec2i(vi * 2 + 0,vi * 2 + 1);               
+        });
+
+        set_output("nodalForceVis",std::move(nodalForceVis));
+
+        auto facetForceVis = std::make_shared<zeno::PrimitiveObject>();
+        auto& stverts = facetForceVis->verts;
+        auto& stlines = facetForceVis->lines;
+
+        stverts.resize(0);
+        stlines.resize(0);
+
+        set_output("facetForceVis",std::move(facetForceVis));
 
 #endif 
 
@@ -1516,8 +1660,8 @@ struct VisualizeCollisionForce : zeno::INode {
 
 };
 
-ZENDEFNODE(VisualizeCollisionForce, {{"ZSParticles",{"float","scale","1.0"},{"float","collisionEps"}},
-                                  {"spprim","stprim"},
+ZENDEFNODE(VisualizeCollisionForce, {{"ZSParticles",{"float","scale","1.0"},{"float","in_collisionEps"},{"float","out_collisionEps"}},
+                                  {"nodalForceVis","facetForceVis","collisionFacetVis","colPointFacetPairVis"},
                                   {
                                   },
                                   {"ZSGeometry"}});

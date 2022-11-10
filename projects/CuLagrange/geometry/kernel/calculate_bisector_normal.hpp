@@ -80,7 +80,7 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T collisionEps,T& dist) {
+            int cell_id,const zs::vec<T,3>& p,T in_collisionEps,T out_collisionEps,T& dist) {
         using namespace zs;
 
         // auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
@@ -103,9 +103,11 @@ namespace zeno { namespace COLLISION_UTILS {
         T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p);
         // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
         // collisionEps = avge * max_ratio;
+        auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
+
         if(distance > collisionEps)
             return 0;
-        // dist = seg.dot(nrm);
+        dist = seg.dot(nrm);
         // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
         //     return 0;
 
@@ -128,11 +130,11 @@ namespace zeno { namespace COLLISION_UTILS {
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T collisionEps) {
+            int cell_id,const zs::vec<T,3>& p,T in_collisionEps,T out_collisionEps) {
         using namespace zs;
 
         T dist{};
-        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,collisionEps,dist);
+        return is_inside_the_cell(verts,x_tag,lines,tris,surf_nrm_buffer,triNrmTag,bis_nrm_buffer,bisector_normal_tag,cell_id,p,in_collisionEps,out_collisionEps,dist);
     } 
 
 

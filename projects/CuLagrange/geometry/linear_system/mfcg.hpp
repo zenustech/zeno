@@ -139,16 +139,17 @@ namespace zeno { namespace PCG {
             const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
-                constexpr int block_size = space_dim * space_dim;
-                vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
-        });
+        TILEVEC_OPS::fill<space_dim * space_dim>(pol,vtemp,PTag,zs::vec<T,space_dim*space_dim>::zeros());
+        // pol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
+        //         constexpr int block_size = space_dim * space_dim;
+        //         vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
+        // });
         pol(zs::range(etemp.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
                         ZS_LAMBDA(int ei) mutable{
             constexpr int h_width = space_dim * simplex_dim;
-            auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            auto inds = etemp.template pack<simplex_dim>("inds",ei).reinterpret_bits(int_c);
             auto H = etemp.template pack<h_width,h_width>(HTag,ei);
 
             for(int vi = 0;vi != simplex_dim;++vi)
@@ -166,7 +167,7 @@ namespace zeno { namespace PCG {
                     [vtemp = proxy<space>({},vtemp),dtemp = proxy<space>({},dtemp),HTag,PTag,use_block]
                         ZS_LAMBDA(int ei) mutable{
             constexpr int h_width = space_dim * simplex_dim;
-            auto inds = dtemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            auto inds = dtemp.template pack<simplex_dim>("inds",ei).reinterpret_bits(int_c);
             for(int i = 0;i != simplex_dim;++i)
                 if(inds[i] < 0)
                     return;
@@ -416,58 +417,58 @@ namespace zeno { namespace PCG {
 
 
 
-    template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec,typename DynTileVec>
-    void multiply(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const DynTileVec& dtemp,
-            const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        constexpr auto execTag = wrapv<space>{};
+    // template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec,typename DynTileVec>
+    // void multiply(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const DynTileVec& dtemp,
+    //         const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
+    //     using namespace zs;
+    //     constexpr auto space = execspace_e::cuda;
+    //     constexpr auto execTag = wrapv<space>{};
 
-        pol(range(etemp.size()),
-            [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
-                    inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
-                constexpr int hessian_width = space_dim * simplex_dim;
-                auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
-                for(int i = 0;i != simplex_dim;++i)
-                    if(inds[i] < 0)
-                        return;
-                zs::vec<T,hessian_width> temp{};
+    //     pol(range(etemp.size()),
+    //         [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
+    //                 inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
+    //             constexpr int hessian_width = space_dim * simplex_dim;
+    //             auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 if(inds[i] < 0)
+    //                     return;
+    //             zs::vec<T,hessian_width> temp{};
 
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
 
-                auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
-                temp = He * temp;
+    //             auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
+    //             temp = He * temp;
 
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
-        });
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
+    //     });
 
-        pol(range(dtemp.size()),
-            [execTag,vtemp = proxy<space>({},vtemp),dtemp = proxy<space>({},dtemp),
-                    inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
-                constexpr int hessian_width = space_dim * simplex_dim;
-                auto inds = dtemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
-                for(int i = 0;i != simplex_dim;++i)
-                    if(inds[i] < 0)
-                        return;
-                zs::vec<T,hessian_width> temp{};
+    //     pol(range(dtemp.size()),
+    //         [execTag,vtemp = proxy<space>({},vtemp),dtemp = proxy<space>({},dtemp),
+    //                 inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
+    //             constexpr int hessian_width = space_dim * simplex_dim;
+    //             auto inds = dtemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 if(inds[i] < 0)
+    //                     return;
+    //             zs::vec<T,hessian_width> temp{};
 
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
 
-                auto He = dtemp.template pack<hessian_width,hessian_width>(H_tag,ei);
-                temp = He * temp;
+    //             auto He = dtemp.template pack<hessian_width,hessian_width>(H_tag,ei);
+    //             temp = He * temp;
 
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
-        });
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
+    //     });
 
-    }
+    // }
 
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
     void multiply_transpose(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
@@ -485,58 +486,6 @@ namespace zeno { namespace PCG {
                     inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
                 constexpr int hessian_width = space_dim * simplex_dim;
                 auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
-                zs::vec<T,hessian_width> temp{};
-
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
-
-                auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
-                temp = He.transpose() * temp;
-
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
-        });
-    }
-
-
-    template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec,typename DynTileVec>
-    void multiply_transpose(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const DynTileVec& dtemp,
-            const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        constexpr auto execTag = wrapv<space>{};
-
-        pol(range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),y_tag] __device__(int vi) mutable {
-                vtemp.template tuple<space_dim>(y_tag,vi) = zs::vec<T,space_dim>::zeros();
-        });
-
-        pol(range(etemp.size()),
-            [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
-                    inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
-                constexpr int hessian_width = space_dim * simplex_dim;
-                auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
-                zs::vec<T,hessian_width> temp{};
-
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
-
-                auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
-                temp = He.transpose() * temp;
-
-                for(int i = 0;i != simplex_dim;++i)
-                    for(int j = 0;j != space_dim;++j)
-                        atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
-        });
-
-        pol(range(dtemp.size()),
-            [execTag,vtemp = proxy<space>({},vtemp),dtemp = proxy<space>({},dtemp),
-                    inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
-                constexpr int hessian_width = space_dim * simplex_dim;
-                auto inds = dtemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
 
                 for(int i = 0;i != simplex_dim;++i)
                     if(inds[i] < 0)
@@ -548,15 +497,72 @@ namespace zeno { namespace PCG {
                     for(int j = 0;j != space_dim;++j)
                         temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
 
-                auto He = dtemp.template pack<hessian_width,hessian_width>(H_tag,ei);
+                auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
                 temp = He.transpose() * temp;
 
                 for(int i = 0;i != simplex_dim;++i)
                     for(int j = 0;j != space_dim;++j)
                         atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
         });
-
     }
+
+
+    // template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec,typename DynTileVec>
+    // void multiply_transpose(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const DynTileVec& dtemp,
+    //         const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
+    //     using namespace zs;
+    //     constexpr auto space = execspace_e::cuda;
+    //     constexpr auto execTag = wrapv<space>{};
+
+    //     pol(range(vtemp.size()),
+    //         [vtemp = proxy<space>({},vtemp),y_tag] __device__(int vi) mutable {
+    //             vtemp.template tuple<space_dim>(y_tag,vi) = zs::vec<T,space_dim>::zeros();
+    //     });
+
+    //     pol(range(etemp.size()),
+    //         [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
+    //                 inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
+    //             constexpr int hessian_width = space_dim * simplex_dim;
+    //             auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
+    //             zs::vec<T,hessian_width> temp{};
+
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
+
+    //             auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
+    //             temp = He.transpose() * temp;
+
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
+    //     });
+
+    //     pol(range(dtemp.size()),
+    //         [execTag,vtemp = proxy<space>({},vtemp),dtemp = proxy<space>({},dtemp),
+    //                 inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
+    //             constexpr int hessian_width = space_dim * simplex_dim;
+    //             auto inds = dtemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
+
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 if(inds[i] < 0)
+    //                     return;
+
+    //             zs::vec<T,hessian_width> temp{};
+
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
+
+    //             auto He = dtemp.template pack<hessian_width,hessian_width>(H_tag,ei);
+    //             temp = He.transpose() * temp;
+
+    //             for(int i = 0;i != simplex_dim;++i)
+    //                 for(int j = 0;j != space_dim;++j)
+    //                     atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
+    //     });
+
+    // }
 
 
 
@@ -649,8 +655,11 @@ namespace zeno { namespace PCG {
 
         int iter = 0;
         for(;iter != max_iters;++iter){
-            if(zTrk < 0)
+            if(zTrk < 0) {
+                std::cout << "negative zTrk detected = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
                 throw std::runtime_error("negative zTrk detected");
+            }
             if(residualPreconditionedNorm < localTol)
                 break;
             // H * p -> tmp
@@ -770,8 +779,10 @@ namespace zeno { namespace PCG {
 
         int iter = 0;
         for(;iter != max_iters;++iter){
-            if(zTrk < 0)
+            if(zTrk < 0) {
+                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
                 throw std::runtime_error("negative zTrk detected");
+            }
             if(residualPreconditionedNorm < localTol)
                 break;
             // H * p -> tmp

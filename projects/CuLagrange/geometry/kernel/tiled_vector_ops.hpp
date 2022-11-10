@@ -76,14 +76,19 @@ namespace zeno { namespace TILEVEC_OPS {
 
     template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
     void assemble(Pol& pol,
-        const SrcTileVec& src,zs::SmallString& src_tag,
-        const DstTileVec& dst,zs::SmallString& dst_tag) {
+        const SrcTileVec& src,const zs::SmallString& src_tag,
+        DstTileVec& dst,const zs::SmallString& dst_tag) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
+            // TILEVEC_OPS::fill<space_dim>(pol,dst,"dir",zs::vec<T,space_dim>::uniform((T)0.0));
+
             pol(range(src.size()),
                 [src = proxy<space>({},src),dst = proxy<space>({},dst),src_tag,dst_tag] __device__(int si) mutable {
-                    auto inds = src.template pack<space_dim>("inds",si);
+                    auto inds = src.template pack<simplex_size>("inds",si).reinterpret_bits(int_c);
+                    for(int i = 0;i != simplex_size;++i)
+                        if(inds[i] < 0)
+                            return;
                     auto data = src.template pack<space_dim * simplex_size>(src_tag,si);
                     for(int i = 0;i != simplex_size;++i)
                             for(int d = 0;d != space_dim;++d)

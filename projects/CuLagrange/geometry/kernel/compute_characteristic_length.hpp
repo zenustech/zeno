@@ -39,7 +39,7 @@ namespace zeno {
                 auto a1 = verts.template pack<3>(xTag,e1);
 
                 auto e01 = (a0 - a1).length();
-                atomic_add(exec_cuda,&length_sum[0],e01);
+                atomic_add(exec_cuda,&length_sum[0],(T)e01);
             }
         });
 

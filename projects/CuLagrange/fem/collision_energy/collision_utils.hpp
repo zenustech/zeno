@@ -680,7 +680,7 @@ namespace COLLISION_UTILS {
         const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (barySum - 1.0 < 1e-6)
+        if (fabs(barySum - 1.0) < 1e-6)
         {
             const VECTOR3 nHat = n / n.norm();
             const REAL normalDistance = (nHat.dot(v - v0));
@@ -755,7 +755,7 @@ namespace COLLISION_UTILS {
         const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (barySum - 1.0 < 1e-8)
+        if (fabs(barySum - 1.0) < 1e-6)
             return true;
 
         return false;
