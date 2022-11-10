@@ -609,12 +609,16 @@ struct FleshDynamicStepping : INode {
 
 
         auto zsbones = get_input<ZenoParticles>("driven_boudary");
-        auto driven_tag = get_param<std::string>("driven_tag");
-        auto muscle_id_tag = get_param<std::string>("muscle_id_tag");
-        auto bone_driven_weight = (T)0.02;
+        auto driven_tag = get_input2<std::string>("driven_tag");
+        auto bone_driven_weight = get_input2<float>("driven_weight");
+        auto muscle_id_tag = get_input2<std::string>("muscle_id_tag");
+        // auto bone_driven_weight = (T)0.02;
+
+
+
         auto newton_res = (T)0.01;
 
-        auto dt = get_param<float>("dt");
+        auto dt = get_input2<float>("dt");
 
         auto volf = vec3::from_array(gravity * models.density);
 
@@ -882,12 +886,19 @@ struct FleshDynamicStepping : INode {
 
 };
 
-ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","driven_boudary","gravity","Acts",{"float","cstiffness","0.0"},{"float","in_collisionEps","0.01"},{"float","out_collisionEps","0.01"}},
+ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles",
+                                    "gravity","Acts",
+                                    "driven_boudary",
+                                    {"string","driven_tag","bone_bw"},
+                                    {"float","driven_weight","0.02"},
+                                    {"string","muscle_id_tag","ms_id_tag"},
+                                    {"float","cstiffness","0.0"},
+                                    {"float","in_collisionEps","0.01"},
+                                    {"float","out_collisionEps","0.01"},
+                                    {"float","dt","0.5"}
+                                    },
                                   {"ZSParticles"},
                                   {
-                                    {"string","driven_tag","bone_bw"},
-                                    {"string","muscle_id_tag","ms_id_tag"},
-                                    {"float","dt","0.03"}
                                   },
                                   {"FEM"}});
 
