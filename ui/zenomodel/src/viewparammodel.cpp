@@ -59,15 +59,9 @@ void VParamItem::setData(const QVariant& value, int role)
     switch (role)
     {
         case Qt::EditRole:
-        {
-            if (value == m_info.name || m_bMappedCore)
-                return;
-            m_info.name = value.toString();
-            break;
-        }
         case ROLE_VPARAM_NAME:
         {
-            if (m_bMappedCore)
+            if (value == m_info.name)
                 return;
             m_info.name = value.toString();
             break;
@@ -109,56 +103,20 @@ QStandardItem* VParamItem::clone() const
     return pItem;
 }
 
-void VParamItem::cloneFrom(VParamItem* rItem)
+void VParamItem::cloneAppend(VParamItem* rItem)
 {
     if (!rItem) return;
 
-    if (rItem->vType == VPARAM_PARAM)
-    {
-        if (m_index != rItem->m_index)
-        {
-            m_index = rItem->m_index;
-        }
-        if (m_info.control != rItem->m_info.control)
-        {
-            setData(rItem->m_info.control, ROLE_PARAM_CTRL);
-        }
-        if (m_info.value != rItem->m_info.value)
-        {
-            setData(rItem->m_info.value, ROLE_PARAM_VALUE);
-        }
-        return;
-    }
-
-    //remove the old items first.
-    QVector<int> deleteRows;
-    for (int r = 0; r < rowCount(); r++)
-    {
-        VParamItem* lChild = static_cast<VParamItem*>(child(r));
-        VParamItem* rChild = rItem->getItem(lChild->m_info.name);
-        if (!rChild)
-        {
-            deleteRows.append(r);
-        }
-    }
-    for (int r : deleteRows)
-    {
-        removeRow(r);
-    }
+    m_info = rItem->m_info;
+    m_index = rItem->m_index;
+    m_bEditable = rItem->m_bEditable;
 
     for (int r = 0; r < rItem->rowCount(); r++)
     {
         VParamItem* rChild = static_cast<VParamItem*>(rItem->child(r));
-        VParamItem* lChild = getItem(rChild->m_info.name);
-        if (!lChild)
-        {
-            //insert new child.
-            VParamItem* newItem = static_cast<VParamItem*>(rChild->clone());
-            newItem->cloneFrom(rChild);
-            insertRow(r, newItem);
-            continue;
-        }
-        lChild->cloneFrom(rChild);
+        VParamItem* newItem = new VParamItem(rChild->vType, rChild->m_info.name, rChild->m_bMappedCore);
+        newItem->cloneAppend(rChild);
+        appendRow(newItem);
     }
 }
 
@@ -342,7 +300,11 @@ void ViewParamModel::clone(ViewParamModel* pModel)
     QStandardItem* pRoot = invisibleRootItem();
     ZASSERT_EXIT(pRoot);
 
-    VParamItem* pLeft = static_cast<VParamItem*>(pRoot->child(0));
+    pRoot->removeRow(0);
+
     VParamItem* pRight = static_cast<VParamItem*>(pModel->invisibleRootItem()->child(0));
-    pLeft->cloneFrom(pRight);
+    VParamItem* newItem = new VParamItem(VPARAM_ROOT, "root");
+    newItem->cloneAppend(pRight);
+
+    pRoot->appendRow(newItem);
 }

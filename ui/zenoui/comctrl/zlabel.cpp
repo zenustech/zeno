@@ -1,6 +1,24 @@
 #include "zlabel.h"
 
 
+ZDebugLabel::ZDebugLabel(QWidget* parent)
+    : QLabel(parent)
+{
+}
+
+ZDebugLabel::ZDebugLabel(const QString& text, QWidget* parent)
+    : QLabel(text, parent)
+    , m_text(text)
+{
+}
+
+void ZDebugLabel::adjustText(const QString& text)
+{
+    m_text = text;
+}
+
+
+
 ZIconLabel::ZIconLabel(QWidget* parent)
     : QLabel(parent)
     , m_bToggled(false)

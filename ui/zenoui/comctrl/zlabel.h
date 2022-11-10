@@ -3,6 +3,18 @@
 
 #include <QtWidgets>
 
+class ZDebugLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    ZDebugLabel(QWidget* parent = nullptr);
+    ZDebugLabel(const QString& text, QWidget* parent = nullptr);
+    void adjustText(const QString& text);
+
+private:
+    QString m_text;
+};
+
 class ZIconLabel : public QLabel
 {
     Q_OBJECT

@@ -45,6 +45,7 @@ private slots:
     void onNameEditFinished();      //name lineedit.
     void onLabelEditFinished();
     void onHintEditFinished();
+    void onParamTreeDeleted();
 
 private:
     ViewParamModel* m_proxyModel;

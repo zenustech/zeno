@@ -27,7 +27,7 @@ enum ROLE_VPARAM
 
 struct VParamItem : public QStandardItem
 {
-    QPersistentModelIndex m_index;      //index to real param.
+    QPersistentModelIndex m_index;      //index to core param.
     PARAM_INFO m_info;
 
     VPARAM_TYPE vType;
@@ -40,7 +40,7 @@ struct VParamItem : public QStandardItem
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
     QStandardItem* clone() const override;
-    void cloneFrom(VParamItem* pItem);
+    void cloneAppend(VParamItem* pItem);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
 };

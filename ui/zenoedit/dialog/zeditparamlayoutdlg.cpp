@@ -57,8 +57,8 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     bool bEditable = index.data(ROLE_VAPRAM_EDITTABLE).toBool();
-    if (!bEditable)
-        return nullptr;
+    //if (!bEditable)
+    //    return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
@@ -103,6 +103,16 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
     connect(m_ui->btnCancel, SIGNAL(clicked()), this, SLOT(onCancel()));
+
+    QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->paramsView);
+    connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
+}
+
+void ZEditParamLayoutDlg::onParamTreeDeleted()
+{
+    QModelIndex idx = m_ui->paramsView->currentIndex();
+    if (!idx.isValid()) return;
+    m_proxyModel->removeRow(idx.row(), idx.parent());
 }
 
 void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
@@ -113,7 +123,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
     m_ui->editName->setText(name);
     bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
-    m_ui->editName->setEnabled(bEditable);
+    //m_ui->editName->setEnabled(bEditable);
 
     VPARAM_TYPE type = (VPARAM_TYPE)pCurrentItem->data(ROLE_VPARAM_TYPE).toInt();
     if (type == VPARAM_TAB)
@@ -221,7 +231,7 @@ void ZEditParamLayoutDlg::onNameEditFinished()
         return;
 
     QStandardItem* pItem = m_proxyModel->itemFromIndex(currIdx);
-    pItem->setData(m_ui->editName->text(), ROLE_VPARAM_NAME);
+    pItem->setData(m_ui->editName->text(), ROLE_VPARAM_NAME);   //call: VParamItem::setData
 }
 
 void ZEditParamLayoutDlg::onLabelEditFinished()

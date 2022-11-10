@@ -21,6 +21,8 @@ class ZenoPropPanel : public QWidget
         _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), controlLayout(nullptr) {}
     };
     typedef QMap<QString, _PANEL_CONTROL> PANEL_GROUP;
+    typedef QMap<QString, PANEL_GROUP> PANEL_TAB;
+    typedef QMap<QString, PANEL_TAB> PANEL_TABS;
 
 public:
     ZenoPropPanel(QWidget* parent = nullptr);
@@ -48,6 +50,8 @@ private:
     ViewParamModel* m_paramsModel;
     QTabWidget* m_tabWidget;
     bool m_bReentry;
+
+    PANEL_TABS m_controls;
 };
 
 #endif

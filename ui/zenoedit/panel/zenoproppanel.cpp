@@ -178,7 +178,23 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
 {
     ZASSERT_EXIT(m_paramsModel && m_tabWidget);
+    if (!parent.isValid())
+    {
+        QStandardItem* root = m_paramsModel->invisibleRootItem();
+        ZASSERT_EXIT(root);
+        QStandardItem* pRoot = root->child(0);
+        if (!pRoot) return;
+
+        for (int i = 0; i < pRoot->rowCount(); i++)
+        {
+            QStandardItem* pTabItem = pRoot->child(i);
+            syncAddTab(m_tabWidget, pTabItem, i);
+        }
+        return;
+    }
+
     QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem);
     QStandardItem* newItem = parentItem->child(first);
     int vType = newItem->data(ROLE_VPARAM_TYPE).toInt();
     const QString& name = newItem->data(ROLE_VPARAM_NAME).toString();
@@ -232,6 +248,14 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
 
 bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)
 {
+    ZASSERT_EXIT(paramItem && pGroupLayout, false);
+    QStandardItem* pGroupItem = paramItem->parent();
+    ZASSERT_EXIT(pGroupItem, false);
+    QStandardItem* pTabItem = pGroupItem->parent();
+    ZASSERT_EXIT(pTabItem, false);
+
+    const QString& tabName = pTabItem->data(ROLE_VPARAM_NAME).toString();
+    const QString& groupName = pGroupItem->data(ROLE_VPARAM_NAME).toString();
     const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
     const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
@@ -255,7 +279,15 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     pLabel->setProperty("cssClass", "proppanel");
 
     pGroupLayout->addWidget(pLabel, row, 0, Qt::AlignLeft);
-    pGroupLayout->addWidget(pControl, row, 1);
+    if (pControl)
+        pGroupLayout->addWidget(pControl, row, 1);
+
+    _PANEL_CONTROL panelCtrl;
+    panelCtrl.controlLayout = pGroupLayout;
+    panelCtrl.pLabel = pLabel;
+    panelCtrl.pControl = pControl;
+
+    m_controls[tabName][groupName][paramName] = panelCtrl;
     return true;
 }
 
@@ -272,8 +304,7 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     for (int k = 0; k < pGroupItem->rowCount(); k++)
     {
         QStandardItem* paramItem = pGroupItem->child(k);
-        int n = pLayout->rowCount();
-        syncAddControl(pLayout, paramItem, n);
+        syncAddControl(pLayout, paramItem, k);
     }
     pGroupWidget->setContentLayout(pLayout);
     pTabLayout->addWidget(pGroupWidget);
@@ -304,7 +335,20 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
 void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
     ZASSERT_EXIT(m_paramsModel);
+
     QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    if (parentItem == nullptr)
+    {
+        //clear all
+        while (m_tabWidget->count() > 0)
+        {
+            QWidget* wid = m_tabWidget->widget(0);
+            m_tabWidget->removeTab(0);
+            delete wid;
+        }
+        return;
+    }
+
     QStandardItem* removeItem = parentItem->child(first);
     int vType = removeItem->data(ROLE_VPARAM_TYPE).toInt();
     const QString& name = removeItem->data(ROLE_VPARAM_NAME).toString();
@@ -353,14 +397,20 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
         ZASSERT_EXIT(pGroupLayout);
         if (pGroupWidget->title() == groupName)
         {
-            QStandardItem* paramItem = parentItem->child(first);
-            QLayoutItem* pLabelItem = pGroupLayout->itemAtPosition(first, 0);
-            QLayoutItem* pControlItem = pGroupLayout->itemAtPosition(first, 1);
-            delete pLabelItem->widget();
-            delete pControlItem->widget();
-            pGroupLayout->removeItem(pLabelItem);
-            pGroupLayout->removeItem(pControlItem);
+            _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+            if (ctrl.controlLayout)
+            {
+                QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
+                ZASSERT_EXIT(pGridLayout);
+
+                ctrl.controlLayout->removeWidget(ctrl.pControl);
+                ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                delete ctrl.pControl;
+                delete ctrl.pLabel;
+                m_controls[tabName][groupName].remove(paramName);
+            }
         }
+        //pGroupWidget->updateGeo();
     }
 }
 
