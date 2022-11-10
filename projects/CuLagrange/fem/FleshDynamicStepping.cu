@@ -25,10 +25,10 @@
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
 
-#include "collision_energy/vertex_face_collision.hpp"
-#include "collision_energy/vertex_face_sqrt_collision.hpp"
-#include "collision_energy/edge_edge_collision.hpp"
-#include "collision_energy/edge_edge_sqrt_collition.hpp"
+// #include "collision_energy/vertex_face_collision.hpp"
+// #include "collision_energy/vertex_face_sqrt_collision.hpp"
+// #include "collision_energy/edge_edge_collision.hpp"
+// #include "collision_energy/edge_edge_sqrt_collition.hpp"
 
 #include "collision_energy/evaluate_collision.hpp"
 
