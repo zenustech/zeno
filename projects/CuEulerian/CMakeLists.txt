@@ -35,3 +35,8 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   navierstokes/NS_pipeline.cu
 )
+
+# hybrid
+target_sources(zeno PRIVATE
+  hybrid/P2G.cu
+)
