@@ -79,8 +79,10 @@ namespace VERTEX_FACE_COLLISION {
         const MATRIX12 springLengthH = springLengthHessian(v,e,n);
         
         // final = 2 * k * (ndotGrad * ndotGrad' + ndot * ndotHessian);
-        return (REAL)2.0 * mu * (zs::dyadic_prod(gvf, gvf) + 
-                            springLength * springLengthH);
+        // return (REAL)2.0 * mu * (zs::dyadic_prod(gvf, gvf) + 
+        //                     springLength * springLengthH);
+
+        return (REAL)2.0 * mu * zs::dyadic_prod(gvf, gvf); 
     }
 
 };

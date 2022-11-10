@@ -20,6 +20,7 @@
 #include "zensim/container/Bvtt.hpp"
 
 #include "vertex_face_sqrt_collision.hpp"
+#include "vertex_face_collision.hpp"
 
 namespace zeno { namespace COLLISION_UTILS {
 
@@ -195,13 +196,21 @@ void evaluate_collision_grad_and_hessian(Pol& cudaPol,
                     cv[j] = verts.template pack<3>(xtag,inds[j]);
             
                 auto is_inverted = reinterpret_bits<int>(cptemp("inverted",cpi));
-                auto ceps = is_inverted ? in_collisionEps : out_collisionEps;
+                // auto ceps = is_inverted ? in_collisionEps : out_collisionEps;
+
+                auto ceps = out_collisionEps;
                 // ceps += (T)1e-2 * ceps;
 
                 auto alpha = stiffness;
                 auto beta = cptemp("area",cpi);
+          
+#if 0
+                cptemp.template tuple<12>("grad",cpi) = alpha * beta * VERTEX_FACE_COLLISION::gradient(cv,mu,lam,out_collisionEps);
+                cptemp.template tuple<12*12>("H",cpi) = alpha * beta * VERTEX_FACE_COLLISION::hessian(cv,mu,lam,out_collisionEps);
+#else
                 cptemp.template tuple<12>("grad",cpi) = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps);
-                cptemp.template tuple<12*12>("H",cpi) = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps);           
+                cptemp.template tuple<12*12>("H",cpi) = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps); 
+#endif
 
                 // printf("cpi[%d] : %f %f %f\n",cpi,(float)alpha,(float)beta,(float)cptemp.template pack<12>("grad",cpi).norm());   
 
