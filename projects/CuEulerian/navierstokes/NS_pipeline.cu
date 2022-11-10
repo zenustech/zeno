@@ -154,7 +154,7 @@ struct ZSNSAdvectDiffuse : INode {
                         offset = zs::vec<int, 3>::zeros();
                         offset[y] = i;
                         u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
-                        
+
                         offset = zs::vec<int, 3>::zeros();
                         offset[z] = i;
                         u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
@@ -843,6 +843,175 @@ struct ZSExtendSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSExtendSparseGrid,
+           {/* inputs: */
+            {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"bool", "refit", "1"}, {"int", "layers", "2"}},
+            /* outputs: */
+            {"NSGrid"},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
+
+struct ZSMaintainSparseGrid : INode {
+    template <typename PredT> void maintain(ZenoSparseGrid *nsgridPtr, std::string tag, PredT pred, int nlayers) {
+        using namespace zs;
+        static constexpr auto space = execspace_e::cuda;
+        namespace cg = ::cooperative_groups;
+        auto pol = cuda_exec();
+        auto &spg = nsgridPtr->getSparseGrid();
+
+        if (!spg._grid.hasProperty(tag))
+            throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
+
+        auto nbs = spg.numBlocks();
+        using Ti = RM_CVREF_T(nbs);
+
+        Vector<Ti> marks{spg.get_allocator(), nbs + 1}, offsets{spg.get_allocator(), nbs + 1};
+        marks.reset(0);
+
+        static_assert(RM_CVREF_T(spg)::block_size % 32 == 0, "block size should be a multiple of 32.");
+
+        /// @brief mark active block entries
+        pol(range(nbs * 32), [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag),
+                              marks = proxy<space>(marks), pred] __device__(std::size_t i) mutable {
+            auto tile = cg::tiled_partition<32>(cg::this_thread_block());
+            auto bno = i / 32;
+            auto cellno = tile.thread_rank();
+
+            while (cellno < spg.block_size) {
+                if (tile.ballot(pred(spg(tagOffset, bno, cellno))))
+                    break;
+                cellno += 32;
+            }
+            if (tile.thread_rank() == 0 && cellno < spg.block_size)
+                marks[bno] = 1;
+        });
+
+        exclusive_scan(pol, std::begin(marks), std::end(marks), std::begin(offsets));
+        auto newNbs = offsets.getVal(nbs);
+        fmt::print("compacting {} blocks to {} active blocks.\n", nbs, newNbs);
+
+        /// @brief compact active block entries
+        // table
+        auto &table = spg._table;
+        table.reset(false);
+        table._cnt.setVal(newNbs);
+        // backup previous block entries, nbs is the previous count of blocks
+        auto prevKeys = table._activeKeys;
+        auto &keys = table._activeKeys;
+
+        pol(range(nbs * spg._table.bucket_size),
+            [marks = proxy<space>(marks), newKeys = proxy<space>(keys), keys = proxy<space>(prevKeys),
+             table = proxy<space>(table), offsets = proxy<space>(offsets),
+             bs_c = wrapv<RM_CVREF_T(spg)::block_size>{}] __device__(std::size_t i) mutable {
+                constexpr auto block_size = decltype(bs_c)::value;
+                constexpr auto bucket_size = RM_CVREF_T(table)::bucket_size;
+                static_assert(block_size % bucket_size == 0, "block_size should be a multiple of bucket_size");
+                auto tile = cg::tiled_partition<bucket_size>(cg::this_thread_block());
+                auto bno = i / bucket_size;
+                if (marks[bno] == 0)
+                    return;
+                auto dstBno = offsets[bno];
+                // table
+                auto bcoord = keys[bno];
+                table.tile_insert(tile, bcoord, dstBno, false); // do not enqueue key, hence set false
+                if (tile.thread_rank() == 0)
+                    newKeys[dstBno] = bcoord;
+            });
+
+        /// @brief iteratively expand the active domain
+        Ti nbsOffset = 0;
+        while (nlayers-- > 0 && newNbs > 0) {
+            // reserve enough memory for expanded grid and table
+            spg.resize(pol, newNbs * 27 + nbsOffset);
+            // extend one layer
+            pol(range(newNbs * spg._table.bucket_size),
+                [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag),
+                 nbsOffset] __device__(std::size_t i) mutable {
+                    auto tile = cg::tiled_partition<RM_CVREF_T(spg._table)::bucket_size>(cg::this_thread_block());
+                    auto bno = i / spg._table.bucket_size + nbsOffset;
+                    auto bcoord = spg.iCoord(bno, 0);
+                    for (auto loc : ndrange<3>(3)) {
+                        auto dir = make_vec<int>(loc) - 1;
+                        // spg._table.insert(bcoord + dir * spg.side_length);
+                        spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
+                                               true);
+                    }
+                });
+            // slide the window
+            nbsOffset += newNbs;
+            newNbs = spg.numBlocks() - nbsOffset;
+
+            // initialize newly added blocks
+            if (newNbs > 0) {
+                zs::memset(mem_device, (void *)spg._grid.tileOffset(nbsOffset), 0,
+                           (std::size_t)newNbs * spg._grid.tileBytes());
+
+                if (tag == "sdf") {
+                    // special treatment for "sdf" property
+                    pol(range(newNbs * spg.block_size),
+                        [dx = spg.voxelSize()[0], spg = proxy<space>(spg), sdfOffset = spg.getPropertyOffset("sdf"),
+                         blockOffset = nbsOffset * spg.block_size] __device__(std::size_t cellno) mutable {
+                            spg(sdfOffset, blockOffset + cellno) = 3 * dx;
+                        });
+                }
+            }
+        }
+
+        /// @brief relocate original grid data to the new sparse grid
+        // grid
+        auto &grid = spg._grid;
+        auto prevGrid = grid;
+        pol(range(nbs * spg._table.bucket_size), [grid = proxy<space>(prevGrid), spg = proxy<space>(spg),
+                                                  keys = proxy<space>(prevKeys)] __device__(std::size_t i) mutable {
+            constexpr auto bucket_size = RM_CVREF_T(table)::bucket_size;
+            auto tile = cg::tiled_partition<bucket_size>(cg::this_thread_block());
+            auto bno = i / bucket_size;
+            auto bcoord = keys[bno];
+            auto dstBno = spg._table.tile_query(tile, bcoord);
+            if (dstBno == spg._table.sentinel_v)
+                return;
+            // table
+            for (auto cellno = tile.thread_rank(); cellno < spg.block_size; cellno += bucket_size) {
+                for (int chn = 0; chn != grid.numChannels(); ++chn)
+                    spg._grid(chn, dstBno, cellno) = grid(chn, bno, cellno);
+            }
+        });
+    }
+
+    void apply() override {
+        auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
+        auto tag = get_input2<std::string>("Attribute");
+        auto nlayers = get_input2<int>("layers");
+        auto needRefit = get_input2<bool>("refit");
+
+        std::size_t nbs = 0;
+        int opt = 0;
+        if (needRefit) {
+            if (tag == "rho")
+                opt = 1;
+            else if (tag == "sdf")
+                opt = 2;
+        }
+
+        if (opt == 0)
+            maintain(
+                zsSPG.get(), tag, [] __device__(float v) { return true; }, nlayers);
+        else if (opt == 1)
+            maintain(
+                zsSPG.get(), tag, [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; },
+                nlayers);
+        else if (opt == 2)
+            maintain(
+                zsSPG.get(), tag,
+                [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; },
+                nlayers);
+
+        set_output("NSGrid", zsSPG);
+    }
+};
+
+ZENDEFNODE(ZSMaintainSparseGrid,
            {/* inputs: */
             {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"bool", "refit", "1"}, {"int", "layers", "2"}},
             /* outputs: */
