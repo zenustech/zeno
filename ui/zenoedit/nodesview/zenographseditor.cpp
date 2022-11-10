@@ -851,7 +851,7 @@ void ZenoGraphsEditor::importMaterialX() {
             auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
             node_id_mapping[name] = hNode;
             Zeno_SetInputDefl(hNode, "op", binary[start_name]);
-            edges.emplace_back(name, "in", ms["in"]["nodename"]);
+            edges.emplace_back(name, "in1", ms["in"]["nodename"]);
         }
         else if (binary.count(start_name)) {
             auto hNode = Zeno_AddNode(hGraph, "ShaderBinaryMath");
@@ -864,13 +864,13 @@ void ZenoGraphsEditor::importMaterialX() {
             auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
             node_id_mapping[name] = hNode;
             Zeno_SetInputDefl(hNode, "op", std::string("copy"));
-            edges.emplace_back(name, "in", nodename);
+            edges.emplace_back(name, "in1", nodename);
         }
         else if (start_name == "normalmap") {
             auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
             node_id_mapping[name] = hNode;
             Zeno_SetInputDefl(hNode, "op", std::string("copy"));
-            edges.emplace_back(name, "in", ms["in"]["nodename"]);
+            edges.emplace_back(name, "in1", ms["in"]["nodename"]);
         }
 //        else if (start_name == "clamp") {
 //            auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
@@ -894,7 +894,7 @@ void ZenoGraphsEditor::importMaterialX() {
             auto hNode = Zeno_AddNode(hGraph, "ShaderExtractVec");
             node_id_mapping[name] = hNode;
             extract_out_socket[name] = std::stoul(ms["index"]["value"]);
-            edges.emplace_back(name, "in", ms["in"]["nodename"]);
+            edges.emplace_back(name, "vec", ms["in"]["nodename"]);
         }
         else if (start_name == "normal" || start_name == "tangent") {
             // ignore
