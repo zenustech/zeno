@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "nodesmgr.h"
 #include "apiutil.h"
+#include "zeno/utils/log.h"
 
 
 ZENO_ERROR Zeno_NewFile()
@@ -165,20 +166,26 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
         return Err_ModelNull;
 
     QModelIndex outIdx = pModel->nodeIndex(hOutnode);
-    if (!outIdx.isValid())
+    if (!outIdx.isValid()) {
+        zeno::log_error("miss out_node");
         return Err_NodeNotExist;
+    }
     OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    const QString& qsOutSock = QString::fromStdString(outSock);
+    const QString qsOutSock = QString::fromStdString(outSock);
     if (!outputs.contains(qsOutSock)) {
+        zeno::log_error("miss out_socket");
         return Err_SockNotExist;
     }
 
     QModelIndex inIdx = pModel->nodeIndex(hInnode);
-    if (!inIdx.isValid())
+    if (!inIdx.isValid()) {
+        zeno::log_error("miss in_node");
         return Err_NodeNotExist;
+    }
     INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     const QString qsInSock = QString::fromStdString(inSock);
     if (!inputs.contains(qsInSock)) {
+        zeno::log_error("miss in_socket");
         return Err_SockNotExist;
     }
 
