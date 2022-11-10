@@ -144,15 +144,25 @@ struct ZSNSAdvectDiffuse : INode {
                     const int stcl = 2; // stencil point in each side
                     float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
 
+                    zs::vec<int, 3> offset;
+
                     for (int i = -stcl; i <= stcl; ++i) {
-                        u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(i, 0, 0));
-                        u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(0, i, 0));
-                        u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + zs::vec<int, 3>(0, 0, i));
+                        offset = zs::vec<int, 3>::zeros();
+                        offset[x] = i;
+                        u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+
+                        offset = zs::vec<int, 3>::zeros();
+                        offset[y] = i;
+                        u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+                        
+                        offset = zs::vec<int, 3>::zeros();
+                        offset[z] = i;
+                        u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
                     }
 
                     float u_adv = spgv.value(vSrcTag, x, icoord);
-                    float v_adv = spgv.value(vSrcTag, y, icoord);
-                    float w_adv = spgv.value(vSrcTag, z, icoord);
+                    float v_adv = spgv.iStaggeredCellSample(vSrcTag, y, icoord, x);
+                    float w_adv = spgv.iStaggeredCellSample(vSrcTag, z, icoord, x);
 
                     float adv_term = 0.f;
                     int upwind = u_adv < 0 ? 1 : -1;
