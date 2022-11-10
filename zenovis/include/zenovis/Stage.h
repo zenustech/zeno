@@ -52,9 +52,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 struct ConfigurationInfo{
-    std::string cRepo = "http://test1:12345@192.168.3.11:8000/r/zeno_usd_test.git";
+    std::string cRepo = "http://test1:12345@192.168.2.106:8000/r/zeno_usd_test.git";
     std::string cPath = "C:/Users/Public/zeno_usd_test";
-    std::string cServer = "192.168.3.11";
+    std::string cServer = "192.168.2.106";
 };
 
 struct ZPrimInfo{
@@ -71,9 +71,10 @@ struct ZenoStage{
     UsdStageRefPtr cStagePtr;
     UsdStageRefPtr fStagePtr;
     UsdStageRefPtr sStagePtr;
+
     ConfigurationInfo confInfo;
-    TfRefPtr<SdfLayer> composLayer;
-    std::string pathEnv;
+    SdfLayerRefPtr composLayer;
+    std::map<SdfPath, std::shared_ptr<zeno::PrimitiveObject>> convertedObject;
 
     ZenoStage();
 
@@ -82,6 +83,7 @@ struct ZenoStage{
     int CompositionArcsStage();
     int TraverseStageObjects(UsdStageRefPtr stage, std::map<std::string, UPrimInfo>& consis);
     int RemoveStagePrims();
+    int CheckConvertConsistency(UsdPrim& prim);
     int CheckPathConflict();
     int CheckAttrVisibility(const UsdPrim& prim);
     void CreateUSDHierarchy(const SdfPath &path);

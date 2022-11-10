@@ -9,6 +9,16 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <chrono>
+
+#define TIMER_START(NAME) \
+    auto start_##NAME = std::chrono::high_resolution_clock::now();
+
+#define TIMER_END(NAME) \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now(); \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME); \
+    std::cout << "USD: " << #NAME << " "                          \
+              << duration_##NAME.count()*0.001f << " Milliseconds" << std::endl;
 
 namespace zenovis {
 
@@ -34,6 +44,8 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     }
 
     if(changed){
+        increase_count++;
+        std::cout << "USD: Objects Changed Times " << increase_count << "\n";
         zenoStage->RemoveStagePrims();
         convertObjects.clear();
         objectConsistent.clear();
@@ -52,7 +64,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
                 zenoLightObjects[key] = obj;
             }
 
-            // TODO Save userData to Usd Stage, Currently it is a local conversion
+            // TODO keep userData to Usd Stage, Currently it is a local conversion
             // Prim
             std::string p_path, p_type;
             ZPrimInfo primInfo;
@@ -93,12 +105,13 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
 
         // TODO Handle path conflict situations, perhaps over, priorities, etc
         zenoStage->CheckPathConflict();
-        zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
-
-        increase_count++;
     }
+    TIMER_START(TraverseStage)
+    zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
+    TIMER_END(TraverseStage)
 
     // #########################################################
+    // FIXME Run the same scene several times and the polygon will get a few errors
     auto cins = convertObjects.insertPass();
     bool converted = false;
     for(auto const&[k ,p]: objectConsistent){

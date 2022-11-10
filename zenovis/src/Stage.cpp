@@ -235,19 +235,35 @@ int ZenoStage::CheckAttrVisibility(const UsdPrim& prim){
     return 0;
 }
 
+int ZenoStage::CheckConvertConsistency(UsdPrim& prim){
+    if(convertedObject.find(prim.GetPrimPath()) != convertedObject.end()){
+        return 1;
+    }
+    return 0;
+}
+
 int ZenoStage::TraverseStageObjects(UsdStageRefPtr stage, std::map<std::string, UPrimInfo>& consis) {
     for (UsdPrim prim: stage->TraverseAll()){
+        UPrimInfo primInfo;
+        pxr::SdfPath primPath = prim.GetPrimPath();
+        std::string primStrPath = primPath.GetAsString();
+
         // Visibility
         if(CheckAttrVisibility(prim))
             continue;
-
-        UPrimInfo primInfo{prim, std::make_shared<zeno::PrimitiveObject>()};
-        std::string primPath = prim.GetPrimPath().GetAsString();
+        if(CheckConvertConsistency(prim)){
+            primInfo = {prim, convertedObject[primPath]};
+            consis[primStrPath] = primInfo;
+            continue;
+        }
 
         // Mesh
         if(prim.GetTypeName() == _typeTokens->Mesh){
-            consis[primPath] = primInfo;
+            primInfo = {prim, std::make_shared<zeno::PrimitiveObject>()};
+            consis[primStrPath] = primInfo;
+            std::cout << "USD: Converting " << primStrPath << "\n";
             Convert2ZenoPrimitive(primInfo);
+            convertedObject[primPath] = primInfo.iObject;
         }
     }
 }
@@ -278,6 +294,9 @@ int ZenoStage::CompositionArcsStage(){
 
     // Output
     composLayer->Export(confInfo.cPath + "/_inter_compLayer.usda");
+    //std::string result;
+    //composLayer->ExportToString(&result);
+    //std::cout << "USD: Stage\n" << result << "\n";
     return 0;
 }
 
@@ -298,9 +317,9 @@ void ZenoStage::update() {
         CompositionArcsStage();
         fStagePtr->Reload();
 
-        std::string stageString;
-        fStagePtr->ExportToString(&stageString);
-        std::cout << "USD: Stage " << std::endl << stageString << std::endl;
+        //std::string stageString;
+        //fStagePtr->ExportToString(&stageString);
+        //std::cout << "USD: Stage " << std::endl << stageString << std::endl;
     }
 }
 
@@ -318,6 +337,8 @@ int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
     pxr::VtArray<pxr::GfVec3f> DisplayColor;
     pxr::VtArray<int> FaceVertexCounts;
     pxr::VtArray<int> FaceVertexIndices;
+
+    // TODO Interpolation for primvars read.
 
     // Points
     for(auto const& vert:zenoPrim->verts)
@@ -356,6 +377,7 @@ int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
 int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
     auto obj = primInfo.iObject;
     auto prim = primInfo.usdPrim;
+    auto path = prim.GetPrimPath().GetAsString();
     auto timeCode = 0.0;
 
     TfToken tf_displayColor("primvars:displayColor");
@@ -364,44 +386,84 @@ int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
     UsdAttribute attr_geoHole = processGeom.GetHoleIndicesAttr();
     UsdAttribute attr_faceVertexIndices = prim.GetAttribute(UsdGeomTokens->faceVertexIndices);
     UsdAttribute attr_points = prim.GetAttribute(UsdGeomTokens->points);
+    UsdAttribute attr_normals = prim.GetAttribute(UsdGeomTokens->normals);
     UsdAttribute attr_displayColor = prim.GetAttribute(tf_displayColor);
     UsdAttribute attr_faceVertexCounts = prim.GetAttribute(TfToken("faceVertexCounts"));
 
     VtArray<int> vt_faceVertexCounts, vt_faceVertexIndices;
-    VtArray<GfVec3f> vt_points, vt_displayColor;
+    VtArray<GfVec3f> vt_points, vt_normals, vt_displayColor;
     VtArray<int> vt_holeIndices;
     UsdGeomXformable xformable(prim);
     GfMatrix4d ModelTransform = xformable.ComputeLocalToWorldTransform(timeCode);
 
     attr_faceVertexIndices.Get(&vt_faceVertexIndices, timeCode);
     attr_points.Get(&vt_points, timeCode);
+    attr_normals.Get(&vt_normals, timeCode);
     attr_displayColor.Get(&vt_displayColor, timeCode);
     attr_geoHole.Get(&vt_holeIndices, timeCode);
     attr_faceVertexCounts.Get(&vt_faceVertexCounts, timeCode);
+
+    // TODO Interpolation for primvars write.
 
     int index_start = 0;
 
     auto & verts = obj->verts;
     auto & loops = obj->loops;
     auto & polys  = obj->polys;
+    auto & tris  = obj->tris;
     for(int i=0; i<vt_points.size(); i++){
+        // TODO Use transform data like userData instead of actually calculating vertex positions
         auto g_point = ModelTransform.Transform(vt_points[i]);
         verts.emplace_back(g_point[0],g_point[1],g_point[2]);
     }
-    for(int i=0;i<vt_faceVertexCounts.size();i++){
-        int count = vt_faceVertexCounts[i];
-        for(int j=index_start;j<index_start+count;j++){
-            loops.emplace_back(vt_faceVertexIndices[j]);
+    // FIXME If the mesh does not have a normal attribute, zeno will crash
+    if(! vt_normals.empty()){
+        auto & nrm = obj->verts.add_attr<zeno::vec3f>("nrm");
+        for(int i=0;i<vt_normals.size();i++){
+            auto normal = vt_normals[i];
+            nrm[i] = {normal[0],normal[1],normal[2]};
         }
-        polys.push_back({i * count, count});
+    }else{
+        std::cout << "USD: No normal property " << path << "\n";
+    }
+
+    // TODO zeno support for quadrilateral and changeable faces
+    for(int i=0;i<vt_faceVertexCounts.size();i++){
+        // FIXME With tris, it is no longer black in Optix mode,
+        //  but the face is wrong because it is quad from ServerStage
+        //  Use loops-polys mode, normal under raster, wrong under Optix
+        int count = vt_faceVertexCounts[i];
+
+        //for(int j=index_start;j<index_start+count;j++){
+        //    loops.emplace_back(vt_faceVertexIndices[j]);
+        //}
+        //polys.push_back({i * count, count});
+
+        // TODO Support any number of face vertex counts
+        if(count==3){
+            tris.emplace_back(vt_faceVertexIndices[index_start],
+                              vt_faceVertexIndices[index_start+1],
+                              vt_faceVertexIndices[index_start+2]);
+        }
+        if(count==4){
+            tris.emplace_back(vt_faceVertexIndices[index_start],
+                              vt_faceVertexIndices[index_start+2],
+                              vt_faceVertexIndices[index_start+1]);
+            tris.emplace_back(vt_faceVertexIndices[index_start],
+                            vt_faceVertexIndices[index_start+3],
+                            vt_faceVertexIndices[index_start+2]);
+        }
         index_start+=count;
     }
+
     if(! vt_displayColor.empty()){
         auto & clr = obj->verts.add_attr<zeno::vec3f>("clr");
         for(int i=0;i<vt_displayColor.size();i++){
             auto color = vt_displayColor[i];
             clr[i] = {color[0],color[1],color[2]};
         }
+    }else{
+        std::cout << "USD: No displayColor property " << path << "\n";
     }
 
     return 0;
