@@ -54,11 +54,20 @@ target_sources(zeno PRIVATE
   # fem/Check.cu
   fem/Generation.cpp
   # fem/test.cpp
-  fem/QuasiStaticStepping.cu
+  # fem/QuasiStaticStepping.cu
 
-  fem/FastQuasiStaticStepping.cu
+  # fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
+  # fem/FleshDynamicStepping.cu # CHECK THIS
+
+  fem/collision_energy/vertex_face_collision.hpp
+  fem/collision_energy/vertex_face_sqrt_collision.hpp
+  fem/collision_energy/edge_edge_collision.hpp
+  fem/collision_energy/edge_edge_sqrt_collition.hpp
+  fem/collision_energy/evaluate_collision.hpp
+  fem/collision_energy/collision_utils.hpp
+
 )
 
 # geometry
@@ -71,6 +80,11 @@ target_sources(zeno PRIVATE
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
+  geometry/kernel/compute_characteristic_length.hpp
+  geometry/kernel/topology.hpp
+  geometry/kernel/calculate_facet_normal.hpp
+  geometry/kernel/calculate_bisector_normal.hpp
+  geometry/kernel/tiled_vector_ops.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
@@ -80,4 +94,7 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
+  # geometry/CollisionVis.cu # CHECK THIS
+  geometry/CalcSurfaceArea.cu
+  geometry/MarkSurfaceTag.cu
 )
