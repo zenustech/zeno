@@ -1,3 +1,4 @@
+#pragma once
 #include "zensim/io/MeshIO.hpp"
 #include "zensim/math/bit/Bits.h"
 #include "zensim/types/Property.h"
