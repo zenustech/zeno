@@ -167,25 +167,25 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
 
     QModelIndex outIdx = pModel->nodeIndex(hOutnode);
     if (!outIdx.isValid()) {
-        zeno::log_error("miss out_node");
+        zeno::log_error("miss out_node: {}", hOutnode);
         return Err_NodeNotExist;
     }
     OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
     const QString qsOutSock = QString::fromStdString(outSock);
     if (!outputs.contains(qsOutSock)) {
-        zeno::log_error("miss out_socket");
+        zeno::log_error("miss out_socket: {}", outSock);
         return Err_SockNotExist;
     }
 
     QModelIndex inIdx = pModel->nodeIndex(hInnode);
     if (!inIdx.isValid()) {
-        zeno::log_error("miss in_node");
+        zeno::log_error("miss in_node: {}", hInnode);
         return Err_NodeNotExist;
     }
     INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     const QString qsInSock = QString::fromStdString(inSock);
     if (!inputs.contains(qsInSock)) {
-        zeno::log_error("miss in_socket");
+        zeno::log_error("miss in_socket: {}", inSock);
         return Err_SockNotExist;
     }
 

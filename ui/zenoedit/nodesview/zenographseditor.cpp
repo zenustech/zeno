@@ -912,11 +912,26 @@ void ZenoGraphsEditor::importMaterialX() {
         }
     }
 
+    std::map<std::string, std::string> extract_in_socket_map {
+            {"fg", "in1"},
+            {"bg", "in2"},
+            {"mix", "in3"},
+    };
     int index = 0;
-    for (const auto& [a, b, c] : edges) {
-        if (index == 0) {
-            zeno::log_info("edge: {} {} {}", a, b, c);
-            Zeno_AddLink(node_id_mapping[c], "out", node_id_mapping[a], b);
+    for (auto [i_node, i_socket, o_node] : edges) {
+        std::string out_socket = "out";
+        if (extract_out_socket.count(o_node)) {
+            auto i = extract_out_socket[o_node];
+            out_socket.clear();
+            out_socket.push_back("xyz"[i]);
+        }
+        if (extract_in_socket_map.count(i_socket)) {
+            i_socket = extract_in_socket_map[i_socket];
+        }
+
+        ZENO_ERROR err = Zeno_AddLink(node_id_mapping[o_node], out_socket, node_id_mapping[i_node], i_socket);
+        if (err) {
+            zeno::log_info("{}, err {}, edge {} {} {}", index, err, i_node, i_socket, o_node);
         }
         index++;
     }
