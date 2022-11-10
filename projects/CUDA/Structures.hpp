@@ -5,6 +5,7 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
+#include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -435,6 +436,34 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
 
   levelset_t levelset;
   std::string transferScheme;
+};
+
+struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
+  using spg_t = zs::SparseGrid<3, zs::f32, 8>;
+
+  auto &getSparseGrid() noexcept { return spg; }
+  const auto &getSparseGrid() const noexcept { return spg; }
+
+  template <typename T>
+  decltype(auto) setMeta(const std::string &tag, T &&val) {
+    return metas[tag] = FWD(val);
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  bool hasMeta(const std::string &tag) const {
+    if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+
+  spg_t spg;
+  std::map<std::string, std::any> metas;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {
