@@ -16,6 +16,21 @@
 
 namespace zeno {
 
+/// credits: du wenxin
+template <typename T = float, typename Ti = int> struct CsrMatrix {
+    using value_type = T;
+    using index_type = std::make_signed_t<Ti>;
+    using size_type = std::make_unsigned_t<Ti>;
+    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
+    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
+    zs::Vector<size_type> ap{};
+    zs::Vector<int> aj{};
+    zs::Vector<value_type> ax{};
+    // for build
+    table_type tab{};
+    zs::Vector<size_type> nnz{}; // non-zero entries per row
+};
+
 template <int n = 1> struct HessianPiece {
     using HessT = zs::vec<float, n * 3, n * 3>;
     using IndsT = zs::vec<int, n>;
@@ -230,6 +245,7 @@ struct IPCSystem : IObject {
                                                   bool includeHessian = true);
     // krylov solver
     void convertHessian(zs::CudaExecutionPolicy &pol);
+    void compactHessian(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);
@@ -332,8 +348,6 @@ struct IPCSystem : IObject {
     zs::Vector<int> nFEE;
     dtiles_t fricEE;
 
-    template <int dim>
-    using table_t = zs::bcht<zs::vec<int, dim>, int, true, zs::universal_hash<zs::vec<int, dim>>, 16>;
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
@@ -348,6 +362,9 @@ struct IPCSystem : IObject {
     HessianPiece<3> hess3;
     HessianPiece<4> hess4;
     tiles_t cgtemp;
+
+    // possibly accessed in compactHessian and cgsolve
+    CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
 
     // boundary contacts
     // auxiliary data (spatial acceleration)
