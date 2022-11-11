@@ -94,7 +94,7 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
-  geometry/CollisionVis.cu # CHECK THIS
+  geometry/CollisionVis.cu
   geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
 )

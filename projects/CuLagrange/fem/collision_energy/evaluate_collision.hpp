@@ -10,6 +10,7 @@
 
 
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
+#include "../../geometry/kernel/calculate_edge_normal.hpp"
 #include "../../geometry/kernel/calculate_facet_normal.hpp"
 #include "../../geometry/kernel/topology.hpp"
 #include "../../geometry/kernel/compute_characteristic_length.hpp"
@@ -23,6 +24,8 @@
 
 #include "vertex_face_sqrt_collision.hpp"
 #include "vertex_face_collision.hpp"
+#include "edge_edge_sqrt_collition.hpp"
+#include "edge_edge_collision.hpp"
 
 namespace zeno { namespace COLLISION_UTILS {
 
@@ -39,7 +42,7 @@ template<int MAX_FP_COLLISION_PAIRS,typename Pol,
             typename SurfTriTileVec,
             typename SurfTriNrmVec,
             typename SurfLineNrmVec,
-            typename CollisionBuffer> 
+            typename FPCollisionBuffer> 
 void do_facet_point_collision_detection(Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
     const SurfPointTileVec& points,
@@ -47,7 +50,7 @@ void do_facet_point_collision_detection(Pol& cudaPol,
     const SurfTriTileVec& tris,
     SurfTriNrmVec& sttemp,
     SurfLineNrmVec& setemp,
-    CollisionBuffer& cptemp,
+    FPCollisionBuffer& cptemp,
     // const bvh_t& stBvh,
     T in_collisionEps,T out_collisionEps) {
         using namespace zs;
@@ -145,14 +148,48 @@ void do_facet_point_collision_detection(Pol& cudaPol,
         });
 }
 
+template<int MAX_EE_COLLISION_PAIRS,typename Pol,
+    typename PosTileVec,
+    typename SurfPointTileVec,
+    typename SurfLineTileVec,
+    typename SurfTriTileVec,
+    typename SurfTriNrmVec,
+    typename SurfLineNrmVec,
+    typename PointNeighHash,
+    typename EECollisionBuffer>
+void do_edge_edge_collision_detection(Pol& cudaPol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const SurfPointTileVec& points,
+    const SurfLineTileVec& lines,
+    const SurfTriTileVec& tris,
+    SurfTriNrmVec& sttemp,
+    SurfLineNrmVec& setemp,
+    EECollisionBuffer& eetemp,
+    const PointNeighHash& pphash,
+    T in_collisionEps,T out_collisionEps) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto seBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,verts,lines,wrapv<2>{},(T)0.0,xtag);
+
+        auto avgl = compute_average_edge_length(cudaPol,verts,xtag,lines);
+        auto bvh_thickness = 5 * avgl;
+
+        if(!calculate_facet_normal(cudaPol,verts,xtag,sttemp,"nrm"))
+            throw std::runtime_error("fail updating facet normal");
+
+        
+}
+
 
 template<int MAX_FP_COLLISION_PAIRS,
     typename Pol,
     typename PosTileVec,
-    typename CollisionBuffer>
+    typename FPCollisionBuffer>
 void evaluate_collision_grad_and_hessian(Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
-    CollisionBuffer& cptemp,
+    FPCollisionBuffer& cptemp,
     T in_collisionEps,T out_collisionEps,
     T collisionStiffness,
     T mu,T lambda) {
@@ -248,7 +285,7 @@ void evaluate_collision_grad_and_hessian(Pol& cudaPol,
 //             typename CellPointTileVec,
 //             typename CellBisectorTileVec,
 //             typename CellTriTileVec,
-//             typename CollisionBuffer>
+//             typename FPCollisionBuffer>
 // void evaluate_collision_grad_and_hessian(Pol& cudaPol,
 //     const PosTileVec& verts,
 //     const zs::SmallString& xtag,
@@ -258,7 +295,7 @@ void evaluate_collision_grad_and_hessian(Pol& cudaPol,
 //     CellPointTileVec& sptemp,
 //     CellBisectorTileVec& setemp,
 //     CellTriTileVec& sttemp,
-//     CollisionBuffer& cptemp,
+//     FPCollisionBuffer& cptemp,
 //     T cellBvhThickness,
 //     T collisionEps,
 //     T collisionStiffness,

@@ -25,10 +25,12 @@
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
 
-#include "collision_energy/vertex_face_collision.hpp"
-#include "collision_energy/vertex_face_sqrt_collision.hpp"
-#include "collision_energy/edge_edge_collision.hpp"
-#include "collision_energy/edge_edge_sqrt_collition.hpp"
+// #include "collision_energy/vertex_face_collision.hpp"
+// #include "collision_energy/vertex_face_sqrt_collision.hpp"
+// #include "collision_energy/edge_edge_collision.hpp"
+// #include "collision_energy/edge_edge_sqrt_collition.hpp"
+
+#include "collision_energy/evaluate_collision.hpp"
 
 #include "collision_energy/evaluate_collision.hpp"
 
@@ -761,6 +763,16 @@ struct FleshDynamicStepping : INode {
 
                 Act = R * Act * R.transpose();
 
+<<<<<<< HEAD
+=======
+                // if(ei == 0) {
+                //     printf("Act[0]:\n%f %f %f\n%f %f %f\n%f %f %f\n",
+                //         (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
+                //         (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
+                //         (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));
+                // }
+
+>>>>>>> 9b88c843a7e0426cf993d7a55660202f6f42caaf
                 etemp.template tuple<9>("ActInv",ei) = zs::inverse(Act);
         });
         // std::cout << "set initial guess" << std::endl;

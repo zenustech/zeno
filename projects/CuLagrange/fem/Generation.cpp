@@ -5,7 +5,9 @@
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/MeshIO.hpp"
 #include "zensim/math/bit/Bits.h"
+
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
+
 #include "zensim/types/Property.h"
 #include <atomic>
 #include <zeno/VDBGrid.h>
@@ -267,11 +269,11 @@ struct ExtractMeshSurface : INode {
             prim->tris.values = tris; // surfaces
         if (includeLines) {
             prim->lines.values = lines; // surfaces edges
-            prim->lines.add_attr<float>("area") = lineAreas;
+            // prim->lines.add_attr<float>("area") = lineAreas;
         }
         if (includePoints) {
             prim->points.values = points; // surfaces points
-            prim->points.add_attr<float>("area") = pointAreas;
+            // prim->points.add_attr<float>("area") = pointAreas;
         }
         set_output("prim", std::move(prim));
     }
@@ -620,16 +622,18 @@ struct ToZSTetrahedra : INode {
                         surfaces("inds", i, triNo) = zs::reinterpret_bits<float>(tri[i]);
                 });
 
-        ompExec(zs::range(tris.size()), [&, surfaces = proxy<space>({}, surfaces)](int triNo) mutable {
+        ompExec(zs::range(tris.size()),
+            [&,surfaces = proxy<space>({},surfaces)] (int triNo) mutable {
             // if(lineNo == 1) {
-            auto check_tri = surfaces.template pack<3>("inds", triNo).template reinterpret_bits<int>();
-            auto tri = tris[triNo];
-            if (tri[0] != check_tri[0] || tri[1] != check_tri[1] || tri[2] != check_tri[2]) {
-                printf("GENERATION::tri_mismatch%d : [%d %d %d] != [%d %d %d]\n", triNo, check_tri[0], check_tri[1],
-                       check_tri[2], tri[0], tri[1], tri[2]);
-            }
+                auto check_tri = surfaces.template pack<3>("inds",triNo).template reinterpret_bits<int>();
+                auto tri = tris[triNo];
+                if(tri[0] != check_tri[0] || tri[1] != check_tri[1] || tri[2] != check_tri[2]) {
+                    printf("GENERATION::tri_mismatch%d : [%d %d %d] != [%d %d %d]\n",triNo,check_tri[0],check_tri[1],check_tri[2],
+                        tri[0],tri[1],tri[2]);
+                }
             // }
         });
+
 
         // record total surface area
         zstets->setMeta("surfArea", (float)areaSum);
@@ -640,13 +644,15 @@ struct ToZSTetrahedra : INode {
 
         ompExec(zs::range(lines.size()), [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
             auto line = lines[lineNo];
-            for (int i = 0; i != 2; ++i) {
-                // int32_t idx = line[i];
+            for (int i = 0; i != 2; ++i){
+                // int32_t idx = line[i];    
                 // surfEdges("inds", i, lineNo) = zs::reinterpret_bits<float>(idx);
                 surfEdges("inds", i, lineNo) = zs::reinterpret_bits<float>(line[i]);
+
+
             }
 
-            if (lineNo == 0) {
+            if(lineNo == 0) {
                 // auto check_edge = surfEdges.template pack<2>("inds",lineNo).template reinterpret_bits<int>();
                 // printf("GENERATION_A::line0 : %d %d\n",line[0],line[1]);
             }
@@ -654,15 +660,16 @@ struct ToZSTetrahedra : INode {
             // surfEdges("w", lineNo) = lineAreas[lineNo]; // line area (weight)
         });
 
-        ompExec(zs::range(lines.size()), [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
+
+        ompExec(zs::range(lines.size()),
+            [&,surfEdges = proxy<space>({},surfEdges)] (int lineNo) mutable {
             // if(lineNo == 1) {
-            auto check_edge = surfEdges.template pack<2>("inds", lineNo).template reinterpret_bits<int32_t>();
-            auto line = lines[lineNo];
-            if (line[0] != check_edge[0] || line[1] != check_edge[1]) {
-                printf("GENERATION::line_mismatch%d : [%d %d] != [%d %d]\n", lineNo, check_edge[0], check_edge[1],
-                       line[0], line[1]);
-                // printf("REF::line%d : %d %d\n",lineNo,line[0],line[1]);
-            }
+                auto check_edge = surfEdges.template pack<2>("inds",lineNo).template reinterpret_bits<int32_t>();
+                auto line = lines[lineNo];
+                if(line[0] != check_edge[0] || line[1] != check_edge[1]) {
+                    printf("GENERATION::line_mismatch%d : [%d %d] != [%d %d]\n",lineNo,check_edge[0],check_edge[1],line[0],line[1]);
+                    // printf("REF::line%d : %d %d\n",lineNo,line[0],line[1]);
+                }
             // }
         });
 
@@ -674,6 +681,7 @@ struct ToZSTetrahedra : INode {
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(point);
             // surfVerts("w", pointNo) = pointAreas[pointNo]; // point area (weight)
         });
+
 
         pars = pars.clone({zs::memsrc_e::device, 0});
         eles = eles.clone({zs::memsrc_e::device, 0});
@@ -689,7 +697,7 @@ struct ToZSTetrahedra : INode {
         //         auto inds = lines.template pack<2>("inds",li).template reinterpret_bits<int>();
         //         if(li == 0)
         //             printf("line0 : %d %d\n",inds[0],inds[1]);
-        // });
+        // });        
 
         set_output("ZSParticles", std::move(zstets));
     }
@@ -1137,7 +1145,7 @@ struct ToZSStrands : INode {
         ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
             using vec3 = zs::vec<double, 3>;
             using mat3 = zs::vec<float, 3, 3>;
-            using vec3f = zs::vec<float, 3>;
+            using vec3f = zs::vec<float,3>;
             auto p = vec3f::from_array(pos[vi]);
             pars.tuple<3>("x", vi) = p;
             pars.tuple<3>("x0", vi) = p;
