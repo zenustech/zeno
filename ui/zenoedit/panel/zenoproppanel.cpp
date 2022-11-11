@@ -24,6 +24,7 @@
 #include "zenomainwindow.h"
 #include <zenomodel/include/viewparammodel.h>
 #include "../dialog/zeditparamlayoutdlg.h"
+#include <zenoui/comctrl/zspinboxslider.h>
 
 
 static QString initTabWidgetQss()
@@ -207,11 +208,23 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
         }
         else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
         {
-
+            pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
         }
         else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
         {
             pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+        }
+        else if (QSlider* pSlider = qobject_cast<QSlider*>(ctrl.pControl))
+        {
+            pSlider->setValue(value.toInt());
+        }
+        else if (QSpinBox* pSpinBox = qobject_cast<QSpinBox*>(ctrl.pControl))
+        {
+            pSpinBox->setValue(value.toInt());
+        }
+        else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
+        {
+            pSpinSlider->setValue(value.toInt());
         }
         //...
     }
@@ -306,6 +319,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
         //trick implementation:
         //todo: api scoped and transaction: undo/redo problem.
+        UI_VECTYPE vecwtf = newValue.value<UI_VECTYPE>();
         paramItem->setData(newValue, ROLE_PARAM_VALUE);
     };
 

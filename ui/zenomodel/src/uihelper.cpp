@@ -5,6 +5,7 @@
 #include "curvemodel.h"
 #include "variantptr.h"
 #include "jsonhelper.h"
+#include <zenomodel/include/curveutil.h>
 #include <QUuid>
 
 
@@ -436,6 +437,59 @@ float UiHelper::parseNumeric(const QVariant& val, bool castStr, bool& bSucceed)
     return num;
 }
 
+QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
+{
+    switch (ctrl)
+    {
+        case CONTROL_INT:
+        case CONTROL_FLOAT:
+        case CONTROL_HSLIDER:
+        case CONTROL_HSPINBOX:
+        case CONTROL_SPINBOX_SLIDER:
+            return 0;
+        case CONTROL_BOOL:
+            return false;
+        case CONTROL_ENUM:
+        case CONTROL_WRITEPATH:
+        case CONTROL_READPATH:
+        case CONTROL_MULTILINE_STRING:
+        case CONTROL_STRING:
+            return "";
+        case CONTROL_COLOR:
+        {
+            return QVariant::fromValue(QLinearGradient());
+        }
+        case CONTROL_CURVE:
+        {
+            CurveModel* pModel = curve_util::deflModel(nullptr);
+            return QVariantPtr<CurveModel>::asVariant(pModel);
+        }
+        case CONTROL_VEC4_FLOAT:
+        case CONTROL_VEC4_INT:
+        {
+            UI_VECTYPE vec(4);
+            return QVariant::fromValue(vec);
+        }
+        case CONTROL_VEC3_FLOAT:
+        case CONTROL_VEC3_INT:
+        {
+            UI_VECTYPE vec(3);
+            return QVariant::fromValue(vec);
+        }
+        case CONTROL_VEC2_FLOAT:
+        case CONTROL_VEC2_INT:
+        {
+            UI_VECTYPE vec(2);
+            return QVariant::fromValue(vec);
+        }
+        default:
+        {
+            zeno::log_warn("unknown control");
+            return QVariant();
+        }
+    }
+}
+
 float UiHelper::parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed)
 {
     float num = 0;
@@ -538,7 +592,7 @@ QString UiHelper::getUniqueName(const QList<QString>& existNames, const QString&
     QString name;
     do
     {
-        name = prefix + QString::number(n++);
+        name = prefix + "(" + QString::number(n++) + ")";
     } while (existNames.contains(name));
     return name;
 }

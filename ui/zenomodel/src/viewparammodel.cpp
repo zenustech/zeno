@@ -6,8 +6,6 @@
 VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
     : QStandardItem(text)
     , vType(type)
-    , m_bMappedCore(bMapCore)
-    , m_bEditable(true)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
@@ -16,11 +14,17 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
 VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text, bool bMapCore)
     : QStandardItem(icon, text)
     , vType(type)
-    , m_bMappedCore(bMapCore)
-    , m_bEditable(true)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
+}
+
+VParamItem::VParamItem(const VParamItem& other)
+    : QStandardItem(other)
+    , vType(other.vType)
+    , m_info(other.m_info)
+    , m_index(other.m_index)
+{
 }
 
 QVariant VParamItem::data(int role) const
@@ -28,11 +32,16 @@ QVariant VParamItem::data(int role) const
     switch (role)
     {
     case Qt::EditRole:  return m_info.name;
-    case ROLE_VAPRAM_EDITTABLE: return m_bEditable;
     case Qt::DisplayRole:
     case ROLE_VPARAM_NAME:  return m_info.name;
     case ROLE_VPARAM_TYPE:  return vType;
     case ROLE_PARAM_CTRL:   return m_info.control;
+    case ROLE_PARAM_NAME:
+    {
+        if (!m_index.isValid())
+            return "";
+        return m_index.data(ROLE_PARAM_NAME);
+    }
     case ROLE_PARAM_VALUE:
     {
         if (!m_index.isValid())
@@ -47,8 +56,15 @@ QVariant VParamItem::data(int role) const
     }
     case ROLE_VPARAM_IS_COREPARAM:
     {
-        return m_bMappedCore;
+        return m_index.isValid();
     }
+    case ROLE_PARAM_SOCKETTYPE:
+    {
+        if (!m_index.isValid())
+            return PARAM_UNKNOWN;
+        return m_index.data(ROLE_PARAM_SOCKETTYPE);
+    }
+    case ROLE_VAPRAM_EDITTABLE:
     default:
         return QStandardItem::data(role);
     }
@@ -64,7 +80,7 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.name)
                 return;
             m_info.name = value.toString();
-            break;
+            return;
         }
         case ROLE_PARAM_VALUE:
         {
@@ -77,8 +93,10 @@ void VParamItem::setData(const QVariant& value, int role)
             {
                 m_info.value = value;
             }
-            break;
+            return;
         }
+        case ROLE_VAPRAM_EDITTABLE:
+            break;
     }
     QStandardItem::setData(value, role);
 }
@@ -96,26 +114,19 @@ VParamItem* VParamItem::getItem(const QString& uniqueName) const
 
 QStandardItem* VParamItem::clone() const
 {
-    VParamItem* pItem = new VParamItem(vType, m_info.name, m_bMappedCore);
-    pItem->m_info = this->m_info;
-    pItem->m_index = m_index;
-    pItem->m_bEditable = m_bEditable;
+    VParamItem* pItem = new VParamItem(*this);
     return pItem;
 }
 
-void VParamItem::cloneAppend(VParamItem* rItem)
+void VParamItem::cloneChildren(VParamItem* rItem)
 {
-    if (!rItem) return;
-
-    m_info = rItem->m_info;
-    m_index = rItem->m_index;
-    m_bEditable = rItem->m_bEditable;
-
+    if (!rItem)
+        return;
     for (int r = 0; r < rItem->rowCount(); r++)
     {
         VParamItem* rChild = static_cast<VParamItem*>(rItem->child(r));
-        VParamItem* newItem = new VParamItem(rChild->vType, rChild->m_info.name, rChild->m_bMappedCore);
-        newItem->cloneAppend(rChild);
+        VParamItem* newItem = new VParamItem(*rChild);
+        newItem->cloneChildren(rChild);
         appendRow(newItem);
     }
 }
@@ -175,18 +186,18 @@ void ViewParamModel::setup(const QString& customUI)
             VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
             VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
 
-            pInputsGroup->m_bEditable = false;
-            paramsGroup->m_bEditable = false;
-            pOutputsGroup->m_bEditable = false;
+            pInputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
+            paramsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
+            pOutputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
 
             pTab->appendRow(pInputsGroup);
             pTab->appendRow(paramsGroup);
             pTab->appendRow(pOutputsGroup);
         }
-        pTab->m_bEditable = false;
+        pTab->setData(true, ROLE_VAPRAM_EDITTABLE);
 
         pRoot->appendRow(pTab);
-        pRoot->m_bEditable = false;
+        pRoot->setData(true, ROLE_VAPRAM_EDITTABLE);
 
         appendRow(pRoot);
     }
@@ -241,7 +252,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
-                paramItem->m_bEditable = false;
+                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -260,7 +271,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
-                paramItem->m_bEditable = false;
+                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -279,7 +290,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->m_index = idx;
-                paramItem->m_bEditable = false;
+                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -303,8 +314,8 @@ void ViewParamModel::clone(ViewParamModel* pModel)
     pRoot->removeRow(0);
 
     VParamItem* pRight = static_cast<VParamItem*>(pModel->invisibleRootItem()->child(0));
-    VParamItem* newItem = new VParamItem(VPARAM_ROOT, "root");
-    newItem->cloneAppend(pRight);
+    VParamItem* newItem = new VParamItem(*pRight);
+    newItem->cloneChildren(pRight);
 
     pRoot->appendRow(newItem);
 }

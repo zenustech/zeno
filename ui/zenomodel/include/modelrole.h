@@ -1,13 +1,6 @@
 #ifndef __MODEL_ROLE_H__
 #define __MODEL_ROLE_H__
 
-enum PARAM_CLASS
-{
-	PARAM_INPUT,
-	PARAM_PARAM,
-	PARAM_OUTPUT,
-};
-
 enum MODEL_ROLE
 {
 	ROLE_OBJID = Qt::UserRole + 1,	// like "0xgrwe-MakeCurveMap", which is a ident.
@@ -46,7 +39,7 @@ enum MODEL_ROLE
 	ROLE_PARAM_CTRL,		//ui control
 	ROLE_PARAM_VALUE,
 	ROLE_PARAM_LINKS,
-	ROLE_PARAM_SOCKETTYPE,	//just tell whether the param is input socket, outputsocket or param.
+	ROLE_PARAM_SOCKETTYPE,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
 };
 
 enum LOG_ROLE

@@ -38,6 +38,14 @@ enum NODE_TYPE {
     SUBOUTPUT_NODE,
 };
 
+enum PARAM_CLASS
+{
+    PARAM_UNKNOWN,
+    PARAM_INPUT,
+    PARAM_PARAM,
+    PARAM_OUTPUT,
+};
+
 enum NODE_OPTION {
     OPT_ONCE = 1,
     OPT_MUTE = 1 << 1,

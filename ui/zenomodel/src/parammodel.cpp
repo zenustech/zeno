@@ -245,6 +245,7 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_CTRL:   return item.ctrl;
     case ROLE_PARAM_VALUE:  return item.pConst;
     case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
+    case ROLE_PARAM_SOCKETTYPE:     return m_class;
     case ROLE_OBJID:
         //return nodeid:
         return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";

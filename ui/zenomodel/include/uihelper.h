@@ -41,6 +41,7 @@ public:
     static QString variantToString(const QVariant& var);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
+    static QVariant initVariantByControl(PARAM_CONTROL ctrl);
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
     static NODE_TYPE nodeType(const QString& name);
 

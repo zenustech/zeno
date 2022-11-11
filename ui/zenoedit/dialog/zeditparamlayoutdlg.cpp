@@ -5,43 +5,48 @@
 
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Integer",             CONTROL_INT,    "int"},
-    {"Float",               CONTROL_FLOAT,  "float"},
-    {"String",              CONTROL_STRING, "string"},
-    {"Boolean",             CONTROL_BOOL,   "bool"},
+    {"Integer",             CONTROL_INT,            "int"},
+    {"Float",               CONTROL_FLOAT,          "float"},
+    {"String",              CONTROL_STRING,         "string"},
+    {"Boolean",             CONTROL_BOOL,           "bool"},
     {"Multiline String",    CONTROL_MULTILINE_STRING, "string"},
-    {"Float Vector 4",      CONTROL_VEC4_FLOAT, "vec4f"},
-    {"Float Vector 3",      CONTROL_VEC3_FLOAT, "vec3f"},
-    {"Float Vector 2",      CONTROL_VEC2_FLOAT, "vec2f"},
-    {"Integer Vector 4",    CONTROL_VEC4_INT,   "vec4i"},
-    {"Integer Vector 3",    CONTROL_VEC3_INT,   "vec3i"},
-    {"Integer Vector 2",    CONTROL_VEC2_INT,   "vec2i"},
-    {"Color",   CONTROL_COLOR,  "color"},
-    {"Curve",   CONTROL_CURVE,  "curve"},
+    {"read path",           CONTROL_READPATH,       "string"},
+    {"write path",          CONTROL_WRITEPATH,      "string"},
+    {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f"},
+    {"Float Vector 3",      CONTROL_VEC3_FLOAT,     "vec3f"},
+    {"Float Vector 2",      CONTROL_VEC2_FLOAT,     "vec2f"},
+    {"Integer Vector 4",    CONTROL_VEC4_INT,       "vec4i"},
+    {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i"},
+    {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i"},
+    {"Color",               CONTROL_COLOR,          "color"},
+    {"Curve",               CONTROL_CURVE,          "curve"},
+    {"SpinBox",             CONTROL_HSPINBOX,       "int"},
+    {"Slider",              CONTROL_HSLIDER,        "int"},
+    {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int"},
 };
 
-static QString getControlName(PARAM_CONTROL ctrl)
+static CONTROL_ITEM_INFO getControl(PARAM_CONTROL ctrl)
 {
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         if (controlList[i].ctrl == ctrl)
         {
-            return controlList[i].name;
+            return controlList[i];
         }
     }
-    return "";
+    return CONTROL_ITEM_INFO();
 }
 
-static PARAM_CONTROL getControlByName(const QString& name)
+static CONTROL_ITEM_INFO getControlByName(const QString& name)
 {
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         if (controlList[i].name == name)
         {
-            return controlList[i].ctrl;
+            return controlList[i];
         }
     }
-    return CONTROL_NONE;
+    return CONTROL_ITEM_INFO();
 }
 
 
@@ -144,10 +149,17 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         const QString& paramName = name;
         PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrentItem->data(ROLE_PARAM_CTRL).toInt();
-        const QString& ctrlName = getControlName(ctrl);
+        const QString& ctrlName = getControl(ctrl).name;
 
         m_ui->cbControl->setEnabled(true);
         m_ui->cbControl->setCurrentText(ctrlName);
+
+        const QString& coreName = pCurrentItem->data(ROLE_PARAM_NAME).toString();
+        const QString& coreType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
+        PARAM_CLASS coreCls = (PARAM_CLASS)pCurrentItem->data(ROLE_PARAM_SOCKETTYPE).toInt();
+
+        m_ui->editCoreParamName->setText(coreName);
+        m_ui->editCoreParamType->setText(coreType);
     }
 }
 
@@ -203,23 +215,12 @@ void ZEditParamLayoutDlg::onBtnAdd()
             QMessageBox::information(this, "Error ", "create control needs to place under the group");
             return;
         }
-
-        PARAM_CONTROL ctrl = CONTROL_NONE;
-        QString typeDesc;
-        for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
-        {
-            if (controlList[i].name == ctrlName)
-            {
-                ctrl = controlList[i].ctrl;
-                typeDesc = controlList[i].defaultType;
-                break;
-            }
-        }
-
-        QString newItem = UiHelper::getUniqueName(existNames, "Param");
+        CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
+        QString newItem = UiHelper::getUniqueName(existNames, ctrl.name);
         VParamItem* pNewItem = new VParamItem(VPARAM_PARAM, newItem);
-        pNewItem->m_info.control = ctrl;
-        pNewItem->m_info.typeDesc = typeDesc;
+        pNewItem->m_info.control = ctrl.ctrl;
+        pNewItem->m_info.typeDesc = ctrl.defaultType;
+        pNewItem->m_info.value = UiHelper::initVariantByControl(ctrl.ctrl);
         pItem->appendRow(pNewItem);
     }
 }

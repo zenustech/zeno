@@ -156,6 +156,48 @@ namespace zenoui
                 });
                 return pVecEdit;
             }
+            case CONTROL_VEC2_INT:
+            case CONTROL_VEC2_FLOAT:
+            {
+                UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                int dim = 2;
+                bool bFloat = ctrl == CONTROL_VEC2_FLOAT;
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
+                    UI_VECTYPE vec = pVecEdit->vec();
+                    const QVariant& newValue = QVariant::fromValue(vec);
+                    cbFunc(newValue);
+                    });
+                return pVecEdit;
+            }
+            case CONTROL_VEC3_INT:
+            case CONTROL_VEC3_FLOAT:
+            {
+                UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                int dim = 3;
+                bool bFloat = ctrl == CONTROL_VEC3_FLOAT;
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
+                    UI_VECTYPE vec = pVecEdit->vec();
+                    const QVariant& newValue = QVariant::fromValue(vec);
+                    cbFunc(newValue);
+                    });
+                return pVecEdit;
+            }
+            case CONTROL_VEC4_INT:
+            case CONTROL_VEC4_FLOAT:
+            {
+                UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                int dim = 4;
+                bool bFloat = ctrl == CONTROL_VEC4_FLOAT;
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
+                    UI_VECTYPE vec = pVecEdit->vec();
+                    const QVariant& newValue = QVariant::fromValue(vec);
+                    cbFunc(newValue);
+                    });
+                return pVecEdit;
+            }
             case CONTROL_ENUM:
             {
                 QStringList items = type.mid(QString("enum ").length()).split(QRegExp("\\s+"));

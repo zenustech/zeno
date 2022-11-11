@@ -29,20 +29,21 @@ enum ROLE_VPARAM
 
 struct VParamItem : public QStandardItem
 {
-    QPersistentModelIndex m_index;      //index to core param.
-    PARAM_INFO m_info;
+    QPersistentModelIndex m_index;      //index to core param, see IParamModel.
 
+    //for easy to debug, store here rather than QStandardItem internal data:
+    PARAM_INFO m_info;
     VPARAM_TYPE vType;
-    const bool m_bMappedCore;     //mapped to core param.
-    bool m_bEditable;
 
     VParamItem(VPARAM_TYPE vType, const QString& text, bool bMapCore = false);
     VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text, bool bMapCore = false);
 
+    VParamItem(const VParamItem& other);
+
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
     QStandardItem* clone() const override;
-    void cloneAppend(VParamItem* pItem);
+    void cloneChildren(VParamItem* pItem);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
 };
