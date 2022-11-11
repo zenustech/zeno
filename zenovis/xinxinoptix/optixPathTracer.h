@@ -1,6 +1,10 @@
 // this part of code is modified from nvidia's optix example
 #pragma once
 
+#ifndef __CUDACC_RTC__ 
+        #include "optixVolume.h"
+#endif
+
 enum RayType
 {
     RAY_TYPE_RADIANCE  = 0,

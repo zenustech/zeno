@@ -47,6 +47,9 @@ inline raii<OptixModule>                    ray_module               ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+
+inline raii<OptixModule>                    volume_module            ;
+
 ////end material independent stuffs
 inline void createContext()
 {

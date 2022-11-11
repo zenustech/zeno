@@ -980,6 +980,8 @@ static void detectHuangrenxunHappiness() {
     }
 }
 
+Volume g_volume = {};
+VolumeAccel g_volume_accel = {};
 
 //------------------------------------------------------------------------------
 //
@@ -1063,6 +1065,9 @@ void optixinit( int argc, char* argv[] )
         }
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
     xinxinoptix::using_hdr_sky(false);
+
+    loadVolume( g_volume, "/home/iaomw/Public/cloud_10_variant_0000.nvdb" );
+    buildVolumeAccel( g_volume_accel, g_volume, state.context );
 }
 
 
@@ -1412,11 +1417,20 @@ std::vector<std::vector<std::string>> &texs) {
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    if (!OptixUtil::createModule(
-        OptixUtil::ray_module,
-        state.context,
-        sutil::lookupIncFile("PTKernel.cu"),
-        "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
+            if (!OptixUtil::createModule(
+                OptixUtil::ray_module,
+                state.context,
+                sutil::lookupIncFile("PTKernel.cu"),
+                "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
+
+            auto succ = OptixUtil::createModule(
+                OptixUtil::volume_module,
+                state.context,
+                sutil::lookupIncFile("volume.cu"),
+                "volume.cu");
+
+            if (!succ) throw std::runtime_error("base ray module failed to compile");
+            
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {

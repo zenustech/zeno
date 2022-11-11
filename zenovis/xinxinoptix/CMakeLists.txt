@@ -5,6 +5,13 @@ target_sources(zenovis PRIVATE
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
+
+  volume/optixVolume.cpp
+  volume/optixVolume.h
+
+#   volume/*.cpp
+#   volume/*.h
+  
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/sutil/Scene.cpp
@@ -25,7 +32,12 @@ target_sources(zenovis PRIVATE
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 
+target_include_directories(zenovis PRIVATE ../../projects/zenvdb/openvdb/nanovdb)
+target_include_directories(zenovis PRIVATE volume)
+
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
+
+
 target_include_directories(zenovis PRIVATE SDK)
 target_include_directories(zenovis PRIVATE SDK/sutil)
 target_include_directories(zenovis PRIVATE SDK/sdk_cuda)
@@ -64,6 +76,9 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume_cuda.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.h
     )
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
