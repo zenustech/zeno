@@ -46,13 +46,13 @@ struct ZSEvalGradientField : zeno::INode {
             fmt::print("the input field does not contain specified channel:{}\n",attr);
             throw std::runtime_error("the input field does not contain specified channel");
         }
-        if(verts.getChannelSize(attr) != 1){
+        if(verts.getPropertySize(attr) != 1){
             fmt::print("only scaler field is currently supported\n");
             throw std::runtime_error("only scaler field is currently supported");
         }
 
         auto& eles = field->getQuadraturePoints();
-        auto simplex_size = eles.getChannelSize("inds");
+        auto simplex_size = eles.getPropertySize("inds");
         if(simplex_size != 4 && simplex_size != 3)
             throw std::runtime_error("ZSEvalGradientField: invalid simplex size");
 
@@ -188,7 +188,7 @@ struct ZSRetrieveVectorField : zeno::INode {
         constexpr auto cuda_space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
 
-        int elm_dim = eles.getChannelSize("inds");
+        int elm_dim = eles.getPropertySize("inds");
 
         cudaPol(zs::range(vec_buffer.size()),
             [vec_buffer = proxy<cuda_space>({},vec_buffer),verts = proxy<cuda_space>({},verts),eles = proxy<cuda_space>({},eles),
@@ -300,8 +300,8 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
 
-        int attr_dim = quads.getChannelSize(attr);
-        int simplex_size = quads.getChannelSize("inds");
+        int attr_dim = quads.getPropertySize(attr);
+        int simplex_size = quads.getPropertySize("inds");
 
         // std::cout << "check here 1" << std::endl;
 
@@ -401,8 +401,8 @@ struct ZSSampleVertAttr2Quadrature : zeno::INode {
         //     throw std::runtime_error("the input vertices have no specified weight channel");
         // }
 
-        int simplex_size = quads.getChannelSize("inds");
-        int attr_dim = verts.getChannelSize(attr);
+        int simplex_size = quads.getPropertySize("inds");
+        int attr_dim = verts.getPropertySize(attr);
 
         if(!quads.hasProperty(attr))
             quads.append_channels(cudaPol,{{attr,attr_dim}});
@@ -453,7 +453,7 @@ struct ZSNormalizeVectorField : zeno::INode {
         auto cudaPol = cuda_exec();
         constexpr auto space = execspace_e::cuda;
 
-        int attr_dim = data.getChannelSize(attr);
+        int attr_dim = data.getPropertySize(attr);
 
         cudaPol(range(data.size()),
             [data = proxy<space>({},data),attr_dim,attr = SmallString(attr)] __device__(int di) mutable {
@@ -569,7 +569,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
 
         // auto bvh_thickness = get_param<float>("bvh_thickness");
 
-        int simplex_size = src_quads.getChannelSize("inds");
+        int simplex_size = src_quads.getPropertySize("inds");
         if(simplex_size != 4){
             fmt::print("currently, only the tetrahedron is supported\n");
             throw std::runtime_error("currently, only the tetrahedron is supported");
@@ -592,7 +592,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
             throw std::runtime_error("the input dest quadrature does not have the specified mark tag");
         }
 
-        int attr_dim = src_quads.getChannelSize(attr);
+        int attr_dim = src_quads.getPropertySize(attr);
         // dst_quads.append_channels(cudaPol,{{attr,attr_dim}});
 
 

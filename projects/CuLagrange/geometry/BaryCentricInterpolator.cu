@@ -79,7 +79,7 @@ struct ZSComputeBaryCentricWeights : INode {
             }
         );
 
-        auto e_dim = e_eles.getChannelSize("inds");
+        auto e_dim = e_eles.getPropertySize("inds");
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {

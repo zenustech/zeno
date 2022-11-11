@@ -1319,6 +1319,18 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
             pComboBox->setText(inSocket.info.defaultValue.toString());
             break;
         }
+        case CONTROL_MULTILINE_STRING:
+        {
+            ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(ctrl.socket_control);
+            if (!pTextEdit) {
+                clearInSocketControl(inSocket.info.name);
+                pTextEdit = qobject_cast<ZenoParamMultilineStr*>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pTextEdit);
+                bUpdateLayout = true;
+            }
+            pTextEdit->setText(inSocket.info.defaultValue.toString());
+            break;
+        }
         case CONTROL_NONE: {
             //should clear the control if exists.
             if (ctrl.socket_control) {

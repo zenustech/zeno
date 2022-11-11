@@ -55,8 +55,8 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
         return *std::unique_ptr<T>::get();
     }
 
-    operator std::unique_ptr<T> &() { return *this; }
-    operator std::unique_ptr<T> const &() const { return *this; }
+    // operator std::unique_ptr<T> &() { return *this; }
+    // operator std::unique_ptr<T> const &() const { return *this; }
 };
 
 

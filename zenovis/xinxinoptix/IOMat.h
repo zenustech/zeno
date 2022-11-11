@@ -10,6 +10,7 @@ struct MatOutput {
     float specular;
     float specularTint;
     float anisotropic;
+    float anisoRotation;
     float sheen;
     float sheenTint;
     float clearcoat;

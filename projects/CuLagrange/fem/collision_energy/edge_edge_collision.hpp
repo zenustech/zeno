@@ -8,14 +8,14 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    REAL psi(const std::vector<VECTOR3>& v,
+    constexpr REAL psi(const VECTOR3 v[4],
                             const VECTOR2& a, 
                             const VECTOR2& b,
                             const REAL& _mu,
                             const REAL& _nu,
                             const REAL& _eps){
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
@@ -41,7 +41,7 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    REAL psiNegated(const std::vector<VECTOR3>& v,
+    constexpr REAL psiNegated(const VECTOR3 v[4],
                                 const VECTOR2& a, 
                                 const VECTOR2& b,
                                 const REAL& _mu,
@@ -49,7 +49,7 @@ namespace EDGE_EDGE_COLLISION {
                                 const REAL& _eps)
     {
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
@@ -84,7 +84,7 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    VECTOR12 gradient(const std::vector<VECTOR3>& v,
+    constexpr VECTOR12 gradient(const VECTOR3 v[4],
                                 const VECTOR2& a, 
                                 const VECTOR2& b,
                                 const REAL& _mu,
@@ -92,14 +92,10 @@ namespace EDGE_EDGE_COLLISION {
                                 const REAL& _eps)
     {
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
-
-        assert(v.size() == 4);
-        assert(e.size() == 2);
-
         // Harmon  et al. says that if the two edges are nearly parallel, a vertex-face
         // will pick up the slack, so ignore it. But ... the collision is still well
         // defined from the perspective of the pinned version of this energy.
@@ -128,7 +124,7 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    VECTOR12 gradientNegated(const std::vector<VECTOR3>& v,
+    constexpr VECTOR12 gradientNegated(const VECTOR3 v[4],
                                 const VECTOR2& a, 
                                 const VECTOR2& b,
                                 const REAL& _mu,
@@ -136,13 +132,10 @@ namespace EDGE_EDGE_COLLISION {
                                 const REAL& _eps)
     {
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
-
-        assert(v.size() == 4);
-        assert(e.size() == 2);
 
         // Harmon  et al. says that if the two edges are nearly parallel, a vertex-face
         // will pick up the slack, so ignore it. But ... the collision is still well
@@ -177,7 +170,7 @@ namespace EDGE_EDGE_COLLISION {
     ///////////////////////////////////////////////////////////////////////
     // partial of (va - vb)
     ///////////////////////////////////////////////////////////////////////
-    MATRIX3x12 vDiffPartial(const VECTOR2& a, const VECTOR2& b)
+    constexpr MATRIX3x12 vDiffPartial(const VECTOR2& a, const VECTOR2& b)
     {
         MATRIX3x12 tPartial{(REAL)0.0};
         // tPartial.setZero();
@@ -192,20 +185,17 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 hessian(const std::vector<VECTOR3>& v,
+    constexpr MATRIX12 hessian(const VECTOR3 v[4],
                                 const VECTOR2& a, 
                                 const VECTOR2& b,
                                 const REAL& _mu,
                                 const REAL& _nu,
                                 const REAL& _eps){
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
-
-        assert(v.size() == 4);
-        assert(e.size() == 2);
         
         // Harmon  et al. says that if the two edges are nearly parallel, a vertex-face
         // will pick up the slack, so ignore it. But ... the collision is still well
@@ -247,7 +237,7 @@ namespace EDGE_EDGE_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    MATRIX12 hessianNegated(const std::vector<VECTOR3>& v,
+    constexpr MATRIX12 hessianNegated(const VECTOR3 v[4],
                                 const VECTOR2& a, 
                                 const VECTOR2& b,
                                 const REAL& _mu,
@@ -255,12 +245,10 @@ namespace EDGE_EDGE_COLLISION {
                                 const REAL& _eps)
     {
         // convert to vertices and edges
-        std::vector<VECTOR3> e{3};
+        VECTOR3 e[3] = {};
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2];
-        assert(v.size() == 4);
-        assert(e.size() == 2);
         
         // Harmon  et al. says that if the two edges are nearly parallel, a vertex-face
         // will pick up the slack, so ignore it. But ... the collision is still well

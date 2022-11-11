@@ -213,7 +213,7 @@ struct ExtractMeshSurface : INode {
                     else if (x[d] > y[d])
                         return 0;
                 }
-                return 1;
+                return 0;
             };
             std::set<vec3i, RM_CVREF_T(comp_v3)> surfs(comp_v3);
             auto hastri = [&surfs](const vec3i &tri, int i, int j, int k) {
@@ -246,6 +246,7 @@ struct ExtractMeshSurface : INode {
                 ist2(tri[1], tri[2]);
                 ist2(tri[2], tri[0]);
             }
+            lineAreas.resize(lines.size(), 0.f);
 
             /// surf verts
             std::set<int> spoints;
@@ -259,6 +260,7 @@ struct ExtractMeshSurface : INode {
                 ist(line[0]);
                 ist(line[1]);
             }
+            pointAreas.resize(points.size(), 0.f);
         }
 #endif
         if (includeTris)
@@ -533,7 +535,7 @@ struct ToZSTetrahedra : INode {
             }
         }
         tags.insert(std::end(tags), std::begin(auxVertAttribs), std::end(auxVertAttribs));
-        eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),std::end(auxElmAttribs));
+        eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs), std::end(auxElmAttribs));
 
         constexpr auto space = zs::execspace_e::openmp;
         zstets->particles = std::make_shared<typename ZenoParticles::particles_t>(tags, pos.size(), zs::memsrc_e::host);
@@ -542,14 +544,12 @@ struct ToZSTetrahedra : INode {
         ompExec(zs::range(pos.size()), [&, pars = proxy<space>({}, pars)](int vi) mutable {
             using vec3 = zs::vec<float, 3>;
             using mat3 = zs::vec<float, 3, 3>;
-            auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+            auto p = vec3::from_array(pos[vi]);
             pars.tuple<3>("x", vi) = p;
             pars.tuple<3>("x0", vi) = p;
             pars.tuple<3>("v", vi) = vec3::zeros();
-            if (prim->has_attr("vel")) {
-                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
-                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
-            }
+            if (prim->has_attr("vel"))
+                pars.tuple<3>("v", vi) = vec3::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
             // default boundary handling setup
             pars.tuple<9>("BCbasis", vi) = mat3::identity();
             pars("BCorder", vi) = 0;
@@ -592,7 +592,7 @@ struct ToZSTetrahedra : INode {
                     eles("vol", ei) = vol;
                     // vert masses
                     auto vmass = vol * zsmodel->density / 4;
-                    eles("m",ei) = vol * zsmodel->density;
+                    eles("m", ei) = vol * zsmodel->density;
                     for (int d = 0; d != 4; ++d)
                         atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
 
@@ -620,25 +620,59 @@ struct ToZSTetrahedra : INode {
                         surfaces("inds", i, triNo) = zs::reinterpret_bits<float>(tri[i]);
                 });
 
+        ompExec(zs::range(tris.size()), [&, surfaces = proxy<space>({}, surfaces)](int triNo) mutable {
+            // if(lineNo == 1) {
+            auto check_tri = surfaces.template pack<3>("inds", triNo).template reinterpret_bits<int>();
+            auto tri = tris[triNo];
+            if (tri[0] != check_tri[0] || tri[1] != check_tri[1] || tri[2] != check_tri[2]) {
+                printf("GENERATION::tri_mismatch%d : [%d %d %d] != [%d %d %d]\n", triNo, check_tri[0], check_tri[1],
+                       check_tri[2], tri[0], tri[1], tri[2]);
+            }
+            // }
+        });
+
         // record total surface area
         zstets->setMeta("surfArea", (float)areaSum);
 
         auto &surfEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
         surfEdges = typename ZenoParticles::particles_t({{"inds", 2}, {"w", 1}}, lines.size(), zs::memsrc_e::host);
-        const auto &lineAreas = lines.attr<float>("area");
+        // const auto &lineAreas = lines.attr<float>("area");
+
         ompExec(zs::range(lines.size()), [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
             auto line = lines[lineNo];
-            for (int i = 0; i != 2; ++i)
+            for (int i = 0; i != 2; ++i) {
+                // int32_t idx = line[i];
+                // surfEdges("inds", i, lineNo) = zs::reinterpret_bits<float>(idx);
                 surfEdges("inds", i, lineNo) = zs::reinterpret_bits<float>(line[i]);
-            surfEdges("w", lineNo) = lineAreas[lineNo]; // line area (weight)
+            }
+
+            if (lineNo == 0) {
+                // auto check_edge = surfEdges.template pack<2>("inds",lineNo).template reinterpret_bits<int>();
+                // printf("GENERATION_A::line0 : %d %d\n",line[0],line[1]);
+            }
+
+            // surfEdges("w", lineNo) = lineAreas[lineNo]; // line area (weight)
         });
+
+        ompExec(zs::range(lines.size()), [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
+            // if(lineNo == 1) {
+            auto check_edge = surfEdges.template pack<2>("inds", lineNo).template reinterpret_bits<int32_t>();
+            auto line = lines[lineNo];
+            if (line[0] != check_edge[0] || line[1] != check_edge[1]) {
+                printf("GENERATION::line_mismatch%d : [%d %d] != [%d %d]\n", lineNo, check_edge[0], check_edge[1],
+                       line[0], line[1]);
+                // printf("REF::line%d : %d %d\n",lineNo,line[0],line[1]);
+            }
+            // }
+        });
+
         auto &surfVerts = (*zstets)[ZenoParticles::s_surfVertTag];
         surfVerts = typename ZenoParticles::particles_t({{"inds", 1}, {"w", 1}}, points.size(), zs::memsrc_e::host);
-        const auto &pointAreas = points.attr<float>("area");
+        // const auto &pointAreas = points.attr<float>("area");
         ompExec(zs::range(points.size()), [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
             auto point = points[pointNo];
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(point);
-            surfVerts("w", pointNo) = pointAreas[pointNo]; // point area (weight)
+            // surfVerts("w", pointNo) = pointAreas[pointNo]; // point area (weight)
         });
 
         pars = pars.clone({zs::memsrc_e::device, 0});
@@ -646,6 +680,16 @@ struct ToZSTetrahedra : INode {
         surfaces = surfaces.clone({zs::memsrc_e::device, 0});
         surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
         surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+
+        // auto cudaExec = cuda_exec();
+        // constexpr auto cuda_space = zs::execspace_e::cuda;
+
+        // cudaExec(range(lines.size()),
+        //     [lines = proxy<cuda_space>({},surfEdges)] ZS_LAMBDA(int li) mutable {
+        //         auto inds = lines.template pack<2>("inds",li).template reinterpret_bits<int>();
+        //         if(li == 0)
+        //             printf("line0 : %d %d\n",inds[0],inds[1]);
+        // });
 
         set_output("ZSParticles", std::move(zstets));
     }
@@ -752,10 +796,10 @@ struct ToZSTriMesh : INode {
         auto &pars = zstris->getParticles();
         ompExec(Collapse{pars.size()},
                 [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
-                    pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+                    pars.tuple<3>("x", vi) = vec3::from_array(pos[vi]);
                     auto vel = vec3::zeros();
                     if (velsPtr != nullptr)
-                        vel = vec3{velsPtr[vi][0], velsPtr[vi][1], velsPtr[vi][2]};
+                        vel = vec3::from_array(velsPtr[vi]);
                     pars.tuple<3>("v", vi) = vel;
 
                     for (auto &prop : auxVertAttribs) {
@@ -832,15 +876,14 @@ struct ToZSSurfaceMesh : INode {
         pars = dtiles_t{tags, pos.size(), zs::memsrc_e::host};
         ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
             using vec3 = zs::vec<double, 3>;
+            using vec3f = zs::vec<float, 3>;
             using mat3 = zs::vec<float, 3, 3>;
-            auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+            auto p = vec3f::from_array(pos[vi]);
             pars.tuple<3>("x", vi) = p;
             pars.tuple<3>("x0", vi) = p;
             pars.tuple<3>("v", vi) = vec3::zeros();
-            if (prim->has_attr("vel")) {
-                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
-                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
-            }
+            if (prim->has_attr("vel"))
+                pars.tuple<3>("v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
             // default boundary handling setup
             pars.tuple<9>("BCbasis", vi) = mat3::identity();
             pars("BCorder", vi) = 0;
@@ -1008,11 +1051,11 @@ struct ToZSSurfaceMesh : INode {
           {
           auto sv = proxy<execspace_e::host>({}, surfEdges);
               for (int i = 0; i != 10; ++i) {
-                auto se = sv.template pack<2>("inds", i).template reinterpret_bits<int>();
+                auto se = sv.pack(dim_c<2>, "inds", i).template reinterpret_bits<int>();
                 fmt::print("checking surf edge! {}-th se<{}, {}>\n", i, se[0],
                          se[1]);
                   auto ii = sedges.size() - 1 - i;
-                  se = sv.template pack<2>("inds", ii)
+                  se = sv.pack(dim_c<2>, "inds", ii)
                             .template reinterpret_bits<int>();
                   fmt::print("checking surf edge! {}-th se<{}, {}>\n", ii,
                              se[0], se[1]);
@@ -1094,14 +1137,13 @@ struct ToZSStrands : INode {
         ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
             using vec3 = zs::vec<double, 3>;
             using mat3 = zs::vec<float, 3, 3>;
-            auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+            using vec3f = zs::vec<float, 3>;
+            auto p = vec3f::from_array(pos[vi]);
             pars.tuple<3>("x", vi) = p;
             pars.tuple<3>("x0", vi) = p;
             pars.tuple<3>("v", vi) = vec3::zeros();
-            if (prim->has_attr("vel")) {
-                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
-                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
-            }
+            if (prim->has_attr("vel"))
+                pars.tuple<3>("v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
             // default boundary handling setup
             pars.tuple<9>("BCbasis", vi) = mat3::identity();
             pars("BCorder", vi) = 0;

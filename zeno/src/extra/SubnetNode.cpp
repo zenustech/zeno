@@ -7,7 +7,7 @@
 
 namespace zeno {
 
-ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_unique<Graph>())
+ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_shared<Graph>())
 {}
 
 ZENO_API SubnetNode::~SubnetNode() = default;

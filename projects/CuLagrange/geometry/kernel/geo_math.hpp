@@ -22,12 +22,12 @@ namespace zeno { namespace LSL_GEO {
     }    
 
     // using T = float;
-    template<typename T,typename V = typename zs::vec<T,3>>
-    constexpr T area(const V& p0,const V& p1,const V& p2){
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr auto area(const zs::VecInterface<VecT>& p0,const zs::VecInterface<VecT>& p1,const zs::VecInterface<VecT>& p2){
         auto a = (p0 - p1).norm();
         auto b = (p0 - p2).norm();
         auto c = (p1 - p2).norm();
-        return doublearea(a,b,c) / 2.0;
+        return doublearea(a,b,c) / (typename VecT::value_type)2.0;
     }
     // template<typename T,typename V = typename zs::vec<T,3>>
     // constexpr T area(const V p[3]){

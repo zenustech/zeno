@@ -29,7 +29,7 @@ set(ZENO_EXTENSIONS
     CalcGeometryUV
     MeshSubdiv
     CUDA
-    CuOcean
+    CuEulerian
     CuLagrange
     Audio
     Parameterization

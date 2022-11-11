@@ -1158,228 +1158,183 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
 
 struct UpdatePrimitiveAttrFromZSParticles : INode {
 
-  // template <int ATTR_DIM,typename DeviceTileVec>
-  // void deviceAttr2HostImp(const std::string& device_attr_name,const DeviceTileVec& device_tile_vec,
-  //     const std::string& host_attr_name,std::vector<zeno::vec<ATTR_DIM,float>>& host_attr) {
+        using namespace zs;
+        // auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
+        int prim_idx = 0;
+        auto deviceAttrName = get_param<std::string>("attr");
+        auto attrType = get_param<std::string>("type");
+        auto location = get_param<std::string>("location");
+        if (parobjPtrs.size() <= prim_idx)
+            throw std::runtime_error("prim index out of range");
+        const auto parobjPtr = parobjPtrs[prim_idx];
+        if (parobjPtr->prim.get() == nullptr)
+            return;
 
-  // }
+        auto hostAttrName = deviceAttrName;
+        if (deviceAttrName == "x" && location == "vert")
+            hostAttrName = "pos";
 
-  // template <typename DeviceTileVec>
-  // void deviceAttr2HostImp(const std::string& device_attr_name,const DeviceTileVec& device_tile_vec,
-  //     const std::string& host_attr_name,std::vector<float>& host_attr) {
+        auto prim = parobjPtr->prim;
+        if (location == "vert") {
+            bool requireClone = !(parobjPtr->getParticles().memspace() == memsrc_e::host ||
+                                  parobjPtr->getParticles().memspace() == memsrc_e::um);
 
-  // }
+            if (!parobjPtr->getParticles().hasProperty(deviceAttrName))
+                throw std::runtime_error("the particles has no specified channel");
+            // clone the specified attribute from particles to primitiveObject
+            if (!prim->has_attr(hostAttrName)) {
+                if (attrType == "float")
+                    prim->add_attr<float>(hostAttrName);
+                else
+                    prim->add_attr<zeno::vec3f>(hostAttrName);
+            }
 
+            // const auto& pars = requireClone ? parobjPtr->getParticles().clone({memsrc_e::host}) : parobjPtr->getParticles();
+            if (!requireClone) {
+                const auto &pars = parobjPtr->getParticles();
 
-  // template <tyename DeviceTileVec,int TOPO_DIM>
-  // int deviceAttr2Host(const std::string& device_attr_name,const DeviceTileVec& device_tile_vec,
-  //     const std::string& host_attr_name,AttrVector<zeno::vec<TOPO_DIM,float>>& host_attr_vec) {
-  //       // bool requireClone = !(device_tile_vec.memspace() == memsrc_e::host || device_tile_vec.memspace() == memsrc_e::um);
-  //       bool requireClone = !(device_tile_vec.memspace() == memsrc_e::host || device_tile_vec.memspace() == memsrc_e::um);
-  //       int attr_dim = device_tile_vec.getChannelSize(device_attr_name);
-        
+                auto ompExec = zs::omp_exec();
+                if (attrType == "float") {
+                    // fmt::print("update float attr {}\n",attrName);
+                    auto &attr = prim->attr<float>(hostAttrName);
+                    ompExec(range(pars.size()), [pars = proxy<execspace_e::host>({}, pars), &attr,
+                                                 deviceAttrName = zs::SmallString(deviceAttrName)](auto pi) {
+                        attr[pi] = pars(deviceAttrName, pi);
+                    });
+                } else if (attrType == "vec3f") {
+                    // fmt::print("update vec3f attr {}\n",attrName);
 
+                    auto &attr = prim->attr<zeno::vec3f>(hostAttrName);
+                    ompExec(range(pars.size()), [pars = proxy<execspace_e::host>({}, pars), &attr,
+                                                 deviceAttrName = zs::SmallString(deviceAttrName)](auto pi) {
+                        attr[pi] = pars.template array<3, float>(deviceAttrName, pi);
+                    });
+                } else {
+                    throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
 
-  //       if(attr_dim == 1){
-  //         deviceAttr2HostImp(device_attr_name,device_tile_vec,host_attr_vec.add_attr<float>(host_attr_name));
-  //       }else if(attr_dim == 3){
-  //         deviceAttr2HostImp(device_attr_name,device_tile_vec,host_attr_vec.add_attr<zeno::vec<3,float>>(host_attr_name));
-  //       }
-  //       else
-  //         return -1;
+            } else {
+                // fmt::print("no cloneing is needed\n");
 
-  //       return 0;
-  // }
+                auto cudaExec = zs::cuda_exec();
+                auto ompExec = zs::omp_exec();
+                const auto &pars = parobjPtr->getParticles();
+                if (attrType == "float") {
+                    zs::Vector<float> kernel_attr{pars.get_allocator(), pars.size()};
+                    cudaExec(zs::range(pars.size()),
+                             [kernel_attr = proxy<execspace_e::cuda>(kernel_attr),
+                              pars = proxy<execspace_e::cuda>({}, pars),
+                              deviceAttrName = zs::SmallString{deviceAttrName}] __device__(int vi) mutable {
+                                 kernel_attr[vi] = pars(deviceAttrName, vi);
+                             });
+                    kernel_attr = kernel_attr.clone({memsrc_e::host});
+                    auto &attr = prim->attr<float>(hostAttrName);
+                    ompExec(range(pars.size()), [kernel_attr = proxy<execspace_e::host>(kernel_attr), &attr](auto pi) {
+                        attr[pi] = kernel_attr[pi];
+                    });
 
-  void apply() override {
-      auto parobjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+                } else if (attrType == "vec3f") {
+                    zs::Vector<zs::vec<float, 3>> kernel_attr{pars.get_allocator(), pars.size()};
+                    cudaExec(zs::range(pars.size()),
+                             [kernel_attr = proxy<execspace_e::cuda>(kernel_attr),
+                              pars = proxy<execspace_e::cuda>({}, pars),
+                              deviceAttrName = zs::SmallString{deviceAttrName}] __device__(int vi) mutable {
+                                 kernel_attr[vi] = pars.template pack<3>(deviceAttrName, vi);
+                             });
+                    kernel_attr = kernel_attr.clone({memsrc_e::host});
+                    auto &attr = prim->attr<zeno::vec3f>(hostAttrName);
+                    ompExec(range(pars.size()), [kernel_attr = proxy<execspace_e::host>(kernel_attr), &attr](auto pi) {
+                        attr[pi] = zeno::vec3f(kernel_attr[pi][0], kernel_attr[pi][1], kernel_attr[pi][2]);
+                    });
 
-      using namespace zs;
-      // auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
-      int prim_idx = 0;
-      auto deviceAttrName = get_param<std::string>("attr");
-      auto attrType = get_param<std::string>("type");
-      auto location = get_param<std::string>("location");
-      if(parobjPtrs.size() <= prim_idx)
-        throw std::runtime_error("prim index out of range");
-      const auto parobjPtr = parobjPtrs[prim_idx];
-      if(parobjPtr->prim.get() == nullptr)
-        return;
-      
-      auto hostAttrName = deviceAttrName;
-      if(deviceAttrName == "x" && location == "vert")
-        hostAttrName = "pos";
+                } else {
+                    throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
+            }
+            // fmt::print(fg(fmt::color::cyan),
+            //     "done executing UpdatePrimitiveAttrFromZSParticles\n");
+        } else if (location == "quad") {
+            auto attrName = deviceAttrName;
 
-      auto prim = parobjPtr->prim;
-      if(location == "vert") {
-        bool requireClone = !(parobjPtr->getParticles().memspace() == memsrc_e::host || parobjPtr->getParticles().memspace() == memsrc_e::um);
+            bool requireClone = !(parobjPtr->getQuadraturePoints().memspace() == memsrc_e::host ||
+                                  parobjPtr->getQuadraturePoints().memspace() == memsrc_e::um);
+            const auto &quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host})
+                                             : parobjPtr->getQuadraturePoints();
 
-        if(!parobjPtr->getParticles().hasProperty(deviceAttrName))
-          throw std::runtime_error("the particles has no specified channel");
-        // clone the specified attribute from particles to primitiveObject
-        if(!prim->has_attr(hostAttrName)){
-          if(attrType == "float")
-            prim->add_attr<float>(hostAttrName);
-          else
-            prim->add_attr<zeno::vec3f>(hostAttrName);
-        }
+            int simplex_size = quads.getChannelSize("inds");
 
-        // const auto& pars = requireClone ? parobjPtr->getParticles().clone({memsrc_e::host}) : parobjPtr->getParticles();
-        if(!requireClone) {
-          const auto& pars = parobjPtr->getParticles();
+            if (!quads.hasProperty(attrName))
+                throw std::runtime_error("the particles has no specified channel");
+            // clone the specified attribute from particles to primitiveObject
 
-          auto ompExec = zs::omp_exec();
-          if(attrType == "float"){
-            // fmt::print("update float attr {}\n",attrName);
-            auto& attr = prim->attr<float>(hostAttrName);
-            ompExec(range(pars.size()),
-              [pars = proxy<execspace_e::host>({},pars),&attr,
-                  deviceAttrName = zs::SmallString(deviceAttrName)] (auto pi) {
-                attr[pi] = pars(deviceAttrName,pi);
-              });
-          }else if(attrType == "vec3f"){
-            // fmt::print("update vec3f attr {}\n",attrName);
+            if (simplex_size == 4) {
+                if (!prim->quads.has_attr(attrName)) {
+                    if (attrType == "float")
+                        prim->quads.add_attr<float>(attrName);
+                    else
+                        prim->quads.add_attr<zeno::vec3f>(attrName);
+                }
 
-            auto& attr = prim->attr<zeno::vec3f>(hostAttrName);
-            ompExec(range(pars.size()),
-              [pars = proxy<execspace_e::host>({},pars),&attr,deviceAttrName = zs::SmallString(deviceAttrName)] (auto pi) {
-                attr[pi] = pars.template array<3,float>(deviceAttrName,pi);
-              });
-          }else{
-            throw std::runtime_error("INVALID SPECIFIED TYPE");
-          }
+                auto ompExec = zs::omp_exec();
+                if (attrType == "float") {
+                    // fmt::print("update float attr {}\n",attrName);
+                    auto &attr = prim->quads.attr<float>(attrName);
+                    ompExec(range(quads.size()),
+                            [quads = proxy<execspace_e::host>({}, quads), &attr,
+                             attrName = zs::SmallString(attrName)](auto pi) { attr[pi] = quads(attrName, pi); });
+                } else if (attrType == "vec3f") {
+                    // fmt::print("update vec3f attr {}\n",attrName);
+                    auto &attr = prim->quads.attr<zeno::vec3f>(attrName);
+                    ompExec(range(quads.size()),
+                            [quads = proxy<execspace_e::host>({}, quads), &attr, attrName = zs::SmallString(attrName)](
+                                auto pi) { attr[pi] = quads.template array<3, float>(attrName, pi); });
+                } else {
+                    throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
+
+                fmt::print(fg(fmt::color::cyan), "done executing UpdatePrimitiveAttrFromZSParticles\n");
+            } else if (simplex_size == 3) {
+                if (!prim->tris.has_attr(attrName)) {
+                    if (attrType == "float")
+                        prim->tris.add_attr<float>(attrName);
+                    else
+                        prim->tris.add_attr<zeno::vec3f>(attrName);
+                }
+
+                auto ompExec = zs::omp_exec();
+                if (attrType == "float") {
+                    // fmt::print("update float attr {}\n",attrName);
+                    auto &attr = prim->tris.attr<float>(attrName);
+                    ompExec(range(quads.size()),
+                            [quads = proxy<execspace_e::host>({}, quads), &attr,
+                             attrName = zs::SmallString(attrName)](auto pi) { attr[pi] = quads(attrName, pi); });
+                } else if (attrType == "vec3f") {
+                    // fmt::print("update vec3f attr {}\n",attrName);
+                    auto &attr = prim->tris.attr<zeno::vec3f>(attrName);
+                    ompExec(range(quads.size()),
+                            [quads = proxy<execspace_e::host>({}, quads), &attr, attrName = zs::SmallString(attrName)](
+                                auto pi) { attr[pi] = quads.template array<3, float>(attrName, pi); });
+                } else {
+                    throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
+
+                fmt::print(fg(fmt::color::cyan), "done executing UpdatePrimitiveAttrFromZSParticles\n");
+            }
 
         } else {
-          // fmt::print("no cloneing is needed\n");
-
-          auto cudaExec = zs::cuda_exec();
-          auto ompExec = zs::omp_exec();
-          const auto& pars = parobjPtr->getParticles();
-          if(attrType == "float") {
-            zs::Vector<float> kernel_attr{pars.get_allocator(),pars.size()};
-            cudaExec(zs::range(pars.size()),
-              [kernel_attr = proxy<execspace_e::cuda>(kernel_attr),pars = proxy<execspace_e::cuda>({},pars),
-                  deviceAttrName = zs::SmallString{deviceAttrName}] __device__(int vi) mutable {
-                kernel_attr[vi] = pars(deviceAttrName,vi);
-              });
-            kernel_attr = kernel_attr.clone({memsrc_e::host});  
-            auto& attr = prim->attr<float>(hostAttrName);
-            ompExec(range(pars.size()),
-              [kernel_attr = proxy<execspace_e::host>(kernel_attr),&attr] (auto pi) {
-                attr[pi] = kernel_attr[pi];
-              });
-
-          }else if(attrType == "vec3f"){
-            zs::Vector<zs::vec<float,3>> kernel_attr{pars.get_allocator(),pars.size()};
-            cudaExec(zs::range(pars.size()),
-              [kernel_attr = proxy<execspace_e::cuda>(kernel_attr),pars = proxy<execspace_e::cuda>({},pars),
-                  deviceAttrName = zs::SmallString{deviceAttrName}] __device__(int vi) mutable {
-                kernel_attr[vi] = pars.template pack<3>(deviceAttrName,vi);
-              });
-            kernel_attr = kernel_attr.clone({memsrc_e::host});   
-            auto& attr = prim->attr<zeno::vec3f>(hostAttrName);
-            ompExec(range(pars.size()),
-              [kernel_attr = proxy<execspace_e::host>(kernel_attr),&attr] (auto pi) {
-                attr[pi] = zeno::vec3f(kernel_attr[pi][0],kernel_attr[pi][1],kernel_attr[pi][2]);
-              });
-
-          }else{
-            throw std::runtime_error("INVALID SPECIFIED TYPE");
-          }
+            throw std::runtime_error("UNRECOGINIZED LOCATION SPECIFIED");
         }
-        // fmt::print(fg(fmt::color::cyan),
-        //     "done executing UpdatePrimitiveAttrFromZSParticles\n");
-      }else if(location == "quad") {
-        auto attrName = deviceAttrName;
-
-        bool requireClone = !(parobjPtr->getQuadraturePoints().memspace() == memsrc_e::host || parobjPtr->getQuadraturePoints().memspace() == memsrc_e::um);
-        const auto& quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host}) : parobjPtr->getQuadraturePoints();
-
-        int simplex_size = quads.getChannelSize("inds");
-
-        if(!quads.hasProperty(attrName))
-          throw std::runtime_error("the particles has no specified channel");
-        // clone the specified attribute from particles to primitiveObject
-
-        if(simplex_size == 4) {
-          if(!prim->quads.has_attr(attrName)){
-            if(attrType == "float")
-              prim->quads.add_attr<float>(attrName);
-            else
-              prim->quads.add_attr<zeno::vec3f>(attrName);
-          }
-          
-          auto ompExec = zs::omp_exec();
-          if(attrType == "float"){
-            // fmt::print("update float attr {}\n",attrName);
-            auto& attr = prim->quads.attr<float>(attrName);
-            ompExec(range(quads.size()),
-              [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-                attr[pi] = quads(attrName,pi);
-              });
-          }else if(attrType == "vec3f"){
-            // fmt::print("update vec3f attr {}\n",attrName);
-            auto& attr = prim->quads.attr<zeno::vec3f>(attrName);
-            ompExec(range(quads.size()),
-              [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-                attr[pi] = quads.template array<3,float>(attrName,pi);
-              });
-          }else{
-            throw std::runtime_error("INVALID SPECIFIED TYPE");
-          }
-
-          fmt::print(fg(fmt::color::cyan),
-              "done executing UpdatePrimitiveAttrFromZSParticles\n");      
-        }else if(simplex_size == 3) {
-            if(!prim->tris.has_attr(attrName)){
-              if(attrType == "float")
-                prim->tris.add_attr<float>(attrName);
-              else
-                prim->tris.add_attr<zeno::vec3f>(attrName);
-            }
-            
-            auto ompExec = zs::omp_exec();
-            if(attrType == "float"){
-              // fmt::print("update float attr {}\n",attrName);
-              auto& attr = prim->tris.attr<float>(attrName);
-              ompExec(range(quads.size()),
-                [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-                  attr[pi] = quads(attrName,pi);
-                });
-            }else if(attrType == "vec3f"){
-              // fmt::print("update vec3f attr {}\n",attrName);
-              auto& attr = prim->tris.attr<zeno::vec3f>(attrName);
-              ompExec(range(quads.size()),
-                [quads = proxy<execspace_e::host>({},quads),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
-                  attr[pi] = quads.template array<3,float>(attrName,pi);
-                });
-            }else{
-              throw std::runtime_error("INVALID SPECIFIED TYPE");
-            }
-
-            fmt::print(fg(fmt::color::cyan),
-                "done executing UpdatePrimitiveAttrFromZSParticles\n");            
-        }
-            
-      }else {
-        throw std::runtime_error("UNRECOGINIZED LOCATION SPECIFIED");
-      }
-      set_output("ZSParticles",get_input("ZSParticles"));
-  }
+        set_output("ZSParticles", get_input("ZSParticles"));
+    }
 };
 
-ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,{
-                {"ZSParticles"},
-                {"ZSParticles"},
-                {{"string","attr","x"},{"enum float vec3f","type","float"},{"enum vert quad","location","vert"}},
-                {"MPM"},
-});
-
-
-// struct UpdatePrimitiveAttrsFromZSParticles {
-
-// }
-
+ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
+           {
+               {"ZSParticles"},
+               {"ZSParticles"},
+               {{"string", "attr", "x"}, {"enum float vec3f", "type", "float"}, {"enum vert quad", "location", "vert"}},
+               {"MPM"},
+           });
 
 struct MakeZSPartition : INode {
     void apply() override {
@@ -1439,8 +1394,8 @@ struct MakeZSLevelSet : INode {
         std::vector<zs::PropertyTag> tags{{"sdf", 1}};
 
         auto ls = std::make_shared<ZenoLevelSet>();
-        ls->transferScheme = get_param<std::string>("transfer");
-        auto cateStr = get_param<std::string>("category");
+        ls->transferScheme = get_input2<std::string>("transfer");
+        auto cateStr = get_input2<std::string>("category");
 
         // default is "cellcentered"
         if (cateStr == "staggered")
@@ -1509,7 +1464,7 @@ struct ToZSBoundary : INode {
         fmt::print(fg(fmt::color::green), "begin executing ToZSBoundary\n");
         auto boundary = std::make_shared<ZenoBoundary>();
 
-        auto type = get_param<std::string>("type");
+        auto type = get_input2<std::string>("type");
         auto queryType = [&type]() -> zs::collider_e {
             if (type == "sticky" || type == "Sticky")
                 return zs::collider_e::Sticky;
@@ -1557,9 +1512,15 @@ struct ToZSBoundary : INode {
     }
 };
 ZENDEFNODE(ToZSBoundary, {
-                             {"ZSLevelSet", "translation", "translation_rate", "scale", "scale_rate", "ypr_angles"},
+                             {"ZSLevelSet",
+                              "translation",
+                              "translation_rate",
+                              "scale",
+                              "scale_rate",
+                              "ypr_angles",
+                              {"string", "type", "sticky"}},
                              {"ZSBoundary"},
-                             {{"string", "type", "sticky"}},
+                             {},
                              {"MPM"},
                          });
 
@@ -1720,7 +1681,7 @@ struct WriteZSParticles : zeno::INode {
     void apply() override {
         fmt::print(fg(fmt::color::green), "begin executing WriteZSParticles\n");
         auto &pars = get_input<ZenoParticles>("ZSParticles")->getParticles();
-        auto path = get_param<std::string>("path");
+        auto path = get_input2<std::string>("path");
         auto cudaExec = zs::cuda_exec().device(0);
         zs::Vector<zs::vec<float, 3>> pos{pars.size(), zs::memsrc_e::um, 0};
         zs::Vector<float> vms{pars.size(), zs::memsrc_e::um, 0};
@@ -1741,9 +1702,9 @@ struct WriteZSParticles : zeno::INode {
 };
 
 ZENDEFNODE(WriteZSParticles, {
-                                 {"ZSParticles"},
+                                 {"ZSParticles", {"string", "path", ""}},
                                  {},
-                                 {{"string", "path", ""}},
+                                 {},
                                  {"MPM"},
                              });
 

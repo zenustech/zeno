@@ -1095,7 +1095,7 @@ struct ZSGridToZSParticle : INode {
                      grid = proxy<execspace_e::cuda>({}, grid)] __device__(auto boundaryNo, auto ci) mutable {
                         using grid_t = RM_CVREF_T(grid);
                         using table_t = RM_CVREF_T(table);
-                        using key_t = typename table_t::key_t;
+                        using key_t = typename table_t::key_type;
                         auto bi = boundaryIndices[boundaryNo];
                         if (grid("m", bi, ci) != 0.f && tags[boundaryNo] == 0) {
                             if (atomic_cas(exec_cuda, &tags[boundaryNo], 0, 1) == 0) {

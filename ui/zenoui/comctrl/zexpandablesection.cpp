@@ -21,14 +21,44 @@ QSize ZContentWidget::minimumSizeHint() const
 }
 
 
+ZScrollArea::ZScrollArea(QWidget* parent)
+	: QScrollArea(parent)
+{
+}
+
+QSize ZScrollArea::sizeHint() const
+{
+    //mock QScrollArea::sizeHint()
+    int f = 2 * frameWidth();
+    QSize sz(f, f);
+    int h = fontMetrics().height();
+    if (QWidget* pWidget = this->widget()) {
+        if (!widgetSize.isValid())
+            widgetSize = widgetResizable() ? pWidget->sizeHint() : pWidget->size();
+        sz += widgetSize;
+    }
+    else {
+        sz += QSize(12 * h, 8 * h);
+    }
+    if (verticalScrollBarPolicy() == Qt::ScrollBarAlwaysOn)
+        sz.setWidth(sz.width() + verticalScrollBar()->sizeHint().width());
+    if (horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOn)
+        sz.setHeight(sz.height() + horizontalScrollBar()->sizeHint().height());
+    if (sz.isValid())
+        return sz;      //custom: return real widget size without bound.
+    return sz.boundedTo(QSize(36 * h, 24 * h));
+}
+
+
 
 ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	: QWidget(parent)
 	, m_mainLayout(nullptr)
 	, m_contentArea(nullptr)
 	, m_contentWidget(nullptr)
+	, m_title(title)
 {
-	m_contentArea = new QScrollArea(this);
+	m_contentArea = new ZScrollArea(this);
 	m_mainLayout = new QGridLayout(this);
 
 	QLabel* plblTitle = new QLabel(title);
@@ -52,12 +82,11 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 	m_mainLayout->addWidget(m_collaspBtn, 0, 0);
 	m_mainLayout->addWidget(plblTitle, 0, 1);
 	m_mainLayout->addWidget(m_contentArea, 1, 1);
-	m_mainLayout->setRowStretch(m_mainLayout->rowCount(), 1);
 
 	setLayout(m_mainLayout);
 
 	connect(m_collaspBtn, &ZIconLabel::toggled, this, &ZExpandableSection::toggle);
-	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 }
 
 void ZExpandableSection::setContentLayout(QLayout* contentLayout)
@@ -90,4 +119,10 @@ QSize ZExpandableSection::minimumSizeHint() const
 {
     QSize sz = QWidget::minimumSizeHint();
     return sz;
+}
+
+void ZExpandableSection::mousePressEvent(QMouseEvent* event)
+{
+	//hit test.
+	QWidget::mousePressEvent(event);
 }

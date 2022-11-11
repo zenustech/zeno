@@ -57,7 +57,6 @@ float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp t
     cudaPol(range(verts.size()), [res = proxy<space>(res), verts = proxy<space>({}, verts), offset, nwarps, nchn, top,
                                   rop] ZS_LAMBDA(int i) mutable {
         auto [mask, numValid] = warp_mask(i, nwarps);
-        auto locid = threadIdx.x & 31;
         float v = top(verts(offset, i));
         while (--nchn) {
             v = rop(top(verts(offset++, i)), v);
@@ -83,7 +82,6 @@ struct ZSPrimitiveReduction : zeno::INode {
     };
     virtual void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto prim = get_input<ZenoParticles>("ZSParticles");
         auto &verts = prim->getParticles();
         auto attrToReduce = get_input2<std::string>("attr");

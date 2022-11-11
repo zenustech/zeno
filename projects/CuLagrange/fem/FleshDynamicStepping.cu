@@ -16,6 +16,10 @@
 #include <zeno/types/StringObject.h>
 
 #include "../geometry/linear_system/mfcg.hpp"
+#include "../geometry/kernel/calculate_bisector_normal.hpp"
+#include "../geometry/kernel/calculate_facet_normal.hpp"
+#include "../geometry/kernel/topology.hpp"
+#include "../geometry/kernel/compute_characteristic_length.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
@@ -26,9 +30,17 @@
 #include "collision_energy/edge_edge_collision.hpp"
 #include "collision_energy/edge_edge_sqrt_collition.hpp"
 
+#include "collision_energy/evaluate_collision.hpp"
+
 #define DEBUG_FLESH_DYN_STEPPING 1
 
 namespace zeno {
+
+// TODO : boundary force
+// TODO : fixed points
+// Anisotropic Cardiac
+
+#define MAX_FP_COLLISION_PAIRS 6
 
 struct FleshDynamicStepping : INode {
 
@@ -48,6 +60,7 @@ struct FleshDynamicStepping : INode {
     using pair4_t = zs::vec<Ti,4>;
 
     // currently only backward euler integrator is supported
+    // topology evaluation should be called before applying this node
     struct FEMDynamicSteppingSystem {
 
         constexpr auto dFAdF(const mat3& A) {
@@ -67,216 +80,305 @@ struct FleshDynamicStepping : INode {
             return M;        
         }
 
-        void computeInvertedVertex(zs::CudaExecutionPolicy& cudaPol,
-                            const zs::SmallString& x_tag,
-                            const zs::SmallString& inversion_tag,
-                            dtiles_t& vtemp,
-                            const tiles_t& quads) {
+        template <typename Model>
+        void computeCollisionEnergy(zs::CudaExecutionPolicy& cudaPol,const Model& model,
+                dtiles_t& vtemp,
+                dtiles_t& etemp,
+                dtiles_t& sttemp,
+                dtiles_t& setemp,
+                dtiles_t& cptemp,
+                // const bvh_t& stBvh,
+                // const bvh_t& seBvh,
+                const T& thickness) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
-            // compute the inverted vertices
-            PCG::fill(cudaPol,vtemp,inversion_tag,(T)0);
-            cudaPol(range(quads.size()),
-                [vtemp = proxy<space>({},vtemp),quads = proxy<space>({},quads),x_tag,inversion_tag] ZS_LAMBDA(int ei) mutable {
-                    auto DmInv = quads.template pack<3,3>("IB",ei);
-                    auto inds = quads.template pack<4>("inds",ei).template reinterpret_bits<int>();
-                    vec3 x1[4] = {vtemp.template pack<3>(x_tag, inds[0]),
-                            vtemp.template pack<3>(x_tag, inds[1]),
-                            vtemp.template pack<3>(x_tag, inds[2]),
-                            vtemp.template pack<3>(x_tag, inds[3])};   
 
-                    mat3 F{};
-                    {
-                        auto x1x0 = x1[1] - x1[0];
-                        auto x2x0 = x1[2] - x1[0];
-                        auto x3x0 = x1[3] - x1[0];
-                        auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
-                                        x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-                        F = Ds * DmInv;
-                    } 
-                    T inversion = zs::determinant(F) > (T)0 ? (T) 0 : (T) -1;
-                    if(inversion > 0)
-                        for(int i = 0;i < 4;++i)
-                            vtemp(inversion_tag,inds[i]) = (T)1;                  
-            });
+            T lambda = model.lam;
+            T mu = model.mu;
+
+
         }
 
-        T computeCollisionEnergy(zs::CudaExecutionPolicy& cudaPol,
-                            const zs::SmallString& x_tag,
-                            const zs::SmallString& inversion_tag,
-                            dtiles_t& vtemp,
-                            const tiles_t& svinds,
-                            const tiles_t& stinds,
-                            const tiles_t& quads,
-                            const T& thick_ness) {
-                                return 0;
-                            }
+
         template <typename Model>
-        void computeCollisionGradientHessian(zs::CudaExecutionPolicy& cudaPol,
-                            const T& lambda,
-                            const T& mu,
-                            const zs::SmallString& x_tag,
-                            const zs::SmallString& inversion_tag,
-                            const zs::SmallString& grad_tag,
+        void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,const Model& model,
                             dtiles_t& vtemp,
-                            const tiles_t& svinds,
-                            const tiles_t& stinds,
-                            const zs::SmallString& hessian_tag,
                             dtiles_t& etemp,
-                            const T& thickness) {
+                            dtiles_t& sttemp,
+                            dtiles_t& setemp,
+                            dtiles_t& cptemp,
+                            // const bvh_t& stBvh,
+                            // const bvh_t& seBvh,
+                            const T& thickness,
+                            bool explicit_collision = false,
+                            bool neglect_inverted = true) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
+
+            T lambda = model.lam;
+            T mu = model.mu; 
+
+            #if DEBUG_FLESH_DYN_STEPPING
+                if(!vtemp.hasProperty("grad"))
+                    fmt::print(fg(fmt::color::red),"the vtemp has no 'grad' channel\n");
+                if(!vtemp.hasProperty("xn"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
+                if(!vtemp.hasProperty("xp"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
+                if(!vtemp.hasProperty("is_inverted"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'is_inverted' channel\n");
+                if(!vtemp.hasProperty("vp"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'vp' channel\n");
+
+                if(!etemp.hasProperty("H"))
+                    fmt::print(fg(fmt::color::red),"the etemp has no 'H' channel\n");
+                if(!etemp.hasProperty("ActInv"))
+                    fmt::print(fg(fmt::color::red),"the etemp has no 'ActInv' channel\n");
+                
+                if(!verts.hasProperty("m"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'm' channel\n");
+
+                if(!eles.hasProperty("inds"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");        
+                if(!eles.hasProperty("IB"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");
+                if(!eles.hasProperty("m"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'm' channel\n");
+                if(!eles.hasProperty("vol"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'vol' channel\n");
+
+                // fmt::print(fg(fmt::color::blue),"the size of tris : {}\n",tris.size());
+                if(!tris.hasProperty("inds"))
+                    fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
+                if(!tris.hasProperty("area"))
+                    fmt::print(fg(fmt::color::red),"the tris has no 'area' channel\n");
+                if(!points.hasProperty("area"))
+                    fmt::print(fg(fmt::color::red),"the points has no 'area' channel\n");
+
+            #endif            
+
+            auto xtag = zs::SmallString("xn");
+            if(explicit_collision)
+                xtag = zs::SmallString("xp");
+
+
+            if(neglect_inverted) {
+            // // figure out all the vertices which is incident to an inverted tet
+                TILEVEC_OPS::fill(cudaPol,vtemp,"is_inverted",reinterpret_bits<T>((int)0));  
+                cudaPol(zs::range(eles.size()),
+                    [vtemp = proxy<space>({},vtemp),quads = proxy<space>({},eles),xtag] ZS_LAMBDA(int ei) mutable {
+                        auto DmInv = quads.template pack<3,3>("IB",ei);
+                        auto inds = quads.template pack<4>("inds",ei).reinterpret_bits(int_c);
+                        vec3 x1[4] = {vtemp.template pack<3>(xtag, inds[0]),
+                                vtemp.template pack<3>(xtag, inds[1]),
+                                vtemp.template pack<3>(xtag, inds[2]),
+                                vtemp.template pack<3>(xtag, inds[3])};   
+
+                        mat3 F{};
+                        {
+                            auto x1x0 = x1[1] - x1[0];
+                            auto x2x0 = x1[2] - x1[0];
+                            auto x3x0 = x1[3] - x1[0];
+                            auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                            x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                            F = Ds * DmInv;
+                        } 
+                        if(zs::determinant(F) < 0.0)
+                            for(int i = 0;i < 4;++i)
+                                vtemp("is_inverted",inds[i]) = reinterpret_bits<T>((int)1);                  
+                });
+
+            }
+
+
+#if 0
+            TILEVEC_OPS::fill<4>(cudaPol,cptemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
+            // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
+
             // compute vertex facet contact pairs
-            cudaPol(range(svinds.size()),[lambda = lambda,mu = mu,
-                            collisionEps = collisionEps,
-                            x_tag,inversion_tag,vtemp = proxy<space>({},vtemp),
-                            hessian_tag,etemp = proxy<space>({},etemp),
-                            svinds = proxy<space>({},svinds),
-                            stinds = proxy<space>({},stinds),
-                            stbvh = proxy<space>(stBvh),thickness] ZS_LAMBDA(int svi) mutable {
-                auto vi = reinterpret_bits<int>(svinds("inds",svi));
+            cudaPol(zs::range(points.size()),[lambda = lambda,mu = mu,collisionStiffness = collisionStiffness,
+                            in_collisionEps = in_collisionEps,out_collisionEps = out_collisionEps,
+                            vtemp = proxy<space>({},vtemp),
+                            etemp = proxy<space>({},etemp),
+                            sttemp = proxy<space>({},sttemp),
+                            setemp = proxy<space>({},setemp),
+                            cptemp = proxy<space>({},cptemp),
+                            points = proxy<space>({},points),
+                            lines = proxy<space>({},lines),
+                            tris = proxy<space>({},tris),
+                            stbvh = proxy<space>(stBvh),thickness = thickness,
+                            neglect_inverted = neglect_inverted,xtag] ZS_LAMBDA(int svi) mutable {
+                // if(svi == 0)    {
+                //     if(tris.hasProperty("inds"))
+                //         printf("compare size : %d %d %d\n",(int)vtemp.size(),(int)tris.size(),(int)tris.propertySize("inds"));
+                //     else
+                //         printf("the tris has no inds channel!!!\n"); 
+                // }
 
-                auto inversion = vtemp(inversion_tag,vi);
-                if(inversion > 0)
-                    return;
 
-                auto p = vtemp.template pack<3>(x_tag,vi);
+                auto vi = reinterpret_bits<int>(points("inds",svi));
+
+                if(neglect_inverted)   {
+                    auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
+                    if(is_vertex_inverted)
+                        return;
+                }
+
+                auto p = vtemp.template pack<3>(xtag,vi);
                 auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
 
+
+                // check whether there is collision happening, and if so, apply the collision force and addup the collision hessian
+                int nm_collision_pairs = 0;
                 auto process_vertex_face_collision_pairs = [&](int stI) {
-                    auto tri = stinds.template pack<3>("inds",stI).reinterpret_bits<int>();
+
+                    if(nm_collision_pairs >= MAX_FP_COLLISION_PAIRS)     
+                        return;   
+
+                    auto tri = tris.pack(dim_c<3>, "inds",stI).reinterpret_bits(int_c);
                     if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
                         return;
 
-                    auto t0 = vtemp.template pack<3>(x_tag,tri[0]);
-                    auto t1 = vtemp.template pack<3>(x_tag,tri[1]);
-                    auto t2 = vtemp.template pack<3>(x_tag,tri[2]);
-
+                    auto t0 = vtemp.template pack<3>(xtag,tri[0]);
+                    auto t1 = vtemp.template pack<3>(xtag,tri[1]);
+                    auto t2 = vtemp.template pack<3>(xtag,tri[2]);
                     // check whether the triangle is degenerate
-                    auto restArea = stinds("area",stI);
+                    auto restArea = tris("area",stI);
                     // skip the triangle too small at rest configuration
-                    if(restArea < (T)1e-6)
-                        return;
+                    // if(restArea < (T)1e-6)
+                    //     return;
 
                     const auto e10 = t1 - t0;
                     const auto e20 = t2 - t0;
                     auto deformedArea = (T)0.5 * e10.cross(e20).norm();
                     const T degeneracyEps = 1e-4;
-
                     // skip the degenerate triangles
                     const T relativeArea = deformedArea / (restArea + (T)1e-6);
                     if(relativeArea < degeneracyEps)
                         return;
 
-                    const T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p);
-
                     bool collide = false;
 
-                    if (distance < collisionEps){
-                        // if the point, projected onto the face's plane, is inside the face,
-                        // then record the collision now
-                        if (COLLISION_UTILS::pointProjectsInsideTriangle(t0, t1, t2, p))
-                            collide = true;
-                        else{// check whether the point is inside the cell
-                            vec3 neigh_normals[3];
-                            auto plane_normal = e10.cross(e20).normalized();
-                            auto neighbors = stinds.template pack<3>("neigh_inds",stI).template reinterpret_bits<int>();
-
-                            vec3 nt[3];
-                            // get the normals of the three adjacent faces
-                            for(int i = 0;i < 3;++i) {
-                                auto ntri = stinds.template pack<3>("inds",neighbors[i]).reinterpret_bits<int>();
-                                nt[0] = vtemp.template pack<3>(x_tag,ntri[0]);
-                                nt[1] = vtemp.template pack<3>(x_tag,ntri[1]);
-                                nt[2] = vtemp.template pack<3>(x_tag,ntri[2]);       
-
-                                auto ne10 = nt[1] - nt[0];
-                                auto ne20 = nt[2] - nt[0];
-
-                                neigh_normals[i] = ne10.cross(ne20).normalized();                      
-                            }
-                            // there is some consistent of neigh_inds and inds here
-                            collide = true;
-                            for(int i = 0;i < 3;++i) {
-                                auto ne = (neigh_normals[i] + plane_normal).normalized();
-                                auto eij = nt[(i + 1) % 3] - nt[i];
-                                auto neb = ne.cross(eij);
-                                auto nebHat = neb.normalized();
-                                auto deplane = nebHat.dot(p - nt[i]);
-
-                                if(deplane < 0.0) {
-                                    collide = false;
-                                    break;
-                                }
-                            }
-                        }
+                    if(COLLISION_UTILS::is_inside_the_cell(vtemp,xtag,
+                            lines,tris,
+                            sttemp,"nrm",
+                            setemp,"nrm",
+                            stI,p,in_collisionEps,out_collisionEps)){
+                        // printf("find collision facet-vertex collision in-cell pair : %d %d\n",stI,svi);
+                        collide = true;
                     }
 
                     if(!collide)
                         return;
 
                     // now there is collision, build the "collision tets"
-                    if(!vtemp.hasProperty("oneRingArea"))
-                        printf("vtemp has no oneRingArea");
+                    // if(!vtemp.hasProperty("oneRingArea"))
+                    //     printf("vtemp has no oneRingArea");
 
-                    auto vertexFaceCollisionAreas = restArea + vtemp("oneRingArea",vi);
+                    cptemp.template tuple<4>("inds",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = zs::vec<int,4>(vi,tri[0],tri[1],tri[2]).template reinterpret_bits<T>();
+
+                    auto vertexFaceCollisionAreas = restArea + points("area",svi);
                     
-                    std::vector<vec3> collision_verts(4);
+                    vec3 collision_verts[4] = {};
                     collision_verts[0] = p;
                     collision_verts[1] = t0;
                     collision_verts[1] = t1;
                     collision_verts[1] = t2;
 
-                    auto grad = VERTEX_FACE_SQRT_COLLISION::gradient(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
-                    auto hessian = VERTEX_FACE_SQRT_COLLISION::hessian(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
+                    auto collisionEps = in_collisionEps;
 
-                    etemp.template tuple<12*12>(hessian_tag,stI) = etemp.template pack<12,12>(hessian_tag,stI) + hessian;
+                    auto grad = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::gradient(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
+                    auto hessian = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::hessian(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
+                    cptemp.template tuple<12*12>("H",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = hessian;
 
                     for(int i = 0;i != 4;++i) {
                         auto g_vi = i == 0 ? vi : tri[i-1];
                         for (int d = 0; d != 3; ++d)
                             atomic_add(exec_cuda, &vtemp("grad", d, g_vi), grad(i * 3 + d));
                     }
+                    nm_collision_pairs++;
 
                 };
                 stbvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
             });
+
+#else
+
+        COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
+            vtemp,"xn",
+            points,
+            lines,
+            tris,
+            sttemp,
+            setemp,
+            cptemp,
+            // stBvh,
+            in_collisionEps,out_collisionEps);
+
+
+        // output all the collision pairs
+        // cudaPol(zs::range(cptemp.size()),
+        //     [cptemp = proxy<space>({},cptemp)] ZS_LAMBDA(int cpi) mutable {
+        //         auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+        //         bool collide = true;
+        //         for(int i = 0;i != 4;++i)
+        //             if(inds[i] < 0)
+        //                 collide = false;
+        //         if(collide)
+        //             printf("collision_pair[%d] : %d %d %d %d\n",
+        //                 cpi,inds[0],inds[1],inds[2],inds[3]);
+        // });
+
+        COLLISION_UTILS::evaluate_collision_grad_and_hessian<MAX_FP_COLLISION_PAIRS>(cudaPol,
+            vtemp,"xn",
+            cptemp,
+            in_collisionEps,out_collisionEps,
+            (T)collisionStiffness,
+            (T)mu,(T)lambda);
+
+
+
+        // project out all the neglect verts
+        if(neglect_inverted) {
+            cudaPol(zs::range(cptemp.size()),
+                [cptemp = proxy<space>({},cptemp),vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int cpi) {
+                    auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+                    for(int i = 0;i != 4;++i)
+                        if(inds[i] < 0)
+                            return;
+
+                    bool is_inverted = false;
+                    for(int i = 0;i != 4;++i){
+                        auto vi = inds[i];
+                        auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
+                        if(is_vertex_inverted)
+                            is_inverted = true;
+                    }
+
+                    if(is_inverted){
+                        cptemp.template tuple<12*12>("H",cpi) = zs::vec<T,12,12>::zeros();
+                        cptemp.template tuple<12>("grad",cpi) = zs::vec<T,12>::zeros();
+                    }
+            });    
         }
 
-        void computeCollisionDetection(zs::CudaExecutionPolicy& cudaPol,
-                            const zs::SmallString& p1_tag,
-                            const zs::SmallString& inversion_tag,
-                            dtiles_t& vtemp,
-                            const tiles_t& stInds,
-                            const tiles_t& seinds,
-                            const tiles_t& svinds,
-                            const tiles_t& quads,
-                            const T& thickness) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            #if DEBUG_FLESH_DYN_STEPPING
-                if(!vtemp.hasProperty(p1_tag))
-                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",p1_tag.asString());
-            #endif
+        // auto gradN = TILEVEC_OPS::inf_norm<12>(cudaPol,cptemp,"grad");
+        // fmt::print(fg(fmt::color::red),"collision gradN = {}\n",gradN);
+        // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
 
-            auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,stInds,zs::wrapv<3>{},thickness,p1_tag);
-            stBvh.refit(cudaPol,triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,seinds,zs::wrapv<2>{},thickness,p1_tag);
-            seBvh.refit(cudaPol,edgeBvs);
+        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",vtemp,"grad");
 
-            computeInvertedVertex(cudaPol,p1_tag,inversion_tag,vtemp,quads);
-            // if(use_vertex_facet_collision)
-            // computeVertexFaceCollisions(cudaPol,p1_tag,inversion_tag,vtemp,quads);
+
+#endif
+
+
         }
+
 
         template <typename Model>
         void computeGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
                             const Model& model,
-                            const zs::SmallString& p1_tag,
-                            const zs::SmallString& p0_tag,
-                            const zs::SmallString& v0_tag,
                             dtiles_t& vtemp,
-                            const zs::SmallString& H_tag,
                             dtiles_t& etemp) {        
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
@@ -285,15 +387,15 @@ struct FleshDynamicStepping : INode {
                 // std::cout << "CHECK THE PROPERTY CHANNEL" << std::endl;
                 if(!vtemp.hasProperty("grad"))
                     fmt::print(fg(fmt::color::red),"the vtemp has no 'grad' channel\n");
-                if(!vtemp.hasProperty(p1_tag))
-                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",p1_tag.asString());
-                if(!vtemp.hasProperty(p0_tag))
-                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",p0_tag.asString());
-                if(!vtemp.hasProperty(v0_tag))
-                    fmt::print(fg(fmt::color::red),"the verts has no '{}' channel\n",v0_tag.asString());
+                if(!vtemp.hasProperty("xn"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
+                if(!vtemp.hasProperty("xp"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'xp' channel\n");
+                if(!vtemp.hasProperty("vp"))
+                    fmt::print(fg(fmt::color::red),"the verts has no 'vp' channel\n");
 
-                if(!etemp.hasProperty(H_tag))
-                    fmt::print(fg(fmt::color::red),"the etemp has no '{}' channel\n",H_tag.asString());
+                if(!etemp.hasProperty("H"))
+                    fmt::print(fg(fmt::color::red),"the etemp has no 'H' channel\n");
                 if(!etemp.hasProperty("ActInv"))
                     fmt::print(fg(fmt::color::red),"the etemp has no 'ActInv' channel\n");
                 
@@ -306,22 +408,23 @@ struct FleshDynamicStepping : INode {
                     fmt::print(fg(fmt::color::red),"the eles has no 'm' channel\n");
                 if(!eles.hasProperty("vol"))
                     fmt::print(fg(fmt::color::red),"the eles has no 'vol' channel\n");
+                if(!eles.hasProperty("inds"))
+                    fmt::print(fg(fmt::color::red),"the eles has no 'inds' channel\n");
             #endif
 
-            PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
-            PCG::fill<144>(cudaPol,etemp,H_tag,zs::vec<T,144>::zeros());         
+            TILEVEC_OPS::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+            TILEVEC_OPS::fill<144>(cudaPol,etemp,"H",zs::vec<T,144>::zeros());         
             
             // eval the inertia term gradient
-            cudaPol(zs::range(vtemp.size()), [dt2 = dt2,   
+            cudaPol(zs::range(vtemp.size()), [dt2 = dt2,
                         vtemp = proxy<space>({},vtemp),
                         verts = proxy<space>({},verts),
-                        dt = dt,p1_tag,p0_tag,v0_tag] ZS_LAMBDA(int vi) mutable {
+                        dt = dt] ZS_LAMBDA(int vi) mutable {
                 auto m = verts("m",vi);// nodal mass
-                auto x1 = vtemp.pack<3>(p1_tag,vi);
-                auto x0 = vtemp.pack<3>(p0_tag,vi);
-                auto v0 = vtemp.pack<3>(v0_tag,vi);
-
-                vtemp.template tuple<3>("grad",vi) = m * (x1 - x0 - v0 * dt) / dt2;                    
+                auto x1 = vtemp.pack<3>("xn",vi);
+                auto x0 = vtemp.pack<3>("xp",vi);
+                auto v0 = vtemp.pack<3>("vp",vi);
+                vtemp.template tuple<3>("grad",vi) = -m * (x1 - x0 - v0 * dt) / dt2;                    
             });
 
             cudaPol(zs::range(eles.size()), [this,dt2 = dt2,
@@ -330,15 +433,15 @@ struct FleshDynamicStepping : INode {
                             bcws = proxy<space>({},b_bcws),
                             b_verts = proxy<space>({},b_verts),
                             verts = proxy<space>({}, verts),
-                            eles = proxy<space>({}, eles),p1_tag,p0_tag,v0_tag,H_tag,
+                            eles = proxy<space>({}, eles),
                             model, volf = volf] ZS_LAMBDA (int ei) mutable {
                     auto DmInv = eles.template pack<3,3>("IB",ei);
                     auto dFdX = dFdXMatrix(DmInv);
-                    auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
-                    vec3 x1[4] = {vtemp.template pack<3>(p1_tag, inds[0]),
-                            vtemp.template pack<3>(p1_tag, inds[1]),
-                            vtemp.template pack<3>(p1_tag, inds[2]),
-                            vtemp.template pack<3>(p1_tag, inds[3])};   
+                    auto inds = eles.template pack<4>("inds",ei).reinterpret_bits(int_c);
+                    vec3 x1[4] = {vtemp.template pack<3>("xn", inds[0]),
+                            vtemp.template pack<3>("xn", inds[1]),
+                            vtemp.template pack<3>("xn", inds[2]),
+                            vtemp.template pack<3>("xn", inds[3])};   
 
                     mat3 FAct{};
                     {
@@ -373,13 +476,13 @@ struct FleshDynamicStepping : INode {
                     auto dFdAct_dFdX = dFActdF * dFdX; 
                     // dFdAct_dFdX = dFdX; 
                     auto H = dFdAct_dFdX.transpose() * Hq * dFdAct_dFdX * vole;
-                    etemp.template tuple<12 * 12>(H_tag, ei) = H;
+                    etemp.template tuple<12 * 12>("H", ei) = H;
 
                     // add inertia hessian term
                     auto m = eles("m",ei);// element-wise mass
                     for(int i = 0;i < 12;++i){
                         // Mass(i,i) = 1;
-                        etemp(H_tag,i * 12 + i,ei) += m /dt2/4;
+                        etemp("H",i * 12 + i,ei) += m /dt2/4;
                     }
 
 
@@ -390,7 +493,7 @@ struct FleshDynamicStepping : INode {
             auto nmEmbedVerts = b_verts.size();
             cudaPol(zs::range(nmEmbedVerts), [this,
                     bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
-                    eles = proxy<space>({},eles),lambda,mu,p1_tag,H_tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
+                    eles = proxy<space>({},eles),lambda,mu,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
                         auto ei = reinterpret_bits<int>(bcws("inds",vi));
                         if(ei < 0)
                             return;
@@ -398,7 +501,7 @@ struct FleshDynamicStepping : INode {
                         auto w = bcws.pack<4>("w",vi);
                         auto tpos = vec3::zeros();
                         for(size_t i = 0;i != 4;++i)
-                            tpos += w[i] * vtemp.pack<3>(p1_tag,inds[i]);
+                            tpos += w[i] * vtemp.pack<3>("xn",inds[i]);
                         auto pdiff = tpos - b_verts.pack<3>("x",vi);
 
                         T stiffness = 2.0066 * mu + 1.0122 * lambda;
@@ -413,7 +516,7 @@ struct FleshDynamicStepping : INode {
                             for(int j = 0;j != 4;++j){
                                 T alpha = stiffness * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi) * eles("vol",ei);
                                 for(int d = 0;d != 3;++d){
-                                    atomic_add(exec_cuda,&etemp(H_tag,(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
+                                    atomic_add(exec_cuda,&etemp("H",(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
                                 }
                             }
 
@@ -422,11 +525,22 @@ struct FleshDynamicStepping : INode {
         }
 
 
-        FEMDynamicSteppingSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf,const T& _dt)
-            : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf},dt{_dt}, dt2{dt * dt}, use_edge_edge_collision{true}, use_vertex_facet_collision{true} {}
+        FEMDynamicSteppingSystem(const tiles_t &verts, const tiles_t &eles,
+                const tiles_t& points,const tiles_t& lines,const tiles_t& tris,
+                T in_collisionEps,T out_collisionEps,
+                const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,
+                vec3 volf,const T& _dt,const T& collisionStiffness)
+            : verts{verts}, eles{eles},points{points}, lines{lines}, tris{tris},
+                    in_collisionEps{in_collisionEps},out_collisionEps{out_collisionEps},
+                    b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},
+                    volf{volf},
+                    dt{_dt}, dt2{dt * dt},collisionStiffness{collisionStiffness},use_edge_edge_collision{true}, use_vertex_facet_collision{true} {}
 
         const tiles_t &verts;
         const tiles_t &eles;
+        const tiles_t &points;
+        const tiles_t &lines;
+        const tiles_t &tris;
         const tiles_t &b_bcws;  // the barycentric interpolation of embeded bones 
         const tiles_t &b_verts; // the position of embeded bones
 
@@ -434,39 +548,77 @@ struct FleshDynamicStepping : INode {
         vec3 volf;
         T dt;
         T dt2;
-        T collisionEps;
+        T in_collisionEps;
+        T out_collisionEps;
 
         T collisionStiffness;
-
-        bvh_t stBvh, seBvh;  
 
         bool bvh_initialized;
         bool use_edge_edge_collision;
         bool use_vertex_facet_collision;
+
+        // int default_muscle_id;
+        // zs::vec<T,3> default_muscle_dir;
+        // T default_act;
+
+        // T inset;
+        // T outset;
     };
 
 
 
     void apply() override {
         using namespace zs;
-        auto zstets = get_input<ZenoParticles>("ZSParticles");
+        auto zsparticles = get_input<ZenoParticles>("ZSParticles");
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
             gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
         T armijo = (T)1e-4;
         T wolfe = (T)0.9;
-        T cg_res = (T)0.01;
+        // T cg_res = (T)0.001;
+        T cg_res = (T)0.0001;
         T btl_res = (T)0.1;
-        auto models = zstets->getModel();
-        auto& verts = zstets->getParticles();
-        auto& eles = zstets->getQuadraturePoints();
+        auto models = zsparticles->getModel();
+        auto& verts = zsparticles->getParticles();
+        auto& eles = zsparticles->getQuadraturePoints();
+
+        if(eles.getChannelSize("inds") != 4)
+            throw std::runtime_error("the input zsparticles is not a tetrahedra mesh");
+        if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
+            throw std::runtime_error("the input zsparticles has no surface tris");
+        if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+            throw std::runtime_error("the input zsparticles has no surface lines");
+        if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
+            throw std::runtime_error("the input zsparticles has no surface points");
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfTriTag)) {
+        //     throw std::runtime_error("the input zsparticles has no surface tris's spacial structure");
+        // }
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfEdgeTag)) {
+        //     throw std::runtime_error("the input zsparticles has no surface edge's spacial structure");
+        // }
+        // if(!zsparticles->hasBvh(ZenoParticles::s_surfVertTag))  {
+        //     throw std::runtime_error("the input zsparticles has no surface vert's spacial structure");
+        // }
+
+        auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
+        auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+        auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+
+        // auto& stBvh = zsparticles->bvh(ZenoParticles::s_surfTriTag);
+        // auto& seBvh = zsparticles->bvh(ZenoParticles::s_surfEdgeTag);
+
+
         auto zsbones = get_input<ZenoParticles>("driven_boudary");
-        auto tag = get_param<std::string>("driven_tag");
-        auto muscle_id_tag = get_param<std::string>("muscle_id_tag");
-        auto bone_driven_weight = (T)1.0;
+        auto driven_tag = get_input2<std::string>("driven_tag");
+        auto bone_driven_weight = get_input2<float>("driven_weight");
+        auto muscle_id_tag = get_input2<std::string>("muscle_id_tag");
+        // auto bone_driven_weight = (T)0.02;
+
+
+
         auto newton_res = (T)0.01;
 
-        auto dt = get_param<float>("dt");
+        auto dt = get_input2<float>("dt");
 
         auto volf = vec3::from_array(gravity * models.density);
 
@@ -481,82 +633,121 @@ struct FleshDynamicStepping : INode {
         constexpr auto host_space = zs::execspace_e::openmp;
         auto ompExec = zs::omp_exec();
         auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
-        ompExec(range(act_buffer.size()),
-            [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
+        ompExec(zs::range(act_buffer.size()),
+            [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable {
                 act_buffer("act",i) = act_[i];
         });
         act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
 
+        // the temp buffer only store the data that will change every iterations or every frame
         static dtiles_t vtemp{verts.get_allocator(),
-                            {{"grad", 3},
-                            {"P", 9},
-                            {"bou_tag",1},
-                            {"dir", 3},
-                            {"xn", 3},
-                            {"xp",3},
-                            {"vp",3}},
-                            verts.size()};
-        static dtiles_t etemp{eles.get_allocator(), {{"H", 12 * 12},{"inds",4},{"ActInv",3*3},{"muscle_ID",1},{"fiber",3}}, eles.size()};
-        vtemp.resize(verts.size());
-        etemp.resize(eles.size());
+                            {
+                                {"grad", 3},
+                                {"P", 9},
+                                {"bou_tag",1},
+                                {"dir", 3},
+                                {"xn", 3},
+                                {"xp",3},
+                                {"vp",3},
+                                {"is_inverted",1},
+                                {"active",1}
+                            },verts.size()};
 
-        FEMDynamicSteppingSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf,dt};
+        // auto max_collision_pairs = tris.size() / 10; 
+        static dtiles_t etemp{eles.get_allocator(), {
+                {"H", 12 * 12},
+                {"inds",4},
+                {"ActInv",3*3},
+                // {"muscle_ID",1},
+                // {"fiber",3}
+                }, eles.size()};
+
+                // {{tags}, cnt, memsrc_e::um, 0}
+        static dtiles_t sttemp(tris.get_allocator(),
+            {
+                {"nrm",3}
+            },tris.size()
+        );
+        static dtiles_t setemp(lines.get_allocator(),
+            {
+                {"nrm",3}
+            },lines.size()
+        );
+
+        static dtiles_t cptemp(points.get_allocator(),{
+            {"inds",4},
+            {"area",1},
+            {"grad",12},
+            {"inverted",1},
+            {"H",12 * 12}
+        },points.size() * MAX_FP_COLLISION_PAIRS);
+
 
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec().sync(false);
+    
 
-        PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+        // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
+        TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+
+        auto avgl = compute_average_edge_length(cudaPol,verts,"x",tris);
+        // auto avgl = (T)1.0;
+
+        auto collisionStiffness = get_input2<float>("cstiffness");
 
 
-        if(!eles.hasProperty("fiber")){
-            PCG::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
-        }else {
-        if(eles.getChannelSize("fiber") != 3){
-            fmt::print("The input fiber  has wrong channel size\n");
-            throw std::runtime_error("The input fiber has wrong channel size");
-        }
-            PCG::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
-        }
-        if(!eles.hasProperty(muscle_id_tag)) {
-            PCG::fill(cudaPol,etemp,"muscle_ID",-1);
-        }else {
-            PCG::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
-        }
+        // auto inset_ratio = get_input2<float>("collision_inset");
+        // auto outset_ratio = get_input2<float>("collision_outset");    
 
+        auto in_collisionEps = get_input2<float>("in_collisionEps");
+        auto out_collisionEps = get_input2<float>("out_collisionEps");
+
+        FEMDynamicSteppingSystem A{
+            verts,eles,
+            points,lines,tris,
+            (T)in_collisionEps,(T)out_collisionEps,
+            (*zsparticles)[driven_tag],zsbones->getParticles(),bone_driven_weight,
+            volf,dt,collisionStiffness};
+
+
+        // TILEVEC_OPS::fill<9>(cudaPol,etemp,"ActInv",zs::vec<T,9>{1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0});
         // apply muscle activation
-        cudaPol(range(etemp.size()),
-            [etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
+        cudaPol(zs::range(eles.size()),
+            [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),
+                act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts,avgl] ZS_LAMBDA(int ei) mutable {
                 // auto act = eles.template pack<3>("act",ei);
-                auto fiber = etemp.template pack<3>("fiber",ei);
-                
-                vec3 act{0};
+                // auto fiber = etemp.template pack<3>("fiber",ei);
+                zs::vec<T,3> fiber{};
+                if(!eles.hasProperty("fiber"))
+                    fiber = eles.template pack<3>("fiber",ei);
+                else 
+                    fiber = zs::vec<T,3>(1.0,0.0,0.0);
+                vec3 act{1.0,1.0,1.0};
+
 
                 auto nfiber = fiber.norm();
-                auto ID = etemp("muscle_ID",ei);
-                if(nfiber < 0.5 || ID < -1e-6 || nm_acts == 0){ // if there is no local fiber orientaion, use the default act and fiber
-                    fiber = vec3{1.0,0.0,0.0};
-                    act = vec3{1.0,1.0,1.0};
-                }else{
-                    // a test
-                    int id = (int)ID;
-                    float a = 1. - act_buffer("act",id);
+                // auto ID = etemp("muscle_ID",ei);
+                int ID = -1;
+                if(eles.hasProperty(muscle_id_tag))
+                    ID = (int)eles(muscle_id_tag,ei);
+                
+                if(nm_acts > 0 && ID > -1){
+                    float a = 1. - act_buffer("act",ID);
                     act = vec3{1,zs::sqrt(1./a),zs::sqrt(1./a)};
-                    fiber /= nfiber;// in case there is some floating-point error
-
-                    // printf("use act[%d] : %f\n",id,(float)a);
                 }
 
                 vec3 dir[3];
                 dir[0] = fiber;
-                auto tmp = vec3{1.0,0.0,0.0};
+                auto tmp = vec3{0.0,1.0,0.0};
                 dir[1] = dir[0].cross(tmp);
                 if(dir[1].length() < 1e-3) {
-                    tmp = vec3{0.0,1.0,0.0};
+                    tmp = vec3{0.0,0.0,1.0};
                     dir[1] = dir[0].cross(tmp);
                 }
 
                 dir[1] = dir[1] / dir[1].length();
                 dir[2] = dir[0].cross(dir[1]);
+                dir[2] = dir[2] / dir[2].length();
 
                 auto R = mat3{};
                 for(int i = 0;i < 3;++i)
@@ -569,60 +760,120 @@ struct FleshDynamicStepping : INode {
                 Act(2,2) = act[2];
 
                 Act = R * Act * R.transpose();
+
                 etemp.template tuple<9>("ActInv",ei) = zs::inverse(Act);
         });
         // std::cout << "set initial guess" << std::endl;
         // setup initial guess
-        PCG::copy<3>(cudaPol,verts,"x",vtemp,"xp");
-        PCG::copy<3>(cudaPol,verts,"v",vtemp,"vp");
+        TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"xp");
+        TILEVEC_OPS::copy<3>(cudaPol,verts,"v",vtemp,"vp");
+        TILEVEC_OPS::copy(cudaPol,verts,"active",vtemp,"active");
         if(verts.hasProperty("init_x"))
-            PCG::copy<3>(cudaPol,verts,"init_x",vtemp,"xn");   
-        else
-            PCG::add<3>(cudaPol,vtemp,"xp",1.0,"vp",dt,"xn");  
-        PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+            TILEVEC_OPS::copy<3>(cudaPol,verts,"init_x",vtemp,"xn");   
+        else {
+            // TILEVEC_OPS::add<3>(cudaPol,vtemp,"xp",1.0,"vp",dt,"xn");  
+            TILEVEC_OPS::add<3>(cudaPol,vtemp,"xp",1.0,"vp",(T)0.0,"xn");  
+        }
+        TILEVEC_OPS::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
 
 
-        match([&](auto &elasticModel) {
-            A.computeGradientAndHessian(cudaPol, elasticModel,"xn","xp","vp",vtemp,"H",etemp);
-        })(models.getElasticModel());
+        auto bvh_thickness = 5 * avgl;
 
-        PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
+        int max_newton_iterations = 5;
+        int nm_iters = 0;
 
-        // if the grad is too small, return the result
-        // Solve equation using PCG
-        PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
-        // std::cout << "solve using pcg" << std::endl;
-        PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
-        // std::cout << "finish solve pcg" << std::endl;
-        PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
-        T alpha = 1.;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                            alpha] __device__(int i) mutable {
-            vtemp.tuple<3>("xn", i) =
-                vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
-        });
+        while(nm_iters < max_newton_iterations) {
 
 
-        cudaPol(zs::range(verts.size()),
-                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
-                    auto newX = vtemp.pack<3>("xn", vi);
-                    verts.tuple<3>("x", vi) = newX;
-                    verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
-                });
+            match([&](auto &elasticModel) {
+                A.computeGradientAndHessian(cudaPol, elasticModel,vtemp,etemp);
+            })(models.getElasticModel());
+
+            bool include_collision = true;
+            if(include_collision) {
+
+                match([&](auto &elasticModel) {
+                    A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
+                        vtemp,
+                        etemp,
+                        sttemp,
+                        setemp,
+                        cptemp,
+                        // stBvh,
+                        // seBvh,
+                        bvh_thickness);
+                })(models.getElasticModel());
+
+            }
+
+            PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,cptemp,"P",vtemp);
+            // PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
+            // if the grad is too small, return the result
+            // Solve equation using PCG
+            TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+            // std::cout << "solve using pcg" << std::endl;
+            PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,cptemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
+            // PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
+            // std::cout << "finish solve pcg" << std::endl;
+            PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
+            T alpha = 1.;
+            cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),alpha] __device__(int i) mutable {
+                vtemp.tuple<3>("xn", i) =
+                    vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
+            });
+
+
+            cudaPol(zs::range(verts.size()),
+                    [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
+                        auto newX = vtemp.pack<3>("xn", vi);
+                        verts.tuple<3>("x", vi) = newX;
+                        verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
+                    });
+
+            T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+            std::cout << "res[" << nm_iters << "] : " << res << std::endl;
+            if(res < 1e-3)
+                break;
+            nm_iters++;
+        }
+
+
+
+        dtiles_t nodalForceVis(verts.get_allocator(),
+            {
+                {"x",3},
+                {"dir",3},
+            },verts.size());
+
 
         cudaPol.syncCtx();
-        set_output("ZSParticles", zstets);
+        TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",nodalForceVis,"x");
+        TILEVEC_OPS::fill<3>(cudaPol,nodalForceVis,"dir",zs::vec<T,3>::zeros());
+        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",nodalForceVis,"dir");
+
+
+
+
+
+        set_output("ZSParticles", zsparticles);
     }
 
 
 };
 
-ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","driven_boudary","gravity","Acts"},
+ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles",
+                                    "gravity","Acts",
+                                    "driven_boudary",
+                                    {"string","driven_tag","bone_bw"},
+                                    {"float","driven_weight","0.02"},
+                                    {"string","muscle_id_tag","ms_id_tag"},
+                                    {"float","cstiffness","0.0"},
+                                    {"float","in_collisionEps","0.01"},
+                                    {"float","out_collisionEps","0.01"},
+                                    {"float","dt","0.5"}
+                                    },
                                   {"ZSParticles"},
                                   {
-                                    {"string","driven_tag","bone_bw"},
-                                    {"string","muscle_id_tag","ms_id_tag"},
-                                    {"float","dt","0.03"}
                                   },
                                   {"FEM"}});
 

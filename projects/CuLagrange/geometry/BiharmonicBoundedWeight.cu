@@ -337,12 +337,12 @@ struct SolveBBW : zeno::INode {
             fmt::print("The input tets does not contain specified property:{}\n",btag);
         }
 
-        int wdim = verts.getChannelSize(wtag);
+        int wdim = verts.getPropertySize(wtag);
         if(wdim == 0){
             throw std::runtime_error("The input tets does not contain bbw channel\n");
         }
         
-        int cdim = eles.getChannelSize("inds");
+        int cdim = eles.getPropertySize("inds");
         if(cdim != 4){
             throw std::runtime_error("Only tetrahedra is currently supported\n");
         }
