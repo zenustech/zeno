@@ -195,7 +195,7 @@ if (ZENO_BUILD_PLAYER)
     add_subdirectory(ui/zenoplayer)
 endif()
 
-add_subdirectory(embed)
+#add_subdirectory(embed)
 
 if (ZENO_INSTALL_TARGET)
     install(

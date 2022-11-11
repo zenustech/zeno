@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Structures.hpp"
+#include "Structures.hpp"
 
 namespace zeno {
     template<typename T>

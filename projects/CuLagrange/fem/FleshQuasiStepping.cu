@@ -26,7 +26,7 @@ struct FleshQuasiStaticStepping : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
   using mat3 = zs::vec<T, 3, 3>;
-  struct FEMSystem {
+  struct FEMQuasiStaticSystem {
 
     constexpr auto dFAdF(const mat3& A) {
         zs::vec<T,9,9> M{};
@@ -52,6 +52,8 @@ struct FleshQuasiStaticStepping : INode {
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{verts.get_allocator(), 1};
       res.setVal(0);
+      bool shouldSync = pol.shouldSync();
+      pol.sync(true);
     //   elastic potential
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
                                eles = proxy<space>({}, eles),
@@ -123,7 +125,7 @@ struct FleshQuasiStaticStepping : INode {
                 // the cnorm here should be the allocated volume of point in embeded tet 
               atomic_add(exec_cuda, &res[0], (T)bpsi);
       });
-
+      pol.sync(shouldSync);
       return res.getVal();
     }
 
@@ -136,8 +138,8 @@ struct FleshQuasiStaticStepping : INode {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // fmt::print("check here 0");
-        PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
-        PCG::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
+        TILEVEC_OPS::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+        TILEVEC_OPS::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
         cudaPol(zs::range(eles.size()), [this,
                                         vtemp = proxy<space>({}, vtemp),
                                         etemp = proxy<space>({}, etemp),
@@ -284,7 +286,7 @@ struct FleshQuasiStaticStepping : INode {
 
     }
 
-    FEMSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf)
+    FEMQuasiStaticSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf)
         : verts{verts}, eles{eles}, b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},volf{volf}{}
 
     const tiles_t &verts;
@@ -299,7 +301,9 @@ struct FleshQuasiStaticStepping : INode {
   void apply() override {
     using namespace zs;
     auto zstets = get_input<ZenoParticles>("ZSParticles");
-    auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
+    auto gravity = zeno::vec<3,T>(0);
+    if(has_input("gravity"))
+      gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec<3,T>>();
     auto armijo = get_param<float>("armijo");
     auto curvature = get_param<float>("wolfe");
     auto cg_res = get_param<float>("cg_res");
@@ -319,7 +323,7 @@ struct FleshQuasiStaticStepping : INode {
     // fmt::print("number of activations : {}\n",nm_acts);
 
     std::vector<float> act_;    
-    int nm_acts = 0;
+    std::size_t nm_acts = 0;
     // auto nm_acts_ = zstets->get().get("NM_MUSCLES");
     // std::cout << "nm_acts_ : " << std::endl;
 
@@ -332,18 +336,13 @@ struct FleshQuasiStaticStepping : INode {
 
     constexpr auto host_space = zs::execspace_e::openmp;
     auto ompExec = zs::omp_exec();
-    auto act_buffer = dtiles_t{{{"act",1}},(std::size_t)nm_acts,zs::memsrc_e::host};
+    auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
     ompExec(range(act_buffer.size()),
         [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
             act_buffer("act",i) = act_[i];
             // fmt::print("act<{}> : {}\n",i,act_buffer("act",i));
     });
     act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
-
-    if((!eles.hasProperty(muscle_id_tag)) || (eles.getPropertySize(muscle_id_tag) != 1)){
-        fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getPropertySize(muscle_id_tag));
-        throw std::runtime_error("the quadrature has no muscle id tag");
-    }
 
     static dtiles_t vtemp{verts.get_allocator(),
                           {{"grad", 3},
@@ -357,38 +356,51 @@ struct FleshQuasiStaticStepping : INode {
                            {"p", 3},
                            {"q", 3}},
                           verts.size()};
-    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12},{"inds",4},{"ActInv",3*3}}, eles.size()};
+    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12},{"inds",4},{"ActInv",3*3},{"muscle_ID",1},{"fiber",3}}, eles.size()};
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
-    FEMSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
+    FEMQuasiStaticSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
 
     constexpr auto space = execspace_e::cuda;
-    auto cudaPol = cuda_exec();
+    auto cudaPol = cuda_exec().sync(false);
 
-    PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+    TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
 
 
     if(!eles.hasProperty("fiber")){
-        fmt::print("The input flesh should have fiber orientations\n");
-        throw std::runtime_error("The input flesh should have fiber orientations");
-    }
+        // fmt::print("The input flesh have no fiber orientations, use the default setting\n");
+        TILEVEC_OPS::fill<3>(cudaPol,etemp,"fiber",{1.,0.,0.});
+        // throw std::runtime_error("The input flesh should have fiber orientations");
 
-    if(eles.getPropertySize("fiber") != 3){
-        fmt::print("The input fiber  has wrong channel size\n");
-        throw std::runtime_error("The input fiber has wrong channel size");
+    }else {
+      if(eles.getChannelSize("fiber") != 3){
+          fmt::print("The input fiber  has wrong channel size\n");
+          throw std::runtime_error("The input fiber has wrong channel size");
+      }
+      TILEVEC_OPS::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
+    }
+    if(!eles.hasProperty(muscle_id_tag)) {
+      // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
+      //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+      //     throw std::runtime_error("the quadrature has no muscle id tag");
+      // }
+      // fmt::print("The input flesh have no mosucle_id specified, use the default setting");
+      TILEVEC_OPS::fill(cudaPol,etemp,"muscle_ID",-1);
+    }else {
+      TILEVEC_OPS::copy(cudaPol,eles,muscle_id_tag,etemp,"muscle_ID");
     }
 
     // apply muscle activation
     cudaPol(range(etemp.size()),
-        [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
+        [etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
             // auto act = eles.template pack<3>("act",ei);
-            auto fiber = eles.template pack<3>("fiber",ei);
+            auto fiber = etemp.template pack<3>("fiber",ei);
               
             vec3 act{0};
 
             auto nfiber = fiber.norm();
-            auto ID = eles(muscle_id_tag,ei);
+            auto ID = etemp("muscle_ID",ei);
             if(nfiber < 0.5 || ID < -1e-6 || nm_acts == 0){ // if there is no local fiber orientaion, use the default act and fiber
                 fiber = vec3{1.0,0.0,0.0};
                 act = vec3{1.0,1.0,1.0};
@@ -451,15 +463,15 @@ struct FleshQuasiStaticStepping : INode {
     });
 
     // setup initial guess
-    PCG::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
-    PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+    TILEVEC_OPS::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
+    TILEVEC_OPS::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
 
     for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
       match([&](auto &elasticModel) {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
 
-    // auto Hn = PCG::dot<144>(cudaPol,etemp,"He","He");
+    // auto Hn = TILEVEC_OPS::dot<144>(cudaPol,etemp,"He","He");
     // fmt::print("Hn : {}\n",(float)Hn);    
 
     // break;
@@ -469,31 +481,30 @@ struct FleshQuasiStaticStepping : INode {
 
       // if the grad is too small, return the result
       // Solve equation using PCG
-      PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+      TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
       PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","He",cg_res,1000,50);
       PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
       PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
-      T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+      T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
 
       if (res < newton_res) {
         fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
                    newtonIter, res);
         break;
       }
-      T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+      T dg = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","dir");
       if(fabs(dg) < btl_res){
-        fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",
-        newtonIter, res);
+        // fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",newtonIter, res);
         break;
       }
       if(dg < 0){
-          T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
-          T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
+          T gradn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","grad"));
+          T dirn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"dir","dir"));
           fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
           throw std::runtime_error("INVALID DESCENT DIRECTION");
       }
       T alpha = 1.;
-      PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
+      TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
       T E0;
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0",vtemp,etemp);
@@ -507,7 +518,7 @@ struct FleshQuasiStaticStepping : INode {
       int line_search = 0;
       std::vector<T> armijo_buffer(max_line_search);
       do {
-        PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+        TILEVEC_OPS::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn",vtemp,etemp);
         })(models.getElasticModel());
@@ -520,8 +531,8 @@ struct FleshQuasiStaticStepping : INode {
       } while (line_search < max_line_search);
       if(line_search == max_line_search){
           fmt::print("LINE_SEARCH_EXCEED: %f\n",dg);
-          for(size_t i = 0;i != max_line_search;++i)
-            fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+          // for(size_t i = 0;i != max_line_search;++i)
+          //   fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
       }
 
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
@@ -538,6 +549,28 @@ struct FleshQuasiStaticStepping : INode {
               verts.tuple<3>("x", vi) = newX;
             });
 
+    cudaPol.syncCtx();
+
+    // write back muscle activation
+    auto output_act = get_param<int>("output_act");
+    if(output_act) {
+      auto ActTag = get_param<std::string>("actTag");
+      if(!eles.hasProperty(ActTag))
+        eles.append_channels(cudaPol,{{ActTag,1}});
+      TILEVEC_OPS::fill(cudaPol,eles,ActTag,0);
+      if(nm_acts > 0) {
+        cudaPol(zs::range(eles.size()),
+          [eles = proxy<space>({},eles),muscle_id_tag = zs::SmallString{muscle_id_tag},
+              act_buffer = proxy<space>({},act_buffer),ActTag = zs::SmallString{ActTag}] __device__(int ei) mutable {
+            auto ID = eles(muscle_id_tag,ei);
+            int id = (int)ID;
+            eles(ActTag,ei) = id > -1 ? act_buffer("act",id) : 0;
+            // eles(ActTag,ei) = id > -1 ? 0.5 : 0;
+        });
+      }
+    }
+
+    cudaPol.syncCtx();
 
     set_output("ZSParticles", zstets);
   }
@@ -548,7 +581,7 @@ ZENDEFNODE(FleshQuasiStaticStepping, {{"ZSParticles","driven_bones","gravity","A
                                   {{"float","armijo","0.1"},{"float","wolfe","0.9"},
                                     {"float","cg_res","0.1"},{"float","btl_res","0.0001"},{"float","newton_res","0.001"},
                                     {"string","driven_tag","bone_bw"},{"float","bone_driven_weight","0.0"},
-                                    {"string","muscle_id_tag","ms_id_tag"}  
+                                    {"string","muscle_id_tag","ms_id_tag"},{"int","output_act","0"},{"string","actTag","Act"}  
                                   },
                                   {"FEM"}});
 
