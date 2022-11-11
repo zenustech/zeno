@@ -42,6 +42,11 @@ target_sources(zeno PRIVATE
   pbd/PBDPipeline.cu
 )
 
+# fem-cloth
+target_sources(zeno PRIVATE
+  fem/ClothInit.cu
+)
+
 # fem
 target_sources(zeno PRIVATE
   fem/SolverInit.cu

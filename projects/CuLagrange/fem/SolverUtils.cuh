@@ -133,29 +133,5 @@ inline T dot(zs::CudaExecutionPolicy &cudaPol, zs::TileVector<T, 32, AllocatorT>
     });
     return reduce(cudaPol, res, thrust::plus<T>{});
 }
-inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
-                                     const zs::SmallString tag = "dir") {
-    using namespace zs;
-    using T = typename IPCSystem::T;
-    constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), count_warps(vertData.size())};
-    zs::memset(zs::mem_device, res.data(), 0, sizeof(T) * count_warps(vertData.size()));
-    cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
-                                     offset = vertData.getPropertyOffset(tag)] __device__(int pi) mutable {
-        auto v = data.pack<3>(offset, pi);
-        auto val = v.abs().max();
-
-        auto [mask, numValid] = warp_mask(pi, n);
-        auto locid = threadIdx.x & 31;
-        for (int stride = 1; stride < 32; stride <<= 1) {
-            auto tmp = __shfl_down_sync(mask, val, stride);
-            if (locid + stride < numValid)
-                val = zs::max(val, tmp);
-        }
-        if (locid == 0)
-            res[pi / 32] = val;
-    });
-    return reduce(cudaPol, res, thrust::maximum<T>{});
-}
 
 } // namespace zeno
