@@ -645,7 +645,7 @@ struct ZSSmokeBuoyancy : INode {
                     rho_face = 0.5f * (rho_this + rho_face);
                     T_face = 0.5f * (T_this + T_face);
 
-                    float G_scale = alpha * rho_face - beta * (T_face * T_ref - T_amb);
+                    float G_scale = alpha * rho_face - beta * T_face * (T_ref - T_amb);
 
                     spgv(vSrcTag, ch, blockno, cellno) += G_scale * gravity[ch] * dt;
                 }
