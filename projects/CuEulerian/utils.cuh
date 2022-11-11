@@ -54,4 +54,34 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
     return ret.getVal();
 }
 
+template <typename SpgPtrT>
+inline auto src_tag(SpgPtrT spg, zs::SmallString attr_) {
+    std::string attr = attr_.asString();
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+
+template <typename SpgPtrT>
+inline auto dst_tag(SpgPtrT spg, zs::SmallString attr_) {
+    std::string atrr = attr_.asString();
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        cur ^= 1;
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+
+template <typename SpgPtrT>
+inline void update_cur(SpgPtrT spg, zs::SmallString attr_) {
+    std::string attr = attr_.asString();
+    int &cur = spg->readMeta<int &>(attr + "_cur");
+    cur ^= 1;
+}
+
 } // namespace zeno

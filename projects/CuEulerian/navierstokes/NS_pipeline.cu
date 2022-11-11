@@ -19,6 +19,8 @@
 
 namespace zeno {
 
+#define SEMI_LAGRANGIAN 1
+
 struct ZSVDBToNavierStokesGrid : INode {
     void apply() override {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
@@ -57,6 +59,7 @@ struct ZSNavierStokesDt : INode {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
         auto mu = get_input2<float>("Viscosity");
+        auto CFL = get_input2<float>("CFL");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -89,7 +92,6 @@ struct ZSNavierStokesDt : INode {
         float v_max = reduce(pol, res, thrust::maximum<float>{});
 
         // CFL dt
-        const float CFL = 0.8f;
         float dt_v = CFL * dx / (v_max + 1e-10);
 
         // Viscosity dt
@@ -99,20 +101,22 @@ struct ZSNavierStokesDt : INode {
 
         float dt = dt_v < dt_nu ? dt_v : dt_nu;
 
+        fmt::print(fg(fmt::color::blue_violet), "Maximum velocity : {}\n", v_max);
         fmt::print(fg(fmt::color::blue_violet), "CFL time step : {} sec\n", dt);
 
         set_output("dt", std::make_shared<NumericObject>(dt));
     }
 };
 
-ZENDEFNODE(ZSNavierStokesDt, {/* inputs: */
-                              {"NSGrid", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
-                              /* outputs: */
-                              {"dt"},
-                              /* params: */
-                              {},
-                              /* category: */
-                              {"Eulerian"}});
+ZENDEFNODE(ZSNavierStokesDt,
+           {/* inputs: */
+            {"NSGrid", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}, {"float", "CFL", "0.5"}},
+            /* outputs: */
+            {"dt"},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
 
 struct ZSNSAdvectDiffuse : INode {
     void apply() override {
@@ -128,8 +132,32 @@ struct ZSNSAdvectDiffuse : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
+#if SEMI_LAGRANGIAN
+        // Semi-Lagrangian advection (1st order)
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
+             vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                auto icoord = spgv.iCoord(blockno, cellno);
+                auto wcoord = spgv.indexToWorld(icoord);
 
+                for (int ch = 0; ch < 3; ++ch) {
+                    int x = ch;
+                    int y = (ch + 1) % 3;
+                    int z = (ch + 2) % 3;
+
+                    zs::vec<float, 3> u_adv;
+                    u_adv[0] = spgv.value(vSrcTag, x, icoord);
+                    u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, y, icoord, x);
+                    u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, z, icoord, x);
+
+                    auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+
+                    float u_sl = spgv.wStaggeredSample(vSrcTag, x, wcoord_face - u_adv * dt);
+
+                    spgv(vDstTag, x, blockno, cellno) = u_sl;
+                }
+            });
+#else
         // advection
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)},
@@ -154,7 +182,7 @@ struct ZSNSAdvectDiffuse : INode {
                         offset = zs::vec<int, 3>::zeros();
                         offset[y] = i;
                         u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
-                        
+
                         offset = zs::vec<int, 3>::zeros();
                         offset[z] = i;
                         u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
@@ -178,13 +206,13 @@ struct ZSNSAdvectDiffuse : INode {
                     spgv(vDstTag, x, icoord) = u_adv - adv_term * dt;
                 }
             });
-        v_cur ^= 1;
+#endif
+        update_cur(NSGrid, "v");
 
         // diffusion
         pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), dx, dt, rho, mu,
-             vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)},
-             vDstTag = zs::SmallString{std::string("v") + std::to_string(v_cur ^ 1)}] __device__(int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), dx, dt, rho, mu, vSrcTag = src_tag(NSGrid, "v"),
+             vDstTag = dst_tag(NSGrid, "v")] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
 
                 for (int ch = 0; ch < 3; ++ch) {
@@ -206,7 +234,7 @@ struct ZSNSAdvectDiffuse : INode {
                     spgv(vDstTag, ch, icoord) = u_x[1] + diff_term * dt;
                 }
             });
-        v_cur ^= 1;
+        update_cur(NSGrid, "v");
 
         set_output("NSGrid", NSGrid);
     }
