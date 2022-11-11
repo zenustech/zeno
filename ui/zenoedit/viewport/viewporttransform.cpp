@@ -38,6 +38,7 @@ FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
 }
 
 void FakeTransformer::addObject(const std::string& name) {
+    if (name.empty()) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
@@ -73,6 +74,7 @@ void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
 }
 
 void FakeTransformer::removeObject(const std::string& name) {
+    if (name.empty()) return;
     auto p = m_objects.find(name);
     if (p == m_objects.end())
         return ;
