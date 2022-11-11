@@ -1,5 +1,21 @@
 #include "Cloth.cuh"
+#include "Structures.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include <zeno/types/ListObject.h>
+
+#define RETRIEVE_OBJECT_PTRS(T, STR)                                                  \
+    ([this](const std::string_view str) {                                             \
+        std::vector<T *> objPtrs{};                                                   \
+        if (has_input<T>(str.data()))                                                 \
+            objPtrs.push_back(get_input<T>(str.data()).get());                        \
+        else if (has_input<zeno::ListObject>(str.data())) {                           \
+            auto &objSharedPtrLists = *get_input<zeno::ListObject>(str.data());       \
+            for (auto &&objSharedPtr : objSharedPtrLists.get())                       \
+                if (auto ptr = dynamic_cast<T *>(objSharedPtr.get()); ptr != nullptr) \
+                    objPtrs.push_back(ptr);                                           \
+        }                                                                             \
+        return objPtrs;                                                               \
+    })(STR);
 
 namespace zeno {
 
@@ -450,5 +466,66 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
     // do once
     markSelfIntersectionPrimitives(cudaPol);
 }
+
+struct MakeClothSystem : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto zsprims = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        std::shared_ptr<ZenoParticles> zsboundary;
+        if (has_input<ZenoParticles>("ZSBoundaryPrimitives"))
+            zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
+
+        auto cudaPol = zs::cuda_exec();
+
+        const typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
+        const typename ClothSystem::tiles_t *coEdges =
+            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
+        const typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
+
+        /// solver parameters
+        auto input_est_num_cps = get_input2<int>("est_num_cps");
+        auto input_withContact = get_input2<bool>("with_contact");
+        auto input_contactEE = get_input2<bool>("contact_with_ee");
+        auto input_contactSelf = get_input2<bool>("contact_with_self");
+        auto input_dHat = get_input2<float>("dHat");
+        auto input_aug_coeff = get_input2<float>("aug_coeff");
+        auto input_pn_rel = get_input2<float>("pn_rel");
+        auto input_cg_rel = get_input2<float>("cg_rel");
+        auto input_pn_cap = get_input2<int>("pn_iter_cap");
+        auto input_cg_cap = get_input2<int>("cg_iter_cap");
+        auto input_gravity = get_input2<float>("gravity");
+        auto dt = get_input2<float>("dt");
+
+        auto A = std::make_shared<ClothSystem>(zsprims, coVerts, coEdges, coEles, dt,
+                                               (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
+                                               input_withContact, input_aug_coeff, input_pn_rel, input_cg_rel,
+                                               input_pn_cap, input_cg_cap, input_dHat, input_gravity);
+        A->enableContactEE = input_contactEE;
+        A->enableContactSelf = input_contactSelf;
+
+        set_output("ZSClothSystem", A);
+    }
+};
+
+ZENDEFNODE(MakeClothSystem, {{
+                                 "ZSParticles",
+                                 "ZSBoundaryPrimitives",
+                                 {"int", "est_num_cps", "1000000"},
+                                 {"bool", "with_contact", "1"},
+                                 {"bool", "contact_with_ee", "1"},
+                                 {"bool", "contact_with_self", "1"},
+                                 {"float", "dt", "0.01"},
+                                 {"float", "dHat", "0.001"},
+                                 {"float", "aug_coeff", "1e2"},
+                                 {"float", "pn_rel", "0.01"},
+                                 {"float", "cg_rel", "0.001"},
+                                 {"int", "pn_iter_cap", "1000"},
+                                 {"int", "cg_iter_cap", "1000"},
+                                 {"float", "gravity", "-9.8"},
+                             },
+                             {"ZSClothSystem"},
+                             {},
+                             {"FEM"}});
 
 } // namespace zeno
