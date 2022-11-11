@@ -101,18 +101,31 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         TIMER_END(CompositionArcsStage)
     }
     TIMER_START(TraverseStage)
+    objectConsistent.clear();
     zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
     TIMER_END(TraverseStage)
 
     {
         //auto prim = std::make_shared<zeno::PrimitiveObject>();
-        //prim->verts.emplace_back(zeno::vec3f(debug_count/2.0f,0,0));
+        //prim->verts.emplace_back(zeno::vec3f(debug_count/10.0f,0,0));
         //prim->verts.emplace_back(zeno::vec3f(0,0,0));
         //prim->verts.emplace_back(zeno::vec3f(0,1,0));
         //prim->tris.emplace_back(zeno::vec3f(0,1,2));
         //UPrimInfo info;
-        //objectConsistent["___debug"+std::to_string(debug_count)] = prim;
+        //info.iObject = prim;
+        //objectConsistent["___debug"+std::to_string(debug_count)] = info;
     }
+
+    //for(auto const&[k ,p]: objectConsistent){
+    //    auto obj = p.iObject;
+    //    if (obj->has_attr("pos")) {
+    //        auto &pos = obj->attr<zeno::vec3f>("pos");
+    //        for (auto &po : pos) {
+    //            po = po+zeno::vec3f(debug_count/50.0f, 0,0);
+    //            std::cout << "po " << po[0] << ", " << po[1] << ", " << po[2] << "\n";
+    //        }
+    //    }
+    //}
 
     // #########################################################
     // FIXME Run the same scene several times and the polygon will get a few errors
@@ -123,6 +136,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         if(cins.may_emplace(nk)){
             // Comparison
             // If zInfo is empty that mean the object is from AnotherStage
+            std::cout << "nk " << nk << "\n";
             auto zInfo = nameComparison[k];
             nameComparison[nk] = nameComparison[k];
             nameComparison.erase(k);

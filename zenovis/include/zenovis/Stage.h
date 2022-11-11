@@ -23,6 +23,8 @@
 #include <zeno/types/PrimitiveObject.h>
 
 #include <chrono>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "zenovis/StageCommon.h"
 
@@ -75,6 +77,15 @@ struct UPrimInfo{
     std::shared_ptr<zeno::PrimitiveObject> iObject;
 };
 
+struct ZTransInfo{
+    glm::vec3 zTrans{0};
+    glm::vec4 zRotate{0,0,0,1};
+    glm::vec3 zScale{1};
+    glm::vec3 zLastTrans{0};
+    glm::vec4 zLastRotate{0,0,0,1};
+    glm::vec3 zLastScale{1};
+};
+
 struct ZenoStage{
     UsdStageRefPtr cStagePtr;
     UsdStageRefPtr fStagePtr;
@@ -83,11 +94,13 @@ struct ZenoStage{
     HandleStateInfo *stateInfo;
     SdfLayerRefPtr composLayer;
     std::map<SdfPath, std::shared_ptr<zeno::PrimitiveObject>> convertedObject;
+    std::map<SdfPath, ZTransInfo> objectsTransform;
 
     ZenoStage();
 
     void init();
     void update();
+    void sync(SyncInfo info);
 
     int PrintStageString(UsdStageRefPtr stage);
     int PrintLayerString(SdfLayerRefPtr layer);
@@ -101,7 +114,4 @@ struct ZenoStage{
 
     int Convert2UsdGeomMesh(const ZPrimInfo& primInfo);
     int Convert2ZenoPrimitive(const UPrimInfo& primInfo);
-
-
-
 };

@@ -21,94 +21,131 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-class con_handler : public boost::enable_shared_from_this<con_handler>
+// https://www.codeproject.com/Articles/1264257/Socket-Programming-in-Cplusplus-using-boost-asio-T
+struct StageSyncServer;
+
+struct StageConHandler : boost::enable_shared_from_this<StageConHandler>
 {
-  private:
+    StageSyncServer* syncServer;
     boost::asio::ip::tcp::socket sock;
-    std::string message="Hello From Server!";
+    std::string message="Message From Server!";
     enum { max_length = 1024 };
     char data[max_length];
 
-  public:
-    typedef boost::shared_ptr<con_handler> pointer;
-    con_handler(boost::asio::io_context& io_context): sock(io_context){}
+    typedef boost::shared_ptr<StageConHandler> pointer;
+    StageConHandler(boost::asio::io_context& io_context): sock(io_context){}
+
     // creating the pointer
-    static pointer create(boost::asio::io_context& io_context)
+    static pointer Create(boost::asio::io_context& io_context)
     {
-        return pointer(new con_handler(io_context));
+        std::cout << "USD: StageConHandler Create\n";
+        return pointer(new StageConHandler(io_context));
     }
+
     //socket creation
-    boost::asio::ip::tcp::socket& socket()
+    boost::asio::ip::tcp::socket& Socket()
     {
         return sock;
     }
 
-    void start()
+    void Start()
     {
+        std::cout << "USD: StageConHandler Start\n";
         sock.async_read_some(
             boost::asio::buffer(data, max_length),
-            boost::bind(&con_handler::handle_read,
+            boost::bind(&StageConHandler::HandleRead,
                         shared_from_this(),
                         boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred));
 
         sock.async_write_some(
             boost::asio::buffer(message, max_length),
-            boost::bind(&con_handler::handle_write,
+            boost::bind(&StageConHandler::HandleWrite,
                         shared_from_this(),
                         boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred));
     }
 
-    void handle_read(const boost::system::error_code& err, size_t bytes_transferred)
+    void HandleRead(const boost::system::error_code& err, size_t bytes_transferred);
+    void HandleWrite(const boost::system::error_code& err, size_t bytes_transferred)
     {
         if (!err) {
-            std::cout << data << std::endl;
+            std::cout << "USD: ConHandler Server Sent Message"<< std::endl;
         } else {
-            std::cerr << "error: " << err.message() << std::endl;
-            sock.close();
-        }
-    }
-    void handle_write(const boost::system::error_code& err, size_t bytes_transferred)
-    {
-        if (!err) {
-            std::cout << "Server sent Hello message!"<< std::endl;
-        } else {
-            std::cerr << "error: " << err.message() << std::endl;
+            std::cerr << "USD: ConHandler Error Write: " << err.message() << std::endl;
             sock.close();
         }
     }
 };
 
-class Server
-{
-  private:
+struct StageSyncServer{
     boost::asio::ip::tcp::acceptor acceptor_;
-    void start_accept()
+    std::function<void(SyncInfo)> cSyncCallback;
+    void StartAccept()
     {
+        std::cout << "USD: StageSyncServer StartAccept\n";
         // socket  // acceptor_.get_io_service()
         auto& a = acceptor_.get_executor().context();
-        con_handler::pointer connection = con_handler::create(static_cast<boost::asio::io_context &>(a));
+        StageConHandler::pointer connection = StageConHandler::Create(static_cast<boost::asio::io_context &>(a));
+        connection->syncServer = this;
 
         // asynchronous accept operation and wait for a new connection.
-        acceptor_.async_accept(connection->socket(),
-                               boost::bind(&Server::handle_accept, this, connection,
+        acceptor_.async_accept(connection->Socket(),
+                               boost::bind(&StageSyncServer::HandleAccept, this, connection,
                                            boost::asio::placeholders::error));
     }
-  public:
+
     //constructor for accepting connection from client
-    Server(boost::asio::io_context& io_context): acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 1234))
+    StageSyncServer(boost::asio::io_context& io_context): acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 1234))
     {
-        start_accept();
+        std::cout << "USD: StageSyncServer Constructed\n";
+        StartAccept();
     }
-    void handle_accept(con_handler::pointer connection, const boost::system::error_code& err)
+
+    void HandleAccept(StageConHandler::pointer connection, const boost::system::error_code& err)
     {
+        std::cout << "USD: StageSyncServer HandleAccept\n";
         if (!err) {
-            connection->start();
+            connection->Start();
         }
-        start_accept();
+        StartAccept();
     }
 };
+
+void StageConHandler::HandleRead(const boost::system::error_code& err, size_t bytes_transferred)
+{
+    if (!err) {
+        std::cout << "USD: ConHandler Receive A Message: " << data << std::endl;
+        SyncInfo syncInfo{data};
+        syncServer->cSyncCallback(syncInfo);
+    } else {
+        std::cerr << "USD: ConHandler Error Read: " << err.message() << std::endl;
+        sock.close();
+    }
+}
+
+// https://www.cppstories.com/2018/07/string-view-perf-followup/
+std::vector<std::string> StrSplit(const std::string& str, const std::string& delims = " ")
+{
+    std::vector<std::string> output;
+    auto first = std::cbegin(str);
+
+    while (first != std::cend(str))
+    {
+        const auto second = std::find_first_of(first, std::cend(str),
+                                               std::cbegin(delims), std::cend(delims));
+
+        if (first != second)
+            output.emplace_back(first, second);
+
+        if (second == std::cend(str))
+            break;
+
+        first = std::next(second);
+    }
+
+    return output;
+}
 
 void client(){
     boost::asio::io_context io_context;
@@ -158,6 +195,140 @@ std::string Execute( std::string cmd )
 }
 
 /// ######################################################
+
+
+void ZenoStage::init(){
+    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
+    composLayer = SdfLayer::CreateAnonymous();
+
+    cStagePtr = UsdStage::CreateInMemory();
+    //cStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_stage.usda");
+    fStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_final.usda");
+    sStagePtr = UsdStage::Open(stateInfo->cPath + "/test.usda");
+
+    // Create a placeholder usd file
+    UsdStage::CreateNew(stateInfo->cPath + "/_inter_compLayer.usda");  // making sure the file exists
+    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
+    fStagePtr->Save();
+
+    pxr::UsdGeomSetStageUpAxis(cStagePtr, pxr::TfToken("Y"));
+    pxr::UsdGeomSetStageUpAxis(fStagePtr, pxr::TfToken("Y"));
+
+    stateInfo->cSyncCallback = std::bind(&ZenoStage::sync, this, std::placeholders::_1);
+
+    std::thread([&]() {
+        try
+        {
+            std::cout << "USD: StageManager Server Running.\n";
+            boost::asio::io_service io_service;
+            //StageSyncServer server(io_service);
+            auto server = std::make_shared<StageSyncServer>(io_service);
+            server->cSyncCallback = stateInfo->cSyncCallback;
+            io_service.run();
+        }
+        catch(std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+    }).detach();
+}
+
+void ZenoStage::update() {
+    // TODO Use webhook instead of timed update
+    std::string cmd = "git -C " + stateInfo->cPath + " pull";
+
+    // XXX git and cmd (on Windows) environment variables need to be set up in PATH
+    std::string res = Execute(cmd);
+    res.erase(std::remove(res.begin(), res.end(), '\n'), res.cend());
+    //std::cout << "USD: Update Res " << res << std::endl;
+
+    // SS(R) -> SS(L)
+    if(res.find("Already up to date") == std::string::npos) {
+        std::cout << "USD: Update Dirty Stage" << std::endl;
+
+        TIMER_START(StageUpdate)
+        sStagePtr->Reload();  // The effect is same as layers.reload
+        CompositionArcsStage();
+        fStagePtr->Reload();
+        TIMER_END(StageUpdate)
+
+        // FIXME The child thread calls the main thread update function
+        //  Need better synchronization mechanisms and consider moving
+        //  this logic into the UI module
+        stateInfo->cUpdateFunction();
+    }
+}
+
+void ZenoStage::sync(SyncInfo info) {
+    std::cout << "USD: ZenoStage Sync\n";
+
+    auto splittedStr = StrSplit(info.sMsg, ";");
+    auto primPath = splittedStr[0];
+    auto transformType = splittedStr[1];
+    auto valueType = splittedStr[2];
+    // Let's assume that the type is vec3
+    auto value = zeno::vec3f(std::stof(splittedStr[3]),
+                             std::stof(splittedStr[4]),
+                             std::stof(splittedStr[5]));
+    auto end = splittedStr[6];
+
+    auto sdfPrimPath = SdfPath(primPath);
+    auto obj = convertedObject[sdfPrimPath];
+    if(obj)
+    if(objectsTransform.find(sdfPrimPath) == objectsTransform.end())
+        objectsTransform[sdfPrimPath] = ZTransInfo();
+
+    auto& objTrans = objectsTransform[sdfPrimPath];
+    auto& lastTrans = objTrans.zLastTrans;
+    auto& lastRotate = objTrans.zLastRotate;
+    auto& lastScale = objTrans.zLastScale;
+
+    auto translate = zeno::vec_to_other<glm::vec3>(value);
+    auto rotate = zeno::vec_to_other<glm::vec4>(zeno::vec4f(0,0,0,1));
+    auto scale = zeno::vec_to_other<glm::vec3>(zeno::vec3f(1,1,1));
+
+    // Invert last transform
+    auto pre_translate_matrix = glm::translate(translate + lastTrans);
+    auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+    auto last_quaternion = glm::quat(lastRotate[3], lastRotate[0], lastRotate[1], lastRotate[2]);
+    auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
+    auto pre_scale_matrix = glm::scale(scale * lastScale);
+
+    auto pre_transform_matrix = pre_translate_matrix * glm::toMat4(last_quaternion) * pre_rotate_matrix * pre_scale_matrix;
+    auto inv_pre_transform = glm::inverse(pre_transform_matrix);
+
+    // Transform
+    auto translate_matrix = glm::translate(translate + objTrans.zTrans);
+    auto cur_quaternion = glm::quat(objTrans.zRotate[3], objTrans.zRotate[0], objTrans.zRotate[1], objTrans.zRotate[2]);
+    auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
+    auto scale_matrix = glm::scale(scale * objTrans.zScale);
+
+    auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
+
+    objTrans.zLastTrans = translate;
+    objTrans.zLastRotate = rotate;
+    objTrans.zLastScale = scale;
+
+    if (obj->has_attr("pos")) {
+        auto &pos = obj->attr<zeno::vec3f>("pos");
+        for (auto &po : pos) {
+            auto p = zeno::vec_to_other<glm::vec3>(po);
+            auto t = transform_matrix * glm::vec4(p, 1.0f);
+            auto pt = glm::vec3(t) / t.w;
+            po = zeno::other_to_vec<3>(pt);
+        }
+    }
+    if (obj->has_attr("nrm")) {
+        auto &nrm = obj->attr<zeno::vec3f>("nrm");
+        for (auto &vec : nrm) {
+            auto n = zeno::vec_to_other<glm::vec3>(vec);
+            glm::mat3 norm_matrix(transform_matrix);
+            norm_matrix = glm::transpose(glm::inverse(norm_matrix));
+            auto t = glm::normalize(norm_matrix * n);
+            vec = zeno::other_to_vec<3>(t);
+        }
+    }
+}
 
 ZenoStage::ZenoStage() {
 
@@ -288,61 +459,6 @@ int ZenoStage::CompositionArcsStage(){
     }
 
     return 0;
-}
-
-void ZenoStage::init(){
-    UpdateTimer(std::bind(&ZenoStage::update, this), 500);
-    composLayer = SdfLayer::CreateAnonymous();
-
-    cStagePtr = UsdStage::CreateInMemory();
-    //cStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_stage.usda");
-    fStagePtr = UsdStage::CreateNew(stateInfo->cPath + "/_inter_final.usda");
-    sStagePtr = UsdStage::Open(stateInfo->cPath + "/test.usda");
-
-    // Create a placeholder usd file
-    UsdStage::CreateNew(stateInfo->cPath + "/_inter_compLayer.usda");  // making sure the file exists
-    fStagePtr->GetRootLayer()->InsertSubLayerPath("_inter_compLayer.usda");
-    fStagePtr->Save();
-
-    pxr::UsdGeomSetStageUpAxis(cStagePtr, pxr::TfToken("Y"));
-    pxr::UsdGeomSetStageUpAxis(fStagePtr, pxr::TfToken("Y"));
-
-    std::thread([&]() {
-        try
-        {
-            std::cout << "USD: StageManager Server Running.\n";
-            boost::asio::io_service io_service;
-            Server server(io_service);
-            io_service.run();
-        }
-        catch(std::exception& e)
-        {
-            std::cerr << e.what() << std::endl;
-        }
-    }).detach();
-}
-
-void ZenoStage::update() {
-    // TODO Use webhook instead of timed update
-    std::string cmd = "git -C " + stateInfo->cPath + " pull";
-
-    // XXX git and cmd (on Windows) environment variables need to be set up in PATH
-    std::string res = Execute(cmd);
-    res.erase(std::remove(res.begin(), res.end(), '\n'), res.cend());
-    //std::cout << "USD: Update Res " << res << std::endl;
-
-    // SS(R) -> SS(L)
-    if(res.find("Already up to date") == std::string::npos) {
-        std::cout << "USD: Update Dirty Stage" << std::endl;
-
-        TIMER_START(StageUpdate)
-        sStagePtr->Reload();  // The effect is same as layers.reload
-        CompositionArcsStage();
-        fStagePtr->Reload();
-        TIMER_END(StageUpdate)
-
-        stateInfo->cUpdateFunction();
-    }
 }
 
 int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
@@ -490,4 +606,3 @@ int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
 
     return 0;
 }
-
