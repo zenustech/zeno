@@ -1251,7 +1251,7 @@ struct ToBoundaryParticles : INode {
         numSprayedParsPerElement.reset(0);
         // sprayedVertToElement, dofVol
         if (sprayed) { // compute volumes for remaining verts
-            table.reset(ompExec, true);
+            table.reset(true);
             // hash
             table._cnt.setVal(eleSize);
             ompExec(zs::range(eleSize), [table = proxy<execspace_e::openmp>(table), &tris](auto ei) mutable {

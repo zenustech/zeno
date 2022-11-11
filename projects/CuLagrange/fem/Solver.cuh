@@ -1,6 +1,7 @@
 #pragma once
 #include "SpatialAccel.cuh"
 #include "Structures.hpp"
+#include "zensim/container/Bcht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
@@ -14,6 +15,21 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
+
+/// credits: du wenxin
+template <typename T = float, typename Ti = int> struct CsrMatrix {
+    using value_type = T;
+    using index_type = std::make_signed_t<Ti>;
+    using size_type = std::make_unsigned_t<Ti>;
+    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
+    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
+    zs::Vector<size_type> ap{};
+    zs::Vector<int> aj{};
+    zs::Vector<value_type> ax{};
+    // for build
+    table_type tab{};
+    zs::Vector<size_type> nnz{}; // non-zero entries per row
+};
 
 template <int n = 1> struct HessianPiece {
     using HessT = zs::vec<float, n * 3, n * 3>;
@@ -210,9 +226,10 @@ struct IPCSystem : IObject {
     auto getCollisionCnts() const {
         return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
     }
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
-    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
+    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
     // linear system setup
@@ -228,6 +245,7 @@ struct IPCSystem : IObject {
                                                   bool includeHessian = true);
     // krylov solver
     void convertHessian(zs::CudaExecutionPolicy &pol);
+    void compactHessian(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);
@@ -248,12 +266,15 @@ struct IPCSystem : IObject {
     bool enableGround = false;
     bool enableContact = true;
     bool enableMollification = true;
+    bool enableContactEE = true;
+    bool enableContactSelf = true;
     bool s_enableFriction = true;
     bool s_enableSelfFriction = true;
     vec3 s_groundNormal{0, 1, 0};
     T augLagCoeff = 1e4;
     T pnRel = 1e-2;
     T cgRel = 1e-2;
+    int fricIterCap = 2;
     int PNCap = 1000;
     int CGCap = 500;
     int CCDCap = 20000;
@@ -326,6 +347,8 @@ struct IPCSystem : IObject {
     zs::Vector<pair4_t> FEE;
     zs::Vector<int> nFEE;
     dtiles_t fricEE;
+
+    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
     zs::Vector<T> temp;
@@ -339,6 +362,9 @@ struct IPCSystem : IObject {
     HessianPiece<3> hess3;
     HessianPiece<4> hess4;
     tiles_t cgtemp;
+
+    // possibly accessed in compactHessian and cgsolve
+    CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
 
     // boundary contacts
     // auxiliary data (spatial acceleration)

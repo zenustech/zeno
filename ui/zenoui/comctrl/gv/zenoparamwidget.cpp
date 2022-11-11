@@ -437,6 +437,17 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
+    m_combobox->setEditable(true);
+
+    ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
+    pLineEdit->setTextMargins(param.margins);
+    pLineEdit->setPalette(param.palette);
+    QFont font("HarmonyOS Sans", 10);
+    pLineEdit->setFont(font);
+    pLineEdit->setProperty("cssClass", "proppanel");
+    pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_combobox->setLineEdit(pLineEdit);
+
     setWidget(m_combobox);
 
     setZValue(ZVALUE_ELEMENT);
