@@ -919,6 +919,11 @@ struct ZSMaintainSparseGrid : INode {
                     newKeys[dstBno] = bcoord;
             });
 
+        // grid
+        /// @note backup the grid ahead
+        auto &grid = spg._grid;
+        auto prevGrid = grid;
+
         /// @brief iteratively expand the active domain
         Ti nbsOffset = 0;
         while (nlayers-- > 0 && newNbs > 0) {
@@ -959,9 +964,6 @@ struct ZSMaintainSparseGrid : INode {
         }
 
         /// @brief relocate original grid data to the new sparse grid
-        // grid
-        auto &grid = spg._grid;
-        auto prevGrid = grid;
         pol(range(nbs * spg._table.bucket_size), [grid = proxy<space>(prevGrid), spg = proxy<space>(spg),
                                                   keys = proxy<space>(prevKeys)] __device__(std::size_t i) mutable {
             constexpr auto bucket_size = RM_CVREF_T(table)::bucket_size;
