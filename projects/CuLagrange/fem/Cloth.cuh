@@ -172,6 +172,7 @@ struct ClothSystem : IObject {
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
+#if 0
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void updateVelocities(zs::CudaExecutionPolicy &pol);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
@@ -182,6 +183,7 @@ struct ClothSystem : IObject {
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
     T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
+#endif
     // contacts
     auto getCnts() const {
         return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
