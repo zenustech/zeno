@@ -141,71 +141,67 @@ struct ZSNSAdvectDiffuse : INode {
                 auto wcoord = spgv.indexToWorld(icoord);
 
                 for (int ch = 0; ch < 3; ++ch) {
-                    int x = ch;
-                    int y = (ch + 1) % 3;
-                    int z = (ch + 2) % 3;
-
                     zs::vec<float, 3> u_adv;
-                    u_adv[0] = spgv.value(vSrcTag, x, icoord);
-                    u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, y, icoord, x);
-                    u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, z, icoord, x);
+                    u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
+                    u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
+                    u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
 
                     auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
-                    float u_sl = spgv.wStaggeredSample(vSrcTag, x, wcoord_face - u_adv * dt);
+                    float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
 
-                    spgv(vDstTag, x, blockno, cellno) = u_sl;
+                    spgv(vDstTag, ch, blockno, cellno) = u_sl;
                 }
             });
 #else
         // advection
-        pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = zs::SmallString{std::string("v") + std::to_string(v_cur)},
-             vDstTag = zs::SmallString{std::string("v") + std::to_string(v_cur ^ 1)}] __device__(int cellno) mutable {
-                auto icoord = spgv.iCoord(cellno);
+        pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg), dx, dt,
+                                                    vSrcTag = src_tag(NSGrid, "v"),
+                                                    vDstTag = dst_tag(NSGrid, "v")] __device__(int cellno) mutable {
+            auto icoord = spgv.iCoord(cellno);
 
-                for (int ch = 0; ch < 3; ++ch) {
-                    int x = ch;
-                    int y = (ch + 1) % 3;
-                    int z = (ch + 2) % 3;
+            for (int ch = 0; ch < 3; ++ch) {
+                int x = ch;
+                int y = (ch + 1) % 3;
+                int z = (ch + 2) % 3;
 
-                    const int stcl = 2; // stencil point in each side
-                    float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
+                const int stcl = 2; // stencil point in each side
+                float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
 
-                    zs::vec<int, 3> offset;
+                zs::vec<int, 3> offset;
 
-                    for (int i = -stcl; i <= stcl; ++i) {
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[x] = i;
-                        u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+                for (int i = -stcl; i <= stcl; ++i) {
+                    offset = zs::vec<int, 3>::zeros();
+                    offset[x] = i;
+                    u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
 
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[y] = i;
-                        u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+                    offset = zs::vec<int, 3>::zeros();
+                    offset[y] = i;
+                    u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
 
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[z] = i;
-                        u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
-                    }
-
-                    float u_adv = spgv.value(vSrcTag, x, icoord);
-                    float v_adv = spgv.iStaggeredCellSample(vSrcTag, y, icoord, x);
-                    float w_adv = spgv.iStaggeredCellSample(vSrcTag, z, icoord, x);
-
-                    float adv_term = 0.f;
-                    int upwind = u_adv < 0 ? 1 : -1;
-                    adv_term += u_adv * scheme::HJ_WENO3(u_x[2 - upwind], u_x[2], u_x[2 + upwind], u_x[2 + 2 * upwind],
-                                                         u_adv, dx);
-                    upwind = v_adv < 0 ? 1 : -1;
-                    adv_term += v_adv * scheme::HJ_WENO3(u_y[2 - upwind], u_y[2], u_y[2 + upwind], u_y[2 + 2 * upwind],
-                                                         v_adv, dx);
-                    upwind = w_adv < 0 ? 1 : -1;
-                    adv_term += w_adv * scheme::HJ_WENO3(u_z[2 - upwind], u_z[2], u_z[2 + upwind], u_z[2 + 2 * upwind],
-                                                         w_adv, dx);
-
-                    spgv(vDstTag, x, icoord) = u_adv - adv_term * dt;
+                    offset = zs::vec<int, 3>::zeros();
+                    offset[z] = i;
+                    u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
                 }
-            });
+
+                float u_adv = spgv.value(vSrcTag, x, icoord);
+                float v_adv = spgv.iStaggeredCellSample(vSrcTag, y, icoord, x);
+                float w_adv = spgv.iStaggeredCellSample(vSrcTag, z, icoord, x);
+
+                float adv_term = 0.f;
+                int upwind = u_adv < 0 ? 1 : -1;
+                adv_term +=
+                    u_adv * scheme::HJ_WENO3(u_x[2 - upwind], u_x[2], u_x[2 + upwind], u_x[2 + 2 * upwind], u_adv, dx);
+                upwind = v_adv < 0 ? 1 : -1;
+                adv_term +=
+                    v_adv * scheme::HJ_WENO3(u_y[2 - upwind], u_y[2], u_y[2 + upwind], u_y[2 + 2 * upwind], v_adv, dx);
+                upwind = w_adv < 0 ? 1 : -1;
+                adv_term +=
+                    w_adv * scheme::HJ_WENO3(u_z[2 - upwind], u_z[2], u_z[2 + upwind], u_z[2 + 2 * upwind], w_adv, dx);
+
+                spgv(vDstTag, x, icoord) = u_adv - adv_term * dt;
+            }
+        });
 #endif
         update_cur(NSGrid, "v");
 
@@ -1015,7 +1011,6 @@ struct ZSMaintainSparseGrid : INode {
         auto nlayers = get_input2<int>("layers");
         auto needRefit = get_input2<bool>("refit");
 
-        std::size_t nbs = 0;
         int opt = 0;
         if (needRefit) {
             if (tag == "rho")
