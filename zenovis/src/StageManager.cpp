@@ -12,6 +12,18 @@
 
 namespace zenovis {
 
+glm::mat4 EulerRotate(glm::vec3 rotate){
+    float ax = rotate[0] * (M_PI / 180.0);
+    float ay = rotate[1] * (M_PI / 180.0);
+    float az = rotate[2] * (M_PI / 180.0);
+    glm::mat3 mx = glm::mat3(1,0,0,  0,cos(ax),-sin(ax),  0,sin(ax),cos(ax));
+    glm::mat3 my = glm::mat3(cos(ay),0,sin(ay),  0,1,0,  -sin(ay),0,cos(ay));
+    glm::mat3 mz = glm::mat3(cos(az),-sin(az),0,  sin(az),cos(az),0,  0,0,1);
+
+    // TODO Let's think about the case of Order
+    return glm::transpose(glm::mat4x4(mx*my*mz));
+}
+
 StageManager::StageManager(){
     zeno::log_info("USD: StageManager Constructed");
     stateInfo = new HandleStateInfo;
@@ -113,6 +125,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         auto& objTrans = zenoStage->objectsTransform[SdfPath(primPath)];
         UPrimInfo info; info.iObject = std::move(objectConsistent[primPath].iObject);
         auto& obj = info.iObject;
+        bool useQuaRotate = false;
         objectConsistent[newPrimPath] = info;
         objectConsistent.erase(primPath);
 
@@ -122,26 +135,49 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         auto pivot = objTrans.zPivot;
         auto lastTrans = objTrans.zLastTrans;
         auto lastRotate = objTrans.zLastRotate;
+        auto lastQuaRotate = objTrans.zLastQuaRotate;
         auto lastScale = objTrans.zLastScale;
+        auto transPivot = glm::translate(pivot);
+        auto invTransPivot = glm::inverse(transPivot);
+
+        // Qua Rotate
+        auto axis = glm::normalize(rotate);
+        auto angle = glm::length(rotate) * (3.14159265358f / 180.f);
+        glm::quat q(glm::rotate(angle, axis));
+        glm::vec4 quaRotate = {q.x,q.y,q.z,q.w};
+        if(glm::length(rotate) < 0.001f) {
+            quaRotate = {0,0,0,1};
+        }
+
+        // Euler Rotate
+        auto eulerRotate = EulerRotate(rotate);
+        auto lastEulerRotate = EulerRotate(lastRotate);
 
         std::cout << "USD: Trans "<<translate[0]<<","<<translate[1]<<","<<translate[2]<<"\n";
         std::cout << "USD: Rotate "<<rotate[0]<<","<<rotate[1]<<","<<rotate[2]<<"\n";
         std::cout << "USD: Scale "<<scale[0]<<","<<scale[1]<<","<<scale[2]<<"\n";
         std::cout << "USD: Pivot "<<pivot[0]<<","<<pivot[1]<<","<<pivot[2]<<"\n";
-
-        auto transPivot = glm::translate(pivot);
-        auto invTransPivot = glm::inverse(transPivot);
+        std::cout << "USD: Axis "<<axis[0]<<","<<axis[1]<<","<<axis[2]<<"\n";
+        std::cout << "USD: QuaRotate "<<quaRotate[0]<<","<<quaRotate[1]<<","<<quaRotate[2]<<","<<quaRotate[3]<<"\n";
+        std::cout << "USD: Angle "<<angle<<"\n";
 
         // Invert last transform
         auto pre_translate_matrix = glm::translate(lastTrans);
         auto pre_scale_matrix = glm::scale(scale * lastScale);
-        auto pre_transform_matrix = pre_translate_matrix * pre_scale_matrix;
+        auto pre_quaternion = glm::quat(lastQuaRotate[3], lastQuaRotate[0], lastQuaRotate[1], lastQuaRotate[2]);
+        auto pre_rotate_matrix = useQuaRotate ? glm::toMat4(pre_quaternion) : lastEulerRotate;
+
+        auto pre_transform_matrix = pre_translate_matrix * pre_rotate_matrix * pre_scale_matrix;
         auto inv_pre_transform = glm::inverse(pre_transform_matrix);
 
         // Transform
         auto translate_matrix = glm::translate(translate);
+        auto cur_quaternion = glm::quat(quaRotate[3], quaRotate[0], quaRotate[1], quaRotate[2]);
+        auto rotate_matrix = useQuaRotate ? glm::toMat4(cur_quaternion) : eulerRotate;
         auto scale_matrix = glm::scale(scale * objTrans.zScale);
-        auto transform_matrix = transPivot * translate_matrix * scale_matrix * inv_pre_transform * invTransPivot;
+        auto transform_matrix = transPivot
+                                * translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform
+                                * invTransPivot;
 
         auto m = transform_matrix;
         std::cout << "-----Object\n";
@@ -174,6 +210,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         objTrans.zLastTrans = translate;
         objTrans.zLastRotate = rotate;
         objTrans.zLastScale = scale;
+        objTrans.zLastQuaRotate = quaRotate;
 
         synced = true;
     }

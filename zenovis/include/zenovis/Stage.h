@@ -84,6 +84,7 @@ struct ZTransInfo{
     glm::vec3 zScale{1};
     glm::vec3 zLastTrans{0};
     glm::vec3 zLastRotate{0,0,0};
+    glm::vec4 zLastQuaRotate{0,0,0,1};
     glm::vec3 zLastScale{1};
 };
 
