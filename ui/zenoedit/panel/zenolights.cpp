@@ -25,7 +25,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     setPalette(palette);
     setAutoFillBackground(true);
 
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    //setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
     QHBoxLayout* pSunLightLayout = new QHBoxLayout;
     pMainLayout->addLayout(pSunLightLayout);
