@@ -262,6 +262,9 @@ void ZenoStage::update() {
 void ZenoStage::sync(SyncInfo info) {
     std::cout << "USD: ZenoStage Sync\n";
 
+    // TODO The current data is from Houdini, but Houdini writes back to Pivot after each adjustment of Trans.
+    //  Do we need to be consistent? It feels like it needs to be written back to Pivot,
+    //  otherwise it breaks the localness
     auto splittedStr = StrSplit(info.sMsg, ";");
     auto primPath = splittedStr[0];
     auto transformType = splittedStr[1];
