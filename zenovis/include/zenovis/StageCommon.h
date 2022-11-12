@@ -7,9 +7,9 @@ struct SyncInfo{
 };
 
 struct HandleStateInfo{
-    std::string cRepo = "http://test1:12345@192.168.2.106:8000/r/zeno_usd_test.git";
+    std::string cRepo = "http://test1:12345@192.168.3.11:8000/r/zeno_usd_test.git";
     std::string cPath = "C:/Users/Public/zeno_usd_test";
-    std::string cServer = "192.168.2.106";
+    std::string cServer = "192.168.3.11";
 
     std::function<void()> cUpdateFunction;
     std::function<void(SyncInfo)> cSyncCallback;

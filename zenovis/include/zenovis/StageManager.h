@@ -46,7 +46,7 @@ struct StageManager : zeno::disable_copy {
     HandleStateInfo *stateInfo;
 
     int increase_count = 0;
-    int debug_count = 0;
+    int sync_count = 0;
 
     StageManager();
     ~StageManager();

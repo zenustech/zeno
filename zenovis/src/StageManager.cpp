@@ -100,32 +100,81 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         zenoStage->CheckPathConflict();
         TIMER_END(CompositionArcsStage)
     }
-    TIMER_START(TraverseStage)
+    //TIMER_START(TraverseStage)
     objectConsistent.clear();
     zenoStage->TraverseStageObjects(zenoStage->fStagePtr, objectConsistent);
-    TIMER_END(TraverseStage)
+    //TIMER_END(TraverseStage)
 
-    {
-        //auto prim = std::make_shared<zeno::PrimitiveObject>();
-        //prim->verts.emplace_back(zeno::vec3f(debug_count/10.0f,0,0));
-        //prim->verts.emplace_back(zeno::vec3f(0,0,0));
-        //prim->verts.emplace_back(zeno::vec3f(0,1,0));
-        //prim->tris.emplace_back(zeno::vec3f(0,1,2));
-        //UPrimInfo info;
-        //info.iObject = prim;
-        //objectConsistent["___debug"+std::to_string(debug_count)] = info;
+    bool synced = false;
+    for(const auto& primPath: zenoStage->syncedObject) {
+        // FIXME Error calculating results in child thread
+        std::cout << "USD: Object Sync " << primPath << "\n";
+        auto newPrimPath = primPath+":"+std::to_string(sync_count);
+        auto& objTrans = zenoStage->objectsTransform[SdfPath(primPath)];
+        UPrimInfo info; info.iObject = std::move(objectConsistent[primPath].iObject);
+        auto& obj = info.iObject;
+        objectConsistent[newPrimPath] = info;
+        objectConsistent.erase(primPath);
+
+        auto translate = objTrans.zTrans;
+        auto rotate = objTrans.zRotate;
+        auto scale = objTrans.zScale;
+        auto lastTrans = objTrans.zLastTrans;
+        auto lastRotate = objTrans.zLastRotate;
+        auto lastScale = objTrans.zLastScale;
+
+        std::cout << "USD: Trans "<<translate[0]<<","<<translate[1]<<","<<translate[2]<<"\n";
+        std::cout << "USD: Rotate "<<rotate[0]<<","<<rotate[1]<<","<<rotate[2]<<"\n";
+
+        // Invert last transform
+        auto pre_translate_matrix = glm::translate(lastTrans);
+        auto pre_scale_matrix = glm::scale(scale * lastScale);
+        auto pre_transform_matrix = pre_translate_matrix * pre_scale_matrix;
+        auto inv_pre_transform = glm::inverse(pre_transform_matrix);
+
+        // Transform
+        auto translate_matrix = glm::translate(translate);
+        auto scale_matrix = glm::scale(scale * objTrans.zScale);
+        auto transform_matrix = translate_matrix * scale_matrix * inv_pre_transform;
+
+        auto m = transform_matrix;
+        std::cout << "-----Object\n";
+        std::cout <<m[0][0]<<","<<m[0][1]<<","<<m[0][2]<<","<<m[0][3] << "\n";
+        std::cout <<m[1][0]<<","<<m[1][1]<<","<<m[1][2]<<","<<m[1][3] << "\n";
+        std::cout <<m[2][0]<<","<<m[2][1]<<","<<m[2][2]<<","<<m[2][3] << "\n";
+        std::cout <<m[3][0]<<","<<m[3][1]<<","<<m[3][2]<<","<<m[3][3] << "\n";
+        std::cout << "-----\n";
+
+        if (obj->has_attr("pos")) {
+            auto &pos = obj->attr<zeno::vec3f>("pos");
+            for (auto &po : pos) {
+                auto p = zeno::vec_to_other<glm::vec3>(po);
+                auto t = transform_matrix * glm::vec4(p, 1.0f);
+                auto pt = glm::vec3(t) / t.w;
+                po = zeno::other_to_vec<3>(pt);
+            }
+        }
+        if (obj->has_attr("nrm")) {
+            auto &nrm = obj->attr<zeno::vec3f>("nrm");
+            for (auto &vec : nrm) {
+                auto n = zeno::vec_to_other<glm::vec3>(vec);
+                glm::mat3 norm_matrix(transform_matrix);
+                norm_matrix = glm::transpose(glm::inverse(norm_matrix));
+                auto t = glm::normalize(norm_matrix * n);
+                vec = zeno::other_to_vec<3>(t);
+            }
+        }
+
+        objTrans.zLastTrans = translate;
+        objTrans.zLastRotate = rotate;
+        objTrans.zLastScale = scale;
+
+        synced = true;
     }
-
-    //for(auto const&[k ,p]: objectConsistent){
-    //    auto obj = p.iObject;
-    //    if (obj->has_attr("pos")) {
-    //        auto &pos = obj->attr<zeno::vec3f>("pos");
-    //        for (auto &po : pos) {
-    //            po = po+zeno::vec3f(debug_count/50.0f, 0,0);
-    //            std::cout << "po " << po[0] << ", " << po[1] << ", " << po[2] << "\n";
-    //        }
-    //    }
-    //}
+    if(synced){
+        zenoStage->syncedObject.clear();
+        sync_count++;
+    }
 
     // #########################################################
     // FIXME Run the same scene several times and the polygon will get a few errors
@@ -134,9 +183,9 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     for(auto const&[k ,p]: objectConsistent){
         std::string nk = k+":"+std::to_string(increase_count);
         if(cins.may_emplace(nk)){
+            std::cout << "Emplace " << nk << " , " << k << "\n";
             // Comparison
             // If zInfo is empty that mean the object is from AnotherStage
-            std::cout << "nk " << nk << "\n";
             auto zInfo = nameComparison[k];
             nameComparison[nk] = nameComparison[k];
             nameComparison.erase(k);
@@ -150,8 +199,6 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     if(converted){
         std::cout << "USD: Consistent Size " << objectConsistent.size() << std::endl;
     }
-
-    debug_count++;
 
     return converted;
 }

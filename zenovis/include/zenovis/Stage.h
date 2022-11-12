@@ -79,10 +79,10 @@ struct UPrimInfo{
 
 struct ZTransInfo{
     glm::vec3 zTrans{0};
-    glm::vec4 zRotate{0,0,0,1};
+    glm::vec3 zRotate{0,0,0};
     glm::vec3 zScale{1};
     glm::vec3 zLastTrans{0};
-    glm::vec4 zLastRotate{0,0,0,1};
+    glm::vec3 zLastRotate{0,0,0};
     glm::vec3 zLastScale{1};
 };
 
@@ -94,6 +94,7 @@ struct ZenoStage{
     HandleStateInfo *stateInfo;
     SdfLayerRefPtr composLayer;
     std::map<SdfPath, std::shared_ptr<zeno::PrimitiveObject>> convertedObject;
+    std::vector<std::string> syncedObject;
     std::map<SdfPath, ZTransInfo> objectsTransform;
 
     ZenoStage();

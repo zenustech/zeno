@@ -267,67 +267,36 @@ void ZenoStage::sync(SyncInfo info) {
     auto transformType = splittedStr[1];
     auto valueType = splittedStr[2];
     // Let's assume that the type is vec3
-    auto value = zeno::vec3f(std::stof(splittedStr[3]),
-                             std::stof(splittedStr[4]),
-                             std::stof(splittedStr[5]));
+    double x = atof(splittedStr[3].c_str());
+    double y = atof(splittedStr[4].c_str());
+    double z = atof(splittedStr[5].c_str());
+    auto value = zeno::vec3f(float(x),float(y),float(z));
     auto end = splittedStr[6];
+
+    std::cout << "USD: Sync " << primPath << " Type " << transformType <<" "<< valueType
+              << " Value " << value[0]<<","<<value[1]<<","<<value[2] << " END " << end << "\n";
 
     auto sdfPrimPath = SdfPath(primPath);
     auto obj = convertedObject[sdfPrimPath];
-    if(obj)
     if(objectsTransform.find(sdfPrimPath) == objectsTransform.end())
         objectsTransform[sdfPrimPath] = ZTransInfo();
 
     auto& objTrans = objectsTransform[sdfPrimPath];
-    auto& lastTrans = objTrans.zLastTrans;
-    auto& lastRotate = objTrans.zLastRotate;
-    auto& lastScale = objTrans.zLastScale;
-
-    auto translate = zeno::vec_to_other<glm::vec3>(value);
-    auto rotate = zeno::vec_to_other<glm::vec4>(zeno::vec4f(0,0,0,1));
-    auto scale = zeno::vec_to_other<glm::vec3>(zeno::vec3f(1,1,1));
-
-    // Invert last transform
-    auto pre_translate_matrix = glm::translate(translate + lastTrans);
-    auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-    auto last_quaternion = glm::quat(lastRotate[3], lastRotate[0], lastRotate[1], lastRotate[2]);
-    auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
-    auto pre_scale_matrix = glm::scale(scale * lastScale);
-
-    auto pre_transform_matrix = pre_translate_matrix * glm::toMat4(last_quaternion) * pre_rotate_matrix * pre_scale_matrix;
-    auto inv_pre_transform = glm::inverse(pre_transform_matrix);
-
-    // Transform
-    auto translate_matrix = glm::translate(translate + objTrans.zTrans);
-    auto cur_quaternion = glm::quat(objTrans.zRotate[3], objTrans.zRotate[0], objTrans.zRotate[1], objTrans.zRotate[2]);
-    auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
-    auto scale_matrix = glm::scale(scale * objTrans.zScale);
-
-    auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
-
-    objTrans.zLastTrans = translate;
-    objTrans.zLastRotate = rotate;
-    objTrans.zLastScale = scale;
-
-    if (obj->has_attr("pos")) {
-        auto &pos = obj->attr<zeno::vec3f>("pos");
-        for (auto &po : pos) {
-            auto p = zeno::vec_to_other<glm::vec3>(po);
-            auto t = transform_matrix * glm::vec4(p, 1.0f);
-            auto pt = glm::vec3(t) / t.w;
-            po = zeno::other_to_vec<3>(pt);
-        }
+    objTrans.zTrans = glm::vec3(0,0,0);
+    objTrans.zRotate = glm::vec3(0,0,0);
+    objTrans.zScale = glm::vec3(1,1,1);
+    if(transformType == "Translate"){
+        objTrans.zTrans = glm::vec3(value[0],value[1],value[2]);
+    }else if(transformType == "Rotate"){
+        objTrans.zRotate = glm::vec3(value[0],value[1],value[2]);
+    }else if(transformType == "Scale"){
+        objTrans.zScale = glm::vec3(value[0],value[1],value[2]);
     }
-    if (obj->has_attr("nrm")) {
-        auto &nrm = obj->attr<zeno::vec3f>("nrm");
-        for (auto &vec : nrm) {
-            auto n = zeno::vec_to_other<glm::vec3>(vec);
-            glm::mat3 norm_matrix(transform_matrix);
-            norm_matrix = glm::transpose(glm::inverse(norm_matrix));
-            auto t = glm::normalize(norm_matrix * n);
-            vec = zeno::other_to_vec<3>(t);
-        }
-    }
+
+    if(! std::count(syncedObject.begin(), syncedObject.end(), primPath))
+        syncedObject.emplace_back(primPath);
+
+    stateInfo->cUpdateFunction();
 }
 
 ZenoStage::ZenoStage() {
