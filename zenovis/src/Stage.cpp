@@ -270,11 +270,16 @@ void ZenoStage::sync(SyncInfo info) {
     double x = atof(splittedStr[3].c_str());
     double y = atof(splittedStr[4].c_str());
     double z = atof(splittedStr[5].c_str());
+    double px = atof(splittedStr[6].c_str());
+    double py = atof(splittedStr[7].c_str());
+    double pz = atof(splittedStr[8].c_str());
     auto value = zeno::vec3f(float(x),float(y),float(z));
-    auto end = splittedStr[6];
+    auto pivot = zeno::vec3f(float(px),float(py),float(pz));
+    auto end = splittedStr[9];
 
     std::cout << "USD: Sync " << primPath << " Type " << transformType <<" "<< valueType
-              << " Value " << value[0]<<","<<value[1]<<","<<value[2] << " END " << end << "\n";
+              << " Value " << value[0]<<","<<value[1]<<","<<value[2] << " Pivot "
+              << pivot[0]<<","<<pivot[1]<<","<<pivot[2]<<" END " << end << "\n";
 
     auto sdfPrimPath = SdfPath(primPath);
     auto obj = convertedObject[sdfPrimPath];
@@ -285,6 +290,7 @@ void ZenoStage::sync(SyncInfo info) {
     objTrans.zTrans = glm::vec3(0,0,0);
     objTrans.zRotate = glm::vec3(0,0,0);
     objTrans.zScale = glm::vec3(1,1,1);
+    objTrans.zPivot = glm::vec3(pivot[0],pivot[1],pivot[2]);
     if(transformType == "Translate"){
         objTrans.zTrans = glm::vec3(value[0],value[1],value[2]);
     }else if(transformType == "Rotate"){

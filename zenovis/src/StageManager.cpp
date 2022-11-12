@@ -119,12 +119,18 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         auto translate = objTrans.zTrans;
         auto rotate = objTrans.zRotate;
         auto scale = objTrans.zScale;
+        auto pivot = objTrans.zPivot;
         auto lastTrans = objTrans.zLastTrans;
         auto lastRotate = objTrans.zLastRotate;
         auto lastScale = objTrans.zLastScale;
 
         std::cout << "USD: Trans "<<translate[0]<<","<<translate[1]<<","<<translate[2]<<"\n";
         std::cout << "USD: Rotate "<<rotate[0]<<","<<rotate[1]<<","<<rotate[2]<<"\n";
+        std::cout << "USD: Scale "<<scale[0]<<","<<scale[1]<<","<<scale[2]<<"\n";
+        std::cout << "USD: Pivot "<<pivot[0]<<","<<pivot[1]<<","<<pivot[2]<<"\n";
+
+        auto transPivot = glm::translate(pivot);
+        auto invTransPivot = glm::inverse(transPivot);
 
         // Invert last transform
         auto pre_translate_matrix = glm::translate(lastTrans);
@@ -135,7 +141,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         // Transform
         auto translate_matrix = glm::translate(translate);
         auto scale_matrix = glm::scale(scale * objTrans.zScale);
-        auto transform_matrix = translate_matrix * scale_matrix * inv_pre_transform;
+        auto transform_matrix = transPivot * translate_matrix * scale_matrix * inv_pre_transform * invTransPivot;
 
         auto m = transform_matrix;
         std::cout << "-----Object\n";

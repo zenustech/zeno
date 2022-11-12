@@ -78,6 +78,7 @@ struct UPrimInfo{
 };
 
 struct ZTransInfo{
+    glm::vec3 zPivot{0};
     glm::vec3 zTrans{0};
     glm::vec3 zRotate{0,0,0};
     glm::vec3 zScale{1};
