@@ -34,7 +34,7 @@ class ZEditParamLayoutDlg : public QDialog
 {
     Q_OBJECT
 public:
-    ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent = nullptr);
+    ZEditParamLayoutDlg(ViewParamModel* pModel, const QPersistentModelIndex& nodeIdx, QWidget* parent = nullptr);
 
 private slots:
     void onBtnAdd();
@@ -46,12 +46,14 @@ private slots:
     void onLabelEditFinished();
     void onHintEditFinished();
     void onParamTreeDeleted();
+    void onChooseParamClicked();
 
 private:
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
 
     Ui::EditParamLayoutDlg* m_ui;
+    const QPersistentModelIndex m_index;
 };
 
 

@@ -82,18 +82,25 @@ void VParamItem::setData(const QVariant& value, int role)
             m_info.name = value.toString();
             return;
         }
+        case ROLE_PARAM_CTRL:
+        {
+            if (value == m_info.control)
+                return;
+            m_info.control = (PARAM_CONTROL)value.toInt();
+            return;
+        }
         case ROLE_PARAM_VALUE:
         {
             if (m_index.isValid())
             {
                 QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
                 pModel->setData(m_index, value, role);
+                return;
             }
             else
             {
                 m_info.value = value;
             }
-            return;
         }
         case ROLE_VAPRAM_EDITTABLE:
             break;

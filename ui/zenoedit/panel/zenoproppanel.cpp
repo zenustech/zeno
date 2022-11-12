@@ -328,8 +328,8 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     };
 
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
-    if (!pControl)
-        return false;
+    //if (!pControl)
+    //    return false;
 
     QLabel* pLabel = new QLabel(paramName);
     pLabel->setProperty("cssClass", "proppanel");
@@ -505,7 +505,7 @@ void ZenoPropPanel::onSettings()
         ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
         ZASSERT_EXIT(viewParams);
 
-        ZEditParamLayoutDlg dlg(viewParams, this);
+        ZEditParamLayoutDlg dlg(viewParams, m_idx, this);
         dlg.exec();
     });
     pMenu->exec(QCursor::pos());

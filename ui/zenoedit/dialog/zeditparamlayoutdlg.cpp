@@ -2,6 +2,7 @@
 #include "ui_zeditparamlayoutdlg.h"
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
+#include "zmapcoreparamdlg.h"
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -69,10 +70,11 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, const QPersistentModelIndex& nodeIdx, QWidget* parent)
     : QDialog(parent)
     , m_model(pModel)
     , m_proxyModel(nullptr)
+    , m_index(nodeIdx)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -111,6 +113,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, QWidget* parent
 
     QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->paramsView);
     connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
+
+    connect(m_ui->btnChooseCoreParam, SIGNAL(clicked(bool)), this, SLOT(onChooseParamClicked()));
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -243,6 +247,41 @@ void ZEditParamLayoutDlg::onLabelEditFinished()
 void ZEditParamLayoutDlg::onHintEditFinished()
 {
 
+}
+
+void ZEditParamLayoutDlg::onChooseParamClicked()
+{
+    ZMapCoreparamDlg dlg(m_index);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        QModelIndex coreIdx = dlg.coreIndex();
+
+        QModelIndex viewparamIdx = m_ui->paramsView->currentIndex();
+        QStandardItem* pItem = m_proxyModel->itemFromIndex(viewparamIdx);
+        VParamItem* pViewItem = static_cast<VParamItem*>(pItem);
+
+        if (coreIdx.isValid())
+        {
+            pViewItem->m_index = coreIdx;
+
+            //update control info.
+            const QString& newName = coreIdx.data(ROLE_PARAM_NAME).toString();
+            const QString& typeDesc = coreIdx.data(ROLE_PARAM_TYPE).toString();
+
+            m_ui->editCoreParamName->setText(newName);
+            m_ui->editCoreParamType->setText(typeDesc);
+
+            PARAM_CONTROL newCtrl = UiHelper::getControlType(typeDesc);
+            pViewItem->setData(newCtrl, ROLE_PARAM_CTRL);
+        }
+        else
+        {
+            pViewItem->m_index = QModelIndex();
+            pViewItem->setData(CONTROL_NONE, ROLE_PARAM_CTRL);
+            m_ui->editCoreParamName->setText("");
+            m_ui->editCoreParamType->setText("");
+        }
+    }
 }
 
 void ZEditParamLayoutDlg::onApply()
