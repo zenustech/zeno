@@ -121,6 +121,9 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
     connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
     connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
+    connect(item.inputsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
+    connect(item.paramsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
+    connect(item.outputsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();

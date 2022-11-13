@@ -192,7 +192,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     {
         QStandardItem* param = groupItem->child(r);
         const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
-        const QVariant& value = param->data(ROLE_PARAM_VALUE).toString();
+        const QVariant& value = param->data(ROLE_PARAM_VALUE);
         _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
         if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
         {

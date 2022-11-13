@@ -262,7 +262,7 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
 
         if (coreIdx.isValid())
         {
-            pViewItem->m_index = coreIdx;
+            pViewItem->mapCoreParam(coreIdx);
 
             //update control info.
             const QString& newName = coreIdx.data(ROLE_PARAM_NAME).toString();

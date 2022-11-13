@@ -27,6 +27,25 @@ enum ROLE_VPARAM
 };
 
 
+struct VParamItem;
+
+class ProxySlotObject : public QObject
+{
+    Q_OBJECT
+public:
+    ProxySlotObject(VParamItem* pItem, QObject* parent = nullptr);
+    ~ProxySlotObject();
+    void mapCoreIndex(const QPersistentModelIndex& idx);
+    void unmap();
+
+public slots:
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+
+private:
+    VParamItem* m_pItem;
+};
+
+
 struct VParamItem : public QStandardItem
 {
     QPersistentModelIndex m_index;      //index to core param, see IParamModel.
@@ -35,15 +54,19 @@ struct VParamItem : public QStandardItem
     PARAM_INFO m_info;
     VPARAM_TYPE vType;
 
+    ProxySlotObject m_proxySlot;
+
     VParamItem(VPARAM_TYPE vType, const QString& text, bool bMapCore = false);
     VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text, bool bMapCore = false);
 
     VParamItem(const VParamItem& other);
+    ~VParamItem();
 
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
     QStandardItem* clone() const override;
     void cloneChildren(VParamItem* pItem);
+    void mapCoreParam(const QPersistentModelIndex& idx);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
 };
@@ -60,6 +83,7 @@ public:
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);
     void onParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 
 private:
     void setup(const QString& customUI);

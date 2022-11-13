@@ -3,9 +3,52 @@
 #include "zassert.h"
 
 
+ProxySlotObject::ProxySlotObject(VParamItem* pItem, QObject* parent)
+    : m_pItem(pItem)
+    , QObject(parent)
+{
+}
+
+ProxySlotObject::~ProxySlotObject()
+{
+    unmap();
+}
+
+void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (topLeft == m_pItem->m_index) {
+        const QString& name = m_pItem->m_index.data(ROLE_PARAM_NAME).toString();
+        QVariant var = m_pItem->m_index.data(ROLE_PARAM_VALUE);
+        UI_VECTYPE vecwtf = var.value<UI_VECTYPE>();
+        QModelIndex viewIdx = m_pItem->index();
+        emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+    }
+}
+
+void ProxySlotObject::unmap()
+{
+    if (m_pItem->m_index.isValid())
+    {
+        QObject::disconnect(m_pItem->m_index.model(), &QAbstractItemModel::dataChanged, this, &ProxySlotObject::onDataChanged);
+    }
+}
+
+void ProxySlotObject::mapCoreIndex(const QPersistentModelIndex& idx)
+{
+    unmap();
+    if (idx.isValid())
+    {
+        bool ret = QObject::connect(idx.model(), &QAbstractItemModel::dataChanged, this, &ProxySlotObject::onDataChanged);
+        ZASSERT_EXIT(ret);
+    }
+}
+
+
+
 VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
     : QStandardItem(text)
     , vType(type)
+    , m_proxySlot(this)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
@@ -14,6 +57,7 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
 VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text, bool bMapCore)
     : QStandardItem(icon, text)
     , vType(type)
+    , m_proxySlot(this)
 {
     m_info.control = CONTROL_NONE;
     m_info.name = text;
@@ -23,7 +67,12 @@ VParamItem::VParamItem(const VParamItem& other)
     : QStandardItem(other)
     , vType(other.vType)
     , m_info(other.m_info)
-    , m_index(other.m_index)
+    , m_proxySlot(this)
+{
+    mapCoreParam(other.m_index);
+}
+
+VParamItem::~VParamItem()
 {
 }
 
@@ -136,6 +185,12 @@ void VParamItem::cloneChildren(VParamItem* rItem)
         newItem->cloneChildren(rChild);
         appendRow(newItem);
     }
+}
+
+void VParamItem::mapCoreParam(const QPersistentModelIndex& idx)
+{
+    m_index = idx;
+    m_proxySlot.mapCoreIndex(idx);
 }
 
 bool VParamItem::operator==(VParamItem* rItem) const
@@ -258,7 +313,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
-                paramItem->m_index = idx;
+                paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
@@ -277,7 +332,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
-                paramItem->m_index = idx;
+                paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
@@ -296,7 +351,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
-                paramItem->m_index = idx;
+                paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
                 break;
@@ -311,6 +366,11 @@ void ViewParamModel::onParamsAboutToBeRemoved(const QModelIndex& parent, int fir
     ZASSERT_EXIT(pModel);
     const QModelIndex& idx = pModel->index(first, 0, parent);
     if (!idx.isValid()) return;
+}
+
+void ViewParamModel::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    //we use ProxySlotObject as a proxy to receive dataChanged from IParamModel.
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)
