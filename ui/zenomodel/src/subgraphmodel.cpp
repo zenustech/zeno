@@ -113,17 +113,24 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
-    item.viewParams = new ViewParamModel(this);
 
-    connect(item.inputsModel, &IParamModel::rowsInserted, item.viewParams, &ViewParamModel::onParamsInserted);
-    connect(item.paramsModel, &IParamModel::rowsInserted, item.viewParams, &ViewParamModel::onParamsInserted);
-    connect(item.outputsModel, &IParamModel::rowsInserted, item.viewParams, &ViewParamModel::onParamsInserted);
-    connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
-    connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
-    connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, item.viewParams, &ViewParamModel::onParamsAboutToBeRemoved);
-    connect(item.inputsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
-    connect(item.paramsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
-    connect(item.outputsModel, &IParamModel::dataChanged, item.viewParams, &ViewParamModel::onDataChanged);
+    item.panelParams = new ViewParamModel(false, this);
+    item.nodeParams = new ViewParamModel(true, this);
+
+    for (ViewParamModel* viewParamModel : QList{ item.panelParams, item.nodeParams })
+    {
+        connect(item.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
+        connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.inputsModel, &IParamModel::dataChanged, viewParamModel, &ViewParamModel::onDataChanged);
+
+        connect(item.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
+        connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.paramsModel, &IParamModel::dataChanged, viewParamModel, &ViewParamModel::onDataChanged);
+
+        connect(item.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
+        connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.outputsModel, &IParamModel::dataChanged, viewParamModel, &ViewParamModel::onDataChanged);
+    }
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -131,6 +138,7 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
 
     if (!inputs.isEmpty())
     {
+        //will emit signal rowsInserted.
         item.inputsModel->setInputSockets(inputs);
     }
     if (!params.isEmpty())
@@ -312,7 +320,15 @@ ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
     _NodeItem item;
     if (!itemFromIndex(index, item))
         return nullptr;
-    return item.viewParams;
+    return item.panelParams;
+}
+
+ViewParamModel* SubGraphModel::nodeParams(const QModelIndex& index)
+{
+    _NodeItem item;
+    if (!itemFromIndex(index, item))
+        return nullptr;
+    return item.nodeParams;
 }
 
 QVariant SubGraphModel::data(const QModelIndex& index, int role) const
@@ -368,7 +384,11 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_VIEWPARAMS:
         {
-            return QVariantPtr<ViewParamModel>::asVariant(item.viewParams);
+            return QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
+        }
+        case ROLE_NODEPARAMS:
+        {
+            return QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
         }
         default:
             return QVariant();

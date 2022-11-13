@@ -84,7 +84,7 @@ QVariant VParamItem::data(int role) const
     case Qt::DisplayRole:
     case ROLE_VPARAM_NAME:  return m_info.name;
     case ROLE_VPARAM_TYPE:  return vType;
-    case ROLE_PARAM_CTRL:   return m_info.control;
+    case ROLE_PARAM_CTRL:   return m_info.control;  //todo: remove control at core param.
     case ROLE_PARAM_NAME:
     {
         if (!m_index.isValid())
@@ -102,6 +102,12 @@ QVariant VParamItem::data(int role) const
         if (!m_index.isValid())
             return m_info.typeDesc;
         return m_index.data(ROLE_PARAM_TYPE);
+    }
+    case ROLE_PARAM_LINKS:
+    {
+        if (!m_index.isValid())
+            return QVariant();
+        return m_index.data(ROLE_PARAM_LINKS);
     }
     case ROLE_VPARAM_IS_COREPARAM:
     {
@@ -206,14 +212,16 @@ bool VParamItem::operator==(VParamItem* rItem) const
 
 
 
-ViewParamModel::ViewParamModel(QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, QObject* parent)
     : QStandardItemModel(parent)
+    , m_bNodeUI(bNodeUI)
 {
     setup("");
 }
 
-ViewParamModel::ViewParamModel(const QString& customXml, QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, const QString& customXml, QObject* parent)
     : QStandardItemModel(parent)
+    , m_bNodeUI(bNodeUI)
 {
     setup(customXml);
 }
@@ -222,48 +230,87 @@ void ViewParamModel::setup(const QString& customUI)
 {
     if (customUI.isEmpty())
     {
-        /*default structure:
-            root
-                |-- Tab (Default)
-                    |-- Inputs (Group)
-                        -- input param1 (Item)
-                        -- input param2
-                        ...
-
-                    |-- Params (Group)
-                        -- param1 (Item)
-                        -- param2 (Item)
-                        ...
-
-                    |- Outputs (Group)
-                        - output param1 (Item)
-                        - output param2 (Item)
-            ...
-        */
-        VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
-
-        VParamItem* pTab = new VParamItem(VPARAM_TAB, "Default");
-        {
-            VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
-            VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
-            VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
-
-            pInputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
-            paramsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
-            pOutputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
-
-            pTab->appendRow(pInputsGroup);
-            pTab->appendRow(paramsGroup);
-            pTab->appendRow(pOutputsGroup);
-        }
-        pTab->setData(true, ROLE_VAPRAM_EDITTABLE);
-
-        pRoot->appendRow(pTab);
-        pRoot->setData(true, ROLE_VAPRAM_EDITTABLE);
-
-        appendRow(pRoot);
+        if (m_bNodeUI)
+            initNode();
+        else
+            initPanel();
     }
 }
+
+void ViewParamModel::initPanel()
+{
+    /*default structure:
+                root
+                    |-- Tab (Default)
+                        |-- Inputs (Group)
+                            -- input param1 (Item)
+                            -- input param2
+                            ...
+
+                        |-- Params (Group)
+                            -- param1 (Item)
+                            -- param2 (Item)
+                            ...
+
+                        |- Outputs (Group)
+                            - output param1 (Item)
+                            - output param2 (Item)
+                ...
+            */
+    VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
+    pRoot->setEditable(false);
+
+    VParamItem* pTab = new VParamItem(VPARAM_TAB, "Default");
+    {
+        VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
+        VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
+        VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
+
+        pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+        paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+        pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+
+        pTab->appendRow(pInputsGroup);
+        pTab->appendRow(paramsGroup);
+        pTab->appendRow(pOutputsGroup);
+    }
+    pTab->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+
+    pRoot->appendRow(pTab);
+    appendRow(pRoot);
+}
+
+void ViewParamModel::initNode()
+{
+    /*default structure:
+    |-- Inputs (Group)
+        -- input param1 (Item)
+        -- input param2
+        ...
+
+    |-- Params (Group)
+        -- param1 (Item)
+        -- param2 (Item)
+        ...
+
+    |- Outputs (Group)
+        - output param1 (Item)
+        - output param2 (Item)
+        ...
+    */
+    VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
+    VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
+    VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
+
+    pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+    paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+    pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+
+    appendRow(pInputsGroup);
+    appendRow(paramsGroup);
+    appendRow(pOutputsGroup);
+}
+
 
 QString ViewParamModel::exportUI() const
 {

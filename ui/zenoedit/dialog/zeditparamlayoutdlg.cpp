@@ -70,7 +70,7 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, const QPersistentModelIndex& nodeIdx, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, QWidget* parent)
     : QDialog(parent)
     , m_model(pModel)
     , m_proxyModel(nullptr)
@@ -91,7 +91,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, const QPersiste
 
     m_ui->listConctrl->addItems(lstCtrls);
 
-    m_proxyModel = new ViewParamModel(this);
+    m_proxyModel = new ViewParamModel(bNodeUI, this);
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);

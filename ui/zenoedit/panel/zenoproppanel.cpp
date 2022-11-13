@@ -319,7 +319,6 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
         //trick implementation:
         //todo: api scoped and transaction: undo/redo problem.
-        UI_VECTYPE vecwtf = newValue.value<UI_VECTYPE>();
         paramItem->setData(newValue, ROLE_PARAM_VALUE);
     };
 
@@ -505,7 +504,7 @@ void ZenoPropPanel::onSettings()
         ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
         ZASSERT_EXIT(viewParams);
 
-        ZEditParamLayoutDlg dlg(viewParams, m_idx, this);
+        ZEditParamLayoutDlg dlg(viewParams, true, m_idx, this);
         dlg.exec();
     });
     pMenu->exec(QCursor::pos());

@@ -30,7 +30,8 @@ class SubGraphModel : public QAbstractItemModel
         IParamModel* paramsModel;
         IParamModel* outputsModel;
 
-        ViewParamModel* viewParams;
+        ViewParamModel* panelParams;
+        ViewParamModel* nodeParams;
 
         bool bCollasped;
 
@@ -41,7 +42,8 @@ class SubGraphModel : public QAbstractItemModel
             , inputsModel(nullptr)
             , paramsModel(nullptr)
             , outputsModel(nullptr)
-            , viewParams(nullptr)
+            , panelParams(nullptr)
+            , nodeParams(nullptr)
         {
         }
     };
@@ -85,6 +87,7 @@ public:
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
     IParamModel* paramModel(const QModelIndex& index, PARAM_CLASS cls) const;
     ViewParamModel* viewParams(const QModelIndex& index);
+    ViewParamModel* nodeParams(const QModelIndex& index);
 
     bool setParamValue(
         PARAM_CLASS cls,

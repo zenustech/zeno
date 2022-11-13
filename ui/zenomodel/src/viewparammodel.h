@@ -75,8 +75,8 @@ class ViewParamModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit ViewParamModel(QObject* parent = nullptr);
-    explicit ViewParamModel(const QString& customXml, QObject* parent = nullptr);
+    explicit ViewParamModel(bool bNodeUI, QObject* parent = nullptr);
+    explicit ViewParamModel(bool bNodeUI, const QString& customXml, QObject* parent = nullptr);
     QString exportUI() const;
     void clone(ViewParamModel* pModel);
 
@@ -87,6 +87,10 @@ public slots:
 
 private:
     void setup(const QString& customUI);
+    void initPanel();
+    void initNode();
+
+    const bool m_bNodeUI;
 };
 
 #endif

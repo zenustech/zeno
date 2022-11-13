@@ -26,6 +26,7 @@
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
+#include <zenomodel/include/viewparammodel.h>
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -193,10 +194,18 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setSpacing(5);
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItem* root = viewParams->invisibleRootItem();
+    ZASSERT_EXIT(root && root->rowCount() == 3, nullptr);
+    //see ViewParamModel::initNode()
+    QStandardItem* inputsItem = root->child(0);
+    QStandardItem* paramsItem = root->child(1);
+    QStandardItem* outputsItem = root->child(2);
+
     //params.
-    m_bodyLayout->addLayout(initParams(pScene));
-    m_bodyLayout->addLayout(initSockets(true, pScene));
-    m_bodyLayout->addLayout(initSockets(false, pScene));
+    m_bodyLayout->addLayout(initParams(paramsItem, pScene));
+    m_bodyLayout->addLayout(initSockets(inputsItem, true, pScene));
+    m_bodyLayout->addLayout(initSockets(outputsItem, false, pScene));
 
     bodyWidget->setLayout(m_bodyLayout);
 
@@ -267,7 +276,7 @@ void ZenoNode::onNameUpdated(const QString& newName)
     }
 }
 
-ZGraphicsLayout* ZenoNode::initParams(ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
@@ -278,9 +287,10 @@ ZGraphicsLayout* ZenoNode::initParams(ZenoSubGraphScene* pScene)
     ZGraphicsLayout* paramsLayout = new ZGraphicsLayout(false);
     paramsLayout->setSpacing(5);
 
-    for (int r = 0; r < paramsModel->rowCount(); r++)
+    for (int r = 0; r < paramItems->rowCount(); r++)
     {
-        const QModelIndex& idx = paramsModel->index(r, 0);
+        const QStandardItem* pItem = paramItems->child(r);
+        const QModelIndex& idx = pItem->index();
         paramsLayout->addLayout(addParam(idx, pScene));
     }
 
@@ -350,7 +360,7 @@ ZGraphicsLayout* ZenoNode::initParams(ZenoSubGraphScene* pScene)
     return paramsLayout;
 }
 
-ZGraphicsLayout* ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
@@ -361,9 +371,10 @@ ZGraphicsLayout* ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pSc
     ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
     pSocketsLayout->setSpacing(5);
 
-    for (int r = 0; r < socketModel->rowCount(); r++)
+    for (int r = 0; r < socketItems->rowCount(); r++)
     {
-        const QModelIndex& idx = socketModel->index(r, 0);
+        const QStandardItem* pItem = socketItems->child(r);
+        const QModelIndex& idx = pItem->index();
         ZSocketLayout* pSocketLayout = addSocket(idx, bInput, pScene);
         pSocketsLayout->addLayout(pSocketLayout);
     }
@@ -482,32 +493,35 @@ ZGraphicsLayout* ZenoNode::initSockets(const bool bInput, ZenoSubGraphScene* pSc
     return pSocketsLayout;
 }
 
-ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, ZenoSubGraphScene* pScene)
+ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewParamIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
     auto cbFuncRenameSock = [=](QString oldText, QString newText) {
+        //todo:
+        ZASSERT_EXIT(false);
+
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphsModel);
         IParamModel* pModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
         ZASSERT_EXIT(pModel);
-        bool ret = pModel->setData(paramIdx, newText, ROLE_PARAM_NAME);
+        bool ret = pModel->setData(viewParamIdx, newText, ROLE_PARAM_NAME);
     };
 
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
         emit socketClicked(pSocketItem);
     };
 
-    const QString& sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
-    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
-    const QString& sockType = paramIdx.data(ROLE_PARAM_TYPE).toString();
-    const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
-    const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+    const QString& sockName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
+    const QString& sockType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
+    const QVariant& deflVal = viewParamIdx.data(ROLE_PARAM_VALUE);
+    const PARAM_LINKS& links = viewParamIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
 
     bool bEditableSock = ctrl == CONTROL_DICTKEY;
-    ZSocketLayout* pMiniLayout = new ZSocketLayout(paramIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+    ZSocketLayout* pMiniLayout = new ZSocketLayout(viewParamIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
 
     if (bInput)
     {
-        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, paramIdx);
+        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, viewParamIdx);
         pMiniLayout->setControl(pSocketControl);
         if (pSocketControl)
             pSocketControl->setVisible(links.isEmpty());
@@ -574,6 +588,13 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QMod
     const QPersistentModelIndex perIdx(paramIdx);
 
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
+        if (!perIdx.isValid())
+            return;
+        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
+        paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
+        return;
+
+        /* old style*/
         bool bOk = false;
         const QString& nodeid = nodeId();
 
