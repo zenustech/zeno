@@ -24,22 +24,28 @@ struct ZSVDBToNavierStokesGrid : INode {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
 
         auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
-        spg.append_channels(zs::cuda_exec(), {{"v0", 3},
-                                              {"v1", 3},
-                                              {"p0", 1},
-                                              {"p1", 1},
-                                              {"div_v", 1},
-                                              {"rho", 1}, // smoke density
-                                              {"T", 1},   // smoke temperature
-                                              {"flux", 3}});
+        spg.append_channels(zs::cuda_exec(), {
+                                                 {"v0", 3},
+                                                 {"v1", 3},
+                                                 {"p0", 1},
+                                                 {"p1", 1},
+                                                 {"div_v", 1},
+                                                 {"rho0", 1}, // smoke density
+                                                 {"rho1", 1},
+                                                 {"T0", 1}, // smoke temperature
+                                                 {"T1", 1},
+                                                 {"flux", 3} // finite volume method
+                                             });
         spg._background = 0.f;
 
-        auto zsSPG = std::make_shared<ZenoSparseGrid>();
-        zsSPG->spg = std::move(spg);
-        zsSPG->setMeta("v_cur", 0);
-        zsSPG->setMeta("p_cur", 0);
+        auto NSGrid = std::make_shared<ZenoSparseGrid>();
+        NSGrid->spg = std::move(spg);
+        NSGrid->setMeta("v_cur", 0);
+        NSGrid->setMeta("p_cur", 0);
+        NSGrid->setMeta("rho_cur", 0);
+        NSGrid->setMeta("T_cur", 0);
 
-        set_output("NSGrid", zsSPG);
+        set_output("NSGrid", NSGrid);
     }
 };
 
@@ -68,8 +74,6 @@ struct ZSNavierStokesDt : INode {
         size_t cell_cnt = block_cnt * spg.block_size;
         zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
         zs::memset(zs::mem_device, res.data(), 0, sizeof(float) * count_warps(cell_cnt));
-
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
 
         // maximum velocity
         pol(zs::Collapse{block_cnt, spg.block_size},
@@ -256,8 +260,6 @@ struct ZSNSExternalForce : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
-
         // add force (accelaration)
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), force, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno,
@@ -293,8 +295,6 @@ struct ZSNSPressureProject : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
-
         // velocity divergence
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
@@ -313,8 +313,6 @@ struct ZSNSPressureProject : INode {
             });
 
         const float dxSqrOverDt = dx * dx / dt;
-
-        int &p_cur = NSGrid->readMeta<int &>("p_cur");
 
         // zs::CppTimer timer;
         // timer.tick();
@@ -415,7 +413,7 @@ struct ZSNSPressureProject : INode {
                     spgv(vDstTag, ch, icoord) = u;
                 }
             });
-        v_cur ^= 1;
+        update_cur(NSGrid, "v");
 
         set_output("NSGrid", NSGrid);
     }
@@ -443,8 +441,6 @@ struct ZSNSNaiveSolidWall : INode {
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
-
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
 
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
@@ -484,12 +480,10 @@ struct ZSTracerAdvectDiffuse : INode {
 
         auto dx = spg.voxelSize()[0];
 
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
-
         // Finite Volume Method (FVM)
         // numrtical flux of tracer
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), diffuse, dx, tag,
+            [spgv = zs::proxy<space>(spg), diffuse, dx, tag = src_tag(NSGrid, tag),
              vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                 auto icoord = spgv.iCoord(blockno, cellno);
 
@@ -527,7 +521,8 @@ struct ZSTracerAdvectDiffuse : INode {
 
         // time integration of tracer
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), dx, dt, tag] __device__(int blockno, int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), dx, dt, tag = src_tag(NSGrid, tag)] __device__(int blockno,
+                                                                                          int cellno) mutable {
                 auto icoord = spgv.iCoord(blockno, cellno);
 
                 float flux[3][2];
@@ -587,16 +582,17 @@ struct ZSTracerEmission : INode {
 
         auto dx = spg.voxelSize()[0];
 
-        pol(zs::Collapse{block_cnt, spg.block_size}, [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx,
-                                                      tag] __device__(int blockno, int cellno) mutable {
-            auto wcoord = spgv.wCoord(blockno, cellno);
-            auto emit_sdf = sdfv.wSample("sdf", wcoord);
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx,
+             tag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                auto wcoord = spgv.wCoord(blockno, cellno);
+                auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
-            if (emit_sdf <= 1.5f * dx) {
-                // fix me: naive emission
-                spgv(tag, blockno, cellno) = 1.0;
-            }
-        });
+                if (emit_sdf <= 1.5f * dx) {
+                    // fix me: naive emission
+                    spgv(tag, blockno, cellno) = 1.0;
+                }
+            });
     }
 
     void apply() override {
@@ -637,23 +633,22 @@ struct ZSSmokeBuoyancy : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        int &v_cur = NSGrid->readMeta<int &>("v_cur");
-
         // add force (accelaration)
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), dt, alpha, beta, gravity = zs::vec<float, 3>::from_array(gravity),
-             vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+             vSrcTag = src_tag(NSGrid, "v"), rhoSrcTag = src_tag(NSGrid, "rho"),
+             TSrcTag = src_tag(NSGrid, "T")] __device__(int blockno, int cellno) mutable {
                 auto icoord = spgv.iCoord(blockno, cellno);
 
-                float rho_this = spgv.value("rho", blockno, cellno);
-                float T_this = spgv.value("T", blockno, cellno);
+                float rho_this = spgv.value(rhoSrcTag, blockno, cellno);
+                float T_this = spgv.value(TSrcTag, blockno, cellno);
 
                 for (int ch = 0; ch < 3; ++ch) {
                     zs::vec<int, 3> offset{0, 0, 0};
                     offset[ch] = -1;
 
-                    float rho_face = spgv.value("rho", icoord + offset);
-                    float T_face = spgv.value("T", icoord + offset);
+                    float rho_face = spgv.value(rhoSrcTag, icoord + offset);
+                    float T_face = spgv.value(TSrcTag, icoord + offset);
 
                     rho_face = 0.5f * (rho_this + rho_face);
                     T_face = 0.5f * (T_this + T_face);
@@ -683,7 +678,7 @@ ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
 
 struct ZSExtendSparseGrid : INode {
 
-    template <typename PredT> void refit(ZenoSparseGrid *nsgridPtr, std::string tag, PredT pred) {
+    template <typename PredT> void refit(ZenoSparseGrid *nsgridPtr, zs::SmallString tag, PredT pred) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
@@ -756,7 +751,7 @@ struct ZSExtendSparseGrid : INode {
     }
 
     template <typename PredT>
-    void extend(ZenoSparseGrid *nsgridPtr, std::string tag, std::size_t &nbsOffset, PredT pred) {
+    void extend(ZenoSparseGrid *nsgridPtr, zs::SmallString tag, std::size_t &nbsOffset, PredT pred) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
@@ -774,7 +769,7 @@ struct ZSExtendSparseGrid : INode {
         //                nbs * 26 + nbsOffset);
 
         if (!spg._grid.hasProperty(tag))
-            throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
+            throw std::runtime_error(fmt::format("property [{}] not exist!", tag.asString()));
 
         pol(range(nbs * spg._table.bucket_size), [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag),
                                                   nbsOffset, pred] __device__(std::size_t i) mutable {
@@ -829,22 +824,22 @@ struct ZSExtendSparseGrid : INode {
 
         if (needRefit && opt != 0) {
             if (opt == 1)
-                refit(zsSPG.get(), tag,
+                refit(zsSPG.get(), src_tag(zsSPG, tag),
                       [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; });
             else if (opt == 2)
-                refit(zsSPG.get(), tag,
+                refit(zsSPG.get(), src_tag(zsSPG, tag),
                       [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; });
             opt = 0;
         }
 
         while (nlayers-- > 0) {
             if (opt == 0)
-                extend(zsSPG.get(), tag, nbs, [] __device__(float v) { return true; });
+                extend(zsSPG.get(), src_tag(zsSPG, tag), nbs, [] __device__(float v) { return true; });
             else if (opt == 1)
-                extend(zsSPG.get(), tag, nbs,
+                extend(zsSPG.get(), src_tag(zsSPG, tag), nbs,
                        [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; });
             else if (opt == 2)
-                extend(zsSPG.get(), tag, nbs,
+                extend(zsSPG.get(), src_tag(zsSPG, tag), nbs,
                        [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; });
             opt = 0; // always active since
         }
@@ -864,7 +859,7 @@ ZENDEFNODE(ZSExtendSparseGrid,
             {"Eulerian"}});
 
 struct ZSMaintainSparseGrid : INode {
-    template <typename PredT> void maintain(ZenoSparseGrid *nsgridPtr, std::string tag, PredT pred, int nlayers) {
+    template <typename PredT> void maintain(ZenoSparseGrid *nsgridPtr, zs::SmallString tag, PredT pred, int nlayers) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
@@ -872,7 +867,7 @@ struct ZSMaintainSparseGrid : INode {
         auto &spg = nsgridPtr->getSparseGrid();
 
         if (!spg._grid.hasProperty(tag))
-            throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
+            throw std::runtime_error(fmt::format("property [{}] not exist!", tag.asString()));
 
         auto nbs = spg.numBlocks();
         using Ti = RM_CVREF_T(nbs);
@@ -1008,14 +1003,14 @@ struct ZSMaintainSparseGrid : INode {
 
         if (opt == 0)
             maintain(
-                zsSPG.get(), tag, [] __device__(float v) { return true; }, nlayers);
+                zsSPG.get(), src_tag(zsSPG, tag), [] __device__(float v) { return true; }, nlayers);
         else if (opt == 1)
             maintain(
-                zsSPG.get(), tag, [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; },
+                zsSPG.get(), src_tag(zsSPG, tag), [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; },
                 nlayers);
         else if (opt == 2)
             maintain(
-                zsSPG.get(), tag,
+                zsSPG.get(), src_tag(zsSPG, tag),
                 [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; },
                 nlayers);
 
