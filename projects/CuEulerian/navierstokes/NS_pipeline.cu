@@ -123,6 +123,7 @@ struct ZSNSAdvectDiffuse : INode {
         auto rho = get_input2<float>("Density");
         auto mu = get_input2<float>("Viscosity");
         auto dt = get_input2<float>("dt");
+        auto scheme = get_input2<std::string>("Scheme");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -131,78 +132,80 @@ struct ZSNSAdvectDiffuse : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-#if 0
-        // Semi-Lagrangian advection (1st order)
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
-             vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                auto icoord = spgv.iCoord(blockno, cellno);
-                auto wcoord = spgv.indexToWorld(icoord);
+        if (scheme == "Semi-Lagrangian") {
+            // Semi-Lagrangian advection (1st order)
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
+                 vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
 
-                for (int ch = 0; ch < 3; ++ch) {
-                    zs::vec<float, 3> u_adv;
-                    u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
-                    u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
-                    u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<float, 3> u_adv;
+                        u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
+                        u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
+                        u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
 
-                    auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
-                    float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
 
-                    spgv(vDstTag, ch, blockno, cellno) = u_sl;
-                }
-            });
-#endif
-
-        // advection
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
-             vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                auto icoord = spgv.iCoord(blockno, cellno);
-
-                for (int ch = 0; ch < 3; ++ch) {
-                    zs::vec<float, 3> u_adv;
-                    u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
-                    u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
-                    u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
-
-                    int x = ch;
-                    int y = (ch + 1) % 3;
-                    int z = (ch + 2) % 3;
-
-                    const int stcl = 2; // stencil point in each side
-                    float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
-
-                    zs::vec<int, 3> offset;
-
-                    for (int i = -stcl; i <= stcl; ++i) {
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[x] = i;
-                        u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
-
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[y] = i;
-                        u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
-
-                        offset = zs::vec<int, 3>::zeros();
-                        offset[z] = i;
-                        u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+                        spgv(vDstTag, ch, blockno, cellno) = u_sl;
                     }
+                });
+        } else if (scheme == "Finite-Difference") {
+            // advection
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
+                 vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
 
-                    float adv_term = 0.f;
-                    int upwind = u_adv[x] < 0 ? 1 : -1;
-                    adv_term += u_adv[x] * scheme::HJ_WENO3(u_x[2 - upwind], u_x[2], u_x[2 + upwind],
-                                                            u_x[2 + 2 * upwind], u_adv[x], dx);
-                    upwind = u_adv[y] < 0 ? 1 : -1;
-                    adv_term += u_adv[y] * scheme::HJ_WENO3(u_y[2 - upwind], u_y[2], u_y[2 + upwind],
-                                                            u_y[2 + 2 * upwind], u_adv[y], dx);
-                    upwind = u_adv[z] < 0 ? 1 : -1;
-                    adv_term += u_adv[z] * scheme::HJ_WENO3(u_z[2 - upwind], u_z[2], u_z[2 + upwind],
-                                                            u_z[2 + 2 * upwind], u_adv[z], dx);
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<float, 3> u_adv;
+                        u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
+                        u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
+                        u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
 
-                    spgv(vDstTag, ch, blockno, cellno) = u_adv[x] - adv_term * dt;
-                }
-            });
+                        int x = ch;
+                        int y = (ch + 1) % 3;
+                        int z = (ch + 2) % 3;
+
+                        const int stcl = 2; // stencil point in each side
+                        float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
+
+                        zs::vec<int, 3> offset;
+
+                        for (int i = -stcl; i <= stcl; ++i) {
+                            offset = zs::vec<int, 3>::zeros();
+                            offset[x] = i;
+                            u_x[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+
+                            offset = zs::vec<int, 3>::zeros();
+                            offset[y] = i;
+                            u_y[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+
+                            offset = zs::vec<int, 3>::zeros();
+                            offset[z] = i;
+                            u_z[i + stcl] = spgv.value(vSrcTag, x, icoord + offset);
+                        }
+
+                        float adv_term = 0.f;
+                        int upwind = u_adv[x] < 0 ? 1 : -1;
+                        adv_term += u_adv[x] * scheme::HJ_WENO3(u_x[2 - upwind], u_x[2], u_x[2 + upwind],
+                                                                u_x[2 + 2 * upwind], u_adv[x], dx);
+                        upwind = u_adv[y] < 0 ? 1 : -1;
+                        adv_term += u_adv[y] * scheme::HJ_WENO3(u_y[2 - upwind], u_y[2], u_y[2 + upwind],
+                                                                u_y[2 + 2 * upwind], u_adv[y], dx);
+                        upwind = u_adv[z] < 0 ? 1 : -1;
+                        adv_term += u_adv[z] * scheme::HJ_WENO3(u_z[2 - upwind], u_z[2], u_z[2 + upwind],
+                                                                u_z[2 + 2 * upwind], u_adv[z], dx);
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_adv[x] - adv_term * dt;
+                    }
+                });
+        } else {
+            throw std::runtime_error(fmt::format("Advection scheme [{}] not found!", scheme));
+        }
 
         update_cur(NSGrid, "v");
 
@@ -240,7 +243,11 @@ struct ZSNSAdvectDiffuse : INode {
 };
 
 ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
-                               {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
+                               {"NSGrid",
+                                "dt",
+                                {"float", "Density", "1.0"},
+                                {"float", "Viscosity", "0.0"},
+                                {"enum Finite-Difference Semi-Lagrangian", "Scheme", "Finite-Difference"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */
@@ -471,7 +478,8 @@ ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
                                 {"Eulerian"}});
 
 struct ZSTracerAdvectDiffuse : INode {
-    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, ZenoSparseGrid *NSGrid) {
+    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, std::string scheme,
+                 ZenoSparseGrid *NSGrid) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -480,95 +488,119 @@ struct ZSTracerAdvectDiffuse : INode {
 
         auto dx = spg.voxelSize()[0];
 
-        // Finite Volume Method (FVM)
-        // numrtical flux of tracer
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), diffuse, dx, tag = src_tag(NSGrid, tag),
-             vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                auto icoord = spgv.iCoord(blockno, cellno);
+        if (scheme == "Semi-Lagrangian") {
+            // Semi-Lagrangian advection (1st order)
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
 
-                const int stcl = 2; // stencil point in each side
-                float trc[3][2 * stcl];
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
 
-                // | i - 2 | i - 1 | i | i + 1 |
-                for (int i = -stcl; i < stcl; ++i) {
-                    trc[0][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(i, 0, 0));
-                    trc[1][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, i, 0));
-                    trc[2][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, 0, i));
-                }
+                    spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
 
-                float u_adv[3];
-                for (int ch = 0; ch < 3; ++ch)
-                    u_adv[ch] = spgv.value(vSrcTag, ch, icoord);
+            update_cur(NSGrid, tag);
+        } else if (scheme == "Finite-Volume") {
+            // Finite Volume Method (FVM)
+            // numrtical flux of tracer
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), diffuse, dx, tag = src_tag(NSGrid, tag),
+                 vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
 
-                // approximate value at i - 1/2
-                float flux[3];
-                for (int ch = 0; ch < 3; ++ch) {
-                    // convection flux
-                    if (u_adv[ch] < 0)
-                        flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
-                    else
-                        flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
+                    const int stcl = 2; // stencil point in each side
+                    float trc[3][2 * stcl];
 
-                    // diffusion flux
-                    flux[ch] -= diffuse * (trc[ch][2] - trc[ch][1]) / dx;
-                }
+                    // | i - 2 | i - 1 | i | i + 1 |
+                    for (int i = -stcl; i < stcl; ++i) {
+                        trc[0][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(i, 0, 0));
+                        trc[1][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, i, 0));
+                        trc[2][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, 0, i));
+                    }
 
-                for (int ch = 0; ch < 3; ++ch) {
-                    spgv("flux", ch, blockno, cellno) = flux[ch];
-                }
-            });
+                    float u_adv[3];
+                    for (int ch = 0; ch < 3; ++ch)
+                        u_adv[ch] = spgv.value(vSrcTag, ch, icoord);
 
-        // time integration of tracer
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), dx, dt, tag = src_tag(NSGrid, tag)] __device__(int blockno,
-                                                                                          int cellno) mutable {
-                auto icoord = spgv.iCoord(blockno, cellno);
+                    // approximate value at i - 1/2
+                    float flux[3];
+                    for (int ch = 0; ch < 3; ++ch) {
+                        // convection flux
+                        if (u_adv[ch] < 0)
+                            flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
+                        else
+                            flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
 
-                float flux[3][2];
-                for (int ch = 0; ch < 3; ++ch) {
-                    zs::vec<int, 3> offset{0, 0, 0};
-                    offset[ch] = 1;
+                        // diffusion flux
+                        flux[ch] -= diffuse * (trc[ch][2] - trc[ch][1]) / dx;
+                    }
 
-                    flux[ch][0] = spgv.value("flux", ch, icoord);
-                    flux[ch][1] = spgv.value("flux", ch, icoord + offset);
-                }
+                    for (int ch = 0; ch < 3; ++ch) {
+                        spgv("flux", ch, blockno, cellno) = flux[ch];
+                    }
+                });
 
-                float dtrc = 0;
-                for (int ch = 0; ch < 3; ++ch) {
-                    dtrc += (flux[ch][0] - flux[ch][1]) / dx;
-                }
-                dtrc *= dt;
+            // time integration of tracer
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, tag = src_tag(NSGrid, tag)] __device__(int blockno,
+                                                                                              int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
 
-                spgv(tag, blockno, cellno) += dtrc;
-            });
+                    float flux[3][2];
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<int, 3> offset{0, 0, 0};
+                        offset[ch] = 1;
+
+                        flux[ch][0] = spgv.value("flux", ch, icoord);
+                        flux[ch][1] = spgv.value("flux", ch, icoord + offset);
+                    }
+
+                    float dtrc = 0;
+                    for (int ch = 0; ch < 3; ++ch) {
+                        dtrc += (flux[ch][0] - flux[ch][1]) / dx;
+                    }
+                    dtrc *= dt;
+
+                    spgv(tag, blockno, cellno) += dtrc;
+                });
+        } else {
+            throw std::runtime_error(fmt::format("Advection scheme [{}] not found!", scheme));
+        }
     }
 
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto diffuse = get_input2<float>("Diffusion");
         auto dt = get_input2<float>("dt");
+        auto scheme = get_input2<std::string>("Scheme");
 
         auto pol = zs::cuda_exec();
         ///
         if (get_input2<bool>("Density"))
-            compute(pol, "rho", diffuse, dt, NSGrid.get());
+            compute(pol, "rho", diffuse, dt, scheme, NSGrid.get());
         if (get_input2<bool>("Temperature"))
-            compute(pol, "T", diffuse, dt, NSGrid.get());
+            compute(pol, "T", diffuse, dt, scheme, NSGrid.get());
 
         set_output("NSGrid", NSGrid);
     }
 };
 
-ZENDEFNODE(ZSTracerAdvectDiffuse,
-           {/* inputs: */
-            {"NSGrid", "dt", {"float", "Diffusion", "0.0"}, {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
-            /* outputs: */
-            {"NSGrid"},
-            /* params: */
-            {},
-            /* category: */
-            {"Eulerian"}});
+ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
+                                   {"NSGrid",
+                                    "dt",
+                                    {"float", "Diffusion", "0.0"},
+                                    {"bool", "Density", "1"},
+                                    {"bool", "Temperature", "1"},
+                                    {"enum Finite-Volume Semi-Lagrangian", "Scheme", "Finite-Volume"}},
+                                   /* outputs: */
+                                   {"NSGrid"},
+                                   /* params: */
+                                   {},
+                                   /* category: */
+                                   {"Eulerian"}});
 
 struct ZSTracerEmission : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
@@ -1006,8 +1038,8 @@ struct ZSMaintainSparseGrid : INode {
                 zsSPG.get(), src_tag(zsSPG, tag), [] __device__(float v) { return true; }, nlayers);
         else if (opt == 1)
             maintain(
-                zsSPG.get(), src_tag(zsSPG, tag), [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; },
-                nlayers);
+                zsSPG.get(), src_tag(zsSPG, tag),
+                [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; }, nlayers);
         else if (opt == 2)
             maintain(
                 zsSPG.get(), src_tag(zsSPG, tag),
