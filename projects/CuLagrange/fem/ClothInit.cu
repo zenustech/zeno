@@ -444,7 +444,6 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
                      {"dir", 3},
                      {"xn", 3},
                      {"vn", 3},
-                     {"xn0", 3},
                      {"xtilde", 3},
                      {"xhat", 3}, // initial positions at the current substep (constraint,
                                   // extAccel)
@@ -461,10 +460,88 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
     // dHat (static)
     this->dHat = dHat_ * std::sqrt(boxDiagSize2);
 
-    // check initial self intersections
-    // including proximity pairs
-    // do once
+    // check initial self intersections including proximity pairs, do once
     markSelfIntersectionPrimitives(cudaPol);
+}
+
+void ClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    // setup substep dt
+    ++substep;
+    dt = framedt * ratio;
+    curRatio += ratio;
+
+    projectDBC = false;
+    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
+        auto xn = vtemp.pack(dim_c<3>, "xn", vi);
+        vtemp.tuple(dim_c<3>, "xhat", vi) = xn;
+        auto newX = xn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
+        vtemp.tuple(dim_c<3>, "xtilde", vi) = newX;
+    });
+    if (coVerts)
+        if (auto coSize = coVerts->size(); coSize)
+            pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
+                                   coOffset = coOffset, dt = dt] __device__(int i) mutable {
+                auto xn = vtemp.pack(dim_c<3>, "xn", coOffset + i);
+                vtemp.tuple(dim_c<3>, "xhat", coOffset + i) = xn;
+                auto newX = xn + coverts.pack(dim_c<3>, "v", i) * dt;
+                vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
+            });
+    for (auto &primHandle : auxPrims) {
+        /// @note hard constraint
+        if (primHandle.category == ZenoParticles::category_e::tracker) {
+            const auto &eles = primHandle.getEles();
+            pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+                                        framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                // retrieve motion from the associated boundary vert
+                auto deltaX = vtemp.pack(dim_c<3>, "xtilde", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);
+                auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
+                vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+            });
+        }
+    }
+}
+
+void ClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
+        auto newX = vtemp.pack<3>("xn", vi);
+        auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
+        auto vn = vtemp.pack<3>("vn", vi);
+        vn += dv;
+        vtemp.tuple<3>("vn", vi) = vn;
+    });
+}
+
+void ClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
+        auto &verts = primHandle.getVerts();
+        // update velocity and positions
+        pol(zs::range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
+             asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
+                verts.tuple<3>("x", vi) = vtemp.pack<3>("xn", vOffset + vi);
+                if (!asBoundary)
+                    verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
+            });
+    }
+    if (coVerts)
+        if (auto coSize = coVerts->size(); coSize)
+            pol(Collapse(coSize),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<tiles_t *>(coVerts)),
+                 coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
+                    verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "xn", coOffset + vi);
+                    // no need to update v here. positions are moved accordingly
+                    // also, boundary velocies are set elsewhere
+                });
 }
 
 struct MakeClothSystem : INode {

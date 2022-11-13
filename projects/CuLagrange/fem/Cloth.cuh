@@ -70,6 +70,8 @@ struct ClothSystem : IObject {
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
+    static constexpr T s_constraint_residual = 1e-2;
+    static constexpr T boundaryKappa = 1e3;
     inline static const char s_meanMassTag[] = "MeanMass";
 
     // cloth, boundary
@@ -172,18 +174,28 @@ struct ClothSystem : IObject {
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
-#if 0
-    void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
+
     void updateVelocities(zs::CudaExecutionPolicy &pol);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// pipeline
+    void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void newtonKrylov(zs::CudaExecutionPolicy &pol);
+    void computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
-    T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
-#endif
+    T constraintResidual(zs::CudaExecutionPolicy &pol);
+
+    /// linear solve
+    T infNorm(zs::CudaExecutionPolicy &pol);
+    void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
+    void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
+    void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol);
+
     // contacts
     auto getCnts() const {
         return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
@@ -216,14 +228,15 @@ struct ClothSystem : IObject {
 
     //
     std::vector<PrimitiveHandle> prims;
-    std::vector<PrimitiveHandle> auxPrims;
+    std::vector<PrimitiveHandle> auxPrims; // intended for hard constraint (tracker primitive)
     Ti coOffset, numDofs, numBouDofs;
     Ti sfOffset, seOffset, svOffset;
 
     // (scripted) collision objects
     const tiles_t *coVerts, *coEdges, *coEles;
 
-    tiles_t vtemp;
+    tiles_t vtemp;      // solver data
+    zs::Vector<T> temp; // as temporary buffer
 
     // self contacts
     zs::Vector<pair_t> PP;
@@ -240,12 +253,10 @@ struct ClothSystem : IObject {
     tiles_t tempEE;
 
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
-    // end contacts
-
-    zs::Vector<T> temp; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
+    // end contacts
 
     // possibly accessed in compactHessian and cgsolve
     CsrMatrix<zs::vec<T, 3, 3>, int> linMat; // sparsity pattern update during hessian computation
