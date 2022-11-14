@@ -67,7 +67,7 @@ target_sources(zeno PRIVATE
   # fem/FastQuasiStaticStepping.cu
   fem/FleshQuasiStepping.cu
 
-  # fem/FleshDynamicStepping.cu # CHECK THIS
+  fem/FleshDynamicStepping.cu # CHECK THIS
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
   fem/collision_energy/edge_edge_collision.hpp
@@ -101,7 +101,7 @@ target_sources(zeno PRIVATE
   geometry/Jiggle.cu
   geometry/DeformationField.cu
 
-  # geometry/CollisionVis.cu # CHECK THIS
+  geometry/CollisionVis.cu # CHECK THIS
   geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
 )

@@ -329,13 +329,13 @@ struct ToBoundaryPrimitive : INode {
         ompExec(zs::range(numVerts), [pars = proxy<execspace_e::openmp>({}, pars), &pos, velsPtr](int pi) mutable {
             using vec3 = zs::vec<float, 3>;
             // pos
-            pars.tuple<3>("x", pi) = pos[pi];
-            pars.tuple<3>("x0", pi) = pos[pi];
+            pars.template tuple<3>("x", pi) = pos[pi];
+            pars.template tuple<3>("x0", pi) = pos[pi];
             // vel
             if (velsPtr != nullptr)
-                pars.tuple<3>("v", pi) = velsPtr[pi];
+                pars.template tuple<3>("v", pi) = velsPtr[pi];
             else
-                pars.tuple<3>("v", pi) = vec3::zeros();
+                pars.template tuple<3>("v", pi) = vec3::zeros();
         });
 
         // elements
@@ -544,21 +544,21 @@ struct ToZSTetrahedra : INode {
             using vec3 = zs::vec<float, 3>;
             using mat3 = zs::vec<float, 3, 3>;
             auto p = vec3::from_array(pos[vi]);
-            pars.tuple<3>("x", vi) = p;
-            pars.tuple<3>("x0", vi) = p;
-            pars.tuple<3>("v", vi) = vec3::zeros();
+            pars.template tuple<3>("x", vi) = p;
+            pars.template tuple<3>("x0", vi) = p;
+            pars.template tuple<3>("v", vi) = vec3::zeros();
             if (prim->has_attr("vel"))
-                pars.tuple<3>("v", vi) = vec3::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
+                pars.template tuple<3>("v", vi) = vec3::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
             // default boundary handling setup
-            pars.tuple<9>("BCbasis", vi) = mat3::identity();
+            pars.template tuple<9>("BCbasis", vi) = mat3::identity();
             pars("BCorder", vi) = 0;
-            pars.tuple<3>("BCtarget", vi) = vec3::zeros();
+            pars.template tuple<3>("BCtarget", vi) = vec3::zeros();
             // computed later
             pars("m", vi) = 0.f;
 
             for (auto &prop : auxVertAttribs) {
                 if (prop.numChannels == 3)
-                    pars.tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
+                    pars.template tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
                 else // prop.numChannles == 1
                     pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
             }
@@ -577,7 +577,7 @@ struct ToZSTetrahedra : INode {
                     vec3 xs[4];
                     for (int d = 0; d != 4; ++d) {
                         eles("inds", d, ei) = zs::reinterpret_bits<float>(quad[d]);
-                        xs[d] = pars.pack<3>("x", quad[d]);
+                        xs[d] = pars.template pack<3>("x", quad[d]);
                     }
 
                     vec3 ds[3] = {xs[1] - xs[0], xs[2] - xs[0], xs[3] - xs[0]};
@@ -585,7 +585,7 @@ struct ToZSTetrahedra : INode {
                     for (int d = 0; d != 3; ++d)
                         for (int i = 0; i != 3; ++i)
                             D(d, i) = ds[i][d];
-                    eles.tuple<9>("IB", ei) = zs::inverse(D);
+                    eles.template tuple<9>("IB", ei) = zs::inverse(D);
                     auto vol = zs::abs(zs::determinant(D)) / 6;
                     atomic_add(exec_omp, &volumeSum, (double)vol);
                     eles("vol", ei) = vol;
@@ -597,7 +597,7 @@ struct ToZSTetrahedra : INode {
 
                     for (auto &prop : auxElmAttribs) {
                         if (prop.numChannels == 3)
-                            eles.tuple<3>(prop.name, ei) = prim->quads.attr<vec3f>(std::string{prop.name})[ei];
+                            eles.template tuple<3>(prop.name, ei) = prim->quads.attr<vec3f>(std::string{prop.name})[ei];
                         else
                             eles(prop.name, ei) = prim->quads.attr<float>(std::string{prop.name})[ei];
                     }
@@ -611,9 +611,9 @@ struct ToZSTetrahedra : INode {
         ompExec(zs::range(tris.size()),
                 [&, surfaces = proxy<space>({}, surfaces), pars = proxy<space>({}, pars)](int triNo) mutable {
                     auto tri = tris[triNo];
-                    auto X0 = pars.pack<3>("x0", tri[0]);
-                    auto X1 = pars.pack<3>("x0", tri[1]);
-                    auto X2 = pars.pack<3>("x0", tri[2]);
+                    auto X0 = pars.template pack<3>("x0", tri[0]);
+                    auto X1 = pars.template pack<3>("x0", tri[1]);
+                    auto X2 = pars.template pack<3>("x0", tri[2]);
                     atomic_add(exec_omp, &areaSum, (double)(X1 - X0).cross(X2 - X0).norm() / 2);
                     for (int i = 0; i != 3; ++i)
                         surfaces("inds", i, triNo) = zs::reinterpret_bits<float>(tri[i]);
@@ -795,15 +795,15 @@ struct ToZSTriMesh : INode {
         auto &pars = zstris->getParticles();
         ompExec(Collapse{pars.size()},
                 [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
-                    pars.tuple<3>("x", vi) = vec3::from_array(pos[vi]);
+                    pars.template tuple<3>("x", vi) = vec3::from_array(pos[vi]);
                     auto vel = vec3::zeros();
                     if (velsPtr != nullptr)
                         vel = vec3::from_array(velsPtr[vi]);
-                    pars.tuple<3>("v", vi) = vel;
+                    pars.template tuple<3>("v", vi) = vel;
 
                     for (auto &prop : auxVertAttribs) {
                         if (prop.numChannels == 3)
-                            pars.tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
+                            pars.template tuple<3>(prop.name, vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
                         else // prop.numChannles == 1
                             pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
                     }
@@ -816,13 +816,14 @@ struct ToZSTriMesh : INode {
             T l[3] = {};
             for (size_t i = 0; i < 3; ++i) {
                 eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-                l[i] = (pars.pack<3>("x", tris[ei][i]) - pars.pack<3>("x", tris[ei][(i + 1) % 3])).length();
+                l[i] = (pars.template pack<3>("x", tris[ei][i]) - pars.template pack<3>("x", tris[ei][(i + 1) % 3]))
+                           .length();
             }
             eles("area", ei) = area(l[0], l[1], l[2]);
 
             for (auto &prop : auxElmAttribs) {
                 if (prop.numChannels == 3)
-                    eles.tuple<3>(prop.name, ei) = tris.attr<vec3f>(std::string{prop.name})[ei];
+                    eles.template tuple<3>(prop.name, ei) = tris.attr<vec3f>(std::string{prop.name})[ei];
                 else
                     eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
             }
@@ -1154,16 +1155,16 @@ struct ToZSStrands : INode {
             using mat3 = zs::vec<float, 3, 3>;
             using vec3f = zs::vec<float, 3>;
             auto p = vec3f::from_array(pos[vi]);
-            pars.tuple<3>("x", vi) = p;
-            pars.tuple<3>("x0", vi) = p;
-            pars.tuple<3>("v", vi) = vec3::zeros();
+            pars.template tuple<3>("x", vi) = p;
+            pars.template tuple<3>("x0", vi) = p;
+            pars.template tuple<3>("v", vi) = vec3::zeros();
             if (prim->has_attr("vel"))
-                pars.tuple<3>("v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
+                pars.template tuple<3>("v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
             // default boundary handling setup
-            pars.tuple<9>("BCbasis", vi) = mat3::identity();
+            pars.template tuple<9>("BCbasis", vi) = mat3::identity();
             pars("BCorder", vi) = 0;
             pars("BCfixed", vi) = 0;
-            pars.tuple<3>("BCtarget", vi) = vec3::zeros();
+            pars.template tuple<3>("BCtarget", vi) = vec3::zeros();
             // computed later
             pars("m", vi) = 0;
         });
@@ -1183,7 +1184,7 @@ struct ToZSStrands : INode {
                     vec3 xs[2];
                     for (int d = 0; d != 2; ++d) {
                         eles("inds", d, ei) = zs::reinterpret_bits<float>(line[d]);
-                        xs[d] = pars.pack<3>("x", line[d]);
+                        xs[d] = pars.template pack<3>("x", line[d]);
                     }
 
                     auto rl = (xs[1] - xs[0]).norm();
