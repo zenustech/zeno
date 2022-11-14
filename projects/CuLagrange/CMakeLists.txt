@@ -47,6 +47,7 @@ target_sources(zeno PRIVATE
   fem/ClothInit.cu
   fem/ClothPipeline.cu
   fem/ClothLinearSystem.cu
+  fem/ClothCollision.cu
 )
 
 # fem

@@ -173,10 +173,14 @@ struct ClothSystem : IObject {
                 int PNCap, int CGCap, T dHat, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
 
     void updateVelocities(zs::CudaExecutionPolicy &pol);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
+
+    /// collision
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
+    void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat);
+    void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
 
     /// pipeline
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);

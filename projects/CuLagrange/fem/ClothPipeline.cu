@@ -387,11 +387,9 @@ void ClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
 // PRECOMPUTE
-#if 0
         if (enableContact) {
             findCollisionConstraints(pol, dHat);
         }
-#endif
         // GRAD, HESS, P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
