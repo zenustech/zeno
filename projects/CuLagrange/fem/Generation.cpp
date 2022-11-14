@@ -891,16 +891,16 @@ struct ToZSSurfaceMesh : INode {
                 using vec3f = zs::vec<float, 3>;
                 using mat3 = zs::vec<float, 3, 3>;
                 auto p = vec3f::from_array(pos[vi]);
-                pars.tuple<3>("x", vi) = p;
-                pars.tuple<3>("x0", vi) = p;
-                pars.tuple<3>("v", vi) = vec3::zeros();
+                pars.tuple(dim_c<3>, "x", vi) = p;
+                pars.tuple(dim_c<3>, "x0", vi) = p;
+                pars.tuple(dim_c<3>, "v", vi) = vec3::zeros();
                 if (prim->has_attr("vel"))
-                    pars.tuple<3>("v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
+                    pars.tuple(dim_c<3>, "v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
                 // default boundary handling setup
-                pars.tuple<9>("BCbasis", vi) = mat3::identity();
+                pars.tuple(dim_c<3, 3>, "BCbasis", vi) = mat3::identity();
                 pars("BCorder", vi) = 0;
                 pars("BCfixed", vi) = 0;
-                pars.tuple<3>("BCtarget", vi) = vec3::zeros();
+                pars.tuple(dim_c<3>, "BCtarget", vi) = vec3::zeros();
                 // computed later
                 pars("m", vi) = 0.f;
             });
