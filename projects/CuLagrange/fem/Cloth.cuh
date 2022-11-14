@@ -71,7 +71,7 @@ struct ClothSystem : IObject {
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
     static constexpr T s_constraint_residual = 1e-2;
-    static constexpr T boundaryKappa = 1e3;
+    static constexpr T boundaryKappa = 1e1;
     inline static const char s_meanMassTag[] = "MeanMass";
 
     // cloth, boundary
@@ -190,6 +190,7 @@ struct ClothSystem : IObject {
     T constraintResidual(zs::CudaExecutionPolicy &pol);
 
     /// linear solve
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     T infNorm(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);

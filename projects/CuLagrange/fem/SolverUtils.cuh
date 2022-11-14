@@ -104,7 +104,7 @@ inline TT dot(zs::CudaExecutionPolicy &cudaPol, zs::wrapt<TT>, zs::TileVector<T,
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     Vector<TT> res{vertData.get_allocator(), count_warps(vertData.size())};
-    zs::memset(zs::mem_device, res.data(), 0, sizeof(TT) * count_warps(vertData.size()));
+    res.reset(0);
     cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
                                      offset0 = vertData.getPropertyOffset(tag0),
                                      offset1 = vertData.getPropertyOffset(tag1)] __device__(int pi) mutable {

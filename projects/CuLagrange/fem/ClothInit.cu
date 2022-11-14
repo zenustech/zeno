@@ -327,7 +327,7 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), voffset = primHandle.vOffset, dt = dt,
-             avgNodeMass = avgNodeMass, augLagCoeff = augLagCoeff] __device__(int i) mutable {
+             avgNodeMass = avgNodeMass] __device__(int i) mutable {
                 auto x = verts.pack<3>("x", i);
                 auto v = verts.pack<3>("v", i);
 
@@ -412,9 +412,8 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
                                                                                                      zs::memsrc_e::um,
                                                                                                      0},
       //
-      temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
-      csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles().get_allocator(), 1},
-      ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
+      temp{estNumCps, zs::memsrc_e::um, 0}, csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
+      ncsPT{zsprims[0]->getParticles().get_allocator(), 1}, ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
       pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0} {

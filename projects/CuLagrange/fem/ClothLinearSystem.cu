@@ -46,7 +46,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
         auto m = vtemp("ws", i);
         auto dx = vtemp.pack(dim_c<3>, dxOffset, i) * m;
         for (int d = 0; d != 3; ++d)
-            atomic_add(execTag, &vtemp(bOffset, d, i), dx(d));
+            atomic_add(execTag, &vtemp(bOffset + d, i), dx(d));
     });
     // elasticity
     for (auto &primHandle : prims) {
@@ -64,10 +64,10 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                 T entryH = 0, entryDx = 0, entryG = 0;
                 if (tid < 30) {
                     entryH = etemp("He", rowid * 6 + colid, ei);
-                    entryDx = vtemp(dxOffset, colid % 3, inds[colid / 3]);
+                    entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
                     entryG = entryH * entryDx;
                     if (colid == 0) {
-                        entryG += etemp("He", rowid * 6 + 5, ei) * vtemp(dxOffset, 2, inds[1]);
+                        entryG += etemp("He", rowid * 6 + 5, ei) * vtemp(dxOffset + 2, inds[1]);
                     }
                 }
                 for (int iter = 1; iter <= 4; iter <<= 1) {
@@ -76,7 +76,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                         entryG += tmp;
                 }
                 if (colid == 0 && rowid < 6)
-                    atomic_add(execTag, &vtemp(bOffset, rowid % 3, inds[rowid / 3]), entryG);
+                    atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
             });
         } else if (primHandle.category == ZenoParticles::surface) {
             if (primHandle.isBoundary())
@@ -97,7 +97,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                     int GRtid = idx % 9;
 
                     auto inds = eles.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>() + vOffset;
-                    T rdata = etemp("He", entryId, ei) * vtemp(dxOffset, axisId, inds[vId]);
+                    T rdata = etemp("He", entryId, ei) * vtemp(dxOffset + axisId, inds[vId]);
 
                     if (threadIdx.x == 0)
                         offset = 9 - GRtid;
@@ -124,7 +124,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                     }
 
                     if (bBoundary)
-                        atomic_add(exec_cuda, &vtemp(bOffset, MRid % 3, inds[MRid / 3]), rdata);
+                        atomic_add(exec_cuda, &vtemp(bOffset + MRid % 3, inds[MRid / 3]), rdata);
                 });
         } else if (primHandle.category == ZenoParticles::tet)
             pol(range(eles.size() * 144),
@@ -143,7 +143,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                     int GRtid = idx % 12;
 
                     auto inds = eles.pack(dim_c<4>, "inds", Hid).template reinterpret_bits<int>() + vOffset;
-                    T rdata = etemp("He", entryId, Hid) * vtemp(dxOffset, axisId, inds[vId]);
+                    T rdata = etemp("He", entryId, Hid) * vtemp(dxOffset + axisId, inds[vId]);
 
                     if (threadIdx.x == 0)
                         offset = 12 - GRtid;
@@ -170,7 +170,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                     }
 
                     if (bBoundary)
-                        atomic_add(exec_cuda, &vtemp(bOffset, MRid % 3, inds[MRid / 3]), rdata);
+                        atomic_add(exec_cuda, &vtemp(bOffset + MRid % 3, inds[MRid / 3]), rdata);
                 });
     }
     for (auto &primHandle : auxPrims) {
@@ -186,10 +186,10 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                 T entryH = 0, entryDx = 0, entryG = 0;
                 if (tid < 30) {
                     entryH = etemp("He", rowid * 6 + colid, ei);
-                    entryDx = vtemp(dxOffset, colid % 3, inds[colid / 3]);
+                    entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
                     entryG = entryH * entryDx;
                     if (colid == 0) {
-                        entryG += etemp("He", rowid * 6 + 5, ei) * vtemp(dxOffset, 2, inds[1]);
+                        entryG += etemp("He", rowid * 6 + 5, ei) * vtemp(dxOffset + 2, inds[1]);
                     }
                 }
                 for (int iter = 1; iter <= 4; iter <<= 1) {
@@ -198,7 +198,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
                         entryG += tmp;
                 }
                 if (colid == 0 && rowid < 6)
-                    atomic_add(execTag, &vtemp(bOffset, rowid % 3, inds[rowid / 3]), entryG);
+                    atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
             });
         }
     }
@@ -210,7 +210,7 @@ void ClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString d
             auto dx = vtemp.pack(dim_c<3>, dxOffset, vi);
             auto w = vtemp("ws", vi);
             for (int d = 0; d != 3; ++d)
-                atomic_add(execTag, &vtemp(bOffset, d, vi), boundaryKappa * w * dx(d));
+                atomic_add(execTag, &vtemp(bOffset + d, vi), boundaryKappa * w * dx(d));
         });
     }
 }
@@ -223,33 +223,34 @@ void ClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     pol.sync(false);
     /// solve for A dir = grad;
     // initial guess for hard boundary constraints
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt,
-                             dirOffset = vtemp.getPropertyOffset("dir"),
-                             xtildeOffset = vtemp.getPropertyOffset("xtilde"),
-                             xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
-        if (i < coOffset) {
-            vtemp.tuple(dim_c<3>, dirOffset, i) = vec3::zeros();
-        } else {
-            vtemp.tuple(dim_c<3>, dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
-        }
-    });
+    pol(zs::range(numDofs),
+        [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, dirOffset = vtemp.getPropertyOffset("dir"),
+         xtildeOffset = vtemp.getPropertyOffset("xtilde"),
+         xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
+            if (i < coOffset) {
+                vtemp.tuple(dim_c<3>, dirOffset, i) = vec3::zeros();
+            } else {
+                vtemp.tuple(dim_c<3>, dirOffset, i) =
+                    (vtemp.pack(dim_c<3>, xtildeOffset, i) - vtemp.pack(dim_c<3>, xnOffset, i)) * dt;
+            }
+        });
     // temp = A * dir
     multiply(pol, "dir", "temp");
     // r = grad - temp
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
                              gradOffset = vtemp.getPropertyOffset("grad"),
                              tempOffset = vtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
-        vtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - vtemp.pack<3>(tempOffset, i);
+        vtemp.tuple(dim_c<3>, rOffset, i) = vtemp.pack(dim_c<3>, gradOffset, i) - vtemp.pack(dim_c<3>, tempOffset, i);
     });
-    // project(cudaPol, "r");
+    project(pol, "r");
     precondition(pol, "r", "q");
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
-        vtemp.tuple<3>(pOffset, i) = vtemp.pack<3>(qOffset, i);
+        vtemp.tuple(dim_c<3>, pOffset, i) = vtemp.pack(dim_c<3>, qOffset, i);
     });
-    double zTrk = dot(pol, wrapt<double>{}, vtemp, "r", "q");
-    double residualPreconditionedNorm2 = zTrk;
-    double localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
+    T zTrk = dot(pol, "r", "q");
+    T residualPreconditionedNorm2 = zTrk;
+    T localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
     int iter = 0;
 
     //
@@ -265,23 +266,26 @@ void ClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
         if (residualPreconditionedNorm2 <= localTol2)
             break;
         multiply(pol, "p", "temp");
-        // project(cudaPol, "temp"); // need further checking hessian!
+        project(pol, "temp"); // need further checking hessian!
 
-        double alpha = zTrk / dot(pol, wrapt<double>{}, vtemp, "temp", "p");
+        T alpha = zTrk / dot(pol, "temp", "p");
         pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
                              pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
                              tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>(dirOffset, vi) = vtemp.pack<3>(dirOffset, vi) + alpha * vtemp.pack<3>(pOffset, vi);
-            vtemp.tuple<3>(rOffset, vi) = vtemp.pack<3>(rOffset, vi) - alpha * vtemp.pack<3>(tempOffset, vi);
+            vtemp.tuple(dim_c<3>, dirOffset, vi) =
+                vtemp.pack(dim_c<3>, dirOffset, vi) + alpha * vtemp.pack(dim_c<3>, pOffset, vi);
+            vtemp.tuple(dim_c<3>, rOffset, vi) =
+                vtemp.pack(dim_c<3>, rOffset, vi) - alpha * vtemp.pack(dim_c<3>, tempOffset, vi);
         });
 
         precondition(pol, "r", "q");
-        double zTrkLast = zTrk;
-        zTrk = dot(pol, wrapt<double>{}, vtemp, "q", "r");
-        double beta = zTrk / zTrkLast;
+        T zTrkLast = zTrk;
+        zTrk = dot(pol, "q", "r");
+        T beta = zTrk / zTrkLast;
         pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>(pOffset, vi) = vtemp.pack<3>(qOffset, vi) + beta * vtemp.pack<3>(pOffset, vi);
+            vtemp.tuple(dim_c<3>, pOffset, vi) =
+                vtemp.pack(dim_c<3>, qOffset, vi) + beta * vtemp.pack(dim_c<3>, pOffset, vi);
         });
 
         residualPreconditionedNorm2 = zTrk;
