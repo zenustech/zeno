@@ -58,6 +58,50 @@ ZENDEFNODE(ZSVDBToNavierStokesGrid, {/* inputs: */
                                      /* category: */
                                      {"Eulerian"}});
 
+struct ZSNSAssignAttribute : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto SrcGrid = get_input<ZenoSparseGrid>("SourceGrid");
+        auto tag = get_input2<std::string>("Attribute");
+        auto isStaggered = get_input2<bool>("Staggered");
+
+        auto &spg = NSGrid->spg;
+        auto &src = SrcGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        auto num_ch = src.getPropertySize(tag);
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), srcv = zs::proxy<space>(src), num_ch, isStaggered,
+             srcTag = src_tag(SrcGrid, tag),
+             dstTag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                auto wcoord = spgv.wCoord(blockno, cellno);
+                
+                for (int ch = 0; ch < num_ch; ++ch) {
+                    if (isStaggered) {
+                        spgv(dstTag, ch, blockno, cellno) = srcv.wStaggeredSample(srcTag, ch, wcoord);
+                    } else {
+                        spgv(dstTag, ch, blockno, cellno) = srcv.wSample(srcTag, ch, wcoord);
+                    }
+                }
+            });
+
+        set_output("NSGrid", NSGrid);
+    }
+};
+
+ZENDEFNODE(ZSNSAssignAttribute, {/* inputs: */
+                                 {"NSGrid", "SourceGrid", {"string", "Attribute", ""}, {"bool", "Staggered", "0"}},
+                                 /* outputs: */
+                                 {"NSGrid"},
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {"Eulerian"}});
+
 struct ZSNavierStokesDt : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
@@ -371,29 +415,30 @@ struct ZSNSPressureProject : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        // velocity divergence
-        pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
-                auto icoord = spgv.iCoord(cellno);
+        if (nIter > 0) {
+            // velocity divergence
+            pol(zs::range(block_cnt * spg.block_size),
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
+                    auto icoord = spgv.iCoord(cellno);
 
-                float u_x[2], u_y[2], u_z[2];
-                for (int i = 0; i <= 1; ++i) {
-                    u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
-                    u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
-                    u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
-                }
+                    float u_x[2], u_y[2], u_z[2];
+                    for (int i = 0; i <= 1; ++i) {
+                        u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
+                        u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
+                        u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
+                    }
 
-                float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx;
+                    float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx;
 
-                spgv("div_v", icoord) = div_term;
-            });
+                    spgv("div_v", icoord) = div_term;
+                });
 
-        const float dxSqrOverDt = dx * dx / dt;
+            const float dxSqrOverDt = dx * dx / dt;
 
-        // zs::CppTimer timer;
-        // timer.tick();
-        // pressure Poisson equation
-        for (int iter = 0; iter < nIter; ++iter) {
+            // zs::CppTimer timer;
+            // timer.tick();
+            // pressure Poisson equation
+            for (int iter = 0; iter < nIter; ++iter) {
 #if 0
             // point Jacobi iteration
             pol(zs::range(block_cnt * spg.block_size),
@@ -421,53 +466,54 @@ struct ZSNSPressureProject : INode {
                 });
             update_cur(NSGrid, "p");
 #else
-            // red-black SOR iteration
-            const float sor = 1.0f; // over relaxation rate
+                // red-black SOR iteration
+                const float sor = 1.0f; // over relaxation rate
 
-            for (int clr = 0; clr != 2; ++clr) {
+                for (int clr = 0; clr != 2; ++clr) {
 
-                pol(zs::range(block_cnt * 32), [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho, clr, sor,
-                                                pSrcTag = src_tag(NSGrid, "p")] __device__(int tid) mutable {
-                    auto blockno = tid / 32;
+                    pol(zs::range(block_cnt * 32), [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho, clr, sor,
+                                                    pSrcTag = src_tag(NSGrid, "p")] __device__(int tid) mutable {
+                        auto blockno = tid / 32;
 
-                    auto bcoord = spgv._table._activeKeys[blockno];
-                    if ((((bcoord[0] & 8) ^ (bcoord[1] & 8) ^ (bcoord[2] & 8)) >> 3) == clr)
-                        return;
+                        auto bcoord = spgv._table._activeKeys[blockno];
+                        if ((((bcoord[0] & 8) ^ (bcoord[1] & 8) ^ (bcoord[2] & 8)) >> 3) == clr)
+                            return;
 
-                    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
-                    for (int c_clr = 0; c_clr != 2; ++c_clr) {
+                        auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                        for (int c_clr = 0; c_clr != 2; ++c_clr) {
 
-                        for (int cno = tile.thread_rank(); cno < 256; cno += tile.num_threads()) {
-                            auto cellno = (cno << 1) | c_clr;
+                            for (int cno = tile.thread_rank(); cno < 256; cno += tile.num_threads()) {
+                                auto cellno = (cno << 1) | c_clr;
 
-                            auto ccoord = spgv.local_offset_to_coord(cellno);
-                            auto icoord = bcoord + ccoord;
+                                auto ccoord = spgv.local_offset_to_coord(cellno);
+                                auto icoord = bcoord + ccoord;
 
-                            float div = spgv.value("div_v", blockno, cellno);
+                                float div = spgv.value("div_v", blockno, cellno);
 
-                            const int stcl = 1; // stencil point in each side
-                            float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+                                const int stcl = 1; // stencil point in each side
+                                float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
 
-                            for (int i = -stcl; i <= stcl; ++i) {
-                                p_x[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
-                                p_y[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
-                                p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                                for (int i = -stcl; i <= stcl; ++i) {
+                                    p_x[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
+                                    p_y[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
+                                    p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                                }
+
+                                float p_this = (1.f - sor) * p_x[stcl] +
+                                               sor *
+                                                   ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) -
+                                                    div * dxSqrOverDt * rho) /
+                                                   6.f;
+
+                                spgv(pSrcTag, blockno, cellno) = p_this;
                             }
-
-                            float p_this =
-                                (1.f - sor) * p_x[stcl] +
-                                sor *
-                                    ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dxSqrOverDt * rho) /
-                                    6.f;
-
-                            spgv(pSrcTag, blockno, cellno) = p_this;
                         }
-                    }
-                });
-            }
+                    });
+                }
 #endif
+            }
+            // timer.tock("jacobi/sor iterations");
         }
-        // timer.tock("jacobi/sor iterations");
 
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
