@@ -41,6 +41,14 @@ enum MODEL_ROLE
 	ROLE_PARAM_VALUE,
 	ROLE_PARAM_LINKS,
 	ROLE_PARAM_SOCKETTYPE,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
+
+	//view param
+	ROLE_VPARAM_TYPE,		//vtype, such as group tab param, not ROLE_PARAM_TYPE
+    ROLE_VPARAM_NAME,
+    ROLE_VPARAM_IS_COREPARAM,   //is mapped from core param.
+    ROLE_VAPRAM_EDITTABLE,       //edittable for name and content.
+    ROLE_VPARAM_ACTIVE_TABINDEX,    //active tab index
+    ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 };
 
 enum LOG_ROLE

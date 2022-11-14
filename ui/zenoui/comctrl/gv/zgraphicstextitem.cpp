@@ -1,6 +1,8 @@
 #include "zgraphicstextitem.h"
 #include "zenosocketitem.h"
 #include "render/common_id.h"
+#include <zenomodel/include/modelrole.h>
+#include "zassert.h"
 
 
 qreal editor_factor = 1.0;
@@ -321,7 +323,7 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 
 ZSocketGroupItem::ZSocketGroupItem(
-        const QPersistentModelIndex& paramIdx,
+        const QPersistentModelIndex& viewSockIdx,
         const QString& sockName, 
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,
@@ -329,17 +331,26 @@ ZSocketGroupItem::ZSocketGroupItem(
     )
     : ZSimpleTextItem(sockName, parent)
     , m_bInput(bInput)
-    , m_paramIdx(paramIdx)
+    , m_viewSockIdx(viewSockIdx)
 {
+    ZASSERT_EXIT(m_viewSockIdx.isValid());
+
     ImageElement elem;
     elem.image = ":/icons/socket-off.svg";
     elem.imageHovered = ":/icons/socket-hover.svg";
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(paramIdx, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    m_socket = new ZenoSocketItem(viewSockIdx, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
+    });
+
+    QObject::connect(m_viewSockIdx.model(), &QAbstractItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+        if (topLeft == m_viewSockIdx && !roles.isEmpty() && roles[0] == ROLE_VPARAM_NAME) {
+            const QString& newSockName = topLeft.data(ROLE_VPARAM_NAME).toString();
+            setText(newSockName);
+        }
     });
 
     setBrush(QColor(188, 188, 188));
@@ -393,7 +404,7 @@ QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant&
 
 
 ZSocketEditableItem::ZSocketEditableItem(
-        const QPersistentModelIndex& index,
+        const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,
@@ -402,7 +413,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     )
     : _base(parent)
     , m_bInput(bInput)
-    , m_paramIdx(index)
+    , m_viewSockIdx(viewSockIdx)
 {
     setText(sockName);
 
@@ -412,10 +423,17 @@ ZSocketEditableItem::ZSocketEditableItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(index, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
+    m_socket = new ZenoSocketItem(viewSockIdx, sockName, bInput, elem, QSizeF(cSocketWidth, cSocketHeight), this);
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
+    });
+
+    QObject::connect(m_viewSockIdx.model(), &QAbstractItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+        if (topLeft == m_viewSockIdx && !roles.isEmpty() && roles[0] == ROLE_VPARAM_NAME) {
+            const QString& newSockName = topLeft.data(ROLE_VPARAM_NAME).toString();
+            updateSockName(newSockName);
+        }
     });
 
     setDefaultTextColor(QColor(188, 188, 188));

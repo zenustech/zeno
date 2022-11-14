@@ -21,7 +21,7 @@ public:
     };
 
     ZenoSocketItem(
-        const QPersistentModelIndex& paramIdx,
+        const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
         bool bInput,
         const ImageElement &elem,
@@ -58,7 +58,7 @@ private:
     QString m_noHoverSvg;
     QString m_hoverSvg;
 
-    const QPersistentModelIndex m_paramIdx;
+    const QPersistentModelIndex m_viewSockIdx;
 
     const int sHorLargeMargin;
     const int sTopMargin;

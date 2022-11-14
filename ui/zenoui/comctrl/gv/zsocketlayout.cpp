@@ -6,7 +6,7 @@
 
 
 ZSocketLayout::ZSocketLayout(
-        const QPersistentModelIndex& paramIdx,
+        const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
         bool bInput,
         bool editable,
@@ -18,12 +18,13 @@ ZSocketLayout::ZSocketLayout(
     , m_control(nullptr)
     , m_bInput(bInput)
     , m_bEditable(editable)
+    , m_viewSockIdx(viewSockIdx)
 {
     if (m_bEditable) {
-        m_text = new ZSocketEditableItem(paramIdx, sockName, bInput, cbSock, cb);
+        m_text = new ZSocketEditableItem(viewSockIdx, sockName, bInput, cbSock, cb);
     }
     else {
-        m_text = new ZSocketGroupItem(paramIdx, sockName, bInput, cbSock);
+        m_text = new ZSocketGroupItem(viewSockIdx, sockName, bInput, cbSock);
     }
     if (m_bInput)
         addItem(m_text, Qt::AlignVCenter);
@@ -80,6 +81,11 @@ ZenoSocketItem* ZSocketLayout::socketItem() const
         ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
         return pEdit->socketItem();
     }
+}
+
+QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
+{
+    return m_viewSockIdx;
 }
 
 QPointF ZSocketLayout::getPortPos()

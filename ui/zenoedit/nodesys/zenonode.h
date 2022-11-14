@@ -17,6 +17,7 @@
 
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
+class ViewParamModel;
 
 class ZenoNode : public ZLayoutBackground
 {
@@ -27,6 +28,7 @@ class ZenoNode : public ZLayoutBackground
         ZSimpleTextItem* param_name;
         ZenoParamWidget* param_control;
         ZGraphicsLayout* ctrl_layout;
+        QPersistentModelIndex viewidx;
         _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
     };
 
@@ -73,6 +75,9 @@ public slots:
     void onOptionsUpdated(int options);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
     void onNameUpdated(const QString& newName);
+    void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onViewParamInserted(const QModelIndex& parent, int first, int last);
+    void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -121,6 +126,10 @@ private:
 
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;
+    ZGraphicsLayout* m_inputsLayout;
+    ZGraphicsLayout* m_paramsLayout;
+    ZGraphicsLayout* m_outputsLayout;
+    ViewParamModel* m_viewParams;
 
     //when initui, zenonode should not emit any signals.
     bool m_bUIInited;

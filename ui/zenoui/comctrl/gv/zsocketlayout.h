@@ -12,7 +12,7 @@ class ZSocketLayout : public ZGraphicsLayout
 {
 public:
     ZSocketLayout(
-            const QPersistentModelIndex& index,
+            const QPersistentModelIndex& viewSockIdx,
             const QString& sockName,
             bool bInput,
             bool editable,
@@ -28,12 +28,14 @@ public:
     QGraphicsItem* control() const;
     QGraphicsWidget* widgetControl() const;
     ZenoSocketItem* socketItem() const;
+    QPersistentModelIndex viewSocketIdx() const;
 
 private:
     QGraphicsItem* m_text;
     QGraphicsItem* m_control;
     bool m_bInput;
     bool m_bEditable;
+    const QPersistentModelIndex& m_viewSockIdx;
 };
 
 #endif

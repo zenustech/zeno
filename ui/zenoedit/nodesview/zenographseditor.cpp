@@ -6,6 +6,8 @@
 #include "zenowelcomepage.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/viewparammodel.h>
+#include "variantptr.h"
 #include <comctrl/zenocheckbutton.h>
 #include <comctrl/ziconbutton.h>
 #include <zenoui/style/zenostyle.h>
@@ -18,6 +20,7 @@
 #include "startup/zstartup.h"
 #include "util/log.h"
 #include "settings/zsettings.h"
+#include "dialog/zeditparamlayoutdlg.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -590,6 +593,23 @@ void ZenoGraphsEditor::onAction(const QString& text)
         ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
+    }
+    else if (text == tr("CustomUI"))
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        if (pView)
+        {
+            ZenoSubGraphScene* pScene = pView->scene();
+            QModelIndexList nodes = pScene->selectNodesIndice();
+            if (nodes.size() == 1)
+            {
+                QModelIndex nodeIdx = nodes[0];
+                ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODEPARAMS));
+                ZASSERT_EXIT(viewParams);
+                ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, this);
+                dlg.exec();
+            }
+        }
     }
     else if (text == tr("Easy Subgraph"))
     {

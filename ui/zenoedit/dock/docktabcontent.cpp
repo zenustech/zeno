@@ -161,6 +161,9 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
         pEditor->onAction(pEditor->tr("Expand"));
     });
+    connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
+        pEditor->onAction(pEditor->tr("CustomUI"));
+    });
 
     pVLayout->addWidget(pEditor);
     setLayout(pVLayout);

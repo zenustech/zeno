@@ -40,6 +40,10 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bEnableSnap(false)
     , m_bodyLayout(nullptr)
     , m_bUIInited(false)
+    , m_viewParams(nullptr)
+    , m_inputsLayout(nullptr)
+    , m_paramsLayout(nullptr)
+    , m_outputsLayout(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -194,21 +198,29 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setSpacing(5);
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
-    QStandardItem* root = viewParams->invisibleRootItem();
+    m_viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItem* root = m_viewParams->invisibleRootItem();
     ZASSERT_EXIT(root && root->rowCount() == 3, nullptr);
     //see ViewParamModel::initNode()
     QStandardItem* inputsItem = root->child(0);
     QStandardItem* paramsItem = root->child(1);
     QStandardItem* outputsItem = root->child(2);
 
+    connect(m_viewParams, &ViewParamModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
+    connect(m_viewParams, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
+    connect(m_viewParams, &ViewParamModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
+
     //params.
-    m_bodyLayout->addLayout(initParams(paramsItem, pScene));
-    m_bodyLayout->addLayout(initSockets(inputsItem, true, pScene));
-    m_bodyLayout->addLayout(initSockets(outputsItem, false, pScene));
+    m_paramsLayout = initParams(paramsItem, pScene);
+    m_bodyLayout->addLayout(m_paramsLayout);
+
+    m_inputsLayout = initSockets(inputsItem, true, pScene);
+    m_bodyLayout->addLayout(m_inputsLayout);
+
+    m_outputsLayout = initSockets(outputsItem, false, pScene);
+    m_bodyLayout->addLayout(m_outputsLayout);
 
     bodyWidget->setLayout(m_bodyLayout);
-
     return bodyWidget;
 }
 
@@ -276,6 +288,334 @@ void ZenoNode::onNameUpdated(const QString& newName)
     }
 }
 
+void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (roles.isEmpty())
+        return;
+
+    int role = roles[0];
+    QStandardItem* pItem = m_viewParams->itemFromIndex(topLeft);
+    ZASSERT_EXIT(pItem);
+    int vType = pItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (vType == VPARAM_GROUP)
+    {
+
+    }
+    if (vType != VPARAM_PARAM)
+    {
+        return;
+    }
+
+    QModelIndex viewParamIdx = pItem->index();
+
+    QStandardItem* parentItem = pItem->parent();
+    ZASSERT_EXIT(parentItem);
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+    ZASSERT_EXIT(pScene);
+
+    const QString& groupName = parentItem->text();
+    const QString& paramName = pItem->data(ROLE_VPARAM_NAME).toString();
+
+    if (role == ROLE_VPARAM_NAME)
+    {
+        if (groupName == "In Sockets")
+        {
+            for (auto it = m_inSockets.begin(); it != m_inSockets.end(); it++)
+            {
+                if (it->second->viewSocketIdx() == viewParamIdx)
+                {
+                    QString oldName = it->first;
+                    it->first = paramName;
+                    break;
+                }
+            }
+        }
+        else if (groupName == "Parameters")
+        {
+            for (auto it = m_params.begin(); it != m_params.end(); it++)
+            {
+                if (it->second.viewidx == viewParamIdx)
+                {
+                    QString oldName = it->first;
+                    it->first = paramName;
+                    break;
+                }
+            }
+        }
+        else if (groupName == "Out Sockets")
+        {
+            for (auto it = m_outSockets.begin(); it != m_outSockets.end(); it++)
+            {
+                if (it->second->viewSocketIdx() == viewParamIdx)
+                {
+                    QString oldName = it->first;
+                    it->first = paramName;
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    if (groupName == "In Sockets")
+    {
+        ZASSERT_EXIT(m_inSockets.find(paramName) != m_inSockets.end());
+        ZSocketLayout* pControlLayout = pControlLayout = m_inSockets[paramName];
+        QGraphicsItem* pControl = nullptr;
+        if (pControlLayout)
+            pControl = pControlLayout->control();
+
+        PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
+        switch (role)
+        {
+            case ROLE_PARAM_CTRL:
+            {
+                PARAM_CONTROL oldCtrl = pControl ? (PARAM_CONTROL)pControl->data(GVKEY_CONTROL).toInt() : CONTROL_NONE;
+                if (ctrl != oldCtrl)
+                {
+                    QGraphicsItem* pNewControl = initSocketWidget(pScene, parentItem->index());
+                    pControlLayout->setControl(pNewControl);
+                    pControl = pNewControl;
+                    updateWhole();
+                }
+                //set value on pControl.
+                const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
+                ZenoGvHelper::setValue(pControl, ctrl, deflValue);
+                break;
+            }
+            case ROLE_PARAM_VALUE:
+            {
+                const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
+                ZenoGvHelper::setValue(pControl, ctrl, deflValue);
+                break;
+            }
+        }
+    }
+    else if (groupName == "Parameters")
+    {
+        const QString& sockName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
+        const QString& newType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
+        PARAM_CONTROL ctrl = (PARAM_CONTROL)viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
+        ZASSERT_EXIT(m_params.find(sockName) != m_params.end());
+        const auto& paramCtrl = m_params[sockName];
+
+        switch (role)
+        {
+            case ROLE_PARAM_CTRL:
+            {
+                ZGraphicsLayout* pParamLayout = paramCtrl.ctrl_layout;
+                pParamLayout->removeItem(paramCtrl.param_control);
+
+                ZenoParamWidget* pNewControl = initParamWidget(pScene, viewParamIdx);
+                if (pNewControl)
+                {
+                    pParamLayout->addItem(pNewControl);
+                    m_params[sockName].param_control = pNewControl;
+                }
+                updateWhole();
+                break;
+            }
+            case ROLE_PARAM_VALUE:
+            {
+                const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
+                ZenoGvHelper::setValue(paramCtrl.param_control, ctrl, deflValue);
+                break;
+            }
+        }
+    }
+}
+
+void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int last)
+{
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+    ZASSERT_EXIT(pScene);
+
+    if (!parent.isValid())
+    {
+        QStandardItem* root = m_viewParams->invisibleRootItem();
+        ZASSERT_EXIT(root);
+        QStandardItem* pGroup = root->child(first);
+        if (!pGroup) return;
+
+        const QString& groupName = pGroup->text();
+        if (groupName == "Parameters")
+        {
+            ZGraphicsLayout* playout = initParams(pGroup, pScene);
+            if (m_paramsLayout)
+            {
+                m_paramsLayout->clear();
+                m_bodyLayout->removeLayout(m_paramsLayout);
+            }
+            m_paramsLayout = playout;
+            m_bodyLayout->insertLayout(0, m_paramsLayout);
+            updateWhole();
+        }
+        else if (groupName == "In Sockets")
+        {
+            ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
+            if (m_inputsLayout)
+            {
+                m_inputsLayout->clear();
+                m_bodyLayout->removeLayout(m_inputsLayout);
+            }
+            m_inputsLayout = playout;
+            m_bodyLayout->insertLayout(1, m_inputsLayout);
+            updateWhole();
+        }
+        else if (groupName == "Out Sockets")
+        {
+            ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
+            if (m_outputsLayout)
+            {
+                m_outputsLayout->clear();
+                m_bodyLayout->removeLayout(m_outputsLayout);
+            }
+            m_outputsLayout = playout;
+            m_bodyLayout->insertLayout(2, m_outputsLayout);
+            updateWhole();
+        }
+        return;
+    }
+
+    QStandardItem* parentItem = m_viewParams->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+    QStandardItem* paramItem = parentItem->child(first);
+    const QString& groupName = parentItem->text();
+    const QModelIndex& viewParamIdx = paramItem->index();
+
+    //see ViewParamModel::initNode
+    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    {
+        bool bInput = groupName == "In Sockets";
+        ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
+        ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (pModel->IsSubGraphNode(m_index))
+        {
+            //dynamic socket added, ensure that the key is above the SRC key.
+            pSocketsLayout->insertLayout(0, pSocketLayout);
+        }
+        else
+        {
+            pSocketsLayout->addLayout(pSocketLayout);
+        }
+        updateWhole();
+    }
+    else if (groupName == "Parameters")
+    {
+        m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
+    }
+}
+
+void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    if (!parent.isValid())
+    {
+        ZASSERT_EXIT(first == 0 && last == 2);  //corresponding to ViewParamModel::clone.
+        //remove all component.
+        m_paramsLayout->clear();
+        m_inputsLayout->clear();
+        m_outputsLayout->clear();
+        return;
+    }
+
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+    ZASSERT_EXIT(pScene);
+
+    QStandardItem* parentItem = m_viewParams->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+    QStandardItem* paramItem = parentItem->child(first);
+    const QString& groupName = parentItem->text();
+    const QModelIndex& viewParamIdx = paramItem->index();
+
+    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    {
+        bool bInput = groupName == "In Sockets";
+        const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
+        ZSocketLayout* pSocketLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
+        if (bInput)
+            m_inSockets.remove(sockName);
+        else
+            m_outSockets.remove(sockName);
+        ZGraphicsLayout* pParentLayout = pSocketLayout->parentLayout();
+        pParentLayout->removeLayout(pSocketLayout);
+    }
+    else if (groupName == "Parameters")
+    {
+        const QString& paramName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
+
+        ZASSERT_EXIT(m_params.find(paramName) != m_params.end());
+        ZGraphicsLayout* paramLayout = m_params[paramName].ctrl_layout;
+        m_params.remove(paramName);
+        ZGraphicsLayout* pParentLayout = paramLayout->parentLayout();
+        if (pParentLayout)
+            pParentLayout->removeLayout(paramLayout);
+    }
+}
+
+ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
+{
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
+
+    IParamModel* socketModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+    ZASSERT_EXIT(socketModel, nullptr);
+
+    ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
+    pSocketsLayout->setSpacing(5);
+
+    for (int r = 0; r < socketItems->rowCount(); r++)
+    {
+        const QStandardItem* pItem = socketItems->child(r);
+        const QModelIndex& viewIdx = pItem->index();
+        ZSocketLayout* pSocketLayout = addSocket(viewIdx, bInput, pScene);
+        pSocketsLayout->addLayout(pSocketLayout);
+    }
+    return pSocketsLayout;
+}
+
+ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
+{
+    auto cbFuncRenameSock = [=](QString oldText, QString newText) {
+        //todo:
+        ZASSERT_EXIT(false);
+
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        IParamModel* pModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+        ZASSERT_EXIT(pModel);
+        bool ret = pModel->setData(viewSockIdx, newText, ROLE_PARAM_NAME);
+    };
+
+    Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
+        emit socketClicked(pSocketItem);
+    };
+
+    const QString& sockName = viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)viewSockIdx.data(ROLE_PARAM_CTRL).toInt();
+    const QString& sockType = viewSockIdx.data(ROLE_PARAM_TYPE).toString();
+    const QVariant& deflVal = viewSockIdx.data(ROLE_PARAM_VALUE);
+    const PARAM_LINKS& links = viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+
+    bool bEditableSock = ctrl == CONTROL_DICTKEY;
+    ZSocketLayout* pMiniLayout = new ZSocketLayout(viewSockIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+
+    if (bInput)
+    {
+        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, viewSockIdx);
+        pMiniLayout->setControl(pSocketControl);
+        if (pSocketControl)
+            pSocketControl->setVisible(links.isEmpty());
+    }
+
+    if (bInput)
+        m_inSockets[sockName] = pMiniLayout;
+    else
+        m_outSockets[sockName] = pMiniLayout;
+
+    return pMiniLayout;
+}
+
 ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -299,248 +639,15 @@ ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphSce
     {
         paramsLayout->addLayout(pCustomParams);
     }
-
-    connect(paramsModel, &IParamModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = paramsModel->index(first, 0, parent);
-        paramsLayout->addLayout(addParam(idx, pScene));
-    });
-
-    connect(paramsModel, &IParamModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = paramsModel->index(first, 0, parent);
-        const QString& paramName = idx.data(ROLE_PARAM_NAME).toString();
-
-        ZASSERT_EXIT(m_params.find(paramName) != m_params.end());
-        ZGraphicsLayout* paramLayout = m_params[paramName].ctrl_layout;
-        m_params.remove(paramName);
-        ZGraphicsLayout* pParentLayout = paramLayout->parentLayout();
-        if (pParentLayout)
-            pParentLayout->removeLayout(paramLayout);
-    });
-
-    connect(paramsModel, &IParamModel::mock_dataChanged, this, [=](const QModelIndex& idx, const QVariant& oldValue, int role)
-    {
-        if (role == ROLE_PARAM_TYPE || role == ROLE_PARAM_CTRL)
-        {
-            const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
-            const QString& newType = idx.data(ROLE_PARAM_TYPE).toString();
-            PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-
-            ZASSERT_EXIT(m_params.find(sockName) != m_params.end());
-            const auto& paramCtrl = m_params[sockName];
-            ZGraphicsLayout* pParamLayout = paramCtrl.ctrl_layout;
-            pParamLayout->removeItem(paramCtrl.param_control);
-
-            ZenoParamWidget* pNewControl = initParamWidget(pScene, idx);
-            if (pNewControl)
-            {
-                pParamLayout->addItem(pNewControl);
-                m_params[sockName].param_control = pNewControl;
-            }
-            updateWhole();
-        }
-        else if (role == ROLE_PARAM_VALUE)
-        {
-            const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
-            const QString& newType = idx.data(ROLE_PARAM_TYPE).toString();
-            PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-            const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-
-            ZASSERT_EXIT(m_params.find(sockName) != m_params.end());
-            const auto& paramCtrl = m_params[sockName];
-
-            ZenoGvHelper::setValue(paramCtrl.param_control, ctrl, value);
-            updateWhole();
-        }
-        else if (role == ROLE_PARAM_NAME)
-        {
-            //todo: rename parameter name.
-        }
-    });
-
     return paramsLayout;
 }
 
-ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGraphScene* pScene)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
-
-    IParamModel* socketModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-    ZASSERT_EXIT(socketModel, nullptr);
-
-    ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
-    pSocketsLayout->setSpacing(5);
-
-    for (int r = 0; r < socketItems->rowCount(); r++)
-    {
-        const QStandardItem* pItem = socketItems->child(r);
-        const QModelIndex& idx = pItem->index();
-        ZSocketLayout* pSocketLayout = addSocket(idx, bInput, pScene);
-        pSocketsLayout->addLayout(pSocketLayout);
-    }
-
-    connect(socketModel, &IParamModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = socketModel->index(first, 0, parent);
-        ZSocketLayout* pSocketLayout = addSocket(idx, bInput, pScene);
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (pModel->IsSubGraphNode(m_index))
-        {
-            //dynamic socket added, ensure that the key is above the SRC key.
-            pSocketsLayout->insertLayout(0, pSocketLayout);
-        }
-        else
-        {
-            pSocketsLayout->addLayout(pSocketLayout);
-        }
-        updateWhole();
-    });
-
-    connect(socketModel, &IParamModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
-        const QModelIndex& idx = socketModel->index(first, 0, parent);
-        const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
-        ZSocketLayout* pSocketLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
-        if (bInput)
-            m_inSockets.remove(sockName);
-        else
-            m_outSockets.remove(sockName);
-        ZGraphicsLayout* pParentLayout = pSocketLayout->parentLayout();
-        pParentLayout->removeLayout(pSocketLayout);
-    });
-
-    connect(socketModel, &IParamModel::mock_dataChanged, this, [=](const QModelIndex& idx, const QVariant& oldValue, int role)
-    {
-        const QString& sockName = idx.data(ROLE_PARAM_NAME).toString();
-        const PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-        const QString& type = idx.data(ROLE_PARAM_TYPE).toString();
-        const QVariant& deflValue = idx.data(ROLE_PARAM_VALUE);
-
-        ZSocketLayout* pControlLayout = nullptr;
-        if (role == ROLE_PARAM_NAME)
-        {
-            QString oldName = oldValue.toString();
-            pControlLayout = bInput ? m_inSockets[oldName] : m_outSockets[oldName];
-        }
-        else
-        {
-            pControlLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
-        }
-        QGraphicsItem* pControl = nullptr;
-        if (pControlLayout)
-            pControl = pControlLayout->control();
-
-        if (role == ROLE_PARAM_NAME)
-        {
-            //dict rename issues.
-            QString oldName = oldValue.toString();
-            QString newName = sockName;
-            FuckQMap<QString, ZSocketLayout*>::iterator it;
-            if (bInput)
-            {
-                it = m_inSockets.find(oldName);
-                ZASSERT_EXIT(oldName != newName && it != m_inSockets.end() && it->second);
-            }
-            else
-            {
-                it = m_outSockets.find(oldName);
-                ZASSERT_EXIT(oldName != newName && it != m_outSockets.end() && it->second);
-            }
-            it->second->updateSockName(newName);
-            it->first = newName;
-            ZGraphicsLayout::updateHierarchy(it->second);
-        }
-        else if (role == ROLE_PARAM_CTRL)
-        {
-            if (!bInput)
-                return;     //there is not control on output socket.
-
-            PARAM_CONTROL oldCtrl = pControl ? (PARAM_CONTROL)pControl->data(GVKEY_CONTROL).toInt() : CONTROL_NONE;
-            if (ctrl != oldCtrl)
-            {
-                QGraphicsItem* pNewControl = initSocketWidget(pScene, idx);
-                pControlLayout->setControl(pNewControl);
-                pControl = pNewControl;
-                updateWhole();
-            }
-            //set value on pControl.
-            ZenoGvHelper::setValue(pControl, ctrl, deflValue);
-        }
-        else if (role == ROLE_PARAM_VALUE)
-        {
-            //set value on pControl.
-            ZenoGvHelper::setValue(pControl, ctrl, deflValue);
-        }
-        else if (role == ROLE_PARAM_TYPE)
-        {
-            //socket type changed.
-            if (bInput)
-            {
-                PARAM_CONTROL newCtrl = UiHelper::getControlType(type);
-                QGraphicsItem* pNewControl = initSocketWidget(pScene, idx);
-                pControlLayout->setControl(pNewControl);
-                pControl = pNewControl;
-                updateWhole();
-            }
-        }
-        else if (role == ROLE_PARAM_LINKS)
-        {
-            //connect/disconnect?
-            PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (pControl)
-                pControl->setVisible(links.isEmpty());
-        }
-    });
-
-    return pSocketsLayout;
-}
-
-ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewParamIdx, bool bInput, ZenoSubGraphScene* pScene)
-{
-    auto cbFuncRenameSock = [=](QString oldText, QString newText) {
-        //todo:
-        ZASSERT_EXIT(false);
-
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
-        IParamModel* pModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-        ZASSERT_EXIT(pModel);
-        bool ret = pModel->setData(viewParamIdx, newText, ROLE_PARAM_NAME);
-    };
-
-    Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
-        emit socketClicked(pSocketItem);
-    };
-
-    const QString& sockName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
-    PARAM_CONTROL ctrl = (PARAM_CONTROL)viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
-    const QString& sockType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
-    const QVariant& deflVal = viewParamIdx.data(ROLE_PARAM_VALUE);
-    const PARAM_LINKS& links = viewParamIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-
-    bool bEditableSock = ctrl == CONTROL_DICTKEY;
-    ZSocketLayout* pMiniLayout = new ZSocketLayout(viewParamIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
-
-    if (bInput)
-    {
-        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, viewParamIdx);
-        pMiniLayout->setControl(pSocketControl);
-        if (pSocketControl)
-            pSocketControl->setVisible(links.isEmpty());
-    }
-
-    if (bInput)
-        m_inSockets.insert(sockName, pMiniLayout);
-    else
-        m_outSockets.insert(sockName, pMiniLayout);
-
-    return pMiniLayout;
-}
-
-ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene)
-{
-    const QString& paramName = idx.data(ROLE_PARAM_NAME).toString();
-    PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-    const QString& paramType = idx.data(ROLE_PARAM_TYPE).toString();
-    const QVariant& value = idx.data(ROLE_PARAM_VALUE);
+    const QString& paramName = viewparamIdx.data(ROLE_VPARAM_NAME).toString();
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)viewparamIdx.data(ROLE_PARAM_CTRL).toInt();
+    const QString& paramType = viewparamIdx.data(ROLE_PARAM_TYPE).toString();
+    const QVariant& value = viewparamIdx.data(ROLE_PARAM_VALUE);
 
     if (ctrl == CONTROL_NONVISIBLE)
         return nullptr;
@@ -553,6 +660,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* p
     textItem->setFont(m_renderParams.socketFont);
     textItem->updateBoundingRect();
     paramCtrl.param_name = textItem;
+    paramCtrl.viewidx = viewparamIdx;
     paramCtrl.ctrl_layout->addItem(paramCtrl.param_name, Qt::AlignVCenter);
 
     switch (ctrl)
@@ -568,7 +676,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& idx, ZenoSubGraphScene* p
         case CONTROL_MULTILINE_STRING:
         case CONTROL_CURVE:
         {
-            ZenoParamWidget* pWidget = initParamWidget(pScene, idx);
+            ZenoParamWidget* pWidget = initParamWidget(pScene, viewparamIdx);
             paramCtrl.ctrl_layout->addItem(pWidget);
             paramCtrl.param_control = pWidget;
             break;

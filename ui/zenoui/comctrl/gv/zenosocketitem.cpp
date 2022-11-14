@@ -2,10 +2,11 @@
 #include "zgraphicstextitem.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/viewparammodel.h>
 
 
 ZenoSocketItem::ZenoSocketItem(
-        const QPersistentModelIndex& paramIdx,
+        const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
         bool bInput,
         const ImageElement& elem,
@@ -13,7 +14,7 @@ ZenoSocketItem::ZenoSocketItem(
         QGraphicsItem* parent)
     : ZenoImageItem(elem, sz, parent)
     , m_bInput(bInput)
-    , m_paramIdx(paramIdx)
+    , m_viewSockIdx(viewSockIdx)
     , m_status(STATUS_UNKNOWN)
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
@@ -64,12 +65,12 @@ QPointF ZenoSocketItem::center() const
 
 QString ZenoSocketItem::name() const
 {
-    return m_paramIdx.isValid() ? m_paramIdx.data(ROLE_PARAM_NAME).toString() : "";
+    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_VPARAM_NAME).toString() : "";
 }
 
 QModelIndex ZenoSocketItem::paramIndex() const
 {
-    return m_paramIdx;
+    return m_viewSockIdx;
 }
 
 QRectF ZenoSocketItem::boundingRect() const
@@ -86,12 +87,12 @@ QRectF ZenoSocketItem::boundingRect() const
 
 bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
 {
-    Q_ASSERT(m_paramIdx.isValid(), false);
-    if (!m_paramIdx.isValid())
+    Q_ASSERT(m_viewSockIdx.isValid(), false);
+    if (!m_viewSockIdx.isValid())
         return false;
 
     bInput = m_bInput;
-    nodeid = m_paramIdx.data(ROLE_OBJID).toString();
+    nodeid = m_viewSockIdx.data(ROLE_OBJID).toString();
     sockName = name();
     return true;
 }
@@ -104,9 +105,9 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
     {
         QString sockName = name();
-        if (m_paramIdx.isValid())
+        if (m_viewSockIdx.isValid())
         {
-            PARAM_LINKS links = m_paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            PARAM_LINKS links = m_viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
             if (!links.isEmpty())
                 status = STATUS_CONNECTED;
         }

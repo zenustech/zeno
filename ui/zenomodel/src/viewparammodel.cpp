@@ -1,6 +1,7 @@
 #include "viewparammodel.h"
 #include "parammodel.h"
 #include "zassert.h"
+#include "modelrole.h"
 
 
 ProxySlotObject::ProxySlotObject(VParamItem* pItem, QObject* parent)
@@ -17,9 +18,6 @@ ProxySlotObject::~ProxySlotObject()
 void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     if (topLeft == m_pItem->m_index) {
-        const QString& name = m_pItem->m_index.data(ROLE_PARAM_NAME).toString();
-        QVariant var = m_pItem->m_index.data(ROLE_PARAM_VALUE);
-        UI_VECTYPE vecwtf = var.value<UI_VECTYPE>();
         QModelIndex viewIdx = m_pItem->index();
         emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
     }
@@ -118,6 +116,10 @@ QVariant VParamItem::data(int role) const
         if (!m_index.isValid())
             return PARAM_UNKNOWN;
         return m_index.data(ROLE_PARAM_SOCKETTYPE);
+    }
+    case ROLE_OBJID:
+    {
+        return m_index.data(ROLE_OBJID);
     }
     case ROLE_VAPRAM_EDITTABLE:
     default:
@@ -422,14 +424,32 @@ void ViewParamModel::onDataChanged(const QModelIndex& topLeft, const QModelIndex
 
 void ViewParamModel::clone(ViewParamModel* pModel)
 {
-    QStandardItem* pRoot = invisibleRootItem();
-    ZASSERT_EXIT(pRoot);
+    if (m_bNodeUI)
+    {
+        QStandardItem* pRoot = invisibleRootItem();
+        ZASSERT_EXIT(pRoot);
+        pRoot->removeRows(0, 3);
 
-    pRoot->removeRow(0);
+        QStandardItem* pRightRoot = pModel->invisibleRootItem();
+        for (int r = 0; r < pRightRoot->rowCount(); r++)
+        {
+            VParamItem* pRight = static_cast<VParamItem*>(pRightRoot->child(r));
+            VParamItem* newItem = new VParamItem(*pRight);
+            newItem->cloneChildren(pRight);
+            pRoot->appendRow(newItem);
+        }
+    }
+    else
+    {
+        QStandardItem* pRoot = invisibleRootItem();
+        ZASSERT_EXIT(pRoot);
 
-    VParamItem* pRight = static_cast<VParamItem*>(pModel->invisibleRootItem()->child(0));
-    VParamItem* newItem = new VParamItem(*pRight);
-    newItem->cloneChildren(pRight);
+        pRoot->removeRow(0);
 
-    pRoot->appendRow(newItem);
+        VParamItem* pRight = static_cast<VParamItem*>(pModel->invisibleRootItem()->child(0));
+        VParamItem* newItem = new VParamItem(*pRight);
+        newItem->cloneChildren(pRight);
+
+        pRoot->appendRow(newItem);
+    }
 }
