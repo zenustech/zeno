@@ -1,6 +1,6 @@
 #ifndef VIEWPORT_PICKER_H
 #define VIEWPORT_PICKER_H
-
+#include "zenovis.h"
 #include <zeno/utils/vec.h>
 
 #include <QtWidgets>
@@ -52,6 +52,7 @@ public:
                              const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
     void setPickMode(int mode);
   private:
+    std::unique_ptr<zenovis::IPicker> picker;
     int pick_mode;
     inline void onPrimitiveSelected();
 };

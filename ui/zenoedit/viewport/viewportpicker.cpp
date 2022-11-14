@@ -72,9 +72,9 @@ void Picker::pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_do
 
 void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    auto framebuffer_picker = zenovis::makeFrameBufferPicker(scene);
-    framebuffer_picker->draw();
-    auto selected_obj = framebuffer_picker->getPicked(x, y);
+    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    picker->draw();
+    auto selected_obj = picker->getPicked(x, y);
     if (scene->selected.count(selected_obj) > 0) {
         scene->selected.erase(selected_obj);
         on_delete(selected_obj);
@@ -91,9 +91,9 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
 void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                                  const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    auto framebuffer_picker = zenovis::makeFrameBufferPicker(scene);
-    framebuffer_picker->draw();
-    auto selected_objs = framebuffer_picker->getPicked(x0, y0, x1, y1);
+    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    picker->draw();
+    auto selected_objs = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ") selected " << selected_obj.c_str();
 
     // parse selected string
