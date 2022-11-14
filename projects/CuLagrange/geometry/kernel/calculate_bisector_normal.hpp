@@ -75,62 +75,62 @@ namespace zeno { namespace COLLISION_UTILS {
             return res;
     }
 
-    template<typename PosTileVec,typename SurfLineTileVec,typename SurfTriTileVec,typename BisectorTileVec,typename SurfNrmTileVec>
+    template<typename VecT,typename PosTileVec,typename SurfLineTileVec,typename SurfTriTileVec,typename BisectorTileVec,typename SurfNrmTileVec>
     constexpr int is_inside_the_cell(const PosTileVec& verts,const zs::SmallString& x_tag,
             const SurfLineTileVec& lines,const SurfTriTileVec& tris,
             const SurfNrmTileVec& surf_nrm_buffer,const zs::SmallString& triNrmTag,
             const BisectorTileVec& bis_nrm_buffer,const zs::SmallString& bisector_normal_tag,
-            int cell_id,const zs::vec<T,3>& p,T in_collisionEps,T out_collisionEps,T& dist) {
-        using namespace zs;
+            int cell_id,const zs::VecInterface<VecT>& p,T in_collisionEps,T out_collisionEps,T& dist) {
+        // using namespace zs;
 
-        // auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
-        auto nrm = surf_nrm_buffer.template pack<3>("nrm",cell_id);
+        // // auto fe_inds = tris.template pack<3>("fe_inds",cell_id).reinterpret_bits(int_c);
+        // auto nrm = surf_nrm_buffer.template pack<3>("nrm",cell_id);
         
-        auto inds = tris.template pack<3>("inds",cell_id).reinterpret_bits(int_c);
-        auto seg = p - verts.template pack<3>(x_tag,inds[0]);    
+        // auto inds = tris.template pack<3>("inds",cell_id).reinterpret_bits(int_c);
+        // auto seg = p - verts.template pack<3>(x_tag,inds[0]);    
 
-        // evaluate the avg edge length
-        auto t0 = verts.template pack<3>(x_tag,inds[0]);
-        auto t1 = verts.template pack<3>(x_tag,inds[1]);
-        auto t2 = verts.template pack<3>(x_tag,inds[2]);
+        // // evaluate the avg edge length
+        // auto t0 = verts.template pack<3>(x_tag,inds[0]);
+        // auto t1 = verts.template pack<3>(x_tag,inds[1]);
+        // auto t2 = verts.template pack<3>(x_tag,inds[2]);
 
-        auto e01 = (t0 - t1).norm();
-        auto e02 = (t0 - t2).norm();
-        auto e12 = (t1 - t2).norm();
+        // auto e01 = (t0 - t1).norm();
+        // auto e02 = (t0 - t2).norm();
+        // auto e12 = (t1 - t2).norm();
 
-        // auto avge = (e01 + e02 + e12)/(T)3.0;
+        // // auto avge = (e01 + e02 + e12)/(T)3.0;
 
-        T barySum = (T)1.0;
-        T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p,barySum);
-        // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
-        // collisionEps = avge * max_ratio;
-        auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
+        // T barySum = (T)1.0;
+        // T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p,barySum);
+        // // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
+        // // collisionEps = avge * max_ratio;
+        // auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
 
-        if(barySum > 3)
-            return 0;
-
-        if(distance > collisionEps)
-            return 0;
-        dist = seg.dot(nrm);
-        // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+        // if(barySum > 3)
         //     return 0;
 
-        // if the triangle cell is too degenerate
-        if(pointProjectsInsideTriangle(t0,t1,t2,p))
-            return 1;
+        // if(distance > collisionEps)
+        //     return 0;
+        // dist = seg.dot(nrm);
+        // // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+        // //     return 0;
+
+        // // if the triangle cell is too degenerate
+        // if(pointProjectsInsideTriangle(t0,t1,t2,p))
+        //     return 1;
 
         
-        // bool is_inside_the_cell = true;
+        // // bool is_inside_the_cell = true;
 
-        for(int i = 0;i != 3;++i) {
-            auto bisector_normal = get_bisector_orient(lines,tris,bis_nrm_buffer,bisector_normal_tag,cell_id,i);
-            // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+        // for(int i = 0;i != 3;++i) {
+        //     auto bisector_normal = get_bisector_orient(lines,tris,bis_nrm_buffer,bisector_normal_tag,cell_id,i);
+        //     // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
 
-            seg = p - verts.template pack<3>(x_tag,inds[i]);
-            if(bisector_normal.dot(seg) < 0)
-                return 0;
+        //     seg = p - verts.template pack<3>(x_tag,inds[i]);
+        //     if(bisector_normal.dot(seg) < 0)
+        //         return 0;
 
-        }
+        // }
 
         return 1;
     } 

@@ -3,12 +3,12 @@
 #include "collision_utils.hpp"
 
 namespace zeno {
-namespace EDGE_EDGE_COLLISION {
+namespace EDGE_EDGE_SQRT_COLLISION {
     using namespace COLLISION_UTILS;
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-REAL psi(const std::vector<VECTOR3>& v,
+constexpr REAL psi(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -17,7 +17,7 @@ REAL psi(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];
@@ -35,7 +35,7 @@ REAL psi(const std::vector<VECTOR3>& v,
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-REAL psiNegated(const std::vector<VECTOR3>& v,
+constexpr REAL psiNegated(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -44,7 +44,7 @@ REAL psiNegated(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];
@@ -61,7 +61,7 @@ REAL psiNegated(const std::vector<VECTOR3>& v,
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-VECTOR12 gradient(const std::vector<VECTOR3>& v,
+constexpr VECTOR12 gradient(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -70,7 +70,7 @@ VECTOR12 gradient(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];
@@ -97,7 +97,7 @@ VECTOR12 gradient(const std::vector<VECTOR3>& v,
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-VECTOR12 gradientNegated(const std::vector<VECTOR3>& v,
+constexpr VECTOR12 gradientNegated(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -106,7 +106,7 @@ VECTOR12 gradientNegated(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];
@@ -135,7 +135,7 @@ VECTOR12 gradientNegated(const std::vector<VECTOR3>& v,
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-MATRIX12 hessian(const std::vector<VECTOR3>& v,
+constexpr MATRIX12 hessian(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -144,7 +144,7 @@ MATRIX12 hessian(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];
@@ -179,7 +179,7 @@ MATRIX12 hessian(const std::vector<VECTOR3>& v,
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-MATRIX12 hessianNegated(const std::vector<VECTOR3>& v,
+constexpr MATRIX12 hessianNegated(const VECTOR3 v[4],
                     const VECTOR2& a, 
                     const VECTOR2& b,
                     const REAL& _mu,
@@ -188,7 +188,7 @@ MATRIX12 hessianNegated(const std::vector<VECTOR3>& v,
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    std::vector<VECTOR3> e{3};
+    VECTOR3 e[3] = {};
     e[0] = v[3] - v[2];
     e[1] = v[0] - v[2];
     e[2] = v[1] - v[2];

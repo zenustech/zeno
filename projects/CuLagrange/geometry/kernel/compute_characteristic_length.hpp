@@ -9,7 +9,7 @@ namespace zeno {
     using T = float;
 
     template<typename Pol,typename VTileVec,typename TTileVec>
-    constexpr T compute_average_edge_length(Pol& pol,const VTileVec& verts,const zs::SmallString& xTag,const TTileVec& elms) {
+    T compute_average_edge_length(Pol& pol,const VTileVec& verts,const zs::SmallString& xTag,const TTileVec& elms) {
         using namespace zs;
 
         static_assert(is_same_v<typename VTileVec::value_type,T>,"precision not match");

@@ -71,7 +71,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
         // if everything has become undefined, just give up
         // const REAL tDott = t.dot(t);
-        // if (tMagnitude <= _inverseEps || fabs(tDott) < _inverseEps)
+        // if (tMagnitude <= _inverseEps || zs::abs(tDott) < _inverseEps)
         //     return VECTOR12::zeros();
 
         if (tMagnitude <= _inverseEps)
@@ -87,7 +87,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         // could instead try to trap all the inverses and hand back something fixed up,
         // but consistency is not guaranteed, so let's just zero it out at the first
         // sign of trouble
-        //const REAL tMagnitudeInv = (fabs(tMagnitude) > _inverseEps) ? 1.0 / tMagnitude : 0.0;
+        //const REAL tMagnitudeInv = (zs::abs(tMagnitude) > _inverseEps) ? 1.0 / tMagnitude : 0.0;
         //const VECTOR12 result = 2.0 * _mu * springDiff * tMagnitudeInv * tDiff.transpose() * t
 
         return result;
@@ -153,8 +153,8 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         // could instead try to trap all the inverses and hand back something fixed up,
         // but consistency is not guaranteed, so let's just zero it out at the first
         // sign of trouble
-        //const REAL tMagnitudeInv = (fabs(tMagnitude) > _inverseEps) ? 1.0 / tMagnitude : 0.0;
-        //const REAL tDottInv = (fabs(tDott) > _inverseEps) ? 1.0 / tDott : 1.0;
+        //const REAL tMagnitudeInv = (zs::abs(tMagnitude) > _inverseEps) ? 1.0 / tMagnitude : 0.0;
+        //const REAL tDottInv = (zs::abs(tDott) > _inverseEps) ? 1.0 / tDott : 1.0;
         //return 2.0 * _mu * ((tDottInv - springDiff / (tDott * tMagnitude)) * (product * product.transpose()) +
         //                    (springDiff * tMagnitudeInv) * tDiff.transpose() * tDiff); 
     }

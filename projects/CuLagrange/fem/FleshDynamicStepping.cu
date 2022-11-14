@@ -16,19 +16,28 @@
 #include <zeno/types/StringObject.h>
 
 #include "../geometry/linear_system/mfcg.hpp"
-#include "../geometry/kernel/calculate_bisector_normal.hpp"
+
 #include "../geometry/kernel/calculate_facet_normal.hpp"
 #include "../geometry/kernel/topology.hpp"
 #include "../geometry/kernel/compute_characteristic_length.hpp"
+#include "../geometry/kernel/calculate_bisector_normal.hpp"
+
+#include "../geometry/kernel/tiled_vector_ops.hpp"
+#include "../geometry/kernel/geo_math.hpp"
+
+#include "../geometry/kernel/calculate_edge_normal.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
 
-#include "collision_energy/vertex_face_collision.hpp"
 #include "collision_energy/vertex_face_sqrt_collision.hpp"
+#include "collision_energy/vertex_face_collision.hpp"
+#include "collision_energy/edge_edge_sqrt_collision.hpp"
 #include "collision_energy/edge_edge_collision.hpp"
-#include "collision_energy/edge_edge_sqrt_collition.hpp"
+
+
+
 
 #include "collision_energy/evaluate_collision.hpp"
 
@@ -80,299 +89,299 @@ struct FleshDynamicStepping : INode {
             return M;        
         }
 
-        template <typename Model>
-        void computeCollisionEnergy(zs::CudaExecutionPolicy& cudaPol,const Model& model,
-                dtiles_t& vtemp,
-                dtiles_t& etemp,
-                dtiles_t& sttemp,
-                dtiles_t& setemp,
-                dtiles_t& cptemp,
-                // const bvh_t& stBvh,
-                // const bvh_t& seBvh,
-                const T& thickness) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
+//         template <typename Model>
+//         void computeCollisionEnergy(zs::CudaExecutionPolicy& cudaPol,const Model& model,
+//                 dtiles_t& vtemp,
+//                 dtiles_t& etemp,
+//                 dtiles_t& sttemp,
+//                 dtiles_t& setemp,
+//                 dtiles_t& cptemp,
+//                 // const bvh_t& stBvh,
+//                 // const bvh_t& seBvh,
+//                 const T& thickness) {
+//             using namespace zs;
+//             constexpr auto space = execspace_e::cuda;
 
-            T lambda = model.lam;
-            T mu = model.mu;
-
-
-        }
+//             T lambda = model.lam;
+//             T mu = model.mu;
 
 
-        template <typename Model>
-        void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,const Model& model,
-                            dtiles_t& vtemp,
-                            dtiles_t& etemp,
-                            dtiles_t& sttemp,
-                            dtiles_t& setemp,
-                            dtiles_t& cptemp,
-                            // const bvh_t& stBvh,
-                            // const bvh_t& seBvh,
-                            const T& thickness,
-                            bool explicit_collision = false,
-                            bool neglect_inverted = true) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
+//         }
 
-            T lambda = model.lam;
-            T mu = model.mu; 
 
-            #if DEBUG_FLESH_DYN_STEPPING
-                if(!vtemp.hasProperty("grad"))
-                    fmt::print(fg(fmt::color::red),"the vtemp has no 'grad' channel\n");
-                if(!vtemp.hasProperty("xn"))
-                    fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
-                if(!vtemp.hasProperty("xp"))
-                    fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
-                if(!vtemp.hasProperty("is_inverted"))
-                    fmt::print(fg(fmt::color::red),"the verts has no 'is_inverted' channel\n");
-                if(!vtemp.hasProperty("vp"))
-                    fmt::print(fg(fmt::color::red),"the verts has no 'vp' channel\n");
+//         template <typename Model>
+//         void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,const Model& model,
+//                             dtiles_t& vtemp,
+//                             dtiles_t& etemp,
+//                             dtiles_t& sttemp,
+//                             dtiles_t& setemp,
+//                             dtiles_t& cptemp,
+//                             // const bvh_t& stBvh,
+//                             // const bvh_t& seBvh,
+//                             const T& thickness,
+//                             bool explicit_collision = false,
+//                             bool neglect_inverted = true) {
+//             using namespace zs;
+//             constexpr auto space = execspace_e::cuda;
 
-                if(!etemp.hasProperty("H"))
-                    fmt::print(fg(fmt::color::red),"the etemp has no 'H' channel\n");
-                if(!etemp.hasProperty("ActInv"))
-                    fmt::print(fg(fmt::color::red),"the etemp has no 'ActInv' channel\n");
+//             T lambda = model.lam;
+//             T mu = model.mu; 
+
+//             #if DEBUG_FLESH_DYN_STEPPING
+//                 if(!vtemp.hasProperty("grad"))
+//                     fmt::print(fg(fmt::color::red),"the vtemp has no 'grad' channel\n");
+//                 if(!vtemp.hasProperty("xn"))
+//                     fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
+//                 if(!vtemp.hasProperty("xp"))
+//                     fmt::print(fg(fmt::color::red),"the verts has no 'xn' channel\n");
+//                 if(!vtemp.hasProperty("is_inverted"))
+//                     fmt::print(fg(fmt::color::red),"the verts has no 'is_inverted' channel\n");
+//                 if(!vtemp.hasProperty("vp"))
+//                     fmt::print(fg(fmt::color::red),"the verts has no 'vp' channel\n");
+
+//                 if(!etemp.hasProperty("H"))
+//                     fmt::print(fg(fmt::color::red),"the etemp has no 'H' channel\n");
+//                 if(!etemp.hasProperty("ActInv"))
+//                     fmt::print(fg(fmt::color::red),"the etemp has no 'ActInv' channel\n");
                 
-                if(!verts.hasProperty("m"))
-                    fmt::print(fg(fmt::color::red),"the verts has no 'm' channel\n");
+//                 if(!verts.hasProperty("m"))
+//                     fmt::print(fg(fmt::color::red),"the verts has no 'm' channel\n");
 
-                if(!eles.hasProperty("inds"))
-                    fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");        
-                if(!eles.hasProperty("IB"))
-                    fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");
-                if(!eles.hasProperty("m"))
-                    fmt::print(fg(fmt::color::red),"the eles has no 'm' channel\n");
-                if(!eles.hasProperty("vol"))
-                    fmt::print(fg(fmt::color::red),"the eles has no 'vol' channel\n");
+//                 if(!eles.hasProperty("inds"))
+//                     fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");        
+//                 if(!eles.hasProperty("IB"))
+//                     fmt::print(fg(fmt::color::red),"the eles has no 'IB' channel\n");
+//                 if(!eles.hasProperty("m"))
+//                     fmt::print(fg(fmt::color::red),"the eles has no 'm' channel\n");
+//                 if(!eles.hasProperty("vol"))
+//                     fmt::print(fg(fmt::color::red),"the eles has no 'vol' channel\n");
 
-                // fmt::print(fg(fmt::color::blue),"the size of tris : {}\n",tris.size());
-                if(!tris.hasProperty("inds"))
-                    fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
-                if(!tris.hasProperty("area"))
-                    fmt::print(fg(fmt::color::red),"the tris has no 'area' channel\n");
-                if(!points.hasProperty("area"))
-                    fmt::print(fg(fmt::color::red),"the points has no 'area' channel\n");
+//                 // fmt::print(fg(fmt::color::blue),"the size of tris : {}\n",tris.size());
+//                 if(!tris.hasProperty("inds"))
+//                     fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
+//                 if(!tris.hasProperty("area"))
+//                     fmt::print(fg(fmt::color::red),"the tris has no 'area' channel\n");
+//                 if(!points.hasProperty("area"))
+//                     fmt::print(fg(fmt::color::red),"the points has no 'area' channel\n");
 
-            #endif            
+//             #endif            
 
-            auto xtag = zs::SmallString("xn");
-            if(explicit_collision)
-                xtag = zs::SmallString("xp");
-
-
-            if(neglect_inverted) {
-            // // figure out all the vertices which is incident to an inverted tet
-                TILEVEC_OPS::fill(cudaPol,vtemp,"is_inverted",reinterpret_bits<T>((int)0));  
-                cudaPol(zs::range(eles.size()),
-                    [vtemp = proxy<space>({},vtemp),quads = proxy<space>({},eles),xtag] ZS_LAMBDA(int ei) mutable {
-                        auto DmInv = quads.template pack<3,3>("IB",ei);
-                        auto inds = quads.template pack<4>("inds",ei).reinterpret_bits(int_c);
-                        vec3 x1[4] = {vtemp.template pack<3>(xtag, inds[0]),
-                                vtemp.template pack<3>(xtag, inds[1]),
-                                vtemp.template pack<3>(xtag, inds[2]),
-                                vtemp.template pack<3>(xtag, inds[3])};   
-
-                        mat3 F{};
-                        {
-                            auto x1x0 = x1[1] - x1[0];
-                            auto x2x0 = x1[2] - x1[0];
-                            auto x3x0 = x1[3] - x1[0];
-                            auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
-                                            x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-                            F = Ds * DmInv;
-                        } 
-                        if(zs::determinant(F) < 0.0)
-                            for(int i = 0;i < 4;++i)
-                                vtemp("is_inverted",inds[i]) = reinterpret_bits<T>((int)1);                  
-                });
-
-            }
+//             auto xtag = zs::SmallString("xn");
+//             if(explicit_collision)
+//                 xtag = zs::SmallString("xp");
 
 
-#if 0
-            TILEVEC_OPS::fill<4>(cudaPol,cptemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
-            // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
+//             if(neglect_inverted) {
+//             // // figure out all the vertices which is incident to an inverted tet
+//                 TILEVEC_OPS::fill(cudaPol,vtemp,"is_inverted",reinterpret_bits<T>((int)0));  
+//                 cudaPol(zs::range(eles.size()),
+//                     [vtemp = proxy<space>({},vtemp),quads = proxy<space>({},eles),xtag] ZS_LAMBDA(int ei) mutable {
+//                         auto DmInv = quads.template pack<3,3>("IB",ei);
+//                         auto inds = quads.template pack<4>("inds",ei).reinterpret_bits(int_c);
+//                         vec3 x1[4] = {vtemp.template pack<3>(xtag, inds[0]),
+//                                 vtemp.template pack<3>(xtag, inds[1]),
+//                                 vtemp.template pack<3>(xtag, inds[2]),
+//                                 vtemp.template pack<3>(xtag, inds[3])};   
 
-            // compute vertex facet contact pairs
-            cudaPol(zs::range(points.size()),[lambda = lambda,mu = mu,collisionStiffness = collisionStiffness,
-                            in_collisionEps = in_collisionEps,out_collisionEps = out_collisionEps,
-                            vtemp = proxy<space>({},vtemp),
-                            etemp = proxy<space>({},etemp),
-                            sttemp = proxy<space>({},sttemp),
-                            setemp = proxy<space>({},setemp),
-                            cptemp = proxy<space>({},cptemp),
-                            points = proxy<space>({},points),
-                            lines = proxy<space>({},lines),
-                            tris = proxy<space>({},tris),
-                            stbvh = proxy<space>(stBvh),thickness = thickness,
-                            neglect_inverted = neglect_inverted,xtag] ZS_LAMBDA(int svi) mutable {
-                // if(svi == 0)    {
-                //     if(tris.hasProperty("inds"))
-                //         printf("compare size : %d %d %d\n",(int)vtemp.size(),(int)tris.size(),(int)tris.propertySize("inds"));
-                //     else
-                //         printf("the tris has no inds channel!!!\n"); 
-                // }
+//                         mat3 F{};
+//                         {
+//                             auto x1x0 = x1[1] - x1[0];
+//                             auto x2x0 = x1[2] - x1[0];
+//                             auto x3x0 = x1[3] - x1[0];
+//                             auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+//                                             x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+//                             F = Ds * DmInv;
+//                         } 
+//                         if(zs::determinant(F) < 0.0)
+//                             for(int i = 0;i < 4;++i)
+//                                 vtemp("is_inverted",inds[i]) = reinterpret_bits<T>((int)1);                  
+//                 });
 
-
-                auto vi = reinterpret_bits<int>(points("inds",svi));
-
-                if(neglect_inverted)   {
-                    auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
-                    if(is_vertex_inverted)
-                        return;
-                }
-
-                auto p = vtemp.template pack<3>(xtag,vi);
-                auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+//             }
 
 
-                // check whether there is collision happening, and if so, apply the collision force and addup the collision hessian
-                int nm_collision_pairs = 0;
-                auto process_vertex_face_collision_pairs = [&](int stI) {
+// #if 0
+//             TILEVEC_OPS::fill<4>(cudaPol,cptemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
+//             // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
 
-                    if(nm_collision_pairs >= MAX_FP_COLLISION_PAIRS)     
-                        return;   
+//             // compute vertex facet contact pairs
+//             cudaPol(zs::range(points.size()),[lambda = lambda,mu = mu,collisionStiffness = collisionStiffness,
+//                             in_collisionEps = in_collisionEps,out_collisionEps = out_collisionEps,
+//                             vtemp = proxy<space>({},vtemp),
+//                             etemp = proxy<space>({},etemp),
+//                             sttemp = proxy<space>({},sttemp),
+//                             setemp = proxy<space>({},setemp),
+//                             cptemp = proxy<space>({},cptemp),
+//                             points = proxy<space>({},points),
+//                             lines = proxy<space>({},lines),
+//                             tris = proxy<space>({},tris),
+//                             stbvh = proxy<space>(stBvh),thickness = thickness,
+//                             neglect_inverted = neglect_inverted,xtag] ZS_LAMBDA(int svi) mutable {
+//                 // if(svi == 0)    {
+//                 //     if(tris.hasProperty("inds"))
+//                 //         printf("compare size : %d %d %d\n",(int)vtemp.size(),(int)tris.size(),(int)tris.propertySize("inds"));
+//                 //     else
+//                 //         printf("the tris has no inds channel!!!\n"); 
+//                 // }
 
-                    auto tri = tris.pack(dim_c<3>, "inds",stI).reinterpret_bits(int_c);
-                    if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
-                        return;
 
-                    auto t0 = vtemp.template pack<3>(xtag,tri[0]);
-                    auto t1 = vtemp.template pack<3>(xtag,tri[1]);
-                    auto t2 = vtemp.template pack<3>(xtag,tri[2]);
-                    // check whether the triangle is degenerate
-                    auto restArea = tris("area",stI);
-                    // skip the triangle too small at rest configuration
-                    // if(restArea < (T)1e-6)
-                    //     return;
+//                 auto vi = reinterpret_bits<int>(points("inds",svi));
 
-                    const auto e10 = t1 - t0;
-                    const auto e20 = t2 - t0;
-                    auto deformedArea = (T)0.5 * e10.cross(e20).norm();
-                    const T degeneracyEps = 1e-4;
-                    // skip the degenerate triangles
-                    const T relativeArea = deformedArea / (restArea + (T)1e-6);
-                    if(relativeArea < degeneracyEps)
-                        return;
+//                 if(neglect_inverted)   {
+//                     auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
+//                     if(is_vertex_inverted)
+//                         return;
+//                 }
 
-                    bool collide = false;
+//                 auto p = vtemp.template pack<3>(xtag,vi);
+//                 auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
 
-                    if(COLLISION_UTILS::is_inside_the_cell(vtemp,xtag,
-                            lines,tris,
-                            sttemp,"nrm",
-                            setemp,"nrm",
-                            stI,p,in_collisionEps,out_collisionEps)){
-                        // printf("find collision facet-vertex collision in-cell pair : %d %d\n",stI,svi);
-                        collide = true;
-                    }
 
-                    if(!collide)
-                        return;
+//                 // check whether there is collision happening, and if so, apply the collision force and addup the collision hessian
+//                 int nm_collision_pairs = 0;
+//                 auto process_vertex_face_collision_pairs = [&](int stI) {
 
-                    // now there is collision, build the "collision tets"
-                    // if(!vtemp.hasProperty("oneRingArea"))
-                    //     printf("vtemp has no oneRingArea");
+//                     if(nm_collision_pairs >= MAX_FP_COLLISION_PAIRS)     
+//                         return;   
 
-                    cptemp.template tuple<4>("inds",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = zs::vec<int,4>(vi,tri[0],tri[1],tri[2]).template reinterpret_bits<T>();
+//                     auto tri = tris.pack(dim_c<3>, "inds",stI).reinterpret_bits(int_c);
+//                     if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
+//                         return;
 
-                    auto vertexFaceCollisionAreas = restArea + points("area",svi);
+//                     auto t0 = vtemp.template pack<3>(xtag,tri[0]);
+//                     auto t1 = vtemp.template pack<3>(xtag,tri[1]);
+//                     auto t2 = vtemp.template pack<3>(xtag,tri[2]);
+//                     // check whether the triangle is degenerate
+//                     auto restArea = tris("area",stI);
+//                     // skip the triangle too small at rest configuration
+//                     // if(restArea < (T)1e-6)
+//                     //     return;
+
+//                     const auto e10 = t1 - t0;
+//                     const auto e20 = t2 - t0;
+//                     auto deformedArea = (T)0.5 * e10.cross(e20).norm();
+//                     const T degeneracyEps = 1e-4;
+//                     // skip the degenerate triangles
+//                     const T relativeArea = deformedArea / (restArea + (T)1e-6);
+//                     if(relativeArea < degeneracyEps)
+//                         return;
+
+//                     bool collide = false;
+
+//                     if(COLLISION_UTILS::is_inside_the_cell(vtemp,xtag,
+//                             lines,tris,
+//                             sttemp,"nrm",
+//                             setemp,"nrm",
+//                             stI,p,in_collisionEps,out_collisionEps)){
+//                         // printf("find collision facet-vertex collision in-cell pair : %d %d\n",stI,svi);
+//                         collide = true;
+//                     }
+
+//                     if(!collide)
+//                         return;
+
+//                     // now there is collision, build the "collision tets"
+//                     // if(!vtemp.hasProperty("oneRingArea"))
+//                     //     printf("vtemp has no oneRingArea");
+
+//                     cptemp.template tuple<4>("inds",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = zs::vec<int,4>(vi,tri[0],tri[1],tri[2]).template reinterpret_bits<T>();
+
+//                     auto vertexFaceCollisionAreas = restArea + points("area",svi);
                     
-                    vec3 collision_verts[4] = {};
-                    collision_verts[0] = p;
-                    collision_verts[1] = t0;
-                    collision_verts[1] = t1;
-                    collision_verts[1] = t2;
+//                     vec3 collision_verts[4] = {};
+//                     collision_verts[0] = p;
+//                     collision_verts[1] = t0;
+//                     collision_verts[1] = t1;
+//                     collision_verts[1] = t2;
 
-                    auto collisionEps = in_collisionEps;
+//                     auto collisionEps = in_collisionEps;
 
-                    auto grad = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::gradient(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
-                    auto hessian = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::hessian(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
-                    cptemp.template tuple<12*12>("H",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = hessian;
+//                     auto grad = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::gradient(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
+//                     auto hessian = collisionStiffness * VERTEX_FACE_SQRT_COLLISION::hessian(collision_verts,mu,lambda,collisionEps) * vertexFaceCollisionAreas;
+//                     cptemp.template tuple<12*12>("H",svi * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) = hessian;
 
-                    for(int i = 0;i != 4;++i) {
-                        auto g_vi = i == 0 ? vi : tri[i-1];
-                        for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp("grad", d, g_vi), grad(i * 3 + d));
-                    }
-                    nm_collision_pairs++;
+//                     for(int i = 0;i != 4;++i) {
+//                         auto g_vi = i == 0 ? vi : tri[i-1];
+//                         for (int d = 0; d != 3; ++d)
+//                             atomic_add(exec_cuda, &vtemp("grad", d, g_vi), grad(i * 3 + d));
+//                     }
+//                     nm_collision_pairs++;
 
-                };
-                stbvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
-            });
+//                 };
+//                 stbvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
+//             });
 
-#else
+// #else
 
-        COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
-            vtemp,"xn",
-            points,
-            lines,
-            tris,
-            sttemp,
-            setemp,
-            cptemp,
-            // stBvh,
-            in_collisionEps,out_collisionEps);
-
-
-        // output all the collision pairs
-        // cudaPol(zs::range(cptemp.size()),
-        //     [cptemp = proxy<space>({},cptemp)] ZS_LAMBDA(int cpi) mutable {
-        //         auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
-        //         bool collide = true;
-        //         for(int i = 0;i != 4;++i)
-        //             if(inds[i] < 0)
-        //                 collide = false;
-        //         if(collide)
-        //             printf("collision_pair[%d] : %d %d %d %d\n",
-        //                 cpi,inds[0],inds[1],inds[2],inds[3]);
-        // });
-
-        COLLISION_UTILS::evaluate_collision_grad_and_hessian<MAX_FP_COLLISION_PAIRS>(cudaPol,
-            vtemp,"xn",
-            cptemp,
-            in_collisionEps,out_collisionEps,
-            (T)collisionStiffness,
-            (T)mu,(T)lambda);
+//         COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
+//             vtemp,"xn",
+//             points,
+//             lines,
+//             tris,
+//             sttemp,
+//             setemp,
+//             cptemp,
+//             // stBvh,
+//             in_collisionEps,out_collisionEps);
 
 
+//         // output all the collision pairs
+//         // cudaPol(zs::range(cptemp.size()),
+//         //     [cptemp = proxy<space>({},cptemp)] ZS_LAMBDA(int cpi) mutable {
+//         //         auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+//         //         bool collide = true;
+//         //         for(int i = 0;i != 4;++i)
+//         //             if(inds[i] < 0)
+//         //                 collide = false;
+//         //         if(collide)
+//         //             printf("collision_pair[%d] : %d %d %d %d\n",
+//         //                 cpi,inds[0],inds[1],inds[2],inds[3]);
+//         // });
 
-        // project out all the neglect verts
-        if(neglect_inverted) {
-            cudaPol(zs::range(cptemp.size()),
-                [cptemp = proxy<space>({},cptemp),vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int cpi) {
-                    auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
-                    for(int i = 0;i != 4;++i)
-                        if(inds[i] < 0)
-                            return;
-
-                    bool is_inverted = false;
-                    for(int i = 0;i != 4;++i){
-                        auto vi = inds[i];
-                        auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
-                        if(is_vertex_inverted)
-                            is_inverted = true;
-                    }
-
-                    if(is_inverted){
-                        cptemp.template tuple<12*12>("H",cpi) = zs::vec<T,12,12>::zeros();
-                        cptemp.template tuple<12>("grad",cpi) = zs::vec<T,12>::zeros();
-                    }
-            });    
-        }
-
-        // auto gradN = TILEVEC_OPS::inf_norm<12>(cudaPol,cptemp,"grad");
-        // fmt::print(fg(fmt::color::red),"collision gradN = {}\n",gradN);
-        // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
-
-        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",vtemp,"grad");
+//         COLLISION_UTILS::evaluate_collision_grad_and_hessian<MAX_FP_COLLISION_PAIRS>(cudaPol,
+//             vtemp,"xn",
+//             cptemp,
+//             in_collisionEps,out_collisionEps,
+//             (T)collisionStiffness,
+//             (T)mu,(T)lambda);
 
 
-#endif
+
+//         // project out all the neglect verts
+//         if(neglect_inverted) {
+//             cudaPol(zs::range(cptemp.size()),
+//                 [cptemp = proxy<space>({},cptemp),vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int cpi) {
+//                     auto inds = cptemp.template pack<4>("inds",cpi).reinterpret_bits(int_c);
+//                     for(int i = 0;i != 4;++i)
+//                         if(inds[i] < 0)
+//                             return;
+
+//                     bool is_inverted = false;
+//                     for(int i = 0;i != 4;++i){
+//                         auto vi = inds[i];
+//                         auto is_vertex_inverted = reinterpret_bits<int>(vtemp("is_inverted",vi));
+//                         if(is_vertex_inverted)
+//                             is_inverted = true;
+//                     }
+
+//                     if(is_inverted){
+//                         cptemp.template tuple<12*12>("H",cpi) = zs::vec<T,12,12>::zeros();
+//                         cptemp.template tuple<12>("grad",cpi) = zs::vec<T,12>::zeros();
+//                     }
+//             });    
+//         }
+
+//         // auto gradN = TILEVEC_OPS::inf_norm<12>(cudaPol,cptemp,"grad");
+//         // fmt::print(fg(fmt::color::red),"collision gradN = {}\n",gradN);
+//         // TILEVEC_OPS::fill<12*12>(cudaPol,cptemp,"H",zs::vec<T,12*12>::zeros());
+
+//         TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",vtemp,"grad");
 
 
-        }
+// #endif
+
+
+//         }
 
 
         template <typename Model>
@@ -684,7 +693,7 @@ struct FleshDynamicStepping : INode {
 
 
         constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec().sync(false);
+        auto cudaPol = cuda_exec();
     
 
         // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
@@ -817,17 +826,17 @@ struct FleshDynamicStepping : INode {
                 // stBvh.refit(cudaPol,stbvs);
                 // seBvh.refit(cudaPol,sebvs);
 
-                match([&](auto &elasticModel) {
-                    A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
-                        vtemp,
-                        etemp,
-                        sttemp,
-                        setemp,
-                        cptemp,
-                        // stBvh,
-                        // seBvh,
-                        bvh_thickness);
-                })(models.getElasticModel());
+                // match([&](auto &elasticModel) {
+                //     A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
+                //         vtemp,
+                //         etemp,
+                //         sttemp,
+                //         setemp,
+                //         cptemp,
+                //         // stBvh,
+                //         // seBvh,
+                //         bvh_thickness);
+                // })(models.getElasticModel());
 
             }
 
@@ -847,14 +856,6 @@ struct FleshDynamicStepping : INode {
                     vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
             });
 
-
-            cudaPol(zs::range(verts.size()),
-                    [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
-                        auto newX = vtemp.pack<3>("xn", vi);
-                        verts.tuple<3>("x", vi) = newX;
-                        verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
-                    });
-
             T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
             std::cout << "res[" << nm_iters << "] : " << res << std::endl;
             if(res < 1e-3)
@@ -864,6 +865,13 @@ struct FleshDynamicStepping : INode {
 
 
 
+        cudaPol(zs::range(verts.size()),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
+                    auto newX = vtemp.pack<3>("xn", vi);
+                    verts.tuple<3>("x", vi) = newX;
+                    verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
+                });
+
         dtiles_t nodalForceVis(verts.get_allocator(),
             {
                 {"x",3},
@@ -871,10 +879,10 @@ struct FleshDynamicStepping : INode {
             },verts.size());
 
 
-        cudaPol.syncCtx();
-        TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",nodalForceVis,"x");
-        TILEVEC_OPS::fill<3>(cudaPol,nodalForceVis,"dir",zs::vec<T,3>::zeros());
-        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",nodalForceVis,"dir");
+
+        // TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",nodalForceVis,"x");
+        // TILEVEC_OPS::fill<3>(cudaPol,nodalForceVis,"dir",zs::vec<T,3>::zeros());
+        // TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",nodalForceVis,"dir");
 
 
 
