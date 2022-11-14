@@ -34,7 +34,7 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
                                                  {"T1", 1},
-                                                 {"flux", 3} // finite volume method
+                                                 {"tmp", 3} // FVM, BFECC
                                              });
         spg._background = 0.f;
 
@@ -153,6 +153,75 @@ struct ZSNSAdvectDiffuse : INode {
                         spgv(vDstTag, ch, blockno, cellno) = u_sl;
                     }
                 });
+        } else if (scheme == "BFECC") {
+            // Back and Forth Error Compensation and Correction (BFECC)
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"),
+                 vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<float, 3> u_adv;
+                        u_adv[0] = spgv.iStaggeredCellSample(vSrcTag, 0, icoord, ch);
+                        u_adv[1] = spgv.iStaggeredCellSample(vSrcTag, 1, icoord, ch);
+                        u_adv[2] = spgv.iStaggeredCellSample(vSrcTag, 2, icoord, ch);
+
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_sl;
+                    }
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, advSrcTag = src_tag(NSGrid, "v"), vSrcTag = dst_tag(NSGrid, "v"),
+                 vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<float, 3> u_adv;
+                        u_adv[0] = spgv.iStaggeredCellSample(advSrcTag, 0, icoord, ch);
+                        u_adv[1] = spgv.iStaggeredCellSample(advSrcTag, 1, icoord, ch);
+                        u_adv[2] = spgv.iStaggeredCellSample(advSrcTag, 2, icoord, ch);
+
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face + u_adv * dt);
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_adv[ch] + (u_adv[ch] - u_sl) / 2.f;
+                    }
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, advSrcTag = src_tag(NSGrid, "v"),
+                 vSrcTag = zs::SmallString{"tmp"},
+                 vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        zs::vec<float, 3> u_adv;
+                        u_adv[0] = spgv.iStaggeredCellSample(advSrcTag, 0, icoord, ch);
+                        u_adv[1] = spgv.iStaggeredCellSample(advSrcTag, 1, icoord, ch);
+                        u_adv[2] = spgv.iStaggeredCellSample(advSrcTag, 2, icoord, ch);
+
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+                        auto wcoord_face_src = wcoord_face - u_adv * dt;
+
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face_src);
+
+                        // clamp
+                        auto arena = spgv.wArena(wcoord_face_src, ch);
+                        auto sl_mi = arena.minimum(advSrcTag, ch);
+                        auto sl_ma = arena.maximum(advSrcTag, ch);
+                        if (u_sl > sl_ma || u_sl < sl_mi) {
+                            u_sl = spgv.wStaggeredSample(advSrcTag, ch, wcoord_face_src);
+                        }
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_sl;
+                    }
+                });
         } else if (scheme == "Finite-Difference") {
             // advection
             pol(zs::Collapse{block_cnt, spg.block_size},
@@ -247,7 +316,7 @@ ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
                                 "dt",
                                 {"float", "Density", "1.0"},
                                 {"float", "Viscosity", "0.0"},
-                                {"enum Finite-Difference Semi-Lagrangian", "Scheme", "Finite-Difference"}},
+                                {"enum Finite-Difference Semi-Lagrangian BFECC", "Scheme", "Finite-Difference"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */
@@ -353,7 +422,7 @@ struct ZSNSPressureProject : INode {
             update_cur(NSGrid, "p");
 #else
             // red-black SOR iteration
-            const float sor = 1.2f; // over relaxation rate
+            const float sor = 1.0f; // over relaxation rate
 
             for (int clr = 0; clr != 2; ++clr) {
 
@@ -503,6 +572,56 @@ struct ZSTracerAdvectDiffuse : INode {
                 });
 
             update_cur(NSGrid, tag);
+        } else if (scheme == "BFECC") {
+            // Back and Forth Error Compensation and Correction (BFECC)
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
+
+                    spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag),
+                 trcSrcTag = dst_tag(NSGrid, tag),
+                 trcDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord + u_adv * dt);
+                    float trc_n = spgv.value(trcTag, blockno, cellno);
+
+                    spgv(trcDstTag, blockno, cellno) = trc_n + (trc_n - trc_sl) / 2.f;
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag),
+                 trcSrcTag = zs::SmallString{"tmp"},
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    auto wcoord_src = wcoord - u_adv * dt;
+
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord_src);
+
+                    // clamp
+                    auto arena = spgv.wArena(wcoord_src);
+                    auto sl_mi = arena.minimum(trcTag);
+                    auto sl_ma = arena.maximum(trcTag);
+                    if (trc_sl > sl_ma || trc_sl < sl_mi) {
+                        trc_sl = spgv.wSample(trcTag, wcoord_src);
+                    }
+
+                    spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
+
+            update_cur(NSGrid, tag);
         } else if (scheme == "Finite-Volume") {
             // Finite Volume Method (FVM)
             // numrtical flux of tracer
@@ -539,7 +658,7 @@ struct ZSTracerAdvectDiffuse : INode {
                     }
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        spgv("flux", ch, blockno, cellno) = flux[ch];
+                        spgv("tmp", ch, blockno, cellno) = flux[ch];
                     }
                 });
 
@@ -554,8 +673,8 @@ struct ZSTracerAdvectDiffuse : INode {
                         zs::vec<int, 3> offset{0, 0, 0};
                         offset[ch] = 1;
 
-                        flux[ch][0] = spgv.value("flux", ch, icoord);
-                        flux[ch][1] = spgv.value("flux", ch, icoord + offset);
+                        flux[ch][0] = spgv.value("tmp", ch, icoord);
+                        flux[ch][1] = spgv.value("tmp", ch, icoord + offset);
                     }
 
                     float dtrc = 0;
@@ -594,7 +713,7 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                     {"float", "Diffusion", "0.0"},
                                     {"bool", "Density", "1"},
                                     {"bool", "Temperature", "1"},
-                                    {"enum Finite-Volume Semi-Lagrangian", "Scheme", "Finite-Volume"}},
+                                    {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"}},
                                    /* outputs: */
                                    {"NSGrid"},
                                    /* params: */
