@@ -238,29 +238,10 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QMode
     const QPersistentModelIndex perIdx(paramIdx);
 
     Callback_EditFinished cbUpdateParam = [=](QVariant newValue) {
-        //sync param from view to model.
-        const QString& paramName = perIdx.data(ROLE_PARAM_NAME).toString();
-        const PARAM_CONTROL ctrl = (PARAM_CONTROL)perIdx.data(ROLE_PARAM_CTRL).toInt();
-        const QString nodeid = nodeId();
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-
-        PARAM_UPDATE_INFO info;
-        info.oldValue = perIdx.data(ROLE_PARAM_VALUE);
-        info.name = paramName;
-
-        switch (ctrl)
-        {
-        case CONTROL_COLOR:
-        case CONTROL_CURVE:
-        case CONTROL_VEC:
-            info.newValue = newValue;
-            break;
-        default:
-            info.newValue = UiHelper::parseTextValue(ctrl, newValue.toString());
-            break;
-        }
-        if (info.oldValue != info.newValue)
-            pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
+        if (!perIdx.isValid())
+            return;
+        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
+        paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {
@@ -326,6 +307,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 {
                     QString oldName = it->first;
                     it->first = paramName;
+                    it->second->updateSockName(paramName);
                     break;
                 }
             }
@@ -338,6 +320,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 {
                     QString oldName = it->first;
                     it->first = paramName;
+                    it->second.param_name->setText(paramName);
                     break;
                 }
             }
@@ -350,6 +333,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 {
                     QString oldName = it->first;
                     it->first = paramName;
+                    it->second->updateSockName(paramName);
                     break;
                 }
             }
@@ -393,7 +377,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     }
     else if (groupName == "Parameters")
     {
-        const QString& sockName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
+        const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
         const QString& newType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
         PARAM_CONTROL ctrl = (PARAM_CONTROL)viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
         ZASSERT_EXIT(m_params.find(sockName) != m_params.end());
@@ -555,12 +539,6 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
 
 ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
-
-    IParamModel* socketModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-    ZASSERT_EXIT(socketModel, nullptr);
-
     ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
     pSocketsLayout->setSpacing(5);
 
@@ -618,12 +596,6 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
 
 ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
-
-    IParamModel* paramsModel = pGraphsModel->paramModel(m_index, PARAM_PARAM);
-    ZASSERT_EXIT(paramsModel, nullptr);
-
     ZGraphicsLayout* paramsLayout = new ZGraphicsLayout(false);
     paramsLayout->setSpacing(5);
 
@@ -700,30 +672,6 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QMod
             return;
         QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
         paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
-        return;
-
-        /* old style*/
-        bool bOk = false;
-        const QString& nodeid = nodeId();
-
-        PARAM_UPDATE_INFO info;
-        info.name = perIdx.data(ROLE_PARAM_NAME).toString();
-        info.oldValue = perIdx.data(ROLE_PARAM_VALUE);
-        info.newValue = newValue;
-
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
-
-        if (newValue.type() == QMetaType::VoidStar)
-        {
-            //curvemodel: 
-            //todo: only store as a void ptr, have to develope a undo/redo mechasim for "submodel".
-            pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, false);
-        }
-        else if (info.oldValue != info.newValue)
-        {
-            pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, true);
-        }
     };
 
     auto cbSwith = [=](bool bOn) {

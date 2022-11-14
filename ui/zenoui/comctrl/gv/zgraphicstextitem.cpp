@@ -346,12 +346,6 @@ ZSocketGroupItem::ZSocketGroupItem(
         cbSockOnClick(m_socket);
     });
 
-    QObject::connect(m_viewSockIdx.model(), &QAbstractItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
-        if (topLeft == m_viewSockIdx && !roles.isEmpty() && roles[0] == ROLE_VPARAM_NAME) {
-            const QString& newSockName = topLeft.data(ROLE_VPARAM_NAME).toString();
-            setText(newSockName);
-        }
-    });
 
     setBrush(QColor(188, 188, 188));
     QFont font("HarmonyOS Sans Bold", 11);
@@ -427,13 +421,6 @@ ZSocketEditableItem::ZSocketEditableItem(
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
-    });
-
-    QObject::connect(m_viewSockIdx.model(), &QAbstractItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
-        if (topLeft == m_viewSockIdx && !roles.isEmpty() && roles[0] == ROLE_VPARAM_NAME) {
-            const QString& newSockName = topLeft.data(ROLE_VPARAM_NAME).toString();
-            updateSockName(newSockName);
-        }
     });
 
     setDefaultTextColor(QColor(188, 188, 188));
