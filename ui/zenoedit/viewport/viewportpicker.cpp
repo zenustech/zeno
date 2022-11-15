@@ -74,14 +74,16 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     picker->draw();
-    auto selected_obj = picker->getPicked(x, y);
-    if (scene->selected.count(selected_obj) > 0) {
-        scene->selected.erase(selected_obj);
-        on_delete(selected_obj);
-    }
-    else {
-        scene->selected.insert(selected_obj);
-        on_add(selected_obj);
+
+    if (picker->getMode() == zenovis::PICK_OBJECT) {
+        auto selected = picker->getPicked(x, y);
+        if (scene->selected.count(selected) > 0) {
+            scene->selected.erase(selected);
+            on_delete(selected);
+        } else {
+            scene->selected.insert(selected);
+            on_add(selected);
+        }
     }
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
@@ -93,19 +95,39 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     picker->draw();
-    auto selected_objs = picker->getPicked(x0, y0, x1, y1);
-    // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ") selected " << selected_obj.c_str();
+    auto selected = picker->getPicked(x0, y0, x1, y1);
+    // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ")\nselected " << selected.c_str();
 
     // parse selected string
     std::regex reg(" ");
-    std::sregex_token_iterator p(selected_objs.begin(), selected_objs.end(), reg, -1);
+    std::sregex_token_iterator p(selected.begin(), selected.end(), reg, -1);
     std::sregex_token_iterator end;
-    while (p != end) {
-        scene->selected.insert(*p);
-        on_add(*p);
-        p++;
+
+    if (picker->getMode() == zenovis::PICK_OBJECT) {
+        while (p != end) {
+            scene->selected.insert(*p);
+            on_add(*p);
+            p++;
+        }
+        onPrimitiveSelected();
     }
-    onPrimitiveSelected();
+    else {
+        while (p != end) {
+            string result = *p;
+            auto t = result.find_last_of(':');
+            auto obj_id = result.substr(0, t);
+            auto elem_id = atoi(result.substr(t+1).c_str());
+            switch (picker->getMode()) {
+                case zenovis::PICK_VERTEX:
+                    if (scene->selected_verts.find(obj_id) != scene->selected_verts.end())
+                        scene->selected_verts[obj_id].push_back(elem_id);
+                    else scene->selected_verts[obj_id] = {elem_id};
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }
 
 void Picker::onPrimitiveSelected() {
