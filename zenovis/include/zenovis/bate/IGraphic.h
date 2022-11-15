@@ -36,6 +36,13 @@ enum {
     VIEW_COORD_SYS
 };
 
+enum {
+    PICK_OBJECT,
+    PICK_VERTEX,
+    PICK_LINE,
+    PICK_FACE
+};
+
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;
@@ -57,6 +64,8 @@ struct IGraphicHandler : IGraphicDraw {
 };
 
 struct IPicker : IGraphicDraw {
+    virtual void setMode(int mode) = 0;
+    virtual int getMode() = 0;
     virtual std::string getPicked(int x, int y) = 0;
     virtual std::string getPicked(int x0, int y0, int x1, int y1) = 0;
 };

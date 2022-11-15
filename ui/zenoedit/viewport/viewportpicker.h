@@ -15,13 +15,6 @@
 using std::string;
 namespace zeno {
 
-enum {
-    PICK_OBJECT,
-    PICK_VERTEX,
-    PICK_LINE,
-    PICK_FACE
-};
-
 static std::optional<float> ray_box_intersect(
     zeno::vec3f const &bmin,
     zeno::vec3f const &bmax,
@@ -40,7 +33,7 @@ static bool test_in_selected_bounding(
 
 class Picker {
 public:
-    Picker() : pick_mode(PICK_OBJECT) {};
+    Picker() {};
 
     void pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
                      const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
@@ -50,10 +43,8 @@ public:
                              const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
     void pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                              const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
-    void setPickMode(int mode);
   private:
     std::unique_ptr<zenovis::IPicker> picker;
-    int pick_mode;
     inline void onPrimitiveSelected();
 };
 

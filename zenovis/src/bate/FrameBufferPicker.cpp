@@ -29,6 +29,7 @@ using zeno::PrimitiveObject;
 using std::unique_ptr;
 using std::make_unique;
 using std::string;
+using std::vector;
 using std::unordered_map;
 using std::unordered_set;
 
@@ -53,11 +54,54 @@ static const char *obj_frag_code = R"(
     # version 330
     out uvec3 FragColor;
 
-    uniform uint gObjectIndex = uint(0);
+    uniform uint gObjectIndex;
 
     void main()
     {
        FragColor = uvec3(gObjectIndex, 0, 0);
+    }
+)";
+
+static const char *vert_vert_code = R"(
+    # version 330
+    layout (location = 0) in vec3 position;
+    flat out uint gVertexIndex;
+
+    uniform mat4 mVP;
+    uniform mat4 mInvVP;
+    uniform mat4 mView;
+    uniform mat4 mProj;
+    uniform mat4 mInvView;
+    uniform mat4 mInvProj;
+
+    void main()
+    {
+        gVertexIndex = uint(gl_VertexID);
+        gl_Position = mVP * vec4(position, 1.0);
+        gl_PointSize = 20;
+    }
+)";
+
+static const char*vert_frag_code = R"(
+    # version 330
+    flat in uint gVertexIndex;
+    out uvec3 FragColor;
+
+    uniform uint gObjectIndex;
+
+    void main()
+    {
+       FragColor = uvec3(gObjectIndex, gVertexIndex, 0);
+    }
+)";
+
+static const char* empty_frag_code = R"(
+    # version 330
+    out uvec3 FragColor;
+
+    void main()
+    {
+       FragColor = uvec3(0, 0, 0);
     }
 )";
 
@@ -113,24 +157,36 @@ struct FrameBufferPicker : IPicker {
     unique_ptr<Buffer> ebo;
     unique_ptr<VAO> vao;
 
-    Program* shader;
+    Program* obj_shader;
+    Program* vert_shader;
+    Program* empty_shader;
 
     int w, h;
     unordered_map<unsigned int, string> id_table;
 
-    struct PixelInfoWithObj {
-        unsigned int obj_id;
-        unsigned int no_use1;
-        unsigned int no_use2;
+    int mode;
 
-        PixelInfoWithObj() {
+    struct PixelInfo {
+        unsigned int obj_id;
+        unsigned int elem_id;
+        unsigned int blank;
+
+        PixelInfo() {
             obj_id = 0;
-            no_use1 = 0;
-            no_use2 = 0;
+            elem_id = 0;
+            blank = 0;
+        }
+
+        bool has_object() const {
+            return obj_id != blank;
+        }
+
+        bool has_element() const {
+            return elem_id != blank;
         }
     };
 
-    explicit FrameBufferPicker(Scene* s) : scene(s) {
+    explicit FrameBufferPicker(Scene* s) : scene(s), mode(PICK_VERTEX) {
         // generate framebuffer
         fbo = make_unique<FBO>();
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
@@ -175,9 +231,13 @@ struct FrameBufferPicker : IPicker {
     }
 
     virtual void draw() override {
-        // prepare shader
-        shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
-        scene->camera->set_program_uniforms(shader);
+        // prepare shaders
+        obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
+        vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
+        empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
+        scene->camera->set_program_uniforms(obj_shader);
+        scene->camera->set_program_uniforms(vert_shader);
+        scene->camera->set_program_uniforms(empty_shader);
 
         // enable framebuffer writing
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
@@ -189,29 +249,87 @@ struct FrameBufferPicker : IPicker {
             auto it = prims.begin() + id;
             auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
             if (prim->has_attr("pos")) {
-                // set object id
-                shader->use();
-                CHECK_GL(glUniform1ui(glGetUniformLocation(shader->pro, "gObjectIndex"), id + 1));
-
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
                 auto vertex_count = prim->size();
-                std::vector<vec3f> mem(vertex_count);
+                vector<vec3f> mem(vertex_count);
                 for (int i = 0; i < vertex_count; i++)
                     mem[i] = pos[i];
                 vao->bind();
                 vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
-                ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
 
-                // draw prim
-                CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
+                if (mode == zenovis::PICK_OBJECT) {
+                    // shader uniform
+                    obj_shader->use();
+                    CHECK_GL(glUniform1ui(glGetUniformLocation(obj_shader->pro, "gObjectIndex"), id + 1));
+                    // draw prim
+                    ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
+                }
+
+                if (mode == zenovis::PICK_VERTEX) {
+                    // enable depth test
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                    // shader uniform
+                    vert_shader->use();
+                    CHECK_GL(glUniform1ui(glGetUniformLocation(vert_shader->pro, "gObjectIndex"), id + 1));
+                    // draw points
+                    CHECK_GL(glDrawArrays(GL_POINTS, 0, mem.size()));
+                    // draw triangles to cover invisible points
+                    empty_shader->use();
+                    ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
+                    // disable depth test
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                }
+
+//                // use vertex normal to cut back vertices
+//                if (mode == zenovis::PICK_VERTEX) {
+//                    auto front = zeno::other_to_vec<3>(scene->camera->m_lodfront);
+//                    if (prim->has_attr("nrm")) {
+//                        auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+//                        for (int i = 0; i < vertex_count; i++) {
+//                            if (zeno::dot(nrm[i], front) < 0)
+//                                mem[i] = pos[i];
+//                        }
+//                    }
+//                    else {
+//                        // compute vertex normal
+//                        vector<vec3f> nrms(vertex_count);
+//                        for (auto & tri : prim->tris) {
+//                            auto ia = tri[0];
+//                            auto ib = tri[1];
+//                            auto ic = tri[2];
+//                            auto const& a = pos[ia];
+//                            auto const& b = pos[ib];
+//                            auto const& c = pos[ic];
+//                            auto nrm = zeno::cross(b - a, c - a);
+//                            nrms[ia] += nrm;
+//                            nrms[ib] += nrm;
+//                            nrms[ic] += nrm;
+//                        }
+//                        for (int i = 0; i < vertex_count; i++) {
+//                            auto nrm = zeno::normalize(nrms[i]);
+//                            if (zeno::dot(nrm, front) < 0)
+//                                mem[i] = pos[i];
+//                        }
+//                    }
+//                    vao->bind();
+//                    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+//                    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+//                    // draw points
+//                    CHECK_GL(glDrawArrays(GL_POINTS, 0, mem.size()));
+//                }
 
                 // unbind vbo
                 vbo->disable_attribute(0);
                 vbo->unbind();
                 vao->unbind();
-                ebo->unbind();
 
                 // store object's name
                 id_table[id + 1] = it->first;
@@ -225,7 +343,7 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        PixelInfoWithObj pixel;
+        PixelInfo pixel;
         // qt coordinate is from left up to right bottom
         //  (x, y)------> w
         //    | \
@@ -242,7 +360,7 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadPixels(x, h - y - 1, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &pixel));
 
         // output buffer to image
-//        auto* pixels = new PixelInfoWithObj[w * h];
+//        auto* pixels = new PixelInfo[w * h];
 //        CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
 //        auto* ids = new unsigned int[w * h];
 //        for (int i=0; i<w*h; i++)
@@ -252,12 +370,17 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadBuffer(GL_NONE));
         fbo->unbind();
 
-        return id_table[pixel.obj_id];
+        string result;
+        if (mode == zenovis::PICK_OBJECT)
+            result = id_table[pixel.obj_id];
+        else
+            result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id);
+
+        return result;
     }
 
     virtual string getPicked(int x0, int y0, int x1, int y1) override {
         if (!fbo->complete()) return "";
-        string result;
         unordered_set<unsigned int> selected_obj;
 
         // prepare fbo
@@ -273,20 +396,39 @@ struct FrameBufferPicker : IPicker {
 
         // read pixels
         int pixel_count = rect_w * rect_h;
-        auto* pixels = new PixelInfoWithObj[pixel_count];
+        auto* pixels = new PixelInfo[pixel_count];
         CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
 
-        // fetch selected objects' ids
-        for (int i = 0; i < pixel_count; i++) {
-            selected_obj.insert(pixels[i].obj_id);
-        }
+        string result;
+        if (mode == zenovis::PICK_OBJECT) {
+            // fetch selected objects' ids
+            for (int i = 0; i < pixel_count; i++) {
+                selected_obj.insert(pixels[i].obj_id);
+            }
 
-        // generate select result
-        for (auto id : selected_obj) {
-            if (id_table.find(id) != id_table.end())
-                result += id_table[id] + " ";
+            // generate select result
+            for (auto id: selected_obj) {
+                if (id_table.find(id) != id_table.end())
+                    result += id_table[id] + " ";
+            }
+        }
+        else if (mode == zenovis::PICK_VERTEX) {
+            for (int i = 0; i < pixel_count; i++) {
+                if (pixels[i].has_object()) {
+                    // check if
+                    result += id_table[pixels[i].obj_id] + ":" + std::to_string(pixels[i].elem_id) + " ";
+                }
+            }
         }
         return result;
+    }
+
+    virtual void setMode(int m) override {
+        mode = m;
+    }
+
+    virtual int getMode() override {
+        return mode;
     }
 };
 
