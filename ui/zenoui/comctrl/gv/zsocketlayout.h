@@ -35,7 +35,7 @@ private:
     QGraphicsItem* m_control;
     bool m_bInput;
     bool m_bEditable;
-    const QPersistentModelIndex& m_viewSockIdx;
+    const QPersistentModelIndex m_viewSockIdx;
 };
 
 #endif

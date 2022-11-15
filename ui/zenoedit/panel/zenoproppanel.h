@@ -47,7 +47,6 @@ private:
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;
 
-    ViewParamModel* m_paramsModel;
     QTabWidget* m_tabWidget;
     bool m_bReentry;
 

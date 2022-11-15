@@ -40,7 +40,6 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bEnableSnap(false)
     , m_bodyLayout(nullptr)
     , m_bUIInited(false)
-    , m_viewParams(nullptr)
     , m_inputsLayout(nullptr)
     , m_paramsLayout(nullptr)
     , m_outputsLayout(nullptr)
@@ -198,17 +197,20 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setSpacing(5);
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
-    m_viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
-    QStandardItem* root = m_viewParams->invisibleRootItem();
+    ZASSERT_EXIT(m_index.isValid(), nullptr);
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    ZASSERT_EXIT(viewParams, nullptr);
+
+    QStandardItem* root = viewParams->invisibleRootItem();
     ZASSERT_EXIT(root && root->rowCount() == 3, nullptr);
     //see ViewParamModel::initNode()
     QStandardItem* inputsItem = root->child(0);
     QStandardItem* paramsItem = root->child(1);
     QStandardItem* outputsItem = root->child(2);
 
-    connect(m_viewParams, &ViewParamModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
-    connect(m_viewParams, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
-    connect(m_viewParams, &ViewParamModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
+    connect(viewParams, &ViewParamModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
+    connect(viewParams, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
+    connect(viewParams, &ViewParamModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
@@ -274,16 +276,25 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     if (roles.isEmpty())
         return;
 
-    int role = roles[0];
-    QStandardItem* pItem = m_viewParams->itemFromIndex(topLeft);
+    if (!m_index.isValid())
+        return;
+
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    if (!viewParams)
+        return;
+
+    QStandardItem* pItem = viewParams->itemFromIndex(topLeft);
     ZASSERT_EXIT(pItem);
     int vType = pItem->data(ROLE_VPARAM_TYPE).toInt();
-    if (vType == VPARAM_GROUP)
-    {
-
-    }
     if (vType != VPARAM_PARAM)
     {
+        return;
+    }
+
+    int role = roles[0];
+    if (role == ROLE_PARAM_NAME)
+    {
+        //only update name by ROLE_VPARAM_NAME
         return;
     }
 
@@ -414,9 +425,14 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
     ZASSERT_EXIT(pScene);
 
+    if (!m_index.isValid())
+        return;
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    ZASSERT_EXIT(viewParams);
+
     if (!parent.isValid())
     {
-        QStandardItem* root = m_viewParams->invisibleRootItem();
+        QStandardItem* root = viewParams->invisibleRootItem();
         ZASSERT_EXIT(root);
         QStandardItem* pGroup = root->child(first);
         if (!pGroup) return;
@@ -461,7 +477,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
         return;
     }
 
-    QStandardItem* parentItem = m_viewParams->itemFromIndex(parent);
+    QStandardItem* parentItem = viewParams->itemFromIndex(parent);
     ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
     QStandardItem* paramItem = parentItem->child(first);
     const QString& groupName = parentItem->text();
@@ -495,18 +511,28 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
 {
     if (!parent.isValid())
     {
+        //clear all.
         ZASSERT_EXIT(first == 0 && last == 2);  //corresponding to ViewParamModel::clone.
         //remove all component.
         m_paramsLayout->clear();
         m_inputsLayout->clear();
         m_outputsLayout->clear();
+        m_params.clear();
+        m_inSockets.clear();
+        m_outSockets.clear();
         return;
     }
 
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
     ZASSERT_EXIT(pScene);
 
-    QStandardItem* parentItem = m_viewParams->itemFromIndex(parent);
+    if (!m_index.isValid())
+        return;
+
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    ZASSERT_EXIT(viewParams);
+
+    QStandardItem* parentItem = viewParams->itemFromIndex(parent);
     ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
     QStandardItem* paramItem = parentItem->child(first);
     const QString& groupName = parentItem->text();
@@ -554,15 +580,13 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
 
 ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
+    QPersistentModelIndex perIdx(viewSockIdx);
     auto cbFuncRenameSock = [=](QString oldText, QString newText) {
-        //todo:
-        ZASSERT_EXIT(false);
-
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
-        IParamModel* pModel = pGraphsModel->paramModel(m_index, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-        ZASSERT_EXIT(pModel);
-        bool ret = pModel->setData(viewSockIdx, newText, ROLE_PARAM_NAME);
+        if (!perIdx.isValid())
+            return;
+        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
+        if (paramModel)
+            paramModel->setData(perIdx, newText, ROLE_PARAM_NAME);
     };
 
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
@@ -659,7 +683,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         }
     }
 
-    m_params.insert(paramName, paramCtrl);
+    m_params[paramName] = paramCtrl;
     return paramCtrl.ctrl_layout;
 }
 
@@ -671,7 +695,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QMod
         if (!perIdx.isValid())
             return;
         QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
-        paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
+        if (paramModel)
+            paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {
@@ -815,11 +840,17 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
     } else {
         QString id = nodeId();
         if (bInput) {
-            ZASSERT_EXIT(m_inSockets.find(portName) != m_inSockets.end(), QPointF());
+            if (m_inSockets.find(portName) == m_inSockets.end())
+            {
+                return QPointF();
+            }
             QPointF pos = m_inSockets[portName]->socketItem()->center();
             return pos;
         } else {
-            ZASSERT_EXIT(m_outSockets.find(portName) != m_outSockets.end(), QPointF());
+            if (m_outSockets.find(portName) == m_outSockets.end())
+            {
+                return QPointF();
+            }
             QPointF pos = m_outSockets[portName]->socketItem()->center();
             return pos;
         }

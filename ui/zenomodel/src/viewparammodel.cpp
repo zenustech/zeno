@@ -137,7 +137,21 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.name)
                 return;
             m_info.name = value.toString();
-            return;
+            break;
+        }
+        case ROLE_PARAM_NAME:
+        {
+            if (m_index.isValid())
+            {
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                bool ret = pModel->setData(m_index, value, role);
+                if (ret)
+                {
+                    //when core name updated, need to sync view name.
+                    setData(value, ROLE_VPARAM_NAME);
+                }
+            }
+            break;
         }
         case ROLE_PARAM_CTRL:
         {

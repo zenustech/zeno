@@ -129,7 +129,6 @@ private:
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_paramsLayout;
     ZGraphicsLayout* m_outputsLayout;
-    ViewParamModel* m_viewParams;
 
     //when initui, zenonode should not emit any signals.
     bool m_bUIInited;

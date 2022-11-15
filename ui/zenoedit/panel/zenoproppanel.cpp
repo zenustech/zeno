@@ -71,7 +71,6 @@ static QString initTabWidgetQss()
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
     , m_bReentry(false)
-    , m_paramsModel(nullptr)
     , m_tabWidget(nullptr)
 {
     QVBoxLayout* pVLayout = new QVBoxLayout;
@@ -115,11 +114,15 @@ void ZenoPropPanel::clearLayout()
     m_tabWidget = nullptr;
     m_controls.clear();
 
-    if (m_paramsModel)
+    if (m_idx.isValid())
     {
-        disconnect(m_paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-        disconnect(m_paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-        disconnect(m_paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+        ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+        if (paramsModel)
+        {
+            disconnect(paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+            disconnect(paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+            disconnect(paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+        }
     }
 
     update();
@@ -138,15 +141,18 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
     m_subgIdx = subgIdx;
     m_idx = nodes[0];
-    m_paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
-    if (!m_paramsModel)
+    if (!m_idx.isValid())
         return;
 
-    connect(m_paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-    connect(m_paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-    connect(m_paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    if (!paramsModel)
+        return;
 
-    QStandardItem* root = m_paramsModel->invisibleRootItem();
+    connect(paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+    connect(paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+    connect(paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+
+    QStandardItem* root = paramsModel->invisibleRootItem();
     if (!root) return;
 
     QStandardItem* pRoot = root->child(0);
@@ -174,11 +180,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
 void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    ZASSERT_EXIT(m_paramsModel);
-    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || m_controls.isEmpty())
+    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
-    QStandardItem* paramItem = m_paramsModel->itemFromIndex(topLeft);
+    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    ZASSERT_EXIT(paramsModel);
+
+    QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
     ZASSERT_EXIT(paramItem);
 
     QStandardItem* groupItem = paramItem->parent();
@@ -234,10 +242,16 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
 {
-    ZASSERT_EXIT(m_paramsModel && m_tabWidget);
+    ZASSERT_EXIT(m_tabWidget);
+    if (!m_idx.isValid())
+        return;
+
+    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    ZASSERT_EXIT(paramsModel);
+
     if (!parent.isValid())
     {
-        QStandardItem* root = m_paramsModel->invisibleRootItem();
+        QStandardItem* root = paramsModel->invisibleRootItem();
         ZASSERT_EXIT(root);
         QStandardItem* pRoot = root->child(0);
         if (!pRoot) return;
@@ -253,7 +267,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (m_controls.isEmpty())
         return;
 
-    QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
     ZASSERT_EXIT(parentItem);
     QStandardItem* newItem = parentItem->child(first);
     int vType = newItem->data(ROLE_VPARAM_TYPE).toInt();
@@ -321,9 +335,13 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
     const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
 
+    QPersistentModelIndex perIdx(paramItem->index());
+
     Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
         //trick implementation:
         //todo: api scoped and transaction: undo/redo problem.
+        if (!m_idx.isValid() || !perIdx.isValid())
+            return;
         paramItem->setData(newValue, ROLE_PARAM_VALUE);
     };
 
@@ -371,8 +389,9 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     pGroupWidget->setContentLayout(pLayout);
     pTabLayout->addWidget(pGroupWidget);
 
-    connect(pGroupWidget, &ZExpandableSection::stateChanged, this, [=](bool bCollasped)
-    {
+    connect(pGroupWidget, &ZExpandableSection::stateChanged, this, [=](bool bCollasped) {
+        if (!m_idx.isValid())
+            return;
         pGroupItem->setData(bCollasped, ROLE_VPARAM_COLLASPED);
     });
     return true;
@@ -401,12 +420,13 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
 
 void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    if (m_controls.isEmpty())
+    if (m_controls.isEmpty() || !m_idx.isValid())
         return;
 
-    ZASSERT_EXIT(m_paramsModel);
+    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    ZASSERT_EXIT(paramsModel);
 
-    QStandardItem* parentItem = m_paramsModel->itemFromIndex(parent);
+    QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
     if (parentItem == nullptr)
     {
         //clear all
@@ -507,7 +527,8 @@ void ZenoPropPanel::onSettings()
     QAction* pEditLayout = new QAction(tr("Edit Parameter Layout"));
     pMenu->addAction(pEditLayout);
     connect(pEditLayout, &QAction::triggered, [=]() {
-        if (!m_idx.isValid())   return;
+        if (!m_idx.isValid())
+            return;
 
         ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
         ZASSERT_EXIT(viewParams);
