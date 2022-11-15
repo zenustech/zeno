@@ -77,6 +77,7 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
                 auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
                 switch (pt_distance_type(p, t0, t1, t2)) {
+#if 0
                 case 0: {
                     if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
                         //auto no = atomic_add(exec_cuda, &nPP[0], 1);
@@ -125,6 +126,7 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
                     }
                     break;
                 }
+#endif
                 case 6: {
                     if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
                         //auto no = atomic_add(exec_cuda, &nPT[0], 1);
@@ -288,6 +290,104 @@ void ClothSystem::computeCollisionGradientAndHessian(zs::CudaExecutionPolicy &po
     });
     if (enableContactEE) {
         ;
+    }
+}
+
+void compute_surface_neighbors(typename ZenoParticles::particles_t &sfs, typename ZenoParticles::particles_t &ses,
+                               typename ZenoParticles::particles_t &svs) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    using vec2i = zs::vec<int, 2>;
+    using vec3i = zs::vec<int, 3>;
+    auto pol = cuda_exec();
+    sfs.append_channels(pol, {{"ff_inds", 3}, {"fe_inds", 3}, {"fp_inds", 3}});
+    ses.append_channels(pol, {{"fe_inds", 2}});
+
+    bcht<vec2i, int, true, universal_hash<vec2i>, 32> etab{sfs.get_allocator(), sfs.size() * 3};
+    Vector<int> sfi{etab.get_allocator(), sfs.size() * 3}; // surftri indices corresponding to edges in the table
+    /// @brief compute ff neighbors
+    {
+        pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
+                                sfi = proxy<space>(sfi)] __device__(int ti) mutable {
+            auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+            for (int i = 0; i != 3; ++i)
+                if (auto no = etab.insert(vec2i{tri[i], tri[(i + 1) % 3]}); no >= 0) {
+                    sfi[no] = ti;
+                } else
+                    printf("the same directed edge has been inserted twice!\n");
+        });
+        pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
+                                sfi = proxy<space>(sfi)] __device__(int ti) mutable {
+            auto neighborIds = vec3i::uniform(-1);
+            auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+            for (int i = 0; i != 3; ++i)
+                if (auto no = etab.query(vec2i{tri[(i + 1) % 3], tri[i]}); no >= 0) {
+                    neighborIds[i] = sfi[no];
+                }
+            sfs.tuple(dim_c<3>, "ff_inds", ti) = neighborIds.reinterpret_bits(float_c);
+        });
+    }
+    /// @brief compute fe neighbors
+    {
+        pol(range(ses.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs), ses = proxy<space>({}, ses),
+                                sfi = proxy<space>(sfi)] __device__(int li) mutable {
+            auto findLineIdInTri = [](const auto &tri, int v0, int v1) -> int {
+#pragma unroll
+                for (int loc = 0; loc < 3; ++loc)
+                    if (tri[loc] == v0 && tri[(loc + 1) % 3] == v1)
+                        return loc;
+                return -1;
+            };
+            auto neighborTris = vec2i::uniform(-1);
+            auto line = ses.pack(dim_c<2>, "inds", li).reinterpret_bits(int_c);
+
+            auto extract = [&](int evI) {
+                if (auto no = etab.query(line); no >= 0) {
+                    // tri
+                    auto triNo = sfi[no];
+                    auto tri = sfs.pack(dim_c<3>, "inds", triNo).reinterpret_bits(int_c);
+                    auto loc = findLineIdInTri(tri, line[0], line[1]);
+                    if (loc == -1)
+                        printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", line[0], line[1],
+                               tri[0], tri[1], tri[2]);
+                    sfs("fe_inds", loc, triNo) = li;
+                    // edge
+                    neighborTris[evI] = triNo;
+                }
+            };
+            extract(0);
+            auto tmp = line[0];
+            line[0] = line[1];
+            line[1] = tmp;
+            extract(1);
+            ses.tuple(dim_c<2>, "fe_inds", li) = neighborTris;
+        });
+    }
+    /// @brief compute fp neighbors
+    /// @note  surface vertex index is not necessarily consecutive, thus hashing
+    {
+        bcht<int, int, true, universal_hash<int>, 32> vtab{svs.get_allocator(), svs.size()};
+        Vector<int> svi{etab.get_allocator(), svs.size()}; // surftri indices corresponding to edges in the table
+        // svs
+        pol(range(svs.size()), [vtab = proxy<space>(vtab), svs = proxy<space>({}, svs),
+                                svi = proxy<space>(svi)] __device__(int vi) mutable {
+            int vert = reinterpret_bits<int>(svs("inds", vi));
+            if (auto no = vtab.insert(vert); no >= 0)
+                svi[no] = vi;
+            else
+                printf("the same directed edge has been inserted twice!\n");
+        });
+        //
+        pol(range(sfs.size()), [vtab = proxy<space>(vtab), sfs = proxy<space>({}, sfs),
+                                svi = proxy<space>(svi)] __device__(int ti) mutable {
+            auto neighborIds = vec3i::uniform(-1);
+            auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+            for (int i = 0; i != 3; ++i)
+                if (auto no = vtab.query(tri[i]); no >= 0) {
+                    neighborIds[i] = svi[no];
+                }
+            sfs.tuple(dim_c<3>, "fp_inds", ti) = neighborIds.reinterpret_bits(float_c);
+        });
     }
 }
 
