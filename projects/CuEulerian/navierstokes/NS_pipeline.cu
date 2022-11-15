@@ -20,6 +20,8 @@
 namespace zeno {
 
 struct ZSVDBToNavierStokesGrid : INode {
+    template <int level> using grid_t = typename ZenoSparseGrid::template grid_t<level>;
+
     void apply() override {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
 
@@ -29,16 +31,22 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"v1", 3},
                                                  {"p0", 1},
                                                  {"p1", 1},
-                                                 {"div_v", 1},
                                                  {"rho0", 1}, // smoke density
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
                                                  {"T1", 1},
-                                                 {"tmp", 3} // FVM, BFECC
+                                                 {"tmp", 3} // FVM, BFECC, MultiGrid
                                              });
         spg._background = 0.f;
 
         auto NSGrid = std::make_shared<ZenoSparseGrid>();
+        {
+            auto nbs = spg.numBlocks();
+            std::vector<zs::PropertyTag> tags{{"p", 1}, {"tmp", 3}};
+            NSGrid->spg1 = grid_t<1>{spg.get_allocator(), tags, nbs};
+            NSGrid->spg2 = grid_t<2>{spg.get_allocator(), tags, nbs};
+            NSGrid->spg3 = grid_t<3>{spg.get_allocator(), tags, nbs};
+        }
         NSGrid->spg = std::move(spg);
         NSGrid->setMeta("v_cur", 0);
         NSGrid->setMeta("p_cur", 0);
@@ -73,13 +81,16 @@ struct ZSNSAssignAttribute : INode {
         constexpr auto space = zs::execspace_e::cuda;
 
         auto num_ch = src.getPropertySize(tag);
+        if (num_ch != spg.getPropertySize(src_tag(NSGrid, tag))) {
+            throw std::runtime_error(fmt::format("The channel number of [{}] doesn't match!", tag));
+        }
 
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), srcv = zs::proxy<space>(src), num_ch, isStaggered,
              srcTag = src_tag(SrcGrid, tag),
              dstTag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
-                
+
                 for (int ch = 0; ch < num_ch; ++ch) {
                     if (isStaggered) {
                         spgv(dstTag, ch, blockno, cellno) = srcv.wStaggeredSample(srcTag, ch, wcoord);
@@ -402,11 +413,33 @@ ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
                                {"Eulerian"}});
 
 struct ZSNSPressureProject : INode {
+
+    template <int level>
+    void computeLevel(ZenoSparseGrid *NSGrid) {
+        if constexpr (level == 3) {
+            ;// solve
+            return;
+        } else {
+            auto &grid = NSGrid->getLevel<level>();
+            // smooth
+            // residual
+            // restrict
+            computeLevel<level + 1>(NSGrid);
+            // prolongate
+            // correct
+            // residual
+        }
+    }
+    void ColoredSOR(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, int level, float dx, float dt, float rho,
+                    float sor) {
+        const float dxSqrOverDt = dx * dx / dt;
+
+        
+    }
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
-        int nIter = get_input2<int>("iterations");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -415,6 +448,9 @@ struct ZSNSPressureProject : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
+        // Multi-grid solver with V-Cycle
+
+#if 0
         if (nIter > 0) {
             // velocity divergence
             pol(zs::range(block_cnt * spg.block_size),
@@ -430,7 +466,7 @@ struct ZSNSPressureProject : INode {
 
                     float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx;
 
-                    spgv("div_v", icoord) = div_term;
+                    spgv("tmp", icoord) = div_term;
                 });
 
             const float dxSqrOverDt = dx * dx / dt;
@@ -439,7 +475,7 @@ struct ZSNSPressureProject : INode {
             // timer.tick();
             // pressure Poisson equation
             for (int iter = 0; iter < nIter; ++iter) {
-#if 0
+#ifdef POINT_JACOBI
             // point Jacobi iteration
             pol(zs::range(block_cnt * spg.block_size),
                 [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho,
@@ -448,7 +484,7 @@ struct ZSNSPressureProject : INode {
                      dst_tag(NSGrid, "p")] __device__(int cellno) mutable {
                     auto icoord = spgv.iCoord(cellno);
 
-                    float div = spgv.value("div_v", icoord);
+                    float div = spgv.value("tmp", icoord);
 
                     const int stcl = 1; // stencil point in each side
                     float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
@@ -488,7 +524,7 @@ struct ZSNSPressureProject : INode {
                                 auto ccoord = spgv.local_offset_to_coord(cellno);
                                 auto icoord = bcoord + ccoord;
 
-                                float div = spgv.value("div_v", blockno, cellno);
+                                float div = spgv.value("tmp", blockno, cellno);
 
                                 const int stcl = 1; // stencil point in each side
                                 float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
@@ -514,7 +550,7 @@ struct ZSNSPressureProject : INode {
             }
             // timer.tock("jacobi/sor iterations");
         }
-
+#endif
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), dx, dt, rho, vSrcTag = src_tag(NSGrid, "v"), vDstTag = dst_tag(NSGrid, "v"),
@@ -542,7 +578,7 @@ struct ZSNSPressureProject : INode {
 };
 
 ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
-                                 {"NSGrid", "dt", {"int", "iterations", "10"}, {"float", "Density", "1.0"}},
+                                 {"NSGrid", "dt", {"float", "Density", "1.0"}},
                                  /* outputs: */
                                  {"NSGrid"},
                                  /* params: */
