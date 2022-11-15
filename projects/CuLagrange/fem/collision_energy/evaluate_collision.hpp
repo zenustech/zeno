@@ -170,7 +170,7 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 // collisionEps = avge * max_ratio;
                 auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
 
-                if(barySum > 3)
+                if(barySum > 2)
                     return;
 
                 if(distance > collisionEps)
