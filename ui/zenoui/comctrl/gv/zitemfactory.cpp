@@ -192,13 +192,32 @@ namespace zenoui
             {
                 return nullptr; //no control expect key editor.
             }
-            case CONTROL_VEC:
+            case CONTROL_VEC2_INT:
+            case CONTROL_VEC2_FLOAT:
+            case CONTROL_VEC3_FLOAT:
+            case CONTROL_VEC3_INT:
+            case CONTROL_VEC4_FLOAT:
+            case CONTROL_VEC4_INT:
             {
                 UI_VECTYPE vec = value.value<UI_VECTYPE>();
 
                 int dim = -1;
                 bool bFloat = false;
-                UiHelper::parseVecType(type, dim, bFloat);
+                if (ctrl == CONTROL_VEC2_INT || ctrl == CONTROL_VEC2_FLOAT)
+                {
+                    dim = 2;
+                    bFloat = ctrl == CONTROL_VEC2_FLOAT;
+                }
+                else if (ctrl == CONTROL_VEC3_INT || ctrl == CONTROL_VEC3_FLOAT)
+                {
+                    dim = 3;
+                    bFloat = ctrl == CONTROL_VEC3_FLOAT;
+                }
+                else if (ctrl == CONTROL_VEC4_INT || ctrl == CONTROL_VEC4_FLOAT)
+                {
+                    dim = 4;
+                    bFloat = ctrl == CONTROL_VEC4_FLOAT;
+                }
 
                 ZenoVecEditItem* pVecEditor = new ZenoVecEditItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
@@ -229,7 +248,7 @@ namespace zenoui
                 QObject::connect(pComboBox, &ZenoParamComboBox::textActivated, [=](const QString& textValue) {
                     QString oldValue = pComboBox->text();
                     cbFunc(textValue);
-                    });
+                });
                 pItemWidget = pComboBox;
                 break;
             }

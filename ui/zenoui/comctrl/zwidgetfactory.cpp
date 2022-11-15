@@ -141,61 +141,38 @@ namespace zenoui
             {
                 return nullptr; //no control expect key editor.
             }
-            case CONTROL_VEC:
+            case CONTROL_VEC2_FLOAT:
+            case CONTROL_VEC2_INT:
+            case CONTROL_VEC3_FLOAT:
+            case CONTROL_VEC3_INT:
+            case CONTROL_VEC4_FLOAT:
+            case CONTROL_VEC4_INT:
             {
                 UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 int dim = -1;
                 bool bFloat = false;
-                UiHelper::parseVecType(type, dim, bFloat);
+                if (ctrl == CONTROL_VEC2_INT || ctrl == CONTROL_VEC2_FLOAT)
+                {
+                    dim = 2;
+                    bFloat = ctrl == CONTROL_VEC2_FLOAT;
+                }
+                else if (ctrl == CONTROL_VEC3_INT || ctrl == CONTROL_VEC3_FLOAT)
+                {
+                    dim = 3;
+                    bFloat = ctrl == CONTROL_VEC3_FLOAT;
+                }
+                else if (ctrl == CONTROL_VEC4_INT || ctrl == CONTROL_VEC4_FLOAT)
+                {
+                    dim = 4;
+                    bFloat = ctrl == CONTROL_VEC4_FLOAT;
+                }
 
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "zeno2_2_lineedit");
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
                     UI_VECTYPE vec = pVecEdit->vec();
                     const QVariant& newValue = QVariant::fromValue(vec);
                     cbFunc(newValue);
                 });
-                return pVecEdit;
-            }
-            case CONTROL_VEC2_INT:
-            case CONTROL_VEC2_FLOAT:
-            {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
-                int dim = 2;
-                bool bFloat = ctrl == CONTROL_VEC2_FLOAT;
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
-                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEdit->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
-                    cbFunc(newValue);
-                    });
-                return pVecEdit;
-            }
-            case CONTROL_VEC3_INT:
-            case CONTROL_VEC3_FLOAT:
-            {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
-                int dim = 3;
-                bool bFloat = ctrl == CONTROL_VEC3_FLOAT;
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
-                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEdit->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
-                    cbFunc(newValue);
-                    });
-                return pVecEdit;
-            }
-            case CONTROL_VEC4_INT:
-            case CONTROL_VEC4_FLOAT:
-            {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
-                int dim = 4;
-                bool bFloat = ctrl == CONTROL_VEC4_FLOAT;
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
-                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEdit->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
-                    cbFunc(newValue);
-                    });
                 return pVecEdit;
             }
             case CONTROL_ENUM:
@@ -364,7 +341,12 @@ namespace zenoui
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
         case CONTROL_BOOL:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
-        case CONTROL_VEC:    return qobject_cast<ZVecEditor*>(pControl) != nullptr;
+        case CONTROL_VEC2_FLOAT:
+        case CONTROL_VEC2_INT:
+        case CONTROL_VEC3_FLOAT:
+        case CONTROL_VEC3_INT:
+        case CONTROL_VEC4_FLOAT:
+        case CONTROL_VEC4_INT:return qobject_cast<ZVecEditor*>(pControl) != nullptr;
         case CONTROL_ENUM:    return qobject_cast<QComboBox*>(pControl) != nullptr;
         case CONTROL_MULTILINE_STRING:    return qobject_cast<ZTextEdit*>(pControl) != nullptr;
         case CONTROL_CURVE:

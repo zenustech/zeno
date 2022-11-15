@@ -146,7 +146,12 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     {
         return (varType == QMetaType::VoidStar);
     }
-    case CONTROL_VEC:
+    case CONTROL_VEC2_FLOAT:
+    case CONTROL_VEC2_INT:
+    case CONTROL_VEC3_FLOAT:
+    case CONTROL_VEC3_INT:
+    case CONTROL_VEC4_FLOAT:
+    case CONTROL_VEC4_INT:
     {
         if (varType == QVariant::UserType &&
             var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
@@ -225,7 +230,12 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
-    case CONTROL_VEC:
+    case CONTROL_VEC2_FLOAT:
+    case CONTROL_VEC2_INT:
+    case CONTROL_VEC3_FLOAT:
+    case CONTROL_VEC3_INT:
+    case CONTROL_VEC4_FLOAT:
+    case CONTROL_VEC4_INT:
     {
         UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
@@ -340,7 +350,14 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         int dim = 0;
         bool bFloat = false;
         if (parseVecType(type, dim, bFloat)) {
-            return CONTROL_VEC;
+            switch (dim)
+            {
+            case 2: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
+            case 3: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
+            case 4: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
+            default:
+                return CONTROL_NONE;
+            }
         }
         else {
             return CONTROL_NONE;

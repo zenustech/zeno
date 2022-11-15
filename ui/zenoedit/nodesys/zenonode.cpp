@@ -665,7 +665,12 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_INT:
         case CONTROL_FLOAT:
         case CONTROL_BOOL:
-        case CONTROL_VEC:
+        case CONTROL_VEC2_FLOAT:
+        case CONTROL_VEC2_INT:
+        case CONTROL_VEC3_FLOAT:
+        case CONTROL_VEC3_INT:
+        case CONTROL_VEC4_FLOAT:
+        case CONTROL_VEC4_INT:
         case CONTROL_ENUM:
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
