@@ -459,6 +459,10 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
     // dHat (static)
     this->dHat = dHat_ * std::sqrt(boxDiagSize2);
 
+    auto [mu_, lam_] = largestLameParams();
+    maxMu = mu_;
+    maxLam = lam_;
+
     // check initial self intersections including proximity pairs, do once
     markSelfIntersectionPrimitives(cudaPol);
 }

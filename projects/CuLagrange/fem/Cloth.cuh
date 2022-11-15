@@ -153,14 +153,16 @@ struct ClothSystem : IObject {
         return coVerts != nullptr;
     }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
-    T largestMu() const {
-        T mu = 0;
+    auto largestLameParams() const {
+        T mu = 0, lam = 0;
         for (auto &&primHandle : prims) {
             auto [m, l] = primHandle.getModelLameParams();
             if (m > mu)
                 mu = m;
+            if (l > lam)
+                lam = l;
         }
-        return mu;
+        return zs::make_tuple(mu, lam);
     }
 
     void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
@@ -187,6 +189,7 @@ struct ClothSystem : IObject {
     void newtonKrylov(zs::CudaExecutionPolicy &pol);
     void computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+    void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
 
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
@@ -230,6 +233,7 @@ struct ClothSystem : IObject {
 
     T boxDiagSize2 = 0;
     T avgNodeMass = 0;
+    T maxMu, maxLam;
 
     //
     std::vector<PrimitiveHandle> prims;

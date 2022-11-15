@@ -386,7 +386,7 @@ void ClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
-// PRECOMPUTE
+        // PRECOMPUTE
         if (enableContact) {
             findCollisionConstraints(pol, dHat);
         }
@@ -397,11 +397,9 @@ void ClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
         computeInertialAndGravityGradientAndHessian(pol);
         computeElasticGradientAndHessian(pol);
-#if 0
         if (enableContact) {
-            computeBarrierGradientAndHessian(pol);
+            computeCollisionGradientAndHessian(pol);
         }
-#endif
         // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
         if (!projectDBC) {
             // grad

@@ -1,4 +1,5 @@
 #include "Cloth.cuh"
+#include "collision_energy/vertex_face_sqrt_collision.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
@@ -150,10 +151,8 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
                                        sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
                                        exclSes = proxy<space>(exclSes), vtemp = proxy<space>({}, vtemp),
                                        bvh = proxy<space>(sebvh), front = proxy<space>(sefront),
-#if 0
-				       PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE), 
-				       nPE = proxy<space>(nPE), EE = proxy<space>(EE), nEE = proxy<space>(nEE),
-#endif
+                                       // PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE),
+                                       // nPE = proxy<space>(nPE), EE = proxy<space>(EE), nEE = proxy<space>(nEE),
                                        //
                                        csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat2 = dHat * dHat,
                                        thickness = dHat, voffset = withBoundary ? coOffset : 0,
@@ -262,6 +261,34 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
             sefront.reorder(pol);
     }
     pol.profile(false);
+}
+
+void ClothSystem::computeCollisionGradientAndHessian(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto numPT = ncsPT.getVal();
+    // group of size-4 tiles?
+    pol(range(numPT), [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), csPT = proxy<space>(csPT),
+                       gradOffset = vtemp.getPropertyOffset("grad"), thickness = dHat, maxMu = maxMu,
+                       maxLam = maxLam] __device__(int i) mutable {
+        auto pt = csPT[i];
+        zs::vec<T, 3> vs[4] = {vtemp.pack(dim_c<3>, "xn", pt[0]), vtemp.pack(dim_c<3>, "xn", pt[1]),
+                               vtemp.pack(dim_c<3>, "xn", pt[2]), vtemp.pack(dim_c<3>, "xn", pt[3])};
+        auto grad = VERTEX_FACE_SQRT_COLLISION::gradient(vs, maxMu, maxLam, thickness);
+        auto hess = VERTEX_FACE_SQRT_COLLISION::hessian(vs, maxMu, maxLam, thickness);
+        // gradient
+        for (int d = 0; d != 3; ++d) {
+            atomic_add(exec_cuda, &vtemp(gradOffset + d, pt[0]), -grad(0 + d));
+            atomic_add(exec_cuda, &vtemp(gradOffset + d, pt[1]), -grad(3 + d));
+            atomic_add(exec_cuda, &vtemp(gradOffset + d, pt[2]), -grad(6 + d));
+            atomic_add(exec_cuda, &vtemp(gradOffset + d, pt[3]), -grad(9 + d));
+        }
+        // hessian
+        tempPT.tuple(dim_c<12, 12>, "H", i) = hess;
+    });
+    if (enableContactEE) {
+        ;
+    }
 }
 
 } // namespace zeno
