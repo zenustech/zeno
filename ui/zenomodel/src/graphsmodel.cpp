@@ -1165,6 +1165,18 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
     }
 }
 
+QModelIndex GraphsModel::addLink2(const QModelIndex& fromSock, const QModelIndex& toSock)
+{
+    if (!fromSock.isValid() || !toSock.isValid())
+        return QModelIndex();
+
+    auto pInputsModel = const_cast<QAbstractItemModel*>(fromSock.model());
+    auto pOutputsModel = const_cast<QAbstractItemModel*>(toSock.model());
+    int row = m_linkModel->addLink(fromSock, toSock);
+    const QModelIndex& linkIdx = m_linkModel->index(row, 0);
+    return linkIdx;
+}
+
 QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction)
 {
     if (enableTransaction)

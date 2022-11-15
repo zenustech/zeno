@@ -85,6 +85,7 @@ public:
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
     QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) override;
+    QModelIndex addLink2(const QModelIndex& fromSock, const QModelIndex& toSock) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

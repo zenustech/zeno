@@ -63,10 +63,12 @@ class ViewParamModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit ViewParamModel(bool bNodeUI, QObject* parent = nullptr);
-    explicit ViewParamModel(bool bNodeUI, const QString& customXml, QObject* parent = nullptr);
+    explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, QObject* parent = nullptr);
+    explicit ViewParamModel(bool bNodeUI, const QString& customXml, const QModelIndex& nodeIdx, QObject* parent = nullptr);
     QString exportUI() const;
     void clone(ViewParamModel* pModel);
+    QPersistentModelIndex nodeIdx() const;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);
@@ -79,6 +81,7 @@ private:
     void initNode();
 
     const bool m_bNodeUI;
+    const QPersistentModelIndex m_nodeIdx;
 };
 
 #endif

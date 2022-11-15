@@ -119,7 +119,9 @@ QVariant VParamItem::data(int role) const
     }
     case ROLE_OBJID:
     {
-        return m_index.data(ROLE_OBJID);
+        if (model())
+            return model()->data(index(), ROLE_OBJID);
+        return "";
     }
     case ROLE_VAPRAM_EDITTABLE:
     default:
@@ -228,16 +230,18 @@ bool VParamItem::operator==(VParamItem* rItem) const
 
 
 
-ViewParamModel::ViewParamModel(bool bNodeUI, QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, QObject* parent)
     : QStandardItemModel(parent)
     , m_bNodeUI(bNodeUI)
+    , m_nodeIdx(nodeIdx)
 {
     setup("");
 }
 
-ViewParamModel::ViewParamModel(bool bNodeUI, const QString& customXml, QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, const QString& customXml, const QModelIndex& nodeIdx, QObject* parent)
     : QStandardItemModel(parent)
     , m_bNodeUI(bNodeUI)
+    , m_nodeIdx(nodeIdx)
 {
     setup(customXml);
 }
@@ -434,6 +438,20 @@ void ViewParamModel::onParamsAboutToBeRemoved(const QModelIndex& parent, int fir
 void ViewParamModel::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     //we use ProxySlotObject as a proxy to receive dataChanged from IParamModel.
+}
+
+QPersistentModelIndex ViewParamModel::nodeIdx() const
+{
+    return m_nodeIdx;
+}
+
+QVariant ViewParamModel::data(const QModelIndex& index, int role) const
+{
+    if (role == ROLE_OBJID) {
+        if (m_nodeIdx.isValid())
+            return m_nodeIdx.data(role);
+    }
+    return QStandardItemModel::data(index, role);
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)

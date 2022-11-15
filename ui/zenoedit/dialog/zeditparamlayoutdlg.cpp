@@ -91,7 +91,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, c
 
     m_ui->listConctrl->addItems(lstCtrls);
 
-    m_proxyModel = new ViewParamModel(bNodeUI, this);
+    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), this);
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);

@@ -628,6 +628,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
         {
             QString outNode, outSock, inNode, inSock;
             QPointF outPos, inPos;
+            QPersistentModelIndex fromSockIdx, toSockIdx;
             if (fixedInput) {
                 outNode = nodeid;
                 outSock = targetSockName;
@@ -635,6 +636,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 inNode = fixedNodeId;
                 inSock = fixedSocket;
                 inPos = fixedPos;
+                fromSockIdx = targetSock->paramIndex();
+                toSockIdx = m_tempLink->getFixedSocket()->paramIndex();
             } else {
                 outNode = fixedNodeId;
                 outSock = fixedSocket;
@@ -642,6 +645,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 inNode = nodeid;
                 inSock = targetSockName;
                 inPos = socketPos;
+                fromSockIdx = m_tempLink->getFixedSocket()->paramIndex();
+                toSockIdx = targetSock->paramIndex();
             }
 
             const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
@@ -677,9 +682,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             EdgeInfo info(outNode, inNode, outSock, inSock);
             pGraphsModel->addLink(info, m_subgIdx, true, true);
-
+            //pGraphsModel->addLink2(fromSockIdx, toSockIdx);
             pGraphsModel->endTransaction();
-
             return;
         }
     }

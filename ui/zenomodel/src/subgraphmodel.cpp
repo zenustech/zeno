@@ -114,8 +114,8 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
-    item.panelParams = new ViewParamModel(false, this);
-    item.nodeParams = new ViewParamModel(true, this);
+    item.panelParams = new ViewParamModel(false, nodeIdx, this);
+    item.nodeParams = new ViewParamModel(true, nodeIdx, this);
 
     for (ViewParamModel* viewParamModel : QList{ item.panelParams, item.nodeParams })
     {
