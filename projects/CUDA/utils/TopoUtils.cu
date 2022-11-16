@@ -41,6 +41,7 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, typename ZenoPartic
                     neighborIds[i] = sfi[no];
                 }
             sfs.tuple(dim_c<3>, "ff_inds", ti) = neighborIds.reinterpret_bits(float_c);
+            sfs.tuple(dim_c<3>, "fe_inds", ti) = vec3i::uniform(-1); // default initialization
         });
     }
     /// @brief compute fe neighbors
@@ -69,11 +70,11 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, typename ZenoPartic
                         if (loc == -1) {
                             printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", line[0],
                                    line[1], tri[0], tri[1], tri[2]);
-                            return;
+                        } else {
+                            sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
+                            // edge
+                            neighborTris[0] = triNo;
                         }
-                        sfs(sfFeIndsOffset + loc, triNo) = li;
-                        // edge
-                        neighborTris[0] = triNo;
                     }
                 }
                 vec2i rline{line[1], line[0]};
@@ -86,11 +87,11 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, typename ZenoPartic
                         if (loc == -1) {
                             printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", rline[0],
                                    rline[1], tri[0], tri[1], tri[2]);
-                            return;
+                        } else {
+                            sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
+                            // edge
+                            neighborTris[1] = triNo;
                         }
-                        sfs(sfFeIndsOffset + loc, triNo) = li;
-                        // edge
-                        neighborTris[1] = triNo;
                     }
                 }
                 ses.tuple(dim_c<2>, seFeIndsOffset, li) = neighborTris.reinterpret_bits(float_c);
