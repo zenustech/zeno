@@ -219,6 +219,10 @@ namespace zenoui
                     bFloat = ctrl == CONTROL_VEC4_FLOAT;
                 }
 
+                if (vec.size() != dim)
+                {
+                    vec.resize(dim);
+                }
                 ZenoVecEditItem* pVecEditor = new ZenoVecEditItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));

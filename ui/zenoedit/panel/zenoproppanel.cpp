@@ -151,6 +151,12 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     connect(paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
     connect(paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
     connect(paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
+        clearLayout();
+    });
+    connect(pModel, &IGraphsModel::modelClear, this, [=]() {
+        clearLayout();
+    });
 
     QStandardItem* root = paramsModel->invisibleRootItem();
     if (!root) return;
@@ -176,68 +182,6 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     pMainLayout->setSpacing(0);
 
     update();
-}
-
-void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
-        return;
-
-    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
-    ZASSERT_EXIT(paramsModel);
-
-    QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
-    ZASSERT_EXIT(paramItem);
-
-    QStandardItem* groupItem = paramItem->parent();
-    ZASSERT_EXIT(groupItem);
-
-    QStandardItem* tabItem = groupItem->parent();
-    ZASSERT_EXIT(tabItem);
-
-    const QString& tabName = tabItem->data(ROLE_VPARAM_NAME).toString();
-    const QString& groupName = groupItem->data(ROLE_VPARAM_NAME).toString();
-
-    for (int r = topLeft.row(); r <= bottomRight.row(); r++)
-    {
-        QStandardItem* param = groupItem->child(r);
-        const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
-        const QVariant& value = param->data(ROLE_PARAM_VALUE);
-        _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
-        if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
-        {
-            pLineEdit->setText(value.toString());
-        }
-        else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
-        {
-            pCombobox->setCurrentText(value.toString());
-        }
-        else if (QTextEdit* pTextEidt = qobject_cast<QTextEdit*>(ctrl.pControl))
-        {
-            pTextEidt->setText(value.toString());
-        }
-        else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
-        {
-            pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
-        }
-        else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
-        {
-            pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
-        }
-        else if (QSlider* pSlider = qobject_cast<QSlider*>(ctrl.pControl))
-        {
-            pSlider->setValue(value.toInt());
-        }
-        else if (QSpinBox* pSpinBox = qobject_cast<QSpinBox*>(ctrl.pControl))
-        {
-            pSpinBox->setValue(value.toInt());
-        }
-        else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
-        {
-            pSpinSlider->setValue(value.toInt());
-        }
-        //...
-    }
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
@@ -363,6 +307,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
+    panelCtrl.m_viewIdx = perIdx;
     panelCtrl.pControl = pControl;
 
     m_controls[tabName][groupName][paramName] = panelCtrl;
@@ -500,7 +445,103 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
                 m_controls[tabName][groupName].remove(paramName);
             }
         }
-        //pGroupWidget->updateGeo();
+    }
+}
+
+void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
+        return;
+
+    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    ZASSERT_EXIT(paramsModel);
+
+    QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
+    ZASSERT_EXIT(paramItem);
+
+    QStandardItem* groupItem = paramItem->parent();
+    ZASSERT_EXIT(groupItem);
+
+    QStandardItem* tabItem = groupItem->parent();
+    ZASSERT_EXIT(tabItem);
+
+    int role = roles[0];
+    const QString& tabName = tabItem->data(ROLE_VPARAM_NAME).toString();
+    const QString& groupName = groupItem->data(ROLE_VPARAM_NAME).toString();
+
+    PANEL_GROUP& group = m_controls[tabName][groupName];
+
+    for (int r = topLeft.row(); r <= bottomRight.row(); r++)
+    {
+        QStandardItem* param = groupItem->child(r);
+
+        if (role == ROLE_VPARAM_NAME)
+        {
+            for (auto it = group.begin(); it != group.end(); it++)
+            {
+                if (it->second.m_viewIdx == param->index())
+                {
+                    const QString& newName = it->second.m_viewIdx.data(ROLE_VPARAM_NAME).toString();
+                    it->second.pLabel->setText(newName);
+                    it->first = newName;
+                    break;
+                }
+            }
+        }
+        else if (role == ROLE_PARAM_CTRL)
+        {
+            const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
+            _PANEL_CONTROL& ctrl = group[paramName];
+            QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
+            ZASSERT_EXIT(pGridLayout);
+
+            ctrl.controlLayout->removeWidget(ctrl.pControl);
+            ctrl.controlLayout->removeWidget(ctrl.pLabel);
+            delete ctrl.pControl;
+            delete ctrl.pLabel;
+
+            int row = group.keys().indexOf(paramName, 0);
+            syncAddControl(pGridLayout, param, row);
+        }
+        else if (role == ROLE_PARAM_VALUE)
+        {
+            const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
+            const QVariant& value = param->data(ROLE_PARAM_VALUE);
+            _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+            if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
+            {
+                pLineEdit->setText(value.toString());
+            }
+            else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
+            {
+                pCombobox->setCurrentText(value.toString());
+            }
+            else if (QTextEdit* pTextEidt = qobject_cast<QTextEdit*>(ctrl.pControl))
+            {
+                pTextEidt->setText(value.toString());
+            }
+            else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
+            {
+                pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
+            }
+            else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
+            {
+                pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+            }
+            else if (QSlider* pSlider = qobject_cast<QSlider*>(ctrl.pControl))
+            {
+                pSlider->setValue(value.toInt());
+            }
+            else if (QSpinBox* pSpinBox = qobject_cast<QSpinBox*>(ctrl.pControl))
+            {
+                pSpinBox->setValue(value.toInt());
+            }
+            else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
+            {
+                pSpinSlider->setValue(value.toInt());
+            }
+            //...
+        }
     }
 }
 

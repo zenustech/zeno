@@ -353,8 +353,8 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
             switch (dim)
             {
             case 2: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
-            case 3: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
-            case 4: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
+            case 3: return bFloat ? CONTROL_VEC3_FLOAT : CONTROL_VEC3_INT;
+            case 4: return bFloat ? CONTROL_VEC4_FLOAT : CONTROL_VEC4_INT;
             default:
                 return CONTROL_NONE;
             }
