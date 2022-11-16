@@ -51,8 +51,6 @@ template <zs::execspace_e space, typename T, typename Ti> auto proxy(const CsrMa
 }
 
 /// for cell-based collision detection
-void compute_surface_neighbors(typename ZenoParticles::particles_t &tris, typename ZenoParticles::particles_t &lines,
-                               typename ZenoParticles::particles_t &verts);
 
 struct ClothSystem : IObject {
     using T = float;

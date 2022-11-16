@@ -1,5 +1,6 @@
 #include "Cloth.cuh"
 #include "Structures.hpp"
+#include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include <zeno/types/ListObject.h>
 
@@ -562,6 +563,17 @@ struct MakeClothSystem : INode {
         const typename ClothSystem::tiles_t *coEdges =
             zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
         const typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
+#if 0
+        const typename ClothSystem::tiles_t *coSvs =
+            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfVertTag] : nullptr;
+#endif
+
+        if (zsboundary) {
+            auto pol = cuda_exec();
+            compute_surface_neighbors(pol, zsboundary->getQuadraturePoints(),
+                                      (*zsboundary)[ZenoParticles::s_surfEdgeTag],
+                                      (*zsboundary)[ZenoParticles::s_surfVertTag]);
+        }
 
         /// solver parameters
         auto input_est_num_cps = get_input2<int>("est_num_cps");
