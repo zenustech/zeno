@@ -681,6 +681,15 @@ extern "C" __global__ void __closesthit__radiance()
         specTrans = 0;
         ior = 1;
     }
+    if(prd->isSS == true && prd->medium == DisneyBSDF::PhaseFunctions::isotropic && subsurface==0 )
+    {
+        prd->passed = true;
+        prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+        prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+        prd->origin = P;
+        prd->direction = ray_dir;
+        return;
+    }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
