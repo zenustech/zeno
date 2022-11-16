@@ -53,6 +53,9 @@ struct Params
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;
+    float sunLightIntensity;
+    float colorTemperatureMix;
+    float colorTemperature;
 
     float windDirX;
     float windDirY;
