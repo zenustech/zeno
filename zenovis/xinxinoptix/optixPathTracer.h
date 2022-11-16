@@ -84,4 +84,5 @@ struct HitGroupData
     unsigned short* lightMark;
     float4* uniforms;
     cudaTextureObject_t textures[32];
+
 };
