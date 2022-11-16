@@ -49,6 +49,7 @@ enum MODEL_ROLE
     ROLE_VAPRAM_EDITTABLE,       //edittable for name and content.
     ROLE_VPARAM_ACTIVE_TABINDEX,    //active tab index
     ROLE_VPARAM_COLLASPED,      // whether group is collasped.
+	ROLE_VPARAM_CTRL_PROPERTIES,
 };
 
 enum LOG_ROLE

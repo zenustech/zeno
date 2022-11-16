@@ -278,6 +278,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
     const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+    CONTROL_PROPERTIES pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
 
     QPersistentModelIndex perIdx(paramItem->index());
 
@@ -293,7 +294,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
     };
 
-    QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch);
+    QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch, pros);
     //if (!pControl)
     //    return false;
 

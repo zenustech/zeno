@@ -177,12 +177,16 @@ namespace zenoui
             }
             case CONTROL_ENUM:
             {
-                QStringList items = type.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-                QComboBox* pComboBox = new QComboBox;
-                if (properties.find("items") != properties.end())
+                QStringList items;
+                if (type.startsWith("enum "))
+                {
+                    items = type.mid(QString("enum ").length()).split(QRegExp("\\s+")); //compatible with legacy items.
+                }
+                if (items.isEmpty() && properties.find("items") != properties.end())
                 {
                     items = properties["items"].toStringList();
                 }
+                QComboBox* pComboBox = new QComboBox;
                 pComboBox->setProperty("cssClass", "newstyle");
                 pComboBox->addItems(items);
                 pComboBox->setCurrentText(value.toString());
@@ -245,16 +249,16 @@ namespace zenoui
                     }\
                 ");
                 pSlider->setValue(value.toInt());
-                if (properties.find("singleStep") != properties.end())
+                if (properties.find("step") != properties.end())
                 {
-                    int singleStep = properties["singleStep"].toInt();
-                    pSlider->setSingleStep(singleStep);
+                    int step = properties["step"].toInt();
+                    pSlider->setSingleStep(step);
                 }
-                if (properties.find("from") != properties.end() &&
-                    properties.find("to") != properties.end())
+                if (properties.find("min") != properties.end() &&
+                    properties.find("max") != properties.end())
                 {
-                    int from = properties["from"].toInt();
-                    int to = properties["to"].toInt();
+                    int from = properties["min"].toInt();
+                    int to = properties["max"].toInt();
                     pSlider->setRange(from, to);
                 }
                 QObject::connect(pSlider, &QSlider::valueChanged, [=](int value) {
@@ -305,16 +309,16 @@ namespace zenoui
             case CONTROL_SPINBOX_SLIDER:
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
-                if (properties.find("singleStep") != properties.end())
+                if (properties.find("step") != properties.end())
                 {
-                    int singleStep = properties["singleStep"].toInt();
-                    pSlider->setSingleStep(singleStep);
+                    int step = properties["step"].toInt();
+                    pSlider->setSingleStep(step);
                 }
-                if (properties.find("from") != properties.end() &&
-                    properties.find("to") != properties.end())
+                if (properties.find("min") != properties.end() &&
+                    properties.find("max") != properties.end())
                 {
-                    int from = properties["from"].toInt();
-                    int to = properties["to"].toInt();
+                    int from = properties["min"].toInt();
+                    int to = properties["max"].toInt();
                     pSlider->setRange(from, to);
                 }
                 QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int value) {

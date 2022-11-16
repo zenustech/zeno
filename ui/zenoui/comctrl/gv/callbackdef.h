@@ -5,8 +5,6 @@ typedef std::function<void(QString, QString)> Callback_EditContentsChange;
 
 class ZenoSocketItem;
 
-typedef QMap<QString, QVariant> CONTROL_PROPERTIES;
-
 typedef std::function<void(ZenoSocketItem*)> Callback_OnSockClicked;
 
 typedef std::function<void(QVariant state)> Callback_EditFinished;

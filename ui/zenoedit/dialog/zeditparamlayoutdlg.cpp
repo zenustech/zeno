@@ -13,6 +13,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Multiline String",    CONTROL_MULTILINE_STRING, "string"},
     {"read path",           CONTROL_READPATH,       "string"},
     {"write path",          CONTROL_WRITEPATH,      "string"},
+    {"Enum",                CONTROL_ENUM,           "string"},
     {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f"},
     {"Float Vector 3",      CONTROL_VEC3_FLOAT,     "vec3f"},
     {"Float Vector 2",      CONTROL_VEC2_FLOAT,     "vec2f"},
@@ -115,6 +116,10 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, c
     connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
 
     connect(m_ui->btnChooseCoreParam, SIGNAL(clicked(bool)), this, SLOT(onChooseParamClicked()));
+    connect(m_ui->editComboItems, SIGNAL(editingFinished()), this, SLOT(onComboItemsEditFinished()));
+    connect(m_ui->editMin, SIGNAL(editingFinished()), this, SLOT(onMinEditFinished()));
+    connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
+    connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -138,19 +143,15 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     if (type == VPARAM_TAB)
     {
         m_ui->cbControl->setEnabled(false);
+        m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_GROUP)
     {
         m_ui->cbControl->setEnabled(false);
+        m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_PARAM)
     {
-        if (!bEditable)
-        {
-            m_ui->cbControl->setEnabled(false);
-            return;
-        }
-
         const QString& paramName = name;
         PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrentItem->data(ROLE_PARAM_CTRL).toInt();
         const QString& ctrlName = getControl(ctrl).name;
@@ -164,6 +165,26 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         m_ui->editCoreParamName->setText(coreName);
         m_ui->editCoreParamType->setText(coreType);
+
+        if (ctrl == CONTROL_ENUM)
+        {
+            CONTROL_PROPERTIES pros = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+            if (pros.find("items") != pros.end())
+            {
+                m_ui->editComboItems->setText(pros["items"].toStringList().join(","));
+            }
+            m_ui->stackProperties->setCurrentIndex(1);
+        }
+        else if (ctrl == CONTROL_HSLIDER ||
+                 ctrl == CONTROL_HSPINBOX ||
+                 ctrl == CONTROL_SPINBOX_SLIDER)
+        {
+            m_ui->stackProperties->setCurrentIndex(2);
+        }
+        else
+        {
+            m_ui->stackProperties->setCurrentIndex(0);
+        }
     }
 }
 
@@ -247,6 +268,58 @@ void ZEditParamLayoutDlg::onLabelEditFinished()
 void ZEditParamLayoutDlg::onHintEditFinished()
 {
 
+}
+
+void ZEditParamLayoutDlg::onComboItemsEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    const QString& items = m_ui->editComboItems->text();
+    QStringList lst = items.split(",");
+    if (lst.isEmpty())
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    properties["items"] = lst;
+    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+}
+
+void ZEditParamLayoutDlg::onMinEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    int from = m_ui->editMin->text().toInt();
+    properties["min"] = from;
+    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+}
+
+void ZEditParamLayoutDlg::onMaxEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    int to = m_ui->editMax->text().toInt();
+    properties["max"] = to;
+    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+}
+
+void ZEditParamLayoutDlg::onStepEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    int step = m_ui->editStep->text().toInt();
+    properties["step"] = step;
+    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
 
 void ZEditParamLayoutDlg::onChooseParamClicked()
