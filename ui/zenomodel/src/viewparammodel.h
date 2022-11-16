@@ -73,7 +73,6 @@ public:
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);
     void onParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 
 private:
     void setup(const QString& customUI);

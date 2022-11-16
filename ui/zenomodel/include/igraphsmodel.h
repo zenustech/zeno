@@ -61,6 +61,7 @@ public:
 	virtual NODE_DESCS descriptors() const = 0;
     virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
 	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
+	virtual bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
 	virtual void clear() = 0;
 	virtual void undo() = 0;
@@ -89,6 +90,7 @@ public:
     virtual void endTransaction() = 0;
 	virtual LinkModel* linkModel() const = 0;
 	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
+	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 
 signals:
 	void clearLayout2();

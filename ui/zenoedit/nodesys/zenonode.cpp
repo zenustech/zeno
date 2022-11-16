@@ -368,7 +368,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 PARAM_CONTROL oldCtrl = pControl ? (PARAM_CONTROL)pControl->data(GVKEY_CONTROL).toInt() : CONTROL_NONE;
                 if (ctrl != oldCtrl)
                 {
-                    QGraphicsItem* pNewControl = initSocketWidget(pScene, parentItem->index());
+                    QGraphicsItem* pNewControl = initSocketWidget(pScene, pItem->index());
                     pControlLayout->setControl(pNewControl);
                     pControl = pNewControl;
                     updateWhole();

@@ -2,6 +2,7 @@
 #include "parammodel.h"
 #include "zassert.h"
 #include "modelrole.h"
+#include <zenomodel/include/uihelper.h>
 
 
 ProxySlotObject::ProxySlotObject(VParamItem* pItem, QObject* parent)
@@ -17,8 +18,21 @@ ProxySlotObject::~ProxySlotObject()
 
 void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (topLeft == m_pItem->m_index) {
+    if (topLeft == m_pItem->m_index)
+    {
         QModelIndex viewIdx = m_pItem->index();
+        if (roles.contains(ROLE_PARAM_TYPE))
+        {
+            const QString& newType = topLeft.data(ROLE_PARAM_TYPE).toString();
+            PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
+            m_pItem->m_info.control = newCtrl;
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
+        }
+        if (roles.contains(ROLE_PARAM_NAME))
+        {
+            m_pItem->m_info.name = topLeft.data(ROLE_PARAM_NAME).toString();
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, { ROLE_VPARAM_NAME });
+        }
         emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
     }
 }
@@ -433,11 +447,6 @@ void ViewParamModel::onParamsAboutToBeRemoved(const QModelIndex& parent, int fir
     ZASSERT_EXIT(pModel);
     const QModelIndex& idx = pModel->index(first, 0, parent);
     if (!idx.isValid()) return;
-}
-
-void ViewParamModel::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-    //we use ProxySlotObject as a proxy to receive dataChanged from IParamModel.
 }
 
 QPersistentModelIndex ViewParamModel::nodeIdx() const

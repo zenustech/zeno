@@ -97,6 +97,7 @@ private:
         PARAM_CONTROL ctrl = CONTROL_NONE,
         const PARAM_LINKS& links = PARAM_LINKS());
     bool _removeRow(const QModelIndex& index);
+    void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
 
     const QPersistentModelIndex m_nodeIdx;
     const QPersistentModelIndex m_subgIdx;

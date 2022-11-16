@@ -308,6 +308,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                 return false;
             oldValue = item.pConst;
             item.pConst = value;
+            onSubIOEdited(oldValue, item);
             break;
         }
         case ROLE_PARAM_LINKS:
@@ -322,6 +323,114 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
     emit dataChanged(index, index, QVector<int>{role});     //legacy signal
     emit mock_dataChanged(index, oldValue, role);   //custom signal.
     return true;
+}
+
+void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
+{
+    const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    if (nodeName == "SubInput" || nodeName == "SubOutput")
+    {
+        bool bInput = nodeName == "SubInput";
+        const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        ZASSERT_EXIT(m_items.find("defl") != m_items.end() &&
+                     m_items.find("name") != m_items.end() &&
+                     m_items.find("type") != m_items.end());
+        const QString& sockName = m_items["name"].pConst.toString();
+
+        if (item.name == "type")
+        {
+            const QString& newType = item.pConst.toString();
+            PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
+            const QVariant& newValue = UiHelper::initDefaultValue(newType);
+
+            const QModelIndex& idx_defl = index("defl");
+            
+            _ItemInfo& defl = m_items["defl"];
+            defl.type = newType;
+            defl.ctrl = newCtrl;
+            defl.pConst = newValue;
+            emit dataChanged(idx_defl, idx_defl, QVector<int>{ROLE_PARAM_TYPE});
+
+            //update desc.
+            NODE_DESC desc;
+            bool ret = m_model->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+                desc.inputs[sockName].info.type = newType;
+                desc.inputs[sockName].info.control = newCtrl;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
+                desc.outputs[sockName].info.type = newType;
+                desc.outputs[sockName].info.control = newCtrl;
+            }
+            m_model->updateSubgDesc(subgName, desc);
+
+            //update to every subgraph node.
+            QModelIndexList subgNodes = m_model->findSubgraphNode(subgName);
+            for (auto idx : subgNodes)
+            {
+                // update socket for current subgraph node.
+                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+                QModelIndex paramIdx = sockModel->index(sockName);
+                sockModel->setData(paramIdx, newType, ROLE_PARAM_TYPE);
+                sockModel->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
+            }
+        }
+        else if (item.name == "name")
+        {
+            //1.update desc info for the subgraph node.
+            const QString& newName = sockName;
+            const QString& oldName = oldValue.toString();
+
+            NODE_DESC desc;
+            bool ret = m_model->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                desc.inputs[newName].info.name = newName;
+                desc.inputs.remove(oldName);
+            }
+            else
+            {
+                desc.outputs[newName].info.name = newName;
+                desc.outputs.remove(oldName);
+            }
+            m_model->updateSubgDesc(subgName, desc);
+
+            //2.update all sockets for all subgraph node.
+            QModelIndexList subgNodes = m_model->findSubgraphNode(subgName);
+            for (auto idx : subgNodes)
+            {
+                // update socket for current subgraph node.
+                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+                QModelIndex paramIdx = sockModel->index(oldName);
+                sockModel->setData(paramIdx, newName, ROLE_PARAM_NAME);
+            }
+        }
+        else if (item.name == "defl")
+        {
+            const QVariant& deflVal = m_items["defl"].pConst;
+            NODE_DESC desc;
+            bool ret = m_model->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+                desc.inputs[sockName].info.defaultValue = deflVal;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
+                desc.outputs[sockName].info.defaultValue = deflVal;
+            }
+            m_model->updateSubgDesc(subgName, desc);
+            //no need to update all subgraph node because it causes disturbance.
+        }
+    }
 }
 
 QModelIndexList IParamModel::match(

@@ -565,6 +565,16 @@ bool GraphsModel::getDescriptor(const QString& descName, NODE_DESC& desc)
     return false;
 }
 
+bool GraphsModel::updateSubgDesc(const QString& descName, const NODE_DESC& desc)
+{
+    if (m_subgsDesc.find(descName) != m_subgsDesc.end())
+    {
+        m_subgsDesc[descName] = desc;
+        return true;
+    }
+    return false;
+}
+
 void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 {
     int row = m_subGraphs.size();

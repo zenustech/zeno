@@ -39,6 +39,7 @@ public:
     NODE_DESCS descriptors() const override;
     bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
     bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
+    bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) override;
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
@@ -118,6 +119,7 @@ public:
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
     IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
+    QModelIndexList findSubgraphNode(const QString& subgName) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -145,7 +147,6 @@ private:
     void onSubIOUpdate(SubGraphModel* pGraph, const QModelIndex& nodeIdx, PARAM_UPDATE_INFO info);
     bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
 
-    QModelIndexList findSubgraphNode(const QString& subgName);
     void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
                    bool enableTrans = false);
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;
