@@ -320,6 +320,7 @@ struct GraphicsManager {
             }
         }
         xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        return true;
     }
     // return if find sky
     bool load_lights(std::string key, zeno::IObject *obj){
@@ -366,10 +367,14 @@ struct GraphicsManager {
                 sky_found = true;
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                float sunLightIntensity = prim_in->userData().get2<float>("sunLightIntensity");
+                float colorTemperatureMix = prim_in->userData().get2<float>("colorTemperatureMix");
+                float colorTemperature = prim_in->userData().get2<float>("colorTemperature");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
                 float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
@@ -413,10 +418,14 @@ struct GraphicsManager {
             if (ud.has("sunLightDir")) {
                 zeno::vec2f sunLightDir = ud.get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = ud.get2<float>("sunLightSoftness");
+                float sunLightIntensity = ud.get2<float>("sunLightIntensity");
+                float colorTemperatureMix = ud.get2<float>("colorTemperatureMix");
+                float colorTemperature = ud.get2<float>("colorTemperature");
                 zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
                 float timeStart = ud.get2<float>("timeStart");
                 float timeSpeed = ud.get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
         }
 

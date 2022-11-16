@@ -24,3 +24,19 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   swe/FDGather.cu
 )
+
+# level set function
+target_sources(zeno PRIVATE
+  levelset/Grid_creator.cu
+  levelset/Reinitialization.cu
+)
+
+# navier stokes
+target_sources(zeno PRIVATE
+  navierstokes/NS_pipeline.cu
+)
+
+# hybrid
+target_sources(zeno PRIVATE
+  hybrid/P2G.cu
+)

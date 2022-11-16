@@ -494,6 +494,8 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
             QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
             ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
             pComboBox->setText(value);
+            if (scene)
+                scene->addScrollControl(pComboBox);
 
             connect(pComboBox, &ZenoParamComboBox::textActivated, this, [paramName, this](const QString& textValue) {
                 onParamEditFinished(paramName, textValue);
@@ -1317,6 +1319,18 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
                 bUpdateLayout = true;
             }
             pComboBox->setText(inSocket.info.defaultValue.toString());
+            break;
+        }
+        case CONTROL_MULTILINE_STRING:
+        {
+            ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(ctrl.socket_control);
+            if (!pTextEdit) {
+                clearInSocketControl(inSocket.info.name);
+                pTextEdit = qobject_cast<ZenoParamMultilineStr*>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pTextEdit);
+                bUpdateLayout = true;
+            }
+            pTextEdit->setText(inSocket.info.defaultValue.toString());
             break;
         }
         case CONTROL_NONE: {

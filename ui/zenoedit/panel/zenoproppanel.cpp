@@ -188,6 +188,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->addItems(items);
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
 				pComboBox->setObjectName(paramName);
+				pComboBox->setEditable(true);
 				pComboBox->setProperty("control", param.control);
 				pComboBox->setCurrentText(param.value.toString());
 				pComboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -403,6 +404,31 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pComboBox, r++, 1);
 				break;
 			}
+			case CONTROL_MULTILINE_STRING:
+			{
+				ZTextEdit* pTextEdit = new ZTextEdit;
+				pTextEdit->setFrameShape(QFrame::NoFrame);
+				pTextEdit->setProperty("cssClass", "proppanel");
+				pTextEdit->setObjectName(inputSock);
+				pTextEdit->setProperty("control", input.info.control);
+				pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
+				pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+				QTextCharFormat format;
+				QFont font("HarmonyOS Sans", 12);
+				format.setFont(font);
+				pTextEdit->setCurrentFont(font);
+				pTextEdit->setText(input.info.defaultValue.toString());
+
+				QPalette pal = pTextEdit->palette();
+				pal.setColor(QPalette::Base, QColor(37, 37, 37));
+				pTextEdit->setPalette(pal);
+
+				QObject::connect(pTextEdit, &ZTextEdit::editFinished, this, &ZenoPropPanel::onInputEditFinish);
+
+				pLayout->addWidget(pTextEdit, r++, 1);
+				break;
+			}
 		}
 	}
 
@@ -458,6 +484,10 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 	}
+    else if (QTextEdit* pTextEdit = qobject_cast<QTextEdit*>(pSender))
+    {
+		info.newValue = pTextEdit->toPlainText();
+    }
 
 	if (info.oldValue != info.newValue)
 	{
@@ -642,6 +672,16 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						QComboBox* pComboBox = lst[0];
 						pComboBox->setCurrentText(inSocket.info.defaultValue.toString());
+					}
+					break;
+				}
+				case CONTROL_MULTILINE_STRING:
+				{
+					auto lst = findChildren<QTextEdit*>(inSock, Qt::FindChildrenRecursively);
+					if (lst.size() == 1)
+					{
+						QTextEdit* pTextEdit = lst[0];
+						pTextEdit->setText(inSocket.info.defaultValue.toString());
 					}
 					break;
 				}

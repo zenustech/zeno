@@ -50,11 +50,11 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
     pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() + voffset;
-        auto x0 = vtemp.template pack<3>(xTag, inds[0]);
+        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
-            merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+            merge(bv, vtemp.pack(dim_c<3>, xTag, inds[d]));
         bvs[ei] = bv;
     });
     return ret;
@@ -74,13 +74,13 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, 
                                  verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
                                  codim_v = wrapv<codim>{}, xTag, dirTag, stepSize, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() + voffset;
-        auto x0 = verts.template pack<3>(xTag, inds[0]);
-        auto dir0 = vtemp.template pack<3>(dirTag, inds[0]);
+        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto x0 = verts.pack(dim_c<3>, xTag, inds[0]);
+        auto dir0 = vtemp.pack(dim_c<3>, dirTag, inds[0]);
         bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};
         for (int d = 1; d != dim; ++d) {
-            auto x = verts.template pack<3>(xTag, inds[d]);
-            auto dir = vtemp.template pack<3>(dirTag, inds[d]);
+            auto x = verts.pack(dim_c<3>, xTag, inds[d]);
+            auto dir = vtemp.pack(dim_c<3>, dirTag, inds[d]);
             merge(bv, x);
             merge(bv, x + stepSize * dir);
         }
@@ -104,12 +104,12 @@ inline TT dot(zs::CudaExecutionPolicy &cudaPol, zs::wrapt<TT>, zs::TileVector<T,
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     Vector<TT> res{vertData.get_allocator(), count_warps(vertData.size())};
-    zs::memset(zs::mem_device, res.data(), 0, sizeof(TT) * count_warps(vertData.size()));
+    res.reset(0);
     cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
                                      offset0 = vertData.getPropertyOffset(tag0),
                                      offset1 = vertData.getPropertyOffset(tag1)] __device__(int pi) mutable {
-        auto v0 = data.template pack<3>(offset0, pi).template cast<TT>();
-        auto v1 = data.template pack<3>(offset1, pi).template cast<TT>();
+        auto v0 = data.pack(dim_c<3>, offset0, pi).template cast<TT>();
+        auto v1 = data.pack(dim_c<3>, offset1, pi).template cast<TT>();
         auto v = v0.dot(v1);
         reduce_to(pi, n, v, res[pi / 32]);
     });
@@ -125,37 +125,13 @@ inline T dot(zs::CudaExecutionPolicy &cudaPol, zs::TileVector<T, 32, AllocatorT>
     zs::memset(zs::mem_device, res.data(), 0, sizeof(T) * count_warps(vertData.size()));
     cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0, tag1,
                                      n = vertData.size()] __device__(int pi) mutable {
-        auto v0 = data.template pack<3>(tag0, pi);
-        auto v1 = data.template pack<3>(tag1, pi);
+        auto v0 = data.pack(dim_c<3>, tag0, pi);
+        auto v1 = data.pack(dim_c<3>, tag1, pi);
         auto v = v0.dot(v1);
         // res[pi] = v;
         reduce_to(pi, n, v, res[pi / 32]);
     });
     return reduce(cudaPol, res, thrust::plus<T>{});
-}
-inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
-                                     const zs::SmallString tag = "dir") {
-    using namespace zs;
-    using T = typename IPCSystem::T;
-    constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), count_warps(vertData.size())};
-    zs::memset(zs::mem_device, res.data(), 0, sizeof(T) * count_warps(vertData.size()));
-    cudaPol(range(vertData.size()), [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
-                                     offset = vertData.getPropertyOffset(tag)] __device__(int pi) mutable {
-        auto v = data.pack<3>(offset, pi);
-        auto val = v.abs().max();
-
-        auto [mask, numValid] = warp_mask(pi, n);
-        auto locid = threadIdx.x & 31;
-        for (int stride = 1; stride < 32; stride <<= 1) {
-            auto tmp = __shfl_down_sync(mask, val, stride);
-            if (locid + stride < numValid)
-                val = zs::max(val, tmp);
-        }
-        if (locid == 0)
-            res[pi / 32] = val;
-    });
-    return reduce(cudaPol, res, thrust::maximum<T>{});
 }
 
 } // namespace zeno

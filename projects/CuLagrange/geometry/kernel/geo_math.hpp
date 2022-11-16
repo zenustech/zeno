@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <vector>
+
 namespace zeno { namespace LSL_GEO {
 
     template<int simplex_size,int ne = (simplex_size - 1) * simplex_size, zs::enable_if_t<(simplex_size >= 2 && simplex_size <= 4)> = 0>
@@ -19,24 +22,24 @@ namespace zeno { namespace LSL_GEO {
     }    
 
     // using T = float;
-    template<typename T,typename V = typename zs::vec<T,3>>
-    constexpr T area(const V& p0,const V& p1,const V& p2){
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr auto area(const zs::VecInterface<VecT>& p0,const zs::VecInterface<VecT>& p1,const zs::VecInterface<VecT>& p2){
         auto a = (p0 - p1).norm();
         auto b = (p0 - p2).norm();
         auto c = (p1 - p2).norm();
-        return doublearea(a,b,c) / 2.0;
+        return doublearea(a,b,c) / (typename VecT::value_type)2.0;
     }
-    template<typename T,typename V = typename zs::vec<T,3>>
-    constexpr T area(const V p[3]){
-        auto a = (p[0] - p[1]).norm();
-        auto b = (p[0] - p[2]).norm();
-        auto c = (p[1] - p[2]).norm();
-        return doublearea(a,b,c) / 2.0;
-    }
-    template<typename T>
-    constexpr T area(T a,T b,T c) {
-        return doublearea(a,b,c)/2;
-    }    
+    // template<typename T,typename V = typename zs::vec<T,3>>
+    // constexpr T area(const V p[3]){
+    //     auto a = (p[0] - p[1]).norm();
+    //     auto b = (p[0] - p[2]).norm();
+    //     auto c = (p[1] - p[2]).norm();
+    //     return doublearea(a,b,c) / 2.0;
+    // }
+    // template<typename T,zs::enable_if_t<std::is_integral_v<T>> = 0>
+    // constexpr T area(T a,T b,T c) {
+    //     return doublearea(a,b,c)/2;
+    // }    
 
 
     template<typename T>
@@ -126,6 +129,63 @@ namespace zeno { namespace LSL_GEO {
         theta(3) = zs::acos(cos_theta(3)); 
         theta(4) = zs::acos(cos_theta(4)); 
         theta(5) = zs::acos(cos_theta(5));       
+    }
+
+    template<typename T>
+    constexpr zs::vec<T,3,3> deformation_gradient(
+        const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3,const zs::vec<T,3,3>& IB) {
+            auto x01 = x1 - x0;
+            auto x02 = x2 - x0;
+            auto x03 = x3 - x0;
+            zs::vec<T,3,3> Dx{
+                x01[0],x02[0],x03[0],
+                x01[1],x02[1],x03[1],
+                x01[2],x02[2],x03[2]};  
+            return Dx * IB;
+    }
+
+    template<typename T>
+    constexpr zs::vec<T,3,3> deformation_gradient(
+            const zs::vec<T,3>& X0,const zs::vec<T,3>& X1,const zs::vec<T,3>& X2,const zs::vec<T,3>& X3,
+            const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3) {
+        auto X01 = X1 - X0;
+        auto X02 = X2 - X0;
+        auto X03 = X3 - X0;
+        zs::vec<T,3,3> DX{
+            X01[0],X02[0],X03[0],
+            X01[1],X02[1],X03[1],
+            X01[2],X02[2],X03[2]};
+        
+        auto IB = zs::inverse(DX);          
+        return deformtion_gradient(x0,x1,x2,x3,IB);
+    }
+
+
+
+    template<typename T>
+    constexpr void deformation_xform(
+            const zs::vec<T,3>& X0,const zs::vec<T,3>& X1,const zs::vec<T,3>& X2,const zs::vec<T,3>& X3,
+            const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3,
+            zs::vec<T,3,3>& F,zs::vec<T,3>& b) {
+        auto X01 = X1 - X0;
+        auto X02 = X2 - X0;
+        auto X03 = X3 - X0;
+        zs::vec<T,3,3> DX{
+            X01[0],X02[0],X03[0],
+            X01[1],X02[1],X03[1],
+            X01[2],X02[2],X03[2]};
+        
+        auto IB = zs::inverse(DX);   
+        deformation_xform(x0,x1,x2,x3,X0,IB,F,b);
+    }
+
+    template<typename T>
+    constexpr void deformation_xform(
+        const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3,
+        const zs::vec<T,3>& X0,const zs::vec<T,3,3>& IB,
+        zs::vec<T,3,3>& F,zs::vec<T,3>& b) {
+            F = deformation_gradient(x0,x1,x2,x3,IB);
+            b = x0 - F * X0;
     }
 
 };
