@@ -483,6 +483,14 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     ZASSERT_EXIT(pSocketItem);
 
     QModelIndex paramIdx = pSocketItem->paramIndex();
+    ZASSERT_EXIT(paramIdx.isValid());
+
+    if (!paramIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
+    {
+        QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
+        return;
+    }
+
     QString nodeid, sockName;
     bool bInput = false;
     pSocketItem->getSocketInfo(bInput, nodeid, sockName);
@@ -607,6 +615,12 @@ void ZenoSubGraphScene::onTempLinkClosed()
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (ZenoSocketItem *targetSock = m_tempLink->getAdsorbedSocket())
     {
+        if (!targetSock->paramIndex().data(ROLE_VPARAM_IS_COREPARAM).toBool())
+        {
+            QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
+            return;
+        }
+
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphsModel);
 
