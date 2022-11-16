@@ -627,6 +627,9 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                     inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
                     inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
                     inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
+                    inputs["sunLightIntensity"].info.defaultValue = (double)ud.get2<float>("sunLightIntensity");
+                    inputs["colorTemperatureMix"].info.defaultValue = (double)ud.get2<float>("colorTemperatureMix");
+                    inputs["colorTemperature"].info.defaultValue = (double)ud.get2<float>("colorTemperature");
                 }
                 auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
                 pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
