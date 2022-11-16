@@ -41,11 +41,25 @@ struct ZSVDBToNavierStokesGrid : INode {
 
         auto NSGrid = std::make_shared<ZenoSparseGrid>();
         {
+            // initialize multigrid
             auto nbs = spg.numBlocks();
-            std::vector<zs::PropertyTag> tags{{"p", 1}, {"tmp", 3}};
+            std::vector<zs::PropertyTag> tags{{"p0", 1}, {"p1", 1}, {"tmp", 3}};
+            auto transform = spg._transform;
+
             NSGrid->spg1 = grid_t<1>{spg.get_allocator(), tags, nbs};
+            transform.preScale(zs::vec<float, 3>::uniform(2.f));
+            NSGrid->spg1._transform = transform;
+            NSGrid->spg1._background = spg._background;
+
             NSGrid->spg2 = grid_t<2>{spg.get_allocator(), tags, nbs};
+            transform.preScale(zs::vec<float, 3>::uniform(2.f));
+            NSGrid->spg2._transform = transform;
+            NSGrid->spg2._background = spg._background;
+
             NSGrid->spg3 = grid_t<3>{spg.get_allocator(), tags, nbs};
+            transform.preScale(zs::vec<float, 3>::uniform(2.f));
+            NSGrid->spg3._transform = transform;
+            NSGrid->spg3._background = spg._background;
         }
         NSGrid->spg = std::move(spg);
         NSGrid->setMeta("v_cur", 0);
@@ -89,12 +103,14 @@ struct ZSNSAssignAttribute : INode {
             [spgv = zs::proxy<space>(spg), srcv = zs::proxy<space>(src), num_ch, isStaggered,
              srcTag = src_tag(SrcGrid, tag),
              dstTag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
-                auto wcoord = spgv.wCoord(blockno, cellno);
-
-                for (int ch = 0; ch < num_ch; ++ch) {
-                    if (isStaggered) {
-                        spgv(dstTag, ch, blockno, cellno) = srcv.wStaggeredSample(srcTag, ch, wcoord);
-                    } else {
+                if (isStaggered) {
+                    for (int ch = 0; ch < num_ch; ++ch) {
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+                        spgv(dstTag, ch, blockno, cellno) = srcv.wStaggeredSample(srcTag, ch, wcoord_face);
+                    }
+                } else {
+                    for (int ch = 0; ch < num_ch; ++ch) {
+                        auto wcoord = spgv.wCoord(blockno, cellno);
                         spgv(dstTag, ch, blockno, cellno) = srcv.wSample(srcTag, ch, wcoord);
                     }
                 }
@@ -414,74 +430,27 @@ ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
 
 struct ZSNSPressureProject : INode {
 
-    template <int level>
-    void computeLevel(ZenoSparseGrid *NSGrid) {
-        if constexpr (level == 3) {
-            ;// solve
-            return;
-        } else {
-            auto &grid = NSGrid->getLevel<level>();
-            // smooth
-            // residual
-            // restrict
-            computeLevel<level + 1>(NSGrid);
-            // prolongate
-            // correct
-            // residual
-        }
-    }
-    void ColoredSOR(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, int level, float dx, float dt, float rho,
-                    float sor) {
-        const float dxSqrOverDt = dx * dx / dt;
+    template <int level> float Jacobi(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, int nIter) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
-        
-    }
-    void apply() override {
-        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
-        auto rho = get_input2<float>("Density");
-        auto dt = get_input2<float>("dt");
-
-        auto &spg = NSGrid->spg;
+        auto &spg = NSGrid->getLevel<level>();
         auto block_cnt = spg.numBlocks();
+
         auto dx = spg.voxelSize()[0];
 
-        auto pol = zs::cuda_exec();
-        constexpr auto space = zs::execspace_e::cuda;
-
-        // Multi-grid solver with V-Cycle
-
-#if 0
-        if (nIter > 0) {
-            // velocity divergence
+        if (level != 0) {
+            // take zero as initial guess
             pol(zs::range(block_cnt * spg.block_size),
-                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
-                    auto icoord = spgv.iCoord(cellno);
+                [spgv = zs::proxy<space>(spg)] __device__(int cellno) mutable { spgv("p0", cellno) = 0.f; });
+        }
 
-                    float u_x[2], u_y[2], u_z[2];
-                    for (int i = 0; i <= 1; ++i) {
-                        u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
-                        u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
-                        u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
-                    }
+        int cur = level == 0 ? NSGrid->readMeta("p_cur") : 0;
 
-                    float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx;
-
-                    spgv("tmp", icoord) = div_term;
-                });
-
-            const float dxSqrOverDt = dx * dx / dt;
-
-            // zs::CppTimer timer;
-            // timer.tick();
-            // pressure Poisson equation
-            for (int iter = 0; iter < nIter; ++iter) {
-#ifdef POINT_JACOBI
+        for (int iter = 0; iter < nIter; ++iter) {
             // point Jacobi iteration
             pol(zs::range(block_cnt * spg.block_size),
-                [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho,
-                 pSrcTag = src_tag(NSGrid, "p"),
-                 pDstTag =
-                     dst_tag(NSGrid, "p")] __device__(int cellno) mutable {
+                [spgv = zs::proxy<space>(spg), dx, rho, pSrcTag = zs::SmallString{"p" + std::to_string(cur)},
+                 pDstTag = zs::SmallString{"p" + std::to_string(cur ^ 1)}] __device__(int cellno) mutable {
                     auto icoord = spgv.iCoord(cellno);
 
                     float div = spgv.value("tmp", icoord);
@@ -495,19 +464,152 @@ struct ZSNSPressureProject : INode {
                         p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
                     }
 
-                    float p_this =
-                        -(div * dxSqrOverDt * rho - (p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2])) / 6.f;
+                    float p_this = -(div * dx * dx * rho - (p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2])) / 6.f;
 
-                    spgv(pDstTag, icoord) = p_this;
+                    spgv(pDstTag, cellno) = p_this;
                 });
-            update_cur(NSGrid, "p");
+            cur ^= 1;
+        }
+
+        if (level == 0)
+            NSGrid->setMeta("p_cur", cur);
+
+        // residual
+        size_t cell_cnt = block_cnt * spg.block_size;
+        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
+        zs::memset(zs::mem_device, res.data(), 0, sizeof(float) * count_warps(cell_cnt));
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, rho,
+             pSrcTag = zs::SmallString{"p" + std::to_string(cur)}] __device__(int blockno, int cellno) mutable {
+                auto icoord = spgv.iCoord(blockno, cellno);
+
+                float div = spgv.value("tmp", icoord);
+
+                const int stcl = 1; // stencil point in each side
+                float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+
+                for (int i = -stcl; i <= stcl; ++i) {
+                    p_x[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
+                    p_y[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
+                    p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                }
+
+                float m_residual =
+                    div - (central_diff_2nd(p_x[0], p_x[1], p_x[2], dx) + central_diff_2nd(p_y[0], p_y[1], p_y[2], dx) +
+                           central_diff_2nd(p_z[0], p_z[1], p_z[2], dx)) /
+                              rho;
+
+                spgv("tmp", 1, blockno, cellno) = m_residual;
+
+                size_t cellno_glb = blockno * spgv.block_size + cellno;
+
+                reduce_max(cellno_glb, cell_cnt, m_residual, res[cellno_glb / 32]);
+            });
+
+        float max_residual = reduce(pol, res, thrust::maximum<float>{});
+        return max_residual;
+    }
+
+    template <int level> void restriction(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg_f = NSGrid->getLevel<level>();
+        auto &spg_c = NSGrid->getLevel<level + 1>();
+
+        auto block_cnt = spg_c.numBlocks();
+
+        pol(zs::Collapse{block_cnt, spg_c.block_size},
+            [spgv_f = zs::proxy<space>(spg_f), spgv_c = zs::proxy<space>(spg_c)] __device__(int blockno,
+                                                                                            int cellno) mutable {
+
+            });
+    }
+
+    template <int level> void computeLevel(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+        if constexpr (level == 3) {
+            ; // solve
+            return;
+        } else {
+            auto &grid = NSGrid->getLevel<level>();
+            // smooth
+            // residual
+            // restrict
+            computeLevel<level + 1>(NSGrid);
+            // prolongate
+            // correct
+            // residual
+        }
+    }
+
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto rho = get_input2<float>("Density");
+        auto dt = get_input2<float>("dt");
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+        auto dx = spg.voxelSize()[0];
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        // velocity divergence (source term)
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
+                auto icoord = spgv.iCoord(cellno);
+
+                float u_x[2], u_y[2], u_z[2];
+                for (int i = 0; i <= 1; ++i) {
+                    u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
+                    u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
+                    u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
+                }
+
+                float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx / dt;
+
+                spgv("tmp", icoord) = div_term;
+            });
+
+        // Multi-grid solver with V-Cycle
+
+#if 0
+        if (nIter > 0) {
+            // zs::CppTimer timer;
+            // timer.tick();
+            // pressure Poisson equation
+            for (int iter = 0; iter < nIter; ++iter) {
+#ifdef POINT_JACOBI
+                // point Jacobi iteration
+                pol(zs::range(block_cnt * spg.block_size),
+                    [spgv = zs::proxy<space>(spg), dx, rho, pSrcTag = src_tag(NSGrid, "p"),
+                     pDstTag = dst_tag(NSGrid, "p")] __device__(int cellno) mutable {
+                        auto icoord = spgv.iCoord(cellno);
+
+                        float div = spgv.value("tmp", icoord);
+
+                        const int stcl = 1; // stencil point in each side
+                        float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+
+                        for (int i = -stcl; i <= stcl; ++i) {
+                            p_x[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
+                            p_y[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
+                            p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                        }
+
+                        float p_this =
+                            -(div * dx * dx * rho - (p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2])) / 6.f;
+
+                        spgv(pDstTag, icoord) = p_this;
+                    });
+                update_cur(NSGrid, "p");
 #else
                 // red-black SOR iteration
                 const float sor = 1.0f; // over relaxation rate
 
                 for (int clr = 0; clr != 2; ++clr) {
 
-                    pol(zs::range(block_cnt * 32), [spgv = zs::proxy<space>(spg), dxSqrOverDt, rho, clr, sor,
+                    pol(zs::range(block_cnt * 32), [spgv = zs::proxy<space>(spg), dx, rho, clr, sor,
                                                     pSrcTag = src_tag(NSGrid, "p")] __device__(int tid) mutable {
                         auto blockno = tid / 32;
 
@@ -535,11 +637,11 @@ struct ZSNSPressureProject : INode {
                                     p_z[i + stcl] = spgv.value(pSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
                                 }
 
-                                float p_this = (1.f - sor) * p_x[stcl] +
-                                               sor *
-                                                   ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) -
-                                                    div * dxSqrOverDt * rho) /
-                                                   6.f;
+                                float p_this =
+                                    (1.f - sor) * p_x[stcl] +
+                                    sor *
+                                        ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dx * dx * rho) /
+                                        6.f;
 
                                 spgv(pSrcTag, blockno, cellno) = p_this;
                             }
