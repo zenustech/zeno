@@ -40,7 +40,7 @@ enum {
     PICK_OBJECT,
     PICK_VERTEX,
     PICK_LINE,
-    PICK_FACE
+    PICK_MESH
 };
 
 struct IGraphic {
@@ -64,8 +64,6 @@ struct IGraphicHandler : IGraphicDraw {
 };
 
 struct IPicker : IGraphicDraw {
-    virtual void setMode(int mode) = 0;
-    virtual int getMode() = 0;
     virtual std::string getPicked(int x, int y) = 0;
     virtual std::string getPicked(int x0, int y0, int x1, int y1) = 0;
 };
