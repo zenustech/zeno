@@ -325,6 +325,83 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
     }
     return texture;
 }
+
+inline float4 psky(float u, float v)
+{
+    // dir with differnt definition?
+    // float3 dir = make_float3(-cos(u)*sin(v), -cos(v), sin(u)*sin(v));
+
+    // float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    // float v = asin(dir.y) / 3.1415926 + 0.5;
+    float3 dir = make_float3(
+        -cos(u*2*3.1415926)*sin(v*3.1415926),  
+        -cos(v*3.1415926),
+        sin(u*2*3.1415926)*sin(v*3.1415926)
+    );
+
+    // debug
+//     if(dir.x < 0.0)
+//     {
+//         return {1.0, 0.0, 0.0, 0.0};
+//     }
+//     return {0.0, 0.0, 1.0, 0.0};
+
+    return make_float4(0.5*(dir.x+1),0.5*(dir.y+1),0.5*(dir.z+1),0.0);
+}
+inline std::shared_ptr<cuTexture> makeCudaTexture(int nx, int ny)
+{
+    auto texture = std::make_shared<cuTexture>();
+    std::vector<float4> data;
+    data.resize(nx*ny);
+    for(int j=0;j<ny;j++)
+        for(int i=0;i<nx;i++)
+        {
+            size_t idx = j*nx + i;
+            data[idx] = psky(
+                static_cast<float>(i)/nx,
+                static_cast<float>(j)/ny
+            );
+        }
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture space alloc failed\n";
+        return 0;
+    }
+    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
+                             nx * sizeof(float) * 4,
+                             nx * sizeof(float) * 4,
+                             ny,
+                             cudaMemcpyHostToDevice);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    cudaResourceDesc resourceDescriptor = { };
+    resourceDescriptor.resType = cudaResourceTypeArray;
+    resourceDescriptor.res.array.array = texture->gpuImageArray;
+    cudaTextureDesc textureDescriptor = { };
+    textureDescriptor.addressMode[0] = cudaAddressModeWrap;
+    textureDescriptor.addressMode[1] = cudaAddressModeWrap;
+    textureDescriptor.borderColor[0] = 0.0f;
+    textureDescriptor.borderColor[1] = 0.0f;
+    textureDescriptor.disableTrilinearOptimization = 1;
+    textureDescriptor.filterMode = cudaFilterModeLinear;
+    textureDescriptor.normalizedCoords = true;
+    textureDescriptor.readMode = cudaReadModeElementType;
+    textureDescriptor.sRGB = 0;
+    rc = cudaCreateTextureObject(&texture->texture, &resourceDescriptor, &textureDescriptor, nullptr);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture creation failed\n";
+        texture->texture = 0;
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    return texture;
+}
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::optional<std::string> sky_tex;
@@ -337,7 +414,12 @@ inline void addTexture(std::string path)
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
     zeno::log_info("is hdr: {}", stbi_is_hdr(path.c_str()));
-    if (stbi_is_hdr(path.c_str())) {
+    // Trying first
+    // a so fxxking stupid approach
+    if(strcmp(path.c_str(), "procedural_sky")==0) {
+        g_tex[path] = makeCudaTexture(32, 32);
+    }
+    else if (stbi_is_hdr(path.c_str())) {
         float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading texture failed:{}", path);

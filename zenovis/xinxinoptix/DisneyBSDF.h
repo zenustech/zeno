@@ -1106,12 +1106,8 @@ static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverag
 	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
         vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
 	// float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
-
     float dens = worleyNoise(p + pertb + windDir * t);
-    // dens = 
-    // // remap( 
-    // fbm(p + pertb + windDir * t, layer)
-    // // , 0., 1., dens, 1.);
+    // dens = remap( fbm(p + pertb + windDir * t, layer),  0., 1., dens, 1.);
 
 	float cov = 1. - coverage * (sin(t)+1.)/2;
 //	dens = smoothstep (cov-0.1, cov + .1, dens);
@@ -1238,10 +1234,7 @@ static __inline__ __device__ vec4 render_clouds(
 
                 C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
                 alpha += (1. - T_i) * (1. - alpha);
-                // pos = vec3(pos.x + coef * dir_step.x,
-                //            pos.y + coef * dir_step.y,
-                //            pos.z + coef * dir_step.z);
-                pos += coef * dir_step.z; // testing operator+=
+                pos += coef * dir_step;
                 coef *= 1.0f;
                 if (length(pos) > 1e3)
                     break;
@@ -1268,9 +1261,10 @@ static __inline__ __device__ vec3 proceduralSky(
     vec3 sky = render_sky_color(r.direction, sunLightDir);
     if(r_dir.y<-0.001) return sky; // just being lazy
 
-    vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
-    col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
-    return col;
+    // vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
+    // col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
+    // return col;
+    return sky;
 }
 
 static __inline__ __device__ vec3 hdrSky(
@@ -1292,21 +1286,21 @@ static __inline__ __device__ vec3 envSky(
     float absorption,
     float t
 ){
-    if (params.usingProceduralSky) {
-        return proceduralSky(
-            dir,
-            sunLightDir,
-            windDir,
-            steps,
-            coverage,
-            thickness,
-            absorption,
-            t
-        );
-    }
-    else {
+    // if (params.usingProceduralSky) {
+    //     return proceduralSky(
+    //         dir,
+    //         sunLightDir,
+    //         windDir,
+    //         steps,
+    //         coverage,
+    //         thickness,
+    //         absorption,
+    //         t
+    //     );
+    // }
+    // else {
         return hdrSky(
             dir
         );
-    }
+    // }
 }

@@ -344,12 +344,18 @@ struct GraphicsManager {
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
-                zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
-                float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
-                zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
-                float timeStart = prim_in->userData().get2<float>("timeStart");
-                float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+
+                // TODO: Check any change in parameters
+                // only update if there is
+
+                // zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
+                // float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                // zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+                // float timeStart = prim_in->userData().get2<float>("timeStart");
+                // float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
+                OptixUtil::sky_tex = "procedural_sky";
+                OptixUtil::addTexture("procedural_sky");
+                // xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
