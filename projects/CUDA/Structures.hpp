@@ -464,7 +464,7 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
   }
 
   template <int level = 0>
-  decltype(auto) getLevel() {
+  auto &getLevel() {
     if constexpr (level == 0)
       return spg;
     else if constexpr (level == 1)
