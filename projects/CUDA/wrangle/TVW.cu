@@ -150,10 +150,10 @@ struct ZSTileVectorWrangler : zeno::INode {
                 else if (targetNo == 1 && !parObjPtr->elements.has_value())
                     continue;
             }
-            if (targetNo == 0) {
-                ;
+            if (targetNo == 0) { // verts
+                tvPtr = &parObjPtr->getParticles();
             } else if (targetNo == 1) {
-                ;
+                tvPtr = &parObjPtr->getQuadraturePoints();
             }
 
             auto props = tvPtr->getPropertyTags();
