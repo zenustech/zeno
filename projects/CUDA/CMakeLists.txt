@@ -53,6 +53,7 @@ target_sources(zeno PRIVATE
   wrangle/PNBVHW.cu
   wrangle/PPW.cu
   wrangle/TVW.cu
+  wrangle/VW.cu
 )
 
 # utils
