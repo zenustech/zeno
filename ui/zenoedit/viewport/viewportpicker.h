@@ -34,7 +34,7 @@ static bool test_in_selected_bounding(
 class Picker {
 public:
     Picker() {};
-
+    void setSelectMode(int mode);
     void pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
                      const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
     void pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
@@ -44,7 +44,7 @@ public:
     void pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                              const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
   private:
-    std::unique_ptr<zenovis::IPicker> picker;
+    // std::unique_ptr<zenovis::IPicker> picker;
     inline void onPrimitiveSelected();
 };
 

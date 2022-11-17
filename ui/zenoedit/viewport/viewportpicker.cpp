@@ -13,6 +13,11 @@
 
 namespace zeno {
 
+void Picker::setSelectMode(int mode) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->select_mode = mode;
+}
+
 void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
                          const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -72,11 +77,12 @@ void Picker::pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_do
 
 void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    // if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    auto picker = zenovis::makeFrameBufferPicker(scene);
     picker->draw();
+    auto selected = picker->getPicked(x, y);
 
-    if (picker->getMode() == zenovis::PICK_OBJECT) {
-        auto selected = picker->getPicked(x, y);
+    if (scene->select_mode == zenovis::PICK_OBJECT) {
         if (scene->selected.count(selected) > 0) {
             scene->selected.erase(selected);
             on_delete(selected);
@@ -84,6 +90,22 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
             scene->selected.insert(selected);
             on_add(selected);
         }
+    }
+    else {
+        qDebug() << selected.c_str();
+        auto t = selected.find_last_of(':');
+        auto obj_id = selected.substr(0, t);
+        std::stringstream ss;
+        ss << selected.substr(t+1);
+        int elem_id; ss >> elem_id;
+        if (scene->selected_elements.find(obj_id) != scene->selected_elements.end()) {
+            if (scene->selected_elements[obj_id].count(elem_id) > 0)
+                scene->selected_elements[obj_id].erase(elem_id);
+            else
+                scene->selected_elements[obj_id].insert(elem_id);
+        }
+        else
+            scene->selected_elements[obj_id] = {elem_id};
     }
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
@@ -93,7 +115,8 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
 void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                                  const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    // if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    auto picker = zenovis::makeFrameBufferPicker(scene);
     picker->draw();
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ")\nselected " << selected.c_str();
@@ -103,7 +126,7 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
     std::sregex_token_iterator p(selected.begin(), selected.end(), reg, -1);
     std::sregex_token_iterator end;
 
-    if (picker->getMode() == zenovis::PICK_OBJECT) {
+    if (scene->select_mode == zenovis::PICK_OBJECT) {
         while (p != end) {
             scene->selected.insert(*p);
             on_add(*p);
@@ -113,19 +136,20 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
     }
     else {
         while (p != end) {
-            string result = *p;
+            string result = *p++;
+            qDebug() << result.c_str();
             auto t = result.find_last_of(':');
             auto obj_id = result.substr(0, t);
-            auto elem_id = atoi(result.substr(t+1).c_str());
-            switch (picker->getMode()) {
-                case zenovis::PICK_VERTEX:
-                    if (scene->selected_verts.find(obj_id) != scene->selected_verts.end())
-                        scene->selected_verts[obj_id].push_back(elem_id);
-                    else scene->selected_verts[obj_id] = {elem_id};
-                    break;
-                default:
-                    break;
-            }
+            std::stringstream ss;
+            ss << result.substr(t+1);
+            int elem_id; ss >> elem_id;
+            if (scene->selected_elements.find(obj_id) != scene->selected_elements.end()) {
+                auto &elements = scene->selected_elements[obj_id];
+                if (elements.count(elem_id) > 0)
+                    elements.erase(elem_id);
+                else
+                    elements.insert(elem_id);
+            } else scene->selected_elements[obj_id] = {elem_id};
         }
     }
 }
