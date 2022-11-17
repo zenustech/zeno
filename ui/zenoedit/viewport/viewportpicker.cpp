@@ -77,12 +77,16 @@ void Picker::pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_do
 
 void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
-    auto picker = zenovis::makeFrameBufferPicker(scene);
-    picker->draw();
+    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    // auto picker = zenovis::makeFrameBufferPicker(scene);
+    // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x, y);
 
     if (scene->select_mode == zenovis::PICK_OBJECT) {
+        if (selected.empty()) {
+            for (const auto& s : scene->selected) on_delete(s);
+            scene->selected.clear();
+        }
         if (scene->selected.count(selected) > 0) {
             scene->selected.erase(selected);
             on_delete(selected);
@@ -92,6 +96,7 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
         }
     }
     else {
+        if (selected.empty()) scene->selected_elements.clear();
         qDebug() << selected.c_str();
         auto t = selected.find_last_of(':');
         auto obj_id = selected.substr(0, t);
@@ -115,9 +120,8 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
 void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                                  const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
-    auto picker = zenovis::makeFrameBufferPicker(scene);
-    picker->draw();
+    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    // auto picker = zenovis::makeFrameBufferPicker(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ")\nselected " << selected.c_str();
 

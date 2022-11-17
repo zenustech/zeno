@@ -179,8 +179,6 @@ struct FrameBufferPicker : IPicker {
     int w, h;
     unordered_map<unsigned int, string> id_table;
 
-    int mode;
-
     struct PixelInfo {
         unsigned int obj_id;
         unsigned int elem_id;
@@ -201,7 +199,7 @@ struct FrameBufferPicker : IPicker {
         }
     };
 
-    explicit FrameBufferPicker(Scene* s) : scene(s), mode(s->select_mode) {
+    explicit FrameBufferPicker(Scene* s) : scene(s) {
         // generate framebuffer
         fbo = make_unique<FBO>();
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
@@ -272,7 +270,7 @@ struct FrameBufferPicker : IPicker {
                 vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
-                if (mode == zenovis::PICK_OBJECT) {
+                if (scene->select_mode == zenovis::PICK_OBJECT) {
                     // shader uniform
                     obj_shader->use();
                     scene->camera->set_program_uniforms(obj_shader);
@@ -283,7 +281,7 @@ struct FrameBufferPicker : IPicker {
                     ebo->unbind();
                 }
 
-                if (mode == zenovis::PICK_VERTEX) {
+                if (scene->select_mode == zenovis::PICK_VERTEX) {
                     // enable depth test
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
@@ -305,7 +303,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (mode == zenovis::PICK_LINE) {
+                if (scene->select_mode == zenovis::PICK_LINE) {
                     // enable depth test
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
@@ -354,6 +352,23 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
+                if (scene->select_mode == zenovis::PICK_MESH) {
+                    // enable depth test
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                    // draw triangles
+                    prim_shader->use();
+                    scene->camera->set_program_uniforms(prim_shader);
+                    CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
+                    auto tri_count = prim->tris.size();
+                    ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
+                    // disable depth test
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                }
+
                 // unbind vbo
                 vbo->disable_attribute(0);
                 vbo->unbind();
@@ -367,6 +382,7 @@ struct FrameBufferPicker : IPicker {
     }
 
     virtual string getPicked(int x, int y) override {
+        draw();
         if (!fbo->complete()) return "";
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
@@ -399,15 +415,20 @@ struct FrameBufferPicker : IPicker {
         fbo->unbind();
 
         string result;
-        if (mode == zenovis::PICK_OBJECT)
+        if (scene->select_mode == zenovis::PICK_OBJECT) {
+            if (!pixel.has_object()) return "";
             result = id_table[pixel.obj_id];
-        else
+        }
+        else {
+            if (!pixel.has_object() || !pixel.has_element()) return "";
             result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id);
+        }
 
         return result;
     }
 
     virtual string getPicked(int x0, int y0, int x1, int y1) override {
+        draw();
         if (!fbo->complete()) return "";
 
         // prepare fbo
@@ -439,7 +460,7 @@ struct FrameBufferPicker : IPicker {
         fbo->unbind();
 
         string result;
-        if (mode == zenovis::PICK_OBJECT) {
+        if (scene->select_mode == zenovis::PICK_OBJECT) {
             unordered_set<unsigned int> selected_obj;
             // fetch selected objects' ids
             for (int i = 0; i < pixel_count; i++) {

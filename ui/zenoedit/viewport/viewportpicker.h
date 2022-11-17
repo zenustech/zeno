@@ -44,7 +44,7 @@ public:
     void pickWithFrameBuffer(int x0, int y0, int x1, int y1,
                              const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
   private:
-    // std::unique_ptr<zenovis::IPicker> picker;
+    std::unique_ptr<zenovis::IPicker> picker;
     inline void onPrimitiveSelected();
 };
 
