@@ -161,9 +161,12 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
                               tris = proxy<space>({}, tris), lines = proxy<space>({}, lines), triNrmTag,
                               biNrmTag] ZS_LAMBDA(int ei) mutable {
         auto fe_inds = lines.pack(dim_c<2>, "fe_inds", ei).reinterpret_bits(int_c);
-        auto n0 = tris.pack(dim_c<3>, triNrmTag, fe_inds[0]);
-        auto n1 = tris.pack(dim_c<3>, triNrmTag, fe_inds[1]);
-        auto ne = (n0 + n1).normalized();
+        auto ne = zs::vec<float, 3>::zeros();
+        if (fe_inds[0] >= 0)
+            ne += tris.pack(dim_c<3>, triNrmTag, fe_inds[0]);
+        if (fe_inds[1] >= 0)
+            ne += tris.pack(dim_c<3>, triNrmTag, fe_inds[1]);
+        ne /= ne.length();
 
         // be careful when extarcting vertex positions
         auto e_inds = lines.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c) + vOffset;
