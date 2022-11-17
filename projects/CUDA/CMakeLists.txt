@@ -47,8 +47,6 @@ set_target_properties(zeno
 
 # wrangler
 target_sources(zeno PRIVATE
-  utils/IndexBuckets.cu
-  utils/Primitives.cu
   wrangle/PW.cu
   wrangle/P2W.cu
   wrangle/PNW.cu
@@ -57,3 +55,9 @@ target_sources(zeno PRIVATE
   wrangle/TVW.cu
 )
 
+# utils
+target_sources(zeno PRIVATE
+  utils/IndexBuckets.cu
+  utils/Primitives.cu
+  utils/TopoUtils.cu
+)

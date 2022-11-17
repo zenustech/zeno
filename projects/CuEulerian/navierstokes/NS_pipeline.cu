@@ -1320,6 +1320,36 @@ struct ZSMaintainSparseGrid : INode {
                     spg._grid(chn, dstBno, cellno) = grid(chn, bno, cellno);
             }
         });
+
+        /// @brief adjust multigrid accordingly
+        // grid
+        nbs = spg.numBlocks();
+        auto &spg1 = nsgridPtr->spg1;
+        spg1.resize(pol, nbs);
+        auto &spg2 = nsgridPtr->spg2;
+        spg2.resize(pol, nbs);
+        auto &spg3 = nsgridPtr->spg3;
+        spg3.resize(pol, nbs);
+        // table
+        {
+            const auto &table = spg._table;
+            auto &table1 = spg1._table;
+            auto &table2 = spg2._table;
+            auto &table3 = spg3._table;
+            table1.reset(true);
+            table1._cnt.setVal(nbs);
+            table2.reset(true);
+            table2._cnt.setVal(nbs);
+            table3.reset(true);
+            table3._cnt.setVal(nbs);
+            pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
+                             tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
+                auto bcoord = table._activeKeys[i];
+                tab1.insertUnsafe(bcoord / 2, i, true);
+                tab2.insertUnsafe(bcoord / 4, i, true);
+                tab3.insertUnsafe(bcoord / 8, i, true);
+            });
+        }
     }
 
     void apply() override {

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Structures.hpp"
 #include "Utils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
