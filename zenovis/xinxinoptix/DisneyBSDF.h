@@ -1005,6 +1005,7 @@ static __inline__ __device__ vec3 proceduralSky2(vec3 dir, vec3 sunLightDir, flo
 
 // ####################################
 #define sun_color vec3(1., .7, .55)
+// #define sky_color mix(vec3(.0, .1, .4), vec3(.3, .6, .8), 1.0 - rd.y)
 static __inline__ __device__ vec3 render_sky_color(vec3 rd, vec3 sunLightDir)
 {
 	double sun_amount = max(dot(rd, normalize(sunLightDir)), 0.0);
@@ -1017,91 +1018,267 @@ struct ray {
 	vec3 origin;
 	vec3 direction;
 };
-struct sphere {
-	vec3 origin;
-	float radius;
-	int material;
-};
+// struct sphere {
+// 	vec3 origin;
+// 	float radius;
+// 	int material;
+// };
 struct hit_record {
 	float t;
 	int material_id;
 	vec3 normal;
 	vec3 origin;
 };
-static __inline__ __device__ void intersect_sphere(
-	ray r,
-	sphere s,
-    hit_record& hit
-){
-	vec3 oc = s.origin - r.origin;
-    float a  = dot(r.direction, r.direction);
-	float b = 2 * dot(oc, r.direction);
-	float c = dot(oc, oc) - s.radius * s.radius;
-    float discriminant = b*b - 4*a*c;
-	if (discriminant < 0) return;
-
-    float t = (-b - sqrt(discriminant) ) / (2.0*a);
-
-	hit.t = t;
-	hit.material_id = s.material;
-	hit.origin = r.origin + t * r.direction;
-	hit.normal = (hit.origin - s.origin) / s.radius;
-}
-static __inline__ __device__ float softlight(float base, float blend, float c)
+struct NoiseGenerator
 {
-    return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
-}
-static __inline__ __device__ vec3 hash33(vec3 p3)
-{
-	p3 = fract(p3 * vec3(.1031, .1030, .0973));
-    float d = dot(p3, vec3(p3.y+33.33, p3.x+33.33, p3.z+33.33));
-    p3 = vec3(
-        p3.x+d,
-        p3.y+d,
-        p3.z+d
-    );
-    return fract(vec3(
-        (p3.x+p3.y)*p3.z,
-        (p3.x+p3.x)*p3.y,
-        (p3.y+p3.x)*p3.x
-    ));
+	// Hash by David_Hoskins
+	#define UI0 1597334673U
+	#define UI1 3812015801U
+	#define UI2 uint2(UI0, UI1)
+	#define UI3 uint3(UI0, UI1, 2798796415U)
+	#define UIF (1.0 / float(0xffffffffU))
+	
+	__inline__ __device__ float3 hash33(float3 p)
+	{
+		// uint3 q = uint3(int3(p)) * UI3;
+		// q = (q.x ^ q.y ^ q.z)*UI3;
+		// return -1. + 2. * float3(q) * UIF;
+        p3 = fract(p3 * vec3(.1031, .1030, .0973));
+        float d = dot(p3, vec3(p3.y+33.33, p3.x+33.33, p3.z+33.33));
+        p3 += d;
+        return fract(vec3(
+            (p3.x+p3.y)*p3.z,
+            (p3.x+p3.x)*p3.y,
+            (p3.y+p3.x)*p3.x
+        ));
+	}
+	
+	__inline__ __device__ float remap(float x, float a, float b, float c, float d)
+	{
+	    return (((x - a) / (b - a)) * (d - c)) + c;
+	}
+	
+	// Gradient noise by iq (modified to be tileable)
+	__inline__ __device__ float gradientNoise(float3 x, float freq)
+	{
+	    // grid
+	    float3 p = floor(x);
+	    float3 w = frac(x);
+	    
+	    // quintic interpolant
+	    float3 u = w * w * w * (w * (w * 6. - 15.) + 10.);
+	
+	    // gradients
+	    float3 ga = hash33(fmod(p + float3(0., 0., 0.), freq));
+	    float3 gb = hash33(fmod(p + float3(1., 0., 0.), freq));
+	    float3 gc = hash33(fmod(p + float3(0., 1., 0.), freq));
+	    float3 gd = hash33(fmod(p + float3(1., 1., 0.), freq));
+	    float3 ge = hash33(fmod(p + float3(0., 0., 1.), freq));
+	    float3 gf = hash33(fmod(p + float3(1., 0., 1.), freq));
+	    float3 gg = hash33(fmod(p + float3(0., 1., 1.), freq));
+	    float3 gh = hash33(fmod(p + float3(1., 1., 1.), freq));
+	    
+	    // projections
+	    float va = dot(ga, w - float3(0., 0., 0.));
+	    float vb = dot(gb, w - float3(1., 0., 0.));
+	    float vc = dot(gc, w - float3(0., 1., 0.));
+	    float vd = dot(gd, w - float3(1., 1., 0.));
+	    float ve = dot(ge, w - float3(0., 0., 1.));
+	    float vf = dot(gf, w - float3(1., 0., 1.));
+	    float vg = dot(gg, w - float3(0., 1., 1.));
+	    float vh = dot(gh, w - float3(1., 1., 1.));
+		
+	    // interpolation
+	    return va + 
+	           u.x * (vb - va) + 
+	           u.y * (vc - va) + 
+	           u.z * (ve - va) + 
+	           u.x * u.y * (va - vb - vc + vd) + 
+	           u.y * u.z * (va - vc - ve + vg) + 
+	           u.z * u.x * (va - vb - ve + vf) + 
+	           u.x * u.y * u.z * (-va + vb + vc - vd + ve - vf - vg + vh);
+	}
+	
+	// Tileable 3D worley noise
+	__inline__ __device__ float worleyNoise(float3 uv, float freq)
+	{    
+	    float3 id = floor(uv);
+	    float3 p = frac(uv);
+	    
+	    float minDist = 10000.;
+	    for (float x = -1.; x <= 1.; ++x)
+	    {
+	        for(float y = -1.; y <= 1.; ++y)
+	        {
+	            for(float z = -1.; z <= 1.; ++z)
+	            {
+	                float3 offset = float3(x, y, z);
+	            	float3 h = hash33(fmod(id + offset, float3(freq, freq, freq))) * .5 + .5;
+	    			h += offset;
+	            	float3 d = p - h;
+	           		minDist = min(minDist, dot(d, d));
+	            }
+	        }
+	    }
+	    
+	    // inverted worley noise
+	    return 1. - minDist;
+	}
+	
+	// Fbm for Perlin noise based on iq's blog
+	__inline__ __device__ float perlinfbm(float3 p, float freq, int octaves)
+	{
+	    float G = exp2(-.85);
+	    float amp = 1.;
+	    float noise = 0.;
+	    for (int i = 0; i < octaves; ++i)
+	    {
+	        noise += amp * gradientNoise(p * freq, freq);
+	        freq *= 2.;
+	        amp *= G;
+	    }
+	    
+	    return noise;
+	}
+	
+	// Tileable Worley fbm inspired by Andrew Schneider's Real-Time Volumetric Cloudscapes
+	// chapter in GPU Pro 7.
+	__inline__ __device__ float worleyFbm(float3 p, float freq)
+	{
+	    return worleyNoise(p*freq, freq) * .625 +
+	    		worleyNoise(p*freq*2., freq*2.) * .25 +
+	    		worleyNoise(p*freq*4., freq*4.) * .125;
+	}
+};
 
+static __inline__ __device__ vec4 3DNoise(vec3 pos, float freq, float octaves)
+{
+    NoiseGenerator NG;
+    float4 col = 0;
+
+    // deal with vec3 pos 
+    // how? hit position!
+    // Eventually need to be saved as texture 128 * 128 * 128 
+    // check usage of cudaTextureObject_t
+
+    float pfbm= mix(1., NG.perlinfbm(pos, freq, octaves), .5);
+    pfbm = abs(pfbm * 2. - 1.); // billowy perlin noise
+    col.g += NG.worleyFbm(pos, freq);
+    col.b += NG.worleyFbm(pos, freq * 2.);
+    col.a += NG.worleyFbm(pos, freq * 4.);
+    col.r += NG.remap(pfbm, 0., 1., col.g, 1.); // perlin-worley
+
+    return col;
 }
-static __inline__ __device__ float worleyNoise(vec3 uv)
-{    
-    vec3 id = floor(uv);
-    vec3 p = fract(uv);
+// static const float4 STRATUS_GRADIENT = float4(0.02f, 0.05f, 0.09f, 0.11f);
+// static const float4 STRATOCUMULUS_GRADIENT = float4(0.02f, 0.2f, 0.48f, 0.625f);
+// static const float4 CUMULUS_GRADIENT = float4(0.01f, 0.0625f, 0.78f, 1.0f); 
+
+// // Fractional value for sample position in the cloud layer.
+// float GetHeightFractionForPoint(float3 InPosition, float2 InCloudMinMax)
+// {
+//     // Get global fractional position in cloud zone.
+//     const float HeightFraction = (InPosition.z - InCloudMinMax.x) / (InCloudMinMax.y - InCloudMinMax.x);
+//     return saturate(HeightFraction);
+// }
+
+// float4 MixGradients(float CloudType)
+// {
+//     float Stratus = 1.0f - saturate(CloudType * 2.0f);
+//     float Stratocumulus = 1.0f - abs(CloudType - 0.5f) * 2.0f;
+//     float Cumulus = saturate(CloudType - 0.5f) * 2.0f;
+//     return STRATUS_GRADIENT * Stratus + STRATOCUMULUS_GRADIENT * Stratocumulus + CUMULUS_GRADIENT * Cumulus;
+// }
+
+// float GetDensityHeightGradientForPoint(float HeightFraction, float CloudType)
+// {
+//     float4 CloudGradient = MixGradients(CloudType);
+//     return smoothstep(CloudGradient.x, CloudGradient.y, HeightFraction) - smoothstep(CloudGradient.z, CloudGradient.w, HeightFraction);
+// }
+
+float SampleCloudDensity(
+    vec3 pos, 
+    vec3 BoxMin, 
+    vec3 BoxMax, 
+    vec3 LocalTiling, 
+    bool bLowFrequencyOnly)
+{
+    float2 CloudMinMax = make_float2(BoxMin.y , BoxMax.y);
     
-    float minDist = 10000.;
-    for (float x = -1.; x <= 1.; ++x)
+    // Get the HeightFraction for use with blending noise types over height.
+    float HeightFraction = GetHeightFractionForPoint(P, CloudMinMax);
+    
+    // Get the density-height gradient using the density height function.
+    float DensityHeightGradient = GetDensityHeightGradientForPoint(HeightFraction, GetCloudType(WeatherData));
+
+    // Get the density-distance-to-edge gradient.
+    float DensityHorizontalGradient = GetDensityHorizontalGradientForPoint(P, BoxMin, BoxMax);
+
+    // Get the cloud mask.
+    float CloudMask = GetCloudMaskforPoint(BoxMin, BoxMax, P);
+    
+    // Cloud coverage is stored in WeatherData's red channel.
+    float CloudCoverage = GetCoverage(WeatherData);
+
+    // Apply position offset and tiling.
+    P += CloudOffset;
+    float3 TiledUV = P * LocalTiling * WorldTiling;
+    
+    // Read the low-frequency Perlin-Worley and Worley noises.
+    float4 LowFrequencyNoises = Texture3DSample(Cloud3DNoiseTextureA, Cloud3DNoiseTextureASampler, TiledUV);
+
+    // Build an FBM out of the low frequency Worley noises
+    // that can be used to add detail to the low-frequency
+    // Perlin-Worley noise.
+    float LowFrequencyFBM = (LowFrequencyNoises.g * 0.625f)
+                            + (LowFrequencyNoises.b * 0.25f)
+                            + (LowFrequencyNoises.a * 0.125f);
+
+    // Define the base cloud shape by dilating it with the
+    // low-frequency FBM made of Worley noise.
+    float BaseCloud = Remap(LowFrequencyNoises.r, -(1.0f - LowFrequencyFBM), 1.0f, 0.0f, 1.0f);
+    
+    // Apply the height function to the base cloud shape.
+    BaseCloud *= DensityHeightGradient;
+
+    // Use remap to apply the cloud coverage attribute.
+    float BaseCloudWithCoverage = Remap(BaseCloud, 1.0f - CloudCoverage, 1.0f, 0.0f, 1.0f);
+
+    // Multiply the result by the cloud coverage attribute so
+    // that smaller clouds are lighter and more aesthetically
+    // pleasing.
+    BaseCloudWithCoverage *= CloudCoverage;
+
+    // Apply distance to edge mask.
+    BaseCloudWithCoverage *= DensityHorizontalGradient;
+
+    // Apply cloud mask.
+    BaseCloudWithCoverage *= CloudMask;
+
+    float FinalCloud = BaseCloudWithCoverage;
+
+    if (!bLowFrequencyOnly)
     {
-        for(float y = -1.; y <= 1.; ++y)
-        {
-            for(float z = -1.; z <= 1.; ++z)
-            {
-                vec3 offset = vec3(x, y, z);
-            	vec3 h = hash33(id + offset) // modified hash
-                    * .5 + .5;
-    			h = vec3(
-                    h.x + offset.x,
-                    h.y + offset.y,
-                    h.z + offset.z
-                );
-            	vec3 d = p - h;
-           		minDist = min(minDist, dot(d, d));
-            }
-        }
+        // Sample high-frequency noises.
+        float4 HighFrequencyNoises = Texture3DSample(Cloud3DNoiseTextureB, Cloud3DNoiseTextureBSampler, TiledUV);
+
+        // Build high-frequency Worley noise FBM.
+        float HighFrequencyFBM = (HighFrequencyNoises.r * 0.625f)
+                    + (HighFrequencyNoises.g * 0.25f)
+                    + (HighFrequencyNoises.b * 0.125f);
+
+        // Transition from wispy shapes to billowy shapes over height.
+        float HighFrequencyNoiseModifier = lerp(HighFrequencyFBM, 1.0f - HighFrequencyFBM, saturate(HeightFraction * 10.0f));
+
+        // High-frequency Worley noises.
+        FinalCloud = Remap(BaseCloudWithCoverage, HighFrequencyNoiseModifier * 0.2f, 1.0f, 0.0f, 1.0f);
     }
-    
-    // inverted worley noise
-    return 1. - minDist;
+    return saturate(FinalCloud);
 }
-static __inline__ __device__ float remap(float x, float a, float b, float c, float d)
+
+float4 RayBoxDistance(ray r, float3 BoxMin, float3 BoxMax)
 {
-    return (((x - a) / (b - a)) * (d - c)) + c;
-}
-static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f, int layer = 6)
-{
+<<<<<<< HEAD
 	// signal
 	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
         vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
@@ -1145,14 +1322,35 @@ static __inline__ __device__ float light(
         );
             coef *= 2.0f;
 	}
+=======
+    const vec3 invraydir = 1 / r.r_dir;
+    
+    float3 t0 = BoxMin * invraydir;
+    float3 t1 = BoxMax * invraydir;
+    float3 tmin = min(t0, t1);
+    float3 tmax = max(t0, t1);
 
-	return T;
+    float dstA = max(max(tmin.x, tmin.y), tmin.z);
+    float dstB = min(tmax.x, min(tmax.y, tmax.z));
+
+    float StepSize = (BoxMax.y - BoxMin.y) / 40;
+    float depthcorrect = r.r_dir * StepSize;
+    float PlaneOffset = 1.0f - frac(dstA / depthcorrect);
+    
+    dstA += PlaneOffset * depthcorrect;
+    dstB = min(dstB, 4000.);
+    
+    float dstToBox = max(0.0f, dstA);
+    float dstInsideBox = max(0, dstB - dstToBox);
+    float3 entrypos = r.r_dir * dstToBox;
+>>>>>>> NickCloud
+
+    return float4(entrypos, dstInsideBox);
 }
-#define SIMULATE_LIGHT
-#define FAKE_LIGHT
-#define max_dist 1e8
+
 static __inline__ __device__ vec4 render_clouds(
     ray r, 
+<<<<<<< HEAD
     vec3 sunLightDir,
     vec3 windDir, 
     int steps, 
@@ -1241,6 +1439,98 @@ static __inline__ __device__ vec4 render_clouds(
             }
         }
     return vec4(C.x, C.y, C.z, alpha);
+=======
+    // vec3 sunLightDir,
+    // vec3 windDir, 
+    int SampleCount, 
+    // float coverage, 
+    // float thickness, 
+    float CloudDensity,
+    // float absorption, 
+    // float time
+)
+{
+    // ##########################################################
+	float3 BoxMin = make_float3(-1000.0, 1000.0, -1000.0);
+	float3 BoxMax = make_float3(1000.0, 2000.0, 1000.0);
+	const float CloudThickness = BoxMax.y - BoxMin.y;
+		
+	float4 RayBoxIntersection = RayBoxDistance(ray, BoxMin, BoxMax);
+	float3 EntryPosition = RayBoxIntersection.xyz;
+	float DistanceInsideBox = RayBoxIntersection.w;
+
+
+	int TargetSampleCount = 40 * (DistanceInsideBox / CloudThickness);
+	int ActualSampleCount = clamp(TargetSampleCount, 0, 100);
+	float ActualStepSize = DistanceInsideBox / ActualSampleCount;
+	float DensityAdjustment =  CloudDensity * TargetSampleCount / ActualSampleCount;
+
+    // ##########################################################
+    // int3 RandomPosition = int3(Parameters.SvPosition.xy, View.StateFrameIndexMod8);
+	// float Random =float(Rand3DPCG16(RandomPosition).x) / 0xffff;
+	// EntryPosition += CameraVector * ActualStepSize * Random * CloudJitter;
+
+    // ##########################################################
+    vec4 col;
+	float LightEnergy = 0.0f;
+	float Transmittance = 1.0f;
+
+	float CloudTest = 0.0f;
+	int ZeroDensitySampleCount = 0;
+
+	// Start the main ray-march loop
+	for (int i = 0; i < SampleCount; i++)
+	{
+		// CloudTest starts as zero so we always evaluate the
+		// last parameter to false, indicating a full sample.
+		if (CloudTest > 0.0f)
+		{
+			const float SampledDensity = saturate(
+                SampleCloudDensity(EntryPosition, BoxMin, BoxMax, LocalTiling, false) 
+                * DensityAdjustment
+            );
+				
+			// If we just samples a zero, increment the counter.
+			if (SampledDensity == 0.0f)
+			{
+				ZeroDensitySampleCount++;
+			}
+			// If we are doing an expensive sample that is still
+			// potentially in the cloud:
+			if (ZeroDensitySampleCount != 6)
+			{
+				if (SampledDensity > DensityThreshold)
+				{
+					float SampledDensityAloneCone = SampleCloudDensityAlongCone(EntryPosition, ShadowStepSize, LightVector, BoxMin, BoxMax, LocalTiling);
+					LightEnergy += GetLightEnergy(SampledDensityAloneCone, dot(-LightVector, CameraVector)) * SampledDensity * Transmittance;
+					Transmittance *= 1.0f - SampledDensity;
+				}
+			}
+			// If not, then set CloudTest to zero so that we go
+			// back to the cheap sample case.
+			else
+			{
+				CloudTest = 0.0f;
+				ZeroDensitySampleCount = 0;
+			}
+		}
+		else
+		{
+			// Sample density the cheap way, only using the
+			// low-frequency noise.
+			CloudTest = SampleCloudDensity(EntryPosition, BoxMin, BoxMax, LocalTiling, true);
+		}
+
+		EntryPosition += CameraVector * ActualStepSize;
+		if (Transmittance < 0.001f)
+		{
+			break;
+		}
+	}
+	col.r = LightEnergy;
+	col.a = 1 - Transmittance;
+	return col;
+>>>>>>> NickCloud
 }
 
 static __inline__ __device__ vec3 proceduralSky(
@@ -1251,7 +1541,7 @@ static __inline__ __device__ vec3 proceduralSky(
     float coverage, 
     float thickness,
     float absorption,
-    float t
+    float time
 ){
     vec3 col = vec3(0,0,0);
 
@@ -1261,10 +1551,16 @@ static __inline__ __device__ vec3 proceduralSky(
     vec3 sky = render_sky_color(r.direction, sunLightDir);
     if(r_dir.y<-0.001) return sky; // just being lazy
 
+<<<<<<< HEAD
     // vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
     // col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     // return col;
     return sky;
+=======
+    vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, time);
+    col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
+    return col;
+>>>>>>> NickCloud
 }
 
 static __inline__ __device__ vec3 hdrSky(
