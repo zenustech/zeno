@@ -54,4 +54,40 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
     return ret.getVal();
 }
 
+inline auto src_tag(ZenoSparseGrid* spg, zs::SmallString attr_) {
+    std::string attr = attr_.asString();
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+inline auto src_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) {
+    return src_tag(spg.get(), attr_);
+}
+
+inline auto dst_tag(ZenoSparseGrid* spg, zs::SmallString attr_) {
+    std::string attr = attr_.asString();
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        cur ^= 1;
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+inline auto dst_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) {
+    return dst_tag(spg.get(), attr_);
+}
+
+inline void update_cur(ZenoSparseGrid* spg, zs::SmallString attr_) {
+    std::string attr = attr_.asString();
+    int &cur = spg->readMeta<int &>(attr + "_cur");
+    cur ^= 1;
+}
+inline void update_cur(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) {
+    update_cur(spg.get(), attr_);
+}
+
 } // namespace zeno
