@@ -400,9 +400,9 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
 }
 
-ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *coVerts, const tiles_t *coEdges,
-                         const tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel,
-                         T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
+ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coEdges, tiles_t *coEles,
+                         T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap,
+                         int CGCap, T dHat_, T gravity)
     : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       nPP{zsprims[0]->getParticles().get_allocator(), 1}, tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0},
       PE{estNumCps, zs::memsrc_e::um, 0}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -559,10 +559,9 @@ struct MakeClothSystem : INode {
 
         auto cudaPol = zs::cuda_exec();
 
-        const typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
-        const typename ClothSystem::tiles_t *coEdges =
-            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
-        const typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
+        typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
+        typename ClothSystem::tiles_t *coEdges = zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
+        typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
 #if 0
         const typename ClothSystem::tiles_t *coSvs =
             zsboundary ? &(*zsboundary)[ZenoParticles::s_surfVertTag] : nullptr;

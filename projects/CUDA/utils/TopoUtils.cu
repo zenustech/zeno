@@ -3,8 +3,8 @@
 
 namespace zeno {
 
-void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, typename ZenoParticles::particles_t &sfs,
-                               typename ZenoParticles::particles_t &ses, typename ZenoParticles::particles_t &svs) {
+void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, ZenoParticles::particles_t &sfs,
+                               ZenoParticles::particles_t &ses, ZenoParticles::particles_t &svs) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     using vec2i = zs::vec<int, 2>;
@@ -121,6 +121,65 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, typename ZenoPartic
             sfs.tuple(dim_c<3>, "fp_inds", ti) = neighborIds.reinterpret_bits(float_c);
         });
     }
+}
+
+void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::particles_t &verts,
+                                 const zs::SmallString &xTag, std::size_t vOffset, ZenoParticles::particles_t &tris,
+                                 const zs::SmallString &triNrmTag, ZenoParticles::particles_t &lines,
+                                 const zs::SmallString &biNrmTag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    if (!verts.hasProperty(xTag))
+        throw std::runtime_error(fmt::format("missing property [{}] for vertex positions.", xTag.asString()));
+    if (!tris.hasProperty("inds"))
+        throw std::runtime_error("missing property [inds] for surface triangles.");
+    if (!lines.hasProperty("fe_inds") || !lines.hasProperty("inds"))
+        throw std::runtime_error("missing property [fe_inds]/[inds] for surface edges.");
+    if (!tris.hasProperty(triNrmTag))
+        throw std::runtime_error(fmt::format("missing property [{}] for surface triangles.", triNrmTag.asString()));
+    if (!lines.hasProperty(biNrmTag))
+        throw std::runtime_error(fmt::format("missing property [{}] for surface edges.", biNrmTag.asString()));
+
+    pol(range(tris.size()), [verts = proxy<space>(verts), xOffset = verts.getPropertyOffset(xTag), vOffset = vOffset,
+                             tris = proxy<space>({}, tris), triNrmTag] ZS_LAMBDA(int ti) mutable {
+        auto tri = tris.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+        auto t0 = verts.pack(dim_c<3>, xOffset, tri[0] + vOffset);
+        auto t1 = verts.pack(dim_c<3>, xOffset, tri[1] + vOffset);
+        auto t2 = verts.pack(dim_c<3>, xOffset, tri[2] + vOffset);
+        using vec3 = RM_CVREF_T(t0);
+        using T = typename vec3::value_type;
+        auto nrm = (t1 - t0).cross(t2 - t0);
+        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+            nrm /= zs::sqrt(len);
+        else
+            nrm = vec3::zeros();
+        tris.tuple(dim_c<3>, triNrmTag, ti) = nrm;
+    });
+
+    pol(range(lines.size()), [verts = proxy<space>(verts), xOffset = verts.getPropertyOffset(xTag), vOffset = vOffset,
+                              tris = proxy<space>({}, tris), lines = proxy<space>({}, lines), triNrmTag,
+                              biNrmTag] ZS_LAMBDA(int ei) mutable {
+        auto fe_inds = lines.pack(dim_c<2>, "fe_inds", ei).reinterpret_bits(int_c);
+        auto n0 = tris.pack(dim_c<3>, triNrmTag, fe_inds[0]);
+        auto n1 = tris.pack(dim_c<3>, triNrmTag, fe_inds[1]);
+        auto ne = (n0 + n1).normalized();
+
+        // be careful when extarcting vertex positions
+        auto e_inds = lines.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c) + vOffset;
+        auto e0 = verts.pack(dim_c<3>, xOffset, e_inds[0]);
+        auto e1 = verts.pack(dim_c<3>, xOffset, e_inds[1]);
+        auto e10 = e1 - e0;
+
+        using vec3 = RM_CVREF_T(e0);
+        using T = typename vec3::value_type;
+        auto nrm = ne.cross(e10);
+        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+            nrm /= zs::sqrt(len);
+        else
+            nrm = vec3::zeros();
+        lines.tuple(dim_c<3>, biNrmTag, ei) = nrm;
+    });
 }
 
 void compute_surface_edges(zs::CudaExecutionPolicy &pol, const ZenoParticles::particles_t &sfs,

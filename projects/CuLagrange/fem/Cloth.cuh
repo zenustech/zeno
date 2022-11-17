@@ -172,9 +172,9 @@ struct ClothSystem : IObject {
     }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *coVerts, const tiles_t *coEdges,
-                const tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
-                int PNCap, int CGCap, T dHat, T gravity);
+    ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coEdges, tiles_t *coEles, T dt,
+                std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat,
+                T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
 
@@ -185,6 +185,7 @@ struct ClothSystem : IObject {
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
+    void findBoundaryCellCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat);
 
     /// pipeline
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
@@ -244,7 +245,8 @@ struct ClothSystem : IObject {
     Ti sfOffset, seOffset, svOffset;
 
     // (scripted) collision objects
-    const tiles_t *coVerts, *coEdges, *coEles;
+    /// @note allow (bisector) normal update on-the-fly, thus made modifiable
+    tiles_t *coVerts, *coEdges, *coEles;
 
     tiles_t vtemp;      // solver data
     zs::Vector<T> temp; // as temporary buffer

@@ -1,4 +1,5 @@
 #include "Cloth.cuh"
+#include "TopoUtils.hpp"
 #include "collision_energy/vertex_face_sqrt_collision.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/geometry/Distance.hpp"
@@ -45,6 +46,125 @@ void ClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat)
 
 #define PROFILE_CD 0
 
+void ClothSystem::findBoundaryCellCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    update_surface_cell_normals(pol, vtemp, "xn", coOffset, *coEles, "nrm", *coEdges, "nrm");
+
+    pol.profile(PROFILE_CD);
+    /// pt
+    const auto &stbvh = bouStBvh;
+    auto &stfront = boundaryStFront;
+    pol(Collapse{stfront.size()},
+        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, *coEles), bouSes = proxy<space>({}, *coEdges),
+         exclTris = proxy<space>(exclBouSts), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh),
+         front = proxy<space>(stfront), csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT), dHat2 = dHat * dHat,
+         out_collisionEps = dHat, in_collisionEps = dHat * 10, voffset = coOffset,
+         frontManageRequired = frontManageRequired] __device__(int i) mutable {
+            auto vi = front.prim(i);
+            vi = reinterpret_bits<int>(svInds("inds", vi));
+            auto p = vtemp.pack(dim_c<3>, "xn", vi);
+            auto bv = bv_t{get_bounding_box(p - in_collisionEps, p + in_collisionEps)};
+            auto f = [&](int stI) {
+                if (exclTris[stI])
+                    return;
+                auto tri = eles.pack(dim_c<3>, "inds", stI).reinterpret_bits(int_c) + voffset;
+                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                    return;
+
+                auto triNrm = eles.pack(dim_c<3>, "nrm", stI);
+                const zs::vec<float, 3> ts[3] = {vtemp.pack(dim_c<3>, "xn", tri[0]), vtemp.pack(dim_c<3>, "xn", tri[1]),
+                                                 vtemp.pack(dim_c<3>, "xn", tri[2])};
+                const auto &t0 = ts[0];
+                const auto &t1 = ts[1];
+                const auto &t2 = ts[2];
+
+                auto seg = p - t0;
+                auto e01 = (t0 - t1).norm();
+                auto e02 = (t0 - t2).norm();
+                auto e12 = (t1 - t2).norm();
+                float barySum = (float)1.0;
+                float distance = COLLISION_UTILS::pointTriangleDistance(t0, t1, t2, p, barySum);
+
+                auto collisionEps = seg.dot(triNrm) > 0 ? out_collisionEps : in_collisionEps;
+
+                if (barySum > 2)
+                    return;
+                if (distance > collisionEps)
+                    return;
+
+                // if the triangle cell is too degenerate
+                auto get_bisector_orient = [&](int j) {
+                    auto ej = reinterpret_bits<int>(eles("fe_inds", j, stI));
+                    auto line = bouSes.pack(dim_c<2>, "inds", ej).reinterpret_bits(int_c) + voffset;
+                    auto tline = zs::vec<int, 2>{tri[j], tri[(j + 1) % 3]};
+                    auto biNrm = bouSes.pack(dim_c<3>, "nrm", ej);
+                    if (tline[1] == line[0] && tline[0] == line[1])
+                        biNrm *= -1;
+                    return biNrm;
+                };
+                if (!COLLISION_UTILS::pointProjectsInsideTriangle(t0, t1, t2, p))
+                    for (int i = 0; i != 3; ++i) {
+                        auto bisector_normal = get_bisector_orient(i);
+                        if (bisector_normal.dot(seg) < 0)
+                            return;
+                        if (i != 2)
+                            seg = p - ts[i + 1];
+                    }
+                // now the points is inside the cell
+                csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+
+                // dist = seg.dot(triNrm);
+            };
+            if (frontManageRequired)
+                bvh.iter_neighbors(bv, i, front, f);
+            else
+                bvh.iter_neighbors(bv, front.node(i), f);
+        });
+    if (frontManageRequired)
+        stfront.reorder(pol);
+    /// ee
+    if (enableContactEE) {
+        const auto &sebvh = bouSeBvh;
+        auto &sefront = boundarySeFront;
+        pol(Collapse{sefront.size()},
+            [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, *coEdges), exclSes = proxy<space>(exclSes),
+             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), front = proxy<space>(sefront),
+             csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat2 = dHat * dHat, thickness = dHat,
+             voffset = coOffset, frontManageRequired = frontManageRequired] __device__(int i) mutable {
+                auto sei = front.prim(i);
+                if (exclSes[sei])
+                    return;
+                auto eiInds = seInds.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c);
+                auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                auto [mi, ma] = get_bounding_box(v0, v1);
+                auto bv = bv_t{mi - thickness, ma + thickness};
+                auto f = [&](int sej) {
+                    if (voffset == 0 && sei < sej) // only check this for self intersection
+                        return;
+                    auto ejInds = sedges.pack(dim_c<2>, "inds", sej).reinterpret_bits(int_c) + voffset;
+                    if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                        eiInds[1] == ejInds[1])
+                        return;
+                    auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
+                    auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
+
+                    // ee_distance_type(v0, v1, v2, v3);
+                    // csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                };
+                if (frontManageRequired)
+                    bvh.iter_neighbors(bv, i, front, f);
+                else
+                    bvh.iter_neighbors(bv, front.node(i), f);
+            });
+        if (frontManageRequired)
+            sefront.reorder(pol);
+    }
+    pol.profile(false);
+}
+
 void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -71,7 +191,6 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
                 auto tri = eles.pack(dim_c<3>, "inds", stI).reinterpret_bits(int_c) + voffset;
                 if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                     return;
-                // ccd
                 auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
                 auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
                 auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
@@ -174,7 +293,6 @@ void ClothSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T d
                 if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
                     eiInds[1] == ejInds[1])
                     return;
-                // ccd
                 auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
 
