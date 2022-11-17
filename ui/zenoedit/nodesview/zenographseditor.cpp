@@ -705,6 +705,7 @@ parse_inputs(rapidxml::xml_node<>* child) {
 }
 void ZenoGraphsEditor::importMaterialX() {
     QString filename = "E:/Wallpaper_SHDR.mtlx";
+    auto dir_path = QFileInfo(filename).absoluteDir().absolutePath().toStdString();
     QFile file(filename);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     if (!ret) {
@@ -729,7 +730,9 @@ void ZenoGraphsEditor::importMaterialX() {
     std::unordered_map<std::string, ZENO_HANDLE> extract_out_socket;
     std::unordered_map<std::string, ZENO_HANDLE> image_index;
     std::unordered_map<std::string, ZENO_HANDLE> image_node;
+    std::unordered_map<std::string, ZVARIANT> constants;
     std::vector<std::tuple<std::string, std::string, std::string>> edges;
+    std::vector<std::tuple<std::string, std::string, std::string>> ss_edges;
 
     auto hGraph = Zeno_GetGraph("main");
 //    auto xNode = Zeno_AddNode(hGraph, "FileReadString");
@@ -761,6 +764,7 @@ void ZenoGraphsEditor::importMaterialX() {
     for (auto child = standard_surface->first_node(); child != nullptr; child = child->next_sibling()) {
         std::string name;
         std::string type;
+        std::string link_node;
         QString value;
         for (xml_attribute<> *attr = child->first_attribute(); attr; attr = attr->next_attribute()) {
             std::string attr_name = attr->name();
@@ -773,12 +777,17 @@ void ZenoGraphsEditor::importMaterialX() {
             else if (attr_name == "value") {
                 value = attr->value();
             }
-        }
-        if (value.isEmpty()) {
-            continue;
+            else if (attr_name == "output") {
+                link_node = attr->value();
+            }
         }
 //        zeno::log_info("{}:{}:{}", name, type, value.toStdString());
         if (name_map.count(name) == 0) {
+            zeno::log_info("unsupported std_surf socket: {}", name);
+            continue;
+        }
+        if (value.isEmpty()) {
+            ss_edges.emplace_back("standard_surface", name_map[name], link_node);
             continue;
         }
         std::string socket_name = name_map[name];
@@ -843,10 +852,14 @@ void ZenoGraphsEditor::importMaterialX() {
         auto ms = parse_inputs(child);
         if (start_name == "constant") {
             if (type == "float") {
-                auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
-                node_id_mapping[name] = hNode;
-                Zeno_SetInputDefl(hNode, "in1", ms["value"]["value"]);
-                Zeno_SetInputDefl(hNode, "op", std::string("copy"));
+                constants[name] = std::stof(ms["value"]["value"]);
+//                auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
+//                node_id_mapping[name] = hNode;
+//                Zeno_SetInputDefl(hNode, "in1", ms["value"]["value"]);
+//                Zeno_SetInputDefl(hNode, "op", std::string("copy"));
+            }
+            else {
+                zeno::log_error("err unsupported constant {} type {}", name, type);
             }
         }
         else if (unary.count(start_name)) {
@@ -910,7 +923,8 @@ void ZenoGraphsEditor::importMaterialX() {
             auto hNode = Zeno_AddNode(hGraph, "MakeTexture2D");
             node_id_mapping[name] = hNode;
             image_index[name] = image_index.size();
-            Zeno_SetInputDefl(hNode, "path", ms["file"]["value"]);
+            std::string file_path = zeno::format("{}/{}", dir_path, ms["file"]["value"]);
+            Zeno_SetInputDefl(hNode, "path", file_path);
             edges.emplace_back(name, "coord", ms["texcoord"]["nodename"]);
         }
         else {
@@ -961,11 +975,27 @@ void ZenoGraphsEditor::importMaterialX() {
         if (image_node.count(i_node)) {
             hInNode = image_node[i_node];
         }
-
+        if (constants.count(o_node)) {
+            Zeno_SetInputDefl(hInNode, i_socket, constants[o_node]);
+            continue;
+        }
         ZENO_ERROR err = Zeno_AddLink(hOutNode, out_socket, hInNode, i_socket);
         if (err) {
             zeno::log_info("{}, err {}, edge {} {} {}", index, err, i_node, i_socket, o_node);
         }
         index++;
+    }
+    int ss_index = 0;
+    for (auto [i_node, i_socket, o_node] : ss_edges) {
+        std::string out_socket = "out";
+
+        ZENO_HANDLE hOutNode = node_id_mapping[o_node];
+        ZENO_HANDLE hInNode = node_id_mapping[i_node];
+
+        ZENO_ERROR err = Zeno_AddLink(hOutNode, out_socket, hInNode, i_socket);
+        if (err) {
+            zeno::log_info("ss {}, err {}, edge {} {} {}", ss_index, err, i_node, i_socket, o_node);
+        }
+        ss_index++;
     }
 }
