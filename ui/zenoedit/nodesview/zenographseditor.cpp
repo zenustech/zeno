@@ -725,8 +725,10 @@ void ZenoGraphsEditor::importMaterialX() {
         return;
     }
 
-    std::unordered_map<std::string, unsigned int> node_id_mapping;
-    std::unordered_map<std::string, unsigned int> extract_out_socket;
+    std::unordered_map<std::string, ZENO_HANDLE> node_id_mapping;
+    std::unordered_map<std::string, ZENO_HANDLE> extract_out_socket;
+    std::unordered_map<std::string, ZENO_HANDLE> image_index;
+    std::unordered_map<std::string, ZENO_HANDLE> image_node;
     std::vector<std::tuple<std::string, std::string, std::string>> edges;
 
     auto hGraph = Zeno_GetGraph("main");
@@ -900,15 +902,37 @@ void ZenoGraphsEditor::importMaterialX() {
             // ignore
         }
         else if (start_name == "texcoord") {
-            // ignore
+            auto hNode = Zeno_AddNode(hGraph, "ShaderInputAttr");
+            Zeno_SetInputDefl(hNode, "attr", std::string("uv"));
+            node_id_mapping[name] = hNode;
         }
         else if (start_name == "image") {
             auto hNode = Zeno_AddNode(hGraph, "MakeTexture2D");
             node_id_mapping[name] = hNode;
+            image_index[name] = image_index.size();
             Zeno_SetInputDefl(hNode, "path", ms["file"]["value"]);
+            edges.emplace_back(name, "coord", ms["texcoord"]["nodename"]);
         }
         else {
             zeno::log_info("unsupported node: {}", start_name);
+        }
+    }
+
+    // specially deal with image node
+    {
+        auto nMakeSmallList = Zeno_AddNode(hGraph, "MakeSmallList");
+        auto nStandardSurface = node_id_mapping["standard_surface"];
+        Zeno_AddLink(nMakeSmallList, "list", nStandardSurface, "tex2dList");
+        for (const auto& [name, index]: image_index) {
+            ZENO_ERROR err = Zeno_AddLink(node_id_mapping[name], "tex", nMakeSmallList, zeno::format("obj{}", index));
+            if (err) {
+                zeno::log_error("Image {}, {}", name, index);
+            }
+
+            auto nShaderTexture2D = Zeno_AddNode(hGraph, "ShaderTexture2D");
+            Zeno_SetInputDefl(nShaderTexture2D, "texid", (int)index);
+
+            image_node[name] = nShaderTexture2D;
         }
     }
 
@@ -929,7 +953,16 @@ void ZenoGraphsEditor::importMaterialX() {
             i_socket = extract_in_socket_map[i_socket];
         }
 
-        ZENO_ERROR err = Zeno_AddLink(node_id_mapping[o_node], out_socket, node_id_mapping[i_node], i_socket);
+        ZENO_HANDLE hOutNode = node_id_mapping[o_node];
+        ZENO_HANDLE hInNode = node_id_mapping[i_node];
+        if (image_node.count(o_node)) {
+            hOutNode = image_node[o_node];
+        }
+        if (image_node.count(i_node)) {
+            hInNode = image_node[i_node];
+        }
+
+        ZENO_ERROR err = Zeno_AddLink(hOutNode, out_socket, hInNode, i_socket);
         if (err) {
             zeno::log_info("{}, err {}, edge {} {} {}", index, err, i_node, i_socket, o_node);
         }
