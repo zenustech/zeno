@@ -472,12 +472,12 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
 
         // output buffer to image
-        auto* img_pixels = new PixelInfo[w * h];
-        CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB_INTEGER, GL_UNSIGNED_INT, img_pixels));
-        auto* ids = new unsigned int[w * h];
-        for (int i=0; i<w*h; i++)
-            ids[i] = img_pixels[i].obj_id;
-        load_buffer_to_image(ids, w, h);
+//        auto* img_pixels = new PixelInfo[w * h];
+//        CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB_INTEGER, GL_UNSIGNED_INT, img_pixels));
+//        auto* ids = new unsigned int[w * h];
+//        for (int i=0; i<w*h; i++)
+//            ids[i] = img_pixels[i].obj_id;
+//        load_buffer_to_image(ids, w, h);
 
         // unbind fbo
         CHECK_GL(glReadBuffer(GL_NONE));

@@ -86,6 +86,7 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
         if (selected.empty()) {
             for (const auto& s : scene->selected) on_delete(s);
             scene->selected.clear();
+            return;
         }
         if (scene->selected.count(selected) > 0) {
             scene->selected.erase(selected);
@@ -96,7 +97,10 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
         }
     }
     else {
-        if (selected.empty()) scene->selected_elements.clear();
+        if (selected.empty()) {
+            scene->selected_elements.clear();
+            return;
+        }
         qDebug() << selected.c_str();
         auto t = selected.find_last_of(':');
         auto obj_id = selected.substr(0, t);
@@ -122,8 +126,11 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     // auto picker = zenovis::makeFrameBufferPicker(scene);
+    // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ")\nselected " << selected.c_str();
+
+    if (selected.empty()) return;
 
     // parse selected string
     std::regex reg(" ");

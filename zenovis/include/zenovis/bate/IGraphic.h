@@ -88,4 +88,5 @@ std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f cent
 std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center, float scale);
 
 std::unique_ptr<IPicker> makeFrameBufferPicker(Scene *scene);
+std::unique_ptr<IGraphicDraw> makePrimitiveHighlight(Scene* scene);
 } // namespace zenovis
