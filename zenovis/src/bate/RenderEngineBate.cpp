@@ -13,6 +13,7 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
+    std::unique_ptr<IGraphicDraw> primHighlight;
     Scene *scene;
 
     auto setupState() {
@@ -32,6 +33,8 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
         hudGraphics.push_back(makeGraphicSelectBox(scene));
+
+        primHighlight = makePrimitiveHighlight(scene);
     }
 
     void update() override {
@@ -54,6 +57,7 @@ struct RenderEngineBate : RenderEngine {
                 hudgra->draw();
             }
         }
+        primHighlight->draw();
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
