@@ -299,7 +299,12 @@ void VParamItem::exportJson(RAPIDJSON_WRITER& writer)
                 QStringList items = pros["items"].toStringList();
 
                 writer.Key("items");
-                writer.String(items.join("\n").toUtf8());
+                writer.StartArray();
+                for (QString item : items)
+                {
+                    writer.String(item.toUtf8());
+                }
+                writer.EndArray();
             }
             else if (ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HSPINBOX ||
                 ctrl == CONTROL_HSLIDER)

@@ -47,10 +47,10 @@ private slots:
     void onHintEditFinished();
     void onParamTreeDeleted();
     void onChooseParamClicked();
-    void onComboItemsEditFinished();
     void onMinEditFinished();
     void onMaxEditFinished();
     void onStepEditFinished();
+    void onComboTableItemsCellChanged(int row, int column);
 
 private:
     ViewParamModel* m_proxyModel;

@@ -116,10 +116,40 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, c
     connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
 
     connect(m_ui->btnChooseCoreParam, SIGNAL(clicked(bool)), this, SLOT(onChooseParamClicked()));
-    connect(m_ui->editComboItems, SIGNAL(editingFinished()), this, SLOT(onComboItemsEditFinished()));
     connect(m_ui->editMin, SIGNAL(editingFinished()), this, SLOT(onMinEditFinished()));
     connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
     connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
+
+    m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
+    connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+}
+
+void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
+{
+    //dump to item.
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    QStringList lst;
+    for (int r = 0; r < m_ui->itemsTable->rowCount(); r++)
+    {
+        QTableWidgetItem* pItem = m_ui->itemsTable->item(r, 0);
+        if (pItem && !pItem->text().isEmpty())
+            lst.append(pItem->text());
+    }
+    if (lst.isEmpty())
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    properties["items"] = lst;
+    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+    m_proxyModel->setData(layerIdx, lst[0], ROLE_PARAM_VALUE);
+
+    if (row == m_ui->itemsTable->rowCount() - 1)
+    {
+        m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
+    }
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -165,13 +195,24 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         m_ui->editCoreParamName->setText(coreName);
         m_ui->editCoreParamType->setText(coreType);
+        m_ui->itemsTable->setRowCount(0);
 
         if (ctrl == CONTROL_ENUM)
         {
             CONTROL_PROPERTIES pros = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
             if (pros.find("items") != pros.end())
             {
-                m_ui->editComboItems->setText(pros["items"].toStringList().join("\n"));
+                const QStringList& items = pros["items"].toStringList();
+                m_ui->itemsTable->setRowCount(items.size() + 1);
+                for (int r = 0; r < items.size(); r++)
+                {
+                    QTableWidgetItem* newItem = new QTableWidgetItem(items[r]);
+                    m_ui->itemsTable->setItem(r, 0, newItem);
+                }
+            }
+            else
+            {
+                m_ui->itemsTable->setRowCount(1);
             }
             m_ui->stackProperties->setCurrentIndex(1);
         }
@@ -268,22 +309,6 @@ void ZEditParamLayoutDlg::onLabelEditFinished()
 void ZEditParamLayoutDlg::onHintEditFinished()
 {
 
-}
-
-void ZEditParamLayoutDlg::onComboItemsEditFinished()
-{
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    const QString& items = m_ui->editComboItems->text();
-    QStringList lst = items.split("\n");
-    if (lst.isEmpty())
-        return;
-
-    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    properties["items"] = lst;
-    m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
 
 void ZEditParamLayoutDlg::onMinEditFinished()
