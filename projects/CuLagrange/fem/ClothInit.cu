@@ -569,9 +569,9 @@ struct MakeClothSystem : INode {
 
         if (zsboundary) {
             auto pol = cuda_exec();
-            compute_surface_neighbors(pol, zsboundary->getQuadraturePoints(),
-                                      (*zsboundary)[ZenoParticles::s_surfEdgeTag],
-                                      (*zsboundary)[ZenoParticles::s_surfVertTag]);
+            compute_surface_neighbors(pol, *coEles, *coEdges, (*zsboundary)[ZenoParticles::s_surfVertTag]);
+            coEles->append_channels(pol, {{"nrm", 3}});
+            coEdges->append_channels(pol, {{"nrm", 3}});
         }
 
         /// solver parameters

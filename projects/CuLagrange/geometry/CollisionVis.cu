@@ -579,13 +579,16 @@ namespace zeno {
 
             //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
             // });
-
+#if 0
+            update_surface_cell_normals(cudaExec, const_cast<ZenoParticles::particles_t&>(verts), "x", 0, const_cast<ZenoParticles::particles_t&>(tris), "nrm", lines, ceNrmTag);
+#else
             COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
                 verts,"x",
                 lines,
                 tris,
                 tris,"nrm",
                 lines,ceNrmTag);
+#endif
 
 
             set_output("ZSParticles",zsparticles);
