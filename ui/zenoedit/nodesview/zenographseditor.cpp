@@ -704,7 +704,7 @@ parse_inputs(rapidxml::xml_node<>* child) {
     return ms;
 }
 void ZenoGraphsEditor::importMaterialX() {
-    QString filename = "E:/Wallpaper_SHDR.mtlx";
+    QString filename = "D:/MDRN_WLP_007_1k_8b/Wallpaper_SHDR.mtlx";
     auto dir_path = QFileInfo(filename).absoluteDir().absolutePath().toStdString();
     QFile file(filename);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -742,6 +742,7 @@ void ZenoGraphsEditor::importMaterialX() {
     /////////////////////////////////////////////////////////////////////////////////////////
     auto hNode = Zeno_AddNode(hGraph, "ShaderFinalize");
     node_id_mapping["standard_surface"] = hNode;
+    Zeno_SetView(hNode, true);
 
     std::map<std::string, std::string> name_map {
             {"metalness", "metallic"},
@@ -759,7 +760,11 @@ void ZenoGraphsEditor::importMaterialX() {
             {"thin_walled", "thin"},
             {"normal", "normal"},
             {"opacity", "opacity"},
+            {"base_color", "basecolor"},
     };
+
+    auto std_surf_name = parse_input(standard_surface)["name"];
+    Zeno_SetInputDefl(hNode, "mtlid", std_surf_name);
 
     for (auto child = standard_surface->first_node(); child != nullptr; child = child->next_sibling()) {
         std::string name;
@@ -853,10 +858,6 @@ void ZenoGraphsEditor::importMaterialX() {
         if (start_name == "constant") {
             if (type == "float") {
                 constants[name] = std::stof(ms["value"]["value"]);
-//                auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
-//                node_id_mapping[name] = hNode;
-//                Zeno_SetInputDefl(hNode, "in1", ms["value"]["value"]);
-//                Zeno_SetInputDefl(hNode, "op", std::string("copy"));
             }
             else {
                 zeno::log_error("err unsupported constant {} type {}", name, type);
@@ -887,23 +888,29 @@ void ZenoGraphsEditor::importMaterialX() {
             Zeno_SetInputDefl(hNode, "op", std::string("copy"));
             edges.emplace_back(name, "in1", ms["in"]["nodename"]);
         }
-//        else if (start_name == "clamp") {
-//            auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
-//            node_id_mapping[name] = hNode;
-//            Zeno_SetInputDefl(hNode, "op", std::string("clamp"));
-//        }
-//        else if (start_name == "smoothstep") {
-//            auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
-//            node_id_mapping[name] = hNode;
-//            Zeno_SetInputDefl(hNode, "op", std::string("smoothstep"));
-//        }
+        else if (start_name == "clamp") {
+            auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
+            node_id_mapping[name] = hNode;
+            Zeno_SetInputDefl(hNode, "op", std::string("clamp"));
+            edges.emplace_back(name, "in1", ms["in"]["nodename"]);
+            edges.emplace_back(name, "in2", ms["low"]["nodename"]);
+            edges.emplace_back(name, "in3", ms["high"]["nodename"]);
+        }
+        else if (start_name == "smoothstep") {
+            auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
+            node_id_mapping[name] = hNode;
+            Zeno_SetInputDefl(hNode, "op", std::string("smoothstep"));
+            edges.emplace_back(name, "in1", ms["in"]["nodename"]);
+            edges.emplace_back(name, "in2", ms["low"]["nodename"]);
+            edges.emplace_back(name, "in3", ms["high"]["nodename"]);
+        }
         else if (start_name == "mix") {
             auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
             node_id_mapping[name] = hNode;
             Zeno_SetInputDefl(hNode, "op", std::string("mix"));
-            edges.emplace_back(name, "fg", ms["fg"]["nodename"]);
-            edges.emplace_back(name, "bg", ms["bg"]["nodename"]);
-            edges.emplace_back(name, "mix", ms["mix"]["nodename"]);
+            edges.emplace_back(name, "in1", ms["fg"]["nodename"]);
+            edges.emplace_back(name, "in2", ms["bg"]["nodename"]);
+            edges.emplace_back(name, "in3", ms["mix"]["nodename"]);
         }
         else if (start_name == "extract") {
             auto hNode = Zeno_AddNode(hGraph, "ShaderExtractVec");
@@ -944,17 +951,12 @@ void ZenoGraphsEditor::importMaterialX() {
             }
 
             auto nShaderTexture2D = Zeno_AddNode(hGraph, "ShaderTexture2D");
-            Zeno_SetInputDefl(nShaderTexture2D, "texid", (int)index);
+            Zeno_SetInputDefl(nShaderTexture2D, "texId", (int)index);
 
             image_node[name] = nShaderTexture2D;
         }
     }
 
-    std::map<std::string, std::string> extract_in_socket_map {
-            {"fg", "in1"},
-            {"bg", "in2"},
-            {"mix", "in3"},
-    };
     int index = 0;
     for (auto [i_node, i_socket, o_node] : edges) {
         std::string out_socket = "out";
@@ -962,9 +964,6 @@ void ZenoGraphsEditor::importMaterialX() {
             auto i = extract_out_socket[o_node];
             out_socket.clear();
             out_socket.push_back("xyz"[i]);
-        }
-        if (extract_in_socket_map.count(i_socket)) {
-            i_socket = extract_in_socket_map[i_socket];
         }
 
         ZENO_HANDLE hOutNode = node_id_mapping[o_node];
