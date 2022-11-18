@@ -2,8 +2,12 @@
 #pragma once
 
 #ifndef __CUDACC_RTC__ 
-        #include "optixVolume.h"
+    #include "optixVolume.h"
+#else
+    // #include "volume.h"
 #endif
+
+#include "volume.h"
 
 enum RayType
 {
@@ -33,6 +37,8 @@ struct CameraInfo
     float aperture;
 };
 
+const unsigned int common_object_mask = 1;
+const unsigned int volume_object_mask = 2;
 
 struct Params
 {
@@ -88,4 +94,7 @@ struct HitGroupData
     unsigned short* lightMark;
     float4* uniforms;
     cudaTextureObject_t textures[32];
+
+    VolumeGeometryData geometry_data;
+    VolumeMaterialData material_data;
 };

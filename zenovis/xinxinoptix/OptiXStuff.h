@@ -1,4 +1,5 @@
 #pragma once
+
 #include <glad/glad.h>  // Needs to be included before gl_interop
 
 #include <cuda_gl_interop.h>
@@ -32,6 +33,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
     std::cerr << "[" << std::setw( 2 ) << level << "][" << std::setw( 12 ) << tag << "]: " << message << "\n";
@@ -49,6 +51,8 @@ inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 
 inline raii<OptixModule>                    volume_module            ;
+inline raii<OptixProgramGroup>              volume_radiance_group    ;
+inline raii<OptixProgramGroup>              volume_occlusion_group   ;
 
 ////end material independent stuffs
 inline void createContext()
@@ -64,10 +68,10 @@ inline void createContext()
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
     pipeline_compile_options = {};
     pipeline_compile_options.usesMotionBlur        = false;
-    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
     pipeline_compile_options.numPayloadValues      = 2;
-    pipeline_compile_options.numAttributeValues    = 2;
-    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+    pipeline_compile_options.numAttributeValues    = 0;
+    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
@@ -77,9 +81,8 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
 
-    
 
     char log[2048];
     size_t sizeof_log = sizeof( log );
@@ -142,8 +145,8 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
-        desc.miss.entryFunctionName = nullptr;
+        // desc.miss.module            = _module;
+        // desc.miss.entryFunctionName = "__miss__occlusion";
         sizeof_log                  = sizeof( log );
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
@@ -153,6 +156,46 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &sizeof_log,
                     &occlusion_miss_group
                     ) );
+    }
+
+    //
+    // Volume hit group
+    //
+
+    {
+        OptixProgramGroupDesc hit_prog_group_desc = {};
+        hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        hit_prog_group_desc.hitgroup.moduleCH = _module;
+        hit_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__radiance_volume";
+        hit_prog_group_desc.hitgroup.moduleAH = nullptr;
+        hit_prog_group_desc.hitgroup.entryFunctionNameAH = nullptr;
+        hit_prog_group_desc.hitgroup.moduleIS = _module;
+        hit_prog_group_desc.hitgroup.entryFunctionNameIS = "__intersection__volume";
+        OPTIX_CHECK_LOG( optixProgramGroupCreate(
+            context,
+            &hit_prog_group_desc,
+            1,                             // num program groups
+            &program_group_options,
+            log, &sizeof_log,
+            &volume_radiance_group
+        ) );
+
+        memset( &hit_prog_group_desc, 0, sizeof( OptixProgramGroupDesc ) );
+        hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        hit_prog_group_desc.hitgroup.moduleCH = _module;
+        hit_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__occlusion_volume";
+        hit_prog_group_desc.hitgroup.moduleAH = nullptr;
+        hit_prog_group_desc.hitgroup.entryFunctionNameAH = nullptr;
+        hit_prog_group_desc.hitgroup.moduleIS = _module;
+        hit_prog_group_desc.hitgroup.entryFunctionNameIS = "__intersection__volume";
+        OPTIX_CHECK_LOG( optixProgramGroupCreate(
+            context,
+            &hit_prog_group_desc,
+            1,                             // num program groups
+            &program_group_options,
+            log, &sizeof_log,
+            &volume_occlusion_group
+        ) );
     }     
 }
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
@@ -448,19 +491,26 @@ inline std::vector<rtMatShader> rtMaterialShaders;//just have an arry of shaders
 inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
-    pipeline_link_options.maxTraceDepth            = 2;
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+    pipeline_link_options.maxTraceDepth            = 4;
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2;
+    int num_progs = 3 + rtMaterialShaders.size() * 2 + 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
+    
     for(int i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;
     }
+
+    int offset = num_progs-2;
+
+    program_groups[offset] = volume_radiance_group;
+    program_groups[offset+1] = volume_occlusion_group;
+
     char   log[2048];
     size_t sizeof_log = sizeof( log );
     OPTIX_CHECK_LOG( optixPipelineCreate(
@@ -482,9 +532,13 @@ inline void createPipeline()
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_occlusion_hit_group, &stack_sizes ) );
     }
-    uint32_t max_trace_depth = 2;
+
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( volume_radiance_group,    &stack_sizes ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( volume_occlusion_group,  &stack_sizes ) );
+
+    uint32_t max_trace_depth = 4;
     uint32_t max_cc_depth = 0;
-    uint32_t max_dc_depth = 0;
+    uint32_t max_dc_depth = 4;
     uint32_t direct_callable_stack_size_from_traversal;
     uint32_t direct_callable_stack_size_from_state;
     uint32_t continuation_stack_size;
@@ -498,7 +552,7 @@ inline void createPipeline()
                 &continuation_stack_size
                 ) );
 
-    const uint32_t max_traversal_depth = 1;
+    const uint32_t max_traversal_depth = 2;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
                 direct_callable_stack_size_from_traversal,
@@ -506,6 +560,7 @@ inline void createPipeline()
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
+                
     delete[]program_groups;
 
 }

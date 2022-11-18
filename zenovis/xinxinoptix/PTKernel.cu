@@ -6,6 +6,16 @@
 #include "TraceStuff.h"
 #include "DisneyBSDF.h"
 
+#include "volume.h"
+
+// #include <optix.h>
+// #include <vector_types.h>
+// #include <cuda/random.h>
+// #include <cuda/helpers.h>
+
+#include <nanovdb/util/Ray.h>
+#include <nanovdb/util/HDDA.h>
+
 extern "C" {
 __constant__ Params params;
 
@@ -229,4 +239,322 @@ extern "C" __global__ void __miss__radiance()
         prd->done = true;
     }
 
+}
+
+extern "C" __global__ void __miss__occlusion()
+{
+    auto *prd = getPRD();
+    prd->transmittanceVDB = 1.0f;
+    //optixSetPayload_0( __float_as_uint( 1.0f ) ); // report transmittance
+
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    if (ix == 0 && iy == 0) {
+        printf("__miss__occlusion \n");
+    }
+}
+
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
+
+    auto *prd = getPRD();
+    prd->transmittanceVDB = 0.0;
+
+
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    if (ix == 0 && iy == 0) {
+        printf("__closesthit__occlusion \n");
+    }
+}
+
+//
+// Masked
+//
+
+static __forceinline__ __device__ void traceRadianceMasked(
+	OptixTraversableHandle handle,
+	float3                 ray_origin,
+	float3                 ray_direction,
+	float                  tmin,
+	float                  tmax,
+	uint8_t                mask,
+	RadiancePRD           *prd)
+{
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
+
+    optixTrace(
+            handle,
+            ray_origin, ray_direction,
+            tmin,
+            tmax,
+            0.0f,                     // rayTime
+            (mask),
+            OPTIX_RAY_FLAG_NONE,
+            RAY_TYPE_RADIANCE,        // SBT offset
+            RAY_TYPE_COUNT,           // SBT stride
+            RAY_TYPE_RADIANCE,        // missSBTIndex
+            u0, u1);
+}
+
+
+static __forceinline__ __device__ void traceOcclusionMasked(
+        OptixTraversableHandle handle,
+        float3                 ray_origin,
+        float3                 ray_direction,
+        float                  tmin,
+        float                  tmax,
+        uint8_t                mask,
+        RadiancePRD           *prd)
+{
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
+
+    optixTrace(
+        handle,
+        ray_origin,
+        ray_direction,
+        tmin,
+        tmax,
+        0.0f,  // rayTime
+        (mask),
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,  //OPTIX_RAY_FLAG_NONE,
+        RAY_TYPE_OCCLUSION,      // SBT offset
+        RAY_TYPE_COUNT,          // SBT stride
+        RAY_TYPE_OCCLUSION,      // missSBTIndex
+        u0, u1);
+}
+
+// ----------------------------------------------------------------------------
+// Volume programs
+// ----------------------------------------------------------------------------
+
+inline __device__ void confine( const nanovdb::BBox<nanovdb::Coord> &bbox, nanovdb::Vec3f &iVec )
+{
+    // NanoVDB's voxels and tiles are formed from half-open intervals, i.e.
+    // voxel[0, 0, 0] spans the set [0, 1) x [0, 1) x [0, 1). To find a point's voxel,
+    // its coordinates are simply truncated to integer. Ray-box intersections yield
+    // pairs of points that, because of numerical errors, fall randomly on either side
+    // of the voxel boundaries.
+    // This confine method, given a point and a (integer-based/Coord-based) bounding
+    // box, moves points outside the bbox into it. That means coordinates at lower
+    // boundaries are snapped to the integer boundary, and in case of the point being
+    // close to an upper boundary, it is move one EPS below that bound and into the volume.
+
+    // get the tighter box around active values
+    auto iMin = nanovdb::Vec3f( bbox.min() );
+    auto iMax = nanovdb::Vec3f( bbox.max() ) + nanovdb::Vec3f( 1.0f );
+
+    // move the start and end points into the bbox
+    float eps = 1e-7f;
+    if( iVec[0] < iMin[0] ) iVec[0] = iMin[0];
+    if( iVec[1] < iMin[1] ) iVec[1] = iMin[1];
+    if( iVec[2] < iMin[2] ) iVec[2] = iMin[2];
+    if( iVec[0] >= iMax[0] ) iVec[0] = iMax[0] - fmaxf( 1.0f, fabsf( iVec[0] ) ) * eps;
+    if( iVec[1] >= iMax[1] ) iVec[1] = iMax[1] - fmaxf( 1.0f, fabsf( iVec[1] ) ) * eps;
+    if( iVec[2] >= iMax[2] ) iVec[2] = iMax[2] - fmaxf( 1.0f, fabsf( iVec[2] ) ) * eps;
+}
+
+inline __hostdev__ void confine( const nanovdb::BBox<nanovdb::Coord> &bbox, nanovdb::Vec3f &iStart, nanovdb::Vec3f &iEnd )
+{
+    confine( bbox, iStart );
+    confine( bbox, iEnd );
+}
+
+template<typename AccT>
+inline __device__ float transmittanceHDDA(
+    const nanovdb::Vec3f& start,
+    const nanovdb::Vec3f& end,
+    AccT& acc, const float opacity )
+{
+
+    // transmittance along a ray through the volume is computed by
+    // taking the negative exponential of volume's density integrated
+    // along the ray.
+    float transmittance = 1.f;
+    auto dir = end - start;
+    auto len = dir.length();
+    nanovdb::Ray<float> ray( start, dir / len, 0.0f, len );
+    nanovdb::Coord ijk = nanovdb::RoundDown<nanovdb::Coord>( ray.start() ); // first hit of bbox
+
+    // Use NanoVDB's HDDA line digitization for fast integration.
+    // This algorithm (http://www.museth.org/Ken/Publications_files/Museth_SIG14.pdf)
+    // can skip over sparse parts of the data structure.
+    //
+    nanovdb::HDDA<nanovdb::Ray<float> > hdda( ray, acc.getDim( ijk, ray ) );
+
+    float t = 0.0f;
+    float density = acc.getValue( ijk ) * opacity;
+    while( hdda.step() )
+    {
+        float dt = hdda.time() - t; // compute length of ray-segment intersecting current voxel/tile
+        transmittance *= expf( -density * dt );
+        t = hdda.time();
+        ijk = hdda.voxel();
+
+        density = acc.getValue( ijk ) * opacity;
+        hdda.update( ray, acc.getDim( ijk, ray ) ); // if necessary adjust DDA step size
+    }
+
+    return transmittance;
+}
+
+
+extern "C" __global__ void __intersection__volume()
+{
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    if (ix == 0 && iy == 0) {
+        printf("__intersection__volume >>>>>>>>> \n");
+    }
+    
+    const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
+    const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
+        sbt_data->geometry_data.volume.grid );
+    assert( grid );
+
+    // compute intersection points with the volume's bounds in index (object) space.
+    const float3 ray_orig = optixGetObjectRayOrigin();
+    const float3 ray_dir  = optixGetObjectRayDirection();
+
+    auto bbox = grid->indexBBox();
+    float t0 = optixGetRayTmin();
+    float t1 = optixGetRayTmax();
+    auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+        reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+
+    if( iRay.intersects( bbox, t0, t1 ) )
+    {
+        RadiancePRD* prd = getPRD();
+            prd->t1 = t1;
+        // report the exit point via payload
+        //optixSetPayload_0( __float_as_uint( t1 ) );
+        // report the entry-point as hit-point
+        optixReportIntersection( fmaxf( t0, optixGetRayTmin() ), 0 );
+    }
+}
+
+extern "C" __global__ void __closesthit__radiance_volume()
+{
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    RadiancePRD* prd = getPRD();
+    
+
+
+    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+
+
+    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
+        sbt_data->geometry_data.volume.grid );
+
+    const auto& tree = grid->tree();
+    auto        acc  = tree.getAccessor();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+
+    const float t0 = optixGetRayTmax();
+    const float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+
+    // trace a continuation ray
+    //
+    // the continuation ray provides two things:
+    //   - the radiance "entering the volume"
+    //   - the "depth" to the next closest object intersected by the ray.
+    // Note, that such an object might be inside the volume. In that case,
+    // transmittance needs to be integrated through the volume along the ray
+    // up to that closer hit-point.
+
+    traceRadianceMasked(
+        params.handle,
+        ray_orig,
+        ray_dir,
+        0.0f,
+        1e16f,
+        (1), // visibility mask - limit intersections to solid objects
+        prd);
+
+    const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+		reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
+
+    auto start = grid->worldToIndexF( ray( t0 ) );
+    auto end   = grid->worldToIndexF( ray( fminf( prd->depth, t1 ) ) );
+
+    auto bbox = grid->indexBBox();
+    confine( bbox, start, end );
+
+    // compute transmittance from the entry-point into the volume to either
+    // the ray's exit point out of the volume, or the hit point found by the
+    // continuation ray, if that is closer.
+    const float opacity = sbt_data->material_data.volume.opacity;
+    float  transmittance = transmittanceHDDA( start, end, acc, opacity );
+
+    //float3 result = payload.result * transmittance;
+
+    // optixSetPayload_0( __float_as_uint( result.x ) );
+    // optixSetPayload_1( __float_as_uint( result.y ) );
+    // optixSetPayload_2( __float_as_uint( result.z ) );
+    // optixSetPayload_3( __float_as_uint( 0.0f ) );
+
+    prd->attenuation *= make_float3(0, 0, 0);//transmittance;
+return;}
+
+extern "C" __global__ void __closesthit__occlusion_volume()
+{
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    const HitGroupData* sbt_data = ( HitGroupData* )optixGetSbtDataPointer();
+
+    RadiancePRD* prd = getPRD();
+
+    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->geometry_data.volume.grid );
+    auto        acc = grid->tree().getAccessor();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+
+    const float t0 = optixGetRayTmax();
+    const float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+
+    // trace a continuation ray
+    traceOcclusionMasked(
+        params.handle,
+        ray_orig,
+        ray_dir,
+        0.01f,
+        1e16f,
+        common_object_mask,
+        prd);
+
+    float transmittance = prd->transmittanceVDB;
+
+    // if the continuation ray didn't hit a solid, compute how much the volume
+    // attenuates/shadows the light along the ray
+    if( transmittance != 0.0f )
+    {
+        const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+                                              reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
+        auto start = grid->worldToIndexF( ray( t0 ) );
+        auto end   = grid->worldToIndexF( ray( t1 ) );
+
+        auto bbox = grid->indexBBox();
+        confine( bbox, start, end );
+
+        const float opacity = sbt_data->material_data.volume.opacity;
+        transmittance       *= transmittanceHDDA( start, end, acc, opacity );
+    }
+
+    prd->transmittanceVDB = transmittance;
+
+    if (ix == 0 && iy == 0) {
+        printf("__closesthit__occlusion_volume <<<<<<<<<<");
+    }
 }

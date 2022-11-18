@@ -62,6 +62,10 @@ struct RadiancePRD
     vec3         extinctionQ[8];
     int          curMatIdx;
     float        CH;
+
+    float t0, t1;
+    float transmittanceVDB;
+
     void         pushMat(vec3 extinction)
     {
         if(curMatIdx<7)
@@ -106,7 +110,7 @@ static __forceinline__ __device__ void  traceRadiance(
             tmin,
             tmax,
             0.0f,                // rayTime
-            OptixVisibilityMask( 1 ),
+            OptixVisibilityMask( 1 | 2 ),
             OPTIX_RAY_FLAG_NONE,
             RAY_TYPE_RADIANCE,        // SBT offset
             RAY_TYPE_COUNT,           // SBT stride
@@ -133,7 +137,7 @@ static __forceinline__ __device__ bool traceOcclusion(
             tmin,
             tmax,
             0.0f,                    // rayTime
-            OptixVisibilityMask( 1 ),
+            OptixVisibilityMask( 1 | 2),
             OPTIX_RAY_FLAG_NONE,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride

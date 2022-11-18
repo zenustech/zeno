@@ -987,8 +987,3 @@ extern "C" __global__ void __closesthit__radiance()
     prd->emission =  float3(mats.emission);
     prd->CH = 1.0;
 }
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}

@@ -30,55 +30,34 @@
 
 #include <optix.h>
 #include <sutil/vec_math.h>
-#include <../SDK/BufferView.h>
-#include <cuda/Light.h>
+
+const unsigned int NUM_PAYLOAD_VALUES = 2u;
+
+// struct LaunchParams
+// {
+//     unsigned int             width;
+//     unsigned int             height;
+//     unsigned int             subframe_index;
+//     float4*                  accum_buffer;
+//     uchar4*                  frame_buffer;
+//     int                      max_depth;
+
+//     float3                   eye;
+//     float3                   U;
+//     float3                   V;
+//     float3                   W;
+
+//     BufferView<Light>        lights;
+//     float3                   miss_color;
+//     OptixTraversableHandle   handle;
+
+//     // Visbility masks
+//     unsigned int solid_objects;
+//     unsigned int volume_object;
+// };
 
 
-const unsigned int NUM_PAYLOAD_VALUES = 4u;
-
-
-enum ObjectType
-{
-    PLANE_OBJECT  = 1,
-    CUBE_OBJECT   = 1 << 1,
-    VOLUME_OBJECT = 1 << 2,
-    ANY_OBJECT = 0xFF,
-};
-
-
-enum RayType
-{
-    RAY_TYPE_RADIANCE  = 0,
-    RAY_TYPE_OCCLUSION = 1,
-    RAY_TYPE_COUNT = 2
-};
-
-
-struct LaunchParams
-{
-    unsigned int             width;
-    unsigned int             height;
-    unsigned int             subframe_index;
-    float4*                  accum_buffer;
-    uchar4*                  frame_buffer;
-    int                      max_depth;
-
-    float3                   eye;
-    float3                   U;
-    float3                   V;
-    float3                   W;
-
-    BufferView<Light>        lights;
-    float3                   miss_color;
-    OptixTraversableHandle   handle;
-
-    // Visbility masks
-    unsigned int solid_objects;
-    unsigned int volume_object;
-};
-
-
-struct MaterialData 
+struct VolumeMaterialData 
 {
     struct Lambert
     {
@@ -99,7 +78,7 @@ struct MaterialData
 };
 
 
-struct GeometryData
+struct VolumeGeometryData
 {
     struct Plane
     {
@@ -118,14 +97,6 @@ struct GeometryData
         Volume volume;
     };
 };
-
-
-struct HitGroupData
-{
-    GeometryData geometry_data;
-    MaterialData material_data;
-};
-
 
 struct PayloadRadiance
 {
