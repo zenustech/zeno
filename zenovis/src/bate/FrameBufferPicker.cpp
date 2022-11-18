@@ -59,7 +59,7 @@ static const char * obj_frag_code = R"(
 
     void main()
     {
-       FragColor = uvec3(gObjectIndex, 0, 0);
+        FragColor = uvec3(gObjectIndex, 0, 0);
     }
 )";
 
@@ -75,11 +75,12 @@ static const char * vert_vert_code = R"(
     uniform mat4 mInvView;
     uniform mat4 mInvProj;
 
+    uniform sampler2D depthTexture;
+
     void main()
     {
         gVertexIndex = uint(gl_VertexID);
         gl_Position = mVP * vec4(position, 1.0);
-        gl_PointSize = 20;
     }
 )";
 
@@ -92,7 +93,7 @@ static const char* vert_frag_code = R"(
 
     void main()
     {
-       FragColor = uvec3(gObjectIndex, gVertexIndex + 1u, 0);
+        FragColor = uvec3(gObjectIndex, gVertexIndex + 1u, 0);
     }
 )";
 
@@ -104,7 +105,7 @@ static const char* prim_frag_code = R"(
 
     void main()
     {
-       FragColor = uvec3(gObjectIndex, gl_PrimitiveID + 1, 0);
+        FragColor = uvec3(gObjectIndex, gl_PrimitiveID + 1, 0);
     }
 )";
 
@@ -114,13 +115,30 @@ static const char* empty_frag_code = R"(
 
     void main()
     {
-       FragColor = uvec3(0, 0, 0);
+        FragColor = uvec3(0, 0, 0);
     }
 )";
 
+static const char* empty_and_offset_frag_code = R"(
+    # version 330
+    out uvec3 FragColor;
+
+    uniform float offset;
+
+    void main()
+    {
+        gl_FragDepth = gl_FragCoord.z + offset;
+        FragColor = uvec3(0, 0, 0);
+    }
+)";
+
+
+
 static void load_buffer_to_image(unsigned int* ids, int w, int h, const std::string& file_name = "output.ppm") {
     unordered_map<unsigned int, vec3i> color_set;
-    color_set[0] = {0, 0, 0};
+    color_set[0] = {20, 20, 20};
+    color_set[1] = {90, 20, 20};
+    color_set[1047233823] = {10, 10, 10};
 
     auto random_color = [](std::default_random_engine &e) -> vec3i{
         std::uniform_int_distribution<int> u(0, 255);
@@ -175,6 +193,7 @@ struct FrameBufferPicker : IPicker {
     Program* vert_shader;
     Program* prim_shader;
     Program* empty_shader;
+    Program* empty_and_offset_shader;
 
     int w, h;
     unordered_map<unsigned int, string> id_table;
@@ -241,6 +260,7 @@ struct FrameBufferPicker : IPicker {
         vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
         prim_shader = scene->shaderMan->compile_program(obj_vert_code, prim_frag_code);
         empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
+        empty_and_offset_shader = scene->shaderMan->compile_program(obj_vert_code, empty_and_offset_frag_code);
     }
 
     ~FrameBufferPicker() {
@@ -282,40 +302,43 @@ struct FrameBufferPicker : IPicker {
                 }
 
                 if (scene->select_mode == zenovis::PICK_VERTEX) {
-                    // enable depth test
+                    // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glDepthFunc(GL_LEQUAL));
                     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                    // shader uniform
+
+                    // ----- draw points -----
                     vert_shader->use();
                     scene->camera->set_program_uniforms(vert_shader);
                     CHECK_GL(glUniform1ui(glGetUniformLocation(vert_shader->pro, "gObjectIndex"), id + 1));
-                    // draw points
                     CHECK_GL(glDrawArrays(GL_POINTS, 0, mem.size()));
-                    // draw triangles to cover invisible points
-                    empty_shader->use();
-                    scene->camera->set_program_uniforms(empty_shader);
+
+                    // ----- draw object to cover invisible points -----
+                    empty_and_offset_shader->use();
+                    empty_and_offset_shader->set_uniform("offset", 0.001f);
+                    scene->camera->set_program_uniforms(empty_and_offset_shader);
+
                     auto tri_count = prim->tris.size();
                     ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
                     CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
                     ebo->unbind();
-                    // disable depth test
+
+                    // ----- disable depth test -----
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
                 if (scene->select_mode == zenovis::PICK_LINE) {
-                    // enable depth test
+                    // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
                     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                    // shader uniform
+                    // ----- draw lines -----
                     prim_shader->use();
                     scene->camera->set_program_uniforms(prim_shader);
                     CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
-                    // draw lines
                     auto line_count = prim->lines.size();
                     if (!line_count) {
-                        // compute lines
+                        // compute lines' indices
                         struct cmp_line {
                             bool operator()(vec2i v1, vec2i v2) const {
                                 return (v1[0] == v2[0] && v1[1] == v2[1]) || (v1[0] == v2[1] && v1[1] == v2[0]);
@@ -341,23 +364,24 @@ struct FrameBufferPicker : IPicker {
                     ebo->bind_data(prim->lines.data(), line_count * sizeof(prim->lines[0]));
                     CHECK_GL(glDrawElements(GL_LINES, line_count * 2, GL_UNSIGNED_INT, 0));
                     ebo->unbind();
-                    // draw triangles to cover invisible points
+
+                    // ----- draw object to cover invisible lines -----
                     empty_shader->use();
                     scene->camera->set_program_uniforms(empty_shader);
                     auto tri_count = prim->tris.size();
                     ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
                     CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
                     ebo->unbind();
-                    // disable depth test
+                    // ----- disable depth test -----
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
                 if (scene->select_mode == zenovis::PICK_MESH) {
-                    // enable depth test
+                    // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
                     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                    // draw triangles
+                    // ----- draw triangles -----
                     prim_shader->use();
                     scene->camera->set_program_uniforms(prim_shader);
                     CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
@@ -365,7 +389,7 @@ struct FrameBufferPicker : IPicker {
                     ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
                     CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
                     ebo->unbind();
-                    // disable depth test
+                    // ----- disable depth test -----
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
@@ -421,7 +445,7 @@ struct FrameBufferPicker : IPicker {
         }
         else {
             if (!pixel.has_object() || !pixel.has_element()) return "";
-            result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id);
+            result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
         }
 
         return result;
@@ -448,12 +472,12 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
 
         // output buffer to image
-//        auto* img_pixels = new PixelInfo[w * h];
-//        CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB_INTEGER, GL_UNSIGNED_INT, img_pixels));
-//        auto* ids = new unsigned int[w * h];
-//        for (int i=0; i<w*h; i++)
-//            ids[i] = img_pixels[i].obj_id;
-//        load_buffer_to_image(ids, w, h);
+        auto* img_pixels = new PixelInfo[w * h];
+        CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB_INTEGER, GL_UNSIGNED_INT, img_pixels));
+        auto* ids = new unsigned int[w * h];
+        for (int i=0; i<w*h; i++)
+            ids[i] = img_pixels[i].obj_id;
+        load_buffer_to_image(ids, w, h);
 
         // unbind fbo
         CHECK_GL(glReadBuffer(GL_NONE));
