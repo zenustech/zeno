@@ -171,7 +171,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             CONTROL_PROPERTIES pros = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
             if (pros.find("items") != pros.end())
             {
-                m_ui->editComboItems->setText(pros["items"].toStringList().join(","));
+                m_ui->editComboItems->setText(pros["items"].toStringList().join("\n"));
             }
             m_ui->stackProperties->setCurrentIndex(1);
         }
@@ -277,7 +277,7 @@ void ZEditParamLayoutDlg::onComboItemsEditFinished()
         return;
 
     const QString& items = m_ui->editComboItems->text();
-    QStringList lst = items.split(",");
+    QStringList lst = items.split("\n");
     if (lst.isEmpty())
         return;
 

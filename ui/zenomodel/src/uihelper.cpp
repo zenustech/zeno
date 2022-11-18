@@ -333,6 +333,34 @@ bool UiHelper::parseVecType(const QString& type, int& dim, bool& bFloat)
     }
 }
 
+QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
+{
+    switch (ctrl)
+    {
+    case CONTROL_INT:               return "Integer";
+    case CONTROL_FLOAT:             return "Float";
+    case CONTROL_STRING:            return "String";
+    case CONTROL_BOOL:              return "Boolean";
+    case CONTROL_MULTILINE_STRING:  return "Multiline String";
+    case CONTROL_READPATH:          return "read path";
+    case CONTROL_WRITEPATH:         return "write path";
+    case CONTROL_ENUM:              return "Enum";
+    case CONTROL_VEC4_FLOAT:        return "Float Vector 4";
+    case CONTROL_VEC3_FLOAT:        return "Float Vector 3";
+    case CONTROL_VEC2_FLOAT:        return "Float Vector 2";
+    case CONTROL_VEC4_INT:          return "Integer Vector 4";
+    case CONTROL_VEC3_INT:          return "Integer Vector 3";
+    case CONTROL_VEC2_INT:          return "Integer Vector 2";
+    case CONTROL_COLOR:             return "Color";
+    case CONTROL_CURVE:             return "Curve";
+    case CONTROL_HSPINBOX:          return "SpinBox";
+    case CONTROL_HSLIDER:           return "Slider";
+    case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
+    default:
+        return "";
+    }
+}
+
 PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {

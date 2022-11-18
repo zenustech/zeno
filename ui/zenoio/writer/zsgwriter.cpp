@@ -3,6 +3,8 @@
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zenomodel/include/uihelper.h>
+#include "variantptr.h"
+#include <zenomodel/include/viewparammodel.h>
 
 using namespace zeno::iotags;
 
@@ -251,6 +253,18 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.Key("content");
 			writer.String(info.content.toUtf8());
 		}
+	}
+
+	//custom ui
+	ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_VIEWPARAMS]);
+	if (viewParams)
+	{
+		writer.Key("custom-ui");
+		viewParams->exportJson(writer);
+
+		//const QString& uixml = viewParams->exportXml();
+		//writer.Key("customui");
+		//writer.String(uixml.toUtf8());
 	}
 }
 

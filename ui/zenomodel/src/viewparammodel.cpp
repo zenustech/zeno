@@ -5,6 +5,15 @@
 #include <zenomodel/include/uihelper.h>
 
 
+static const char* qsToString(const QString& qs)
+{
+    std::string s = qs.toStdString();
+    char* wtf = new char[s.size() + 1];
+    strcpy(wtf, s.c_str());
+    return wtf;
+}
+
+
 ProxySlotObject::ProxySlotObject(VParamItem* pItem, QObject* parent)
     : m_pItem(pItem)
     , QObject(parent)
@@ -231,6 +240,152 @@ void VParamItem::mapCoreParam(const QPersistentModelIndex& idx)
     m_proxySlot.mapCoreIndex(idx);
 }
 
+void VParamItem::exportJson(RAPIDJSON_WRITER& writer)
+{
+    JsonObjBatch batch(writer);
+
+    int vType = data(ROLE_VPARAM_TYPE).toInt();
+    if (vType == VPARAM_TAB)
+    {
+        for (int r = 0; r < rowCount(); r++)
+        {
+            VParamItem* pGroup = static_cast<VParamItem*>(child(r));
+            ZASSERT_EXIT(pGroup && pGroup->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+            const QString& vName = pGroup->data(ROLE_VPARAM_NAME).toString();
+            writer.Key(vName.toUtf8());
+            pGroup->exportJson(writer);
+        }
+    }
+    else if (vType == VPARAM_GROUP)
+    {
+        for (int r = 0; r < rowCount(); r++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(child(r));
+            ZASSERT_EXIT(pChild && pChild->data(ROLE_VPARAM_TYPE) == VPARAM_PARAM);
+            const QString& vName = pChild->data(ROLE_VPARAM_NAME).toString();
+            writer.Key(vName.toUtf8());
+            pChild->exportJson(writer);
+        }
+    }
+    else if (vType == VPARAM_PARAM)
+    {
+        bool bCoreParam = data(ROLE_VPARAM_IS_COREPARAM).toBool();
+        const QString& corename = data(ROLE_PARAM_NAME).toString();
+        writer.Key("core-param");
+        writer.String(corename.toUtf8());
+
+        writer.Key("control");
+        {
+            JsonObjBatch _scope(writer);
+
+            PARAM_CONTROL ctrl = (PARAM_CONTROL)data(ROLE_PARAM_CTRL).toInt();
+            QString typeDesc = UiHelper::getControlDesc(ctrl);
+
+            writer.Key("name");
+            writer.String(typeDesc.toUtf8());
+
+            if (!bCoreParam)
+            {
+                writer.Key("value");
+                const QVariant& value = data(ROLE_PARAM_VALUE);
+                const QString& coreType = data(ROLE_PARAM_TYPE).toString();
+                JsonHelper::AddVariant(value, coreType, writer, true);
+            }
+
+            if (ctrl == CONTROL_ENUM)
+            {
+                CONTROL_PROPERTIES pros = data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+                ZASSERT_EXIT(pros.find("items") != pros.end());
+                QStringList items = pros["items"].toStringList();
+
+                writer.Key("items");
+                writer.String(items.join("\n").toUtf8());
+            }
+            else if (ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HSPINBOX ||
+                ctrl == CONTROL_HSLIDER)
+            {
+                CONTROL_PROPERTIES pros = data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+
+                writer.Key("step");
+                writer.Int(pros["step"].toInt());
+
+                writer.Key("min");
+                writer.Int(pros["min"].toInt());
+
+                writer.Key("max");
+                writer.Int(pros["max"].toInt());
+            }
+        }
+        //todo: link.
+    }
+}
+
+rapidxml::xml_node<>* VParamItem::exportXml(rapidxml::xml_document<>& doc)
+{
+    int vType = data(ROLE_VPARAM_TYPE).toInt();
+    if (vType == VPARAM_TAB)
+    {
+        const QString& name = data(ROLE_VPARAM_NAME).toString();
+        rapidxml::xml_node<>* node = doc.allocate_node(rapidxml::node_element, "tab", qsToString(name));
+        for (int r = 0; r < rowCount(); r++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(child(r));
+            ZASSERT_EXIT(pChild && pChild->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP, nullptr);
+            auto pNode = pChild->exportXml(doc);
+            node->append_node(pNode);
+        }
+        return node;
+    }
+    else if (vType == VPARAM_GROUP)
+    {
+        const QString& name = data(ROLE_VPARAM_NAME).toString();
+        rapidxml::xml_node<>* node = doc.allocate_node(rapidxml::node_element, "group", qsToString(name));
+        for (int r = 0; r < rowCount(); r++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(child(r));
+            ZASSERT_EXIT(pChild && pChild->data(ROLE_VPARAM_TYPE) == VPARAM_PARAM, nullptr);
+            auto pNode = pChild->exportXml(doc);
+            node->append_node(pNode);
+        }
+        return node;
+    }
+    else if (vType == VPARAM_PARAM)
+    {
+        const QString& name = data(ROLE_VPARAM_NAME).toString();
+        const QString& corename = data(ROLE_PARAM_NAME).toString();
+        rapidxml::xml_node<>* node = doc.allocate_node(rapidxml::node_element, "param");
+        //attributes
+        node->append_attribute(doc.allocate_attribute("name", qsToString(name)));
+        node->append_attribute(doc.allocate_attribute("coremap", qsToString(corename)));
+        //control
+        
+        {
+            rapidxml::xml_node<>* ctrlNode = doc.allocate_node(rapidxml::node_element, "control");
+            ctrlNode->append_attribute(doc.allocate_attribute("type", "enum"));
+            PARAM_CONTROL ctrl = (PARAM_CONTROL)data(ROLE_PARAM_CTRL).toInt();
+            switch (ctrl)
+            {
+                case CONTROL_INT:
+                case CONTROL_FLOAT:
+                {
+                    QString qsValue = QString::number(data(ROLE_PARAM_VALUE).toFloat());
+                    rapidxml::xml_node<>* valueNode = doc.allocate_node(rapidxml::node_element, "value", qsToString(qsValue));
+                    ctrlNode->append_node(valueNode);
+                    break;
+                }
+            }
+            node->append_node(ctrlNode);
+        }
+        //todo: link
+
+        return node;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 bool VParamItem::operator==(VParamItem* rItem) const
 {
     //only itself.
@@ -351,8 +506,27 @@ QString ViewParamModel::exportUI() const
     /*
      xml example:
 
+     <customui type="panel">
+        <tab hint="tab1 for xxx">
+            "Tab1"
+            <group>
+                <param name = "pos" coremap = "position">
+                    <control type="enum">
+                        <items>abd\nbef\ncgh</items>
+                        <current></current>
+                    </control>
+                    <linkFrom node="xxx-cube" param="prim">
+                    <linkTo node="xxx-transform" param="dict">
+                </param>
+                <param name = "pos" coremap = "position">
+                </param>
+                inputs
+            </group>
+        </tab>
+     </customui>
+
      <customui>
-        <node name = "VDBWrangle">
+        <node name = "pos" coreparam = "position" type = ">
             <tab name = "Default" type="default" hint="default msg for node">
                 <group name = "inputs">
                     <param name = "..." control = "..."/>
@@ -461,6 +635,53 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
             return m_nodeIdx.data(role);
     }
     return QStandardItemModel::data(index, role);
+}
+
+QString ViewParamModel::exportXml()
+{
+    rapidxml::xml_document<> doc;
+    rapidxml::xml_node<>* node = doc.allocate_node(rapidxml::node_element, "customui");
+    doc.append_node(node);
+    if (m_bNodeUI)
+    {
+
+    }
+    else
+    {
+        node->append_attribute(doc.allocate_attribute("type", qsToString("panel")));
+        QStandardItem* pRoot = invisibleRootItem()->child(0);
+        for (int r = 0; r < pRoot->rowCount(); r++)
+        {
+            VParamItem* pRight = static_cast<VParamItem*>(pRoot->child(r));
+            auto pNode = pRight->exportXml(doc);
+            node->append_node(pNode);
+        }
+    }
+
+    std::string s;
+    print(std::back_inserter(s), doc, 0);
+    QString qsXml = QString::fromStdString(s);
+    return qsXml;
+}
+
+void ViewParamModel::exportJson(RAPIDJSON_WRITER& writer)
+{
+    JsonObjBatch scope(writer);
+    if (m_bNodeUI)
+    {
+
+    }
+    else
+    {
+        QStandardItem* pRoot = invisibleRootItem()->child(0);
+        for (int r = 0; r < pRoot->rowCount(); r++)
+        {
+            VParamItem* pTab = static_cast<VParamItem*>(pRoot->child(r));
+            const QString& vName = pTab->data(ROLE_VPARAM_NAME).toString();
+            writer.Key(vName.toUtf8());
+            pTab->exportJson(writer);
+        }
+    }
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)

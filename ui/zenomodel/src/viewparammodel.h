@@ -3,6 +3,11 @@
 
 #include <QtWidgets>
 #include "modeldata.h"
+#include <zenomodel/include/jsonhelper.h>
+
+#include <rapidxml/rapidxml_print.hpp>
+
+using namespace rapidxml;
 
 enum VPARAM_TYPE
 {
@@ -55,6 +60,8 @@ struct VParamItem : public QStandardItem
     QStandardItem* clone() const override;
     void cloneChildren(VParamItem* pItem);
     void mapCoreParam(const QPersistentModelIndex& idx);
+    void exportJson(RAPIDJSON_WRITER& writer);
+    rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
 };
@@ -69,6 +76,8 @@ public:
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    QString exportXml();
+    void exportJson(RAPIDJSON_WRITER& writer);
 
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);
