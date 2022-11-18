@@ -6,6 +6,7 @@
 #include "variantptr.h"
 #include "jsonhelper.h"
 #include <zenomodel/include/curveutil.h>
+#include <zenomodel/include/viewparammodel.h>
 #include <QUuid>
 
 

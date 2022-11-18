@@ -193,6 +193,10 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         }
         pAcceptor->setOptions(nodeid, options);
     }
+    if (objValue.HasMember("customui-panel"))
+    {
+        pAcceptor->addCustomUI(nodeid, false, objValue["customui-panel"]);
+    }
     if (objValue.HasMember("dict_keys"))
     {
         _parseDictKeys(nodeid, objValue["dict_keys"], pAcceptor);

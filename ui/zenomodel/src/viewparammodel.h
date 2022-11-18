@@ -58,9 +58,7 @@ struct VParamItem : public QStandardItem
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
     QStandardItem* clone() const override;
-    void cloneChildren(VParamItem* pItem);
     void mapCoreParam(const QPersistentModelIndex& idx);
-    void exportJson(RAPIDJSON_WRITER& writer);
     rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
@@ -77,7 +75,7 @@ public:
     QPersistentModelIndex nodeIdx() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QString exportXml();
-    void exportJson(RAPIDJSON_WRITER& writer);
+    bool isNodeModel() const;
 
 public slots:
     void onParamsInserted(const QModelIndex& parent, int first, int last);

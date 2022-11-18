@@ -5,6 +5,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
 #include <zenomodel/include/viewparammodel.h>
+#include <zenoio/customui/customuirw.h>
 
 using namespace zeno::iotags;
 
@@ -255,16 +256,13 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		}
 	}
 
-	//custom ui
-	ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_VIEWPARAMS]);
+	//custom ui for panel
+	ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_PANEL]);
 	if (viewParams)
 	{
-		writer.Key("custom-ui");
-		viewParams->exportJson(writer);
-
-		//const QString& uixml = viewParams->exportXml();
-		//writer.Key("customui");
-		//writer.String(uixml.toUtf8());
+		writer.Key("customui-panel");
+		zenoio::exportCustomUI(viewParams, writer);
+		//viewParams->exportJson(writer);
 	}
 }
 

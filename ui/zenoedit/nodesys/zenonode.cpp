@@ -198,7 +198,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
     ZASSERT_EXIT(viewParams, nullptr);
 
     QStandardItem* root = viewParams->invisibleRootItem();
@@ -208,9 +208,9 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     QStandardItem* paramsItem = root->child(1);
     QStandardItem* outputsItem = root->child(2);
 
-    connect(viewParams, &ViewParamModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
-    connect(viewParams, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
-    connect(viewParams, &ViewParamModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
+    connect(viewParams, &QStandardItemModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
+    connect(viewParams, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
+    connect(viewParams, &QStandardItemModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
@@ -279,7 +279,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     if (!m_index.isValid())
         return;
 
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
     if (!viewParams)
         return;
 
@@ -427,7 +427,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
 
     if (!m_index.isValid())
         return;
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
     ZASSERT_EXIT(viewParams);
 
     if (!parent.isValid())
@@ -529,7 +529,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     if (!m_index.isValid())
         return;
 
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_index.data(ROLE_NODEPARAMS));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
     ZASSERT_EXIT(viewParams);
 
     QStandardItem* parentItem = viewParams->itemFromIndex(parent);

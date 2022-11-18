@@ -17,7 +17,6 @@
 
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
-class ViewParamModel;
 
 class ZenoNode : public ZLayoutBackground
 {

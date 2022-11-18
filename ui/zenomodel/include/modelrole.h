@@ -18,8 +18,10 @@ enum MODEL_ROLE
 	ROLE_INPUT_MODEL,		//input socket model
 	ROLE_PARAM_MODEL,		//param model
 	ROLE_OUTPUT_MODEL,		//output socket model.
-	ROLE_VIEWPARAMS,		// all viewed panel parameters.
-	ROLE_NODEPARAMS,		// all viewed node parameters.
+	ROLE_CUSTOMUI_PANEL,	// all viewed panel parameters.
+	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io.
+	ROLE_CUSTOMUI_NODE,		// all viewed node parameters.
+	ROLE_CUSTOMUI_NODE_IO,
 
 	//synchronize link change, param
 	ROLE_ADDLINK,

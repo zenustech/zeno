@@ -116,12 +116,12 @@ void ZenoPropPanel::clearLayout()
 
     if (m_idx.isValid())
     {
-        ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+        QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
         if (paramsModel)
         {
-            disconnect(paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-            disconnect(paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-            disconnect(paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+            disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+            disconnect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+            disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
         }
     }
 
@@ -144,13 +144,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     if (!m_idx.isValid())
         return;
 
-    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
     if (!paramsModel)
         return;
 
-    connect(paramsModel, &ViewParamModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-    connect(paramsModel, &ViewParamModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-    connect(paramsModel, &ViewParamModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    connect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+    connect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+    connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
     connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
         clearLayout();
     });
@@ -190,7 +190,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (!m_idx.isValid())
         return;
 
-    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
     ZASSERT_EXIT(paramsModel);
 
     if (!parent.isValid())
@@ -369,7 +369,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     if (m_controls.isEmpty() || !m_idx.isValid())
         return;
 
-    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
@@ -454,7 +454,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
-    ViewParamModel* paramsModel = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
@@ -572,7 +572,7 @@ void ZenoPropPanel::onSettings()
         if (!m_idx.isValid())
             return;
 
-        ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(m_idx.data(ROLE_VIEWPARAMS));
+        QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
         ZASSERT_EXIT(viewParams);
 
         ZEditParamLayoutDlg dlg(viewParams, false, m_idx, this);

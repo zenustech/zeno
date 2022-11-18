@@ -8,7 +8,6 @@
 class IGraphsModel;
 
 class ZExpandableSection;
-class ViewParamModel;
 
 class ZenoPropPanel : public QWidget
 {

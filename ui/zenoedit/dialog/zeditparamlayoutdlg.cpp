@@ -3,6 +3,7 @@
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
 #include "zmapcoreparamdlg.h"
+#include <zenomodel/include/uihelper.h>
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -71,9 +72,9 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, QWidget* parent)
     : QDialog(parent)
-    , m_model(pModel)
+    , m_model(nullptr)
     , m_proxyModel(nullptr)
     , m_index(nodeIdx)
 {
@@ -91,6 +92,9 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ViewParamModel* pModel, bool bNodeUI, c
     }
 
     m_ui->listConctrl->addItems(lstCtrls);
+
+    m_model = qobject_cast<ViewParamModel*>(pModel);
+    ZASSERT_EXIT(m_model);
 
     m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), this);
     m_proxyModel->clone(m_model);

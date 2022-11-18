@@ -604,7 +604,7 @@ void ZenoGraphsEditor::onAction(const QString& text)
             if (nodes.size() == 1)
             {
                 QModelIndex nodeIdx = nodes[0];
-                ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODEPARAMS));
+                QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_NODE));
                 ZASSERT_EXIT(viewParams);
                 ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, this);
                 dlg.exec();
