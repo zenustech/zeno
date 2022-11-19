@@ -9,4 +9,6 @@ target_sources(zeno PRIVATE
     PBDDihedralConstraint.cpp
     buildEdgeFromTris.cpp
     lines2tris.cpp
+    TestClothMesh/TestClothMeshData.inc
+    TestClothMesh/TestClothMesh.cpp
     )

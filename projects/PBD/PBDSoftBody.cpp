@@ -61,7 +61,7 @@ private:
             if (restVol[i] > 0.0)
                 pInvMass = 1.0 / (restVol[i] / 4.0);
             for (int j = 0; j < 4; j++)
-                invMass[tet[i][j]] += pInvMass;
+                invMass[tet[i][j]] += pInvMass; 
         }
     }
 

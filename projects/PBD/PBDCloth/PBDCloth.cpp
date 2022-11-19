@@ -1,14 +1,15 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <algorithm>
 #include <iostream>
 namespace zeno {
 struct PBDCloth : zeno::INode {
 private:
     //physical param
     zeno::vec3f externForce{0, -10.0, 0};
-    int numSubsteps = 10;
+    int numSubsteps = 15;
     float dt = 1.0 / 60.0 / numSubsteps;
-    float edgeCompliance;
+    float edgeCompliance = 0.0;
     float dihedralCompliance;
 
     float computeAng(   const vec3f & p0,
@@ -79,25 +80,6 @@ private:
                 if(dot(vel[i],normal)<0.0)
                     vel[i] -= min(dot(vel[i],normal), 0) * normal * loss;
             }
-
-
-    //         const auto calcNormal = [spls = proxy<zs::execspace_e::host>(spls),
-    //                          eps = dx](const vec3f &x_) {
-    //   zs::vec<float, 3> x{x_[0], x_[1], x_[2]}, diff{};
-    //   /// compute a local partial derivative
-    //   for (int i = 0; i != 3; i++) {
-    //     auto v1 = x;
-    //     auto v2 = x;
-    //     v1[i] = x[i] + eps;
-    //     v2[i] = x[i] - eps;
-    //     diff[i] = (spls.getSignedDistance(v1) - spls.getSignedDistance(v2)) /
-    //               (eps + eps);
-    //   }
-    //   if (math::near_zero(diff.l2NormSqr()))
-    //     return vec3f{0, 0, 0};
-    //   auto r = diff.normalized();
-    //   return vec3f{r[0], r[1], r[2]};
-    // };
         }
     }
 
@@ -107,6 +89,45 @@ private:
         res = res / length(res);
         return res;
     }
+
+    void findTriNeighbors(std::vector<vec3i> & tris) 
+    {
+        std::vector<vec3i> edges;
+        for (var i = 0; i < tris.size(); i++) {
+            for (var j = 0; j < 3; j++) {
+                auto id0 = tris[i][j];
+                auto id1 = tris[i][(j+1)%3];
+                edges.push_back(vec3i{std::min(id0,id1),std::max(id0,id1), 3*i+j})
+            }
+        }
+
+        // sort so common edges are next to each other
+        std::sort()
+        edges.sort((a, b) => ((a.id0 < b.id0) || (a.id0 == b.id0 && a.id1 < b.id1)) ? -1 : 1);
+
+        // find matchign edges
+
+        neighbors = new Float32Array(3 * numTris);
+        neighbors.fill(-1);		// open edge
+
+        var nr = 0;
+        while (nr < edges.length) {
+            var e0 = edges[nr];
+            nr++;
+            if (nr < edges.length) {
+                var e1 = edges[nr];
+                if (e0.id0 == e1.id0 && e0.id1 == e1.id1) {
+                    neighbors[e0.edgeNr] = e1.edgeNr;
+                    neighbors[e1.edgeNr] = e0.edgeNr;
+                }
+                nr++;
+            }
+        }
+
+        return neighbors;
+    }
+
+
 
     /**
      * @brief 求解PBD所有边约束（也叫距离约束）。目前采用Gauss-Seidel方式（难以并行）。
@@ -146,6 +167,39 @@ private:
         }
     }
 
+    void solveStretchingConstraint(
+        zeno::AttrVector<zeno::vec3f> &pos,
+        const zeno::AttrVector<zeno::vec2i> &edge,
+        const std::vector<float> & invMass,
+        const std::vector<float> & restLen,
+        const float edgeCompliance,
+        const float dt
+    ) 
+    {
+        float alpha = edgeCompliance / dt / dt;
+
+        for (auto i = 0; i < edge.size(); i++) {
+            int id0 = edge[i][0];
+            int id1 = edge[i][1];
+
+            auto w0 = invMass[id0];
+            auto w1 = invMass[id1];
+            auto w = w0 + w1;
+            if (w == 0.0)
+                continue;
+
+            auto grads = pos[id0] - pos[id1];
+            float Len = length(grads);
+            if (Len == 0.0)
+                continue;
+            grads /= Len;
+            auto C = Len - restLen[i];
+            auto s = -C / (w + alpha);
+
+            pos[id0] += grads *   s * invMass[id0];
+            pos[id1] += grads * (-s * invMass[id1]);
+        }
+    }
 
     void solveDihedralConstraint(PrimitiveObject *prim)
     {
@@ -231,7 +285,8 @@ public:
         for (int steps = 0; steps < numSubsteps; steps++) 
         {
             preSolve(pos, prevPos, vel);
-            solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            // solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            solveStretchingConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
             // solveDihedralConstraint(prim.get());
             postSolve(pos, prevPos, vel);
         }
