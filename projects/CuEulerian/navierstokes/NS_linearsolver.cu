@@ -27,13 +27,26 @@ struct ZSNSPressureProject : INode {
         auto &spg = NSGrid->getLevel<level>();
         auto block_cnt = spg.numBlocks();
 
-        if constexpr (level != 0) {
-            // take zero as initial guess
-            pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg)] __device__(int cellno) mutable {
+        // take zero as initial guess
+        pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg)] __device__(int cellno) mutable {
+            auto icoord = spgv.iCoord(cellno);
+            spgv("p0", icoord) = 0.f;
+        });
+    }
+
+    template <int level, typename Ti>
+    void PostJacobi(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, Ti block_cnt, int cur) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        auto &spg = NSGrid->getLevel<level>();
+        // workaround: write result to "p0" for high level grid
+        if (cur == 0)
+            return;
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg),
+             pSrcTag = zs::SmallString{std::string("p") + std::to_string(cur)}] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
-                spgv("p0", icoord) = 0.f;
+                spgv("p0", icoord) = spgv(pSrcTag, icoord);
             });
-        }
     }
 
     template <int level> void Jacobi(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, int nIter) {
@@ -74,13 +87,7 @@ struct ZSNSPressureProject : INode {
         if constexpr (level == 0)
             NSGrid->setMeta("p_cur", cur);
         else {
-            // workaround: write result to "p0" for high level grid
-            pol(zs::range(block_cnt * spg.block_size),
-                [spgv = zs::proxy<space>(spg),
-                 pSrcTag = zs::SmallString{std::string("p") + std::to_string(cur)}] __device__(int cellno) mutable {
-                    auto icoord = spgv.iCoord(cellno);
-                    spgv("p0", icoord) = spgv(pSrcTag, icoord);
-                });
+            PostJacobi<level>(pol, NSGrid, block_cnt, cur);
         }
     }
 
@@ -245,7 +252,8 @@ struct ZSNSPressureProject : INode {
             float res = residual<level>(pol, NSGrid, rho);
             printf("MG level %d residual: %e\n", level, res);
         } else {
-            clearInit<level>(pol, NSGrid);
+            if constexpr (level != 0)
+                clearInit<level>(pol, NSGrid);
             coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
             float res = residual<level>(pol, NSGrid, rho);
             printf("MG level %d residual: %e\n", level, res);
