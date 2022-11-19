@@ -25,8 +25,8 @@ namespace zeno {
 static zfx::Compiler compiler;
 static zfx::cuda::Assembler assembler;
 
-struct ZSTileVectorWrangler : zeno::INode {
-    ~ZSTileVectorWrangler() {
+struct ZSVolumeWrangler : zeno::INode {
+    ~ZSVolumeWrangler() {
         if (this->_cuModule)
             cuModuleUnload((CUmodule)this->_cuModule);
     }
@@ -34,13 +34,7 @@ struct ZSTileVectorWrangler : zeno::INode {
         using namespace zs;
         auto code = get_input<StringObject>("zfxCode")->get();
 
-        auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
-        const auto targetStr = get_input2<std::string>("target");
-        int targetNo = -1;
-        if (targetStr == "vert")
-            targetNo = 0;
-        else if (targetStr == "element")
-            targetNo = 1;
+        auto spgPtrs = RETRIEVE_OBJECT_PTRS(ZenoSparseGrid, "ZSGrid");
 
         zfx::Options opts(zfx::Options::for_cuda);
         opts.detect_new_symbols = true;
@@ -133,28 +127,10 @@ struct ZSTileVectorWrangler : zeno::INode {
             opts.define_symbol('@' + key, dim);
         };
 
-        for (auto &&parObjPtr : parObjPtrs) {
-            // auto &pars = parObjPtr->getParticles();
-            typename ZenoParticles::particles_t *tvPtr = nullptr;
-
-            if (targetStr == "auto") {
-                if (parObjPtr->elements.has_value())
-                    targetNo = 1;
-                else if (parObjPtr->particles)
-                    targetNo = 0;
-                else
-                    continue;
-            } else {
-                if (targetNo == 0 && !parObjPtr->particles)
-                    continue;
-                else if (targetNo == 1 && !parObjPtr->elements.has_value())
-                    continue;
-            }
-            if (targetNo == 0) { // verts
-                tvPtr = &parObjPtr->getParticles();
-            } else if (targetNo == 1) {
-                tvPtr = &parObjPtr->getQuadraturePoints();
-            }
+        for (auto &&spgPtr : spgPtrs) {
+            // auto &pars = spgPtr->getParticles();
+            auto &spg = spgPtr->getSparseGrid();
+            typename ZenoSparseGrid::spg_t::grid_storage_type *tvPtr = &spg._grid;
 
             auto props = tvPtr->getPropertyTags();
             opts.symdims.clear();
@@ -173,14 +149,29 @@ struct ZSTileVectorWrangler : zeno::INode {
                 return false;
             };
             std::vector<zs::PropertyTag> newChns{};
+            bool hasPositionProperty = false;
             for (auto const &[name, dim] : prog->newsyms) {
                 assert(name[0] == '@');
                 auto key = name.substr(1);
                 if (!checkDuplication(key))
                     newChns.push_back(PropertyTag{key, dim});
+
+                if (key == "x")
+                    hasPositionProperty = true;
             }
             if (newChns.size() > 0)
                 tvPtr->append_channels(cudaPol, newChns);
+
+            // if pos property is accessed, update it
+            if (hasPositionProperty) {
+                constexpr auto space = execspace_e::cuda;
+                if (tvPtr->getPropertySize("x") != 3)
+                    throw std::runtime_error("the existing [pos/x] property should be of size 3.");
+                cudaPol(range(tvPtr->size()), [voxels = proxy<space>(*tvPtr), posOffset = tvPtr->getPropertyOffset("x"),
+                                               spg = proxy<space>(spg)] __device__(int cellno) mutable {
+                    voxels.tuple(dim_c<3>, posOffset, cellno) = spg.wCoord(cellno);
+                });
+            }
 
             if (_cuModule == nullptr) {
                 auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
@@ -263,21 +254,18 @@ struct ZSTileVectorWrangler : zeno::INode {
             cuCtxSynchronize();
         }
 
-        set_output("ZSParticles", get_input("ZSParticles"));
+        set_output("ZSGrid", get_input("ZSGrid"));
     }
 
   private:
     void *_cuModule{nullptr};
 };
 
-ZENDEFNODE(ZSTileVectorWrangler, {
-                                     {"ZSParticles",
-                                      {"string", "zfxCode"},
-                                      {"DictObject:NumericObject", "params"},
-                                      {"enum vert element auto", "target", "auto"}},
-                                     {"ZSParticles"},
-                                     {},
-                                     {"zswrangle"},
-                                 });
+ZENDEFNODE(ZSVolumeWrangler, {
+                                 {"ZSGrid", {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+                                 {"ZSGrid"},
+                                 {},
+                                 {"zswrangle"},
+                             });
 
 } // namespace zeno

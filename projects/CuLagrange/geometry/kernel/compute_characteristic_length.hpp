@@ -17,6 +17,8 @@ namespace zeno {
 
         if(!verts.hasProperty(xTag))
             throw std::runtime_error("compute_average_edge_length::verts contain no specified \"xTag\" channel");
+        if(!elms.hasProperty("inds"))
+            throw std::runtime_error("compute_average_edge_length::elms contain no \"inds\" channel");
 
         constexpr auto space = execspace_e::cuda;
         Vector<T> length_sum{verts.get_allocator(),1};

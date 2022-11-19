@@ -52,6 +52,7 @@ struct IGraphicHandler : IGraphicDraw {
     virtual void setCenter(zeno::vec3f center) = 0;
     virtual void setMode(int mode) = 0;
     virtual void setCoordSys(int coord_sys) = 0;
+    virtual void resize(float scale) = 0;
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
 };
 
@@ -70,7 +71,7 @@ std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 
-std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center);
-std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center);
-std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center);
+std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center, float scale);
+std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center, float scale);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center, float scale);
 } // namespace zenovis

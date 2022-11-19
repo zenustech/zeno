@@ -44,6 +44,11 @@ void RecordVideoMgr::recordFrame()
         m_timer->stop();
         Zenovis::GetInstance().blockSignals(false);
 
+        if (m_recordInfo.saveAsImageSequence) {
+            emit recordFinished();
+            return;
+        }
+
         {
             QString dir_path = m_recordInfo.record_path + "/P/";
             QDir qDir = QDir(dir_path);

@@ -17,10 +17,10 @@ constexpr REAL psi(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
     // get the interpolated vertices
     const VECTOR3 va = (a[0] * v[0] + a[1] * v[1]);
@@ -44,10 +44,10 @@ constexpr REAL psiNegated(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
     // get the interpolated vertices
     const VECTOR3 va = (a[0] * v[0] + a[1] * v[1]);
@@ -70,10 +70,10 @@ constexpr VECTOR12 gradient(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
     // get the interpolated vertices
     const VECTOR3 va = (a[0] * v[0] + a[1] * v[1]);
@@ -106,10 +106,10 @@ constexpr VECTOR12 gradientNegated(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
 
     // get the interpolated vertices
@@ -144,10 +144,10 @@ constexpr MATRIX12 hessian(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
     // get the interpolated vertices
     const VECTOR3 va = (a[0] * v[0] + a[1] * v[1]);
@@ -188,10 +188,10 @@ constexpr MATRIX12 hessianNegated(const VECTOR3 v[4],
                     const REAL& _tooSmall)
 {
     // convert to vertices and edges
-    VECTOR3 e[3] = {};
-    e[0] = v[3] - v[2];
-    e[1] = v[0] - v[2];
-    e[2] = v[1] - v[2];
+    // VECTOR3 e[3] = {};
+    // e[0] = v[3] - v[2];
+    // e[1] = v[0] - v[2];
+    // e[2] = v[1] - v[2];
 
     // get the interpolated vertices
     const VECTOR3 va = (a[0] * v[0] + a[1] * v[1]);

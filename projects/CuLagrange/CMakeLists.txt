@@ -45,6 +45,9 @@ target_sources(zeno PRIVATE
 # fem-cloth
 target_sources(zeno PRIVATE
   fem/ClothInit.cu
+  fem/ClothPipeline.cu
+  fem/ClothLinearSystem.cu
+  fem/ClothCollision.cu
 )
 
 # fem
@@ -58,21 +61,21 @@ target_sources(zeno PRIVATE
 
   # fem/Check.cu
   fem/Generation.cpp
+
   # fem/test.cpp
   # fem/QuasiStaticStepping.cu
 
   # fem/FastQuasiStaticStepping.cu
-
   fem/FleshQuasiStepping.cu
   fem/FleshDynamicStepping.cu
 
+  fem/FleshDynamicStepping.cu # CHECK THIS
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
   fem/collision_energy/edge_edge_collision.hpp
   fem/collision_energy/edge_edge_sqrt_collision.hpp
   fem/collision_energy/evaluate_collision.hpp
   fem/collision_energy/collision_utils.hpp
-
 )
 
 # geometry
@@ -99,6 +102,11 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
+<<<<<<< HEAD
   geometry/CollisionVis.cu
+=======
+
+  geometry/CollisionVis.cu # CHECK THIS
+>>>>>>> 6696d6291e927e3a30115badec2f115f08df725d
   geometry/CalcSurfaceArea.cu
 )

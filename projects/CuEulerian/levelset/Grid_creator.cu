@@ -13,6 +13,8 @@
 
 #include <zeno/VDBGrid.h>
 
+#include "../utils.cuh"
+
 namespace zeno {
 
 struct ZSMakeSparseGrid : INode {
@@ -97,12 +99,7 @@ struct ZSSparseGridToVDB : INode {
 
         auto &spg = zs_grid->spg;
 
-        std::string attrTag = attr;
-        std::string metaTag = attr + "_cur";
-        if (zs_grid->hasMeta(metaTag)) {
-            int &attr_cur = zs_grid->readMeta<int &>(metaTag);
-            attrTag += std::to_string(attr_cur);
-        }
+        auto attrTag = src_tag(zs_grid, attr);
 
         if (attr == "v") {
             auto vdb_ = zs::convert_sparse_grid_to_float3grid(spg, attrTag);
@@ -146,32 +143,65 @@ struct ZSVDBToSparseGrid : INode {
     void apply() override {
         auto vdb = get_input<VDBGrid>("VDB");
         auto attr = get_input2<std::string>("Attribute");
-
         if (attr.empty())
             attr = "sdf";
 
-        ZenoSparseGrid::spg_t spg;
+        if (has_input("SparseGrid")) {
+            auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+            auto &spg = zs_grid->spg;
 
-        auto vdbType = vdb->getType();
-        if (vdbType == "FloatGrid") {
-            auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
-            spg = zs::convert_floatgrid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
-        } else if (vdbType == "Vec3fGrid") {
-            auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
-            spg = zs::convert_float3grid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+            int num_ch;
+            if (vdb->getType() == "FloatGrid")
+                num_ch = 1;
+            else if (vdb->getType() == "Vec3fGrid")
+                num_ch = 3;
+            else
+                throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+
+            auto attrTag = src_tag(zs_grid, attr);
+            if (spg.hasProperty(attrTag)) {
+                if (num_ch != spg.getPropertySize(attrTag)) {
+                    throw std::runtime_error(fmt::format("The channel number of [{}] doesn't match!", attr));
+                }
+            } else {
+                spg.append_channels(zs::cuda_exec(), {{attrTag, num_ch}});
+            }
+
+            if (num_ch == 1) {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
+                zs::assign_floatgrid_to_sparse_grid(vdb_->m_grid, spg, attrTag);
+            } else {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
+                zs::assign_float3grid_to_sparse_grid(vdb_->m_grid, spg, attrTag);
+            }
+
+            set_output("SparseGrid", zs_grid);
         } else {
-            throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+            ZenoSparseGrid::spg_t spg;
+
+            auto vdbType = vdb->getType();
+            if (vdbType == "FloatGrid") {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
+                spg =
+                    zs::convert_floatgrid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+            } else if (vdbType == "Vec3fGrid") {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
+                spg = zs::convert_float3grid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0},
+                                                            attr);
+            } else {
+                throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+            }
+
+            auto zsSPG = std::make_shared<ZenoSparseGrid>();
+            zsSPG->spg = std::move(spg);
+
+            set_output("SparseGrid", zsSPG);
         }
-
-        auto zsSPG = std::make_shared<ZenoSparseGrid>();
-        zsSPG->spg = std::move(spg);
-
-        set_output("SparseGrid", zsSPG);
     }
 };
 
 ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
-                               {"VDB", {"string", "Attribute", ""}},
+                               {"VDB", "SparseGrid", {"string", "Attribute", ""}},
                                /* outputs: */
                                {"SparseGrid"},
                                /* params: */

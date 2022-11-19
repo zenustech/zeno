@@ -1061,7 +1061,8 @@ void optixinit( int argc, char* argv[] )
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
-    xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
+    xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
+                                       1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
 }
 
@@ -1308,7 +1309,10 @@ void update_procedural_sky(
     float sunLightSoftness,
     zeno::vec2f windDir,
     float timeStart,
-    float timeSpeed
+    float timeSpeed,
+    float sunLightIntensity,
+    float colorTemperatureMix,
+    float colorTemperature
 ){
 
     auto &ud = zeno::getSession().userData();
@@ -1323,6 +1327,9 @@ void update_procedural_sky(
     state.params.windDirZ = cos(windDir[1] / 180.f * M_PI) * cos(windDir[0] / 180.f * M_PI);
 
     state.params.sunSoftness = clamp(sunLightSoftness, 0.01f, 1.0f);
+    state.params.sunLightIntensity = sunLightIntensity;
+    state.params.colorTemperatureMix = clamp(colorTemperatureMix, 0.00f, 1.0f);
+    state.params.colorTemperature = clamp(colorTemperature, 1000.0f, 40000.0f);
 
     int frameid = ud.get2<int>("frameid", 0);
     state.params.elapsedTime = timeStart + timeSpeed * frameid;
