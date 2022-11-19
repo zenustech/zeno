@@ -1,3 +1,5 @@
+#pragma once
+
 struct TestClothMeshData {
     inline static const float pos[] = 
     {

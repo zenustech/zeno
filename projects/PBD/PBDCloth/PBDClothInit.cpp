@@ -3,6 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulateQuads
 #include <limits>
 #include <iostream>
+#include <algorithm>
 using std::cout;
 namespace zeno {
 /**
@@ -145,7 +146,40 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
+    void findTriNeighbors(std::vector<vec3i> &tris, std::vector<int> &neighbors) 
+    {
+        neighbors.resize(3*tris.size());
 
+        std::vector<vec3i> edges;
+        
+        for (auto i = 0; i < tris.size(); i++) {
+            for (auto j = 0; j < 3; j++) {
+                auto id0 = tris[i][j];
+                auto id1 = tris[i][(j + 1) % 3];
+                edges.push_back(vec3i{std::min(id0, id1), std::max(id0, id1), 3 * i + j});
+            }
+        }
+
+        // sort so common edges are next to each other
+        std::sort(edges.begin(), edges.end(),
+                  [](vec3i &a, vec3i &b) { return ((a[0] < b[0]) || (a[0] == b[0] && a[1] < b[1])) ? -1 : 1; });
+
+        std::fill(neighbors.begin(), neighbors.end(), -1);
+
+        auto nr = 0;
+        while (nr < edges.size()) {
+            auto e0 = edges[nr];
+            nr++;
+            if (nr < edges.size()) {
+                auto e1 = edges[nr];
+                if (e0[0] == e1[0] && e0[1] == e1[1]) {
+                    neighbors[e0[2]] = e1[2];
+                    neighbors[e1[2]] = e0[2];
+                }
+                nr++;
+            }
+        }
+    }
 
 public:
     virtual void apply() override {
@@ -162,8 +196,12 @@ public:
         auto &restLen = prim->lines.add_attr<float>("restLen");
         auto &restAng = prim->tris.add_attr<vec3f>("restAng");
 
+
+        auto &triNeighbors = prim->verts.add_attr<int>("triNeighbors");
         // auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
         auto &adj4th = prim->tris.attr<vec3i>("adj4th");
+
+        findTriNeighbors(tris, triNeighbors);
 
         initInvMass(pos,tris,areaDensity,invMass);
         initRestLen(pos,edge,restLen);

@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 
-#include "TestClothMeshData.inc"
+#include "TestClothMeshData.h"
 
 
 namespace zeno{

@@ -1,14 +1,14 @@
-target_sources(zeno PRIVATE
-    PBDCloth.cpp
-    testCloth.cpp
-    PBDClothInit.cpp
-    buildEdgeFromQuads.cpp
-    buildAdjacentTris.cpp
-    PBDSetFixedPoint.cpp
-    PBDSolveDihedralConstraint.cpp
-    PBDDihedralConstraint.cpp
-    buildEdgeFromTris.cpp
-    lines2tris.cpp
-    TestClothMesh/TestClothMeshData.inc
-    TestClothMesh/TestClothMesh.cpp
-    )
+# target_sources(zeno PRIVATE
+#     PBDCloth.cpp
+#     testCloth.cpp
+#     # PBDClothInit.cpp
+#     buildEdgeFromQuads.cpp
+#     buildAdjacentTris.cpp
+#     PBDSetFixedPoint.cpp
+#     PBDSolveDihedralConstraint.cpp
+#     PBDDihedralConstraint.cpp
+#     buildEdgeFromTris.cpp
+#     lines2tris.cpp
+#     TestClothMesh/TestClothMeshData.inc
+#     TestClothMesh/TestClothMesh.cpp
+#     )
