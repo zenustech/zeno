@@ -196,7 +196,7 @@ struct ZSNSAdvectDiffuse : INode {
         auto mu = get_input2<float>("Viscosity");
         auto dt = get_input2<float>("dt");
         auto scheme = get_input2<std::string>("Scheme");
-        auto isReflection = get_input2<std::string>("Reflection");
+        auto isReflection = get_input2<bool>("Reflection");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -214,7 +214,7 @@ struct ZSNSAdvectDiffuse : INode {
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     for (int ch = 0; ch < 3; ++ch) {
                         float u_0 = spgv.value(vSrcTag, ch, blockno, cellno);
-                        float u_1 = spgv.value(vDsttag, ch, blockno, cellno);
+                        float u_1 = spgv.value(vDstTag, ch, blockno, cellno);
 
                         spgv(vSrcTag, ch, blockno, cellno) = 2.f*u_0 - u_1;
                         spgv(advTag, ch, blockno, cellno) = u_0;
