@@ -27,8 +27,11 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void focusOutEvent(QFocusEvent* event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void drawBackground(QPainter* painter, const QRectF& rect) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void scrollContentsBy(int dx, int dy) override;
 
 public slots:
     void redo();
@@ -40,6 +43,7 @@ public slots:
     void cameraFocus();
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos, bool isError);
+    void onScrollControlAdded(ZenoParamWidget*);
 
 signals:
     void zoomed(qreal);
@@ -59,6 +63,7 @@ private:
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
+    bool m_bControlActive;
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;

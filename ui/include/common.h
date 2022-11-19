@@ -25,15 +25,16 @@ enum SearchType
     SEARCH_NODECLS = 1 << 1,
     SEARCH_NODEID = 1 << 2,		// search node ident.
     SEARCH_ANNO = 1 << 3,
-    SEARCH_WRANGLE = 1 << 4,
-    SEARCHALL = SEARCH_NODECLS | SEARCH_NODEID | SEARCH_SUBNET | SEARCH_ANNO | SEARCH_WRANGLE
+    SEARCH_ARGS = 1 << 4,       // all args.
+    SEARCHALL = SEARCH_NODECLS | SEARCH_NODEID | SEARCH_SUBNET | SEARCH_ANNO | SEARCH_ARGS
 };
 
 struct SEARCH_RESULT
 {
     SearchType type;
-    QModelIndex targetIdx;
+    QModelIndex targetIdx;  //node or subgraph index.
     QModelIndex subgIdx;
+    QString socket;     //the socket/param which contains the result.
 };
 
 #endif

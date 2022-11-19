@@ -6,7 +6,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenomodel/include/modeldata.h>
 
-
+class ZenoParamWidget;
 class ZenoNode;
 class ZenoFullLink;
 class ZenoTempLink;
@@ -30,6 +30,8 @@ public:
     void select(const QString& id);
     void markError(const QString& nodeid);
     void clearMark();
+    QList<ZenoParamWidget*> getScrollControls() const;
+    void addScrollControl(ZenoParamWidget* pWidget);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -37,6 +39,9 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+
+signals:
+    void scrollControlAdded(ZenoParamWidget*);
 
 public slots:
     void onZoomed(qreal factor);
@@ -72,6 +77,7 @@ private:
     std::map<QString, ZenoNode*> m_nodes;
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
+    QList<ZenoParamWidget*> m_scrollControls;  //resolve conflict scroll event with graphicsview.
     ZenoTempLink* m_tempLink;
 };
 

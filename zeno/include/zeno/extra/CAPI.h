@@ -29,7 +29,6 @@ enum Zeno_PrimMembType {
     Zeno_PrimMembType_loops,
     Zeno_PrimMembType_polys,
     Zeno_PrimMembType_uvs,
-    Zeno_PrimMembType_loop_uvs,
 };
 
 enum Zeno_PrimDataType {
@@ -48,6 +47,7 @@ ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_DestroyGraph(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetCurrentGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GraphIncReference(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_GraphGetSubGraph(Zeno_Graph graph_, Zeno_Graph *retGraph_, const char *subName_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GraphLoadJson(Zeno_Graph graph_, const char *jsonStr_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GraphCallTempNode(Zeno_Graph graph_, const char *nodeType_, const char *const *inputKeys_, const Zeno_Object *inputObjects_, size_t inputCount_, size_t *outputCount_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetLastTempNodeResult(const char **outputKeys_, Zeno_Object *outputObjects_) ZENO_CAPI_NOEXCEPT;

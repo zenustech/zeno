@@ -1,5 +1,5 @@
-#include "Utils.hpp"
 #include "Solver.cuh"
+#include "Utils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
@@ -66,11 +66,11 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
             vtemp.pack<3>("grad", i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
 
         auto M = mat3::identity() * m;
-        mat3 BCbasis[1] = {vtemp.template pack<3, 3>("BCbasis", i)};
+        mat3 BCbasis[1] = {vtemp.pack(dim_c<3, 3>, "BCbasis", i)};
         int BCorder[1] = {(int)vtemp("BCorder", i)};
         int BCfixed[1] = {(int)vtemp("BCfixed", i)};
         rotate_hessian(M, BCbasis, BCorder, BCfixed, projectDBC);
-        tempI.template tuple<9>("Hi", i) = M;
+        tempI.tuple(dim_c<9>, "Hi", i) = M;
         // prepare preconditioner
         for (int r = 0; r != 3; ++r)
             for (int c = 0; c != 3; ++c)
@@ -95,7 +95,7 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
             int BCsoft = vtemp("BCsoft", vi);
             if (BCsoft == 0 && BCorder != 3)
                 vtemp.template tuple<3>("grad", vi) =
-                    vtemp.template pack<3>("grad", vi) + vtemp.template pack<3>("extf", vi) * dt * dt;
+                    vtemp.pack(dim_c<3>, "grad", vi) + vtemp.pack(dim_c<3>, "extf", vi) * dt * dt;
         });
     }
 }
@@ -130,7 +130,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian,
                  n = primHandle.getEles().size()] __device__(int ei) mutable {
-                    auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     mat3 BCbasis[2];
                     int BCorder[2];
                     int BCfixed[2];
@@ -149,7 +149,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     auto k = eles("k", ei);
                     auto rl = eles("rl", ei);
 
-                    vec3 xs[2] = {vtemp.template pack<3>("xn", inds[0]), vtemp.template pack<3>("xn", inds[1])};
+                    vec3 xs[2] = {vtemp.pack(dim_c<3>, "xn", inds[0]), vtemp.pack(dim_c<3>, "xn", inds[1])};
                     auto xij = xs[1] - xs[0];
                     auto lij = xij.norm();
                     auto dij = xij / lij;
@@ -196,10 +196,10 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
                     auto IB = eles.template pack<2, 2>("IB", ei);
-                    auto inds = eles.template pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     auto vole = eles("vol", ei);
-                    vec3 xs[3] = {vtemp.template pack<3>("xn", inds[0]), vtemp.template pack<3>("xn", inds[1]),
-                                  vtemp.template pack<3>("xn", inds[2])};
+                    vec3 xs[3] = {vtemp.pack(dim_c<3>, "xn", inds[0]), vtemp.pack(dim_c<3>, "xn", inds[1]),
+                                  vtemp.pack(dim_c<3>, "xn", inds[2])};
                     auto x1x0 = xs[1] - xs[0];
                     auto x2x0 = xs[2] - xs[0];
 
@@ -326,8 +326,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
-                    auto IB = eles.template pack<3, 3>("IB", ei);
-                    auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto IB = eles.pack(dim_c<3, 3>, "IB", ei);
+                    auto inds = eles.pack(dim_c<4>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     auto vole = eles("vol", ei);
                     vec3 xs[4] = {vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
                                   vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
@@ -494,7 +494,7 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
                     int BCorder[1] = {(int)vtemp("BCorder", vi)};
                     int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
                     rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
-                    svtemp.template tuple<9>("H", svi) = svtemp.template pack<3, 3>("H", svi) + hess;
+                    svtemp.tuple(dim_c<9>, "H", svi) = svtemp.pack(dim_c<3, 3>, "H", svi) + hess;
                     for (int i = 0; i != 3; ++i)
                         for (int j = 0; j != 3; ++j) {
                             atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi), hess(i, j));
@@ -516,7 +516,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
     hess4.reset(false, 0);
     // inertial
     pol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), hess1 = proxy<space>(hess1)] __device__(int i) mutable {
-        auto Hi = tempI.template pack<3, 3>("Hi", i);
+        auto Hi = tempI.pack(dim_c<3, 3>, "Hi", i);
         hess1.hess[i] = Hi;
         hess1.inds[i][0] = i;
     });
@@ -532,8 +532,8 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(eles.size()),
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess2 = proxy<space>(hess2),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
-                    auto He = etemp.template pack<6, 6>("He", ei);
-                    auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto He = etemp.pack(dim_c<6, 6>, "He", ei);
+                    auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     hess2.hess[offset + ei] = He;
                     hess2.inds[offset + ei] = inds;
                 });
@@ -544,8 +544,8 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(eles.size()),
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess3 = proxy<space>(hess3),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
-                    auto He = etemp.template pack<9, 9>("He", ei);
-                    auto inds = eles.template pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto He = etemp.pack(dim_c<9, 9>, "He", ei);
+                    auto inds = eles.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     hess3.hess[offset + ei] = He;
                     hess3.inds[offset + ei] = inds;
                 });
@@ -554,8 +554,8 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(eles.size()),
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess4 = proxy<space>(hess4),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
-                    auto He = etemp.template pack<12, 12>("He", ei);
-                    auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto He = etemp.pack(dim_c<12, 12>, "He", ei);
+                    auto inds = eles.pack(dim_c<4>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                     hess4.hess[offset + ei] = He;
                     hess4.inds[offset + ei] = inds;
                 });
@@ -568,8 +568,8 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(eles.size()),
                     [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles),
                      hess2 = proxy<space>(hess2), vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
-                        auto He = etemp.template pack<6, 6>("He", ei);
-                        auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                        auto He = etemp.pack(dim_c<6, 6>, "He", ei);
+                        auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
                         hess2.hess[offset + ei] = He;
                         hess2.inds[offset + ei] = inds;
                     });
@@ -582,7 +582,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             auto offset = hess2.increaseCount(numPP);
             pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
                                    hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int ppi) mutable {
-                auto H = tempPP.template pack<6, 6>("H", ppi);
+                auto H = tempPP.pack(dim_c<6, 6>, "H", ppi);
                 auto inds = PP[ppi];
                 hess2.hess[offset + ppi] = H;
                 hess2.inds[offset + ppi] = inds;
@@ -592,7 +592,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             offset = hess3.increaseCount(numPE);
             pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE),
                                    hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int pei) mutable {
-                auto H = tempPE.template pack<9, 9>("H", pei);
+                auto H = tempPE.pack(dim_c<9, 9>, "H", pei);
                 auto inds = PE[pei];
                 hess3.hess[offset + pei] = H;
                 hess3.inds[offset + pei] = inds;
@@ -602,7 +602,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             offset = hess4.increaseCount(numPT);
             pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT),
                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pti) mutable {
-                auto H = tempPT.template pack<12, 12>("H", pti);
+                auto H = tempPT.pack(dim_c<12, 12>, "H", pti);
                 auto inds = PT[pti];
                 hess4.hess[offset + pti] = H;
                 hess4.inds[offset + pti] = inds;
@@ -612,7 +612,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             offset = hess4.increaseCount(numEE);
             pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE),
                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eei) mutable {
-                auto H = tempEE.template pack<12, 12>("H", eei);
+                auto H = tempEE.pack(dim_c<12, 12>, "H", eei);
                 auto inds = EE[eei];
                 hess4.hess[offset + eei] = H;
                 hess4.inds[offset + eei] = inds;
@@ -623,7 +623,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 offset = hess4.increaseCount(numEEM);
                 pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = proxy<space>(EEM),
                                         hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eemi) mutable {
-                    auto H = tempEEM.template pack<12, 12>("H", eemi);
+                    auto H = tempEEM.pack(dim_c<12, 12>, "H", eemi);
                     auto inds = EEM[eemi];
                     hess4.hess[offset + eemi] = H;
                     hess4.inds[offset + eemi] = inds;
@@ -633,7 +633,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 offset = hess4.increaseCount(numPPM);
                 pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = proxy<space>(PPM),
                                         hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int ppmi) mutable {
-                    auto H = tempPPM.template pack<12, 12>("H", ppmi);
+                    auto H = tempPPM.pack(dim_c<12, 12>, "H", ppmi);
                     auto inds = PPM[ppmi];
                     hess4.hess[offset + ppmi] = H;
                     hess4.inds[offset + ppmi] = inds;
@@ -643,7 +643,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 offset = hess4.increaseCount(numPEM);
                 pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = proxy<space>(PEM),
                                         hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pemi) mutable {
-                    auto H = tempPEM.template pack<12, 12>("H", pemi);
+                    auto H = tempPEM.pack(dim_c<12, 12>, "H", pemi);
                     auto inds = PEM[pemi];
                     hess4.hess[offset + pemi] = H;
                     hess4.inds[offset + pemi] = inds;
@@ -657,7 +657,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                         offset = hess2.increaseCount(numFPP);
                         pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP),
                                                 hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int fppi) mutable {
-                            auto H = fricPP.template pack<6, 6>("H", fppi);
+                            auto H = fricPP.pack(dim_c<6, 6>, "H", fppi);
                             auto inds = FPP[fppi];
                             hess2.hess[offset + fppi] = H;
                             hess2.inds[offset + fppi] = inds;
@@ -667,7 +667,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                         offset = hess3.increaseCount(numFPE);
                         pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE),
                                                 hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int fpei) mutable {
-                            auto H = fricPE.template pack<9, 9>("H", fpei);
+                            auto H = fricPE.pack(dim_c<9, 9>, "H", fpei);
                             auto inds = FPE[fpei];
                             hess3.hess[offset + fpei] = H;
                             hess3.inds[offset + fpei] = inds;
@@ -677,7 +677,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                         offset = hess4.increaseCount(numFPT);
                         pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT),
                                                 hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int fpti) mutable {
-                            auto H = fricPT.template pack<12, 12>("H", fpti);
+                            auto H = fricPT.pack(dim_c<12, 12>, "H", fpti);
                             auto inds = FPT[fpti];
                             hess4.hess[offset + fpti] = H;
                             hess4.inds[offset + fpti] = inds;
@@ -687,7 +687,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                         offset = hess4.increaseCount(numFEE);
                         pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE),
                                                 hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int feei) mutable {
-                            auto H = fricEE.template pack<12, 12>("H", feei);
+                            auto H = fricEE.pack(dim_c<12, 12>, "H", feei);
                             auto inds = FEE[feei];
                             hess4.hess[offset + feei] = H;
                             hess4.inds[offset + feei] = inds;
@@ -708,7 +708,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                     [svtemp = proxy<space>({}, primHandle.svtemp), svs = proxy<space>({}, svs),
                      svOffset = primHandle.svOffset, hess1 = proxy<space>(hess1), execTag] __device__(int svi) mutable {
                         const auto vi = reinterpret_bits<int>(svs("inds", svi)) + svOffset;
-                        auto pbHess = svtemp.template pack<3, 3>("H", svi);
+                        auto pbHess = svtemp.pack(dim_c<3, 3>, "H", svi);
                         for (int i = 0; i != 3; ++i)
                             for (int j = 0; j != 3; ++j)
                                 atomic_add(execTag, &hess1.hess[vi](i, j), (float)pbHess(i, j));
@@ -731,6 +731,29 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             });
         }
     }
+}
+
+void IPCSystem::compactHessian(zs::CudaExecutionPolicy &pol) {
+    using CsrT = RM_CVREF_T(linMat);
+    using T = CsrT::value_type;
+    using Tn = CsrT::size_type;
+    using table_type = CsrT::table_type;
+    auto &ap = linMat.ap;
+    auto &aj = linMat.aj;
+    auto &ax = linMat.ax;
+    auto &nnz = linMat.nnz;
+    auto &tab = linMat.tab;
+    const auto numExpectedEntries = numDofs * 8;
+    if (linMat.nrows != numDofs) { // init csr mat
+        linMat.nrows = linMat.ncols = numDofs;
+        ap = zs::Vector<Tn>{vtemp.get_allocator(), numDofs + 1};
+        aj = zs::Vector<int>{vtemp.get_allocator(), numExpectedEntries};
+        ax = zs::Vector<T>{vtemp.get_allocator(), numExpectedEntries};
+        nnz = zs::Vector<Tn>{vtemp.get_allocator(), numDofs + 1};
+        tab = table_type{vtemp.get_allocator(), numExpectedEntries};
+    }
+    nnz.reset(0);
+    tab.reset(true);
 }
 
 } // namespace zeno

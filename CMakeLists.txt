@@ -89,7 +89,7 @@ endif()
 if (ZENO_NO_WARNING)  # Use our customized warning flags
     set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wno-format-security -Wnarrowing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wno-format-security -Wnarrowing -Wno-maybe-uninitialized")
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
@@ -194,6 +194,8 @@ if (ZENO_BUILD_PLAYER)
     message(STATUS "Building Zeno Player")
     add_subdirectory(ui/zenoplayer)
 endif()
+
+#add_subdirectory(embed)
 
 if (ZENO_INSTALL_TARGET)
     install(

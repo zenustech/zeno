@@ -37,6 +37,7 @@ public:
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL getControlType(const QString& type);
+    static PARAM_CONTROL getControlType(const QString& type, const QString& sockName);
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);

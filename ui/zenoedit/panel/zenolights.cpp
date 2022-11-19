@@ -24,7 +24,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     setPalette(palette);
     setAutoFillBackground(true);
 
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    //setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
     QHBoxLayout* pSunLightLayout = new QHBoxLayout;
     pMainLayout->addLayout(pSunLightLayout);
@@ -87,6 +87,33 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     timeSpeed->setProperty("cssClass", "proppanel");
     timeSpeed->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(timeSpeed);
+
+    QHBoxLayout* pLightLayout = new QHBoxLayout;
+    pMainLayout->addLayout(pLightLayout);
+
+    QLabel* sunLightIntensityLabel = new QLabel(tr("LightIntensity: "));
+    sunLightIntensityLabel->setProperty("cssClass", "proppanel");
+    pLightLayout->addWidget(sunLightIntensityLabel);
+
+    sunLightIntensity->setProperty("cssClass", "proppanel");
+    sunLightIntensity->setNumSlider({ .1, 1, 10 });
+    pLightLayout->addWidget(sunLightIntensity);
+
+    QLabel* colorTemperatureMixLabel = new QLabel(tr("colorTemperatureMix: "));
+    colorTemperatureMixLabel->setProperty("cssClass", "proppanel");
+    pLightLayout->addWidget(colorTemperatureMixLabel);
+
+    colorTemperatureMix->setProperty("cssClass", "proppanel");
+    colorTemperatureMix->setNumSlider({ .1, 1, 10 });
+    pLightLayout->addWidget(colorTemperatureMix);
+
+    QLabel* colorTemperatureLabel = new QLabel(tr("colorTemperature: "));
+    colorTemperatureLabel->setProperty("cssClass", "proppanel");
+    pLightLayout->addWidget(colorTemperatureLabel);
+
+    colorTemperature->setProperty("cssClass", "proppanel");
+    colorTemperature->setNumSlider({ 10, 100 });
+    pLightLayout->addWidget(colorTemperature);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
@@ -376,6 +403,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(timeSpeed, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(windLong, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(windLat, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(sunLightIntensity, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(colorTemperatureMix, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(colorTemperature, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
 
     connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
@@ -512,6 +542,10 @@ void ZenoLights::modifySunLightDir() {
     float timeStartValue = timeStart->text().toFloat();
     float timeSpeedValue = timeSpeed->text().toFloat();
 
+    float sunLightIntensityValue = sunLightIntensity->text().toFloat();
+    float colorTemperatureMixValue = colorTemperatureMix->text().toFloat();
+    float colorTemperatureValue = colorTemperature->text().toFloat();
+
     bool found = false;
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -524,6 +558,9 @@ void ZenoLights::modifySunLightDir() {
                 prim_in->userData().set2("windDir", std::move(windDir));
                 prim_in->userData().set2("timeStart", std::move(timeStartValue));
                 prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
+                prim_in->userData().set2("sunLightIntensity", std::move(sunLightIntensityValue));
+                prim_in->userData().set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+                prim_in->userData().set2("colorTemperature", std::move(colorTemperatureValue));
             }
         }
     }
@@ -534,6 +571,9 @@ void ZenoLights::modifySunLightDir() {
         ud.erase("windDir");
         ud.erase("timeStart");
         ud.erase("timeSpeed");
+        ud.erase("sunLightIntensity");
+        ud.erase("colorTemperatureMix");
+        ud.erase("colorTemperature");
     }
     else {
         ud.set2("sunLightDir", std::move(sunLightDir));
@@ -541,6 +581,9 @@ void ZenoLights::modifySunLightDir() {
         ud.set2("windDir", std::move(windDir));
         ud.set2("timeStart", std::move(timeStartValue));
         ud.set2("timeSpeed", std::move(timeSpeedValue));
+        ud.set2("sunLightIntensity", std::move(sunLightIntensityValue));
+        ud.set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+        ud.set2("colorTemperature", std::move(colorTemperatureValue));
     }
     scene->objectsMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();
@@ -584,6 +627,9 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                     inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
                     inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
                     inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
+                    inputs["sunLightIntensity"].info.defaultValue = (double)ud.get2<float>("sunLightIntensity");
+                    inputs["colorTemperatureMix"].info.defaultValue = (double)ud.get2<float>("colorTemperatureMix");
+                    inputs["colorTemperature"].info.defaultValue = (double)ud.get2<float>("colorTemperature");
                 }
                 auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
                 pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);

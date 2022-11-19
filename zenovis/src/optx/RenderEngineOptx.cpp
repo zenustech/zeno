@@ -94,27 +94,23 @@ struct GraphicsManager {
             auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
             bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
             //printf("!!has_uv = %d\n", has_uv);
-            #pragma omp parallel for
-            for (size_t i = 0; i < prim->tris.size(); ++i)
-            {
+            if(has_uv) {
+                const auto &uv0data = tris.attr<zeno::vec3f>("uv0");
+                const auto &uv1data = tris.attr<zeno::vec3f>("uv1");
+                const auto &uv2data = tris.attr<zeno::vec3f>("uv2");
+#pragma omp parallel for
+                for (size_t i = 0; i < prim->tris.size(); ++i) {
                     const auto &pos0 = pos[tris[i][0]];
                     const auto &pos1 = pos[tris[i][1]];
                     const auto &pos2 = pos[tris[i][2]];
                     zeno::vec3f uv0;
                     zeno::vec3f uv1;
                     zeno::vec3f uv2;
-                    if(has_uv)
-                    {
-                        uv0 = tris.attr<zeno::vec3f>("uv0")[i];
-                        uv1 = tris.attr<zeno::vec3f>("uv1")[i];
-                        uv2 = tris.attr<zeno::vec3f>("uv2")[i];
-                    }
-                    else
-                    {
-                        uv0 = prim->attr<zeno::vec3f>("uv")[tris[i][0]];
-                        uv1 = prim->attr<zeno::vec3f>("uv")[tris[i][1]];
-                        uv2 = prim->attr<zeno::vec3f>("uv")[tris[i][2]];
-                    }
+
+                    uv0 = uv0data[i];
+                    uv1 = uv1data[i];
+                    uv2 = uv2data[i];
+
                     auto edge0 = pos1 - pos0;
                     auto edge1 = pos2 - pos0;
                     auto deltaUV0 = uv1 - uv0;
@@ -129,7 +125,7 @@ struct GraphicsManager {
                     //printf("tangent:%f %f %f\n", tangent[0], tangent[1], tangent[2]);
                     //zeno::log_info("tangent {} {} {}",tangent[0], tangent[1], tangent[2]);
                     auto tanlen = zeno::length(tangent);
-                    tangent * (1.f / (tanlen + 1e-8));
+                    tangent *(1.f / (tanlen + 1e-8));
                     /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
                         zeno::vec3f n = nrm[tris[i][0]], unused;
                         zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
@@ -137,6 +133,45 @@ struct GraphicsManager {
                         tang[i] = tangent * (1.f / tanlen);
                     }*/
                     tang[i] = tangent;
+                }
+            } else {
+                const auto &uvarray = prim->attr<zeno::vec3f>("uv");
+#pragma omp parallel for
+                for (size_t i = 0; i < prim->tris.size(); ++i) {
+                    const auto &pos0 = pos[tris[i][0]];
+                    const auto &pos1 = pos[tris[i][1]];
+                    const auto &pos2 = pos[tris[i][2]];
+                    zeno::vec3f uv0;
+                    zeno::vec3f uv1;
+                    zeno::vec3f uv2;
+
+                    uv0 = uvarray[tris[i][0]];
+                    uv1 = uvarray[tris[i][1]];
+                    uv2 = uvarray[tris[i][2]];
+
+                    auto edge0 = pos1 - pos0;
+                    auto edge1 = pos2 - pos0;
+                    auto deltaUV0 = uv1 - uv0;
+                    auto deltaUV1 = uv2 - uv0;
+
+                    auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+
+                    zeno::vec3f tangent;
+                    tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+                    tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+                    tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+                    //printf("tangent:%f %f %f\n", tangent[0], tangent[1], tangent[2]);
+                    //zeno::log_info("tangent {} {} {}",tangent[0], tangent[1], tangent[2]);
+                    auto tanlen = zeno::length(tangent);
+                    tangent *(1.f / (tanlen + 1e-8));
+                    /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+                        zeno::vec3f n = nrm[tris[i][0]], unused;
+                        zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+                        } else {
+                        tang[i] = tangent * (1.f / tanlen);
+                        }*/
+                    tang[i] = tangent;
+                }
             }
         }
         std::string key;
@@ -149,7 +184,8 @@ struct GraphicsManager {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
-                if(isRealTimeObject == 0){
+                auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
+                if(isRealTimeObject == 0 && isUniformCarrier == 0){
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
                         zeno::primTriangulateQuads(prim_in);
@@ -180,25 +216,51 @@ struct GraphicsManager {
                     auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
                     auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
                     auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
+                    const zeno::vec3f* uv_data0 = nullptr;
+                    const zeno::vec3f* uv_data1 = nullptr;
+                    const zeno::vec3f* uv_data2 = nullptr;
 
-                    for(size_t tid=0;tid<prim_in->tris.size();tid++)
+                    if(has_uv) {
+                        uv_data0 = prim_in->tris.attr<zeno::vec3f>("uv0").data();
+                        uv_data1 = prim_in->tris.attr<zeno::vec3f>("uv1").data();
+                        uv_data2 = prim_in->tris.attr<zeno::vec3f>("uv2").data();
+
+                        for (size_t tid = 0; tid < prim_in->tris.size(); tid++) {
+                            //std::cout<<tid<<std::endl;
+                            size_t vid = tid * 3;
+                            prim->verts[vid] = in_pos[prim_in->tris[tid][0]];
+                            prim->verts[vid + 1] = in_pos[prim_in->tris[tid][1]];
+                            prim->verts[vid + 2] = in_pos[prim_in->tris[tid][2]];
+                            att_nrm[vid] = in_nrm[prim_in->tris[tid][0]];
+                            att_nrm[vid + 1] = in_nrm[prim_in->tris[tid][1]];
+                            att_nrm[vid + 2] = in_nrm[prim_in->tris[tid][2]];
+                            att_uv[vid] = uv_data0[tid];
+                            att_uv[vid + 1] = uv_data1[tid];
+                            att_uv[vid + 2] = uv_data2[tid];
+                            att_tan[vid] = in_tan[prim_in->tris[tid][0]];
+                            att_tan[vid + 1] = in_tan[prim_in->tris[tid][1]];
+                            att_tan[vid + 2] = in_tan[prim_in->tris[tid][2]];
+                            prim->tris[tid] = zeno::vec3i(vid, vid + 1, vid + 2);
+                        }
+                    } else
                     {
-                        //std::cout<<tid<<std::endl;
-                        size_t vid = tid*3;
-                          prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
-                          prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
-                          prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
-                              att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
-                              att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
-                              att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
-                              att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
-                              att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
-                              att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
-                              att_tan[vid]         = in_tan[prim_in->tris[tid][0]];
-                              att_tan[vid+1]       = in_tan[prim_in->tris[tid][1]];
-                              att_tan[vid+2]       = in_tan[prim_in->tris[tid][2]];
-                             prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
-
+                        for (size_t tid = 0; tid < prim_in->tris.size(); tid++) {
+                            //std::cout<<tid<<std::endl;
+                            size_t vid = tid * 3;
+                            prim->verts[vid] = in_pos[prim_in->tris[tid][0]];
+                            prim->verts[vid + 1] = in_pos[prim_in->tris[tid][1]];
+                            prim->verts[vid + 2] = in_pos[prim_in->tris[tid][2]];
+                            att_nrm[vid] = in_nrm[prim_in->tris[tid][0]];
+                            att_nrm[vid + 1] = in_nrm[prim_in->tris[tid][1]];
+                            att_nrm[vid + 2] = in_nrm[prim_in->tris[tid][2]];
+                            att_uv[vid] = in_uv[prim_in->tris[tid][0]];
+                            att_uv[vid + 1] = in_uv[prim_in->tris[tid][1]];
+                            att_uv[vid + 2] = in_uv[prim_in->tris[tid][2]];
+                            att_tan[vid] = in_tan[prim_in->tris[tid][0]];
+                            att_tan[vid + 1] = in_tan[prim_in->tris[tid][1]];
+                            att_tan[vid + 2] = in_tan[prim_in->tris[tid][2]];
+                            prim->tris[tid] = zeno::vec3i(vid, vid + 1, vid + 2);
+                        }
                     }
                     if (prim_in->has_attr("clr")) {
                         auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
@@ -240,6 +302,26 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
+    bool load_shader_uniforms(std::vector<std::pair<std::string, zeno::IObject *>> const &objs)
+    {
+        std::vector<float4> shaderUniforms;
+        shaderUniforms.resize(0);
+        for (auto const &[key, obj] : objs) {
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)){
+                if ( prim_in->userData().get2<int>("ShaderUniforms", 0)==1 )
+                {
+
+                    shaderUniforms.resize(prim_in->verts.size());
+                    for(int i=0;i<prim_in->verts.size();i++)
+                    {
+                        shaderUniforms[i] = make_float4(prim_in->verts[i][0],prim_in->verts[i][1],prim_in->verts[i][2],0);
+                    }
+                }
+            }
+        }
+        xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        return true;
+    }
     // return if find sky
     bool load_lights(std::string key, zeno::IObject *obj){
         bool sky_found = false;
@@ -285,18 +367,24 @@ struct GraphicsManager {
                 sky_found = true;
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                float sunLightIntensity = prim_in->userData().get2<float>("sunLightIntensity");
+                float colorTemperatureMix = prim_in->userData().get2<float>("colorTemperatureMix");
+                float colorTemperature = prim_in->userData().get2<float>("colorTemperature");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
                 float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::using_hdr_sky(enableHdr);
             }
         }
         return sky_found;
@@ -330,10 +418,14 @@ struct GraphicsManager {
             if (ud.has("sunLightDir")) {
                 zeno::vec2f sunLightDir = ud.get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = ud.get2<float>("sunLightSoftness");
+                float sunLightIntensity = ud.get2<float>("sunLightIntensity");
+                float colorTemperatureMix = ud.get2<float>("colorTemperatureMix");
+                float colorTemperature = ud.get2<float>("colorTemperature");
                 zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
                 float timeStart = ud.get2<float>("timeStart");
                 float timeSpeed = ud.get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
         }
 
@@ -394,6 +486,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
+
     bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
@@ -435,6 +528,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
             meshNeedUpdate = matNeedUpdate = true;
         }
+        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
@@ -529,7 +623,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                                      cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
-
         if(lightNeedUpdate){
             //zeno::log_debug("[zeno-optix] updating light");
             xinxinoptix::optixupdatelight();

@@ -244,7 +244,7 @@ ZENDEFNODE(PrimitiveSplitEdges, {
     {"prim"},
     {"prim"},
     {},
-    {"primitive"},
+    {"deprecated"},
 });
 
 

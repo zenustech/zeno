@@ -130,6 +130,12 @@ ZENO_CAPI Zeno_Error Zeno_GraphIncReference(Zeno_Graph graph_) ZENO_CAPI_NOEXCEP
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_GraphGetSubGraph(Zeno_Graph graph_, Zeno_Graph *retGraph_, const char *subName_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        *retGraph_ = lutGraph.create(lutGraph.access(graph_)->getSubnetGraph(subName_)->shared_from_this());
+    });
+}
+
 ZENO_CAPI Zeno_Error Zeno_GraphLoadJson(Zeno_Graph graph_, const char *jsonStr_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         lutGraph.access(graph_)->loadGraph(jsonStr_);
@@ -321,8 +327,7 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembTy
             &PrimitiveObject::quads,
             &PrimitiveObject::loops,
             &PrimitiveObject::polys,
-            &PrimitiveObject::uvs,
-            &PrimitiveObject::loop_uvs);
+            &PrimitiveObject::uvs);
         std::string attrName = attrName_;
         std::visit([&] (auto const &memb) {
             auto &attArr = memb(*prim);
@@ -350,8 +355,7 @@ ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembTy
             &PrimitiveObject::quads,
             &PrimitiveObject::loops,
             &PrimitiveObject::polys,
-            &PrimitiveObject::uvs,
-            &PrimitiveObject::loop_uvs);
+            &PrimitiveObject::uvs);
         std::string attrName = attrName_;
         std::visit([&] (auto const &memb) {
             index_switch<std::variant_size_v<AttrAcceptAll>>(static_cast<size_t>(dataType_), [&] (auto dataType) {
@@ -376,8 +380,7 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMe
             &PrimitiveObject::quads,
             &PrimitiveObject::loops,
             &PrimitiveObject::polys,
-            &PrimitiveObject::uvs,
-            &PrimitiveObject::loop_uvs);
+            &PrimitiveObject::uvs);
         std::visit([&] (auto const &memb) {
             auto &attArr = memb(*prim);
             *lenRet_ = attArr.template num_attrs<AttrAcceptAll>() + 1;
@@ -405,8 +408,7 @@ ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMem
             &PrimitiveObject::quads,
             &PrimitiveObject::loops,
             &PrimitiveObject::polys,
-            &PrimitiveObject::uvs,
-            &PrimitiveObject::loop_uvs);
+            &PrimitiveObject::uvs);
         std::visit([&] (auto const &memb) {
             memb(*prim).resize(newSize_);
         }, memb);

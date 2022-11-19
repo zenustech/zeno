@@ -42,10 +42,10 @@ struct UVProjectFromPlane : zeno::INode {
         }
 
         if(prim->loops.size()){
-            prim->loop_uvs.resize(prim->loops.size());
+            prim->loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto lo = prim->loops[i];
-                prim->loop_uvs[i] = lo;
+                prim->loops.attr<int>("uvs")[i] = lo;
             }
             prim->uvs.resize(prim->size());
             for (auto i = 0; i < prim->size(); i++) {

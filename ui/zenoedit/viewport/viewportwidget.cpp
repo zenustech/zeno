@@ -160,7 +160,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 }
 
 void CameraControl::lookTo(int dir) {
-    if (dir < 0 || dir > 5) return;
+    if (dir < 0 || dir > 6) return;
     auto x_axis = QVector3D(1, 0, 0);
     auto y_axis = QVector3D(0, 1, 0);
     auto z_axis = QVector3D(0, 0, 1);
@@ -195,6 +195,10 @@ void CameraControl::lookTo(int dir) {
         m_theta = glm::pi<float>() / 2; m_phi = 0.f;
         Zenovis::GetInstance().updateCameraFront(m_center - y_axis * m_radius, y_axis, z_axis);
         break;
+    case 6:
+        m_center = {0, 0, 0};
+        m_theta = 0.f; m_phi = 0.f;
+        Zenovis::GetInstance().updateCameraFront(m_center, -z_axis, y_axis);
     default:
         break;
     }
@@ -206,6 +210,21 @@ void CameraControl::lookTo(int dir) {
 
 void CameraControl::clearTransformer() {
     transformer->clear();
+}
+
+void CameraControl::changeTransformOperation(const QString& node) {
+    auto opt = transformer->getTransOpt();
+    transformer->clear();
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    for (auto const &[key, _] : scene->objectsMan->pairs()) {
+        if (key.find(node.toStdString()) != std::string::npos) {
+            scene->selected.insert(key);
+            transformer->addObject(key);
+        }
+    }
+    transformer->setTransOpt(opt);
+    transformer->changeTransOpt();
+    zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::changeTransformOperation(int mode) {
@@ -227,6 +246,11 @@ void CameraControl::changeTransformOperation(int mode) {
 
 void CameraControl::changeTransformCoordSys() {
     transformer->changeCoordSys();
+    zenoApp->getMainWindow()->updateViewport();
+}
+
+void CameraControl::resizeTransformHandler(int dir) {
+    transformer->resizeHandler(dir);
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -556,15 +580,15 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QGLWidget(parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
 {
-    QSurfaceFormat fmt;
+    QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setProfile(QGLFormat::CoreProfile);
     setFormat(fmt);
 
     // https://blog.csdn.net/zhujiangm/article/details/90760744
@@ -581,7 +605,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QOpenGLContext *ctx;
+    inline static QGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
@@ -695,6 +719,10 @@ void ViewportWidget::cameraLookTo(int dir) {
 
 void ViewportWidget::clearTransformer() {
     m_camera->clearTransformer();
+}
+
+void ViewportWidget::changeTransformOperation(const QString& node) {
+    m_camera->changeTransformOperation(node);
 }
 
 void ViewportWidget::changeTransformOperation(int mode) {
@@ -1005,6 +1033,8 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
         this->cameraLookTo(1);
     if (event->key() == Qt::Key_7)
         this->cameraLookTo(2);
+    if (event->key() == Qt::Key_0)
+        this->cameraLookTo(6);
 
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     if (ctrl_pressed && event->key() == Qt::Key_1)
@@ -1013,6 +1043,13 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
         this->cameraLookTo(4);
     if (ctrl_pressed && event->key() == Qt::Key_7)
         this->cameraLookTo(5);
+
+    if (event->key() == Qt::Key_Backspace)
+        m_camera->resizeTransformHandler(0);
+    if (event->key() == Qt::Key_Plus)
+        m_camera->resizeTransformHandler(1);
+    if (event->key() == Qt::Key_Minus)
+        m_camera->resizeTransformHandler(2);
 }
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent* event) {
@@ -1038,18 +1075,8 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
-        QString presets, path, filename;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename);
-        //validation.
-
         VideoRecInfo recInfo;
-        recInfo.record_path = path;
-        recInfo.frameRange = { frameStart, frameEnd };
-        recInfo.res = { (float)width, (float)height };
-        recInfo.bitrate = bitrate;
-        recInfo.fps = fps;
-        recInfo.videoname = filename;
+        dlg.getInfo(recInfo);
 
         Zenovis::GetInstance().startPlay(true);
 

@@ -149,6 +149,7 @@ struct PathTracerState
     raii<CUdeviceptr>              d_tan;
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices             ;
+    raii<CUdeviceptr>              d_uniforms;
 
     raii<OptixModule>              ptx_module;
     raii<OptixModule>              ptx_module2;
@@ -862,7 +863,7 @@ static void createSBT( PathTracerState& state )
             const int sbt_idx = i * RAY_TYPE_COUNT + 0;  // SBT for radiance ray-type for ith material
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            hitgroup_records[sbt_idx].data.uniforms        = nullptr; //TODO uniforms like iTime, iFrame, etc.
+            hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
             hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
@@ -880,7 +881,7 @@ static void createSBT( PathTracerState& state )
             memset( &hitgroup_records[sbt_idx], 0, hitgroup_record_size );
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_occlusion_hit_group, &hitgroup_records[sbt_idx] ) );
-            hitgroup_records[sbt_idx].data.uniforms        = nullptr; //TODO uniforms like iTime, iFrame, etc.
+            hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
             hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
@@ -1060,7 +1061,9 @@ void optixinit( int argc, char* argv[] )
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
-    xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
+    xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
+                                       1.0, 0.0, 6500.0);
+    xinxinoptix::using_hdr_sky(false);
 }
 
 
@@ -1293,9 +1296,12 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, float sky_strength) {
-    state.params.usingProceduralSky = 0;
     state.params.sky_rot = sky_rot;
     state.params.sky_strength = sky_strength;
+}
+
+void using_hdr_sky(bool enable) {
+    state.params.usingHdrSky = enable;
 }
 
 void update_procedural_sky(
@@ -1303,9 +1309,11 @@ void update_procedural_sky(
     float sunLightSoftness,
     zeno::vec2f windDir,
     float timeStart,
-    float timeSpeed
+    float timeSpeed,
+    float sunLightIntensity,
+    float colorTemperatureMix,
+    float colorTemperature
 ){
-    state.params.usingProceduralSky = 1;
 
     auto &ud = zeno::getSession().userData();
     sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
@@ -1319,6 +1327,9 @@ void update_procedural_sky(
     state.params.windDirZ = cos(windDir[1] / 180.f * M_PI) * cos(windDir[0] / 180.f * M_PI);
 
     state.params.sunSoftness = clamp(sunLightSoftness, 0.01f, 1.0f);
+    state.params.sunLightIntensity = sunLightIntensity;
+    state.params.colorTemperatureMix = clamp(colorTemperatureMix, 0.00f, 1.0f);
+    state.params.colorTemperature = clamp(colorTemperature, 1000.0f, 40000.0f);
 
     int frameid = ud.get2<int>("frameid", 0);
     state.params.elapsedTime = timeStart + timeSpeed * frameid;
@@ -1342,7 +1353,15 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
     g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
     g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
 }
+static int uniformBufferInitialized = false;
+void optixUpdateUniforms(std::vector<float4> & inConstants) {
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
 
+    CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), inConstants.data(),
+                          sizeof(float4)*inConstants.size(), cudaMemcpyHostToDevice));
+
+}
 void optixupdatelight() {
     camera_changed = true;
 

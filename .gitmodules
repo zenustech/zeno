@@ -19,9 +19,6 @@
 [submodule "projects/Rigid/bullet3"]
 	path = projects/Rigid/bullet3
 	url = https://github.com/zenustech/bullet3.git
-[submodule "projects/CUDA/zpc"]
-	path = projects/CUDA/zpc
-	url = https://github.com/zenustech/zpc.git
 [submodule "projects/python/CPython"]
 	path = projects/Python/CPython
 	url = https://github.com/zenustech/python-cmake-buildsystem.git

@@ -68,6 +68,10 @@ protected:
 
 private:
 	QMenuBar* initMenu();
+
+	QAction* m_pSolidMode;
+	QAction* m_pShadingMode;
+	QAction* m_pOptixMode;
 };
 
 class ZenoPropDockTitleWidget : public ZenoDockTitleWidget
