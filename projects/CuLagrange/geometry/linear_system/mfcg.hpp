@@ -105,16 +105,22 @@ namespace zeno { namespace PCG {
     void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
-                constexpr int block_size = space_dim * space_dim;
-                vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
-        });
+        // pol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
+        //         constexpr int block_size = space_dim * space_dim;
+        //         vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
+        // });
+        TILEVEC_OPS::fill(pol,vtemp,PTag,(T)0.0);
+
         pol(zs::range(etemp.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
                         ZS_LAMBDA(int ei) mutable{
             constexpr int h_width = space_dim * simplex_dim;
             auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            for(int i = 0;i != simplex_dim;++i)
+                if(inds[i] < 0)
+                    return;
+
             auto H = etemp.template pack<h_width,h_width>(HTag,ei);
 
             for(int vi = 0;vi != simplex_dim;++vi)

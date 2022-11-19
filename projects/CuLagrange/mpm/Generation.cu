@@ -50,11 +50,11 @@ struct ConfigConstitutiveModel : INode {
             throw std::runtime_error(fmt::format("unrecognized (isotropic) elastic model [{}]\n", typeStr));
 
         // aniso elastic model
-        const auto get_arg = [params = params->getLiterial<zeno::NumericValue>()](const char *const tag, auto type) {
+        const auto get_arg = [&params](const char *const tag, auto type) {
             using T = typename RM_CVREF_T(type)::type;
             std::optional<T> ret{};
-            if (auto it = params.find(tag); it != params.end())
-                ret = std::get<T>(it->second);
+            if (auto it = params->lut.find(tag); it != params->lut.end())
+                ret = safe_any_cast<T>(it->second);
             return ret;
         };
         auto anisoTypeStr = get_input2<std::string>("aniso");

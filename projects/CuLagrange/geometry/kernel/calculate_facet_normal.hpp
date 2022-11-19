@@ -9,20 +9,30 @@ namespace zeno {
     using T = float;
 
     template<typename Pol,typename PosTileVec,typename SurfTriTileVec,typename SurfNrmTileVec>
-    bool calculate_facet_normal(Pol& pol,const PosTileVec& verts,const zs::SmallString& xTag,SurfTriTileVec& tris,SurfNrmTileVec& tri_nrm_buffer,const zs::SmallString& nrmTag) {
+    bool calculate_facet_normal(Pol& pol,const PosTileVec& verts,const zs::SmallString& xTag,const SurfTriTileVec& tris,SurfNrmTileVec& tri_nrm_buffer,const zs::SmallString& nrmTag) {
+        // std::cout << "calculate facet normal" << std::endl;
+        
         using namespace zs;
-        if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) {
-            if(!tris.hasProperty("inds"))
-                fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
-            else if(tris.getChannelSize("inds") != 3)
-                fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
+
+        if(!tris.hasProperty("inds")){
+            std::cout << "the tris has no 'inds' channel\n" << std::endl;
+            fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
+            return false;
+        }
+        if(tris.getChannelSize("inds") != 3){
+            std::cout << "the tris has invalid 'inds' channel size {}\n" << std::endl;
+            fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
             return false;
         }
         if(tris.size() != tri_nrm_buffer.size()) {
+            std::cout << "invalid tris and triNrms" << std::endl;
             fmt::print(fg(fmt::color::red),"the tris's size {} does not match that of tri_nrm_buffer {}\n",
                 tris.size(),tri_nrm_buffer.size());
             return false;
         }
+
+
+
 
         constexpr auto space = execspace_e::cuda;
         pol(zs::range(tris.size()),

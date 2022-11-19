@@ -1,6 +1,5 @@
 #include "Cloth.cuh"
 #include "Structures.hpp"
-#include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include <zeno/types/ListObject.h>
 
@@ -328,7 +327,7 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), voffset = primHandle.vOffset, dt = dt,
-             avgNodeMass = avgNodeMass] __device__(int i) mutable {
+             avgNodeMass = avgNodeMass, augLagCoeff = augLagCoeff] __device__(int i) mutable {
                 auto x = verts.pack<3>("x", i);
                 auto v = verts.pack<3>("v", i);
 
@@ -400,9 +399,9 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
 }
 
-ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coEdges, tiles_t *coEles,
-                         T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap,
-                         int CGCap, T dHat_, T gravity)
+ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *coVerts, const tiles_t *coEdges,
+                         const tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel,
+                         T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
     : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       nPP{zsprims[0]->getParticles().get_allocator(), 1}, tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0},
       PE{estNumCps, zs::memsrc_e::um, 0}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -413,8 +412,9 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts,
                                                                                                      zs::memsrc_e::um,
                                                                                                      0},
       //
-      temp{estNumCps, zs::memsrc_e::um, 0}, csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
-      ncsPT{zsprims[0]->getParticles().get_allocator(), 1}, ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
+      temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
+      csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles().get_allocator(), 1},
+      ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
       pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0} {
@@ -459,10 +459,6 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts,
                          // adaptive dhat, targetGRes, kappa
     // dHat (static)
     this->dHat = dHat_ * std::sqrt(boxDiagSize2);
-
-    auto [mu_, lam_] = largestLameParams();
-    maxMu = mu_;
-    maxLam = lam_;
 
     // check initial self intersections including proximity pairs, do once
     markSelfIntersectionPrimitives(cudaPol);
@@ -559,20 +555,10 @@ struct MakeClothSystem : INode {
 
         auto cudaPol = zs::cuda_exec();
 
-        typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
-        typename ClothSystem::tiles_t *coEdges = zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
-        typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
-#if 0
-        const typename ClothSystem::tiles_t *coSvs =
-            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfVertTag] : nullptr;
-#endif
-
-        if (zsboundary) {
-            auto pol = cuda_exec();
-            compute_surface_neighbors(pol, *coEles, *coEdges, (*zsboundary)[ZenoParticles::s_surfVertTag]);
-            coEles->append_channels(pol, {{"nrm", 3}});
-            coEdges->append_channels(pol, {{"nrm", 3}});
-        }
+        const typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
+        const typename ClothSystem::tiles_t *coEdges =
+            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
+        const typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
 
         /// solver parameters
         auto input_est_num_cps = get_input2<int>("est_num_cps");

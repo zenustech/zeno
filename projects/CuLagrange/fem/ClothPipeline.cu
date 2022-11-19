@@ -11,11 +11,10 @@ typename ClothSystem::T ClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol) {
     using namespace zs;
     using T = typename ClothSystem::T;
     constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(vtemp.size());
-    temp.resize(nwarps);
+    temp.resize(count_warps(vtemp.size()));
     cudaPol(range(vtemp.size()), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = vtemp.size(),
                                   offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
-        auto v = data.pack(dim_c<3>, offset, pi);
+        auto v = data.pack<3>(offset, pi);
         auto val = v.abs().max();
 
         auto [mask, numValid] = warp_mask(pi, n);
@@ -29,23 +28,6 @@ typename ClothSystem::T ClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol) {
             res[pi / 32] = val;
     });
     return reduce(cudaPol, temp, thrust::maximum<T>{});
-}
-typename ClothSystem::T ClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0,
-                                         const zs::SmallString tag1) {
-    using namespace zs;
-    using T = typename ClothSystem::T;
-    constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(vtemp.size());
-    temp.resize(nwarps);
-    temp.reset(0);
-    cudaPol(range(vtemp.size()), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = vtemp.size(),
-                                  offset0 = vtemp.getPropertyOffset(tag0),
-                                  offset1 = vtemp.getPropertyOffset(tag1)] __device__(int pi) mutable {
-        auto v0 = data.pack(dim_c<3>, offset0, pi);
-        auto v1 = data.pack(dim_c<3>, offset1, pi);
-        reduce_to(pi, n, v0.dot(v1), res[pi / 32]);
-    });
-    return reduce(cudaPol, temp, thrust::plus<T>{});
 }
 
 void ClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol) {
@@ -165,8 +147,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     // gradient
                     auto vfdt2 = gij * (dt * dt) * vole;
                     for (int d = 0; d != 3; ++d) {
-                        atomic_add(exec_cuda, &vtemp(gradOffset + d, inds[0]), (T)vfdt2(d));
-                        atomic_add(exec_cuda, &vtemp(gradOffset + d, inds[1]), (T)-vfdt2(d));
+                        atomic_add(exec_cuda, &vtemp(gradOffset, d, inds[0]), (T)vfdt2(d));
+                        atomic_add(exec_cuda, &vtemp(gradOffset, d, inds[1]), (T)-vfdt2(d));
                     }
 
                     auto H = zs::vec<T, 6, 6>::zeros();
@@ -230,7 +212,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     for (int i = 0; i != 3; ++i) {
                         auto vi = inds[i];
                         for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp(gradOffset + d, vi), (T)vfdt2(i * 3 + d));
+                            atomic_add(exec_cuda, &vtemp(gradOffset, d, vi), (T)vfdt2(i * 3 + d));
                     }
 
                     /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
@@ -336,7 +318,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     for (int i = 0; i != 4; ++i) {
                         auto vi = inds[i];
                         for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp(gradOffset + d, vi), (T)vfdt2(i * 3 + d));
+                            atomic_add(exec_cuda, &vtemp(gradOffset, d, vi), (T)vfdt2(i * 3 + d));
                     }
 
                     auto Hq = model.first_piola_derivative(F, true_c);
@@ -386,10 +368,12 @@ void ClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
-        // PRECOMPUTE
+// PRECOMPUTE
+#if 0
         if (enableContact) {
             findCollisionConstraints(pol, dHat);
         }
+#endif
         // GRAD, HESS, P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
@@ -397,24 +381,25 @@ void ClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
         computeInertialAndGravityGradientAndHessian(pol);
         computeElasticGradientAndHessian(pol);
+#if 0
         if (enableContact) {
-            computeCollisionGradientAndHessian(pol);
+            computeBarrierGradientAndHessian(pol);
         }
+#endif
         // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
         if (!projectDBC) {
             // grad
-            pol(zs::range(numBouDofs), [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa,
-                                        coOffset = coOffset] ZS_LAMBDA(int i) mutable {
-                i += coOffset;
-                // computed during the previous constraint residual check
-                auto cons = vtemp.pack(dim_c<3>, "cons", i);
-                auto w = vtemp("ws", i);
-                vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) - boundaryKappa * w * cons;
-                {
-                    for (int d = 0; d != 3; ++d)
-                        vtemp("P", 4 * d, i) += boundaryKappa * w;
-                }
-            });
+            pol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
+                    // computed during the previous constraint residual check
+                    auto cons = vtemp.pack(dim_c<3>, "cons", i);
+                    auto w = vtemp("ws", i);
+                    vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) - boundaryKappa * w * cons;
+                    {
+                        for (int d = 0; d != 3; ++d)
+                            vtemp("P", 4 * d, i) += boundaryKappa * w;
+                    }
+                });
             // hess (embedded in multiply)
         }
         project(pol, "grad");
