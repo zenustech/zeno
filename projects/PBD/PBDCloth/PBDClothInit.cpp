@@ -139,25 +139,31 @@ struct PBDClothInit : zeno::INode {
             }
         }
 
+
         // sort so common edges are next to each other
         std::sort(edges.begin(), edges.end(),
-                  [](vec3i &a, vec3i &b) { return ((a[0] < b[0]) || (a[0] == b[0] && a[1] < b[1])) ? -1 : 1; });
+                  [](vec3i &a, vec3i &b) { return ((a[0] < b[0]) || (a[0] == b[0] && a[1] < b[1])); });
+
 
         std::fill(neighbors.begin(), neighbors.end(), -1);
 
         auto nr = 0;
-        while (nr < edges.size()) {
+        while (nr < edges.size()) 
+        {
             auto e0 = edges[nr];
             nr++;
-            if (nr < edges.size()) {
+            if (nr < edges.size()) 
+            {
                 auto e1 = edges[nr];
-                if (e0[0] == e1[0] && e0[1] == e1[1]) {
+                if (e0[0] == e1[0] && e0[1] == e1[1]) 
+                {
                     neighbors[e0[2]] = e1[2];
                     neighbors[e1[2]] = e0[2];
                 }
                 nr++;
             }
         }
+
     }
 
 
@@ -173,21 +179,14 @@ public:
         auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
 
         auto &invMass = prim->verts.add_attr<float>("invMass");
+        initInvMass(pos,tris,areaDensity,invMass);
         auto &restLen = prim->lines.add_attr<float>("restLen");
-        auto &restAng = prim->tris.add_attr<vec3f>("restAng");
+        initRestLen(pos,edge,restLen);
 
         auto &TriNeighbors = prim->add_attr<int>("TriNeighbors");
-
         initTriNeighbors(tris, TriNeighbors);
-        std::cout<<"TriNeighbors.size(): "<<TriNeighbors.size()<<"\n";
-        for (size_t i = 0; i < TriNeighbors.size(); i++)
-        {   
-            echo(TriNeighbors[i]);
-        }
-        
 
-        initInvMass(pos,tris,areaDensity,invMass);
-        initRestLen(pos,edge,restLen);
+        auto &restAng = prim->tris.add_attr<vec3f>("restAng");
         // initRestAng(pos,tris,triNeighbors,restAng);
 
         //初始化速度和前一时刻位置变量
