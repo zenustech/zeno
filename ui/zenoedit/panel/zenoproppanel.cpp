@@ -575,7 +575,8 @@ void ZenoPropPanel::onSettings()
         QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
         ZASSERT_EXIT(viewParams);
 
-        ZEditParamLayoutDlg dlg(viewParams, false, m_idx, this);
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZEditParamLayoutDlg dlg(viewParams, false, m_idx, pGraphsModel, this);
         dlg.exec();
     });
     pMenu->exec(QCursor::pos());

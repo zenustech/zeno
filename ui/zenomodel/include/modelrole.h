@@ -19,7 +19,7 @@ enum MODEL_ROLE
 	ROLE_PARAM_MODEL,		//param model
 	ROLE_OUTPUT_MODEL,		//output socket model.
 	ROLE_CUSTOMUI_PANEL,	// all viewed panel parameters.
-	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io.
+	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io. see VARAM_INFO
 	ROLE_CUSTOMUI_NODE,		// all viewed node parameters.
 	ROLE_CUSTOMUI_NODE_IO,
 

@@ -3,6 +3,8 @@
 #include <zenomodel/include/modelrole.h>
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/modeldata.h>
+#include <rapidjson/document.h>
 
 
 namespace zenoio
@@ -23,7 +25,7 @@ namespace zenoio
                 ZASSERT_EXIT(pGroup && pGroup->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
                 const QString& vName = pGroup->data(ROLE_VPARAM_NAME).toString();
                 writer.Key(vName.toUtf8());
-                pGroup->exportJson(writer);
+                exportItem(pGroup, writer);
             }
         }
         else if (vType == VPARAM_GROUP)
@@ -34,15 +36,39 @@ namespace zenoio
                 ZASSERT_EXIT(pChild && pChild->data(ROLE_VPARAM_TYPE) == VPARAM_PARAM);
                 const QString& vName = pChild->data(ROLE_VPARAM_NAME).toString();
                 writer.Key(vName.toUtf8());
-                pChild->exportJson(writer);
+                exportItem(pChild, writer);
             }
         }
         else if (vType == VPARAM_PARAM)
         {
             bool bCoreParam = pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
             const QString& corename = pItem->data(ROLE_PARAM_NAME).toString();
-            writer.Key("core-param");
-            writer.String(corename.toUtf8());
+            if (!corename.isEmpty())
+            {
+                writer.Key("core-param");
+                JsonObjBatch _scope(writer);
+
+                writer.Key("name");
+                writer.String(corename.toUtf8());
+
+                writer.Key("class");
+                PARAM_CLASS cls = (PARAM_CLASS)pItem->data(ROLE_PARAM_SOCKETTYPE).toInt();
+                switch (cls)
+                {
+                case PARAM_INPUT:
+                    writer.String("input");
+                    break;
+                case PARAM_PARAM:
+                    writer.String("parameter");
+                    break;
+                case PARAM_OUTPUT:
+                    writer.String("output");
+                    break;
+                default:
+                    writer.String("");
+                    break;
+                }
+            }
 
             writer.Key("control");
             {
@@ -65,14 +91,15 @@ namespace zenoio
                 if (ctrl == CONTROL_ENUM)
                 {
                     CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-                    ZASSERT_EXIT(pros.find("items") != pros.end());
-                    QStringList items = pros["items"].toStringList();
-
                     writer.Key("items");
                     writer.StartArray();
-                    for (QString item : items)
+                    if (pros.find("items") != pros.end())
                     {
-                        writer.String(item.toUtf8());
+                        QStringList items = pros["items"].toStringList();
+                        for (QString item : items)
+                        {
+                            writer.String(item.toUtf8());
+                        }
                     }
                     writer.EndArray();
                 }
@@ -106,5 +133,103 @@ namespace zenoio
             writer.Key(vName.toUtf8());
             exportItem(pTab, writer);
         }
+    }
+
+    VPARAM_INFO importCustomUI(const rapidjson::Value& jsonCutomUI)
+    {
+        VPARAM_INFO invisibleRoot;
+        for (const auto& tabObj : jsonCutomUI.GetObject())
+        {
+            const QString& tabName = tabObj.name.GetString();
+            VPARAM_INFO tab;
+            tab.vType = VPARAM_TAB;
+            tab.m_info.name = tabName;
+
+            for (const auto& groupObj : tabObj.value.GetObject())
+            {
+                const QString& groupName = groupObj.name.GetString();
+                VPARAM_INFO group;
+                group.vType = VPARAM_GROUP;
+                group.m_info.name = groupName;
+
+                for (const auto& paramObj : groupObj.value.GetObject())
+                {
+                    const QString& paramName = paramObj.name.GetString();
+                    const rapidjson::Value& paramVal = paramObj.value;
+
+                    VPARAM_INFO param;
+                    param.vType = VPARAM_PARAM;
+
+                    if (paramVal.HasMember("core-param"))
+                    {
+                        const rapidjson::Value& coreParam = paramVal["core-param"];
+                        ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), invisibleRoot);
+
+                        param.coreParam = QString::fromLocal8Bit(coreParam["name"].GetString());
+                        const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
+
+                        if (cls == "input")
+                        {
+                            param.m_cls = PARAM_INPUT;
+                        }
+                        else if (cls == "parameter")
+                        {
+                            param.m_cls = PARAM_PARAM;
+                        }
+                        else if (cls == "output")
+                        {
+                            param.m_cls = PARAM_OUTPUT;
+                        }
+                        else
+                        {
+                            param.m_cls = PARAM_UNKNOWN;
+                        }
+                    }
+
+                    ZASSERT_EXIT(paramVal.HasMember("control"), invisibleRoot);
+                    const rapidjson::Value& controlObj = paramVal["control"];
+
+                    const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
+                    param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+                    param.m_info.name = paramName;
+
+                    if (controlObj.HasMember("value"))
+                    {
+                        //todo:
+                    }
+                    if (controlObj.HasMember("items"))
+                    {
+                        //combobox
+                        ZASSERT_EXIT(controlObj["items"].IsArray(), invisibleRoot);
+
+                        const auto& arr = controlObj["items"].GetArray();
+                        QStringList lstItems;
+                        for (int i = 0; i < arr.Size(); i++)
+                        {
+                            const auto& itemObj = arr[i];
+                            const QString& itemValue = QString::fromLocal8Bit(itemObj.GetString());
+                            lstItems.append(itemValue);
+                        }
+                        param.controlInfos["items"] = lstItems;
+                    }
+                    if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
+                    {
+                        int step =  controlObj["step"].GetInt();
+                        int min = controlObj["min"].GetInt();
+                        int max = controlObj["max"].GetInt();
+                        param.controlInfos["step"] = step;
+                        param.controlInfos["min"] = min;
+                        param.controlInfos["max"] = max;
+                    }
+
+                    group.children.append(param);
+                }
+
+                tab.children.append(group);
+            }
+
+            invisibleRoot.children.append(tab);
+        }
+        return invisibleRoot;
     }
 }

@@ -37,6 +37,17 @@ enum NODE_TYPE {
     SUBOUTPUT_NODE,
 };
 
+enum VPARAM_TYPE
+{
+    VPARAM_ROOT,
+    VPARAM_TAB,
+    VPARAM_GROUP,
+    VPARAM_INPUTS,
+    VPARAM_PARAMETERS,
+    VPARAM_OUTPUTS,
+    VPARAM_PARAM,
+};
+
 enum PARAM_CLASS
 {
     PARAM_UNKNOWN,
@@ -157,6 +168,21 @@ struct OUTPUT_SOCKET
 };
 typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
 Q_DECLARE_METATYPE(OUTPUT_SOCKETS)
+
+
+struct VPARAM_INFO
+{
+    PARAM_INFO m_info;
+    VPARAM_TYPE vType;
+    QString coreParam;
+    PARAM_CLASS m_cls;
+    QVector<VPARAM_INFO> children;
+    CONTROL_PROPERTIES controlInfos;
+
+    VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN) {}
+};
+Q_DECLARE_METATYPE(VPARAM_INFO);
+
 
 struct COLOR_RAMP
 {

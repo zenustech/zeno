@@ -9,18 +9,8 @@
 
 using namespace rapidxml;
 
-enum VPARAM_TYPE
-{
-    VPARAM_ROOT,
-    VPARAM_TAB,
-    VPARAM_GROUP,
-    VPARAM_INPUTS,
-    VPARAM_PARAMETERS,
-    VPARAM_OUTPUTS,
-    VPARAM_PARAM,
-};
-
 struct VParamItem;
+class IGraphsModel;
 
 class ProxySlotObject : public QObject
 {
@@ -68,18 +58,17 @@ class ViewParamModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, QObject* parent = nullptr);
-    explicit ViewParamModel(bool bNodeUI, const QString& customXml, const QModelIndex& nodeIdx, QObject* parent = nullptr);
-    QString exportUI() const;
+    explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
+    void resetParams(const VPARAM_INFO& invisibleRoot);
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QString exportXml();
     bool isNodeModel() const;
 
 public slots:
-    void onParamsInserted(const QModelIndex& parent, int first, int last);
-    void onParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
+    void onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     void setup(const QString& customUI);
@@ -88,6 +77,7 @@ private:
 
     const bool m_bNodeUI;
     const QPersistentModelIndex m_nodeIdx;
+    const IGraphsModel* const m_model;
 };
 
 #endif

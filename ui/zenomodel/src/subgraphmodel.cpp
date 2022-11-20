@@ -115,19 +115,19 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
     item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
-    item.panelParams = new ViewParamModel(false, nodeIdx, this);
-    item.nodeParams = new ViewParamModel(true, nodeIdx, this);
+    item.panelParams = new ViewParamModel(false, nodeIdx, m_pGraphsModel, this);
+    item.nodeParams = new ViewParamModel(true, nodeIdx, m_pGraphsModel, this);
 
     for (ViewParamModel* viewParamModel : QList{ item.panelParams, item.nodeParams })
     {
-        connect(item.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
-        connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
 
-        connect(item.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
-        connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
 
-        connect(item.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onParamsInserted);
-        connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onParamsAboutToBeRemoved);
+        connect(item.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
     }
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
@@ -380,6 +380,18 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         {
             return item.viewpos;
         }
+        case ROLE_INPUT_MODEL:
+        {
+            return QVariantPtr<IParamModel>::asVariant(item.inputsModel);
+        }
+        case ROLE_PARAM_MODEL:
+        {
+            return QVariantPtr<IParamModel>::asVariant(item.paramsModel);
+        }
+        case ROLE_OUTPUT_MODEL:
+        {
+            return QVariantPtr<IParamModel>::asVariant(item.outputsModel);
+        }
         case ROLE_CUSTOMUI_PANEL:
         {
             return QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
@@ -467,6 +479,12 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     }
                 }
                 break;
+            }
+            case ROLE_CUSTOMUI_PANEL_IO:
+            {
+                const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
+                ZASSERT_EXIT(item.panelParams, false);
+                item.panelParams->resetParams(invisibleRoot);
             }
             case ROLE_COLLASPED:
             {

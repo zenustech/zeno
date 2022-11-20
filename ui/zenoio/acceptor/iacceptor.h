@@ -43,6 +43,7 @@ public:
         const QVector<QPointF>& pts,
         const QVector<QPair<QPointF, QPointF>>& hdls) = 0;
     virtual QObject* currGraphObj() = 0;
+    virtual void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) = 0;
     virtual ~IAcceptor() = default;
 };
 

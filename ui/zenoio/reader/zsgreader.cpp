@@ -5,6 +5,7 @@
 #include "zenoedit/util/log.h"
 #include "variantptr.h"
 #include "common.h"
+#include "../customui/customuirw.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -170,11 +171,15 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     {
         _parseInputs(nodeid, name, legacyDescs, objValue["inputs"], pAcceptor);
     }
-
     if (objValue.HasMember("params"))
     {
         _parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
+    if (objValue.HasMember("customui-panel"))
+    {
+        _parseCustomUI(nodeid, name, objValue["customui-panel"], pAcceptor);
+    }
+
     if (objValue.HasMember("uipos"))
     {
         auto uipos = objValue["uipos"].GetArray();
@@ -192,10 +197,6 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
             options.append(optName);
         }
         pAcceptor->setOptions(nodeid, options);
-    }
-    if (objValue.HasMember("customui-panel"))
-    {
-        pAcceptor->addCustomUI(nodeid, false, objValue["customui-panel"]);
     }
     if (objValue.HasMember("dict_keys"))
     {
@@ -237,6 +238,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
+
     return true;
 }
 
@@ -346,6 +348,12 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
         }
         zeno::log_warn("not object json param");
     }
+}
+
+void ZsgReader::_parseCustomUI(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
+{
+    VPARAM_INFO invisibleRoot = zenoio::importCustomUI(jsonCutomUI);
+    pAcceptor->addCustomUI(id, invisibleRoot);
 }
 
 void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor)

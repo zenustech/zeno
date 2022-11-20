@@ -334,6 +334,15 @@ void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)
     //todo
 }
 
+void ModelAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
+{
+    if (!m_currentGraph)
+        return;
+
+    QModelIndex idx = m_currentGraph->index(id);
+    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot), ROLE_CUSTOMUI_PANEL_IO);
+}
+
 void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")

@@ -362,6 +362,91 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     }
 }
 
+PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
+{
+    if (descName == "Integer")
+    {
+        return CONTROL_INT;
+    }
+    else if (descName == "Float")
+    {
+        return CONTROL_FLOAT;
+    }
+    else if (descName == "String")
+    {
+        return CONTROL_STRING;
+    }
+    else if (descName == "Boolean")
+    {
+        return CONTROL_BOOL;
+    }
+    else if (descName == "Multiline String")
+    {
+        return CONTROL_MULTILINE_STRING;
+    }
+    else if (descName == "read path")
+    {
+        return CONTROL_READPATH;
+    }
+    else if (descName == "write path")
+    {
+        return CONTROL_WRITEPATH;
+    }
+    else if (descName == "Enum")
+    {
+        return CONTROL_ENUM;
+    }
+    else if (descName == "Float Vector 4")
+    {
+        return CONTROL_VEC4_FLOAT;
+    }
+    else if (descName == "Float Vector 3")
+    {
+        return CONTROL_VEC3_FLOAT;
+    }
+    else if (descName == "Float Vector 2")
+    {
+        return CONTROL_VEC2_FLOAT;
+    }
+    else if (descName == "Integer Vector 4")
+    {
+        return CONTROL_VEC4_INT;
+    }
+    else if (descName == "Integer Vector 3")
+    {
+        return CONTROL_VEC3_INT;
+    }
+    else if (descName == "Integer Vector 2")
+    {
+        return CONTROL_VEC2_INT;
+    }
+    else if (descName == "Color")
+    {
+        return CONTROL_COLOR;
+    }
+    else if (descName == "Curve")
+    {
+        return CONTROL_CURVE;
+    }
+    else if (descName == "SpinBox")
+    {
+        return CONTROL_HSPINBOX;
+    }
+    else if (descName == "Slider")
+    {
+        return CONTROL_HSLIDER;
+    }
+    else if (descName == "SpinBoxSlider")
+    {
+        return CONTROL_SPINBOX_SLIDER;
+    }
+    else
+    {
+        return CONTROL_NONE;
+    }
+}
+
+
 PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {

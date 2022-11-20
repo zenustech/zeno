@@ -37,6 +37,7 @@ public:
     QObject *currGraphObj() override;
     void endInputs(const QString& id, const QString& nodeCls) override;
     void endParams(const QString& id, const QString& nodeCls) override;
+    void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
 
     //TransferAcceptor
     QMap<QString, NODE_DATA> nodes() const;

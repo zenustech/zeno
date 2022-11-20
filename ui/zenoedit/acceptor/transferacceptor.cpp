@@ -373,6 +373,11 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
     }
 }
 
+void TransferAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
+{
+    //todo
+}
+
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const
 {
     return m_nodes;

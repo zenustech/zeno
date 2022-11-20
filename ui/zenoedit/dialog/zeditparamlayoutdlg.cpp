@@ -72,7 +72,7 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, IGraphsModel* pGraphsModel, QWidget* parent)
     : QDialog(parent)
     , m_model(nullptr)
     , m_proxyModel(nullptr)
@@ -96,7 +96,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     m_model = qobject_cast<ViewParamModel*>(pModel);
     ZASSERT_EXIT(m_model);
 
-    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), this);
+    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), pGraphsModel, this);
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);

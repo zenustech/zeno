@@ -3,6 +3,7 @@
 #include "zassert.h"
 #include "modelrole.h"
 #include <zenomodel/include/uihelper.h>
+#include "variantptr.h"
 
 
 static const char* qsToString(const QString& qs)
@@ -312,20 +313,13 @@ bool VParamItem::operator==(VParamItem* rItem) const
 
 
 
-ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
     : QStandardItemModel(parent)
     , m_bNodeUI(bNodeUI)
     , m_nodeIdx(nodeIdx)
+    , m_model(pModel)
 {
     setup("");
-}
-
-ViewParamModel::ViewParamModel(bool bNodeUI, const QString& customXml, const QModelIndex& nodeIdx, QObject* parent)
-    : QStandardItemModel(parent)
-    , m_bNodeUI(bNodeUI)
-    , m_nodeIdx(nodeIdx)
-{
-    setup(customXml);
 }
 
 void ViewParamModel::setup(const QString& customUI)
@@ -413,54 +407,62 @@ void ViewParamModel::initNode()
     appendRow(pOutputsGroup);
 }
 
-
-QString ViewParamModel::exportUI() const
+void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
 {
-    /*
-     xml example:
+    //clear old data
+    if (m_bNodeUI)
+    {
+        //todo.
+        return;
+    }
 
-     <customui type="panel">
-        <tab hint="tab1 for xxx">
-            "Tab1"
-            <group>
-                <param name = "pos" coremap = "position">
-                    <control type="enum">
-                        <items>abd\nbef\ncgh</items>
-                        <current></current>
-                    </control>
-                    <linkFrom node="xxx-cube" param="prim">
-                    <linkTo node="xxx-transform" param="dict">
-                </param>
-                <param name = "pos" coremap = "position">
-                </param>
-                inputs
-            </group>
-        </tab>
-     </customui>
+    this->clear();
 
-     <customui>
-        <node name = "pos" coreparam = "position" type = ">
-            <tab name = "Default" type="default" hint="default msg for node">
-                <group name = "inputs">
-                    <param name = "..." control = "..."/>
-                    ...
-                </group>
-                <group name = "params">
-                    <param name = "..." control = "..."/>
-                </group>
-                <group name = "outputs">
-                    
-                </group>
-            </tab>
-        </node>
-        <node name = ...>
-        </node>
-     </customui>
-    */
-    return QString();
+    VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
+    for (VPARAM_INFO tab : invisibleRoot.children)
+    {
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_info.name);
+        for (VPARAM_INFO group : tab.children)
+        {
+            VParamItem* pGroupItem = new VParamItem(VPARAM_GROUP, group.m_info.name);
+            for (VPARAM_INFO param : group.children)
+            {
+                const QString& paramName = param.m_info.name;
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
+
+                //mapping core.
+                const QString& coreparam = param.coreParam;
+                if (!coreparam.isEmpty())
+                {
+                    if (param.m_cls == PARAM_INPUT)
+                    {
+                        IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_INPUT_MODEL));
+                        paramItem->m_index = inputsModel->index(coreparam);
+                    }
+                    else if (param.m_cls == PARAM_PARAM)
+                    {
+                        IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_PARAM_MODEL));
+                        paramItem->m_index = paramsModel->index(coreparam);
+                    }
+                    else if (param.m_cls == PARAM_OUTPUT)
+                    {
+                        IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_OUTPUT_MODEL));
+                        paramItem->m_index = outputsModel->index(coreparam);
+                    }
+                }
+                paramItem->m_info = param.m_info;
+                paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
+
+                pGroupItem->appendRow(paramItem);
+            }
+            pTabItem->appendRow(pGroupItem);
+        }
+        pRoot->appendRow(pTabItem);
+    }
+    invisibleRootItem()->appendRow(pRoot);
 }
 
-void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int last)
+void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, int last)
 {
     IParamModel* pModel = qobject_cast<IParamModel*>(sender());
     ZASSERT_EXIT(pModel);
@@ -528,7 +530,7 @@ void ViewParamModel::onParamsInserted(const QModelIndex& parent, int first, int 
     }
 }
 
-void ViewParamModel::onParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+void ViewParamModel::onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
     IParamModel* pModel = qobject_cast<IParamModel*>(sender());
     ZASSERT_EXIT(pModel);
