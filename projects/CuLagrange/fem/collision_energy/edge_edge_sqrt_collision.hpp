@@ -175,6 +175,8 @@ constexpr MATRIX12 hessian(const VECTOR3 v[4],
 
     return (REAL)-2.0 * _mu * ((_eps - diffNorm) * (vPartial.transpose() * dGrad) +
                         zs::dyadic_prod(normPartial,vPartial.transpose() * d));
+
+    // return (REAL)-2.0 * (zs::dyadic_prod(normPartial,vPartial.transpose() * d));
 }
 
 ///////////////////////////////////////////////////////////////////////

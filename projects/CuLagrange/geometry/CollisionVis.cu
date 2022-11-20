@@ -1749,6 +1749,10 @@ struct VisualizeCollision : zeno::INode {
                 if(collide) {
                     auto abary = ee_buffer.template pack<2>("abary",ei);
                     auto bbary = ee_buffer.template pack<2>("bbary",ei);
+
+                    // printf("Found edge collision pair %d %d %d %d %f %f %f %f\n",inds[0],inds[1],inds[2],inds[3],
+                    //     (float)abary[0],(float)abary[1],(float)bbary[0],(float)bbary[1]);
+
                     // printf("find collision pairs : %d %d %d %d with bary %f %f %f %f\n",inds[0],inds[1],inds[2],inds[3],
                     //     (float)abary[0],(float)abary[1],(float)bbary[0],(float)bbary[1]);
                     cv_ee_buffer.template tuple<3>("a0",ei) = verts.template pack<3>("x",inds[0]);

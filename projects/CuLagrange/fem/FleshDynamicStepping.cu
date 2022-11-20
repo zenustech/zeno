@@ -153,13 +153,13 @@ struct FleshDynamicStepping : INode {
                 ee_buffer,
                 in_collisionEps,out_collisionEps);
 
-            // COLLISION_UTILS::evaluate_ee_collision_grad_and_hessian(cudaPol,
-            //     vtemp,"xn",
-            //     ee_buffer,
-            //     gh_buffer,offset + fp_buffer.size(),
-            //     in_collisionEps,out_collisionEps,
-            //     (T)collisionStiffness,
-            //     (T)mu,(T)lambda);
+            COLLISION_UTILS::evaluate_ee_collision_grad_and_hessian(cudaPol,
+                vtemp,"xn",
+                ee_buffer,
+                gh_buffer,offset + fp_buffer.size(),
+                in_collisionEps,out_collisionEps,
+                (T)collisionStiffness,
+                (T)0.1*mu,(T)0.1*lambda);
 
             // project out all the neglect verts
             if(neglect_inverted) {
@@ -452,7 +452,7 @@ struct FleshDynamicStepping : INode {
         // auto max_collision_pairs = tris.size() / 10; 
         static dtiles_t etemp{eles.get_allocator(), {
                 // {"H", 12 * 12},
-                {"inds",4},
+                // {"inds",4},
                 {"ActInv",3*3},
                 // {"muscle_ID",1},
                 // {"fiber",3}
@@ -495,8 +495,8 @@ struct FleshDynamicStepping : INode {
         auto cudaPol = cuda_exec();
 
         // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
-        TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
-        // TILEVEC_OPS::fill<9>(cudaPol,etemp,"ActInv",zs::vec<T,9>{1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0});
+        // TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+        TILEVEC_OPS::fill<9>(cudaPol,etemp,"ActInv",zs::vec<T,9>{1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0});
         // apply muscle activation
         cudaPol(zs::range(eles.size()),
             [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),
@@ -504,7 +504,7 @@ struct FleshDynamicStepping : INode {
                 // auto act = eles.template pack<3>("act",ei);
                 // auto fiber = etemp.template pack<3>("fiber",ei);
                 zs::vec<T,3> fiber{};
-                if(!eles.hasProperty("fiber"))
+                if(eles.hasProperty("fiber"))
                     fiber = eles.template pack<3>("fiber",ei);
                 else 
                     fiber = zs::vec<T,3>(1.0,0.0,0.0);
@@ -546,6 +546,13 @@ struct FleshDynamicStepping : INode {
 
                 Act = R * Act * R.transpose();
                 etemp.template tuple<9>("ActInv",ei) = zs::inverse(Act);
+                if(ei == 0) {
+                    auto ActInv = etemp.template pack<3,3>("ActInv",ei);
+                    printf("ActInv[0] : \n%f %f %f\n%f %f %f\n%f %f %f\n",
+                        (float)ActInv(0,0),(float)ActInv(0,1),(float)ActInv(0,2),
+                        (float)ActInv(1,0),(float)ActInv(1,1),(float)ActInv(1,2),
+                        (float)ActInv(2,0),(float)ActInv(2,1),(float)ActInv(2,2));
+                }
         });
         auto collisionStiffness = get_input2<float>("cstiffness");
 
@@ -585,8 +592,6 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"H",(T)0.0);  
             TILEVEC_OPS::fill<4>(cudaPol,gh_buffer,"inds",zs::vec<int,4>::uniform(-1).reinterpret_bits(float_c));    
-
-
             match([&](auto &elasticModel) {
                 A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
                     vtemp,

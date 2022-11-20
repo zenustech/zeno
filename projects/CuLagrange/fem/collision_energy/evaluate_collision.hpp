@@ -430,11 +430,15 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
                 auto edgeEdgeCollsionAreas = lines("area",sei) + lines("area",closestEdge);
                 ee_collision_buffer("area",sei) = edgeEdgeCollsionAreas;
 
-                return;
+                // return;
 
                 int is_inverted = is_penertrating ? 1 : 0;  
                 ee_collision_buffer("inverted",sei) = reinterpret_bits<T>(is_inverted);   
                 ee_collision_buffer.template tuple<2>("abary",sei) = aClosest;
+                
+                // printf("aClosest : %f %f\n",aClosest[0],aClosest[1]);
+                // printf("bClosest : %f %f\n",bClosest[0],bClosest[1]);
+
                 ee_collision_buffer.template tuple<2>("bbary",sei) = bClosest;
         });
         

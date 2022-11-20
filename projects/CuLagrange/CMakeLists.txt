@@ -29,7 +29,7 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   mpm/Boundary.cu
   mpm/Generation.cu
-  mpm/Generation.cpp
+  # mpm/Generation.cpp
   mpm/Transfer.cu
   mpm/MPMPipeline.cu
   mpm/Maintenance.cu
@@ -43,12 +43,12 @@ target_sources(zeno PRIVATE
 )
 
 # fem-cloth
-target_sources(zeno PRIVATE
-  fem/ClothInit.cu
-  fem/ClothPipeline.cu
-  fem/ClothLinearSystem.cu
-  fem/ClothCollision.cu
-)
+# target_sources(zeno PRIVATE
+#   fem/ClothInit.cu
+#   fem/ClothPipeline.cu
+#   fem/ClothLinearSystem.cu
+#   fem/ClothCollision.cu
+# )
 
 # fem
 target_sources(zeno PRIVATE
