@@ -4,10 +4,7 @@
 #include <limits>
 #include <iostream>
 #include <algorithm>
-
-#include "../Utils/myPrint.h"
-
-
+using std::cout;
 namespace zeno {
 /**
  * @brief 这个节点是用来为PBD的布料模拟初始化invMass, restLen和restAng的。
@@ -39,6 +36,30 @@ struct PBDClothInit : zeno::INode {
         if(res<-1.0) res = -1.0;  
         if(res>1.0)  res = 1.0;
         return acos(res);
+    }
+
+    //找到other中与self不同的那个点的位置（other的位置），可能是0,1,2
+    int cmp33(vec3i self, vec3i other)
+    {
+        std::vector<bool> isSame{false,false,false};
+        for (size_t i = 0; i < 3; i++)
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                if(self[j] == other[i])//注意是other[i]
+                {
+                    isSame[i] = true;
+                    break;
+                }
+            }
+        }
+
+        for (size_t k = 0; k < 3; k++)
+        {
+            if(isSame[k] == false)
+                return k;
+        }
+        return -1; //没找到
     }
 
 
@@ -125,7 +146,7 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
-    void initTriNeighbors(std::vector<vec3i> &tris, std::vector<int> &neighbors) 
+    void findTriNeighbors(std::vector<vec3i> &tris, std::vector<int> &neighbors) 
     {
         neighbors.resize(3*tris.size());
 
@@ -160,7 +181,6 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
-
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -176,19 +196,17 @@ public:
         auto &restLen = prim->lines.add_attr<float>("restLen");
         auto &restAng = prim->tris.add_attr<vec3f>("restAng");
 
-        auto &TriNeighbors = prim->add_attr<int>("TriNeighbors");
 
-        initTriNeighbors(tris, TriNeighbors);
-        std::cout<<"TriNeighbors.size(): "<<TriNeighbors.size()<<"\n";
-        for (size_t i = 0; i < TriNeighbors.size(); i++)
-        {   
-            echo(TriNeighbors[i]);
-        }
-        
+        auto &triNeighbors = prim->verts.add_attr<int>("triNeighbors");
+        // auto &adjTriId = prim->tris.attr<vec3i>("adjTriId");
+        auto &adj4th = prim->tris.attr<vec3i>("adj4th");
+
+        findTriNeighbors(tris, triNeighbors);
 
         initInvMass(pos,tris,areaDensity,invMass);
         initRestLen(pos,edge,restLen);
-        // initRestAng(pos,tris,triNeighbors,restAng);
+        // initRestAng(pos,tris,adjTriId,restAng);
+        initRestAng(pos,tris,adj4th,restAng);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");
