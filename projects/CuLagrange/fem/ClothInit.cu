@@ -89,6 +89,22 @@ ClothSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, Ti &vOffset
     seOffset += getSurfEdges().size();
     svOffset += getSurfVerts().size();
 }
+typename ClothSystem::T ClothSystem::PrimitiveHandle::maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol,
+                                                                            zs::Vector<T> &temp) const {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto &verts = getVerts();
+    auto &edges = getSurfEdges();
+    temp.resize(edges.size());
+    auto &edgeLengths = temp;
+    pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
+                                 edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
+        auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+    });
+    auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
+    return tmp;
+}
 typename ClothSystem::T ClothSystem::PrimitiveHandle::averageNodalMass(zs::CudaExecutionPolicy &pol) const {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -104,6 +120,33 @@ typename ClothSystem::T ClothSystem::PrimitiveHandle::averageNodalMass(zs::CudaE
 }
 
 /// ClothSystem
+typename ClothSystem::T ClothSystem::maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary) {
+    using T = typename ClothSystem::T;
+    T maxEdgeLength = 0;
+    for (auto &&primHandle : prims) {
+        if (primHandle.isBoundary())
+            continue;
+        if (auto tmp = primHandle.maximumSurfEdgeLength(pol, temp); tmp > maxEdgeLength)
+            maxEdgeLength = tmp;
+    }
+    if (coVerts && includeBoundary) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto &verts = vtemp;
+        auto &edges = *coEdges;
+        temp.resize(edges.size());
+        auto &edgeLengths = temp;
+        pol(Collapse{edges.size()},
+            [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts), edgeLengths = proxy<space>(edgeLengths),
+             coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
+                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+            });
+        if (auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>()); tmp > maxEdgeLength)
+            maxEdgeLength = tmp;
+    }
+    return maxEdgeLength;
+}
 typename ClothSystem::T ClothSystem::averageNodalMass(zs::CudaExecutionPolicy &pol) {
     using T = typename ClothSystem::T;
     T sumNodalMass = 0;
@@ -119,6 +162,16 @@ typename ClothSystem::T ClothSystem::averageNodalMass(zs::CudaExecutionPolicy &p
         return sumNodalMass / sumNodes;
     else
         return 0;
+}
+void ClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
+    L = maximumSurfEdgeLength(pol, true) * 1.5;
+    B = L / std::sqrt(2);
+    Btight = B / 12;
+    LRef = 2 * L / 3;
+    LAda = B + Btight;
+    D = std::sqrt((B+Btight) * (B+Btight) - B * B) * (T)0.1;   // one-tenth of the actual vertex displacement limit, ref Sec.5
+    epsSlack = 9 * B * B / 16;
+    zeno::log_warn("automatically computed params: L[{}], D[{}]\n", L, D);
 }
 void ClothSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;

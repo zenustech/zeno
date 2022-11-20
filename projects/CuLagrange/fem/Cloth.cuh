@@ -74,6 +74,7 @@ struct ClothSystem : IObject {
     using bv_t = typename bvh_t::Box;
     static constexpr T s_constraint_residual = 1e-2;
     static constexpr T boundaryKappa = 1e1;
+    inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
     inline static const char s_meanMassTag[] = "MeanMass";
 
     // cloth, boundary
@@ -84,6 +85,7 @@ struct ClothSystem : IObject {
         PrimitiveHandle(ZenoParticles &zsprim, Ti &vOffset, Ti &sfOffset, Ti &seOffset, Ti &svOffset, zs::wrapv<3>);
         PrimitiveHandle(ZenoParticles &zsprim, Ti &vOffset, Ti &sfOffset, Ti &seOffset, Ti &svOffset, zs::wrapv<4>);
 
+        T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, zs::Vector<T> &temp) const;
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
 
         auto getModelLameParams() const {
@@ -154,6 +156,7 @@ struct ClothSystem : IObject {
     bool hasBoundary() const noexcept {
         return coVerts != nullptr;
     }
+    T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary = true);
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     auto largestLameParams() const {
         T mu = 0, lam = 0;
@@ -166,6 +169,7 @@ struct ClothSystem : IObject {
         }
         return zs::make_tuple(mu, lam);
     }
+    void setupCollisionParams(zs::CudaExecutionPolicy &pol);
 
     void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
         auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
@@ -237,6 +241,51 @@ struct ClothSystem : IObject {
     T boxDiagSize2 = 0;
     T avgNodeMass = 0;
     T maxMu, maxLam;
+
+    /// @brief for cloth collision handling
+    /// @note all length in mm unit
+    /// @note all vertex pair constraints (edge or not) are stored in <PP, nPP, tempPP>
+
+    /// @note global upper length bound on all edges is L
+    T L = 6 * zs::g_sqrt2;
+    T LRef = 4.2, LAda = 6.5;
+    /// @brief global lower bound on the distance between any two non-adjacent vertices in a mesh
+    /// @brief (non-edge) vertex pair distance lower bound is B + Btight
+    T B = 6, Btight = 0.5;
+    /// @note vertex displacement upper boound is sqrt((B + Btight)^2 - B^2)
+
+    /// @note small enough initial displacement for guaranted vertex displacement constraint
+    /// @note i.e. || x^{k+1} - x^k || < 2 * || x^{init} - x^k ||
+
+    /// @brief positive slack constant, used in proximity search
+    /// @note sufficiently large enough to 1) faciliate convergence, 2) address missing pair issue
+    /// @note sufficiently small enough to 1) reduce proximity search cost, 2) reduce early repulsion artifacts
+    T epsSlack = 21.75;
+    /// @brief success condition constant (avoid near boundary numerical issues after the soft phase)
+    T epsCond = 0.01;
+    /// @brief initial displacement limit during the start of K iteration collision steps
+    T D = 0.25;
+    /// @brief coupling coefficients between cloth dynamics and collision dynamics
+    T sigma = 80000; // s^{-2}
+    /// @brief hard phase termination criteria
+    T yita = 0.1;
+    /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
+    int K = 72, ISoft = 10 /*6~16*/, IHard = 8, IInit = 6;
+    /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
+    int IDyn = 3 /*1~6*/, R = 8;
+
+    ///
+    /// initialization
+    /// cloth step
+    /// collision step
+    ///     soft phase
+    ///     hard phase
+
+    T proximityRadius() const {
+        return std::sqrt((B + Btight) * (B + Btight) + epsSlack);
+    }
+
+    ///
 
     //
     std::vector<PrimitiveHandle> prims;
