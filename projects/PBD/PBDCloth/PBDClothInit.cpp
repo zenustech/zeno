@@ -53,33 +53,9 @@ struct PBDClothInit : zeno::INode {
     void initRestAng(
         const AttrVector<vec3f> &pos,
         const AttrVector<vec3i> &tris,
-        const AttrVector<vec3i> &adj4th,
         std::vector<vec3f> &restAng
     ) 
     {
-        for(int i = 0; i < tris.size(); i++)
-        {
-            const vec3i & self = tris[i];
-            int pid1 = self[0]; //先取出本身的三个点的编号
-            int pid2 = self[1];
-            int pid3 = self[2];
-            int pid4 = -1;      //第四个点要搜索另一个面的点
-            for (int j = 0; j < 3; j++)
-            {
-                //因为可能有-1，所以默认值设置负的很大的数字来表示不存在该角度（因为不存在该邻接面）
-                restAng[i][j] = std::numeric_limits<float>::lowest(); 
-                if(adj4th[i][j] != -1) //如果是负一证明该边没有邻接面
-                {
-                    // vec3i other = tris[adjTriId[i][j]]; //取出一个邻接三角面
-                    // //再找到非本身三个点的那个点，作为第四个点。
-                    // pid4 = other[cmp33(self, other)];
-                    pid4 = adj4th[i][j];
-                    if(pid4==-1)
-                        throw std::runtime_error("the adjacent tris failed");
-                    restAng[i][j] = computeAng(pos[pid1],pos[pid2],pos[pid3],pos[pid4]);
-                }
-            }
-        }
     }
 
     /**
@@ -166,6 +142,31 @@ struct PBDClothInit : zeno::INode {
 
     }
 
+    void initTriPairs(std::vector<vec3i> & tris, std::vector<int>& neighbors, std::vector<vec4i>& triPairs)
+    {
+        triPairs.clear();
+
+        for (size_t i = 0; i < tris.size(); i++)
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                auto id0 = tris[i][j];
+                auto id1 = tris[i][(j+1)%3];
+
+                auto n = neighbors[3*i + j];
+                if(n>=0)
+                {
+                    auto ni = std::floor(n/3); //global number
+                    auto nj = n % 3; //local number
+                    auto id2 = tris[i][(j+2)%3];
+                    auto id3 = tris[ni][(nj+2)%3];
+                    triPairs.push_back(vec4i{id0,id1,id2,id3});
+                }
+            }
+            
+        }
+        
+    }
 
 public:
     virtual void apply() override {
@@ -183,11 +184,16 @@ public:
         auto &restLen = prim->lines.add_attr<float>("restLen");
         initRestLen(pos,edge,restLen);
 
-        auto &TriNeighbors = prim->add_attr<int>("TriNeighbors");
-        initTriNeighbors(tris, TriNeighbors);
+        auto &triNeighbors = prim->add_attr<int>("triNeighbors");
+        initTriNeighbors(tris, triNeighbors);
+        // printScalarField("triNeighbors.csv",triNeighbors,0);
 
-        auto &restAng = prim->tris.add_attr<vec3f>("restAng");
+        // auto &restAng = prim->tris.add_attr<vec3f>("restAng");
         // initRestAng(pos,tris,triNeighbors,restAng);
+
+        auto &triPairs = prim->add_attr<vec4i>("triPairs");
+        initTriPairs(tris, triNeighbors, triPairs);
+        printVectorField("triPairs.csv",triPairs,0);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");
