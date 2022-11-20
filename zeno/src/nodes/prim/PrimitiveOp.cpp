@@ -92,6 +92,7 @@ struct BinaryOperator {
     }
 };
 
+#if 1
 struct PrimitiveBinaryOp : INode {
   virtual void apply() override {
     auto primA = get_input<PrimitiveObject>("primA");
@@ -101,37 +102,16 @@ struct PrimitiveBinaryOp : INode {
     auto attrB = get_param<std::string>(("attrB"));
     auto attrOut = get_param<std::string>(("attrOut"));
     auto op = get_param<std::string>(("op"));
-    primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { primB->attr_visit(attrB, [&] (auto &arrB) {
-        if constexpr (is_decay_same_v<decltype(arrOut[0]),
-            is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
-            if (0) {
-#define _PER_OP(opname, expr) \
-            } else if (op == opname) { \
-                BinaryOperator([](auto const &a_, auto const &b_) { \
-                    using PromotedType = decltype(a_ + b_); \
-                    auto a = PromotedType(a_); \
-                    auto b = PromotedType(b_); \
-                    return expr; \
-                })(arrOut, arrA, arrB);
-            _PER_OP("copyA", a)
-            _PER_OP("copyB", b)
-            _PER_OP("add", a + b)
-            _PER_OP("sub", a - b)
-            _PER_OP("rsub", b - a)
-            _PER_OP("mul", a * b)
-            _PER_OP("div", a / b)
-            _PER_OP("rdiv", b / a)
-            _PER_OP("pow", pow(a, b))
-            _PER_OP("rpow", pow(b, a))
-            _PER_OP("atan2", atan2(a, b))
-            _PER_OP("ratan2", atan2(b, a))
-#undef _PER_OP
-            } else {
-                throw Exception("Bad operator type: " + op);
-            }
-        } else {
-            throw Exception("Failed to promote variant type");
-        }
+    primOut->attr_visit(attrOut, [&](auto &arrOut) {
+        using out_element_t = decltype(arrOut[0]);
+        primA->attr_visit(attrA, [&](auto &arrA) {
+            primB->attr_visit(attrB, [&](auto &arrB) {
+                using promotable_t = is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>;
+                if constexpr (is_decay_same_v<out_element_t, promotable_t>) {
+                    throw Exception("Bad operator type: " + op);
+                } else {
+                    throw Exception("Failed to promote variant type");
+                }
     }); }); });
 
     set_output("primOut", get_input("primOut"));
@@ -153,8 +133,9 @@ ZENDEFNODE(PrimitiveBinaryOp,
     }, /* category: */ {
     "deprecated",
     }});
+#endif
 
-
+    #if 0
 struct PrimitiveMix : INode {
     virtual void apply() override{
         auto primA = get_input<PrimitiveObject>("primA");
@@ -277,5 +258,5 @@ ZENDEFNODE(PrimitiveHalfBinaryOp,
     }, /* category: */ {
     "deprecated",
     }});
-
+#endif
 }
