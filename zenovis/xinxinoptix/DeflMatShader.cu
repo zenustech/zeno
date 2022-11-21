@@ -418,6 +418,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
+    prd->transmittanceVDB = 0.0f; 
+
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -464,7 +466,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             }
         }
 
-
+        prd->transmittanceVDB = 0.0f; 
 
         prd->shadowAttanuation = vec3(1e-6f);
         optixTerminateRay();
@@ -569,6 +571,8 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
     float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+
+    prd->depthVDB = optixGetRayTmax();
     
     //N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
@@ -987,3 +991,4 @@ extern "C" __global__ void __closesthit__radiance()
     prd->emission =  float3(mats.emission);
     prd->CH = 1.0;
 }
+

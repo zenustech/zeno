@@ -118,23 +118,6 @@ void buildVolumeAccel( VolumeAccel& accel, const Volume& volume, const OptixDevi
         build_input.customPrimitiveArray.numPrimitives = 1;
         build_input.customPrimitiveArray.sbtIndexOffsetBuffer = 0;
         build_input.customPrimitiveArray.sbtIndexOffsetSizeInBytes = 0;
-
-        // CUdeviceptr vmats;
-        // uint32_t idx[] = {4};//{4};//{g_mtlidlut.size()};
-
-        // build_input.customPrimitiveArray.numSbtRecords = 0;
-
-        // const size_t mat_indices_size_in_bytes = sizeof( uint32_t );
-        // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>(&vmats), mat_indices_size_in_bytes ) );
-        // CUDA_CHECK( cudaMemcpy(
-        //         reinterpret_cast<void*>( vmats ),
-        //         (void*)idx,
-        //         mat_indices_size_in_bytes,
-        //         cudaMemcpyHostToDevice
-        //     ) );
-
-        // build_input.customPrimitiveArray.sbtIndexOffsetBuffer = vmats;
-        // build_input.customPrimitiveArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
         build_input.customPrimitiveArray.primitiveIndexOffset = 0;
 
         OptixAccelBuildOptions accel_options = {};

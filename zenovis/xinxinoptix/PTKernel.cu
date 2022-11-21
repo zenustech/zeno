@@ -143,6 +143,7 @@ extern "C" __global__ void __raygen__rg()
                            &shadow_prd);
             radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
             radiance = radiance + vec3(prd.emission);
+            
 
             prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
@@ -198,9 +199,19 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer[ image_index ] = make_color ( out_color );
 }
 
+#define _INF_F            __int_as_float(0x7f800000)
 
 extern "C" __global__ void __miss__radiance()
 {
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
+
+    if (ix == 0 && iy == 0) {
+        printf("__miss__radiance \n");
+    }
+
+    getPRD()->depthVDB = _INF_F;
+
     vec3 sunLightDir = vec3(
             params.sunLightDirX,
             params.sunLightDirY,
@@ -238,7 +249,6 @@ extern "C" __global__ void __miss__radiance()
     if(length(prd->attenuation)<1e-7f){
         prd->done = true;
     }
-
 }
 
 extern "C" __global__ void __miss__occlusion()
@@ -409,9 +419,9 @@ extern "C" __global__ void __intersection__volume()
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
 
-    if (ix == 0 && iy == 0) {
-        printf("__intersection__volume >>>>>>>>> \n");
-    }
+    // if (ix == 0 && iy == 0) {
+    //     printf("__intersection__volume >>>>>>>>> \n");
+    // }
     
     const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
     const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
@@ -430,10 +440,8 @@ extern "C" __global__ void __intersection__volume()
 
     if( iRay.intersects( bbox, t0, t1 ) )
     {
-        RadiancePRD* prd = getPRD();
-            prd->t1 = t1;
         // report the exit point via payload
-        //optixSetPayload_0( __float_as_uint( t1 ) );
+        getPRD()->t1 = t1; //optixSetPayload_0( __float_as_uint( t1 ) );
         // report the entry-point as hit-point
         optixReportIntersection( fmaxf( t0, optixGetRayTmin() ), 0 );
     }
@@ -445,11 +453,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     const int iy = optixGetLaunchIndex().y;
 
     RadiancePRD* prd = getPRD();
-    
-
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
-
 
     const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
         sbt_data->geometry_data.volume.grid );
@@ -485,7 +490,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 		reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
 
     auto start = grid->worldToIndexF( ray( t0 ) );
-    auto end   = grid->worldToIndexF( ray( fminf( prd->depth, t1 ) ) );
+    auto end   = grid->worldToIndexF( ray( fminf( prd->maxDistance, t1 ) ) );
 
     auto bbox = grid->indexBBox();
     confine( bbox, start, end );
@@ -494,7 +499,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     // the ray's exit point out of the volume, or the hit point found by the
     // continuation ray, if that is closer.
     const float opacity = sbt_data->material_data.volume.opacity;
-    float  transmittance = transmittanceHDDA( start, end, acc, opacity );
+    float transmittance = transmittanceHDDA( start, end, acc, opacity );
 
     //float3 result = payload.result * transmittance;
 
@@ -503,8 +508,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
     // optixSetPayload_2( __float_as_uint( result.z ) );
     // optixSetPayload_3( __float_as_uint( 0.0f ) );
 
-    prd->attenuation *= make_float3(0, 0, 0);//transmittance;
-return;}
+    //prd->attenuation2 = prd->attenuation;
+    prd->attenuation *= transmittance;
+    prd->attenuation2*= transmittance;
+    prd->depthVDB = 0;
+
+    //if (ix == 0 && iy == 0) {
+        //printf("thread x=%d y=%d attenuation=%f attenuation2=%f \n", ix, iy, prd->attenuation, prd->attenuation);
+    //}
+}
 
 extern "C" __global__ void __closesthit__occlusion_volume()
 {
@@ -513,13 +525,13 @@ extern "C" __global__ void __closesthit__occlusion_volume()
 
     const HitGroupData* sbt_data = ( HitGroupData* )optixGetSbtDataPointer();
 
-    RadiancePRD* prd = getPRD();
-
     const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->geometry_data.volume.grid );
     auto        acc = grid->tree().getAccessor();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
+
+    RadiancePRD* prd = getPRD();
 
     const float t0 = optixGetRayTmax();
     const float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
@@ -553,8 +565,5 @@ extern "C" __global__ void __closesthit__occlusion_volume()
     }
 
     prd->transmittanceVDB = transmittance;
-
-    if (ix == 0 && iy == 0) {
-        printf("__closesthit__occlusion_volume <<<<<<<<<<");
-    }
+    prd->shadowAttanuation *= transmittance;
 }

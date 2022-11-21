@@ -63,9 +63,11 @@ struct RadiancePRD
     int          curMatIdx;
     float        CH;
 
+    // cihou nanovdb
     float t0, t1;
+    float depthVDB;
     float transmittanceVDB;
-
+    
     void         pushMat(vec3 extinction)
     {
         if(curMatIdx<7)

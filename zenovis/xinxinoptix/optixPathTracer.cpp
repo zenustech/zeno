@@ -730,7 +730,7 @@ static void createSBT( PathTracerState& state )
         std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
 
         rec.data.geometry_data.volume.grid = reinterpret_cast<void*>( g_volume.d_volume );
-        rec.data.material_data.volume.opacity = 0.125f;
+        rec.data.material_data.volume.opacity = 0.5f;
 
         rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
 

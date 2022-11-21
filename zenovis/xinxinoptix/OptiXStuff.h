@@ -145,8 +145,8 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        // desc.miss.module            = _module;
-        // desc.miss.entryFunctionName = "__miss__occlusion";
+        desc.miss.module            = _module;
+        desc.miss.entryFunctionName = "__miss__occlusion";
         sizeof_log                  = sizeof( log );
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
