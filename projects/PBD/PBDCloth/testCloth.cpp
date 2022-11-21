@@ -54,11 +54,8 @@ struct testCloth : zeno::INode
 
         init(pos,vel,nx,ny,dx, dy);
 
-        set_output("pos", std::move(prim));
-        set_output("nx", std::make_shared<NumericObject>(nx));
-        set_output("ny", std::make_shared<NumericObject>(ny));
-        set_output("dx", std::make_shared<NumericObject>(dx));
-        set_output("dy", std::make_shared<NumericObject>(dy));
+        set_output("prim", std::move(prim));
+
     }
 };
 ZENDEFNODE(testCloth, {
@@ -69,11 +66,7 @@ ZENDEFNODE(testCloth, {
         {"float","dy","0.0078125"}
     },
     {   
-        {"pos"},
-        {"int","nx"},
-        {"int","ny"},
-        {"float","dx"},
-        {"float","dy"}
+        {"prim"},
     },
     {},
     {"PBD"},

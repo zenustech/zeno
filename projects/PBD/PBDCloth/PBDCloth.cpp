@@ -45,7 +45,7 @@ private:
      */
     float ballSdf(const vec3f& p, vec3f& normal)
     {
-        vec3f ballCenter{0, 0.2, 0};
+        vec3f ballCenter{0, 0.5, 0};
         float ballRadius{0.1};
 
         const vec3f diff = p-ballCenter;
@@ -91,9 +91,6 @@ private:
         return res;
     }
 
-    
-
-
 
     /**
      * @brief 求解PBD所有边约束（也叫距离约束）。目前采用Gauss-Seidel方式（难以并行）。
@@ -106,10 +103,10 @@ private:
      * @param dt 时间步长
      */
     void solveDistanceConstraint( 
-        zeno::AttrVector<zeno::vec3f> &pos,
-        const zeno::AttrVector<zeno::vec2i> &edge,
-        const std::vector<float> & invMass,
-        const std::vector<float> & restLen,
+              std::vector<vec3f> &pos,
+        const std::vector<vec2i> &edge,
+        const std::vector<float> &invMass,
+        const std::vector<float> &restLen,
         const float edgeCompliance,
         const float dt
         )
@@ -243,12 +240,12 @@ public:
 
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
-        auto &edge = prim->lines;
+        auto &edge = prim->edges;
+        auto &quads = prim->quads;
         auto &prevPos = prim->verts.attr<vec3f>("prevPos");
         auto &vel = prim->verts.attr<vec3f>("vel");
         auto &invMass=prim->verts.attr<float>("invMass");
-        auto &restLen=prim->lines.attr<float>("restLen");
-        auto &triPairs=prim->attr<vec4i>("triPairs");
+        auto &restLen=prim->edges.attr<float>("restLen");
 
         for (int steps = 0; steps < numSubsteps; steps++) 
         {
