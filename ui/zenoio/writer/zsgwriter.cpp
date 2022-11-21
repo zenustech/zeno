@@ -258,7 +258,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 	//custom ui for panel
 	ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_PANEL]);
-	if (viewParams)
+	if (viewParams && viewParams->isDirty())
 	{
 		writer.Key("customui-panel");
 		zenoio::exportCustomUI(viewParams, writer);

@@ -318,6 +318,7 @@ ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphs
     , m_bNodeUI(bNodeUI)
     , m_nodeIdx(nodeIdx)
     , m_model(pModel)
+    , m_bDirty(false)
 {
     setup("");
 }
@@ -460,6 +461,7 @@ void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
         pRoot->appendRow(pTabItem);
     }
     invisibleRootItem()->appendRow(pRoot);
+    markDirty();
 }
 
 void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, int last)
@@ -582,6 +584,16 @@ QString ViewParamModel::exportXml()
 bool ViewParamModel::isNodeModel() const
 {
     return m_bNodeUI;
+}
+
+bool ViewParamModel::isDirty() const
+{
+    return m_bDirty;
+}
+
+void ViewParamModel::markDirty()
+{
+    m_bDirty = true;
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)

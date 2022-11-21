@@ -65,6 +65,8 @@ public:
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QString exportXml();
     bool isNodeModel() const;
+    bool isDirty() const;
+    void markDirty();
 
 public slots:
     void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
@@ -75,9 +77,10 @@ private:
     void initPanel();
     void initNode();
 
-    const bool m_bNodeUI;
     const QPersistentModelIndex m_nodeIdx;
     const IGraphsModel* const m_model;
+    const bool m_bNodeUI;
+    bool m_bDirty;
 };
 
 #endif

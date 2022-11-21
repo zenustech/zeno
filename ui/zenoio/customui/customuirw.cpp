@@ -195,21 +195,13 @@ namespace zenoio
 
                     if (controlObj.HasMember("value"))
                     {
-                        //todo:
+                        param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
                     }
                     if (controlObj.HasMember("items"))
                     {
                         //combobox
                         ZASSERT_EXIT(controlObj["items"].IsArray(), invisibleRoot);
-
-                        const auto& arr = controlObj["items"].GetArray();
-                        QStringList lstItems;
-                        for (int i = 0; i < arr.Size(); i++)
-                        {
-                            const auto& itemObj = arr[i];
-                            const QString& itemValue = QString::fromLocal8Bit(itemObj.GetString());
-                            lstItems.append(itemValue);
-                        }
+                        QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
                         param.controlInfos["items"] = lstItems;
                     }
                     if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))

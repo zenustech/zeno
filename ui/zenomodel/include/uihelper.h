@@ -59,6 +59,7 @@ public:
     static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
     static QVariant parseStringByType(const QString &defaultValue, const QString &type);
     static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val, QObject *parentRef);
+    static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);

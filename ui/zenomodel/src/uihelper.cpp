@@ -1216,6 +1216,94 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
     return QVariant();
 }
 
+QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
+{
+    if (val.GetType() == rapidjson::kStringType)
+    {
+        bool bSucc = false;
+        float fVal = parseJsonNumeric(val, true, bSucc);
+        if (bSucc)
+            return fVal;
+        return val.GetString();
+    }
+    else if (val.GetType() == rapidjson::kNumberType)
+    {
+        if (val.IsDouble())
+            return val.GetDouble();
+        else if (val.IsInt())
+            return val.GetInt();
+        else {
+            zeno::log_warn("bad rapidjson number type {}", val.GetType());
+            return QVariant();
+        }
+    }
+    else if (val.GetType() == rapidjson::kTrueType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kFalseType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kNullType)
+    {
+        return QVariant();
+    }
+    else if (val.GetType() == rapidjson::kArrayType)
+    {
+        //detect whether it is a numeric vector.
+        auto values = val.GetArray();
+        bool bNumeric = true;
+        for (int i = 0; i < values.Size(); i++)
+        {
+            if (!values[i].IsNumber())
+            {
+                bNumeric = false;
+                break;
+            }
+        }
+        if (bNumeric)
+        {
+            UI_VECTYPE vec;
+            for (int i = 0; i < values.Size(); i++)
+            {
+                const auto& numObj = values[i];
+                if (numObj.IsInt() || numObj.IsInt64() || numObj.IsUint() || numObj.IsUint64())
+                    vec.append(values[i].GetInt());
+                else if (numObj.IsFloat() || numObj.IsDouble())
+                    vec.append(values[i].GetFloat());
+            }
+            return QVariant::fromValue(vec);
+        }
+        else
+        {
+            QStringList lst;
+            for (int i = 0; i < values.Size(); i++)
+            {
+                const auto& obj = values[i];
+                if (obj.IsNumber()) {
+                    lst.append(QString::number(obj.GetFloat()));
+                }
+                else if (obj.IsString()) {
+                    lst.append(QString::fromLocal8Bit(obj.GetString()));
+                }
+            }
+            return lst;
+        }
+    }
+    else if (val.GetType() == rapidjson::kObjectType)
+    {
+        //if (type == "curve")
+        //{
+        //    CurveModel* pModel = JsonHelper::_parseCurveModel(val, parentRef);
+        //    return QVariantPtr<CurveModel>::asVariant(pModel);
+        //}
+    }
+
+    zeno::log_warn("bad rapidjson value type {}", val.GetType());
+    return QVariant();
+}
+
 QString UiHelper::gradient2colorString(const QLinearGradient& grad)
 {
     QString colorStr;

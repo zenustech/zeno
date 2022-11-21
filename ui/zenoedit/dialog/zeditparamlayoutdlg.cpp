@@ -388,6 +388,7 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
 
 void ZEditParamLayoutDlg::onApply()
 {
+    m_model->markDirty();
     m_model->clone(m_proxyModel);
 }
 
