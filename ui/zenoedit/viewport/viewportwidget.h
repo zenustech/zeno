@@ -7,6 +7,7 @@
 #include "comctrl/zmenu.h"
 #include "common.h"
 #include "viewporttransform.h"
+#include "viewportpicker.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -59,7 +60,7 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event);
+    // void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
@@ -87,6 +88,7 @@ private:
 
     QSet<int> m_pressedKeys;
     std::unique_ptr<zeno::FakeTransformer> transformer;
+    std::unique_ptr<zeno::Picker> picker;
 };
 
 class ViewportWidget : public QGLWidget
@@ -117,7 +119,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    // void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;

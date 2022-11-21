@@ -13,6 +13,7 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
+    std::unique_ptr<IGraphicDraw> primHighlight;
     Scene *scene;
 
     auto setupState() {
@@ -32,6 +33,8 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
         hudGraphics.push_back(makeGraphicSelectBox(scene));
+
+        primHighlight = makePrimitiveHighlight(scene);
     }
 
     void update() override {
@@ -49,6 +52,7 @@ struct RenderEngineBate : RenderEngine {
 //        for (auto const &[key, gra] : graphicsMan->graphics.pairs<IGraphicDraw>()) {
 //            gra->draw();
 //        }
+        primHighlight->draw();
         if (scene->drawOptions->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();

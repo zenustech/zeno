@@ -1,13 +1,8 @@
-//
-// Created by ryan on 22-8-8.
-//
-
 #ifndef __VIEWPORT_TRANSFORM_H__
 #define __VIEWPORT_TRANSFORM_H__
 #include "zenovis.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-
 #include <zeno/types/PrimitiveObject.h>
 
 #include <QtWidgets>
