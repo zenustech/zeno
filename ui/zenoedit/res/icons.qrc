@@ -266,5 +266,9 @@
     <file>icons/timeline_sound_on.svg</file>
     <file>icons/timeline_startFrame_idle.svg</file>
     <file>icons/timeline_startFrame_light.svg</file>
+    <file>icons/toolbar_search_idle.svg</file>
+    <file>icons/toolbar_search_light.svg</file>
+    <file>icons/toolbar_localSetting_idle.svg</file>
+    <file>icons/toolbar_localSetting_light.svg</file>
 </qresource>
 </RCC>

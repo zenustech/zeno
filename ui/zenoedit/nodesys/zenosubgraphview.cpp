@@ -196,6 +196,34 @@ void _ZenoSubGraphView::setPath(const QString& path)
     update();
 }
 
+void _ZenoSubGraphView::scaleBy(qreal scaleFactor)
+{
+    qreal curScaleFactor = transform().m11();
+    static qreal minScale = 0.1;
+    static qreal maxScale = 5.0;
+
+    if (((curScaleFactor == minScale) && (scaleFactor < 1.0)) ||
+        ((curScaleFactor == maxScale) && (scaleFactor > 1.0))) return;
+
+    qreal sc = scaleFactor;
+    if ((curScaleFactor * sc < minScale) && (sc < 1.0))
+    {
+        sc = minScale / curScaleFactor;
+    }
+    else if ((curScaleFactor * sc > maxScale) && (sc > 1.0))
+    {
+        sc = maxScale / curScaleFactor;
+    }
+    scale(sc, sc);
+	//centerOn(target_scene_pos);
+}
+
+void _ZenoSubGraphView::setScale(qreal scale)
+{
+    qreal scaleFactor = scale / transform().m11();
+    scaleBy(scaleFactor);
+}
+
 void _ZenoSubGraphView::gentle_zoom(qreal factor)
 {
 	scale(factor, factor);
@@ -534,4 +562,9 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 		QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();
 		m_view->focusOn(objId, pos, isError);
 	}
+}
+
+void ZenoSubGraphView::setZoom(const qreal& scale)
+{
+	m_view->setScale(scale);
 }

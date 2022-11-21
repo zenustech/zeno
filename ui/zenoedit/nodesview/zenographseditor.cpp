@@ -402,6 +402,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
 
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
 
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
             QStringList L = newPath.split("/", QtSkipEmptyParts);
@@ -578,7 +579,7 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     onAction(pAction->text());
 }
 
-void ZenoGraphsEditor::onAction(const QString& text)
+void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
 {
     if (text == tr("Collaspe"))
     {
@@ -668,6 +669,15 @@ void ZenoGraphsEditor::onAction(const QString& text)
             text.replace('\\', '/');
             settings.setValue("zencachedir", text);
             settings.setValue("zencachenum", text2);
+        }
+    }
+    else if (text == tr("zoom"))
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        if (!args.isEmpty() && (args[0].type() == QMetaType::Float || args[0].type() == QMetaType::Double))
+        {
+            pView->setZoom(args[0].toFloat());
         }
     }
 }

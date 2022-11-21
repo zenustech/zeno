@@ -11,6 +11,8 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenoui/comctrl/zlinewidget.h>
+#include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
+#include <zenoui/comctrl/zwidgetfactory.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -117,6 +119,9 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
         ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
     pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
 
+    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+    ZenoGraphsEditor* pEditor = new ZenoGraphsEditor(pMainWin);
+
     ZToolBarButton* pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     pListView->setChecked(true);
 
@@ -127,6 +132,27 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
+    ZToolBarButton* pSearchBtn = new ZToolBarButton(false, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
+    ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+
+    QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
+    CONTROL_PROPERTIES props;
+    props["items"] = items;
+
+    Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
+        const QString& percent = newValue.toString();
+        QRegExp rx("(\\d+)\\%");
+        rx.indexIn(percent);
+        auto caps = rx.capturedTexts();
+        qreal scale = caps[1].toFloat() / 100.;
+        pEditor->onAction(pEditor->tr("zoom"), {scale});
+    };
+    QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", funcZoomEdited, CALLBACK_SWITCH(), props));
+    connect(pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
+        QString percent = QString::number(newFactor * 100);
+        percent += "%";
+        cbZoom->setCurrentText(percent);
+    });
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
@@ -140,6 +166,9 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     pToolLayout->addWidget(pBlackboard);
     pToolLayout->addWidget(pFullPanel);
     pToolLayout->addStretch();
+    pToolLayout->addWidget(cbZoom);
+    pToolLayout->addWidget(pSearchBtn);
+    pToolLayout->addWidget(pSettings);
 
     QVBoxLayout* pVLayout = new QVBoxLayout;
     pVLayout->setContentsMargins(0, 0, 0, 0);
@@ -150,9 +179,6 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     //add the seperator line
     ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
     pVLayout->addWidget(pLine);
-
-    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
-    ZenoGraphsEditor* pEditor = new ZenoGraphsEditor(pMainWin);
 
     connect(pListView, &ZToolBarButton::toggled, pEditor, &ZenoGraphsEditor::onSubnetListPanel);
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {

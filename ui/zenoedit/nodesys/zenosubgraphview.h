@@ -19,6 +19,8 @@ public:
     void initScene(ZenoSubGraphScene* pScene);
     void setPath(const QString& path);
     qreal scaleFactor() const;
+    void setScale(qreal scale);
+    void gentle_zoom(qreal factor);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -46,10 +48,10 @@ signals:
     void viewChanged(qreal);
 
 private:
-    void gentle_zoom(qreal factor);
     void set_modifiers(Qt::KeyboardModifiers modifiers);
     void resetTransform();
     void drawGrid(QPainter* painter, const QRectF& rect);
+    void scaleBy(qreal scaleFactor);
 
     QPointF target_scene_pos, target_viewport_pos, m_startPos;
     QPoint m_mousePos;
@@ -93,6 +95,7 @@ public:
 	void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
 	void resetPath(const QString& path, const QString& subGraphName, const QString& objId, bool isError = false);
+    void setZoom(const qreal& scale);
 
 signals:
 	void pathUpdated(QString);
