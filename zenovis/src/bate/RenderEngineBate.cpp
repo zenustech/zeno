@@ -52,12 +52,12 @@ struct RenderEngineBate : RenderEngine {
         for (auto const &[key, gra] : graphicsMan->graphics.pairs<IGraphicDraw>()) {
             gra->draw();
         }
+        primHighlight->draw();
         if (scene->drawOptions->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
         }
-        primHighlight->draw();
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
