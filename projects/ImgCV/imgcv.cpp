@@ -6,6 +6,7 @@
 #include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 
@@ -298,8 +299,6 @@ struct CVImageMonoColor : CVINode {
         auto is255 = get_input2<bool>("is255");
         auto color = tocvvec<float>(get_input2<vec3f>("color"));
         auto image = std::make_shared<CVImageObject>(likeimage->image.clone());
-        vec2i shape(image->image.size[0], image->image.size[1]);
-        vec2f invshape = 1.f / shape;
         if (is255) {
             cv::Point3_<unsigned char> cval;
             cval.x = (unsigned char)std::clamp(color[0] * 255.f, 0.f, 255.f);
@@ -397,6 +396,7 @@ struct CVImageDrawPoly : CVINode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto linewidth = get_input2<int>("linewidth");
         auto isconvex = get_input2<bool>("isconvex");
+        vec2i shape(image->image.size[1], image->image.size[0]);
         std::vector<std::vector<cv::Point>> pts(prim->polys.size());
         for (int i = 0; i < prim->polys.size(); i++) {
             auto [base, len] = prim->polys[i];
@@ -404,8 +404,8 @@ struct CVImageDrawPoly : CVINode {
             auto &pt = pts[i];
             for (int k = 0; k < len; k++) {
                 auto v = prim->verts[prim->loops[base + k]];
-                pt[k].x = v[0];
-                pt[k].y = v[1];
+                pt[k].x = int((v[0] * 0.5f + 0.5f) * shape[0]);
+                pt[k].y = int((v[1] * -0.5f + 0.5f) * shape[1]);
             }
         }
         if (linewidth > 0) {
@@ -422,7 +422,8 @@ struct CVImageDrawPoly : CVINode {
 ZENDEFNODE(CVImageDrawPoly, {
     {
         {"CVImageObject", "image"},
-        {"vec3f", "color", "0,0,0"},
+        {"PrimitiveObject", "prim"},
+        {"vec3f", "color", "1,1,1"},
         {"PrimitiveObject", "points"},
         {"int", "linewidth", "0"},
         {"bool", "isconvex", "0"},
