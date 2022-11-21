@@ -666,7 +666,7 @@ void FakeTransformer::syncToTransformNode(QString& node_id, const std::string& o
 }
 
 void FakeTransformer::doTransform() {
-    qDebug() << "transformer's objects count " << m_objects.size();
+    // qDebug() << "transformer's objects count " << m_objects.size();
     m_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
