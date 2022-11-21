@@ -31,12 +31,26 @@ struct ZSPrimitiveToSparseGrid : INode {
 
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-
-        const int nchns = spg.getPropertySize(tag);
-        if (isStaggered && nchns != 3)
-            throw std::runtime_error("the size of the target staggered property is not 3!");
-        ///
         auto cudaPol = cuda_exec().device(0);
+
+        const int nchns = parObjPtrs[0]->getParticles().getPropertySize(parTag);
+        for (auto &&parObjPtr : parObjPtrs) {
+            int m_nchns = parObjPtr->getParticles().getPropertySize(parTag);
+            if (m_nchns != nchns)
+                throw std::runtime_error("the size of the ParticleAttribute doesn't match between ZSParticles!");
+            if (isStaggered && m_nchns != 3)
+                throw std::runtime_error("the size of the ParticleAttribute is not 3!");
+        }
+
+        if (!spg.hasProperty(tag)) {
+            spg.append_channels(cudaPol, {{tag, nchns}});
+        } else {
+            int m_nchns = spg.getPropertySize(tag);
+            if (isStaggered && m_nchns != 3)
+                throw std::runtime_error("the size of the GridAttribute is not 3!");
+        }
+        ///
+
         std::vector<PropertyTag> add_tags{{"weight", isStaggered ? 3 : 1}, {"mark", 1}};
         spg.append_channels(cudaPol, add_tags);
 
@@ -50,14 +64,14 @@ struct ZSPrimitiveToSparseGrid : INode {
                     });
         }
 
-        if (opType == "clear-all") {
+        if (opType == "replace-all") {
             cudaPol(range(spg.numBlocks() * spg.block_size),
                     [spg = proxy<space>(spg), nchns,
                      tagDstOffset = spg.getPropertyOffset(tag)] __device__(std::size_t cellno) mutable {
                         for (int d = 0; d < nchns; ++d)
                             spg(tagDstOffset + d, cellno) = 0;
                     });
-        } else if (opType == "clear-local") {
+        } else if (opType == "replace-local") {
             for (auto &&parObjPtr : parObjPtrs) {
                 auto &pars = parObjPtr->getParticles();
                 if (isStaggered) {
@@ -194,13 +208,13 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                          "SparseGrid",
                                          {"string", "ParticleAttribute", ""},
                                          {"string", "GridAttribute"},
-                                         {"enum clear-all clear-local accumulate", "OpType", "clear-all"},
+                                         {"enum replace-all replace-local accumulate", "OpType", "replace-all"},
                                          {"bool", "staggered", "0"},
                                          {"bool", "initialize", "1"},
                                          {"bool", "normalize", "0"}},
                                         /* outputs: */
                                         {"SparseGrid"},
-                                        /* outputs: */
+                                        /* params: */
                                         {},
                                         /* category: */
                                         {"Eulerian"},

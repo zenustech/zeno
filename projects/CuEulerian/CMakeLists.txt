@@ -42,4 +42,5 @@ target_sources(zeno PRIVATE
 # hybrid
 target_sources(zeno PRIVATE
   hybrid/P2G.cu
+  hybrid/G2P.cu
 )

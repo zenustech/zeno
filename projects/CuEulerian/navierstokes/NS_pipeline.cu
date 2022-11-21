@@ -216,10 +216,10 @@ struct ZSNSAdvectDiffuse : INode {
                         float u_0 = spgv.value(vSrcTag, ch, blockno, cellno);
                         float u_1 = spgv.value(vDstTag, ch, blockno, cellno);
 
-                        spgv(vSrcTag, ch, blockno, cellno) = 2.f*u_0 - u_1;
+                        spgv(vSrcTag, ch, blockno, cellno) = 2.f * u_0 - u_1;
                         spgv(advTag, ch, blockno, cellno) = u_0;
                     }
-                 });
+                });
         } else {
             advTag = src_tag(NSGrid, "v");
         }
@@ -423,7 +423,8 @@ struct ZSNSExternalForce : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto dt = get_input2<float>("dt");
-        auto force = get_input2<zeno::vec3f>("Force");
+        auto forceTag = get_input2<std::string>("ForceAttribute");
+        auto gravity = get_input2<zeno::vec3f>("Gravity");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -433,10 +434,12 @@ struct ZSNSExternalForce : INode {
 
         // add force (accelaration)
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), force, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno,
-                                                                                                 int cellno) mutable {
-                for (int ch = 0; ch < 3; ++ch)
-                    spgv(vSrcTag, ch, blockno, cellno) += force[ch] * dt;
+            [spgv = zs::proxy<space>(spg), gravity, dt, vSrcTag = src_tag(NSGrid, "v"),
+             forceTag = zs::SmallString{forceTag}] __device__(int blockno, int cellno) mutable {
+                for (int ch = 0; ch < 3; ++ch) {
+                    float acc = (spgv.value(forceTag, ch, blockno, cellno) + gravity[ch]) * dt;
+                    spgv(vSrcTag, ch, blockno, cellno) += acc;
+                }
             });
 
         set_output("NSGrid", NSGrid);
@@ -444,7 +447,7 @@ struct ZSNSExternalForce : INode {
 };
 
 ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
-                               {"NSGrid", "dt", {"vec3f", "Force", "0, 0, 0"}},
+                               {"NSGrid", "dt", {"string", "ForceAttribute", ""}, {"vec3f", "Gravity", "0, 0, 0"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */
