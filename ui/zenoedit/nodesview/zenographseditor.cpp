@@ -991,7 +991,23 @@ void ZenoGraphsEditor::importMaterialX() {
         ZENO_HANDLE hOutNode = node_id_mapping[o_node];
         ZENO_HANDLE hInNode = node_id_mapping[i_node];
 
-        ZENO_ERROR err = Zeno_AddLink(hOutNode, out_socket, hInNode, i_socket);
+        ZENO_ERROR err;
+        if (i_socket == "normal") {
+            auto hMul = Zeno_AddNode(hGraph, "ShaderBinaryMath");
+            Zeno_SetInputDefl(hMul, "op", std::string("mul"));
+            Zeno_SetInputDefl(hMul, "in2", std::string("2"));
+            auto hAdd = Zeno_AddNode(hGraph, "ShaderBinaryMath");
+            Zeno_SetInputDefl(hAdd, "op", std::string("add"));
+            Zeno_SetInputDefl(hAdd, "in2", std::string("-1"));
+
+            err = Zeno_AddLink(hOutNode, out_socket, hMul, "in1");
+            Zeno_AddLink(hMul, "out", hAdd, "in1");
+            Zeno_AddLink(hAdd, "out", hInNode, i_socket);
+        }
+        else {
+            err = Zeno_AddLink(hOutNode, out_socket, hInNode, i_socket);
+        }
+
         if (err) {
             zeno::log_info("ss {}, err {}, edge {} {} {}", ss_index, err, i_node, i_socket, o_node);
         }
