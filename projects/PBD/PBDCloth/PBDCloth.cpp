@@ -165,6 +165,41 @@ private:
         }
     }
 
+
+    // void solveBendingDistanceConstraint(
+    //           std::vector<vec3f> &pos,
+    //     const std::vector<vec2i> &quads,
+    //     const std::vector<float> &invMass,
+    //     const std::vector<float> &restLen,
+    //     const float edgeCompliance,
+    //     const float dt
+    // )
+    // {
+    //     auto alpha = compliance / dt /dt;
+
+    //     for (auto i = 0; i < quads.size(); i++) 
+    //     {
+    //         int id0 = quads[i][2];
+    //         int id1 = quads[i][3];
+
+    //         auto w0 = invMass[id0];
+    //         auto w1 = invMass[id1];
+    //         auto w = w0 + w1;
+    //         if (w == 0.0)
+    //             continue;
+
+    //         auto grads = pos[id0] - pos[id1];
+    //         float Len = length(grads);
+    //         if (Len == 0.0)
+    //             continue;
+    //         grads /= Len;
+    //         auto C = Len - restLen[i];
+    //         auto s = -C / (w + alpha);
+    //         pos[id0] += grads *   s * invMass[id0];
+    //         pos[id1] += grads * (-s * invMass[id1]);
+    //     }
+    // }
+
     void solveDihedralConstraint(PrimitiveObject *prim)
     {
         vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};

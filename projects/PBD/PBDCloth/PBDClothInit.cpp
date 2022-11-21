@@ -16,90 +16,90 @@ namespace zeno {
  */
 struct PBDClothInit : zeno::INode {
 
-    /**
-     * @brief 计算两个面夹角的辅助函数。注意按照论文Muller2006中Fig.4的顺序。1-2是共享边。
-     * 
-     * @param p1 顶点1位置
-     * @param p2 顶点2位置
-     * @param p3 顶点3位置
-     * @param p4 顶点4位置
-     * @return float 两个面夹角
-     */
-    float computeAng(
-        const vec3f &p1,
-        const vec3f &p2, 
-        const vec3f &p3, 
-        const vec3f &p4)
-    {
-        auto n1 = cross((p2 - p1), (p3 - p1));
-        n1 = n1 / length(n1);
-        auto n2 = cross((p2 - p1), (p4 - p1));
-        n2 = n2 / length(n2);
-        auto res = abs(dot(n1, n2)); //只计算锐角。TODO:是否该如此存疑。
-        if(res<-1.0) res = -1.0;  
-        if(res>1.0)  res = 1.0;
-        return acos(res);
-    }
+    // /**
+    //  * @brief 计算两个面夹角的辅助函数。注意按照论文Muller2006中Fig.4的顺序。1-2是共享边。
+    //  * 
+    //  * @param p1 顶点1位置
+    //  * @param p2 顶点2位置
+    //  * @param p3 顶点3位置
+    //  * @param p4 顶点4位置
+    //  * @return float 两个面夹角
+    //  */
+    // float computeAng(
+    //     const vec3f &p1,
+    //     const vec3f &p2, 
+    //     const vec3f &p3, 
+    //     const vec3f &p4)
+    // {
+    //     auto n1 = cross((p2 - p1), (p3 - p1));
+    //     n1 = n1 / length(n1);
+    //     auto n2 = cross((p2 - p1), (p4 - p1));
+    //     n2 = n2 / length(n2);
+    //     auto res = abs(dot(n1, n2)); //只计算锐角。TODO:是否该如此存疑。
+    //     if(res<-1.0) res = -1.0;  
+    //     if(res>1.0)  res = 1.0;
+    //     return acos(res);
+    // }
 
 
-    /**
-     * @brief 计算所有原角度
-     * 
-     * @param pos 顶点
-     * @param tris 三角面
-     * @param adjTriId 邻接三角面在tris中的编号
-     * @param restAng 原角度, 最多有三个，每个邻接三角面对应一个。没有则存-1
-     */
-    void initRestAng(
-        const AttrVector<vec3f> &pos,
-        const AttrVector<vec3i> &tris,
-        std::vector<vec3f> &restAng
-    ) 
-    {
-    }
+    // /**
+    //  * @brief 计算所有原角度
+    //  * 
+    //  * @param pos 顶点
+    //  * @param tris 三角面
+    //  * @param adjTriId 邻接三角面在tris中的编号
+    //  * @param restAng 原角度, 最多有三个，每个邻接三角面对应一个。没有则存-1
+    //  */
+    // void initRestAng(
+    //     const AttrVector<vec3f> &pos,
+    //     const AttrVector<vec3i> &tris,
+    //     std::vector<vec3f> &restAng
+    // ) 
+    // {
+    // }
 
-    /**
-     * @brief 计算所有原长
-     * 
-     * @param pos 顶点
-     * @param edge 边连接关系
-     * @param restLen 原长
-     */
-    void initRestLen(
-        const AttrVector<vec3f> &pos,
-        const AttrVector<vec2i> &edge,
-        std::vector<float> &restLen
-    ) 
-    {
-        for(int i = 0; i < edge.size(); i++)
-            restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
-    }
+    // /**
+    //  * @brief 计算所有原长
+    //  * 
+    //  * @param pos 顶点
+    //  * @param edge 边连接关系
+    //  * @param restLen 原长
+    //  */
+    // void initRestLen(
+    //     const AttrVector<vec3f> &pos,
+    //     const AttrVector<vec2i> &edge,
+    //     std::vector<float> &restLen
+    // ) 
+    // {
+    //     for(int i = 0; i < edge.size(); i++)
+    //         restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
+    // }
 
 
-    /**
-     * @brief 计算所有质量倒数
-     * 
-     * @param pos 顶点
-     * @param tris 三角面
-     * @param areaDensity 面密度
-     * @param invMass 质量倒数
-     */
-    void initInvMass(        
-        const AttrVector<vec3f> &pos,
-        const AttrVector<vec3i> &tris,
-        const float areaDensity,
-        std::vector<float> &invMass
-        ) 
-    {
-        for(int i = 0; i < tris.size(); i++)
-        {
-            float area = abs(length(cross(pos[tris[i][1]] - pos[tris[i][0]],  pos[tris[i][1]] - pos[tris[i][2]]))/2.0);
-            float pInvMass = 0.0;
-            pInvMass = areaDensity * area / 3.0;
-            for (int j = 0; j < 3; j++)
-                invMass[tris[i][j]] += pInvMass;
-        }
-    }
+    // /**
+    //  * @brief 计算所有质量倒数
+    //  * 
+    //  * @param pos 顶点
+    //  * @param tris 三角面
+    //  * @param areaDensity 面密度
+    //  * @param invMass 质量倒数
+    //  */
+    // void initInvMass(        
+    //     const AttrVector<vec3f> &pos,
+    //     const AttrVector<vec3i> &tris,
+    //     const float areaDensity,
+    //     std::vector<float> &invMass
+    //     ) 
+    // {
+    //     for(int i = 0; i < tris.size(); i++)
+    //     {
+    //         float area = abs(length(cross(pos[tris[i][1]] - pos[tris[i][0]],  pos[tris[i][1]] - pos[tris[i][2]]))/2.0);
+    //         float pInvMass = 0.0;
+    //         pInvMass = areaDensity * area / 3.0;
+    //         for (int j = 0; j < 3; j++)
+    //             invMass[tris[i][j]] += pInvMass;
+    //     }
+    // }
 
     /**
      * @brief 找到共享边。
@@ -189,6 +189,89 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
+    /**
+     * @brief 计算初始集合数据。包括质量倒数、原长度、对角原长度
+     * 
+     * @param pos 输入：粒子位置
+     * @param edges 输入：边
+     * @param tris 输入：三角形
+     * @param quads 输入：三角形对
+     * @param invMass 输出：质量倒数
+     * @param restLen 输出：原长度
+     * @param bendingRestLen 输出：对角原长。用于对角方法的bending
+     */
+    void initGeometry(
+        const std::vector<vec3f> & pos,
+        const std::vector<vec2i> & edges,
+        const std::vector<vec3i> & tris,
+        const std::vector<vec4i> & quads,
+        std::vector<float> & invMass,
+        std::vector<float> & restLen,
+        std::vector<float> & bendingRestLen
+        )
+    {
+        echo(tris.size());
+        std::fill(invMass.begin(),invMass.end(), 0.0);
+
+        vec3f e0{0.0, 0.0, 0.0};
+        vec3f e1{0.0, 0.0, 0.0};
+        vec3f c{0.0, 0.0, 0.0};
+
+        for (auto i = 0; i < tris.size(); i++) 
+        {
+            auto id0 = tris[i][0];
+            auto id1 = tris[i][1];
+            auto id2 = tris[i][2];
+
+            e0 = pos[id1] - pos[id0];
+            e1 = pos[id2] - pos[id0];
+            c = cross(e0,e1);
+
+            auto A = 0.5 * length(c);
+
+            auto pInvMass = A > 0.0 ? (1.0 / A / 3.0) : 0.0;
+            invMass[id0] += pInvMass;
+            invMass[id1] += pInvMass;
+            invMass[id2] += pInvMass;
+        }
+
+        for (auto i = 0; i < edges.size(); i++) 
+        {
+            auto id0 = edges[i][0];
+            auto id1 = edges[i][1];
+            restLen[i] = length(pos[id0] - pos[id1]);
+        }
+
+        for (auto i = 0; i < quads.size(); i++) 
+        {
+            auto id0 = quads[i][2];
+            auto id1 = quads[i][3];
+            bendingRestLen[i] = length(pos[id0] - pos[id1]);
+        }
+
+
+        // 设置挂载点，为左上角和右上角点。
+        auto minX = std::numeric_limits<float>::max();
+        auto maxX = -std::numeric_limits<float>::max();
+        auto maxY = -std::numeric_limits<float>::max();
+        for (auto i = 0; i < pos.size(); i++) 
+        {
+            minX = std::min(minX, pos[i][0]);
+            maxX = std::max(maxX, pos[i][0]);
+            maxY = std::max(maxY, pos[i][1]);
+        }
+        auto eps = 0.0001;
+
+        for (auto i = 0; i < pos.size(); i++) 
+        {
+            auto x = pos[i][0];
+            auto y = pos[i][1];
+            if ((y > maxY - eps) && (x < minX + eps || x > maxX - eps))
+                invMass[i] = 0.0;
+        }
+    }
+
+
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -211,12 +294,21 @@ public:
         // printVectorField("quads.csv",quads,0);
         // printVectorField("edges.csv",edges,0);
 
-        // 计算invMass和restLen
+        // 计算invMass和restLen和 bendingRestLen
+        // bendingRestLen是使用对角距离法来计算bending的时候的restLen，与edges上的restLen不同，是专门针对quads第3和第4个元素的len。
         auto &invMass = prim->verts.add_attr<float>("invMass");
-        initInvMass(pos,tris,areaDensity,invMass);
         auto &restLen = prim->edges.add_attr<float>("restLen");
-        initRestLen(pos,edges,restLen);
+        auto &bendingRestLen = prim->quads.add_attr<float>("bendingRestLen");
 
+        initGeometry(pos,edges,tris,quads,invMass,restLen,bendingRestLen);
+
+        // printVectorField("tris.csv",tris);
+        // printScalarField("invMass.csv",invMass);
+        // printScalarField("restLen.csv",restLen);
+        // printScalarField("bendingRestLen.csv",bendingRestLen);
+
+        // initInvMass(pos,tris,areaDensity,invMass);
+        // initRestLen(pos,edges,restLen);
         // auto &restAng = prim->tris.add_attr<vec3f>("restAng");
         // initRestAng(pos,tris,sharedEdges,restAng);
 
