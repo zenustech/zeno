@@ -1,6 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
-#include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulateQuads
+#include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulatequads
 #include <limits>
 #include <iostream>
 #include <algorithm>
@@ -101,10 +101,18 @@ struct PBDClothInit : zeno::INode {
         }
     }
 
-    void initTriNeighbors(std::vector<vec3i> &tris, std::vector<int> &neighbors) 
+    /**
+     * @brief 找到共享边。
+     * 
+     * @param tris 三角形三个顶点的连接关系
+     * @param sharedEdges 用于查询共享边的。给定一个边的编号，则存储的就是它的共享边的编号。
+     */
+    void initSharedEdges(std::vector<vec3i> &tris, std::vector<int> &sharedEdges) 
     {
-        neighbors.resize(3*tris.size());
+        sharedEdges.resize(3*tris.size());
 
+        //这个edges是有重复的。
+        // 它的前两个参数是顶点编号，组成一个边，第三个参数代表共享边的编号，无共享边则为-1。
         std::vector<vec3i> edges;
         
         for (auto i = 0; i < tris.size(); i++) {
@@ -121,7 +129,7 @@ struct PBDClothInit : zeno::INode {
                   [](vec3i &a, vec3i &b) { return ((a[0] < b[0]) || (a[0] == b[0] && a[1] < b[1])); });
 
 
-        std::fill(neighbors.begin(), neighbors.end(), -1);
+        std::fill(sharedEdges.begin(), sharedEdges.end(), -1);
 
         auto nr = 0;
         while (nr < edges.size()) 
@@ -133,67 +141,84 @@ struct PBDClothInit : zeno::INode {
                 auto e1 = edges[nr];
                 if (e0[0] == e1[0] && e0[1] == e1[1]) 
                 {
-                    neighbors[e0[2]] = e1[2];
-                    neighbors[e1[2]] = e0[2];
+                    sharedEdges[e0[2]] = e1[2];
+                    sharedEdges[e1[2]] = e0[2];
                 }
                 nr++;
             }
         }
-
     }
 
-    void initTriPairs(std::vector<vec3i> & tris, std::vector<int>& neighbors, std::vector<vec4i>& triPairs)
+    /**
+     * @brief 计算边和三角形对。
+     * 
+     * @param tris 三角形顶点连接关系。
+     * @param sharedEdges 用于查询共享边。
+     * @param edges 输出的边。无重复。
+     * @param quads 输出的一对邻接三角形的四个顶点。
+     */
+    void initEdgesAndQuads(const std::vector<vec3i>& tris, const std::vector<int> &sharedEdges, std::vector<vec2i> &edges, std::vector<vec4i>& quads) 
     {
-        triPairs.clear();
+        edges.clear();
+        quads.clear();
 
-        for (size_t i = 0; i < tris.size(); i++)
+        for (auto i = 0; i < tris.size(); i++) 
         {
-            for (size_t j = 0; j < 3; j++)
+            for (auto j = 0; j < 3; j++) 
             {
                 auto id0 = tris[i][j];
-                auto id1 = tris[i][(j+1)%3];
+                auto id1 = tris[i][(j + 1) % 3];
 
-                auto n = neighbors[3*i + j];
+                // 建立edges
+                auto n = sharedEdges[3 * i + j];
+                if (n < 0 || id0 < id1) 
+                {
+                    edges.push_back(vec2i{id0,id1});
+                }
+
+                // 建立三角形对
                 if(n>=0)
                 {
                     auto ni = std::floor(n/3); //global number
                     auto nj = n % 3; //local number
                     auto id2 = tris[i][(j+2)%3];
                     auto id3 = tris[ni][(nj+2)%3];
-                    triPairs.push_back(vec4i{id0,id1,id2,id3});
+                    quads.push_back(vec4i{id0,id1,id2,id3});
                 }
             }
-            
         }
-        
     }
 
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto &pos = prim->verts;
-        auto &tris = prim->tris;
-        auto &edge = prim->lines;
-
         //面密度，用来算invMass的参数
         auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
 
+        auto &pos = prim->verts;
+        auto &tris = prim->tris;
+
+        // 共享边。 sharedEdges是用于寻找共享边的辅助数据结构。
+        auto &sharedEdges = prim->add_attr<int>("sharedEdges");
+        initSharedEdges(tris, sharedEdges);
+        // printScalarField("sharedEdges.csv",sharedEdges,0);
+
+        //建立边连接关系：edges。这次每个边只加入一次。
+        auto &edges = prim->edges;
+        auto &quads = prim->quads;
+        initEdgesAndQuads(tris, sharedEdges, edges, quads);
+        // printVectorField("quads.csv",quads,0);
+        // printVectorField("edges.csv",edges,0);
+
+        // 计算invMass和restLen
         auto &invMass = prim->verts.add_attr<float>("invMass");
         initInvMass(pos,tris,areaDensity,invMass);
-        auto &restLen = prim->lines.add_attr<float>("restLen");
-        initRestLen(pos,edge,restLen);
-
-        auto &triNeighbors = prim->add_attr<int>("triNeighbors");
-        initTriNeighbors(tris, triNeighbors);
-        // printScalarField("triNeighbors.csv",triNeighbors,0);
+        auto &restLen = prim->edges.add_attr<float>("restLen");
+        initRestLen(pos,edges,restLen);
 
         // auto &restAng = prim->tris.add_attr<vec3f>("restAng");
-        // initRestAng(pos,tris,triNeighbors,restAng);
-
-        auto &triPairs = prim->add_attr<vec4i>("triPairs");
-        initTriPairs(tris, triNeighbors, triPairs);
-        printVectorField("triPairs.csv",triPairs,0);
+        // initRestAng(pos,tris,sharedEdges,restAng);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");

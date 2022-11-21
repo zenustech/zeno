@@ -2,6 +2,7 @@
 #include <zeno/zeno.h>
 #include <algorithm>
 #include <iostream>
+#include "../Utils/myPrint.h"
 namespace zeno {
 struct PBDCloth : zeno::INode {
 private:
@@ -115,6 +116,7 @@ private:
     {
         float alpha = edgeCompliance / dt / dt;
         zeno::vec3f grad{0, 0, 0};
+
         for (int i = 0; i < edge.size(); i++) 
         {
             int id0 = edge[i][0];
@@ -246,16 +248,16 @@ public:
         auto &vel = prim->verts.attr<vec3f>("vel");
         auto &invMass=prim->verts.attr<float>("invMass");
         auto &restLen=prim->lines.attr<float>("restLen");
+        auto &triPairs=prim->attr<vec4i>("triPairs");
 
         for (int steps = 0; steps < numSubsteps; steps++) 
         {
             preSolve(pos, prevPos, vel);
-            // solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
-            solveStretchingConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            // solveStretchingConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
             // solveDihedralConstraint(prim.get());
             postSolve(pos, prevPos, vel);
         }
-        std::cout<<"good\n";
 
         set_output("outPrim", std::move(prim));
     };
