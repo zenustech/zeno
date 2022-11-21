@@ -151,15 +151,15 @@ struct FleshDynamicStepping : INode {
                 sttemp,
                 setemp,
                 ee_buffer,
-                in_collisionEps,out_collisionEps);
+                in_collisionEps/(T)4.0,out_collisionEps);
 
             COLLISION_UTILS::evaluate_ee_collision_grad_and_hessian(cudaPol,
                 vtemp,"xn",
                 ee_buffer,
                 gh_buffer,offset + fp_buffer.size(),
-                in_collisionEps,out_collisionEps,
+                in_collisionEps/(T)4.0,out_collisionEps,
                 (T)collisionStiffness,
-                (T)0.1*mu,(T)0.1*lambda);
+                (T)0.01*mu,(T)0.01*lambda);
 
             // project out all the neglect verts
             if(neglect_inverted) {

@@ -173,10 +173,13 @@ constexpr MATRIX12 hessian(const VECTOR3 v[4],
     const MATRIX3x12 dGrad = invNorm * vPartial -
                             invNorm3 * zs::dyadic_prod(diff,(vPartial.transpose() * diff));
 
-    return (REAL)-2.0 * _mu * ((_eps - diffNorm) * (vPartial.transpose() * dGrad) +
-                        zs::dyadic_prod(normPartial,vPartial.transpose() * d));
+    if(_eps < diffNorm)
+        printf("invalid collision situation encountered");
 
-    // return (REAL)-2.0 * (zs::dyadic_prod(normPartial,vPartial.transpose() * d));
+    // return (REAL)-2.0 * _mu * ((_eps - diffNorm) * (vPartial.transpose() * dGrad) +
+    //                     zs::dyadic_prod(normPartial,vPartial.transpose() * d));
+
+    return (REAL)-2.0 * (zs::dyadic_prod(normPartial,vPartial.transpose() * d));
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -219,8 +222,10 @@ constexpr MATRIX12 hessianNegated(const VECTOR3 v[4],
                             ((REAL)1.0 / diffNorm3) * zs::dyadic_prod(diff, (vPartial.transpose() * diff));
 
     // this is the energetically consistent one
-    return (REAL)2.0 * _mu * ((_eps + diffNorm) * (vPartial.transpose() * nGrad) -
-                        zs::dyadic_prod(normPartial,vPartial.transpose() * n));
+    // return (REAL)2.0 * _mu * ((_eps + diffNorm) * (vPartial.transpose() * nGrad) -
+    //                     zs::dyadic_prod(normPartial,vPartial.transpose() * n));
+    return (REAL)-2.0 * _mu * (zs::dyadic_prod(normPartial,vPartial.transpose() * n));
+
 }
 
 
