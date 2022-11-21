@@ -692,10 +692,6 @@ void FakeTransformer::doTransform() {
         auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
 
-        m_last_trans = m_trans;
-        m_last_rotate = m_rotate;
-        m_last_scale = m_scale;
-
         if (obj->has_attr("pos")) {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
@@ -725,6 +721,10 @@ void FakeTransformer::doTransform() {
         }
         m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
+    m_last_trans = m_trans;
+    m_last_rotate = m_rotate;
+    m_last_scale = m_scale;
+
     m_objects_center /= m_objects.size();
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
 }
