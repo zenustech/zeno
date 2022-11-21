@@ -4,6 +4,8 @@
 #include <opencv2/highgui.hpp>
 #include <zeno/zeno.h>
 #include <zeno/utils/arrayindex.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 
 namespace zeno {
 
@@ -334,7 +336,7 @@ ZENDEFNODE(CVImageMonoColor, {
 
 struct CVImageGradColor : CVINode {
     void apply() override {
-        auto likeimage = get_input<CVImageObject>("likeimage");
+        auto likeimage = get_input<CVImageObject>("likeimage"); // TODO: if no likeimage, create Mat::zeros from custom shape
         auto angle = get_input2<float>("angle");
         auto scale = get_input2<float>("scale");
         auto offset = get_input2<float>("offset");
@@ -378,6 +380,53 @@ ZENDEFNODE(CVImageGradColor, {
         {"bool", "is255", "1"},
         {"vec3f", "color1", "0,0,0"},
         {"vec3f", "color2", "1,1,1"},
+    },
+    {
+        {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageDrawPoly : CVINode {
+    void apply() override {
+        auto image = get_input<CVImageObject>("image");
+        auto color = tocvvec<float>(get_input2<vec3f>("color"));
+        if (!get_input2<bool>("inplace"))
+            image = std::make_shared<CVImageObject>(*image);
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto linewidth = get_input2<int>("linewidth");
+        auto isconvex = get_input2<bool>("isconvex");
+        std::vector<std::vector<cv::Point>> pts(prim->polys.size());
+        for (int i = 0; i < prim->polys.size(); i++) {
+            auto [base, len] = prim->polys[i];
+            pts[i].resize(len);
+            auto &pt = pts[i];
+            for (int k = 0; k < len; k++) {
+                auto v = prim->verts[prim->loops[base + k]];
+                pt[k].x = v[0];
+                pt[k].y = v[1];
+            }
+        }
+        if (linewidth > 0) {
+            cv::polylines(image->image, pts, isconvex, color, linewidth);
+        } else if (isconvex) {
+            cv::fillConvexPoly(image->image, pts, color);
+        } else {
+            cv::fillPoly(image->image, pts, color);
+        }
+        set_output("image", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVImageDrawPoly, {
+    {
+        {"CVImageObject", "image"},
+        {"vec3f", "color", "0,0,0"},
+        {"PrimitiveObject", "points"},
+        {"int", "linewidth", "0"},
+        {"bool", "isconvex", "0"},
+        {"bool", "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
