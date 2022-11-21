@@ -269,6 +269,7 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
 
 void FakeTransformer::startTransform() {
     m_status = true;
+    markObjectsInteractive();
     Zenovis::GetInstance().getSession()->set_interactive(true);
 }
 
@@ -327,6 +328,7 @@ void FakeTransformer::endTransform(bool moved) {
             }
         }
     }
+    unmarkObjectsInteractive();
 
     m_status = false;
 
@@ -388,6 +390,28 @@ void FakeTransformer::toScale() {
         m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
+}
+
+void FakeTransformer::markObjectInteractive(const std::string& obj_name) {
+    auto& user_data = m_objects[obj_name]->userData();
+    user_data.setLiterial("interactive", 1);
+}
+
+void FakeTransformer::unmarkObjectInteractive(const std::string& obj_name) {
+    auto& user_data = m_objects[obj_name]->userData();
+    user_data.setLiterial("interactive", 0);
+}
+
+void FakeTransformer::markObjectsInteractive() {
+    for (const auto& [obj_name, obj] : m_objects) {
+        markObjectInteractive(obj_name);
+    }
+}
+
+void FakeTransformer::unmarkObjectsInteractive() {
+    for (const auto& [obj_name, obj] : m_objects) {
+        unmarkObjectInteractive(obj_name);
+    }
 }
 
 void FakeTransformer::resizeHandler(int dir) {
@@ -642,6 +666,7 @@ void FakeTransformer::syncToTransformNode(QString& node_id, const std::string& o
 }
 
 void FakeTransformer::doTransform() {
+    qDebug() << "transformer's objects count " << m_objects.size();
     m_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
