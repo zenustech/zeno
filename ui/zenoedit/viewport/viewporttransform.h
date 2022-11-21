@@ -66,6 +66,10 @@ class FakeTransformer {
     static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
         return {QVec3.x(), QVec3.y(), QVec3.z()};
     }
+    void markObjectInteractive(const std::string& obj_name);
+    void unmarkObjectInteractive(const std::string& obj_name);
+    void markObjectsInteractive();
+    void unmarkObjectsInteractive();
 
     static void print_mat4(std::string name, glm::mat4 mat) {
         qDebug() << name.c_str() << ":";
