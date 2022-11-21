@@ -267,10 +267,12 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
     }
 }
 
+bool FakeTransformer::isTransforming() const {
+    return m_status;
+}
+
 void FakeTransformer::startTransform() {
-    m_status = true;
     markObjectsInteractive();
-    Zenovis::GetInstance().getSession()->set_interactive(true);
 }
 
 void FakeTransformer::endTransform(bool moved) {
@@ -330,8 +332,6 @@ void FakeTransformer::endTransform(bool moved) {
     }
     unmarkObjectsInteractive();
 
-    m_status = false;
-
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
@@ -342,12 +342,6 @@ void FakeTransformer::endTransform(bool moved) {
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
-
-    Zenovis::GetInstance().getSession()->set_interactive(false);
-}
-
-bool FakeTransformer::isTransforming() const {
-    return m_status;
 }
 
 void FakeTransformer::toTranslate() {
@@ -403,12 +397,14 @@ void FakeTransformer::unmarkObjectInteractive(const std::string& obj_name) {
 }
 
 void FakeTransformer::markObjectsInteractive() {
+    m_status = true;
     for (const auto& [obj_name, obj] : m_objects) {
         markObjectInteractive(obj_name);
     }
 }
 
 void FakeTransformer::unmarkObjectsInteractive() {
+    m_status = false;
     for (const auto& [obj_name, obj] : m_objects) {
         unmarkObjectInteractive(obj_name);
     }

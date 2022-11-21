@@ -35,7 +35,6 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        if (scene->drawOptions->interactive) graphicsMan->graphics.clear();
         graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
 
