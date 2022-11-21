@@ -3,7 +3,8 @@
 
 #include <QtWidgets>
 #include <QSizePolicy>
-//#include "zgraphicslayoutitem.h"
+
+#define _DEBUG_ZLAYOUT
 
 class ZGraphicsLayout;
 class QGraphicsItem;
@@ -39,7 +40,8 @@ struct SizeInfo
 
 struct ZGvLayoutItem
 {
-    SizeInfo gvItemSz;
+    SizeInfo gvItemSz;      //user specific size info.
+    SizeInfo actualSz;      //layout calculated cached info.
     ZGraphicsLayout* pLayout;
     QGraphicsItem* pItem;
     Qt::Alignment alignment;
@@ -65,6 +67,7 @@ public:
     void insertLayout(int i, ZGraphicsLayout* pLayout);
     void insertItem(int i, QGraphicsItem* pItem);
     void addSpacing(qreal size);
+    void addSpacing(qreal sizehint, QSizePolicy policy);
     void setParentItem(QGraphicsItem* item);
     QGraphicsItem* parentItem() const;
     ZGraphicsLayout* parentLayout() const;
@@ -83,13 +86,19 @@ public:
     static void updateHierarchy(QGraphicsItem* pItem);
     static ZGraphicsLayout* visitRoot(ZGraphicsLayout* currentLayout);
     void clearCacheSize();
+    void setDebugName(const QString& dbgName);
 
 private:
     void setup(QRectF rc);
     QSizeF calculateSize();
     void calcItemsSize(QSizeF layoutSize);
 
+#ifdef _DEBUG_ZLAYOUT
+    QVector<ZGvLayoutItem*> m_items;
+    QString m_dbgName;
+#else
     QVector<QSharedPointer<ZGvLayoutItem>> m_items;
+#endif
     ZGraphicsLayout* m_parent;
     QGraphicsItem* m_parentItem;
     QRectF m_geometry;

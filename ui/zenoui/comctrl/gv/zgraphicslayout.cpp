@@ -23,7 +23,11 @@ void ZGraphicsLayout::addItem(QGraphicsItem* pItem)
 {
     if (!pItem) return;
 
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Item;
     item->pItem = pItem;
     item->pLayout = nullptr;
@@ -36,7 +40,11 @@ void ZGraphicsLayout::addItem(QGraphicsItem* pItem, Qt::Alignment flag)
 {
     if (!pItem) return;
 
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Item;
     item->pItem = pItem;
     item->pLayout = nullptr;
@@ -50,7 +58,11 @@ void ZGraphicsLayout::insertItem(int i, QGraphicsItem* pItem)
 {
     if (!pItem) return;
 
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Item;
     item->pItem = pItem;
     item->pLayout = nullptr;
@@ -64,7 +76,11 @@ void ZGraphicsLayout::addLayout(ZGraphicsLayout* pLayout)
 {
     if (!pLayout) return;
 
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Layout;
     item->pItem = nullptr;
     item->pLayout = pLayout;
@@ -77,7 +93,11 @@ void ZGraphicsLayout::insertLayout(int i, ZGraphicsLayout* pLayout)
 {
     if (!pLayout) return;
 
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Layout;
     item->pItem = nullptr;
     item->pLayout = pLayout;
@@ -87,9 +107,18 @@ void ZGraphicsLayout::insertLayout(int i, ZGraphicsLayout* pLayout)
     m_items.insert(i, item);
 }
 
+void ZGraphicsLayout::setDebugName(const QString& dbgName)
+{
+    m_dbgName = dbgName;
+}
+
 void ZGraphicsLayout::addSpacing(qreal size)
 {
+#ifndef _DEBUG_ZLAYOUT
     QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
     item->type = Type_Spacing;
     item->pItem = nullptr;
     item->pLayout = nullptr;
@@ -104,6 +133,41 @@ void ZGraphicsLayout::addSpacing(qreal size)
 
     m_items.append(item);
 }
+
+void ZGraphicsLayout::addSpacing(qreal sizehint, QSizePolicy policy)
+{
+#ifndef _DEBUG_ZLAYOUT
+    QSharedPointer<ZGvLayoutItem> item(new ZGvLayoutItem);
+#else
+    ZGvLayoutItem* item = new ZGvLayoutItem;
+#endif
+    item->type = Type_Spacing;
+    item->pItem = nullptr;
+    item->pLayout = nullptr;
+    if (m_bHorizontal)
+    {
+        if (policy.horizontalPolicy() == QSizePolicy::Minimum)
+        {
+            item->gvItemSz.policy = policy;
+            item->gvItemSz.minSize = QSizeF(sizehint, 0);
+        }
+        else if (policy.horizontalPolicy() == QSizePolicy::Fixed)
+        {
+            item->gvItemSz.policy = policy;
+            item->gvItemSz.minSize = QSizeF(sizehint, 0);
+        }
+        else if (policy.horizontalPolicy() == QSizePolicy::Expanding)
+        {
+            item->gvItemSz.policy = policy;
+            item->gvItemSz.minSize = QSizeF(0, 0);
+        }
+    }
+    else {
+        //todo
+    }
+    m_items.append(item);
+}
+
 
 QGraphicsItem* ZGraphicsLayout::parentItem() const
 {
@@ -238,23 +302,34 @@ QSizeF ZGraphicsLayout::calculateSize()
                 {
                     QSizeF _size = pLayout->calculateSize();
                     if (m_bHorizontal) {
-                        size.setHeight(qMax(_size.height(), size.height()));
+                        size.setHeight(qMax(_size.height() + szMargin.height(), size.height()));
                         size += QSizeF(_size.width(), 0);
                     }
                     else {
-                        size.setWidth(qMax(_size.width(), size.width()));
+                        size.setWidth(qMax(_size.width() + szMargin.width(), size.width()));
                         size += QSizeF(0, _size.height());
                     }
                 }
                 else
                 {
+                    //use to debug
+                    if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(item->pItem))
+                    {
+                        ZenoVecEditItem* pVecEdit = qobject_cast<ZenoVecEditItem*>(pWidget);
+                        if (pVecEdit)
+                        {
+                            int j;
+                            j = 0;
+                        }
+                    }
+
                     QSizeF sizeHint = ZenoGvHelper::sizehintByPolicy(item->pItem);
                     if (m_bHorizontal) {
-                        size.setHeight(qMax(sizeHint.height(), size.height()));
+                        size.setHeight(qMax(sizeHint.height() + szMargin.height(), size.height()));
                         size += QSizeF(sizeHint.width(), 0);
                     }
                     else {
-                        size.setWidth(qMax(sizeHint.width(), size.width()));
+                        size.setWidth(qMax(sizeHint.width() + szMargin.width(), size.width()));
                         size += QSizeF(0, sizeHint.height());
                     }
                 }
@@ -263,11 +338,11 @@ QSizeF ZGraphicsLayout::calculateSize()
             case Type_Spacing:
             {
                 if (m_bHorizontal) {
-                    size.setHeight(qMax(item->gvItemSz.minSize.height(), size.height()));
+                    size.setHeight(qMax(item->gvItemSz.minSize.height() + szMargin.height(), size.height()));
                     size += QSizeF(item->gvItemSz.minSize.width(), 0);
                 }
                 else {
-                    size.setWidth(qMax(item->gvItemSz.minSize.width(), size.width()));
+                    size.setWidth(qMax(item->gvItemSz.minSize.width() + szMargin.width(), size.width()));
                     size += QSizeF(0, item->gvItemSz.minSize.height());
                 }
                 break;
@@ -276,11 +351,11 @@ QSizeF ZGraphicsLayout::calculateSize()
             {
                 QSizeF _size = item->pLayout->calculateSize();
                 if (m_bHorizontal) {
-                    size.setHeight(qMax(_size.height(), size.height()));
+                    size.setHeight(qMax(_size.height() + szMargin.height(), size.height()));
                     size += QSizeF(_size.width(), 0);
                 }
                 else {
-                    size.setWidth(qMax(_size.width(), size.width()));
+                    size.setWidth(qMax(_size.width() + szMargin.width(), size.width()));
                     size += QSizeF(0, _size.height());
                 }
                 break;
@@ -398,6 +473,9 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
     for (int i = 0; i < m_items.size(); i++)
     {
         auto item = m_items[i];
+        //clear cached size.
+        item->actualSz = item->gvItemSz;
+
         ZGraphicsLayout* pLayout = nullptr;
         if (Type_Layout == item->type)
         {
@@ -426,18 +504,18 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
                 sz = getSize(_layoutSize);
                 if (m_bHorizontal)
                 {
-                    item->gvItemSz.minSize.setWidth(sz);
-                    item->gvItemSz.minSize.setHeight(layoutSize.height());
+                    item->actualSz.minSize.setWidth(sz);
+                    item->actualSz.minSize.setHeight(layoutSize.height());
                 }
                 else
                 {
-                    item->gvItemSz.minSize.setWidth(layoutSize.width());
-                    item->gvItemSz.minSize.setHeight(sz);
+                    item->actualSz.minSize.setWidth(layoutSize.width());
+                    item->actualSz.minSize.setHeight(sz);
                 }
                 item->bDirty = false;
             }
             else {
-                sz = getSize(item->gvItemSz.minSize);
+                sz = getSize(item->actualSz.minSize);
             }
             remaining -= sz;
             fixedItems.insert(i);
@@ -457,25 +535,27 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
                 }
             }
 
-            QSizePolicy policy = pItem ? pItem->data(GVKEY_SIZEPOLICY).value<QSizePolicy>() : item->gvItemSz.policy;
-            QSizeF sizeHint = pItem ? ZenoGvHelper::sizehintByPolicy(pItem) : item->gvItemSz.minSize;
+            QSizePolicy policy = pItem ? pItem->data(GVKEY_SIZEPOLICY).value<QSizePolicy>() : item->actualSz.policy;
+            QSizeF sizeHint = pItem ? ZenoGvHelper::sizehintByPolicy(pItem) : item->actualSz.minSize;
 
-            item->gvItemSz.minSize = sizeHint;
+            item->actualSz.minSize = sizeHint;
+
+            QSizePolicy::Policy hPolicy = policy.horizontalPolicy();
+            QSizePolicy::Policy vPolicy = policy.verticalPolicy();
 
             if (m_bHorizontal) {
-                if (policy.verticalPolicy() == QSizePolicy::Expanding) {
-                    item->gvItemSz.minSize.setHeight(layoutSize.height());
+                if (vPolicy == QSizePolicy::Expanding) {
+                    item->actualSz.minSize.setHeight(layoutSize.height());
                 }
             }
             else {
-                if (policy.horizontalPolicy() == QSizePolicy::Expanding) {
-                    item->gvItemSz.minSize.setWidth(layoutSize.width());    //minus margins.
+                if (hPolicy == QSizePolicy::Expanding) {
+                    item->actualSz.minSize.setWidth(layoutSize.width());    //minus margins.
                 }
             }
 
-
-            if ((m_bHorizontal && policy.horizontalPolicy() == QSizePolicy::Expanding) ||
-                (!m_bHorizontal && policy.verticalPolicy() == QSizePolicy::Expanding))
+            if ((m_bHorizontal && (hPolicy == QSizePolicy::Expanding || hPolicy == QSizePolicy::Minimum)) ||
+                (!m_bHorizontal && (vPolicy == QSizePolicy::Expanding || vPolicy == QSizePolicy::Minimum)))
             {
                 expandingItems.insert(i);
             }
@@ -484,7 +564,7 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
                 fixedItems.insert(i);
                 qreal sz = getSize(sizeHint);
                 remaining -= sz;
-                setSize(item->gvItemSz.minSize, sz);
+                setSize(item->actualSz.minSize, sz);
                 item->bDirty = false;
                 szs[i] = sz;
             }
@@ -500,7 +580,7 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
         for (int i : expandingItems)
         {
             szs[i] = sz;
-            setSize(m_items[i]->gvItemSz.minSize, sz);
+            setSize(m_items[i]->actualSz.minSize, sz);
             m_items[i]->bDirty = false;
         }
     }
@@ -522,7 +602,7 @@ void ZGraphicsLayout::setup(QRectF rc)
             case Type_Item:
             case Type_Spacing:
             {
-                QSizeF sz = item->gvItemSz.minSize;
+                QSizeF sz = item->actualSz.minSize;
                 QRectF _rc(QPointF(xPos, yPos), sz);
 
                 if (item->type == Type_Layout)

@@ -159,8 +159,8 @@ namespace zenoui
                     UiHelper::variantToString(value),
                     m_nodeParams.lineEditParam);
 
-                pMultiStrEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 64)));
-                pMultiStrEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pMultiStrEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 227))); //the height is the actual init size, hardcode it...
+                pMultiStrEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pMultiStrEdit->setData(GVKEY_TYPE, type);
 
                 QObject::connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, [=]() {
@@ -225,7 +225,7 @@ namespace zenoui
                 }
                 ZenoVecEditItem* pVecEditor = new ZenoVecEditItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
-                pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
                 QObject::connect(pVecEditor, &ZenoVecEditItem::editingFinished, [=]() {

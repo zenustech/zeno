@@ -113,6 +113,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_bodyWidget = initBodyWidget(pScene);
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
+    mainLayout->setDebugName("mainLayout");
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
     mainLayout->setSpacing(0);
@@ -175,9 +176,10 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
 
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+    pHLayout->setDebugName("Header HLayout");
     pHLayout->addSpacing(10);
     pHLayout->addItem(m_NameItem, Qt::AlignVCenter);
-    pHLayout->addSpacing(100);
+    pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
     pHLayout->addItem(m_pStatusWidgets);
 
     headerWidget->setLayout(pHLayout);
@@ -194,6 +196,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
 
     m_bodyLayout = new ZGraphicsLayout(false);
+    m_bodyLayout->setDebugName("Body Layout");
     m_bodyLayout->setSpacing(5);
     m_bodyLayout->setContentsMargin(16, 16, 16, 16);
 
@@ -217,9 +220,11 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->addLayout(m_paramsLayout);
 
     m_inputsLayout = initSockets(inputsItem, true, pScene);
+    m_inputsLayout->setDebugName("inputs layout");
     m_bodyLayout->addLayout(m_inputsLayout);
 
     m_outputsLayout = initSockets(outputsItem, false, pScene);
+    m_outputsLayout->setDebugName("outputs layout");
     m_bodyLayout->addLayout(m_outputsLayout);
 
     bodyWidget->setLayout(m_bodyLayout);
@@ -601,6 +606,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
 
     bool bEditableSock = ctrl == CONTROL_DICTKEY;
     ZSocketLayout* pMiniLayout = new ZSocketLayout(viewSockIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+    pMiniLayout->setDebugName(sockName);
 
     if (bInput)
     {
