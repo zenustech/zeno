@@ -9,6 +9,6 @@ When you type `python` in Windows shell, you will be redirected to Microsoft Sto
 you to install Python (which is free software) with their stupid Store (which implies money).
 
 
-std::tm, std::size, std::data, std::ws, std::right, std::next
+std::tm, std::size, std::data, std::ws, std::right, std::next, std::beta
 
 The names above hopefully can make you think twice before `using namespace std;`.

@@ -588,15 +588,14 @@ void ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
-    if (pModel && pModel->isDirty()) {
-        QMessageBox msgBox =
-            QMessageBox(QMessageBox::Question, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, this);
+    if (zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
+        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
         msgBox.setPalette(pal);
         int ret = msgBox.exec();
         if (ret & QMessageBox::Yes) {
-            saveAs();
+            save();
         }
     }
     pGraphsMgm->clear();
