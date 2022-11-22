@@ -79,6 +79,8 @@ struct ZSSparseGridToPrimitive : INode {
                             }
                         });
             } else {
+                if (nchns > 144)
+                    throw std::runtime_error("# of chns of property cannot exceed 144.");
                 cudaPol(range(pars.size()),
                         [spgv = proxy<space>(spg), pars = proxy<space>({}, pars),
                          tagSrcOffset = spg.getPropertyOffset(tag), tagDstOffset = pars.getPropertyOffset(parTag),
@@ -86,7 +88,7 @@ struct ZSSparseGridToPrimitive : INode {
                             auto pos = pars.pack(dim_c<3>, "x", pi);
                             auto arena = spgv.wArena(pos, wrapv<kernel_e::quadratic>{});
 
-                            float *val = (float *)alloca(nchns * sizeof(float));
+                            float val[144];
                             for (int d = 0; d < nchns; ++d)
                                 val[d] = 0;
 
@@ -95,12 +97,13 @@ struct ZSSparseGridToPrimitive : INode {
                                 auto [bno, cno] = spgv.decomposeCoord(coord);
                                 if (bno < 0) // skip non-exist voxels
                                     continue;
+
                                 auto W = arena.weight(loc);
 #pragma unroll
-                                for (int d = 0; d < nchns; ++d)
+                                for (int d = 0; d < nchns; ++d) {
                                     val[d] += spgv(tagSrcOffset + d, bno, cno) * W;
+                                }
                             }
-
                             for (int d = 0; d < nchns; ++d) {
                                 if (isAccumulate) {
                                     pars(tagDstOffset + d, pi) += val[d];
@@ -129,5 +132,4 @@ ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                      {},
                                      /* category: */
                                      {"Eulerian"}});
-
 } // namespace zeno
