@@ -92,6 +92,45 @@ struct ZSNSPressureProject : INode {
     }
 
     template <int level>
+    void redblackSOR(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, float sor, int nIter) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->getLevel<level>();
+        auto block_cnt = spg.numBlocks();
+
+        auto dx = spg.voxelSize()[0];
+
+        for (int iter = 0; iter < nIter; ++iter) {
+            // a simple implementation of red-black SOR
+            for (int clr = 0; clr != 2; ++clr) {
+                pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg), dx, rho, sor,
+                                                            clr] __device__(int cellno) mutable {
+                    auto icoord = spgv.iCoord(cellno);
+
+                    if ((icoord[0] + icoord[1] + icoord[2]) % 2 == clr) {
+                        float div = spgv.value("tmp", icoord);
+
+                        const int stcl = 1; // stencil point in each side
+                        float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+
+                        for (int i = -stcl; i <= stcl; ++i) {
+                            p_x[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(i, 0, 0));
+                            p_y[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, i, 0));
+                            p_z[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, 0, i));
+                        }
+
+                        float p_this =
+                            (1.f - sor) * p_x[stcl] +
+                            sor * ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dx * dx * rho) / 6.f;
+
+                        spgv("p0", icoord) = p_this;
+                    }
+                });
+            }
+        }
+    }
+
+    template <int level>
     void coloredSOR(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, float sor, int nIter) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -248,7 +287,8 @@ struct ZSNSPressureProject : INode {
     template <int level> void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
         if constexpr (level == 3) {
             clearInit<level>(pol, NSGrid);
-            Jacobi<level>(pol, NSGrid, rho, 100);
+            //Jacobi<level>(pol, NSGrid, rho, 100);
+            redblackSOR<level>(pol, NSGrid, rho, 1.2f, 100);
             float res = residual<level>(pol, NSGrid, rho);
             printf("MG level %d residual: %e\n", level, res);
         } else {
