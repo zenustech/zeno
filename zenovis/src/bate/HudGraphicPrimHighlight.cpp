@@ -74,7 +74,19 @@ struct PrimitiveHighlight : IGraphicDraw {
     virtual void draw() override {
         for (const auto& [prim_id, elements] : scene->selected_elements) {
             // ----- get primitive -----
-            auto prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_id).value());
+            PrimitiveObject* prim = nullptr;
+            auto optional_prim = scene->objectsMan->get(prim_id);
+            if (optional_prim.has_value())
+                prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_id).value());
+            else {
+                auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
+                for (const auto& [n, p] : scene->objectsMan->pairsShared()) {
+                    if (n.find(node_id) != std::string::npos) {
+                        prim = dynamic_cast<PrimitiveObject*>(p.get());
+                        break;
+                    }
+                }
+            }
             auto selected_count = elements.size();
             // ----- prepare data -----
             auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -105,6 +117,7 @@ struct PrimitiveHighlight : IGraphicDraw {
 
             // ----- draw selected edges -----
             if (scene->select_mode == zenovis::PICK_LINE) {
+                if (prim->lines->empty()) return;
                 // prepare indices
                 vector<vec2i> ind(selected_count);
                 int i = 0;

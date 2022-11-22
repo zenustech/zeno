@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
@@ -66,6 +67,7 @@ struct IGraphicHandler : IGraphicDraw {
 struct IPicker : IGraphicDraw {
     virtual std::string getPicked(int x, int y) = 0;
     virtual std::string getPicked(int x0, int y0, int x1, int y1) = 0;
+    virtual void setPrimSet(const std::vector<std::string>& prims) = 0;
 };
 
 struct MakeGraphicVisitor {

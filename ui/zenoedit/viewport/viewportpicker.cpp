@@ -1,7 +1,11 @@
 #include "viewportpicker.h"
-#include "zenovis.h"
-#include "zenomainwindow.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "zenovis.h"
+
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/graphsmanagment.h>
 
 #include <zenovis/Scene.h>
 #include <zenovis/ObjectsManager.h>
@@ -12,11 +16,6 @@
 #include <regex>
 
 namespace zeno {
-
-void Picker::setSelectMode(int mode) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    scene->select_mode = mode;
-}
 
 void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
                          const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
@@ -119,6 +118,7 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
     onPrimitiveSelected();
+    syncResultToNode();
 }
 
 void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
@@ -163,12 +163,49 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
             } else scene->selected_elements[obj_id] = {elem_id};
         }
     }
+    syncResultToNode();
+}
+
+void Picker::setTarget(const string& prim_name) {
+    prim_set = {prim_name};
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
+    picker->setPrimSet(prim_set);
+}
+
+void Picker::bindNode(const QModelIndex& n, const QModelIndex& s, const std::string& sn) {
+    node = n;
+    subgraph = s;
+    sock_name = sn;
+    need_sync = true;
+}
+
+void Picker::unbindNode() {
+    need_sync = false;
 }
 
 void Picker::onPrimitiveSelected() {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     mainWin->onPrimitiveSelected(scene->selected);
+}
+
+void Picker::syncResultToNode() {
+    if (!need_sync) return;
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    // construct result
+    string result;
+    const auto& elems = scene->selected_elements[prim_set[0]];
+    for (const auto& e : elems)
+        result += std::to_string(e) + ',';
+    // construct update info
+    auto params = node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    PARAM_INFO info = params.value(sock_name.c_str());
+    PARAM_UPDATE_INFO new_info = {sock_name.c_str(), info.value, QVariant(result.c_str())};
+    // sync to node
+    auto node_id = node.data(ROLE_OBJID).toString();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    pModel->updateParamInfo(node_id, new_info, subgraph, true);
 }
 
 static std::optional<float> ray_box_intersect(
