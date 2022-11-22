@@ -1,7 +1,9 @@
 #include "zitemfactory.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/render/ztfutil.h>
+#include <zenoui/comctrl/gv/zlineedititem.h>
 #include <zenomodel/include/curvemodel.h>
+#include "zveceditoritem.h"
 #include "style/zenostyle.h"
 #include "../dialog/zenoheatmapeditor.h"
 #include "../dialog/curvemap/zcurvemapeditor.h"
@@ -66,7 +68,7 @@ namespace zenoui
     }
 
 
-    ZenoParamWidget* createItemWidget(
+    QGraphicsItem* createItemWidget(
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,
@@ -77,7 +79,7 @@ namespace zenoui
     {
         ZtfUtil& inst = ZtfUtil::GetInstance();
         static NodeUtilParam m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
-        ZenoParamWidget* pItemWidget = nullptr;
+        QGraphicsItem* pItemWidget = nullptr;
 
         switch (ctrl)
         {
@@ -92,7 +94,7 @@ namespace zenoui
                 pLineEdit->setValidator(validateForSockets(ctrl));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
                 pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
-                pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pLineEdit->setData(GVKEY_TYPE, type);
                 QObject::connect(pLineEdit, &ZenoParamLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
@@ -223,12 +225,13 @@ namespace zenoui
                 {
                     vec.resize(dim);
                 }
-                ZenoVecEditItem* pVecEditor = new ZenoVecEditItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
+
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
-                QObject::connect(pVecEditor, &ZenoVecEditItem::editingFinished, [=]() {
+                QObject::connect(pVecEditor, &ZVecEditorItem::editingFinished, [=]() {
                     UI_VECTYPE vec = pVecEditor->vec();
                     const QVariant& newValue = QVariant::fromValue(vec);
                     cbFunc(newValue);

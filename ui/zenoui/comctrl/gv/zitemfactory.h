@@ -6,7 +6,7 @@
 
 namespace zenoui
 {
-    ZenoParamWidget* createItemWidget(
+    QGraphicsItem* createItemWidget(
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,

@@ -327,6 +327,9 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
 
 void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
 {
+    if (m_model->IsIOProcessing())
+        return;
+
     const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
     if (nodeName == "SubInput" || nodeName == "SubOutput")
     {

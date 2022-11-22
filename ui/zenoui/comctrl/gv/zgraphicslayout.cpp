@@ -4,6 +4,7 @@
 #include "zenogvhelper.h"
 #include "variantptr.h"
 #include "zenoparamwidget.h"
+#include "zveceditoritem.h"
 
 
 ZGraphicsLayout::ZGraphicsLayout(bool bHor)
@@ -315,7 +316,7 @@ QSizeF ZGraphicsLayout::calculateSize()
                     //use to debug
                     if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(item->pItem))
                     {
-                        ZenoVecEditItem* pVecEdit = qobject_cast<ZenoVecEditItem*>(pWidget);
+                        ZVecEditorItem* pVecEdit = qobject_cast<ZVecEditorItem*>(pWidget);
                         if (pVecEdit)
                         {
                             int j;

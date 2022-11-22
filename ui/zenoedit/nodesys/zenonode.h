@@ -25,7 +25,7 @@ class ZenoNode : public ZLayoutBackground
     struct _param_ctrl
     {
         ZSimpleTextItem* param_name;
-        ZenoParamWidget* param_control;
+        QGraphicsItem* param_control;
         ZGraphicsLayout* ctrl_layout;
         QPersistentModelIndex viewidx;
         _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
@@ -107,8 +107,8 @@ protected:
 private:
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
-    ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
+    QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
+    QGraphicsItem* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);

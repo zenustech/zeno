@@ -236,7 +236,7 @@ ZGraphicsLayout* ZenoNode::initCustomParamWidgets()
     return nullptr;
 }
 
-ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
+QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
 {
     const PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
     if (ctrl == CONTROL_NONVISIBLE)
@@ -257,7 +257,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QMode
 
     const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
-    ZenoParamWidget* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith);
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith);
     return pControl;
 }
 
@@ -406,7 +406,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 ZGraphicsLayout* pParamLayout = paramCtrl.ctrl_layout;
                 pParamLayout->removeItem(paramCtrl.param_control);
 
-                ZenoParamWidget* pNewControl = initParamWidget(pScene, viewParamIdx);
+                QGraphicsItem* pNewControl = initParamWidget(pScene, viewParamIdx);
                 if (pNewControl)
                 {
                     pParamLayout->addItem(pNewControl);
@@ -610,7 +610,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
 
     if (bInput)
     {
-        ZenoParamWidget* pSocketControl = initSocketWidget(pScene, viewSockIdx);
+        QGraphicsItem* pSocketControl = initSocketWidget(pScene, viewSockIdx);
         pMiniLayout->setControl(pSocketControl);
         if (pSocketControl)
             pSocketControl->setVisible(links.isEmpty());
@@ -683,8 +683,8 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_MULTILINE_STRING:
         case CONTROL_CURVE:
         {
-            ZenoParamWidget* pWidget = initParamWidget(pScene, viewparamIdx);
-            paramCtrl.ctrl_layout->addItem(pWidget);
+            QGraphicsItem* pWidget = initParamWidget(pScene, viewparamIdx);
+            paramCtrl.ctrl_layout->addItem(pWidget, Qt::AlignRight | Qt::AlignVCenter);
             paramCtrl.param_control = pWidget;
             break;
         }
@@ -698,7 +698,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
     return paramCtrl.ctrl_layout;
 }
 
-ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
+QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
 {
     const QPersistentModelIndex perIdx(paramIdx);
 
@@ -718,7 +718,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QMod
     const QString& sockType = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
 
-    ZenoParamWidget* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith);
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith);
     return pControl;
 }
 

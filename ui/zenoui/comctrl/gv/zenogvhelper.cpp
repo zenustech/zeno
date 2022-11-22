@@ -4,6 +4,7 @@
 #include "zenoparamwidget.h"
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
+#include "zveceditoritem.h"
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
@@ -92,6 +93,11 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             {
                 UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 pBtn->setVec(vec);
+            }
+            else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
+            {
+                UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                pEditor->setVec(vec);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
             {
