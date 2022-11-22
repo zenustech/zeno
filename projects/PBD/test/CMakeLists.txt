@@ -13,3 +13,6 @@
 # target_compile_definitions(zeno PRIVATE
 # PBD_TEST_OUTPUT="projects/test/"
 # )
+
+add_executable(test_PBDCloth test_PBDCloth.cpp)
+target_link_libraries(test_PBDCloth PRIVATE zeno)

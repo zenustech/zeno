@@ -27,9 +27,9 @@ struct TestClothMesh : zeno::INode
 			for (int j = 0; j < 3; j++)
 				tris[i][j] = mesh.tris[i * 3 + j];
 
-		//move above 
-		for(int i = 0; i < pos.size(); i++)
-			pos[i][1] += 1.0;
+		// //move above 
+		// for(int i = 0; i < pos.size(); i++)
+		// 	pos[i][1] += 1.0;
 
         set_output("prim", std::move(prim));
 	};

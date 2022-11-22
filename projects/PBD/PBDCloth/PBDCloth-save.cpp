@@ -11,8 +11,7 @@ private:
     int numSubsteps = 15;
     float dt = 1.0 / 60.0 / numSubsteps;
     float edgeCompliance = 0.0;
-    float dihedralCompliance = 1.0;
-    float bendingCompliance = 1.0;
+    float dihedralCompliance;
 
     float computeAng(   const vec3f & p0,
                         const vec3f & p1,
@@ -55,30 +54,14 @@ private:
         return dist;
     }
 
-    /**
-     * @brief 根据外部约束更新位置。碰撞处理在此步内。
-     * 
-     * @param invMass 输入：质量倒数
-     * @param externForce 输入：外力（如重力）
-     * @param dt 参数：时间步长 
-     * @param pos 更改：位置
-     * @param prevPos 更改：前一步位置
-     * @param vel 更改：速度 
-     */
-    void preSolve(  const std::vector<float> &invMass,
-                    const vec3f &externForce,
-                    const float dt,
-                    std::vector<vec3f> &pos,
-                    std::vector<vec3f> &prevPos,
-                    std::vector<vec3f> &vel) 
+    void preSolve(  zeno::AttrVector<zeno::vec3f> &pos,
+                    std::vector<zeno::vec3f> &prevPos,
+                    std::vector<zeno::vec3f> &vel)
     {
         for (int i = 0; i < pos.size(); i++) 
         {
-            if (invMass[i] == 0.0)
-                continue;
-
-            vel[i] += (externForce) * dt;
             prevPos[i] = pos[i];
+            vel[i] += (externForce) * dt;
             pos[i] += vel[i] * dt;
 
             //地板碰撞
@@ -87,30 +70,17 @@ private:
                 pos[i] = prevPos[i];
                 pos[i][1] = 0.0;
             }
-        }
 
-    }
-
-    /**
-     * @brief 反求速度
-     * 
-     * @param pos 输入：位置
-     * @param prevPos 输入：前一时刻位置
-     * @param invMass 输入：质量倒数
-     * @param dt 参数：时间步长
-     * @param vel 输出：速度
-     */
-    void postSolve( const std::vector<vec3f> &pos,
-                    const std::vector<vec3f> &prevPos,
-                    const std::vector<float> &invMass,
-                    const float dt,
-                    std::vector<vec3f> &vel) 
-    {
-        for (int i = 0; i < pos.size(); i++) 
-        {
-            if (invMass[i] == 0.0)
-                continue;
-            vel[i] = (pos[i] - prevPos[i]) / dt;
+            //球体SDF碰撞
+            vec3f normal;
+            float sdf = ballSdf(pos[i], normal) ;
+            auto loss=0.05;
+            if(sdf < 0.0)
+            {
+                pos[i] = pos[i] - sdf * normal;
+                if(dot(vel[i],normal)<0.0)
+                    vel[i] -= min(dot(vel[i],normal), 0) * normal * loss;
+            }
         }
     }
 
@@ -125,26 +95,56 @@ private:
     /**
      * @brief 求解PBD所有边约束（也叫距离约束）。目前采用Gauss-Seidel方式（难以并行）。
      * 
+     * @param pos 点位置
      * @param edge 边连接关系
      * @param invMass 点质量的倒数
      * @param restLen 边的原长
      * @param edgeCompliance 柔度（越小约束越强，最小为0）
      * @param dt 时间步长
-     * @param pos 点位置
      */
-    void solveDistanceConstraints( 
-        const std::vector<vec2i> &edges,
+    void solveDistanceConstraint( 
+              std::vector<vec3f> &pos,
+        const std::vector<vec2i> &edge,
         const std::vector<float> &invMass,
         const std::vector<float> &restLen,
         const float edgeCompliance,
-        const float dt,
-        std::vector<vec3f> &pos)
+        const float dt
+        )
     {
         float alpha = edgeCompliance / dt / dt;
-        for (auto i = 0; i < edges.size(); i++) 
+        zeno::vec3f grad{0, 0, 0};
+
+        for (int i = 0; i < edge.size(); i++) 
         {
-            int id0 = edges[i][0];
-            int id1 = edges[i][1];
+            int id0 = edge[i][0];
+            int id1 = edge[i][1];
+
+            grad = pos[id0] - pos[id1];
+            float Len = length(grad);
+            grad /= Len;
+            float C = Len - restLen[i];
+            float w = invMass[id0] + invMass[id1];
+            float s = -C / (w + alpha);
+
+            pos[id0] += grad *   s * invMass[id0];
+            pos[id1] += grad * (-s * invMass[id1]);
+        }
+    }
+
+    void solveStretchingConstraint(
+        zeno::AttrVector<zeno::vec3f> &pos,
+        const zeno::AttrVector<zeno::vec2i> &edge,
+        const std::vector<float> & invMass,
+        const std::vector<float> & restLen,
+        const float edgeCompliance,
+        const float dt
+    ) 
+    {
+        float alpha = edgeCompliance / dt / dt;
+
+        for (auto i = 0; i < edge.size(); i++) {
+            int id0 = edge[i][0];
+            int id1 = edge[i][1];
 
             auto w0 = invMass[id0];
             auto w1 = invMass[id1];
@@ -159,55 +159,48 @@ private:
             grads /= Len;
             auto C = Len - restLen[i];
             auto s = -C / (w + alpha);
-            
+
             pos[id0] += grads *   s * invMass[id0];
             pos[id1] += grads * (-s * invMass[id1]);
         }
     }
 
-    /**
-     * @brief 利用对角距离法求解弯折约束。
-     * 
-     * @param quads 三角形对。其中下标2和3代表对角
-     * @param invMass 质量倒数
-     * @param bendingRestLen 对角距离原长
-     * @param bendingCompliance 参数：柔度
-     * @param pos 输出：位置
-     */
-    void solveBendingDistanceConstraints(
-        const std::vector<vec4i> &quads,
-        const std::vector<float> &invMass,
-        const std::vector<float> &bendingRestLen,
-        const float bendingCompliance,
-        const float dt,
-        std::vector<vec3f> &pos)
-    {
-        auto alpha = bendingCompliance / dt /dt;
 
-        for (auto i = 0; i < quads.size(); i++) 
-        {
-            int id0 = quads[i][2];
-            int id1 = quads[i][3];
+    // void solveBendingDistanceConstraint(
+    //           std::vector<vec3f> &pos,
+    //     const std::vector<vec2i> &quads,
+    //     const std::vector<float> &invMass,
+    //     const std::vector<float> &restLen,
+    //     const float edgeCompliance,
+    //     const float dt
+    // )
+    // {
+    //     auto alpha = compliance / dt /dt;
 
-            auto w0 = invMass[id0];
-            auto w1 = invMass[id1];
-            auto w = w0 + w1;
-            if (w == 0.0)
-                continue;
+    //     for (auto i = 0; i < quads.size(); i++) 
+    //     {
+    //         int id0 = quads[i][2];
+    //         int id1 = quads[i][3];
 
-            auto grads = pos[id0] - pos[id1];
-            float Len = length(grads);
-            if (Len == 0.0)
-                continue;
-            grads /= Len;
-            auto C = Len - bendingRestLen[i];
-            auto s = -C / (w + alpha);
-            pos[id0] += grads *   s * invMass[id0];
-            pos[id1] += grads * (-s * invMass[id1]);
-        }
-    }
+    //         auto w0 = invMass[id0];
+    //         auto w1 = invMass[id1];
+    //         auto w = w0 + w1;
+    //         if (w == 0.0)
+    //             continue;
 
-    void solveDihedralConstraints(PrimitiveObject *prim)
+    //         auto grads = pos[id0] - pos[id1];
+    //         float Len = length(grads);
+    //         if (Len == 0.0)
+    //             continue;
+    //         grads /= Len;
+    //         auto C = Len - restLen[i];
+    //         auto s = -C / (w + alpha);
+    //         pos[id0] += grads *   s * invMass[id0];
+    //         pos[id1] += grads * (-s * invMass[id1]);
+    //     }
+    // }
+
+    void solveDihedralConstraint(PrimitiveObject *prim)
     {
         vec3f grad[4] = {vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0), vec3f(0,0,0)};
         float alpha = dihedralCompliance / dt / dt;
@@ -262,8 +255,13 @@ private:
         }
     }
 
-
-
+    void postSolve(const zeno::AttrVector<zeno::vec3f> &pos,
+                   const std::vector<zeno::vec3f> &prevPos,
+                   std::vector<zeno::vec3f> &vel)
+    {
+        for (int i = 0; i < pos.size(); i++) 
+            vel[i] = (pos[i] - prevPos[i]) / dt;
+    }
 
 
 public:
@@ -273,25 +271,24 @@ public:
         externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
-        // dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
-        bendingCompliance = get_input<zeno::NumericObject>("bendingCompliance")->get<float>();
+        dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
 
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
-        auto &edges = prim->edges;
+        auto &edge = prim->edges;
         auto &quads = prim->quads;
         auto &prevPos = prim->verts.attr<vec3f>("prevPos");
         auto &vel = prim->verts.attr<vec3f>("vel");
         auto &invMass=prim->verts.attr<float>("invMass");
         auto &restLen=prim->edges.attr<float>("restLen");
-        auto &bendingRestLen=prim->quads.attr<float>("bendingRestLen");
 
-        // for (int steps = 0; steps < numSubsteps; steps++) 
+        for (int steps = 0; steps < numSubsteps; steps++) 
         {
-            preSolve(invMass,externForce, dt,pos,prevPos, vel);
-            solveDistanceConstraints(edges, invMass, restLen ,edgeCompliance, dt, pos);
-            solveBendingDistanceConstraints(quads,invMass,bendingRestLen,bendingCompliance,dt,pos);
-            postSolve(pos,prevPos,invMass,dt,vel);
+            preSolve(pos, prevPos, vel);
+            solveDistanceConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            // solveStretchingConstraint(pos, edge, invMass, restLen ,edgeCompliance, dt);
+            // solveDihedralConstraint(prim.get());
+            postSolve(pos, prevPos, vel);
         }
 
         set_output("outPrim", std::move(prim));
@@ -302,10 +299,9 @@ ZENDEFNODE(PBDCloth, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
                     {"vec3f", "externForce", "0.0, -10.0, 0.0"},
-                    {"int", "numSubsteps", "15"},
+                    {"int", "numSubsteps", "10"},
                     {"float", "edgeCompliance", "0.0"},
-                    {"float", "bendingCompliance", "1.0"}
-                    // {"float", "dihedralCompliance", "1.0"},
+                    {"float", "dihedralCompliance", "1.0"}
                 },
                  // outputs:
                  {"outPrim"},
