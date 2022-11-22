@@ -263,9 +263,6 @@ private:
     }
 
 
-
-
-
 public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -273,20 +270,20 @@ public:
         externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
         numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
-        // dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         bendingCompliance = get_input<zeno::NumericObject>("bendingCompliance")->get<float>();
+        // dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
 
         dt = 1.0/60.0/numSubsteps;
         auto &pos = prim->verts;
         auto &edges = prim->edges;
         auto &quads = prim->quads;
-        auto &prevPos = prim->verts.attr<vec3f>("prevPos");
-        auto &vel = prim->verts.attr<vec3f>("vel");
         auto &invMass=prim->verts.attr<float>("invMass");
         auto &restLen=prim->edges.attr<float>("restLen");
         auto &bendingRestLen=prim->quads.attr<float>("bendingRestLen");
+        auto &prevPos = prim->verts.attr<vec3f>("prevPos");
+        auto &vel = prim->verts.attr<vec3f>("vel");
 
-        // for (int steps = 0; steps < numSubsteps; steps++) 
+        for (int steps = 0; steps < numSubsteps; steps++) 
         {
             preSolve(invMass,externForce, dt,pos,prevPos, vel);
             solveDistanceConstraints(edges, invMass, restLen ,edgeCompliance, dt, pos);

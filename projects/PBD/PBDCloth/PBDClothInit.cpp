@@ -1,12 +1,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
-#include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulatequads
 #include <limits>
 #include <iostream>
 #include <algorithm>
-
-#include "../Utils/myPrint.h"
-
+// #include <zeno/funcs/PrimitiveUtils.h> //primCalcNormal and primTriangulatequads
 
 namespace zeno {
 /**
@@ -15,91 +12,6 @@ namespace zeno {
  * 
  */
 struct PBDClothInit : zeno::INode {
-
-    // /**
-    //  * @brief 计算两个面夹角的辅助函数。注意按照论文Muller2006中Fig.4的顺序。1-2是共享边。
-    //  * 
-    //  * @param p1 顶点1位置
-    //  * @param p2 顶点2位置
-    //  * @param p3 顶点3位置
-    //  * @param p4 顶点4位置
-    //  * @return float 两个面夹角
-    //  */
-    // float computeAng(
-    //     const vec3f &p1,
-    //     const vec3f &p2, 
-    //     const vec3f &p3, 
-    //     const vec3f &p4)
-    // {
-    //     auto n1 = cross((p2 - p1), (p3 - p1));
-    //     n1 = n1 / length(n1);
-    //     auto n2 = cross((p2 - p1), (p4 - p1));
-    //     n2 = n2 / length(n2);
-    //     auto res = abs(dot(n1, n2)); //只计算锐角。TODO:是否该如此存疑。
-    //     if(res<-1.0) res = -1.0;  
-    //     if(res>1.0)  res = 1.0;
-    //     return acos(res);
-    // }
-
-
-    // /**
-    //  * @brief 计算所有原角度
-    //  * 
-    //  * @param pos 顶点
-    //  * @param tris 三角面
-    //  * @param adjTriId 邻接三角面在tris中的编号
-    //  * @param restAng 原角度, 最多有三个，每个邻接三角面对应一个。没有则存-1
-    //  */
-    // void initRestAng(
-    //     const AttrVector<vec3f> &pos,
-    //     const AttrVector<vec3i> &tris,
-    //     std::vector<vec3f> &restAng
-    // ) 
-    // {
-    // }
-
-    // /**
-    //  * @brief 计算所有原长
-    //  * 
-    //  * @param pos 顶点
-    //  * @param edge 边连接关系
-    //  * @param restLen 原长
-    //  */
-    // void initRestLen(
-    //     const AttrVector<vec3f> &pos,
-    //     const AttrVector<vec2i> &edge,
-    //     std::vector<float> &restLen
-    // ) 
-    // {
-    //     for(int i = 0; i < edge.size(); i++)
-    //         restLen[i] = length((pos[edge[i][0]] - pos[edge[i][1]]));
-    // }
-
-
-    // /**
-    //  * @brief 计算所有质量倒数
-    //  * 
-    //  * @param pos 顶点
-    //  * @param tris 三角面
-    //  * @param areaDensity 面密度
-    //  * @param invMass 质量倒数
-    //  */
-    // void initInvMass(        
-    //     const AttrVector<vec3f> &pos,
-    //     const AttrVector<vec3i> &tris,
-    //     const float areaDensity,
-    //     std::vector<float> &invMass
-    //     ) 
-    // {
-    //     for(int i = 0; i < tris.size(); i++)
-    //     {
-    //         float area = abs(length(cross(pos[tris[i][1]] - pos[tris[i][0]],  pos[tris[i][1]] - pos[tris[i][2]]))/2.0);
-    //         float pInvMass = 0.0;
-    //         pInvMass = areaDensity * area / 3.0;
-    //         for (int j = 0; j < 3; j++)
-    //             invMass[tris[i][j]] += pInvMass;
-    //     }
-    // }
 
     /**
      * @brief 找到共享边。
@@ -124,7 +36,7 @@ struct PBDClothInit : zeno::INode {
         }
 
 
-        // sort so common edges are next to each other
+        // sort so shared edges are next to each other
         std::sort(edges.begin(), edges.end(),
                   [](vec3i &a, vec3i &b) { return ((a[0] < b[0]) || (a[0] == b[0] && a[1] < b[1])); });
 
@@ -210,7 +122,6 @@ struct PBDClothInit : zeno::INode {
         std::vector<float> & bendingRestLen
         )
     {
-        echo(tris.size());
         std::fill(invMass.begin(),invMass.end(), 0.0);
 
         vec3f e0{0.0, 0.0, 0.0};
@@ -276,55 +187,36 @@ public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        //面密度，用来算invMass的参数
-        auto areaDensity = get_input<zeno::NumericObject>("areaDensity")->get<int>();
-
         auto &pos = prim->verts;
         auto &tris = prim->tris;
 
         // 共享边。 sharedEdges是用于寻找共享边的辅助数据结构。
         auto &sharedEdges = prim->add_attr<int>("sharedEdges");
         initSharedEdges(tris, sharedEdges);
-        // printScalarField("sharedEdges.csv",sharedEdges,0);
 
         //建立边连接关系：edges。这次每个边只加入一次。
         auto &edges = prim->edges;
         auto &quads = prim->quads;
         initEdgesAndQuads(tris, sharedEdges, edges, quads);
-        // printVectorField("quads.csv",quads,0);
-        // printVectorField("edges.csv",edges,0);
 
         // 计算invMass和restLen和 bendingRestLen
         // bendingRestLen是使用对角距离法来计算bending的时候的restLen，与edges上的restLen不同，是专门针对quads第3和第4个元素的len。
         auto &invMass = prim->verts.add_attr<float>("invMass");
         auto &restLen = prim->edges.add_attr<float>("restLen");
         auto &bendingRestLen = prim->quads.add_attr<float>("bendingRestLen");
-
         initGeometry(pos,edges,tris,quads,invMass,restLen,bendingRestLen);
-
-        // printVectorField("tris.csv",tris);
-        // printScalarField("invMass.csv",invMass);
-        // printScalarField("restLen.csv",restLen);
-        // printScalarField("bendingRestLen.csv",bendingRestLen);
-
-        // initInvMass(pos,tris,areaDensity,invMass);
-        // initRestLen(pos,edges,restLen);
-        // auto &restAng = prim->tris.add_attr<vec3f>("restAng");
-        // initRestAng(pos,tris,sharedEdges,restAng);
 
         //初始化速度和前一时刻位置变量
         auto &vel = prim->verts.add_attr<vec3f>("vel");
         auto &prevPos = prim->verts.add_attr<vec3f>("prevPos");
 
         set_output("outPrim", std::move(prim));
-
     };
 };
 
 ZENDEFNODE(PBDClothInit, {// inputs:
                           {
-                              {"PrimitiveObject", "prim"},
-                              {"float", "areaDensity", "1.0"}
+                              {"PrimitiveObject", "prim"}
                           },
                           // outputs:
                           {
