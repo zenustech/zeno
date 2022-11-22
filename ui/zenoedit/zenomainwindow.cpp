@@ -28,6 +28,7 @@
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
+#include "ui_zenomainwindow.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -54,7 +55,13 @@ ZenoMainWindow::~ZenoMainWindow()
 
 void ZenoMainWindow::init()
 {
-    initMenu();
+    m_ui = new Ui::MainWindow;
+    m_ui->setupUi(this);
+    QWidget* p = takeCentralWidget();
+    if (p)
+        delete p;
+
+    //initMenu();
     initDocks();
 
     QPalette pal = palette();

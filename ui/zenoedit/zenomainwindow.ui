@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File(F)</string>
+    </property>
+    <widget class="QMenu" name="menu_Export_E">
+     <property name="title">
+      <string>&amp;Export(E)</string>
+     </property>
+     <addaction name="actionScreen_Shoot"/>
+     <addaction name="actionRecord_Video"/>
+    </widget>
+    <addaction name="action_New_N"/>
+    <addaction name="action_Open_O"/>
+    <addaction name="action_Save_S"/>
+    <addaction name="action_Save_As_A"/>
+    <addaction name="action_Import_I"/>
+    <addaction name="menu_Export_E"/>
+    <addaction name="action_Close_C"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit(E)</string>
+    </property>
+    <widget class="QMenu" name="menuCustomLayout">
+     <property name="title">
+      <string>CustomLayout</string>
+     </property>
+     <addaction name="actionDefault_layout"/>
+    </widget>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+    <addaction name="menuCustomLayout"/>
+    <addaction name="action_Copy_C"/>
+    <addaction name="action_Paste_P"/>
+    <addaction name="action_Cut_T"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;Render(R)</string>
+    </property>
+    <addaction name="actionSmooth_Shading"/>
+    <addaction name="actionNormal_Check"/>
+    <addaction name="actionWireFrame"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Grid"/>
+    <addaction name="actionBackground_Color"/>
+    <addaction name="separator"/>
+    <addaction name="actionSolid"/>
+    <addaction name="actionShading"/>
+    <addaction name="actionOptix"/>
+   </widget>
+   <widget class="QMenu" name="menuView_2">
+    <property name="title">
+     <string>&amp;View(V)</string>
+    </property>
+    <widget class="QMenu" name="menuEnvTex">
+     <property name="title">
+      <string>EnvTex</string>
+     </property>
+     <addaction name="actionBlackWhite"/>
+     <addaction name="actionCreek"/>
+     <addaction name="actionDay_Light"/>
+     <addaction name="actionDefault"/>
+     <addaction name="actionFootballField"/>
+     <addaction name="actionForest"/>
+     <addaction name="actionLake"/>
+     <addaction name="actionSee"/>
+    </widget>
+    <widget class="QMenu" name="menuCamera">
+     <property name="title">
+      <string>Camera</string>
+     </property>
+     <addaction name="actionNode_Camera"/>
+    </widget>
+    <addaction name="menuEnvTex"/>
+    <addaction name="menuCamera"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>&amp;Window(W)</string>
+    </property>
+    <widget class="QMenu" name="menuCustom_Layout">
+     <property name="title">
+      <string>Custom Layout</string>
+     </property>
+     <addaction name="actionDefault_2"/>
+    </widget>
+    <addaction name="actionSave_Layout"/>
+    <addaction name="menuCustom_Layout"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help(H)</string>
+    </property>
+    <addaction name="actionEnglish_Chinese"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuView_2"/>
+   <addaction name="menuWindow"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionUndo">
+   <property name="text">
+    <string>&amp;Undo(U)</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>&amp;Redo(R)</string>
+   </property>
+  </action>
+  <action name="actionDefault_layout">
+   <property name="text">
+    <string>Default layout</string>
+   </property>
+  </action>
+  <action name="action_New_N">
+   <property name="text">
+    <string>&amp;New(N)</string>
+   </property>
+  </action>
+  <action name="action_Open_O">
+   <property name="text">
+    <string>&amp;Open(O)</string>
+   </property>
+  </action>
+  <action name="action_Save_S">
+   <property name="text">
+    <string>&amp;Save(S)</string>
+   </property>
+  </action>
+  <action name="action_Save_As_A">
+   <property name="text">
+    <string>&amp;Save As(A)</string>
+   </property>
+  </action>
+  <action name="action_Import_I">
+   <property name="text">
+    <string>&amp;Import(I)</string>
+   </property>
+  </action>
+  <action name="action_Close_C">
+   <property name="text">
+    <string>&amp;Close(C)</string>
+   </property>
+  </action>
+  <action name="action_Copy_C">
+   <property name="text">
+    <string>&amp;Copy(C)</string>
+   </property>
+  </action>
+  <action name="action_Paste_P">
+   <property name="text">
+    <string>&amp;Paste(P)</string>
+   </property>
+  </action>
+  <action name="action_Cut_T">
+   <property name="text">
+    <string>&amp;Cut(T)</string>
+   </property>
+  </action>
+  <action name="actionSmooth_Shading">
+   <property name="text">
+    <string>Smooth Shading</string>
+   </property>
+  </action>
+  <action name="actionNormal_Check">
+   <property name="text">
+    <string>Normal Check</string>
+   </property>
+  </action>
+  <action name="actionWireFrame">
+   <property name="text">
+    <string>WireFrame</string>
+   </property>
+  </action>
+  <action name="actionShow_Grid">
+   <property name="text">
+    <string>Show Grid</string>
+   </property>
+  </action>
+  <action name="actionBackground_Color">
+   <property name="text">
+    <string>Background Color</string>
+   </property>
+  </action>
+  <action name="actionSolid">
+   <property name="text">
+    <string>Solid</string>
+   </property>
+  </action>
+  <action name="actionShading">
+   <property name="text">
+    <string>Shading</string>
+   </property>
+  </action>
+  <action name="actionOptix">
+   <property name="text">
+    <string>Optix</string>
+   </property>
+  </action>
+  <action name="actionBlackWhite">
+   <property name="text">
+    <string>BlackWhite</string>
+   </property>
+  </action>
+  <action name="actionCreek">
+   <property name="text">
+    <string>Creek</string>
+   </property>
+  </action>
+  <action name="actionDay_Light">
+   <property name="text">
+    <string>Day Light</string>
+   </property>
+  </action>
+  <action name="actionDefault">
+   <property name="text">
+    <string>Default</string>
+   </property>
+  </action>
+  <action name="actionFootballField">
+   <property name="text">
+    <string>FootballField</string>
+   </property>
+  </action>
+  <action name="actionForest">
+   <property name="text">
+    <string>Forest</string>
+   </property>
+  </action>
+  <action name="actionLake">
+   <property name="text">
+    <string>Lake</string>
+   </property>
+  </action>
+  <action name="actionSee">
+   <property name="text">
+    <string>Sea</string>
+   </property>
+  </action>
+  <action name="actionNode_Camera">
+   <property name="text">
+    <string>Node Camera</string>
+   </property>
+  </action>
+  <action name="actionSave_Layout">
+   <property name="text">
+    <string>Save Layout</string>
+   </property>
+  </action>
+  <action name="actionDefault_2">
+   <property name="text">
+    <string>Default</string>
+   </property>
+  </action>
+  <action name="actionScreen_Shoot">
+   <property name="text">
+    <string>Screenshoot</string>
+   </property>
+  </action>
+  <action name="actionRecord_Video">
+   <property name="text">
+    <string>Record Video</string>
+   </property>
+  </action>
+  <action name="actionEnglish_Chinese">
+   <property name="text">
+    <string>English Chinese</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

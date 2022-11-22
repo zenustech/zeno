@@ -12,6 +12,11 @@
 class DisplayWidget;
 class ZTimeline;
 
+namespace Ui
+{
+    class MainWindow;
+}
+
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -76,6 +81,7 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     int m_nResizeTimes;
+    Ui::MainWindow* m_ui;
 };
 
 #endif
