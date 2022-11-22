@@ -48,8 +48,10 @@ struct CVINode : INode {
     cv::_InputArray get_input_array(std::string const &name) {
         if (has_input<NumericObject>(name)) {
             auto num = get_input<NumericObject>(name);
+            bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
             return std::visit([&] (auto const &val) -> cv::_InputArray {
-                return tocvvec(val);
+                auto ret = tocvvec(val);
+                return is255 ? ret * 255 : ret;
             }, num->value);
         } else {
             return get_input<CVImageObject>(name)->image;
@@ -304,17 +306,9 @@ struct CVImageMonoColor : CVINode {
             cval.x = (unsigned char)std::clamp(color[0] * 255.f, 0.f, 255.f);
             cval.y = (unsigned char)std::clamp(color[1] * 255.f, 0.f, 255.f);
             cval.z = (unsigned char)std::clamp(color[2] * 255.f, 0.f, 255.f);
-            image->image.forEach<cv::Point3_<unsigned char>>([&] (cv::Point3_<unsigned char> &val, const int *pos) {
-                val = cval;
-            });
+            image->image.setTo(cv::Scalar_<unsigned char>(cval.x, cval.y, cval.z));
         } else {
-            cv::Point3_<float> cval;
-            cval.x = color[0];
-            cval.y = color[1];
-            cval.z = color[2];
-            image->image.forEach<cv::Point3_<float>>([&] (cv::Point3_<float> &val, const int *pos) {
-                val = cval;
-            });
+            image->image.setTo(cv::Scalar(color[0], color[1], color[2]));
         }
         set_output("image", std::move(image));
     }
@@ -395,25 +389,48 @@ struct CVImageDrawPoly : CVINode {
             image = std::make_shared<CVImageObject>(*image);
         auto prim = get_input<PrimitiveObject>("prim");
         auto linewidth = get_input2<int>("linewidth");
-        auto isconvex = get_input2<bool>("isconvex");
+        auto batched = get_input2<bool>("batched");
+        auto antialias = get_input2<bool>("antialias");
+        auto is255 = get_input2<bool>("is255");
+        if (is255) color *= 255.f;
+            //image->image.setTo(cv::Scalar::all(0));
         vec2i shape(image->image.size[1], image->image.size[0]);
-        std::vector<std::vector<cv::Point>> pts(prim->polys.size());
+
+        std::vector<std::vector<cv::Point>> vpts(prim->polys.size());
         for (int i = 0; i < prim->polys.size(); i++) {
             auto [base, len] = prim->polys[i];
-            pts[i].resize(len);
-            auto &pt = pts[i];
+            auto &pt = vpts[i];
+            pt.resize(len);
             for (int k = 0; k < len; k++) {
                 auto v = prim->verts[prim->loops[base + k]];
                 pt[k].x = int((v[0] * 0.5f + 0.5f) * shape[0]);
                 pt[k].y = int((v[1] * -0.5f + 0.5f) * shape[1]);
             }
         }
+        std::vector<const cv::Point *> pts(vpts.size());
+        std::vector<int> npts(vpts.size());
+        for (int i = 0; i < vpts.size(); i++) {
+            pts[i] = vpts[i].data();
+            npts[i] = vpts[i].size();
+        }
+
+        cv::LineTypes linemode = antialias ? cv::LINE_AA : cv::LINE_4;
         if (linewidth > 0) {
-            cv::polylines(image->image, pts, isconvex, color, linewidth);
-        } else if (isconvex) {
-            cv::fillConvexPoly(image->image, pts, color);
+            if (batched) {
+                cv::polylines(image->image, pts.data(), npts.data(), npts.size(), 0, color, linewidth, linemode);
+            } else {
+                for (int i = 0; i < npts.size(); i++) {
+                    cv::polylines(image->image, pts.data() + i, npts.data() + i, 1, 0, color, linewidth, linemode);
+                }
+            }
         } else {
-            cv::fillPoly(image->image, pts, color);
+            if (batched) {
+                cv::fillPoly(image->image, pts.data(), npts.data(), npts.size(), color, linemode);
+            } else {
+                for (int i = 0; i < npts.size(); i++) {
+                    cv::fillPoly(image->image, pts.data() + i, npts.data() + i, 1, color, linemode);
+                }
+            }
         }
         set_output("image", std::move(image));
     }
@@ -426,8 +443,10 @@ ZENDEFNODE(CVImageDrawPoly, {
         {"vec3f", "color", "1,1,1"},
         {"PrimitiveObject", "points"},
         {"int", "linewidth", "0"},
-        {"bool", "isconvex", "0"},
         {"bool", "inplace", "0"},
+        {"bool", "batched", "0"},
+        {"bool", "antialias", "0"},
+        {"bool", "is255", "1"},
     },
     {
         {"CVImageObject", "image"},
