@@ -249,6 +249,11 @@ void CameraControl::changeTransformCoordSys() {
     zenoApp->getMainWindow()->updateViewport();
 }
 
+void CameraControl::resizeTransformHandler(int dir) {
+    transformer->resizeHandler(dir);
+    zenoApp->getMainWindow()->updateViewport();
+}
+
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 {
     auto session = Zenovis::GetInstance().getSession();
@@ -1038,6 +1043,13 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
         this->cameraLookTo(4);
     if (ctrl_pressed && event->key() == Qt::Key_7)
         this->cameraLookTo(5);
+
+    if (event->key() == Qt::Key_Backspace)
+        m_camera->resizeTransformHandler(0);
+    if (event->key() == Qt::Key_Plus)
+        m_camera->resizeTransformHandler(1);
+    if (event->key() == Qt::Key_Minus)
+        m_camera->resizeTransformHandler(2);
 }
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent* event) {
@@ -1063,20 +1075,8 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
-        QString presets, path, filename;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA);
-        //validation.
-
         VideoRecInfo recInfo;
-        recInfo.record_path = path;
-        recInfo.frameRange = { frameStart, frameEnd };
-        recInfo.res = { (float)width, (float)height };
-        recInfo.bitrate = bitrate;
-        recInfo.fps = fps;
-        recInfo.videoname = filename;
-        recInfo.numOptix = numOptix;
-        recInfo.numMSAA = numMSAA;
+        dlg.getInfo(recInfo);
 
         Zenovis::GetInstance().startPlay(true);
 

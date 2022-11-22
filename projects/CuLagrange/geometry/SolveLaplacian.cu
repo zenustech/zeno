@@ -89,10 +89,10 @@ struct ZSSolveLaplacian : zeno::INode {
         });
         // compute preconditioner
         if(cdim == 4){
-            PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+            TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
             PCG::prepare_block_diagonal_preconditioner<4,1>(cudaPol,"L",etemp,"P",vtemp);
         }else{
-            PCG::copy<3>(cudaPol,eles,"inds",etemp,"inds");
+            TILEVEC_OPS::copy<3>(cudaPol,eles,"inds",etemp,"inds");
             PCG::prepare_block_diagonal_preconditioner<3,1>(cudaPol,"L",etemp,"P",vtemp);
         }
         // initial guess

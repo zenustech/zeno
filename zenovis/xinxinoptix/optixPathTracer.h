@@ -53,6 +53,9 @@ struct Params
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;
+    float sunLightIntensity;
+    float colorTemperatureMix;
+    float colorTemperature;
 
     float windDirX;
     float windDirY;
@@ -84,4 +87,5 @@ struct HitGroupData
     unsigned short* lightMark;
     float4* uniforms;
     cudaTextureObject_t textures[32];
+
 };

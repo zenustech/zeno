@@ -103,8 +103,8 @@ struct QuasiStaticStepping : INode {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // fmt::print("check here 0");
-        PCG::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
-        PCG::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
+        TILEVEC_OPS::fill<3>(cudaPol,vtemp,"grad",zs::vec<T,3>::zeros());
+        TILEVEC_OPS::fill<144>(cudaPol,etemp,"He",zs::vec<T,144>::zeros());
         cudaPol(zs::range(eles.size()), [vtemp = proxy<space>({}, vtemp),
                                         etemp = proxy<space>({}, etemp),
                                         bcws = proxy<space>({},b_bcws),
@@ -249,11 +249,11 @@ struct QuasiStaticStepping : INode {
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
 
-    PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+    TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
 
     // setup initial guess
-    PCG::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
-    PCG::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+    TILEVEC_OPS::copy<3>(cudaPol,verts,verts.hasProperty("init_x") ? "init_x" : "x",vtemp,"xn");    
+    TILEVEC_OPS::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
 
     for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
       match([&](auto &elasticModel) {
@@ -265,31 +265,31 @@ struct QuasiStaticStepping : INode {
 
       // if the grad is too small, return the result
       // Solve equation using PCG
-      PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
+      TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
       PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","He",cg_res,1000,50);
       PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
       PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
-      T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
+      T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
 
       if (res < newton_res) {
         fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
                    newtonIter, res);
         break;
       }
-      T dg = PCG::dot<3>(cudaPol,vtemp,"grad","dir");
+      T dg = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","dir");
       if(fabs(dg) < btl_res){
         fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",
         newtonIter, res);
         break;
       }
       if(dg < 0){
-          T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
-          T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
+          T gradn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","grad"));
+          T dirn = std::sqrt(TILEVEC_OPS::dot<3>(cudaPol,vtemp,"dir","dir"));
           fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
           throw std::runtime_error("INVALID DESCENT DIRECTION");
       }
       T alpha = 1.;
-      PCG::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
+      TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",vtemp,"xn0");
       T E0;
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0",vtemp);
@@ -303,7 +303,7 @@ struct QuasiStaticStepping : INode {
       int line_search = 0;
       std::vector<T> armijo_buffer(max_line_search);
       do {
-        PCG::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
+        TILEVEC_OPS::add<3>(cudaPol,vtemp,"xn0",(T)1.0,"dir",alpha,"xn");
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn",vtemp);
         })(models.getElasticModel());

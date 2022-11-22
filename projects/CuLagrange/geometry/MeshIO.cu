@@ -79,7 +79,7 @@ struct WriteVTKMesh : INode {
 
 ZENDEFNODE(WriteVTKMesh, {/* inputs: */ {
                             {"primitive", "prim"},
-                            {"readpath", "path"},
+                            {"writepath", "path"},
                         },
                         /* outputs: */
                         {

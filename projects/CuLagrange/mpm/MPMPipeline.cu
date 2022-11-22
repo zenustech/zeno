@@ -65,7 +65,7 @@ struct ZSPartitionForZSParticles : INode {
 
         using Partition = typename ZenoPartition::table_t;
         // reset
-        partition.reset(cudaPol, true);
+        partition.reset(true);
 
         using grid_t = typename ZenoGrid::grid_t;
         static_assert(grid_traits<grid_t>::is_power_of_two, "grid side_length should be power of two");
@@ -77,7 +77,7 @@ struct ZSPartitionForZSParticles : INode {
                      dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
                         auto x = pars.template pack<3>("x", pi);
                         auto c = (x * dxinv - 0.5);
-                        typename Partition::key_t coord{};
+                        typename Partition::key_type coord{};
                         for (int d = 0; d != 3; ++d)
                             coord[d] = lower_trunc(c[d]);
                         table.insert(coord - (coord & (grid_t::side_length - 1)));
@@ -89,7 +89,7 @@ struct ZSPartitionForZSParticles : INode {
                          dxinv = 1.f / grid.dx] __device__(size_t ei) mutable {
                             auto x = eles.template pack<3>("x", ei);
                             auto c = (x * dxinv - 0.5);
-                            typename Partition::key_t coord{};
+                            typename Partition::key_type coord{};
                             for (int d = 0; d != 3; ++d)
                                 coord[d] = lower_trunc(c[d]);
                             table.insert(coord - (coord & (grid_t::side_length - 1)));
@@ -136,7 +136,7 @@ struct ExpandZSPartition : INode {
             using table_t = RM_CVREF_T(table);
             bi += offset;
             auto bcoord = table._activeKeys[bi];
-            using key_t = typename table_t::key_t;
+            using key_t = typename table_t::key_type;
             for (auto ijk : ndrange<3>(3)) {
                 auto dir = make_vec<int>(ijk) - 1; // current expanding direction
                 if (auto neighborNo = table.query(bcoord + dir * (int)grid_traits<grid_t>::side_length);
