@@ -294,7 +294,7 @@ struct ZSNSPressureProject : INode {
         } else {
             if constexpr (level != 0)
                 clearInit<level>(pol, NSGrid);
-            redblackSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
             float res = residual<level>(pol, NSGrid, rho);
             printf("MG level %d residual: %e\n", level, res);
             restriction<level>(pol, NSGrid);
@@ -302,7 +302,7 @@ struct ZSNSPressureProject : INode {
             multigrid<level + 1>(pol, NSGrid, rho);
 
             prolongation<level>(pol, NSGrid);
-            redblackSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
         }
         return;
     }
