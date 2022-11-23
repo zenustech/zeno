@@ -211,7 +211,7 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                          {"enum replace-all replace-local accumulate", "OpType", "replace-all"},
                                          {"bool", "staggered", "0"},
                                          {"bool", "initialize", "1"},
-                                         {"bool", "normalize", "0"}},
+                                         {"bool", "normalize", "1"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */

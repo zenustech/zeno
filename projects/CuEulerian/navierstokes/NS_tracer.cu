@@ -195,7 +195,8 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                    {"Eulerian"}});
 
 struct ZSTracerEmission : INode {
-    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
+    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF,
+                 bool fromObj) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -207,14 +208,19 @@ struct ZSTracerEmission : INode {
         auto dx = spg.voxelSize()[0];
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx,
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx, fromObj,
              tag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
                 if (emit_sdf <= 1.5f * dx) {
                     // fix me: naive emission
-                    spgv(tag, blockno, cellno) = 1.0;
+                    spgv(tag, blockno, cellno) = 1.f;
+                }
+
+                if (fromObj) {
+                    if (spgv.value("mark", blockno, cellno) > 0.5f)
+                        spgv(tag, blockno, cellno) = 1.f;
                 }
             });
     }
@@ -222,26 +228,33 @@ struct ZSTracerEmission : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto EmitSDF = get_input<ZenoSparseGrid>("EmitterSDF");
+        auto fromObj = get_input2<bool>("fromObjBoundary");
+
+        if (!NSGrid->getSparseGrid().hasProperty("mark")) {
+            fromObj = false;
+        }
 
         auto pol = zs::cuda_exec();
 
         if (get_input2<bool>("Density"))
-            compute(pol, "rho", NSGrid.get(), EmitSDF.get());
+            compute(pol, "rho", NSGrid.get(), EmitSDF.get(), fromObj);
         if (get_input2<bool>("Temperature"))
-            compute(pol, "T", NSGrid.get(), EmitSDF.get());
+            compute(pol, "T", NSGrid.get(), EmitSDF.get(), fromObj);
 
         set_output("NSGrid", NSGrid);
     }
 };
 
-ZENDEFNODE(ZSTracerEmission, {/* inputs: */
-                              {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
-                              /* outputs: */
-                              {"NSGrid"},
-                              /* params: */
-                              {},
-                              /* category: */
-                              {"Eulerian"}});
+ZENDEFNODE(
+    ZSTracerEmission,
+    {/* inputs: */
+     {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}, {"bool", "fromObjBoundary", "0"}},
+     /* outputs: */
+     {"NSGrid"},
+     /* params: */
+     {},
+     /* category: */
+     {"Eulerian"}});
 
 struct ZSSmokeBuoyancy : INode {
     void apply() override {
