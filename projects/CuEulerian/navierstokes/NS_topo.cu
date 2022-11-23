@@ -16,6 +16,7 @@
 
 #include "../scheme.hpp"
 #include "../utils.cuh"
+#include "zeno/utils/log.h"
 
 namespace zeno {
 
@@ -285,15 +286,18 @@ struct ZSMaintainSparseGrid : INode {
                     auto tile = cg::tiled_partition<RM_CVREF_T(spg._table)::bucket_size>(cg::this_thread_block());
                     auto bno = i / spg._table.bucket_size + nbsOffset;
                     auto bcoord = spg.iCoord(bno, 0);
+                    constexpr auto failure_token_v = RM_CVREF_T(spg._table)::failure_token_v;
                     {
                         for (int d = 0; d != 3; ++d) {
                             auto dir = zs::vec<int, 3>::zeros();
                             dir[d] = -1;
-                            spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
-                                               true);
+                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
+                                               true) == failure_token_v)
+                                               *spg._table._success = false;
                             dir[d] = 1;
-                            spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
-                                               true);
+                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
+                                               true)== failure_token_v)
+                                               *spg._table._success = false;
                         }
                     }
                     #if 0
@@ -305,6 +309,8 @@ struct ZSMaintainSparseGrid : INode {
                     }
                     #endif
                 });
+            zeno::log_warn("check build success state: {}\n", (bool)spg._table._buildSuccess.getVal());
+            
             // slide the window
             nbsOffset += newNbs;
             newNbs = spg.numBlocks() - nbsOffset;
@@ -328,11 +334,12 @@ struct ZSMaintainSparseGrid : INode {
         /// @brief relocate original grid data to the new sparse grid
         pol(range(nbs * spg._table.bucket_size), [grid = proxy<space>(prevGrid), spg = proxy<space>(spg),
                                                   keys = proxy<space>(prevKeys)] __device__(std::size_t i) mutable {
-            constexpr auto bucket_size = RM_CVREF_T(table)::bucket_size;
+            constexpr auto bucket_size = RM_CVREF_T(spg._table)::bucket_size;
             auto tile = cg::tiled_partition<bucket_size>(cg::this_thread_block());
             auto bno = i / bucket_size;
             auto bcoord = keys[bno];
             auto dstBno = spg._table.tile_query(tile, bcoord);
+            // auto dstBno = spg._table.query(bcoord);
             if (dstBno == spg._table.sentinel_v)
                 return;
             // table
@@ -363,13 +370,19 @@ struct ZSMaintainSparseGrid : INode {
             table2._cnt.setVal(nbs);
             table3.reset(true);
             table3._cnt.setVal(nbs);
+
+            table1._buildSuccess.setVal(1);
+            table2._buildSuccess.setVal(1);
+            table3._buildSuccess.setVal(1);
             pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
                              tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
                 auto bcoord = table._activeKeys[i];
-                tab1.insertUnsafe(bcoord / 2, i, true);
-                tab2.insertUnsafe(bcoord / 4, i, true);
-                tab3.insertUnsafe(bcoord / 8, i, true);
+                tab1.insert(bcoord / 2, i, true);
+                tab2.insert(bcoord / 4, i, true);
+                tab3.insert(bcoord / 8, i, true);
             });
+
+            zeno::log_warn("check multigrid build success state: {}, {}, {}\n", (bool)table1._buildSuccess.getVal(), (bool)table2._buildSuccess.getVal(), (bool)table3._buildSuccess.getVal());
         }
     }
 
