@@ -57,11 +57,8 @@ void ZenoMainWindow::init()
 {
     m_ui = new Ui::MainWindow;
     m_ui->setupUi(this);
-    QWidget* p = takeCentralWidget();
-    if (p)
-        delete p;
 
-    //initMenu();
+    initMenu();
     initDocks();
 
     QPalette pal = palette();
@@ -70,248 +67,104 @@ void ZenoMainWindow::init()
     setPalette(pal);
 }
 
-void ZenoMainWindow::initMenu() {
-    QMenuBar *pMenuBar = new QMenuBar(this);
-    if (!pMenuBar)
-        return;
-
-    QMenu *pFile = new QMenu(tr("File"));
+void ZenoMainWindow::initMenu()
+{
+    auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QAction* action : actions)
     {
-        QAction *pAction = new QAction(tr("New"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+N")));
-        //QMenu *pNewMenu = new QMenu;
-        //QAction *pNewGraph = pNewMenu->addAction("New Scene");
-        connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
-
-        //pAction->setMenu(pNewMenu);
-
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Open"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+O")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Save"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+S")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Save As"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Import"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+O")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(importGraph()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Export"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+E")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(exportGraph()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Close"), pFile);
-        connect(pAction, SIGNAL(triggered()), this, SLOT(saveQuit()));
-        pFile->addAction(pAction);
+        connect(action, SIGNAL(triggered(bool)), this, SLOT(onMenuActionTriggered(bool)));
+        if (!action->isCheckable())
+            action->setIcon(QIcon());
     }
 
-    QMenu *pEdit = new QMenu(tr("Edit"));
+    connect(m_ui->action_New, SIGNAL(triggered()), this, SLOT(onNewFile()));
+    connect(m_ui->action_Open, SIGNAL(triggered()), this, SLOT(openFileDialog()));
+    connect(m_ui->action_Save, SIGNAL(triggered()), this, SLOT(save()));
+    connect(m_ui->action_Save_As, SIGNAL(triggered()), this, SLOT(saveAs()));
+    connect(m_ui->action_Import, SIGNAL(triggered()), this, SLOT(importGraph()));
+    connect(m_ui->actionExportGraph, SIGNAL(triggered()), this, SLOT(exportGraph()));
+    connect(m_ui->action_Close, SIGNAL(triggered()), this, SLOT(saveQuit()));
+    connect(m_ui->actionSave_Layout, SIGNAL(triggered()), this, SLOT(saveDockLayout()));
+    connect(m_ui->actionEnglish_Chinese, SIGNAL(triggered(bool)), this, SLOT(onLangChanged(bool)));
+
+    m_ui->menubar->setProperty("cssClass", "mainWin");
+
+    //check user saved layout.
+    loadSavedLayout();
+}
+
+void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
+{
+    QAction* pAction = qobject_cast<QAction*>(sender());
+    if (!pAction) return;
+
+    //dispatch to every panel.
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
     {
-        QAction *pAction = new QAction(tr("Undo"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Redo"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Cut"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Copy"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Paste"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
+        pDock->onMenuActionTriggered(pAction, bTriggered);
     }
+}
 
-    //QMenu *pRender = new QMenu(tr("Render"));
-
-    QMenu *pView = new QMenu(tr("View"));
+void ZenoMainWindow::loadSavedLayout()
+{
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    QStringList lst = settings.childGroups();
+    if (!lst.isEmpty())
     {
-        QAction *pViewAct = new QAction(tr("view"));
-        pViewAct->setCheckable(true);
-        pViewAct->setChecked(true);
-        connect(pViewAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_VIEW, pViewAct->isChecked()); });
-        pView->addAction(pViewAct);
-
-        QAction* pEditorAct = new QAction(tr("editor"));
-        pEditorAct->setCheckable(true);
-        pEditorAct->setChecked(true);
-        connect(pEditorAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_EDITOR, pEditorAct->isChecked()); });
-        pView->addAction(pEditorAct);
-
-        QAction* pPropAct = new QAction(tr("property"));
-        pPropAct->setCheckable(true);
-        pPropAct->setChecked(true);
-        connect(pPropAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_NODE_PARAMS, pPropAct->isChecked()); });
-        pView->addAction(pPropAct);
-
-        QAction* pLoggerAct = new QAction(tr("logger"));
-        pLoggerAct->setCheckable(true);
-        pLoggerAct->setChecked(true);
-        connect(pLoggerAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_LOG, pLoggerAct->isChecked()); });
-        pView->addAction(pLoggerAct);
-
-        connect(pView, &QMenu::aboutToShow, this, [=]() {
-            auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-            for (ZenoDockWidget *dock : docks)
-            {
-                DOCK_TYPE type = dock->type();
-                switch (type)
-                {
-                    case DOCK_VIEW:     pViewAct->setChecked(dock->isVisible());    break;
-                    case DOCK_EDITOR:   pEditorAct->setChecked(dock->isVisible());  break;
-                    case DOCK_NODE_PARAMS: pPropAct->setChecked(dock->isVisible()); break;
-                    case DOCK_LOG:      pLoggerAct->setChecked(dock->isVisible()); break;
-                }
-            }
-        });
-
-        pView->addSeparator();
-
-        QAction* pSaveLayout = new QAction(tr("Save Layout"));
-        connect(pSaveLayout, &QAction::triggered, this, [=]() {
-            bool bOk = false;
-            QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
-                                                        QLineEdit::Normal, "layout_1", &bOk);
-            if (bOk) {
+        for (QString name : lst)
+        {
+            QAction* pCustomLayout_ = new QAction(name);
+            connect(pCustomLayout_, &QAction::triggered, this, [=]() {
                 QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                 settings.beginGroup("layout");
-                if (settings.childGroups().indexOf(name) != -1) {
-                    QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"), 
-                        QMessageBox::Ok | QMessageBox::Cancel);
-                    int ret = msg.exec();
-                    if (ret == QMessageBox::Cancel)
-                    {
-                        settings.endGroup();
-                        return;
-                    }
-                }
-
-                QString layoutInfo = exportLayout(m_layoutRoot, size());
                 settings.beginGroup(name);
-                settings.setValue("content", layoutInfo);
+                if (settings.allKeys().indexOf("content") != -1)
+                {
+                    QString content = settings.value("content").toString();
+                    PtrLayoutNode root = readLayout(content);
+                    resetDocks(root);
+                }
+                else {
+                    QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
+                    msg.exec();
+                }
                 settings.endGroup();
                 settings.endGroup();
-            }
-        });
-        pView->addAction(pSaveLayout);
+                });
+            m_ui->menuCustom_Layout->addAction(pCustomLayout_);
+        }
+    }
+}
 
-        QAction *pSaveLayout2 = new QAction(tr("Save Layout2"));
-        connect(pSaveLayout2, &QAction::triggered, this, [=]() {
-            saveLayout2();
-        });
-        pView->addAction(pSaveLayout2);
-
-        //check user saved layout.
+void ZenoMainWindow::saveDockLayout()
+{
+    bool bOk = false;
+    QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
+        QLineEdit::Normal, "layout_1", &bOk);
+    if (bOk)
+    {
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
-        QStringList lst = settings.childGroups();
-        if (!lst.isEmpty())
+        if (settings.childGroups().indexOf(name) != -1)
         {
-            QMenu* pCustomLayout = new QMenu(tr("Custom Layout"));
-            for (QString name : lst)
+            QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"),
+                QMessageBox::Ok | QMessageBox::Cancel);
+            int ret = msg.exec();
+            if (ret == QMessageBox::Cancel)
             {
-                QAction *pCustomLayout_ = new QAction(name);
-                connect(pCustomLayout_, &QAction::triggered, this, [=]() {
-                    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                    settings.beginGroup("layout");
-                    settings.beginGroup(name);
-                    if (settings.allKeys().indexOf("content") != -1)
-                    {
-                        QString content = settings.value("content").toString();
-                        PtrLayoutNode root = readLayout(content);
-                        resetDocks(root);
-                    }
-                    else {
-                        QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
-                        msg.exec();
-                    }
-                    settings.endGroup();
-                    settings.endGroup();
-                });
-                pCustomLayout->addAction(pCustomLayout_);
+                settings.endGroup();
+                return;
             }
-            pView->addMenu(pCustomLayout);
         }
 
-        QAction* pTestAction = new QAction(tr("Test Layout io"));
-        connect(pTestAction, &QAction::triggered, this, [=]() {
-            DlgInEventLoopScope;
-            const QString &initialPath = ".";
-            QFileDialog fileDialog(this, tr("Open"), initialPath, "JSON file(*.json);;");
-            fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
-            fileDialog.setFileMode(QFileDialog::ExistingFile);
-            fileDialog.setDirectory(initialPath);
-            if (fileDialog.exec() != QDialog::Accepted)
-                return "";
-
-            QString filePath = fileDialog.selectedFiles().first();
-            PtrLayoutNode root = readLayoutFile(filePath);
-            resetDocks(root);
-        });
-        pView->addAction(pTestAction);
+        QString layoutInfo = exportLayout(m_layoutRoot, size());
+        settings.beginGroup(name);
+        settings.setValue("content", layoutInfo);
+        settings.endGroup();
+        settings.endGroup();
     }
-
-    //QMenu *pWindow = new QMenu(tr("Window"));
-
-    QMenu *pHelp = new QMenu(tr("Help"));
-    {
-        QAction *pAction = new QAction(tr("Send this File"));
-        connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
-        pHelp->addAction(pAction);
-
-        pHelp->addSeparator();
-
-        pAction = new QAction(tr("English / Chinese"), this);
-        pAction->setCheckable(true);
-        {
-            QSettings settings(zsCompanyName, zsEditor);
-            QVariant use_chinese = settings.value("use_chinese");
-            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
-        }
-        pHelp->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("use_chinese", pAction->isChecked());
-            QMessageBox msg(QMessageBox::Information, "Language",
-                        tr("Please restart Zeno to apply changes."),
-                        QMessageBox::Ok, this);
-            msg.exec();
-        });
-    }
-
-    pMenuBar->addMenu(pFile);
-    pMenuBar->addMenu(pEdit);
-    //pMenuBar->addMenu(pRender);
-    pMenuBar->addMenu(pView);
-    //pMenuBar->addMenu(pWindow);
-    pMenuBar->addMenu(pHelp);
-    pMenuBar->setProperty("cssClass", "mainWin");
-
-    setMenuBar(pMenuBar);
 }
 
 void ZenoMainWindow::saveLayout2()
@@ -322,6 +175,16 @@ void ZenoMainWindow::saveLayout2()
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
     writeLayout(m_layoutRoot, size(), path);
+}
+
+void ZenoMainWindow::onLangChanged(bool bChecked)
+{
+    QSettings settings(zsCompanyName, zsEditor);
+    settings.setValue("use_chinese", bChecked);
+    QMessageBox msg(QMessageBox::Information, "Language",
+        tr("Please restart Zeno to apply changes."),
+        QMessageBox::Ok, this);
+    msg.exec();
 }
 
 void ZenoMainWindow::resetDocks(PtrLayoutNode root)
@@ -426,12 +289,8 @@ void ZenoMainWindow::initDocks()
 
 void ZenoMainWindow::initTimelineDock()
 {
-    QDockWidget *pTimelineDock = new QDockWidget;
     m_pTimeline = new ZTimeline;
-    pTimelineDock->setWidget(m_pTimeline);
-    pTimelineDock->setTitleBarWidget(new QWidget(pTimelineDock));
-    pTimelineDock->setObjectName("timelineDock");
-    addDockWidget(Qt::BottomDockWidgetArea, pTimelineDock);
+    setCentralWidget(m_pTimeline);
 
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);

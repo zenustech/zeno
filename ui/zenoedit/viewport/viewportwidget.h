@@ -144,6 +144,7 @@ public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();
+    void onCommandDispatched(const QString& name, bool bTriggered);
 
 signals:
     void frameUpdated(int new_frame);

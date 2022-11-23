@@ -579,23 +579,28 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     onAction(pAction->text());
 }
 
+void ZenoGraphsEditor::onCommandDispatched(const QString& name, bool bTriggered)
+{
+    onAction(name);
+}
+
 void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
 {
-    if (text == tr("Collaspe"))
+    if (text == "Collaspe")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
         QModelIndex subgIdx = pView->scene()->subGraphIndex();
         m_model->collaspe(subgIdx);
     }
-    else if (text == tr("Expand"))
+    else if (text == "Expand")
 	{
 		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
     }
-    else if (text == tr("CustomUI"))
+    else if (text == "CustomUI")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
@@ -612,7 +617,7 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
             }
         }
     }
-    else if (text == tr("Easy Subgraph"))
+    else if (text == "Easy Subgraph")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
@@ -636,7 +641,7 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
             }
         }
     }
-    else if (text == tr("Set NASLOC"))
+    else if (text == "Set NASLOC")
     {
         QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("nas_loc").toString();
@@ -652,7 +657,7 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
             startUp();
         }
     }
-    else if (text == tr("Set ZENCACHE"))
+    else if (text == "Set ZENCACHE")
     {
         QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("zencachedir").toString();
@@ -671,7 +676,7 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
             settings.setValue("zencachenum", text2);
         }
     }
-    else if (text == tr("zoom"))
+    else if (text == "zoom")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
@@ -679,5 +684,15 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
         {
             pView->setZoom(args[0].toFloat());
         }
+    }
+    else if (text == "&Undo")
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        pGraphsModel->undo();
+    }
+    else if (text == "&Redo")
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        pGraphsModel->redo();
     }
 }

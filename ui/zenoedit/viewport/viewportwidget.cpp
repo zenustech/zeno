@@ -814,6 +814,85 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     m_view->update();
 }
 
+void DisplayWidget::onCommandDispatched(const QString& name, bool bChecked)
+{
+    if (name == "Smooth Shading")
+    {
+        Zenovis::GetInstance().getSession()->set_smooth_shading(bChecked);
+        updateFrame("");
+    }
+    if (name == "Normal Check")
+    {
+        Zenovis::GetInstance().getSession()->set_normal_check(bChecked);
+        updateFrame("");
+    }
+    if (name == "Wireframe")
+    {
+        Zenovis::GetInstance().getSession()->set_render_wireframe(bChecked);
+        updateFrame("");
+    }
+    if (name == "Show Grid")
+    {
+        Zenovis::GetInstance().getSession()->set_show_grid(bChecked);
+        //todo: need a notify mechanism from zenovis/session.
+        updateFrame("");
+    }
+    if (name == "Background Color")
+    {
+        auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
+        auto c = QColor::fromRgbF(r, g, b);
+        c = QColorDialog::getColor(c);
+        if (c.isValid()) {
+            Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
+            updateFrame("");
+        }
+    }
+    if (name == "Solid")
+    {
+        const char* e = "bate";
+        Zenovis::GetInstance().getSession()->set_render_engine(e);
+        updateFrame(QString::fromUtf8(e));
+    }
+    if (name == "Shading")
+    {
+        const char* e = "zhxx";
+        Zenovis::GetInstance().getSession()->set_render_engine(e);
+        //Zenovis::GetInstance().getSession()->set_enable_gi(false);
+        updateFrame(QString::fromUtf8(e));
+    }
+    if (name == "Optix")
+    {
+        const char* e = "optx";
+        Zenovis::GetInstance().getSession()->set_render_engine(e);
+        updateFrame(QString::fromUtf8(e));
+    }
+    if (name == "Node Camera")
+    {
+        int frameid = Zenovis::GetInstance().getSession()->get_curr_frameid();
+        auto* scene = Zenovis::GetInstance().getSession()->get_scene();
+        for (auto const& [key, ptr] : scene->objectsMan->pairs()) {
+            if (key.find("MakeCamera") != std::string::npos && key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                scene->camera->setCamera(cam);
+                updateFrame();
+            }
+        }
+    }
+
+    if (name == "BlackWhite" ||
+        name == "Creek" ||
+        name == "Day Light" ||
+        name == "Default" ||
+        name == "FootballField" ||
+        name == "Forest" ||
+        name == "Lake" ||
+        name == "Sea")
+    {
+        //todo: no implementation from master.
+    }
+    //record: todo: wait for merge from branch master/tmp-recordvideo.
+}
+
 void DisplayWidget::onFinished()
 {
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();

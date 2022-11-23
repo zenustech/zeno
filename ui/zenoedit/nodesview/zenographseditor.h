@@ -43,6 +43,7 @@ public slots:
     void onLogInserted(const QModelIndex& parent, int first, int last);
     void onSubnetListPanel(bool bShow);
     void onAction(const QString& text, const QVariantList& args = QVariantList());
+    void onCommandDispatched(const QString& name, bool bTriggered);
 
 signals:
     void zoomed(qreal);

@@ -76,8 +76,21 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             QRect r = option->rect;
             bool bHor = option->state & QStyle::State_Horizontal;
             bool mouseOver = option->state & QStyle::State_MouseOver;
+            bool bBottomSpliter = false;
 
-            if (mouseOver) {
+            QPoint pt = QCursor::pos();
+            if (const QMainWindow* pWin = qobject_cast<const QMainWindow*>(w))
+            {
+                QWidget* pTimeline = pWin->centralWidget();
+                QRect rc = pTimeline->geometry();
+                rc.adjust(0, -10, 0, 0);
+                if (rc.contains(pt))
+                {
+                    bBottomSpliter = true;
+                }
+            }
+
+            if (mouseOver && !bBottomSpliter) {
                 painter->setPen(QColor("#4B9EF4"));
                 painter->fillRect(r, QColor("#4B9EF4"));
             }

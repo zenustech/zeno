@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>809</width>
+    <height>611</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,49 +19,48 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>809</width>
      <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>&amp;File(F)</string>
+     <string>&amp;File</string>
     </property>
-    <widget class="QMenu" name="menu_Export_E">
+    <widget class="QMenu" name="menu_Export">
      <property name="title">
-      <string>&amp;Export(E)</string>
+      <string>&amp;Export</string>
      </property>
+     <addaction name="actionExportGraph"/>
      <addaction name="actionScreen_Shoot"/>
      <addaction name="actionRecord_Video"/>
     </widget>
-    <addaction name="action_New_N"/>
-    <addaction name="action_Open_O"/>
-    <addaction name="action_Save_S"/>
-    <addaction name="action_Save_As_A"/>
-    <addaction name="action_Import_I"/>
-    <addaction name="menu_Export_E"/>
-    <addaction name="action_Close_C"/>
+    <addaction name="action_New"/>
+    <addaction name="action_Open"/>
+    <addaction name="action_Save"/>
+    <addaction name="action_Save_As"/>
+    <addaction name="action_Import"/>
+    <addaction name="menu_Export"/>
+    <addaction name="action_Close"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>&amp;Edit(E)</string>
+     <string>&amp;Edit</string>
     </property>
-    <widget class="QMenu" name="menuCustomLayout">
-     <property name="title">
-      <string>CustomLayout</string>
-     </property>
-     <addaction name="actionDefault_layout"/>
-    </widget>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
-    <addaction name="menuCustomLayout"/>
-    <addaction name="action_Copy_C"/>
-    <addaction name="action_Paste_P"/>
-    <addaction name="action_Cut_T"/>
+    <addaction name="action_Copy"/>
+    <addaction name="action_Paste"/>
+    <addaction name="action_Cut"/>
+    <addaction name="actionCollaspe"/>
+    <addaction name="actionExpand"/>
+    <addaction name="actionEasy_Graph"/>
+    <addaction name="actionOpen_View"/>
+    <addaction name="actionClear_View"/>
    </widget>
-   <widget class="QMenu" name="menuView">
+   <widget class="QMenu" name="menuRender">
     <property name="title">
-     <string>&amp;Render(R)</string>
+     <string>&amp;Render</string>
     </property>
     <addaction name="actionSmooth_Shading"/>
     <addaction name="actionNormal_Check"/>
@@ -74,9 +73,9 @@
     <addaction name="actionShading"/>
     <addaction name="actionOptix"/>
    </widget>
-   <widget class="QMenu" name="menuView_2">
+   <widget class="QMenu" name="menuView">
     <property name="title">
-     <string>&amp;View(V)</string>
+     <string>&amp;View</string>
     </property>
     <widget class="QMenu" name="menuEnvTex">
      <property name="title">
@@ -102,7 +101,7 @@
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
-     <string>&amp;Window(W)</string>
+     <string>&amp;Window</string>
     </property>
     <widget class="QMenu" name="menuCustom_Layout">
      <property name="title">
@@ -115,26 +114,29 @@
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>&amp;Help(H)</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionEnglish_Chinese"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuRender"/>
    <addaction name="menuView"/>
-   <addaction name="menuView_2"/>
    <addaction name="menuWindow"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionUndo">
    <property name="text">
-    <string>&amp;Undo(U)</string>
+    <string>&amp;Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
    </property>
   </action>
   <action name="actionRedo">
    <property name="text">
-    <string>&amp;Redo(R)</string>
+    <string>&amp;Redo</string>
    </property>
   </action>
   <action name="actionDefault_layout">
@@ -142,67 +144,88 @@
     <string>Default layout</string>
    </property>
   </action>
-  <action name="action_New_N">
+  <action name="action_New">
    <property name="text">
-    <string>&amp;New(N)</string>
+    <string>&amp;New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="action_Open_O">
+  <action name="action_Open">
    <property name="text">
-    <string>&amp;Open(O)</string>
+    <string>&amp;Open</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="action_Save_S">
+  <action name="action_Save">
    <property name="text">
-    <string>&amp;Save(S)</string>
+    <string>&amp;Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
-  <action name="action_Save_As_A">
+  <action name="action_Save_As">
    <property name="text">
-    <string>&amp;Save As(A)</string>
+    <string>&amp;Save As</string>
    </property>
   </action>
-  <action name="action_Import_I">
+  <action name="action_Import">
    <property name="text">
-    <string>&amp;Import(I)</string>
+    <string>&amp;Import</string>
    </property>
   </action>
-  <action name="action_Close_C">
+  <action name="action_Close">
    <property name="text">
-    <string>&amp;Close(C)</string>
+    <string>&amp;Close</string>
    </property>
   </action>
-  <action name="action_Copy_C">
+  <action name="action_Copy">
    <property name="text">
-    <string>&amp;Copy(C)</string>
+    <string>&amp;Copy</string>
    </property>
   </action>
-  <action name="action_Paste_P">
+  <action name="action_Paste">
    <property name="text">
-    <string>&amp;Paste(P)</string>
+    <string>&amp;Paste</string>
    </property>
   </action>
-  <action name="action_Cut_T">
+  <action name="action_Cut">
    <property name="text">
-    <string>&amp;Cut(T)</string>
+    <string>Cu&amp;t</string>
    </property>
   </action>
   <action name="actionSmooth_Shading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Smooth Shading</string>
    </property>
   </action>
   <action name="actionNormal_Check">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Normal Check</string>
    </property>
   </action>
   <action name="actionWireFrame">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>WireFrame</string>
+    <string>Wireframe</string>
    </property>
   </action>
   <action name="actionShow_Grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Grid</string>
    </property>
@@ -293,8 +316,41 @@
    </property>
   </action>
   <action name="actionEnglish_Chinese">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>English Chinese</string>
+   </property>
+  </action>
+  <action name="actionExportGraph">
+   <property name="text">
+    <string>Graph</string>
+   </property>
+  </action>
+  <action name="actionCollaspe">
+   <property name="text">
+    <string>Collaspe</string>
+   </property>
+  </action>
+  <action name="actionExpand">
+   <property name="text">
+    <string>Expand</string>
+   </property>
+  </action>
+  <action name="actionEasy_Graph">
+   <property name="text">
+    <string>Easy Graph</string>
+   </property>
+  </action>
+  <action name="actionOpen_View">
+   <property name="text">
+    <string>Open View</string>
+   </property>
+  </action>
+  <action name="actionClear_View">
+   <property name="text">
+    <string>Clear View</string>
    </property>
   </action>
  </widget>

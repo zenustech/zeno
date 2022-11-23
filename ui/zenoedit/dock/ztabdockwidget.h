@@ -47,6 +47,7 @@ public slots:
     void onSliderValueChanged(int);
     void onFinished();
     void onAddTab(PANEL_TYPE type);
+    void onMenuActionTriggered(QAction* pAction, bool bTriggered);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

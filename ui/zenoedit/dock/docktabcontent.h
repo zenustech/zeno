@@ -6,6 +6,7 @@
 #include <zenoui/comctrl/ztoolbutton.h>
 
 class ZIconToolButton;
+class ZenoGraphsEditor;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -33,9 +34,10 @@ class DockContent_Editor : public QWidget
     Q_OBJECT
 public:
     explicit DockContent_Editor(QWidget* parent = nullptr);
+    void onCommandDispatched(const QString& name, bool bTriggered);
 
 private:
-
+    ZenoGraphsEditor* m_pEditor;
 };
 
 class DockContent_View : public QWidget

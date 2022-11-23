@@ -1,13 +1,13 @@
 QMenu {
-    background-color: rgb(37, 37, 38);
+    background-color: #191D21;
     color: #222222;
     margin: 0px;
 }
 
 QMenu::item {
-    font: 14px "HarmonyOS Sans";
-    padding: 4px 85px 4px 20px;
-    color: rgb(210, 203, 197);
+    font: 14px "Segoe UI";
+    padding: 4px 85px 4px 34px;
+    color: #8A939E;
 }
 
 QMenu::item:disabled{
@@ -15,8 +15,8 @@ QMenu::item:disabled{
 }
 
 QMenu::item:selected {
-    background: rgb(9,71,113);
-    color: rgb(255,255,255);
+    background: #4E6E8F;
+    color: #FFFFFF;
 }
 
 QMenu::icon:checked {
@@ -31,7 +31,7 @@ QMenu::icon:checked {
 
 QMenu::separator {
     height: 1px;
-    background: #4D4D4D;
+    background: #2D3239;
     margin-top: 4px;
     margin-bottom: 4px;
 }
@@ -48,21 +48,25 @@ QMenuBar {
 }
 
 QMenuBar[cssClass="mainWin"] {
-    background-color: rgb(60, 60, 60);
+    background-color: rgb(24, 29, 33);
     spacing: 3px;
-    color: rgb(190,190,190);
+    color: #737B85;
     border-bottom: 1px solid black;
 }
 
 QMenuBar::item {
-    padding: 8px 8px 8px 8px;
+    padding: 4px 10px 4px 10px;
     background: transparent;
+    color: #737B85;
+    font: 12px "Segoe UI";
 }
 
 QMenuBar::item:selected {
-    background: rgb(80,80,80);
+    background: rgb(77, 89, 100);
+    color: #C3D2DF;
 }
 
 QMenuBar::item:pressed {
-    background: rgb(80,80,80);
+    background: rgb(77, 89, 100);
+    color: #C3D2DF;
 }

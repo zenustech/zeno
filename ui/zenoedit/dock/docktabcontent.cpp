@@ -113,6 +113,7 @@ void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::st
 
 DockContent_Editor::DockContent_Editor(QWidget* parent)
     : QWidget(parent)
+    , m_pEditor(nullptr)
 {
     QHBoxLayout* pToolLayout = new QHBoxLayout;
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
@@ -120,7 +121,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
-    ZenoGraphsEditor* pEditor = new ZenoGraphsEditor(pMainWin);
+    m_pEditor = new ZenoGraphsEditor(pMainWin);
 
     ZToolBarButton* pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     pListView->setChecked(true);
@@ -145,10 +146,10 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
         rx.indexIn(percent);
         auto caps = rx.capturedTexts();
         qreal scale = caps[1].toFloat() / 100.;
-        pEditor->onAction(pEditor->tr("zoom"), {scale});
+        m_pEditor->onAction(m_pEditor->tr("zoom"), {scale});
     };
     QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", funcZoomEdited, CALLBACK_SWITCH(), props));
-    connect(pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
+    connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(newFactor * 100);
         percent += "%";
         cbZoom->setCurrentText(percent);
@@ -180,20 +181,29 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
     pVLayout->addWidget(pLine);
 
-    connect(pListView, &ZToolBarButton::toggled, pEditor, &ZenoGraphsEditor::onSubnetListPanel);
+    connect(pListView, &ZToolBarButton::toggled, m_pEditor, &ZenoGraphsEditor::onSubnetListPanel);
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {
-        pEditor->onAction(pEditor->tr("Collaspe"));
+        m_pEditor->onAction(m_pEditor->tr("Collaspe"));
     });
     connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
-        pEditor->onAction(pEditor->tr("Expand"));
+        m_pEditor->onAction(m_pEditor->tr("Expand"));
     });
     connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
-        pEditor->onAction(pEditor->tr("CustomUI"));
+        m_pEditor->onAction(m_pEditor->tr("CustomUI"));
     });
 
-    pVLayout->addWidget(pEditor);
+    pVLayout->addWidget(m_pEditor);
     setLayout(pVLayout);
 }
+
+void DockContent_Editor::onCommandDispatched(const QString& name, bool bTriggered)
+{
+    if (m_pEditor)
+    {
+        m_pEditor->onCommandDispatched(name, bTriggered);
+    }
+}
+
 
 DockContent_View::DockContent_View(QWidget* parent)
     : QWidget(parent)

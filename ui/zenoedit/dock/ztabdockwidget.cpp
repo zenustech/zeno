@@ -325,6 +325,39 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type)
     }
 }
 
+void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
+{
+    if (!pAction)
+        return;
+
+    const QString& content = pAction->text();
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(i);
+        if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
+        {
+        }
+        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
+        {
+            //todo: translate.
+            pView->onCommandDispatched(content, bTriggered);
+        }
+        if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
+        {
+            //undo/redo issues
+            pEditor->onCommandDispatched(content, bTriggered);
+        }
+        if (ZenoSpreadsheet* pSpreadsheet = qobject_cast<ZenoSpreadsheet*>(wid))
+        {
+
+        }
+        if (ZlogPanel* logPanel = qobject_cast<ZlogPanel*>(wid))
+        {
+
+        }
+    }
+}
+
 void ZTabDockWidget::init(ZenoMainWindow* pMainWin)
 {
     QPalette palette = this->palette();

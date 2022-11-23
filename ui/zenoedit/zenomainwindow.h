@@ -44,6 +44,7 @@ public slots:
     void save();
     void saveAs();
     void onMaximumTriggered();
+    void onMenuActionTriggered(bool bTriggered);
     void onSplitDock(bool);
     void onCloseDock();
     void onToggleDockWidget(DOCK_TYPE, bool);
@@ -57,6 +58,9 @@ public slots:
     void onFeedBack();
     void clearErrorMark();
     void updateLightList();
+    void saveDockLayout();
+    void loadSavedLayout();
+    void onLangChanged(bool bChecked);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
