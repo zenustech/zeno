@@ -107,7 +107,7 @@ struct ZSNSPressureProject : INode {
                                                             clr] __device__(int cellno) mutable {
                     auto icoord = spgv.iCoord(cellno);
 
-                    if ((icoord[0] + icoord[1] + icoord[2]) % 2 == clr) {
+                    if (((icoord[0] + icoord[1] + icoord[2]) & 1) == clr) {
                         float div = spgv.value("tmp", icoord);
 
                         const int stcl = 1; // stencil point in each side
@@ -294,7 +294,7 @@ struct ZSNSPressureProject : INode {
         } else {
             if constexpr (level != 0)
                 clearInit<level>(pol, NSGrid);
-            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            redblackSOR<level>(pol, NSGrid, rho, 1.2f, 4);
             float res = residual<level>(pol, NSGrid, rho);
             printf("MG level %d residual: %e\n", level, res);
             restriction<level>(pol, NSGrid);
@@ -302,7 +302,7 @@ struct ZSNSPressureProject : INode {
             multigrid<level + 1>(pol, NSGrid, rho);
 
             prolongation<level>(pol, NSGrid);
-            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            redblackSOR<level>(pol, NSGrid, rho, 1.2f, 4);
         }
         return;
     }
