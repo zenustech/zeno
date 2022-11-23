@@ -16,7 +16,7 @@
 using std::string;
 namespace zeno {
 
-static std::optional<float> ray_bo211x_intersect(
+static std::optional<float> ray_box_intersect(
     zeno::vec3f const &bmin,
     zeno::vec3f const &bmax,
     zeno::vec3f const &ray_pos,
