@@ -283,8 +283,13 @@ public:
         auto &prevPos = prim->verts.attr<vec3f>("prevPos");
         auto &vel = prim->verts.attr<vec3f>("vel");
 
+        static int frames=0;
+        frames+=1;
+
         for (int steps = 0; steps < numSubsteps; steps++) 
         {
+            if(frames==100)
+                echo(frames);
             preSolve(invMass,externForce, dt,pos,prevPos, vel);
             solveDistanceConstraints(edges, invMass, restLen ,edgeCompliance, dt, pos);
             solveBendingDistanceConstraints(quads,invMass,bendingRestLen,bendingCompliance,dt,pos);

@@ -13,5 +13,7 @@ add_subdirectory(PBDCloth)
 add_subdirectory(BunnyMesh)
 add_subdirectory(ReadVtkTet)
 
-# # please comment out the test source files in production environment
-add_subdirectory(test)
+option(PBD_TEST "Build the PBD test" OFF)
+if(PBD_TEST)
+    add_subdirectory(test)
+endif()
