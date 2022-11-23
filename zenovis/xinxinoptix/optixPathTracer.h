@@ -4,10 +4,10 @@
 #ifndef __CUDACC_RTC__ 
     #include "optixVolume.h"
 #else
-    // #include "volume.h"
+    #include "volume.h"
 #endif
 
-#include "volume.h"
+// #include "volume.h"
 
 enum RayType
 {
@@ -95,6 +95,17 @@ struct HitGroupData
     float4* uniforms;
     cudaTextureObject_t textures[32];
 
-    VolumeGeometryData geometry_data;
-    VolumeMaterialData material_data;
+    float opacityHDDA;
+    void* gridVDB;
+
+    float sigma_a, sigma_s;
+    float greenstein; // -1 ~ 1
+
+    #ifdef __CUDACC_RTC__ 
+
+    __device__ float sigma_t() {
+        return sigma_a + sigma_s;
+    }
+
+    #endif
 };

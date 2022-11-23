@@ -33,78 +33,74 @@
 
 const unsigned int NUM_PAYLOAD_VALUES = 2u;
 
-// struct LaunchParams
-// {
-//     unsigned int             width;
-//     unsigned int             height;
-//     unsigned int             subframe_index;
-//     float4*                  accum_buffer;
-//     uchar4*                  frame_buffer;
-//     int                      max_depth;
+__device__
+inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
+    
+//    if (abs(a.x) > abs(a.y))
+//        b = float3(-a.z, 0, a.x) /
+//              sqrt(max(FLT_EPSILON, a.x * a.x + a.z * a.z));
+//    else
+//        b = float3(0, a.z, -a.y) /
+//              sqrt(max(FLT_EPSILON, a.y * a.y + a.z * a.z));
+    
+    if (abs(a.x) > abs(a.y))
+        b = float3{-a.z, 0, a.x};
+    else
+        b = float3{0, a.z, -a.y};
+    
+    b = normalize(b);
+    c = cross(a, b);
+}
 
-//     float3                   eye;
-//     float3                   U;
-//     float3                   V;
-//     float3                   W;
+inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
+    return float3{sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta};
+}
 
-//     BufferView<Light>        lights;
-//     float3                   miss_color;
-//     OptixTraversableHandle   handle;
+inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
+                                 const float3 &x, const float3 &y, const float3 &z) {
+    return sinTheta * cos(phi) * x + sinTheta * sin(phi) * y + cosTheta * z;
+}
 
-//     // Visbility masks
-//     unsigned int solid_objects;
-//     unsigned int volume_object;
-// };
-
-
-struct VolumeMaterialData 
-{
-    struct Lambert
-    {
-        float3 base_color;
-    };
-
-    struct Volume
-    {
-        float  opacity; // effectively a scale factor for volume density
-    };
-
-
-    union
-    {
-        Lambert lambert;
-        Volume  volume; 
-    };
+struct HenyeyGreenstein {
+    float g;
+    __device__ HenyeyGreenstein(float g) : g(g) {}
+    
+    float p(const float3 &wo, const float3 &wi) const;
+    float Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const;
 };
 
+// Media Inline Functions
+inline float PhaseHG(float cosTheta, float g) {
+    float gg = g * g;
+    float denom = 1 + gg + 2 * g * cosTheta;
+    return (0.25 / M_PIf) * (1 - gg) / (denom * sqrt(denom));
+}
 
-struct VolumeGeometryData
-{
-    struct Plane
-    {
-        float3 normal;
-    };
+// HenyeyGreenstein Method Definitions
+inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
+    //ProfilePhase _(Prof::PhaseFuncEvaluation);
+    return PhaseHG(dot(wo, wi), g);
+}
 
-    struct Volume
-    {
-        void* grid;
-    };
+inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
+    // Compute $\cos \theta$ for Henyey--Greenstein sample
+    float cosTheta;
+    if (abs(g) < 1e-3)
+        cosTheta = 1 - 2 * uu.x;
+    else {
+        float gg = g * g;
+        float sqrTerm = (1 - gg) / (1 + g - 2 * g * uu.x);
+        cosTheta = -(1 + gg - sqrTerm * sqrTerm) / (2 * g);
+    }
 
+    // Compute direction _wi_ for Henyey--Greenstein sample
+    float sinTheta = sqrt(fmax(0.0f, 1.0f - cosTheta * cosTheta));
+    float phi = 2 * M_PIf * uu.y;
+    
+    float3 v1, v2;
+    CoordinateSystem(wo, v1, v2);
+    wi = SphericalDirection(sinTheta, cosTheta, phi, v1, v2, wo);
+    //wo = DisneyBSDF::SampleScatterDirection(prd->seed);
 
-    union
-    {
-        Plane  plane;
-        Volume volume;
-    };
-};
-
-struct PayloadRadiance
-{
-    float3 result;
-    float  depth;
-};
-
-
-struct PayloadOcclusion
-{
-};
+    return PhaseHG(cosTheta, g);
+}

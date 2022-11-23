@@ -729,10 +729,12 @@ static void createSBT( PathTracerState& state )
 
         std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
 
-        rec.data.geometry_data.volume.grid = reinterpret_cast<void*>( g_volume.d_volume );
-        rec.data.material_data.volume.opacity = 0.5f;
+        rec.data.gridVDB = reinterpret_cast<void*>( g_volume.d_volume );
+        rec.data.opacityHDDA = 0.25f;
 
-        rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+        rec.data.sigma_a = 1;
+        rec.data.sigma_s = 2;
+        rec.data.greenstein = 0.5;
 
         OPTIX_CHECK( optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
         hitgroup_records[sbt_idx] = rec;
@@ -742,8 +744,6 @@ static void createSBT( PathTracerState& state )
     }
 
     sbt_idx += 2;
-
-    //const uint sbt_idx = hitgroup_record_count - VDB_COUNT * RAY_TYPE_COUNT;
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
