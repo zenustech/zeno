@@ -150,7 +150,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     };
     QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", funcZoomEdited, CALLBACK_SWITCH(), props));
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
-        QString percent = QString::number(newFactor * 100);
+        QString percent = QString::number(int(newFactor * 100));
         percent += "%";
         cbZoom->setCurrentText(percent);
     });

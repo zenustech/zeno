@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>644</width>
-    <height>74</height>
+    <width>639</width>
+    <height>61</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -90,10 +90,19 @@
    <property name="spacing">
     <number>8</number>
    </property>
+   <property name="topMargin">
+    <number>4</number>
+   </property>
+   <property name="bottomMargin">
+    <number>4</number>
+   </property>
    <item>
     <layout class="QGridLayout" name="gridLayout">
      <property name="leftMargin">
       <number>0</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>2</number>
      </property>
      <item row="1" column="0">
       <widget class="QComboBox" name="comboBox">
@@ -180,6 +189,9 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <property name="leftMargin">
       <number>0</number>
      </property>
@@ -217,19 +229,19 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
         </widget>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnBackToStart"/>
+        <widget class="ZToolButton" name="btnBackToStart" native="true"/>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnBackward"/>
+        <widget class="ZToolButton" name="btnBackward" native="true"/>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnPlay"/>
+        <widget class="ZToolButton" name="btnPlay" native="true"/>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnForward"/>
+        <widget class="ZToolButton" name="btnForward" native="true"/>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnForwardToEnd"/>
+        <widget class="ZToolButton" name="btnForwardToEnd" native="true"/>
        </item>
        <item>
         <widget class="QLineEdit" name="editFrame">
@@ -254,7 +266,7 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
         </widget>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnRecycle"/>
+        <widget class="ZToolButton" name="btnRecycle" native="true"/>
        </item>
       </layout>
      </item>
@@ -337,12 +349,6 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
    <class>ZSlider</class>
    <extends>QWidget</extends>
    <header>timeline/zslider.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ZIconLabel</class>
-   <extends>QLabel</extends>
-   <header>zenoui/comctrl/zlabel.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

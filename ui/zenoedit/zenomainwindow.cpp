@@ -65,6 +65,8 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+
+    m_ui->statusbar->showMessage(tr("Status Bar"));
 }
 
 void ZenoMainWindow::initMenu()
