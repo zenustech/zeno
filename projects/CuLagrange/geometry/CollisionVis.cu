@@ -595,7 +595,7 @@ namespace zeno {
 
 
             auto buffer = typename ZenoParticles::particles_t({{"nrm",3},{"x",3}},lines.size(),zs::memsrc_e::device,0);  
-            if(!calculate_edge_normal_from_facet_normal(cudaExec,lines,tris,"nrm",buffer,"nrm",lines))
+            if(!calculate_edge_normal_from_facet_normal(cudaExec,tris,"nrm",buffer,"nrm",lines))
                 throw std::runtime_error("VisualizeSurfaceEdgeNormal::calculate_edge_normal_from_facet_normal fail");
 
 

@@ -10,8 +10,8 @@
 namespace zeno {
     using T = float;
 
-    template<typename Pol,typename LineTileVec,typename SurfTriNrmTileVec,typename SurfLineNrmTileVec,typename SurfTriTopoTileVec>
-    bool calculate_edge_normal_from_facet_normal(Pol& pol,const LineTileVec& lines,
+    template<typename Pol,typename SurfTriNrmTileVec,typename SurfLineNrmTileVec,typename SurfTriTopoTileVec>
+    bool calculate_edge_normal_from_facet_normal(Pol& pol,
         const SurfTriNrmTileVec& ttemp,const zs::SmallString& srcTag,
         SurfLineNrmTileVec& etemp,const zs::SmallString& dstTag,
         const SurfTriTopoTileVec& ltopo) {
@@ -23,6 +23,10 @@ namespace zeno {
             }
             if(!etemp.hasProperty(dstTag) || etemp.getChannelSize(dstTag) != 3) {
                 fmt::print(fg(fmt::color::red),"the input lineNrmTileVec has no valid {} normal channel\n",dstTag);
+                return false;
+            }
+            if(!ltopo.hasProperty("fe_inds") || ltopo.getChannelSize("fe_inds") != 2){
+                fmt::print(fg(fmt::color::red),"the input ltopo has no \"fe_inds\" channel\n");
                 return false;
             }
 

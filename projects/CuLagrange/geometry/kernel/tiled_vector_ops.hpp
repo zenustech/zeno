@@ -238,6 +238,8 @@ namespace zeno { namespace TILEVEC_OPS {
                 throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
             if(!dst.hasProperty(dstTag))
                 throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+            if(dst.size() != topo.size())
+                throw std::runtime_error("tiledvec_ops::assemble::dst and topo size not match");
 
             int simplex_size = topo.getChannelSize(dstTopoTag);
             int space_dim = src.getChannelSize(srcTag);

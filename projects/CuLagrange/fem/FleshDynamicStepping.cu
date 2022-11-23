@@ -143,23 +143,23 @@ struct FleshDynamicStepping : INode {
                 (T)mu,(T)lambda);
 
 
-            COLLISION_UTILS::do_edge_edge_collision_detection(cudaPol,
-                vtemp,"xn",
-                points,
-                lines,
-                tris,
-                sttemp,
-                setemp,
-                ee_buffer,
-                in_collisionEps/(T)4.0,out_collisionEps);
+            // COLLISION_UTILS::do_edge_edge_collision_detection(cudaPol,
+            //     vtemp,"xn",
+            //     points,
+            //     lines,
+            //     tris,
+            //     sttemp,
+            //     setemp,
+            //     ee_buffer,
+            //     in_collisionEps/(T)4.0,out_collisionEps);
 
-            COLLISION_UTILS::evaluate_ee_collision_grad_and_hessian(cudaPol,
-                vtemp,"xn",
-                ee_buffer,
-                gh_buffer,offset + fp_buffer.size(),
-                in_collisionEps/(T)4.0,out_collisionEps,
-                (T)collisionStiffness,
-                (T)0.01*mu,(T)0.01*lambda);
+            // COLLISION_UTILS::evaluate_ee_collision_grad_and_hessian(cudaPol,
+            //     vtemp,"xn",
+            //     ee_buffer,
+            //     gh_buffer,offset + fp_buffer.size(),
+            //     in_collisionEps/(T)4.0,out_collisionEps,
+            //     (T)collisionStiffness,
+            //     (T)0.01*mu,(T)0.01*lambda);
 
             // project out all the neglect verts
             if(neglect_inverted) {
@@ -470,6 +470,9 @@ struct FleshDynamicStepping : INode {
             },lines.size()
         );
 
+        std::cout << "sttemp.size() << " << sttemp.size() << std::endl;
+        std::cout << "setemp.size() << " << setemp.size() << std::endl;
+
         static dtiles_t fp_buffer(points.get_allocator(),{
             {"inds",4},
             {"area",1},
@@ -481,7 +484,8 @@ struct FleshDynamicStepping : INode {
             {"area",1},
             {"inverted",1},
             {"abary",2},
-            {"bbary",2}
+            {"bbary",2},
+            {"bary",4}
         },lines.size());
 
         static dtiles_t gh_buffer(eles.get_allocator(),{
@@ -589,6 +593,8 @@ struct FleshDynamicStepping : INode {
         auto res0 = 1e10;
 
         while(nm_iters < max_newton_iterations) {
+            // break;
+
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"H",(T)0.0);  
             TILEVEC_OPS::fill<4>(cudaPol,gh_buffer,"inds",zs::vec<int,4>::uniform(-1).reinterpret_bits(float_c));    
@@ -622,6 +628,8 @@ struct FleshDynamicStepping : INode {
             // break;
 
             PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",gh_buffer,"P",vtemp);
+            // auto nP = TILEVEC_OPS::inf_norm<9>(cudaPol,vtemp,"P");
+            // std::cout << "nP : " << nP << std::endl;
             // PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
             // if the grad is too small, return the result
             // Solve equation using PCG
@@ -629,10 +637,31 @@ struct FleshDynamicStepping : INode {
             // std::cout << "solve using pcg" << std::endl;
             PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,gh_buffer,"dir","bou_tag","grad","P","inds","H",cg_res,1000,50);
             T alpha = 1.;
+
+            auto nxn = TILEVEC_OPS::inf_norm<3>(cudaPol,vtemp,"xn");
+            auto ndir = TILEVEC_OPS::inf_norm<3>(cudaPol,vtemp,"dir");
+
+            // std::cout << "vtemp's xn : " << nxn << std::endl;
+            // std::cout << "vtemp's dir : " << ndir << std::endl;
+
             cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),alpha] __device__(int i) mutable {
-                vtemp.tuple<3>("xn", i) =
-                    vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
+                // if(i == 0){
+                //     printf("vtemp[0] : %f %f %f\n",(float)vtemp("xn",0,i),(float)vtemp("xn",1,i),(float)vtemp("xn",2,i));
+                // }
+
+                vtemp.template tuple<3>("xn", i) =
+                    vtemp.template pack<3>("xn", i) + alpha * vtemp.template pack<3>("dir", i);
+
+                // if(i == 0){
+                //     printf("dir[0] : %f %f %f\n",(float)vtemp("dir",0,i),(float)vtemp("dir",1,i),(float)vtemp("dir",2,i));
+                //     printf("nvtemp[0] : %f %f %f\n",(float)vtemp("xn",0,i),(float)vtemp("xn",1,i),(float)vtemp("xn",2,i));
+                // }
+
             });
+
+            // nxn = TILEVEC_OPS::inf_norm<3>(cudaPol,vtemp,"xn");
+            // std::cout << "new vtemp's xn : " << nxn << std::endl;
+
 
             T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
             std::cout << "res[" << nm_iters << "] : " << res << std::endl;
@@ -640,6 +669,7 @@ struct FleshDynamicStepping : INode {
                 break;
             nm_iters++;
         }
+
 
         cudaPol(zs::range(verts.size()),
                 [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {

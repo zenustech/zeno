@@ -31,7 +31,17 @@ namespace zeno {
             return false;
         }
 
+        if(!tri_nrm_buffer.hasProperty(nrmTag)) {
+            // std::cout << "the tri_nrm_buffer has no " << nrmTag  << " channel" << std::endl;
+            fmt::print(fg(fmt::color::red),"the tri_nrm_buffer has no {} channel\n",nrmTag);
+            return false;
+        }
 
+        if(tri_nrm_buffer.getChannelSize(nrmTag) != 3) {
+            // std::cout << "the tri_nrm_buffer has no " << nrmTag  << " channel" << std::endl;
+            fmt::print(fg(fmt::color::red),"the tri_nrm_buffer has invalid {} channel, which should be vec3\n",nrmTag);
+            return false;
+        }
 
 
         constexpr auto space = execspace_e::cuda;

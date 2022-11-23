@@ -203,7 +203,9 @@ template<typename Pol,
     typename EECollisionBuffer>
 void do_edge_edge_collision_detection(Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
-    const SurfPointTileVec& points,const SurfLineTileVec& lines,const SurfTriTileVec& tris,
+    const SurfPointTileVec& points,
+    const SurfLineTileVec& lines,
+    const SurfTriTileVec& tris,
     SurfTriNrmVec& sttemp,SurfLineNrmVec& setemp,
     EECollisionBuffer& ee_collision_buffer,
     // const PointNeighHash& pphash,// we might need an one-ring neighbor removal tech
@@ -225,16 +227,23 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
         if(!setemp.hasProperty("nrm") || setemp.getChannelSize("nrm") != 3)
             throw std::runtime_error("do_edge_edge_collision_detection::invalid setemp's \"nrm\" channel");
 
+        if(setemp.size() != lines.size())
+            throw std::runtime_error("setemp.size() != lines.size()");
+        if(sttemp.size() != tris.size())
+            throw std::runtime_error("sttemp.size() != tris.size()");
+
         // std::cout << "do edge edge collision detection" << std::endl;
         if(!calculate_facet_normal(cudaPol,verts,xtag,tris,sttemp,"nrm"))
-            // std::cout << "fail calculate facet normal" << std::endl;
             throw std::runtime_error("do_edge_edge_collision_detection::fail updating facet normal");
 
 
         // std::cout << "calculate edge normal" << std::endl;
 
-        if(!calculate_edge_normal_from_facet_normal(cudaPol,lines,sttemp,"nrm",setemp,"nrm",lines))
+        if(!calculate_edge_normal_from_facet_normal(cudaPol,sttemp,"nrm",setemp,"nrm",lines))
             throw std::runtime_error("do_edge_edge_collision_detection::fail updating edge normal");
+
+        if(ee_collision_buffer.size() != lines.size())
+            throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer size");
 
         if(!ee_collision_buffer.hasProperty("inds") || ee_collision_buffer.getChannelSize("inds") != 4)
             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"inds\" channel");
@@ -256,13 +265,17 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
 
         TILEVEC_OPS::fill<4>(cudaPol,ee_collision_buffer,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
         TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"inverted",reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"abary",(T)0.0);
+        // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"bbary",(T)0.0);
 
         if(!verts.hasProperty("active") || verts.getChannelSize("active") != 1)
             throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"active\" channel");
+        if(!verts.hasProperty(xtag) || verts.getChannelSize(xtag) != 3)
+            throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"xtag\" channel");
 
         cudaPol(zs::range(lines.size()),[in_collisionEps = in_collisionEps,
                 out_collisionEps = out_collisionEps,
-                verts = proxy<space>({},verts),xtag,
+                verts = proxy<space>({},verts),xtag = xtag,
                 points = proxy<space>({},points),
                 lines = proxy<space>({},lines),
                 tris = proxy<space>({},tris),
@@ -304,7 +317,7 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
 
                         zs::vec<T,3> aPoint{};
                         zs::vec<T,3> bPoint{};
-                        zs::vec<T,3> bNrm{};
+                        // zs::vec<T,3> bNrm{};
                         zs::vec<T,2> a{},b{};
 
                         auto nedge = lines.pack(dim_c<2>,"inds",nseI).reinterpret_bits(int_c);
@@ -324,7 +337,7 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
 
 
                         // // the two edges should orient in different directions
-                        bNrm = setemp.template pack<3>("nrm",nseI);
+                        auto bNrm = setemp.template pack<3>("nrm",nseI);
                         auto orient = bNrm.dot(aNrm);
                         if(orient > 0.2){
                             // printf("skip pairs : %d %d due to orient problem %f %f %f\n",sei,nseI,(float)orient,(float)bNrm.norm(),(float)aNrm.norm());
@@ -370,6 +383,8 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
                 };
                 seBvh.iter_neighbors(bv,process_edge_edge_collision_pairs);
 
+
+
                 if(closestEdge == -1) return;
 
                 // printf("find closest pairs : %d -> %d\n",sei,closestEdge);
@@ -391,7 +406,7 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
 
                 auto innerEdge = lines.pack(dim_c<2>,"inds",closestEdge).reinterpret_bits(int_c);
 
-
+                // return;
 
                 // // skip the one-ring neighbor_check
                 // bool insideOneRing = false;
@@ -423,23 +438,27 @@ void do_edge_edge_collision_detection(Pol& cudaPol,
 
                 // if(is_penertrating)
                 //     printf("find penertrating pair %d %d %d %d\n",einds[0],einds[1],innerEdge[0],innerEdge[1]);
-                // return;
 
 
                 ee_collision_buffer.template tuple<4>("inds",sei) = zs::vec<int,4>(einds[0],einds[1],innerEdge[0],innerEdge[1]).template reinterpret_bits<T>();
                 auto edgeEdgeCollsionAreas = lines("area",sei) + lines("area",closestEdge);
                 ee_collision_buffer("area",sei) = edgeEdgeCollsionAreas;
 
-                // return;
-
                 int is_inverted = is_penertrating ? 1 : 0;  
                 ee_collision_buffer("inverted",sei) = reinterpret_bits<T>(is_inverted);   
-                ee_collision_buffer.template tuple<2>("abary",sei) = aClosest;
-                
-                // printf("aClosest : %f %f\n",aClosest[0],aClosest[1]);
-                // printf("bClosest : %f %f\n",bClosest[0],bClosest[1]);
 
+                ee_collision_buffer.template tuple<4>("bary",sei) = zs::vec<T,4>(aClosest[0],aClosest[1],bClosest[0],bClosest[1]);
+                
+                                // return;
+
+                ee_collision_buffer.template tuple<2>("abary",sei) = aClosest;
+
+                // ee_collision_buffer("abary",0,sei) = (T)0.0;
+                // ee_collision_buffer("abary",1,sei) = (T)0.0;
+                // // return;
                 ee_collision_buffer.template tuple<2>("bbary",sei) = bClosest;
+                // ee_collision_buffer("bbary",0,sei) = (T)0.0;
+                // ee_collision_buffer("bbary",1,sei) = (T)0.0;
         });
         
 }
