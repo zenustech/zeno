@@ -511,12 +511,10 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"Bullet"},
 });
 
-struct BulletGlueCompoundShape : BulletCollisionShape {
+struct BulletGlueCompoundShape : IObject {
 	std::vector<std::pair<btTransform, std::shared_ptr<BulletCollisionShape>>> children;
 	std::vector<std::shared_ptr<BulletCompoundShape>> comps;
 	std::vector<std::pair<int, int>> glues;
-
-	using BulletCollisionShape::BulletCollisionShape;
 
 	void addChild(btTransform trans, std::shared_ptr<BulletCollisionShape> child) {
 		auto comShape = static_cast<btCompoundShape *>(shape.get());
@@ -767,7 +765,7 @@ struct BulletMakeGlueObjectList : zeno::INode {
         log_debug("glueobjeclist length={}", objectList->arr.size());
         set_output("objectList", std::move(objectList));
     }
-}
+};
 
 ZENDEFNODE(BulletMakeGlueObjectList, {
     {"glueCompShape", "trans", {"float", "mass", "0"}},
