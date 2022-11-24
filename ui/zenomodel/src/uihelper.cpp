@@ -447,6 +447,48 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
 }
 
 
+QStringList UiHelper::getAllControls()
+{
+    return { "Integer", "Float", "String", "Boolean", "Multiline String", "read path", "write path", "Enum",
+        "Float Vector 4", "Float Vector 3", "Float Vector 2","Integer Vector 4", "Integer Vector 3",
+        "Integer Vector 2", "Color", "Curve", "SpinBox", "Slider", "SpinBoxSlider" };
+}
+
+QStringList UiHelper::getControlLists(const QString& type)
+{
+    QList<PARAM_CONTROL> ctrls;
+    if (type == "int") { ctrls = { CONTROL_INT, CONTROL_SPINBOX_SLIDER, CONTROL_HSPINBOX }; }
+    else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
+    else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
+    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
+    else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
+    else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
+    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }
+    else if (type == "vec3i") { ctrls = { CONTROL_VEC3_INT }; }
+    else if (type == "vec4f") { ctrls = { CONTROL_VEC4_FLOAT }; }
+    else if (type == "vec4i") { ctrls = { CONTROL_VEC4_INT }; }
+    else if (type == "writepath") { ctrls = { CONTROL_WRITEPATH }; }
+    else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
+    else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
+    else if (type == "color") {   //color is more general than heatmap.
+        ctrls = { CONTROL_COLOR };
+    }
+    else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
+    else if (type.startsWith("enum ")) {
+        ctrls = { CONTROL_ENUM }; //todo
+    }
+    else if (type == "NumericObject") { ctrls = { CONTROL_FLOAT }; }
+    else { ctrls = { }; }
+
+    QStringList ctrlNames;
+    for (PARAM_CONTROL ctrl : ctrls)
+    {
+        ctrlNames.append(getControlDesc(ctrl));
+    }
+    return ctrlNames;
+}
+
+
 PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {

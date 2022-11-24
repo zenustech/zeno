@@ -37,6 +37,8 @@ public:
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL getControlType(const QString& type);
+    static QStringList getControlLists(const QString& type);
+    static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);
     static PARAM_CONTROL getControlByDesc(const QString& descName);
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);

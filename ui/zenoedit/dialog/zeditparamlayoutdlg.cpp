@@ -123,6 +123,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     connect(m_ui->editMin, SIGNAL(editingFinished()), this, SLOT(onMinEditFinished()));
     connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
     connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
+    connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
 
     m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
     connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
@@ -189,12 +190,25 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         const QString& paramName = name;
         PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrentItem->data(ROLE_PARAM_CTRL).toInt();
         const QString& ctrlName = getControl(ctrl).name;
+        const QString& coreType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
+        bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
 
-        m_ui->cbControl->setEnabled(true);
-        m_ui->cbControl->setCurrentText(ctrlName);
+        {
+            BlockSignalScope scope(m_ui->cbControl);
+            m_ui->cbControl->setEnabled(true);
+            m_ui->cbControl->clear();
+            QStringList items = UiHelper::getControlLists(coreType);
+            if (bCoreParam) {
+                m_ui->cbControl->addItems(items);
+            }
+            else {
+                m_ui->cbControl->addItems(UiHelper::getAllControls());
+            }
+            m_ui->cbControl->setCurrentText(ctrlName);
+        }
 
         const QString& coreName = pCurrentItem->data(ROLE_PARAM_NAME).toString();
-        const QString& coreType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
+
         PARAM_CLASS coreCls = (PARAM_CLASS)pCurrentItem->data(ROLE_PARAM_SOCKETTYPE).toInt();
 
         m_ui->editCoreParamName->setText(coreName);
@@ -337,6 +351,22 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
     int to = m_ui->editMax->text().toInt();
     properties["max"] = to;
     m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+}
+
+void ZEditParamLayoutDlg::onControlItemChanged(int idx)
+{
+    const QString& controlName = m_ui->cbControl->itemText(idx);
+    PARAM_CONTROL ctrl = UiHelper::getControlByDesc(controlName);
+    if (ctrl == CONTROL_NONE)
+    {
+        zeno::log_warn("no control name {}", controlName.toStdString());
+        return;
+    }
+
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+    m_proxyModel->setData(layerIdx, ctrl, ROLE_PARAM_CTRL);
 }
 
 void ZEditParamLayoutDlg::onStepEditFinished()

@@ -50,6 +50,7 @@ private slots:
     void onMinEditFinished();
     void onMaxEditFinished();
     void onStepEditFinished();
+    void onControlItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
 
 private:
