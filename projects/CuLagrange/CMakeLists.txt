@@ -104,4 +104,5 @@ target_sources(zeno PRIVATE
   geometry/DeformationField.cu
   geometry/CollisionVis.cu
   geometry/CalcSurfaceArea.cu
+  geometry/Topology.cu
 )
