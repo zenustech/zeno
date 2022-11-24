@@ -239,6 +239,7 @@ struct ZSMaintainSparseGrid : INode {
 
         exclusive_scan(pol, std::begin(marks), std::end(marks), std::begin(offsets));
         auto newNbs = offsets.getVal(nbs);
+        auto numMarked = newNbs;
         fmt::print("compacting {} blocks to {} active blocks.\n", nbs, newNbs);
 
         /// @brief compact active block entries
@@ -278,7 +279,7 @@ struct ZSMaintainSparseGrid : INode {
         Ti nbsOffset = 0;
         while (nlayers-- > 0 && newNbs > 0) {
             // reserve enough memory for expanded grid and table
-            spg.resize(pol, newNbs * 7 + nbsOffset);
+            spg.resize(pol, newNbs * 7 + nbsOffset, false);
             // extend one layer
             pol(range(newNbs * spg._table.bucket_size),
                 [spg = proxy<space>(spg), tagOffset = spg.getPropertyOffset(tag),
@@ -291,43 +292,45 @@ struct ZSMaintainSparseGrid : INode {
                         for (int d = 0; d != 3; ++d) {
                             auto dir = zs::vec<int, 3>::zeros();
                             dir[d] = -1;
-                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
-                                               true) == failure_token_v)
-                                               *spg._table._success = false;
+                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length,
+                                                       RM_CVREF_T(spg._table)::sentinel_v, true) == failure_token_v)
+                                *spg._table._success = false;
                             dir[d] = 1;
-                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
-                                               true)== failure_token_v)
-                                               *spg._table._success = false;
+                            if (spg._table.tile_insert(tile, bcoord + dir * spg.side_length,
+                                                       RM_CVREF_T(spg._table)::sentinel_v, true) == failure_token_v)
+                                *spg._table._success = false;
                         }
                     }
-                    #if 0
+#if 0
                     for (auto loc : ndrange<3>(3)) {
                         auto dir = make_vec<int>(loc) - 1;
                         // spg._table.insert(bcoord + dir * spg.side_length);
                         spg._table.tile_insert(tile, bcoord + dir * spg.side_length, RM_CVREF_T(spg._table)::sentinel_v,
                                                true);
                     }
-                    #endif
+#endif
                 });
             zeno::log_warn("check build success state: {}\n", (bool)spg._table._buildSuccess.getVal());
-            
+
             // slide the window
             nbsOffset += newNbs;
             newNbs = spg.numBlocks() - nbsOffset;
+        }
 
-            // initialize newly added blocks
-            if (newNbs > 0) {
-                zs::memset(mem_device, (void *)spg._grid.tileOffset(nbsOffset), 0,
-                           (std::size_t)newNbs * spg._grid.tileBytes());
+        nbsOffset += newNbs; // current total blocks
+        /// @note initialize newly inserted grid blocks
+        if (nbsOffset > numMarked) {
+            spg.resizeGrid(nbsOffset);
+            newNbs = nbsOffset - numMarked;
+            zs::memset(mem_device, (void *)spg._grid.tileOffset(numMarked), 0, (std::size_t)newNbs * spg.block_size);
 
-                if (tag == "sdf") {
-                    // special treatment for "sdf" property
-                    pol(range(newNbs * spg.block_size),
-                        [dx = spg.voxelSize()[0], spg = proxy<space>(spg), sdfOffset = spg.getPropertyOffset("sdf"),
-                         blockOffset = nbsOffset * spg.block_size] __device__(std::size_t cellno) mutable {
-                            spg(sdfOffset, blockOffset + cellno) = 3 * dx;
-                        });
-                }
+            if (tag == "sdf") {
+                // special treatment for "sdf" property
+                pol(range(newNbs * spg.block_size),
+                    [dx = spg.voxelSize()[0], spg = proxy<space>(spg), sdfOffset = spg.getPropertyOffset("sdf"),
+                     blockOffset = numMarked * spg.block_size] __device__(std::size_t cellno) mutable {
+                        spg(sdfOffset, blockOffset + cellno) = 3 * dx;
+                    });
             }
         }
 
@@ -382,7 +385,8 @@ struct ZSMaintainSparseGrid : INode {
                 tab3.insert(bcoord / 8, i, true);
             });
 
-            zeno::log_warn("check multigrid build success state: {}, {}, {}\n", (bool)table1._buildSuccess.getVal(), (bool)table2._buildSuccess.getVal(), (bool)table3._buildSuccess.getVal());
+            zeno::log_warn("check multigrid build success state: {}, {}, {}\n", (bool)table1._buildSuccess.getVal(),
+                           (bool)table2._buildSuccess.getVal(), (bool)table3._buildSuccess.getVal());
         }
     }
 
