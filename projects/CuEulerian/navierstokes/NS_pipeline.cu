@@ -61,6 +61,26 @@ struct ZSVDBToNavierStokesGrid : INode {
             transform.preScale(zs::vec<float, 3>::uniform(2.f));
             NSGrid->spg3._transform = transform;
             NSGrid->spg3._background = spg._background;
+
+            const auto &table = spg._table;
+            auto &table1 = NSGrid->spg1._table;
+            auto &table2 = NSGrid->spg2._table;
+            auto &table3 = NSGrid->spg3._table;
+            table1._cnt.setVal(nbs);
+            table2._cnt.setVal(nbs);
+            table3._cnt.setVal(nbs);
+
+            auto pol = zs::cuda_exec();
+            constexpr auto space = zs::execspace_e::cuda;
+
+            pol(zs::range(nbs),
+                [table = zs::proxy<space>(table), tab1 = zs::proxy<space>(table1), tab2 = zs::proxy<space>(table2),
+                 tab3 = zs::proxy<space>(table3)] __device__(std::size_t i) mutable {
+                    auto bcoord = table._activeKeys[i];
+                    tab1.insert(bcoord / 2, i, true);
+                    tab2.insert(bcoord / 4, i, true);
+                    tab3.insert(bcoord / 8, i, true);
+                });
         }
         NSGrid->spg = std::move(spg);
         NSGrid->setMeta("v_cur", 0);
