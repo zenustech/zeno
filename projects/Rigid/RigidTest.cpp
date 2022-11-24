@@ -758,7 +758,7 @@ struct BulletMakeGlueObjectList : zeno::INode {
         objectList->arr.clear();
         for (auto const &comp: shape->comps) {
             auto object = std::make_shared<BulletObject>(
-                mass, trans->trans, shape);
+                mass, trans->trans, comp);
             object->body->setDamping(0, 0);
             objectList->arr.push_back(std::move(object));
         }
