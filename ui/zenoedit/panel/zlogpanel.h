@@ -72,5 +72,12 @@ private:
     CustomFilterProxyModel *m_pFilterModel;
 };
 
+class ZPlainLogPanel : public QPlainTextEdit
+{
+    Q_OBJECT
+public:
+    ZPlainLogPanel(QWidget* parent = nullptr);
+};
+
 
 #endif

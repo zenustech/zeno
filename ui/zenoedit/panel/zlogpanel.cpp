@@ -124,6 +124,23 @@ void LogListView::onCustomContextMenu(const QPoint& point)
 }
 
 
+ZPlainLogPanel::ZPlainLogPanel(QWidget* parent)
+    : QPlainTextEdit(parent)
+{
+    setReadOnly(true);
+    setStyleSheet("color: #A3B1C0; background-color: rgb(24,29,33); border: 1px solid rgb(18,20,22)");
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            QModelIndex idx = pModel->index(first, 0, parent);
+            QString content = idx.data().toString();
+            appendPlainText(content);
+            verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+        }
+    });
+}
+
+
 ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
     , m_pFilterModel(nullptr)

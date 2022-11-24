@@ -648,7 +648,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             break;
         }
         case DOCK_LOG: {
-            ZlogPanel* pPanel = new ZlogPanel;
+            ZPlainLogPanel* pPanel = new ZPlainLogPanel;
             pDock->setWidget(type, pPanel);
             break;
         }

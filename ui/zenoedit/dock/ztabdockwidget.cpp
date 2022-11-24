@@ -88,7 +88,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_LOG:
         {
-            return new ZlogPanel;
+            return new ZPlainLogPanel;
         }
     }
     return nullptr;
