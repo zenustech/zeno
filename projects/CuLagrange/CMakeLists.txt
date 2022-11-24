@@ -44,10 +44,15 @@ target_sources(zeno PRIVATE
 
 # fem-cloth
 target_sources(zeno PRIVATE
-  fem/ClothInit.cu
-  fem/ClothPipeline.cu
-  fem/ClothLinearSystem.cu
-  fem/ClothCollision.cu
+  #fem/ClothInit.cu
+  #fem/ClothPipeline.cu
+  #fem/ClothLinearSystem.cu
+  #fem/ClothCollision.cu
+
+  fem/FastClothInit.cu
+  fem/FastClothPipeline.cu
+  fem/FastClothLinearSystem.cu
+  fem/FastClothCollision.cu
 )
 
 # fem
