@@ -511,7 +511,7 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"Bullet"},
 });
 
-struct BulletGluedCompoundShape : IObject {
+struct BulletGlueCompoundShape : BulletCollisionShape {
 	std::vector<std::pair<btTransform, std::shared_ptr<BulletCollisionShape>>> children;
 	std::vector<std::shared_ptr<BulletCompoundShape>> comps;
 	std::vector<std::pair<int, int>> glues;
@@ -541,7 +541,7 @@ struct BulletGluedCompoundShape : IObject {
 				i = found[i];
 			return i;
 		};
-		for (auto const &[g1, g2]: glues[g]) {
+		for (auto const &[g1, g2]: glues) {
 			int f1 = find(g1);
 			int f2 = find(g2);
 			found[f2] = f1;
@@ -750,21 +750,31 @@ ZENDEFNODE(BulletMakeObject, {
     {"Bullet"},
 });
 
-struct BulletMakeGlueObjects : zeno::INode {
+struct BulletMakeGlueObjectList : zeno::INode {
+    std::shared_ptr<ListObject> objectList = std::make_shared<ListObject>();
+
     virtual void apply() override {
-        auto shape = get_input<BulletGlueCompoundShape>("shape");
+        auto shape = get_input<BulletGlueCompoundShape>("glueCompShape");
         auto mass = get_input<zeno::NumericObject>("mass")->get<float>();
         auto trans = get_input<BulletTransform>("trans");
-	auto objectList = std::make_shared<ListObject>();
-	for (auto const &comp: shape->comps) {
-		auto object = std::make_shared<BulletObject>(
-		    mass, trans->trans, shape);
-		object->body->setDamping(0, 0);
-		objectList->arr.push_back(std::move(object));
-	}
+        objectList->arr.clear();
+        for (auto const &comp: shape->comps) {
+            auto object = std::make_shared<BulletObject>(
+                mass, trans->trans, shape);
+            object->body->setDamping(0, 0);
+            objectList->arr.push_back(std::move(object));
+        }
+        log_debug("glueobjeclist length={}", objectList->arr.size());
         set_output("objectList", std::move(objectList));
     }
 }
+
+ZENDEFNODE(BulletMakeGlueObjectList, {
+    {"glueCompShape", "trans", {"float", "mass", "0"}},
+    {"objectList"},
+    {},
+    {"Bullet"},
+});
 
 struct BulletObjectSetDamping : zeno::INode {
     virtual void apply() override {
