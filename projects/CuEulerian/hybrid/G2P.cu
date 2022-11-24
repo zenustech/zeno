@@ -16,6 +16,83 @@
 namespace zeno {
 
 struct ZSSparseGridToPrimitive : INode {
+
+    template <zs::kernel_e knl>
+    void g2p_staggered(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *zsSPG, ZenoParticles *parObjPtr,
+                       zs::SmallString srcTag, zs::SmallString parTag, const int nchns, bool isAccumulate) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = zsSPG->getSparseGrid();
+        auto &pars = parObjPtr->getParticles();
+
+        pol(range(pars.size()),
+            [spgv = proxy<space>(spg), pars = proxy<space>({}, pars), tagSrcOffset = spg.getPropertyOffset(srcTag),
+             tagDstOffset = pars.getPropertyOffset(parTag), nchns, isAccumulate] __device__(std::size_t pi) mutable {
+                auto pos = pars.pack(dim_c<3>, "x", pi);
+                for (int d = 0; d < nchns; ++d) { // 0, 1, 2
+                    auto arena = spgv.wArena(pos, d, wrapv<kernel_e::quadratic>{});
+
+                    float val = 0;
+                    for (auto loc : ndrange<3>(RM_CVREF_T(arena)::width)) {
+                        auto coord = arena.coord(loc);
+                        auto [bno, cno] = spgv.decomposeCoord(coord);
+                        if (bno < 0) // skip non-exist voxels
+                            continue;
+                        auto W = arena.weight(loc);
+
+                        val += spgv(tagSrcOffset + d, bno, cno) * W;
+                    }
+                    if (isAccumulate) {
+                        pars(tagDstOffset + d, pi) += val;
+                    } else {
+                        pars(tagDstOffset + d, pi) = val;
+                    }
+                }
+            });
+    }
+
+    template <zs::kernel_e knl>
+    void g2p(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *zsSPG, ZenoParticles *parObjPtr, zs::SmallString srcTag,
+             zs::SmallString parTag, const int nchns, bool isAccumulate) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = zsSPG->getSparseGrid();
+        auto &pars = parObjPtr->getParticles();
+
+        pol(range(pars.size()),
+            [spgv = proxy<space>(spg), pars = proxy<space>({}, pars), tagSrcOffset = spg.getPropertyOffset(srcTag),
+             tagDstOffset = pars.getPropertyOffset(parTag), nchns, isAccumulate] __device__(std::size_t pi) mutable {
+                auto pos = pars.pack(dim_c<3>, "x", pi);
+                auto arena = spgv.wArena(pos, wrapv<kernel_e::quadratic>{});
+
+                float val[144];
+                for (int d = 0; d < nchns; ++d)
+                    val[d] = 0;
+
+                for (auto loc : arena.range()) {
+                    auto coord = arena.coord(loc);
+                    auto [bno, cno] = spgv.decomposeCoord(coord);
+                    if (bno < 0) // skip non-exist voxels
+                        continue;
+
+                    auto W = arena.weight(loc);
+#pragma unroll
+                    for (int d = 0; d < nchns; ++d) {
+                        val[d] += spgv(tagSrcOffset + d, bno, cno) * W;
+                    }
+                }
+                for (int d = 0; d < nchns; ++d) {
+                    if (isAccumulate) {
+                        pars(tagDstOffset + d, pi) += val[d];
+                    } else {
+                        pars(tagDstOffset + d, pi) = val[d];
+                    }
+                }
+            });
+    }
+
     void apply() override {
         auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto &spg = zsSPG->getSparseGrid();
@@ -23,6 +100,7 @@ struct ZSSparseGridToPrimitive : INode {
         auto attrTag = get_input2<std::string>("GridAttribute");
         auto parTag = get_input2<std::string>("ParticleAttribute");
         auto opType = get_input2<std::string>("OpType");
+        auto kernel = get_input2<std::string>("Kernel");
         bool isStaggered = get_input2<bool>("staggered");
 
         bool isAccumulate = false;
@@ -32,13 +110,22 @@ struct ZSSparseGridToPrimitive : INode {
         auto tag = src_tag(zsSPG, attrTag);
 
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec().device(0);
+
+        using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>>;
+        kt_t knl;
+        if (kernel == "linear")
+            knl = wrapv<kernel_e::linear>{};
+        else if (kernel == "quadratic")
+            knl = wrapv<kernel_e::quadratic>{};
+        else if (kernel == "cubic")
+            knl = wrapv<kernel_e::cubic>{};
+        else
+            throw std::runtime_error(fmt::format("Kernel function [{}] not found!", kernel));
 
         const int nchns = spg.getPropertySize(tag);
         if (isStaggered && nchns != 3)
             throw std::runtime_error("the size of GridAttribute is not 3!");
-
-        auto cudaPol = cuda_exec().device(0);
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();
@@ -53,65 +140,18 @@ struct ZSSparseGridToPrimitive : INode {
             }
 
             if (isStaggered) {
-                cudaPol(range(pars.size()),
-                        [spgv = proxy<space>(spg), pars = proxy<space>({}, pars),
-                         tagSrcOffset = spg.getPropertyOffset(tag), tagDstOffset = pars.getPropertyOffset(parTag),
-                         isAccumulate, nchns] __device__(std::size_t pi) mutable {
-                            auto pos = pars.pack(dim_c<3>, "x", pi);
-                            for (int d = 0; d < nchns; ++d) { // 0, 1, 2
-                                auto arena = spgv.wArena(pos, d, wrapv<kernel_e::quadratic>{});
-
-                                float val = 0;
-                                for (auto loc : ndrange<3>(RM_CVREF_T(arena)::width)) {
-                                    auto coord = arena.coord(loc);
-                                    auto [bno, cno] = spgv.decomposeCoord(coord);
-                                    if (bno < 0) // skip non-exist voxels
-                                        continue;
-                                    auto W = arena.weight(loc);
-
-                                    val += spgv(tagSrcOffset + d, bno, cno) * W;
-                                }
-                                if (isAccumulate) {
-                                    pars(tagDstOffset + d, pi) += val;
-                                } else {
-                                    pars(tagDstOffset + d, pi) = val;
-                                }
-                            }
-                        });
+                match([&](auto knlTag) {
+                    constexpr auto knt = decltype(knlTag)::value;
+                    g2p_staggered<knt>(cudaPol, zsSPG.get(), parObjPtr, tag, parTag, nchns, isAccumulate);
+                })(knl);
             } else {
                 if (nchns > 144)
                     throw std::runtime_error("# of chns of property cannot exceed 144.");
-                cudaPol(range(pars.size()),
-                        [spgv = proxy<space>(spg), pars = proxy<space>({}, pars),
-                         tagSrcOffset = spg.getPropertyOffset(tag), tagDstOffset = pars.getPropertyOffset(parTag),
-                         isAccumulate, nchns] __device__(std::size_t pi) mutable {
-                            auto pos = pars.pack(dim_c<3>, "x", pi);
-                            auto arena = spgv.wArena(pos, wrapv<kernel_e::quadratic>{});
 
-                            float val[144];
-                            for (int d = 0; d < nchns; ++d)
-                                val[d] = 0;
-
-                            for (auto loc : arena.range()) {
-                                auto coord = arena.coord(loc);
-                                auto [bno, cno] = spgv.decomposeCoord(coord);
-                                if (bno < 0) // skip non-exist voxels
-                                    continue;
-
-                                auto W = arena.weight(loc);
-#pragma unroll
-                                for (int d = 0; d < nchns; ++d) {
-                                    val[d] += spgv(tagSrcOffset + d, bno, cno) * W;
-                                }
-                            }
-                            for (int d = 0; d < nchns; ++d) {
-                                if (isAccumulate) {
-                                    pars(tagDstOffset + d, pi) += val[d];
-                                } else {
-                                    pars(tagDstOffset + d, pi) = val[d];
-                                }
-                            }
-                        });
+                match([&](auto knlTag) {
+                    constexpr auto knt = decltype(knlTag)::value;
+                    g2p<knt>(cudaPol, zsSPG.get(), parObjPtr, tag, parTag, nchns, isAccumulate);
+                })(knl);
             }
         }
 
@@ -125,6 +165,7 @@ ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                       {"string", "GridAttribute"},
                                       {"string", "ParticleAttribute", ""},
                                       {"enum replace accumulate", "OpType", "replace"},
+                                      {"enum linear quadratic cubic", "Kernel", "quadratic"},
                                       {"bool", "staggered", "0"}},
                                      /* outputs: */
                                      {"ZSParticles"},
