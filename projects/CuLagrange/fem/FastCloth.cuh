@@ -13,46 +13,9 @@
 
 namespace zeno {
 
-/// credits: du wenxin
-template <typename T = float, typename Ti = int> struct CsrMatrix {
-    using value_type = T;
-    using index_type = std::make_signed_t<Ti>;
-    using size_type = std::make_unsigned_t<Ti>;
-    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
-    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
-    zs::Vector<size_type> ap{};
-    zs::Vector<int> aj{};
-    zs::Vector<value_type> ax{};
-    // for build
-    table_type tab{};
-    zs::Vector<size_type> nnz{}; // non-zero entries per row
-};
-
-template <typename CsrMatrixT> struct CsrView {
-    static constexpr bool is_const_structure = std::is_const_v<CsrMatrixT>;
-    using value_type = typename CsrMatrixT::value_type;
-    using index_type = typename CsrMatrixT::index_type;
-    using size_type = typename CsrMatrixT::size_type;
-    CsrView(CsrMatrixT &mat)
-        : nrows{mat.nrows}, ncols{mat.ncols}, ap{mat.ap.data()}, aj{mat.aj.data()}, ax{mat.ax.data()} {
-    }
-
-    size_type nrows, ncols;
-    zs::conditional_t<is_const_structure, const size_type *, size_type *> ap;
-    zs::conditional_t<is_const_structure, const int *, int *> aj;
-    zs::conditional_t<is_const_structure, const value_type *, value_type *> ax;
-};
-
-template <zs::execspace_e space, typename T, typename Ti> auto proxy(CsrMatrix<T, Ti> &csr) {
-    return CsrView<CsrMatrix<T, Ti>>{csr};
-}
-template <zs::execspace_e space, typename T, typename Ti> auto proxy(const CsrMatrix<T, Ti> &csr) {
-    return CsrView<const CsrMatrix<T, Ti>>{csr};
-}
-
 /// for cell-based collision detection
 
-struct ClothSystem : IObject {
+struct FastClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
 
@@ -154,7 +117,9 @@ struct ClothSystem : IObject {
     };
 
     bool hasBoundary() const noexcept {
-        return coVerts != nullptr;
+        if (coVerts != nullptr)
+        return coVerts->size() != 0;
+        return false;
     }
     T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary = true);
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
@@ -176,7 +141,7 @@ struct ClothSystem : IObject {
     }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coEdges, tiles_t *coEles, T dt,
+    FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges, tiles_t *coEles, T dt,
                 std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat,
                 T gravity);
 
@@ -186,18 +151,15 @@ struct ClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
-    void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat);
-    void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
-    void findBoundaryCellCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat);
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat);
+    void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
+    void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
 
     /// pipeline
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void newtonKrylov(zs::CudaExecutionPolicy &pol);
     void computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
-    void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
-
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
@@ -212,11 +174,8 @@ struct ClothSystem : IObject {
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
 
     // contacts
-    auto getCnts() const {
-        return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
-    }
-    auto getCollisionCnts() const {
-        return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
+    auto getConstraintCnt() const {
+        return zs::make_tuple(nPP.getVal(), nE.getVal());
     }
 
     // sim params
@@ -231,7 +190,6 @@ struct ClothSystem : IObject {
     T targetGRes = 1e-2;
 
     bool enableContact = true;
-    bool enableContactEE = true;
     bool enableContactSelf = true;
     bool projectDBC = false;
     T augLagCoeff = 1e4;
@@ -239,12 +197,12 @@ struct ClothSystem : IObject {
     vec3 extAccel;
 
     T boxDiagSize2 = 0;
-    T avgNodeMass = 0;
-    T maxMu, maxLam;
+    T avgNodeMass = 0, mu = 0, rho = 0;
 
     /// @brief for cloth collision handling
     /// @note all length in mm unit
-    /// @note all vertex pair constraints (edge or not) are stored in <PP, nPP, tempPP>
+    /// @note all vertex pair constraints are stored in <PP, nPP, tempPP>
+    /// @note all edge constraints are stored in <E, nE, tempE>
 
     /// @note global upper length bound on all edges is L
     T L = 6 * zs::g_sqrt2;
@@ -260,7 +218,17 @@ struct ClothSystem : IObject {
     /// @brief positive slack constant, used in proximity search
     /// @note sufficiently large enough to 1) faciliate convergence, 2) address missing pair issue
     /// @note sufficiently small enough to 1) reduce proximity search cost, 2) reduce early repulsion artifacts
-    T epsSlack = 21.75;
+    T epsSlack = 21.75; // (B + Btight) * (B + Btight) + epsSlack + epsSlack < L^2
+    // 42.25 + 72
+    /// @brief hard phase constraint coefficients
+    // constexpr T a0 = 0;
+    // constexpr T a1 = 1;
+    T a2 = 1 / (T)21.75, a3 = -1 / (T)473.0625;
+    void updateHardPhaseFunctionCoefficients(T epsSlack) {
+        a3 = -1 / (epsSlack * epsSlack);
+        a2 = -epsSlack * a3;
+    }
+
     /// @brief success condition constant (avoid near boundary numerical issues after the soft phase)
     T epsCond = 0.01;
     /// @brief initial displacement limit during the start of K iteration collision steps
@@ -274,6 +242,10 @@ struct ClothSystem : IObject {
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
     int IDyn = 3 /*1~6*/, R = 8;
 
+    T proximityRadius() const {
+        return std::sqrt((B + Btight) * (B + Btight) + epsSlack);
+    }
+
     ///
     /// initialization
     /// cloth step
@@ -281,13 +253,9 @@ struct ClothSystem : IObject {
     ///     soft phase
     ///     hard phase
 
-    T proximityRadius() const {
-        return std::sqrt((B + Btight) * (B + Btight) + epsSlack);
-    }
 
     ///
 
-    //
     std::vector<PrimitiveHandle> prims;
     std::vector<PrimitiveHandle> auxPrims; // intended for hard constraint (tracker primitive)
     Ti coOffset, numDofs, numBouDofs;
@@ -295,18 +263,18 @@ struct ClothSystem : IObject {
 
     // (scripted) collision objects
     /// @note allow (bisector) normal update on-the-fly, thus made modifiable
-    tiles_t *coVerts, *coEdges, *coEles;
+    tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
     tiles_t vtemp;      // solver data
     zs::Vector<T> temp; // as temporary buffer
 
-    // self contacts
-    zs::Vector<pair_t> PP;
-    zs::Vector<int> nPP;
-    tiles_t tempPP;
-    zs::Vector<pair3_t> PE;
-    zs::Vector<int> nPE;
-    tiles_t tempPE;
+    // collision constraints (edge / non-edge)
+    zs::Vector<pair_t> PP, E;
+    zs::Vector<int> nPP, nE;
+    tiles_t tempPP, tempE;
+    
+#if 0
+    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     zs::Vector<pair4_t> PT;
     zs::Vector<int> nPT;
     tiles_t tempPT;
@@ -314,22 +282,17 @@ struct ClothSystem : IObject {
     zs::Vector<int> nEE;
     tiles_t tempEE;
 
-    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
-
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
+#endif
     // end contacts
-
-    // possibly accessed in compactHessian and cgsolve
-    CsrMatrix<zs::vec<T, 3, 3>, int> linMat; // sparsity pattern update during hessian computation
 
     // boundary contacts
     // auxiliary data (spatial acceleration)
-    tiles_t stInds, seInds, svInds;
-    bvh_t stBvh, seBvh;       // for simulated objects
-    bvh_t bouStBvh, bouSeBvh; // for collision objects
-    bvfront_t selfStFront, boundaryStFront;
-    bvfront_t selfSeFront, boundarySeFront;
+    tiles_t svInds, seInds, stInds;
+    bvh_t svBvh; // for simulated objects
+    bvh_t bouSvBvh; // for collision objects
+    bvfront_t selfSvFront, boundarySvFront;
     bool frontManageRequired;
     T dt, framedt, curRatio;
 };

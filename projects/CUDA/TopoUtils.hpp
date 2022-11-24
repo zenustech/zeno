@@ -11,7 +11,5 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
                                  const zs::SmallString &triNrmTag, ZenoParticles::particles_t &lines,
                                  const zs::SmallString &biNrmTag);
 
-void compute_surface_edges(zs::CudaExecutionPolicy &pol, const ZenoParticles::particles_t &sfs,
-                           ZenoParticles::particles_t *sesPtr, ZenoParticles::particles_t *svsPtr = nullptr);
 
 } // namespace zeno

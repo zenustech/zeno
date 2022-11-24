@@ -185,12 +185,4 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
     });
 }
 
-void compute_surface_edges(zs::CudaExecutionPolicy &pol, const ZenoParticles::particles_t &sfs,
-                           ZenoParticles::particles_t *sesPtr, ZenoParticles::particles_t *svsPtr) {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    using vec2i = zs::vec<int, 2>;
-    using vec3i = zs::vec<int, 3>;
-}
-
 } // namespace zeno
