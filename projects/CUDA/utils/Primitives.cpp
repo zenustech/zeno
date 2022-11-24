@@ -63,20 +63,32 @@ struct PrimitiveProject : INode {
 
         auto const &nrm = prim->attr<vec3f>(nrmAttr);
 
-        pol(range(pos.size()), [&, bvh = proxy<space>(targetBvh)](size_t i) {
+        pol(range(pos.size()), [&, bvh = proxy<space>(targetBvh), sideNo](size_t i) {
             using vec3 = zs::vec<float, 3>;
             auto ro = vec3::from_array(pos[i]);
             auto rd = vec3::from_array(nrm[i]).normalized();
-            float dist = 0;
-            bvh.ray_intersect(ro, rd, [&](int triNo) {
-                auto tri = tris[triNo];
-                auto t0 = vec3::from_array(targetPos[tri[0]]);
-                auto t1 = vec3::from_array(targetPos[tri[1]]);
-                auto t2 = vec3::from_array(targetPos[tri[2]]);
-                if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && d > dist) {
-                    dist = d;
-                }
-            });
+            float dist{0};
+            if (sideNo == 1) {
+                bvh.ray_intersect(ro, rd, [&](int triNo) {
+                    auto tri = tris[triNo];
+                    auto t0 = vec3::from_array(targetPos[tri[0]]);
+                    auto t1 = vec3::from_array(targetPos[tri[1]]);
+                    auto t2 = vec3::from_array(targetPos[tri[2]]);
+                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && d > dist) {
+                        dist = d;
+                    }
+                });
+            } else if (sideNo == 0) {
+                bvh.ray_intersect(ro, rd, [&](int triNo) {
+                    auto tri = tris[triNo];
+                    auto t0 = vec3::from_array(targetPos[tri[0]]);
+                    auto t1 = vec3::from_array(targetPos[tri[1]]);
+                    auto t2 = vec3::from_array(targetPos[tri[2]]);
+                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && (d < dist || dist == 0)) {
+                        dist = d;
+                    }
+                });
+            }
             pos[i] = (ro + dist * rd).to_array();
         });
 
