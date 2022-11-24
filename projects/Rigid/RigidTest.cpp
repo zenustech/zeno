@@ -531,7 +531,7 @@ struct BulletGlueCompoundShape : BulletCollisionShape {
 		glues.emplace_back(src, dst);
 	}
 
-	void solveChildrenComps() {
+	void solveGlueToComps() {
 		std::vector<int> found(children.size());
 		for (int i = 0; i < found.size(); i++) {
 			found[i] = i;
@@ -575,10 +575,10 @@ struct BulletMakeGlueCompoundShape : zeno::INode {
 ZENDEFNODE(BulletMakeGlueCompoundShape, {
 	{
 	},
-	{},
 	{
 		"shape",
 	},
+	{},
 	{"Bullet"},
 });
 
@@ -599,38 +599,38 @@ ZENDEFNODE(BulletGlueCompoundAddChild, {
 		"childShape",
 		"trans",
 	},
-	{},
 	{
 		"compound",
 	},
+	{},
 	{"Bullet"},
-}
+});
 
 struct BulletGlueCompoundUpdateGlueList : zeno::INode {
     virtual void apply() override {
-        auto compound = get_input<BulletCompoundShape>("compound");
+        auto compound = get_input<BulletGlueCompoundShape>("compound");
         auto glueList = get_input<ListObject>("glueListVec2i")->getLiterial<vec2i>();
 	compound->clearGlues();
-	for (int i = 0; i < glueList[i]; i++) {
-		auto [x, y] = glueList[i];
-		compound->addGlue(x, y);
-	}
-	compound->solveGlueToComps();
+    for (int i = 0; i < glueList.size(); i++) {
+        auto [x, y] = glueList[i];
+        compound->addGlue(x, y);
+    }
+    compound->solveGlueToComps();
         set_output("compound", get_input("compound"));
     }
-}
+};
 
 ZENDEFNODE(BulletGlueCompoundUpdateGlueList, {
 	{
 		"compound",
 		"glueListVec2i",
 	},
-	{},
 	{
 		"compound",
 	},
+	{},
 	{"Bullet"},
-}
+});
 
 struct BulletColShapeCalcLocalInertia : zeno::INode {
 	virtual void apply() override {
