@@ -988,6 +988,13 @@ __forceinline__ __device__ vec3 operator*(mat3 a, vec3 b)
 
 __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale)
 {
-    return norm * 2 - 1;
+    norm = norm * 2 - 1;
+    float x = norm.x * scale;
+    float y = norm.y * scale;
+    float z = 1 - sqrt(x * x + y * y);
+    norm.x = x;
+    norm.y = y;
+    norm.z = z;
+    return norm;
 }
 
