@@ -81,7 +81,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
 
 
     char log[2048];
@@ -182,10 +182,12 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
 
         memset( &hit_prog_group_desc, 0, sizeof( OptixProgramGroupDesc ) );
         hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        hit_prog_group_desc.hitgroup.moduleCH = _module;
-        hit_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__occlusion_volume";
-        hit_prog_group_desc.hitgroup.moduleAH = nullptr;
-        hit_prog_group_desc.hitgroup.entryFunctionNameAH = nullptr;
+        
+        hit_prog_group_desc.hitgroup.moduleCH = nullptr;
+        hit_prog_group_desc.hitgroup.entryFunctionNameCH = nullptr;
+
+        hit_prog_group_desc.hitgroup.moduleAH = _module;
+        hit_prog_group_desc.hitgroup.entryFunctionNameAH = "__anyhit__occlusion_volume";
         hit_prog_group_desc.hitgroup.moduleIS = _module;
         hit_prog_group_desc.hitgroup.entryFunctionNameIS = "__intersection__volume";
         OPTIX_CHECK_LOG( optixProgramGroupCreate(

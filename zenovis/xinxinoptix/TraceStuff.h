@@ -139,12 +139,12 @@ static __forceinline__ __device__ bool traceOcclusion(
             tmin,
             tmax,
             0.0f,                    // rayTime
-            OptixVisibilityMask( 1 | 2),
-            OPTIX_RAY_FLAG_NONE,
+            OptixVisibilityMask(1 | 2),
+            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,       // missSBTIndex
-            u0,u1);
+            u0, u1);
         return false;//???
 }
 

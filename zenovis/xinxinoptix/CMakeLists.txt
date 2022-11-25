@@ -86,6 +86,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Ray.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/HDDA.h
     # ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Stencils.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/SampleFromVoxels.h
     )
 
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})

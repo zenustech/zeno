@@ -732,8 +732,8 @@ static void createSBT( PathTracerState& state )
         rec.data.gridVDB = reinterpret_cast<void*>( g_volume.d_volume );
         rec.data.opacityHDDA = 0.25f;
 
-        rec.data.sigma_a = 1;
-        rec.data.sigma_s = 2;
+        rec.data.sigma_a = 0.01;
+        rec.data.sigma_s = 0.3;
         rec.data.greenstein = 0.5;
 
         OPTIX_CHECK( optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
@@ -1115,7 +1115,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
     xinxinoptix::using_hdr_sky(false);
 
-    loadVolume( g_volume, "/home/iaomw/Public/cloud_10_variant_0000.nvdb" );
+    loadVolume( g_volume, "/home/iaomw/Public/wdas_cloud_eighth.nvdb" );
     buildVolumeAccel( g_volume_accel, g_volume, state.context );
 }
 

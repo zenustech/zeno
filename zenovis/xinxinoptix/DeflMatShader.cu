@@ -424,6 +424,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
+    
     }
     else
     {
