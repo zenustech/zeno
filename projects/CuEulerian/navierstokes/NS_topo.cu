@@ -322,7 +322,7 @@ struct ZSMaintainSparseGrid : INode {
         if (nbsOffset > numMarked) {
             spg.resizeGrid(nbsOffset);
             newNbs = nbsOffset - numMarked;
-            zs::memset(mem_device, (void *)spg._grid.tileOffset(numMarked), 0, (std::size_t)newNbs * spg.block_size);
+            zs::memset(mem_device, (void *)spg._grid.tileOffset(numMarked), 0, (std::size_t)newNbs * spg._grid.tileBytes());
 
             if (tag == "sdf") {
                 // special treatment for "sdf" property
