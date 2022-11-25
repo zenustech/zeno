@@ -50,14 +50,19 @@ namespace zeno {
             using vec2i = zs::vec<int, 2>;
             using vec3i = zs::vec<int, 3>;
             sfs.append_channels(pol, {{"ff_inds", 3}, {"fe_inds", 3}, {"fp_inds", 3}});
-            ses.append_channels(pol, {{"fe_inds", 2}});
+            ses.append_channels(pol, {{"fe_inds", 2},{"ep_inds",2}});
 
             fmt::print("sfs size: {}, ses size: {}, svs size: {}\n", sfs.size(), ses.size(), svs.size());
 
             bcht<vec2i, int, true, universal_hash<vec2i>, 32> etab{sfs.get_allocator(), sfs.size() * 3};
             Vector<int> sfi{sfs.get_allocator(), sfs.size() * 3}; // surftri indices corresponding to edges in the table
-            /// @brief compute ff neighbors
+
+            bcht<int,int,true, universal_hash<int>,32> ptab(svs.get_allocator(),svs.size());
+            Vector<int> spi{svs.get_allocator(),svs.size()};
+
+            /// @brief compute hash table
             {
+                // compute directed edge to triangle idx hash table
                 pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
                                         sfi = proxy<space>(sfi)] __device__(int ti) mutable {
                     auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
@@ -72,6 +77,37 @@ namespace zeno {
                                 tri[i], tri[(i + 1) % 3], oti, otri[0], otri[1], otri[2], ti, tri[0], tri[1], tri[2]);
                         }
                 });
+                // // compute surface point to vert hash table
+                // pol(range(svs.size()),[ptab = proxy<space>(ptab),svs = proxy<space>({},svs),
+                //     spi = proxy<space>(spi)] __device__(int pi) mutable {
+                //         auto pidx = reinterpret_bits<int>(svs("inds",pi));
+                //         if(auto no = ptab.insert(pidx); no >= 0)
+                //             spi[no] = pi;
+                //         else {
+                //             auto opi = spi[ptab.query(pidx)];
+                //             auto opidx = reinterpret_bits<int>(svs("inds",opi));
+                //             printf("the same surface point <%d> has been inserted twice! origin svi %d <%d>, cur "
+                //                 "%d <%d>\n",
+                //                 pidx,opi,opidx,pi,pidx);
+                //         }
+                // });
+            }
+            /// @brief compute ep neighbors
+            // {
+            //     pol(range(ses.size()),[ptab = proxy<space>(ptab),ses = proxy<space>({},ses),
+            //         svs = proxy<space>({},svs),spi = proxy<space>(spi)] __device__(int ei) mutable {
+            //             auto neighpIds = vec2i::uniform(-1);
+            //             auto edge = ses.pack(dim_c<2>,"inds",ei).reinterpret_bits(int_c);
+            //             for(int i = 0;i != 2;++i)
+            //                 if(auto no = ptab.query(edge[i]);no >= 0) {
+            //                     neighpIds[i] = spi[no];
+            //                 }
+            //             ses.tuple(dim_c<2>,"ep_inds",ei) = neighpIds.reinterpret_bits(float_c);
+            //     });
+            // } 
+
+            /// @brief compute ff neighbors
+            {
                 pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
                                         sfi = proxy<space>(sfi)] __device__(int ti) mutable {
                     auto neighborIds = vec3i::uniform(-1);
@@ -202,14 +238,14 @@ namespace zeno {
             //             printf("line[%d] : %d %d\n",(int)li,(int)inds[0],(int)inds[1]);
             // });
 
-#if 1
+#if 0
 
             auto bvh_thickness = (T)3 * compute_average_edge_length(cudaExec,verts,"x",tris);
 
             // std::cout << "bvh_thickness : " << bvh_thickness << std::endl；
 
             tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3},{"fp_inds",3}});
-            lines.append_channels(cudaExec,{{"fe_inds",2}});
+            lines.append_channels(cudaExec,{{"fe_inds",2},{"ep_inds",2}});
             if(!compute_ff_neigh_topo(cudaExec,verts,tris,"ff_inds",bvh_thickness))
                 throw std::runtime_error("ZSInitTopoConnect::compute_face_neigh_topo fail");
             if(!compute_fe_neigh_topo(cudaExec,verts,lines,tris,"fe_inds",bvh_thickness))

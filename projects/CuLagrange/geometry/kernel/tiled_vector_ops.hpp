@@ -69,7 +69,7 @@ namespace zeno { namespace TILEVEC_OPS {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         pol(range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),tag,value] __device__(int vi) mutable {
+            [vtemp = proxy<space>({},vtemp,tag),tag,value] __device__(int vi) mutable {
                 vtemp.template tuple<space_dim>(tag,vi) = value;
         });
     }
@@ -81,7 +81,7 @@ namespace zeno { namespace TILEVEC_OPS {
         constexpr auto space = execspace_e::cuda;
         int space_dim = vtemp.getChannelSize(tag);
         pol(range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),tag,value,space_dim] __device__(int vi) mutable {
+            [vtemp = proxy<space>({},vtemp,tag),tag,value,space_dim] __device__(int vi) mutable {
                 for(int i= 0;i != space_dim;++i)
                     vtemp(tag,i,vi) = value;
         });

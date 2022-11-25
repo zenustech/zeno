@@ -13,6 +13,8 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 
+#include "kernel/topology.hpp"
+
 namespace zeno {
 
 struct BuildSurfaceHalfEdgeStructure : zeno::INode {
@@ -40,6 +42,9 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				tris.size() * 3,zs::memsrc_e::device,0);
 
 			auto cudaPol = zs::cuda_exec();
+
+#if 0
+
 			constexpr auto space = zs::execspace_e::cuda;
 
 			TILEVEC_OPS::fill(cudaPol,halfEdge,"to_vertex",reinterpret_bits<T>((int)-1));
@@ -114,10 +119,111 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 						}						
 					}
 			});
+#else
+			if(build_surf_half_edge(cudaPol,tris,lines,points,halfEdge))
+				fmt::print(fg(fmt::color::red),"fail building surf half edge\n");
+#endif
 
+			set_output("zsparticles",zsparticles);
 			// zsparticles->setMeta("de2fi",std::move())
 	}
 
 };
+
+
+ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{{"zsparticles"}},
+							{{"zsparticles"}},
+							{},
+							{"ZSGeometry"}});
+
+
+// visualize the one-ring points, lines, and tris
+struct VisualizeOneRingNeighbors : zeno::INode {
+	using T = float;
+	virtual void apply() override {
+		using namespace zs;
+		auto zsparticles = get_input<ZenoParticles>("zsparticles");
+		constexpr int MAX_NEIGHS = 8;
+
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
+			throw std::runtime_error("the input zsparticles has no surface tris");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+			throw std::runtime_error("the input zsparticles has no surface lines");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag))
+			throw std::runtime_error("the input zsparticles has no surface lines");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfHalfEdgeTag))
+			throw std::runtime_error("the input zsparticles has no half edges");
+
+		const auto& verts = zsparticles->getParticles();
+		const auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
+		const auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+		const auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+		const auto& half_edges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+
+
+		auto cudaPol = zs::cuda_exec();
+		constexpr auto space = zs::execspace_e::cuda;
+
+		auto one_ring_points = typename ZenoParticles::particles_t({{"x",3},{"active",1}},points.size() * (MAX_NEIGHS + 1),zs::memsrc_e::device,0);
+		TILEVEC_OPS::fill(cudaPol,one_ring_points,"active",(T)0);
+
+		// auto one_ring_lines = typename ZenoParticles::particles_t({{"x",3},{"active",1}},points.size() * (MAX_NEIGHS + 1));
+		// auto one_ring_tris = typename ZenoParticles::particles_t({{"x",3},{"active",1}},points.size() * (MAX_NEIGHS + 1));
+
+		cudaPol(zs::range(points.size()),[
+				verts = proxy<space>({},verts),
+				one_ring_points = proxy<space>({},one_ring_points),
+				// one_ring_lines = proxy<space>({},one_ring_lines),
+				// one_ring_tris = proxy<space>({},one_ring_tris),
+				points = proxy<space>({},points),
+				lines = proxy<space>({},lines),
+				tris = proxy<space>({},tris),
+				half_edges = proxy<space>({},half_edges)] ZS_LAMBDA(int pi) mutable {
+			// calculate one-ring neighbored points
+			one_ring_points("active",pi * MAX_NEIGHS + 0) = (T)1.0;
+			auto pidx = reinterpret_bits<int>(points("inds",pi));
+			one_ring_points.tuple(dim_c<3>,"x",pi * MAX_NEIGHS + 0) = verts.pack(dim_c<3>,"x",pidx);
+
+			auto he_idx = reinterpret_bits<int>(points("he_inds",pi));
+
+			zs::vec<int,MAX_NEIGHS> pneighs = get_one_ring_neigh_points<MAX_NEIGHS>(he_idx,half_edges);
+			for(int i = 0;i != MAX_NEIGHS;++i){
+				if(pneighs[i] < 0)
+					break;
+				auto npidx = reinterpret_bits<int>(points("inds",pneighs[i]));
+				one_ring_points("active",pi * MAX_NEIGHS + i + 1) = (T)1.0;
+				one_ring_points.tuple(dim_c<3>,"x",pi * MAX_NEIGHS + i + 1) = verts.pack(dim_c<3>,"x",npidx);
+			}
+
+		});
+
+		one_ring_points = one_ring_points.clone({zs::memsrc_e::host});
+		auto pn_prim = std::make_shared<zeno::PrimitiveObject>();
+		auto& pn_verts = pn_prim->verts;
+		auto& pn_lines = pn_prim->lines;
+
+		pn_verts.resize(points.size() * (MAX_NEIGHS + 1));
+		pn_lines.resize(points.size() * MAX_NEIGHS);
+		constexpr auto omp_space = execspace_e::openmp;
+		auto ompPol = omp_exec();    
+
+		ompPol(zs::range(points.size()),
+			[one_ring_points = proxy<omp_space>({},one_ring_points),&pn_verts,&pn_lines] (int pi) {
+				for(int i = 0;i != MAX_NEIGHS + 1;++i)
+					pn_verts[pi * (MAX_NEIGHS + 1) + i] = one_ring_points.pack(dim_c<3>,"x",pi * (MAX_NEIGHS + 1) + i).to_array();
+				for(int i = 0;i != MAX_NEIGHS;++i)
+					pn_lines[pi * MAX_NEIGHS + i] = zeno::vec2i(pi * (MAX_NEIGHS + 1) + 0,pi * (MAX_NEIGHS + 1) + i + 1);
+		});  
+
+		set_output("prim",std::move(pn_prim));
+	}
+};
+
+
+ZENDEFNODE(VisualizeOneRingNeighbors, {{{"zsparticles"}},
+							{{"prim"}},
+							{},
+							{"ZSGeometry"}});
+
 
 };
