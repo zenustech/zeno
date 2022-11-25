@@ -39,6 +39,7 @@ struct FastClothSystem : IObject {
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
     inline static const char s_meanMassTag[] = "MeanMass";
+    inline static const char s_totalVolumeTag[] = "TotalVolume";
 
     // cloth, boundary
     struct PrimitiveHandle {
@@ -50,6 +51,7 @@ struct FastClothSystem : IObject {
 
         T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, zs::Vector<T> &temp) const;
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
+        T totalVolume(zs::CudaExecutionPolicy &pol) const;
 
         auto getModelLameParams() const {
             T mu = 0, lam = 0;
@@ -118,11 +120,12 @@ struct FastClothSystem : IObject {
 
     bool hasBoundary() const noexcept {
         if (coVerts != nullptr)
-        return coVerts->size() != 0;
+            return coVerts->size() != 0;
         return false;
     }
     T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary = true);
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
+    T totalVolume(zs::CudaExecutionPolicy &pol);
     auto largestLameParams() const {
         T mu = 0, lam = 0;
         for (auto &&primHandle : prims) {
@@ -141,9 +144,9 @@ struct FastClothSystem : IObject {
     }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges, tiles_t *coEles, T dt,
-                std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat,
-                T gravity);
+    FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
+                    tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
+                    int PNCap, int CGCap, T dHat, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
 
@@ -253,7 +256,6 @@ struct FastClothSystem : IObject {
     ///     soft phase
     ///     hard phase
 
-
     ///
 
     std::vector<PrimitiveHandle> prims;
@@ -272,7 +274,7 @@ struct FastClothSystem : IObject {
     zs::Vector<pair_t> PP, E;
     zs::Vector<int> nPP, nE;
     tiles_t tempPP, tempE;
-    
+
 #if 0
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     zs::Vector<pair4_t> PT;
@@ -290,7 +292,7 @@ struct FastClothSystem : IObject {
     // boundary contacts
     // auxiliary data (spatial acceleration)
     tiles_t svInds, seInds, stInds;
-    bvh_t svBvh; // for simulated objects
+    bvh_t svBvh;    // for simulated objects
     bvh_t bouSvBvh; // for collision objects
     bvfront_t selfSvFront, boundarySvFront;
     bool frontManageRequired;
