@@ -21,6 +21,8 @@
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
 #include "raiicuda.h"
+#include "zeno/utils/string.h"
+#include "tinyexr.h"
 
 //#include <GLFW/glfw3.h>
 
@@ -336,8 +338,30 @@ inline void addTexture(std::string path)
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
-    zeno::log_info("is hdr: {}", stbi_is_hdr(path.c_str()));
-    if (stbi_is_hdr(path.c_str())) {
+
+    if (zeno::ends_with(path, ".exr", false)) {
+        float* rgba;
+        const char* err;
+        int ret = LoadEXR(&rgba, &nx, &ny, path.c_str(), &err);
+        if (ret != 0) {
+            zeno::log_error("load exr: {}", err);
+            return;
+        }
+        nc = 4;
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        for (auto i = 0; i < ny / 2; i++) {
+            for (auto x = 0; x < nx * 4; x++) {
+                auto index1 = i * (nx * 4) + x;
+                auto index2 = (ny - 1 - i) * (nx * 4) + x;
+                std::swap(rgba[index1], rgba[index2]);
+            }
+        }
+        assert(rgba);
+        g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
+        free(rgba);
+    }
+    else if (stbi_is_hdr(path.c_str())) {
         float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading texture failed:{}", path);
