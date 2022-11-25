@@ -14,11 +14,11 @@ namespace zeno {
 void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    nPP.setVal(0);
 
     zs::CppTimer timer;
     timer.tick();
     if (enableContact) {
+        nPP.setVal(0);
         if (enableContactSelf) {
             auto pBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
             svBvh.refit(pol, pBvs);
@@ -35,6 +35,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
         frontManageRequired = false;
     }
     /// @note check upper-bound constraints for cloth edges
+    nE.setVal(0);
     for (auto &primHandle : prims) {
         auto &ses = primHandle.getSurfEdges();
         pol(Collapse{ses.size()},

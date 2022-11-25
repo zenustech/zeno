@@ -335,11 +335,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                 });
         }
 
-    /// collision status
-    if (enableContact) {
-        nPP.setVal(0);
-    }
-
+    /// spatial accel initialization
     frontManageRequired = true;
 #define init_front(sInds, front)                                                                           \
     {                                                                                                      \
