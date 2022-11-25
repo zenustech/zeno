@@ -95,6 +95,7 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
     data[ROLE_CUSTOMUI_PANEL] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
+    data[ROLE_CUSTOMUI_NODE] = QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
 
     return data;
 }

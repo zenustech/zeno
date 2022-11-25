@@ -147,9 +147,20 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			bool bValid = UiHelper::validateVariant(deflVal, sockType);
 			if (!inSock.info.links.isEmpty())
 			{
-				for (const EdgeInfo& link : inSock.info.links)
+				if (inSock.info.links.size() == 1)
 				{
+					//legacy link.
+					const EdgeInfo& link = inSock.info.links[0];
 					AddVariantList({ link.outputNode, link.outputSock, deflVal }, sockType, writer, true);
+				}
+				else
+				{
+					writer.StartArray();
+					for (const EdgeInfo& link : inSock.info.links)
+					{
+						AddVariantList({ link.outputNode, link.outputSock, deflVal }, sockType, writer, true);
+					}
+					writer.EndArray();
 				}
 			}
 			else
@@ -262,7 +273,14 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	{
 		writer.Key("customui-panel");
 		zenoio::exportCustomUI(viewParams, writer);
-		//viewParams->exportJson(writer);
+	}
+
+	//custom ui for node
+	ViewParamModel* viewNodeParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_NODE]);
+	if (viewNodeParams && viewNodeParams->isDirty())
+	{
+		writer.Key("customui-node");
+		zenoio::exportCustomUI(viewNodeParams, writer);
 	}
 }
 

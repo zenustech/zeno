@@ -43,6 +43,11 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
             m_pItem->m_info.name = topLeft.data(ROLE_PARAM_NAME).toString();
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, { ROLE_VPARAM_NAME });
         }
+        if (roles.contains(ROLE_PARAM_CTRL))
+        {
+            PARAM_CONTROL ctrl = (PARAM_CONTROL)topLeft.data(ROLE_PARAM_CTRL).toInt();
+            m_pItem->m_info.control = ctrl;
+        }
         emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
     }
 }
@@ -163,6 +168,7 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.name)
                 return;
             m_info.name = value.toString();
+            qobject_cast<ViewParamModel*>(model())->markDirty();
             break;
         }
         case ROLE_PARAM_NAME:
@@ -184,6 +190,12 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.control)
                 return;
             m_info.control = (PARAM_CONTROL)value.toInt();
+            if (m_index.isValid())
+            {
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                pModel->setData(m_index, value, role);
+            }
+            qobject_cast<ViewParamModel*>(model())->markDirty();
             return;
         }
         case ROLE_PARAM_VALUE:
@@ -197,6 +209,7 @@ void VParamItem::setData(const QVariant& value, int role)
             else
             {
                 m_info.value = value;
+                qobject_cast<ViewParamModel*>(model())->markDirty();
             }
         }
         case ROLE_VAPRAM_EDITTABLE:

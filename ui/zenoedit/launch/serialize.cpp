@@ -92,13 +92,38 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                for (EdgeInfo link : input.info.links)
+                if (input.info.control == CONTROL_DICTPANEL)
                 {
-                    QString outSock = link.outputSock;
-                    QString outId = link.outputNode;
-                    const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
-                    outId = nameMangling(graphIdPrefix, outId);
-                    AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                    if (input.info.type == "list")
+                    {
+                        QString _ident = UiHelper::generateUuid("MakeList");
+                        _ident = nameMangling(graphIdPrefix, _ident);
+                        AddStringList({ "addNode", "MakeList", _ident }, writer);
+                        for (int i = 0; i < input.info.links.size(); i++)
+                        {
+                            const EdgeInfo& link = input.info.links[i];
+                            QString outSock = link.outputSock;
+                            QString outId = nameMangling(graphIdPrefix, link.outputNode);
+                            QString _inName = QString("obj%1").arg(i);
+                            AddStringList({ "bindNodeInput", _ident, _inName, outId, outSock }, writer);
+                        }
+                        AddStringList({ "bindNodeInput", ident, inputName, _ident, "list" }, writer);
+                    }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    for (EdgeInfo link : input.info.links)
+                    {
+                        QString outSock = link.outputSock;
+                        QString outId = link.outputNode;
+                        const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
+                        outId = nameMangling(graphIdPrefix, outId);
+                        AddStringList({ "bindNodeInput", ident, inputName, outId, outSock }, writer);
+                    }
                 }
             }
         }

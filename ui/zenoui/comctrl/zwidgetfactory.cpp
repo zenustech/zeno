@@ -326,6 +326,10 @@ namespace zenoui
                 });
                 return pSlider;
             }
+            case CONTROL_DICTPANEL:
+            {
+                //todo
+            }
             default:
                 return nullptr;
         }

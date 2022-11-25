@@ -96,6 +96,7 @@ class ZenoSocketItem;
 
 class ZSocketGroupItem : public ZSimpleTextItem
 {
+    typedef ZSimpleTextItem _base;
 public:
     explicit ZSocketGroupItem(
         const QPersistentModelIndex& viewSockIdx,

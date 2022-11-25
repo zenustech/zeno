@@ -495,6 +495,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     bool bInput = false;
     pSocketItem->getSocketInfo(bInput, nodeid, sockName);
 
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
     QPointF socketPos = pSocketItem->center();
 
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
@@ -502,7 +503,8 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     ZASSERT_EXIT(pGraphsModel);
 
     PARAM_LINKS linkIndice = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-    if (bInput && !linkIndice.isEmpty())
+    bool bDisconnetLink = ctrl != CONTROL_DICTPANEL && bInput && !linkIndice.isEmpty();
+    if (bDisconnetLink)
     {
         //todo: multiple link
         QPersistentModelIndex linkIdx = linkIndice[0];
@@ -663,6 +665,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 toSockIdx = targetSock->paramIndex();
             }
 
+            PARAM_CONTROL toSockCtrl = (PARAM_CONTROL)toSockIdx.data(ROLE_PARAM_CTRL).toInt();
+
             const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
             if (oldLink.isValid())
             {
@@ -684,7 +688,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 pGraphsModel->removeLink(oldLink, m_subgIdx, true);
 
             //remove the edge in inNode:inSock, if exists.
-            if (bTargetInput)
+            if (bTargetInput && toSockCtrl != CONTROL_DICTPANEL)
             {
                 QPersistentModelIndex linkIdx;
                 QString sockName;
