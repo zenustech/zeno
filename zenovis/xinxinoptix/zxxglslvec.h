@@ -985,3 +985,9 @@ __forceinline__ __device__ vec3 operator*(mat3 a, vec3 b)
 //__forceinline__ __device__ float4 glsltocuda(vec4 a) {
     //return make_float4(a.x, a.y, a.z, a.w);
 //}
+
+__forceinline__ __device__ vec3 normalmap(vec3 norm, float scale)
+{
+    return norm * 2 - 1;
+}
+
