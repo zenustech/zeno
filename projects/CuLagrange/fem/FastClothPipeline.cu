@@ -381,7 +381,71 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple(dim_c<3>, "yn", i) = yt + dt * vt;
         vtemp.tuple(dim_c<3>, "xn", i) = yt;
     });
-    // x0
+    // xinit
+    {
+        /// @brief spatially smooth initial displacement
+        auto spg = typename ZenoSparseGrid::spg_t{vtemp.get_allocator(), {{"w", 1}, {"dir", 3}}, (std::size_t)coOffset};
+        spg._transform.preScale(zs::vec<T, 3>::uniform(L)); // using L as voxel size
+        spg.resizePartition(pol, coOffset * 8);
+        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+            using spg_t = RM_CVREF_T(spgv);
+            auto xt = vtemp.pack(dim_c<3>, "xn", i);
+            auto arena = spgv.wArena(xt);
+            for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto bcoord = coord - (coord & (spg_t::side_length - 1));
+                spgv._table.insert(bcoord);
+            }
+        });
+        const auto nbs = spg.numBlocks();
+        spg.resizeGrid(nbs);
+        spg._grid.reset(0);
+
+        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+            auto xt = vtemp.pack(dim_c<3>, "xn", pi);
+            auto dir = vtemp.pack(dim_c<3>, "yn", pi) - xt;
+            auto arena = spgv.wArena(xt);
+            for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto [bno, cno] = spgv.decomposeCoord(coord);
+                auto W = arena.weight(loc);
+#pragma unroll
+                for (int d = 0; d < 3; ++d)
+                    atomic_add(exec_cuda, &spgv("dir", d, bno, cno), W * dir(d));
+
+                atomic_add(exec_cuda, &spgv("w", bno, cno), W);
+            }
+        });
+        pol(range((std::size_t)nbs * spg.block_size),
+            [grid = proxy<space>({}, spg._grid)] __device__(std::size_t cellno) mutable {
+                using T = typename RM_CVREF_T(grid)::value_type;
+                if (grid("w", cellno) > limits<T>::epsilon())
+                    grid.tuple(dim_c<3>, "dir", cellno) = grid.pack(dim_c<3>, "dir", cellno) / grid("w", cellno);
+            });
+        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+            using T = typename RM_CVREF_T(spgv)::value_type;
+            using vec3 = zs::vec<T, 3>;
+            auto xt = vtemp.pack(dim_c<3>, "xn", pi);
+            auto dir = vec3::zeros();
+            auto arena = spgv.wArena(xt);
+            for (auto loc : arena.range()) {
+                auto coord = arena.coord(loc);
+                auto [bno, cno] = spgv.decomposeCoord(coord);
+                auto W = arena.weight(loc);
+                dir += W * spgv._grid.pack(dim_c<3>, "dir", bno, cno);
+            }
+            vtemp.tuple(dim_c<3>, "dir", pi) = dir;
+        });
+    }
+    {
+        for (int i = 0; i != IInit; ++i) {
+            // collisionStep(pol);
+        }
+    }
+
+    /// @brief collect pairs only once depending on x^init
+    /// @note ref: Sec 4.3.2
+    findConstraints(pol, dHat);
 
     /// optimizer
     for (int k = 0; k != K; ++k) {
@@ -459,7 +523,6 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 
         // PRECOMPUTE
-        findConstraints(pol, dHat);
         computeConstraintGradients(pol);
         // soft phase
         // hard phase
