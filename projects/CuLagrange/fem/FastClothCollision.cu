@@ -109,7 +109,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief soft phase for constraints
     ///
-    for (int i = 0; i != ISoft; ++i) {
+    for (int l = 0; l != ISoft; ++l) {
         softPhase(pol);
     }
 

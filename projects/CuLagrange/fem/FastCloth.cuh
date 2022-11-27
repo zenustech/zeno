@@ -172,7 +172,7 @@ struct FastClothSystem : IObject {
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void subStepping(zs::CudaExecutionPolicy &pol);
     // dynamics
-    void computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+    void computeInertialAndCouplingAndForceGradient(zs::CudaExecutionPolicy &cudaPol);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
     // boundary constraint
     void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol);

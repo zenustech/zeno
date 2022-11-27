@@ -98,21 +98,21 @@ typename FastClothSystem::T FastClothSystem::boundaryConstraintResidual(zs::Cuda
     return ret < 1e-6 ? 0 : ret;
 }
 
-void FastClothSystem::computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol) {
+void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecutionPolicy &cudaPol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    // inertial
-    cudaPol(zs::range(coOffset),
-            [vtemp = proxy<space>({}, vtemp), dt = dt, projectDBC = projectDBC] ZS_LAMBDA(int i) mutable {
-                auto m = vtemp("ws", i);
-                vtemp.tuple<3>("grad", i) =
-                    vtemp.pack<3>("grad", i) - m * (vtemp.pack<3>("yn", i) - vtemp.pack<3>("ytilde", i));
+    /// @brief inertial and coupling
+    cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt, sigma = sigma] ZS_LAMBDA(int i) mutable {
+        auto m = vtemp("ws", i);
+        auto yn = vtemp.pack<3>("yn", i);
+        vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) - m * (yn - vtemp.pack<3>("ytilde", i)) -
+                                    m * sigma * (yn - vtemp.pack<3>("xn", i));
 
-                // prepare preconditioner
-                for (int d = 0; d != 3; ++d)
-                    vtemp("P", d * 3 + d, i) += m;
-            });
-    // extforce (only grad modified)
+        // prepare preconditioner
+        for (int d = 0; d != 3; ++d)
+            vtemp("P", d * 3 + d, i) += ((m + 1) * sigma);
+    });
+    /// @brief extforce (only grad modified)
     for (auto &primHandle : prims) {
         if (primHandle.isBoundary()) // skip soft boundary
             continue;
@@ -498,7 +498,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
             vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
         });
-        computeInertialAndGravityGradientAndHessian(pol);
+        computeInertialAndCouplingAndForceGradient(pol);
         computeElasticGradientAndHessian(pol);
 
         // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
@@ -546,7 +546,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         });
 
         /// collision solver
-        // Xinit
+        /// @brief Xinit
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
             auto xk = vtemp.pack(dim_c<3>, "xn", i);
             auto ykp1 = vtemp.pack(dim_c<3>, "yn", i);
@@ -559,6 +559,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
         // x^{k+1}
         findConstraints(pol, dHat);
+        
         /// @brief backup xn for potential hard phase
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);
