@@ -39,18 +39,20 @@ void FastClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStri
     auto wsOffset = vtemp.getPropertyOffset("ws");
     auto dxOffset = vtemp.getPropertyOffset(dxTag);
     auto bOffset = vtemp.getPropertyOffset(bTag);
+
+    /// @brief initialize
     pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), bOffset] ZS_LAMBDA(int vi) mutable {
         vtemp.tuple(dim_c<3>, bOffset, vi) = vec3::zeros();
     });
-    // inertial
+    /// @brief inertial and coupling
     pol(zs::range(coOffset),
-        [execTag, vtemp = proxy<space>(vtemp), wsOffset, dxOffset, bOffset] __device__(int i) mutable {
+        [execTag, vtemp = proxy<space>(vtemp), sigma = sigma, wsOffset, dxOffset, bOffset] __device__(int i) mutable {
             auto m = vtemp(wsOffset, i);
-            auto dx = vtemp.pack(dim_c<3>, dxOffset, i) * m;
+            auto dx = vtemp.pack(dim_c<3>, dxOffset, i) * (m + 1) * sigma;
             for (int d = 0; d != 3; ++d)
                 atomic_add(execTag, &vtemp(bOffset + d, i), dx(d));
         });
-    // elasticity
+    /// @brief elasticity
     for (auto &primHandle : prims) {
         auto &eles = primHandle.getEles();
         // elasticity
@@ -179,6 +181,7 @@ void FastClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStri
                         atomic_add(exec_cuda, &vtemp(bOffset + MRid % 3, inds[MRid / 3]), rdata);
                 });
     }
+    /// @brief hard binding constraint
     for (auto &primHandle : auxPrims) {
         auto &eles = primHandle.getEles();
         // soft bindings
@@ -210,7 +213,7 @@ void FastClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStri
                 });
         }
     }
-    // boundary / constraint
+    /// @brief boundary constraint
     if (!projectDBC) {
         pol(range(numBouDofs), [execTag, vtemp = proxy<space>(vtemp), dxOffset, bOffset, wsOffset, coOffset = coOffset,
                                 boundaryKappa = boundaryKappa] ZS_LAMBDA(int vi) mutable {
