@@ -97,7 +97,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     pol.profile(false);
 }
 
-void FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol) {
+bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
@@ -105,11 +105,6 @@ void FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol) {
     npp = npp_;
     ne = ne_;
     fmt::print("collision stepping [pp, edge constraints]: {}, {}", npp, ne);
-
-    /// @brief backup xn for potential hard phase
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-        vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);
-    });
 
     ///
     /// @brief soft phase for constraints
@@ -122,7 +117,10 @@ void FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol) {
     /// @brief check whether constraints satisfied
     ///
     if (constraintSatisfied(pol))
-        return;
+        return true;
+
+    if (!enableHardPhase)
+        return false;
 
     ///
     /// @brief hard phase for constraints
@@ -137,8 +135,7 @@ void FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol) {
         hardPhase(pol);
     }
 
-    if (constraintSatisfied(pol))
-        throw std::runtime_error("collision step failure!\n");
+    return constraintSatisfied(pol);
 }
 void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
@@ -351,16 +348,15 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
     if (auto v = std::sqrt((B + Btight) * (B + Btight) - B * B) / displacement; v < alpha)
         alpha = v;
 
-    /// @note "xk" is being used for backtracking here
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-        vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);
+        vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
     });
     auto E0 = constraintEnergy(pol); // "xn"
     auto c1m = armijoParam * dot(pol, "dir", "dir");
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
     do {
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i) + vtemp.pack(dim_c<3>, "dir", i);
+            vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
 
         ///
@@ -396,6 +392,7 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         auto E = constraintEnergy(pol);
         if (E <= E0 + alpha * c1m)
             break;
+        alpha /= 2;
     } while (true);
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);
 }

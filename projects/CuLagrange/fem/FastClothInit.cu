@@ -419,7 +419,8 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"temp", 3},
                         // collision dynamics
                         {"xn", 3},
-                        {"xk", 3},   // backup
+                        {"xn0", 3},  // for backtracking during hardphase
+                        {"xk", 3},   // backup before collision step
                         {"xinit", 3} // initial trial collision-free step
                     },
                     (std::size_t)numDofs};

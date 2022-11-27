@@ -446,9 +446,31 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         });
         for (int i = 0; true;) {
             findConstraints(pol, dHat);
-            collisionStep(pol);
+
+            /// @brief backup xn for potential hard phase
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);
+            });
+            /// @brief collision handling
+            bool success = false;
+            /// @note ref: sec 4.3.4
+            for (int r = 0; r != R; ++r) {
+                if (success = collisionStep(pol, false); success)
+                    break;
+            }
+            if (!success) {
+                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                    vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
+                });
+                success = collisionStep(pol, true);
+            }
+            if (!success)
+                throw std::runtime_error("collision step in initialization fails!\n");
+
             if (++i != IInit)
                 break;
+
+            /// @brief update xinit for the next initialization iteration
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
                 auto dir = vtemp.pack(dim_c<3>, "dir", i);
                 vtemp.tuple(dim_c<3>, "xinit", i) = vtemp.pack(dim_c<3>, "xinit", i) + ratio * dir;
@@ -537,7 +559,25 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
         // x^{k+1}
         findConstraints(pol, dHat);
-        collisionStep(pol);
+        /// @brief backup xn for potential hard phase
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+            vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);
+        });
+        bool success = false;
+        /// @note ref: sec 4.3.4
+        for (int r = 0; r != R; ++r) {
+            if (success = collisionStep(pol, false); success)
+                break;
+        }
+        if (!success) {
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
+            });
+            success = collisionStep(pol, true);
+        }
+        if (!success) {
+            throw std::runtime_error("collision step failure!\n");
+        }
     }
 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
