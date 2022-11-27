@@ -589,7 +589,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 struct StepClothSystem : INode {
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto A = get_input<FastClothSystem>("ZSClothSystem");
 
         auto cudaPol = zs::cuda_exec();

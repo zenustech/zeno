@@ -517,13 +517,10 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
 struct MakeClothSystem : INode {
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto zsprims = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         std::shared_ptr<ZenoParticles> zsboundary;
         if (has_input<ZenoParticles>("ZSBoundaryPrimitives"))
             zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
-
-        auto cudaPol = zs::cuda_exec();
 
         typename FastClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
         typename FastClothSystem::tiles_t *coPoints =
