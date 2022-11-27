@@ -177,7 +177,11 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     }
     if (objValue.HasMember("customui-panel"))
     {
-        _parseCustomUI(nodeid, name, objValue["customui-panel"], pAcceptor);
+        _parseCustomUI(nodeid, name, false, objValue["customui-panel"], pAcceptor);
+    }
+    if (objValue.HasMember("customui-node"))
+    {
+        _parseCustomUI(nodeid, name, true, objValue["customui-node"], pAcceptor);
     }
 
     if (objValue.HasMember("uipos"))
@@ -309,13 +313,37 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
-            QVariant defaultValue;
-            if (arr.Size() > 0 && arr[0].IsString())
-                outId = arr[0].GetString();
-            if (arr.Size() > 1 && arr[1].IsString())
-                outSock = arr[1].GetString();
-            if (arr.Size() > 2)
+            int n = arr.Size();
+            if (n == 3 && !arr[0].IsArray() && !arr[1].IsArray())
+            {
+                //legacy case, like [xxx-node, xxx-socket, defl]
+                if (arr[0].IsString())
+                    outId = arr[0].GetString();
+                if (arr[1].IsString())
+                    outSock = arr[1].GetString();
                 pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
+            }
+            else
+            {
+                //multilinks:
+                /*
+                 [xxx-node1, xxx-socket],
+                 [xxx-node2, xxx-socket],
+                 ...
+                 deflVal,
+                 */
+                const rapidjson::Value& defaultValue = arr[n - 1];
+                for (int i = 0; i < n - 1; i++)
+                {
+                    const auto& conn = arr[i];
+                    if (conn.IsArray() && conn.Size() == 2 && conn[0].IsString() && conn[1].IsString())
+                    {
+                        outId = conn[0].GetString();
+                        outSock = conn[1].GetString();
+                        pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, defaultValue, legacyDescs);
+                    }
+                }
+            }
         }
         else if (inputObj.IsNull())
         {
@@ -350,10 +378,10 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
     }
 }
 
-void ZsgReader::_parseCustomUI(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
+void ZsgReader::_parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
 {
     VPARAM_INFO invisibleRoot = zenoio::importCustomUI(jsonCutomUI);
-    pAcceptor->addCustomUI(id, invisibleRoot);
+    pAcceptor->addCustomUI(id, bNodeUI, invisibleRoot);
 }
 
 void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor)

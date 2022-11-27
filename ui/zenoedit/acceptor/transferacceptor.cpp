@@ -373,7 +373,7 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
     }
 }
 
-void TransferAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
+void TransferAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot)
 {
     //todo
 }

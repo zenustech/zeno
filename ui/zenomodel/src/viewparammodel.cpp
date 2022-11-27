@@ -340,14 +340,11 @@ void ViewParamModel::setup(const QString& customUI)
 {
     if (customUI.isEmpty())
     {
-        if (m_bNodeUI)
-            initNode();
-        else
-            initPanel();
+        initCustomUI();
     }
 }
 
-void ViewParamModel::initPanel()
+void ViewParamModel::initCustomUI()
 {
     /*default structure:
                 root
@@ -390,46 +387,9 @@ void ViewParamModel::initPanel()
     appendRow(pRoot);
 }
 
-void ViewParamModel::initNode()
-{
-    /*default structure:
-    |-- Inputs (Group)
-        -- input param1 (Item)
-        -- input param2
-        ...
-
-    |-- Params (Group)
-        -- param1 (Item)
-        -- param2 (Item)
-        ...
-
-    |- Outputs (Group)
-        - output param1 (Item)
-        - output param2 (Item)
-        ...
-    */
-    VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
-    VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
-    VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
-
-    pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-    paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-    pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-
-    appendRow(pInputsGroup);
-    appendRow(paramsGroup);
-    appendRow(pOutputsGroup);
-}
-
 void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
 {
     //clear old data
-    if (m_bNodeUI)
-    {
-        //todo.
-        return;
-    }
-
     this->clear();
 
     VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
@@ -565,33 +525,6 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
             return m_nodeIdx.data(role);
     }
     return QStandardItemModel::data(index, role);
-}
-
-QString ViewParamModel::exportXml()
-{
-    rapidxml::xml_document<> doc;
-    rapidxml::xml_node<>* node = doc.allocate_node(rapidxml::node_element, "customui");
-    doc.append_node(node);
-    if (m_bNodeUI)
-    {
-
-    }
-    else
-    {
-        node->append_attribute(doc.allocate_attribute("type", qsToString("panel")));
-        QStandardItem* pRoot = invisibleRootItem()->child(0);
-        for (int r = 0; r < pRoot->rowCount(); r++)
-        {
-            VParamItem* pRight = static_cast<VParamItem*>(pRoot->child(r));
-            auto pNode = pRight->exportXml(doc);
-            node->append_node(pNode);
-        }
-    }
-
-    std::string s;
-    print(std::back_inserter(s), doc, 0);
-    QString qsXml = QString::fromStdString(s);
-    return qsXml;
 }
 
 bool ViewParamModel::isNodeModel() const

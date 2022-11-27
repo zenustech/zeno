@@ -158,8 +158,12 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 					writer.StartArray();
 					for (const EdgeInfo& link : inSock.info.links)
 					{
-						AddVariantList({ link.outputNode, link.outputSock, deflVal }, sockType, writer, true);
+						writer.StartArray();
+						AddVariant(link.outputNode, "string", writer, true);
+						AddVariant(link.outputSock, "string", writer, true);
+						writer.EndArray();
 					}
+					AddVariant(deflVal, sockType, writer, true);
 					writer.EndArray();
 				}
 			}

@@ -63,7 +63,6 @@ public:
     QPersistentModelIndex nodeIdx() const;
     void resetParams(const VPARAM_INFO& invisibleRoot);
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QString exportXml();
     bool isNodeModel() const;
     bool isDirty() const;
     void markDirty();
@@ -74,8 +73,7 @@ public slots:
 
 private:
     void setup(const QString& customUI);
-    void initPanel();
-    void initNode();
+    void initCustomUI();
 
     const QPersistentModelIndex m_nodeIdx;
     const IGraphsModel* const m_model;

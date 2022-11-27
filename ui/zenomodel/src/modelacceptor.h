@@ -46,10 +46,9 @@ public:
 	QObject* currGraphObj() override;
 	void endInputs(const QString& id, const QString& nodeCls) override;
 	void endParams(const QString& id, const QString& nodeCls) override;
-	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
+	void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) override;
 
 private:
-
 	TIMELINE_INFO m_timeInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
 	SubGraphModel* m_currentGraph;

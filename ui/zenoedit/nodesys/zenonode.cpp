@@ -204,12 +204,19 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
     ZASSERT_EXIT(viewParams, nullptr);
 
-    QStandardItem* root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(root && root->rowCount() == 3, nullptr);
+    QStandardItem* inv_root = viewParams->invisibleRootItem();
+    ZASSERT_EXIT(inv_root && inv_root->rowCount() == 1, nullptr);
+
+    QStandardItem* root = inv_root->child(0);
+    ZASSERT_EXIT(root && root->rowCount() == 1, nullptr);
+
+    QStandardItem* tab = root->child(0);
+    ZASSERT_EXIT(tab && tab->rowCount() == 3, nullptr);
+
     //see ViewParamModel::initNode()
-    QStandardItem* inputsItem = root->child(0);
-    QStandardItem* paramsItem = root->child(1);
-    QStandardItem* outputsItem = root->child(2);
+    QStandardItem* inputsItem = tab->child(0);
+    QStandardItem* paramsItem = tab->child(1);
+    QStandardItem* outputsItem = tab->child(2);
 
     connect(viewParams, &QStandardItemModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
     connect(viewParams, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
@@ -437,47 +444,55 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
 
     if (!parent.isValid())
     {
-        QStandardItem* root = viewParams->invisibleRootItem();
-        ZASSERT_EXIT(root);
-        QStandardItem* pGroup = root->child(first);
-        if (!pGroup) return;
+        QStandardItem* _root = viewParams->invisibleRootItem();
+        ZASSERT_EXIT(_root && _root->rowCount() == 1);
 
-        const QString& groupName = pGroup->text();
-        if (groupName == "Parameters")
+        QStandardItem* pRoot = _root->child(0);
+        ZASSERT_EXIT(pRoot && pRoot->rowCount() == 1);
+
+        QStandardItem* pTab = pRoot->child(0);
+        for (int r = 0; r < pTab->rowCount(); r++)
         {
-            ZGraphicsLayout* playout = initParams(pGroup, pScene);
-            if (m_paramsLayout)
+            QStandardItem* pGroup = pTab->child(r);
+            if (!pGroup) return;
+
+            const QString& groupName = pGroup->text();
+            if (groupName == "Parameters")
             {
-                m_paramsLayout->clear();
-                m_bodyLayout->removeLayout(m_paramsLayout);
+                ZGraphicsLayout* playout = initParams(pGroup, pScene);
+                if (m_paramsLayout)
+                {
+                    m_paramsLayout->clear();
+                    m_bodyLayout->removeLayout(m_paramsLayout);
+                }
+                m_paramsLayout = playout;
+                m_bodyLayout->insertLayout(0, m_paramsLayout);
+                updateWhole();
             }
-            m_paramsLayout = playout;
-            m_bodyLayout->insertLayout(0, m_paramsLayout);
-            updateWhole();
-        }
-        else if (groupName == "In Sockets")
-        {
-            ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
-            if (m_inputsLayout)
+            else if (groupName == "In Sockets")
             {
-                m_inputsLayout->clear();
-                m_bodyLayout->removeLayout(m_inputsLayout);
+                ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
+                if (m_inputsLayout)
+                {
+                    m_inputsLayout->clear();
+                    m_bodyLayout->removeLayout(m_inputsLayout);
+                }
+                m_inputsLayout = playout;
+                m_bodyLayout->insertLayout(1, m_inputsLayout);
+                updateWhole();
             }
-            m_inputsLayout = playout;
-            m_bodyLayout->insertLayout(1, m_inputsLayout);
-            updateWhole();
-        }
-        else if (groupName == "Out Sockets")
-        {
-            ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
-            if (m_outputsLayout)
+            else if (groupName == "Out Sockets")
             {
-                m_outputsLayout->clear();
-                m_bodyLayout->removeLayout(m_outputsLayout);
+                ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
+                if (m_outputsLayout)
+                {
+                    m_outputsLayout->clear();
+                    m_bodyLayout->removeLayout(m_outputsLayout);
+                }
+                m_outputsLayout = playout;
+                m_bodyLayout->insertLayout(2, m_outputsLayout);
+                updateWhole();
             }
-            m_outputsLayout = playout;
-            m_bodyLayout->insertLayout(2, m_outputsLayout);
-            updateWhole();
         }
         return;
     }
@@ -516,8 +531,6 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
 {
     if (!parent.isValid())
     {
-        //clear all.
-        ZASSERT_EXIT(first == 0 && last == 2);  //corresponding to ViewParamModel::clone.
         //remove all component.
         m_paramsLayout->clear();
         m_inputsLayout->clear();
