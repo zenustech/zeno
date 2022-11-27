@@ -433,7 +433,10 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 auto coord = arena.coord(loc);
                 auto [bno, cno] = spgv.decomposeCoord(coord);
                 auto W = arena.weight(loc);
-                dir += W * spgv._grid.pack(dim_c<3>, "dir", bno, cno);
+                dir[0] += W * spgv("dir", 0, bno, cno);
+                dir[1] += W * spgv("dir", 1, bno, cno);
+                dir[2] += W * spgv("dir", 2, bno, cno);
+                // dir += W * spgv._grid.pack(dim_c<3>, "dir", bno, cno);
             }
             vtemp.tuple(dim_c<3>, "dir", pi) = dir;
         });
@@ -559,7 +562,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
         // x^{k+1}
         findConstraints(pol, dHat);
-        
+
         /// @brief backup xn for potential hard phase
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xk", i) = vtemp.pack(dim_c<3>, "xn", i);

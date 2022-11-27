@@ -151,10 +151,10 @@ typename FastClothSystem::T FastClothSystem::maximumSurfEdgeLength(zs::CudaExecu
         temp.resize(edges.size());
         auto &edgeLengths = temp;
         pol(Collapse{edges.size()},
-            [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts), edgeLengths = proxy<space>(edgeLengths),
+            [edges = proxy<space>({}, edges), verts = proxy<space>({}, vtemp), edgeLengths = proxy<space>(edgeLengths),
              coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
-                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
-                edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c) + coOffset;
+                edgeLengths[ei] = (verts.pack<3>("yn", inds[0]) - verts.pack<3>("yn", inds[1])).norm();
             });
         if (auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>()); tmp > maxEdgeLength)
             maxEdgeLength = tmp;
@@ -281,11 +281,11 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             });
     }
 
-    /// @brief setup collision solver parameters
-    setupCollisionParams(pol);
-
     /// @brief initialize vtemp & spatial accel
     reinitialize(pol, dt);
+
+    /// @brief setup collision solver parameters
+    setupCollisionParams(pol);
 }
 
 void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
