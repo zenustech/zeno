@@ -11,10 +11,10 @@ typename FastClothSystem::T FastClothSystem::infNorm(zs::CudaExecutionPolicy &cu
     using namespace zs;
     using T = typename FastClothSystem::T;
     constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(vtemp.size());
+    auto nwarps = count_warps(numDofs);
     temp.resize(nwarps);
-    cudaPol(range(vtemp.size()), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = vtemp.size(),
-                                  offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
+    cudaPol(range(numDofs), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = numDofs,
+                             offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
         auto v = data.pack(dim_c<3>, offset, pi);
         auto val = v.abs().max();
 
@@ -35,12 +35,12 @@ typename FastClothSystem::T FastClothSystem::dot(zs::CudaExecutionPolicy &cudaPo
     using namespace zs;
     using T = typename FastClothSystem::T;
     constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(vtemp.size());
+    auto nwarps = count_warps(numDofs);
     temp.resize(nwarps);
     temp.reset(0);
-    cudaPol(range(vtemp.size()), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = vtemp.size(),
-                                  offset0 = vtemp.getPropertyOffset(tag0),
-                                  offset1 = vtemp.getPropertyOffset(tag1)] __device__(int pi) mutable {
+    cudaPol(range(numDofs), [data = proxy<space>({}, vtemp), res = proxy<space>(temp), n = numDofs,
+                             offset0 = vtemp.getPropertyOffset(tag0),
+                             offset1 = vtemp.getPropertyOffset(tag1)] __device__(int pi) mutable {
         auto v0 = data.pack(dim_c<3>, offset0, pi);
         auto v1 = data.pack(dim_c<3>, offset1, pi);
         reduce_to(pi, n, v0.dot(v1), res[pi / 32]);
@@ -48,7 +48,7 @@ typename FastClothSystem::T FastClothSystem::dot(zs::CudaExecutionPolicy &cudaPo
     return reduce(cudaPol, temp, thrust::plus<T>{});
 }
 
-void FastClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol) {
+void FastClothSystem::computeBoundaryConstraints(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     pol(Collapse{numBouDofs}, [vtemp = proxy<space>({}, vtemp), coOffset = coOffset] __device__(int vi) mutable {
@@ -58,13 +58,13 @@ void FastClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple(dim_c<3>, "cons", vi) = x - xtarget;
     });
 }
-bool FastClothSystem::areConstraintsSatisfied(zs::CudaExecutionPolicy &pol) {
+bool FastClothSystem::areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
-    computeConstraints(pol);
-    auto res = constraintResidual(pol);
+    computeBoundaryConstraints(pol);
+    auto res = boundaryConstraintResidual(pol);
     return res < s_constraint_residual;
 }
-typename FastClothSystem::T FastClothSystem::constraintResidual(zs::CudaExecutionPolicy &pol) {
+typename FastClothSystem::T FastClothSystem::boundaryConstraintResidual(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     if (projectDBC)
@@ -370,12 +370,12 @@ void FastClothSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &
     }
 }
 
-void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
+void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// y0, x0
     // y0, x0
-    pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int i) mutable {
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int i) mutable {
         auto yt = vtemp.pack(dim_c<3>, "yn", i);
         auto vt = vtemp.pack(dim_c<3>, "vn", i);
         vtemp.tuple(dim_c<3>, "yn", i) = yt + dt * vt;
@@ -384,10 +384,10 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     // xinit
     {
         /// @brief spatially smooth initial displacement
-        auto spg = typename ZenoSparseGrid::spg_t{vtemp.get_allocator(), {{"w", 1}, {"dir", 3}}, (std::size_t)coOffset};
+        auto spg = typename ZenoSparseGrid::spg_t{vtemp.get_allocator(), {{"w", 1}, {"dir", 3}}, (std::size_t)numDofs};
         spg._transform.preScale(zs::vec<T, 3>::uniform(L)); // using L as voxel size
-        spg.resizePartition(pol, coOffset * 8);
-        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+        spg.resizePartition(pol, numDofs * 8);
+        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
             using spg_t = RM_CVREF_T(spgv);
             auto xt = vtemp.pack(dim_c<3>, "xn", i);
             auto arena = spgv.wArena(xt);
@@ -401,14 +401,15 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         spg.resizeGrid(nbs);
         spg._grid.reset(0);
 
-        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+            auto m = vtemp("ws", pi);
             auto xt = vtemp.pack(dim_c<3>, "xn", pi);
             auto dir = vtemp.pack(dim_c<3>, "yn", pi) - xt;
             auto arena = spgv.wArena(xt);
             for (auto loc : arena.range()) {
                 auto coord = arena.coord(loc);
                 auto [bno, cno] = spgv.decomposeCoord(coord);
-                auto W = arena.weight(loc);
+                auto W = arena.weight(loc) * m;
 #pragma unroll
                 for (int d = 0; d < 3; ++d)
                     atomic_add(exec_cuda, &spgv("dir", d, bno, cno), W * dir(d));
@@ -422,7 +423,7 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 if (grid("w", cellno) > limits<T>::epsilon())
                     grid.tuple(dim_c<3>, "dir", cellno) = grid.pack(dim_c<3>, "dir", cellno) / grid("w", cellno);
             });
-        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
             using T = typename RM_CVREF_T(spgv)::value_type;
             using vec3 = zs::vec<T, 3>;
             auto xt = vtemp.pack(dim_c<3>, "xn", pi);
@@ -438,8 +439,20 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
     }
     {
-        for (int i = 0; i != IInit; ++i) {
-            // collisionStep(pol);
+        const auto ratio = (T)1 / (T)IInit;
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
+            auto dir = vtemp.pack(dim_c<3>, "dir", i);
+            vtemp.tuple(dim_c<3>, "xinit", i) = vtemp.pack(dim_c<3>, "xn", i) + ratio * dir;
+        });
+        for (int i = 0; true;) {
+            findConstraints(pol, dHat);
+            collisionStep(pol);
+            if (++i != IInit)
+                break;
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
+                auto dir = vtemp.pack(dim_c<3>, "dir", i);
+                vtemp.tuple(dim_c<3>, "xinit", i) = vtemp.pack(dim_c<3>, "xinit", i) + ratio * dir;
+            });
         }
     }
 
@@ -451,8 +464,8 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     for (int k = 0; k != K; ++k) {
         // check constraints
         if (!projectDBC) {
-            computeConstraints(pol);
-            auto cr = constraintResidual(pol);
+            computeBoundaryConstraints(pol);
+            auto cr = boundaryConstraintResidual(pol);
             if (cr < s_constraint_residual) {
                 projectDBC = true;
             }
@@ -498,7 +511,7 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         cgsolve(pol);
         // CHECK PN CONDITION
         T res = infNorm(pol) / dt;
-        T cons_res = constraintResidual(pol);
+        T cons_res = boundaryConstraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
             break;
         }
@@ -506,28 +519,28 @@ void FastClothSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                             "grad residual {}\n",
                             substep, k, res, res * dt));
         // OMIT LINESEARCH
-        pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + vtemp.pack(dim_c<3>, "dir", i);
         });
 
         /// collision solver
         // Xinit
-        pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
             auto xk = vtemp.pack(dim_c<3>, "xn", i);
             auto ykp1 = vtemp.pack(dim_c<3>, "yn", i);
             auto diff = ykp1 - xk;
             T coeff = 1;
             if (auto len2 = diff.l2NormSqr(); len2 > limits<T>::epsilon() * 10)
                 coeff = zs::min(D / zs::sqrt(len2), (T)1);
-            vtemp.tuple(dim_c<3>, "xn", i) = xk + coeff * diff;
+            vtemp.tuple(dim_c<3>, "xinit", i) = xk + coeff * diff;
         });
 
-        // PRECOMPUTE
-        computeConstraintGradients(pol);
-        // soft phase
-        // hard phase
+        // x^{k+1}
+        findConstraints(pol, dHat);
+        collisionStep(pol);
     }
-    pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         auto xk = vtemp.pack(dim_c<3>, "xn", i);
         vtemp.tuple(dim_c<3>, "yn", i) = xk;
     });
@@ -549,7 +562,7 @@ struct StepClothSystem : INode {
         for (int subi = 0; subi != nSubsteps; ++subi) {
             A->advanceSubstep(cudaPol, (typename FastClothSystem::T)1 / nSubsteps);
 
-            A->newtonKrylov(cudaPol);
+            A->subStepping(cudaPol);
 
             A->updateVelocities(cudaPol);
         }

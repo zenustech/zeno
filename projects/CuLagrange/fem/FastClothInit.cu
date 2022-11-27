@@ -312,10 +312,8 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auto v = verts.pack<3>("v", i);
 
             vtemp("ws", voffset + i) = verts("m", i);
-            vtemp.tuple<3>("ytilde", voffset + i) = x + v * dt;
             vtemp.tuple<3>("yn", voffset + i) = x;
             vtemp.tuple<3>("vn", voffset + i) = v;
-            vtemp.tuple<3>("yhat", voffset + i) = x;
         });
     }
     if (hasBoundary())
@@ -328,10 +326,8 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     auto newX = x + v * dt;
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple<3>("ytilde", coOffset + i) = newX;
                     vtemp.tuple<3>("yn", coOffset + i) = x;
-                    // vtemp.tuple<3>("vn", coOffset + i) = v;
-                    // vtemp.tuple<3>("yhat", coOffset + i) = x;
+                    vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
 
@@ -404,23 +400,27 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
 
     vtemp = tiles_t{zsprims[0]->getParticles().get_allocator(),
                     {
-                        {"grad", 3},
-                        {"P", 9},
-                        {"ws", 1}, // also as constraint jacobian
+                        // boundary
+                        {"ws", 1},
                         {"cons", 3},
-
-                        {"dir", 3},
-                        {"yn", 3}, // cloth dynamics
+                        // cloth dynamics
+                        {"yn", 3},
                         {"vn", 3},
                         {"ytilde", 3},
-                        {"yhat", 3}, // initial positions at the current substep (constraint,
-                                     // extAccel)
-                        {"temp", 3},
+                        {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
+                        // linear solver
+                        {"dir", 3},
+                        {"grad", 3},
+                        {"P", 9},
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
+                        // intermediate
+                        {"temp", 3},
                         // collision dynamics
                         {"xn", 3},
+                        {"xk", 3},   // backup
+                        {"xinit", 3} // initial trial collision-free step
                     },
                     (std::size_t)numDofs};
 
@@ -444,32 +444,33 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
 
     projectDBC = false;
     pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
-        auto xn = vtemp.pack(dim_c<3>, "xn", vi);
-        vtemp.tuple(dim_c<3>, "yhat", vi) = xn;
-        auto newX = xn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
+        auto yn = vtemp.pack(dim_c<3>, "yn", vi);
+        vtemp.tuple(dim_c<3>, "yhat", vi) = yn;
+        auto newX = yn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
         vtemp.tuple(dim_c<3>, "ytilde", vi) = newX;
     });
     if (hasBoundary())
         if (auto coSize = coVerts->size(); coSize)
             pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
                                    coOffset = coOffset, dt = dt] __device__(int i) mutable {
-                auto xn = vtemp.pack(dim_c<3>, "xn", coOffset + i);
-                vtemp.tuple(dim_c<3>, "yhat", coOffset + i) = xn;
-                auto newX = xn + coverts.pack(dim_c<3>, "v", i) * dt;
+                auto yn = vtemp.pack(dim_c<3>, "yn", coOffset + i);
+                vtemp.tuple(dim_c<3>, "yhat", coOffset + i) = yn;
+                auto newX = yn + coverts.pack(dim_c<3>, "v", i) * dt;
                 vtemp.tuple(dim_c<3>, "ytilde", coOffset + i) = newX;
             });
+
     for (auto &primHandle : auxPrims) {
-        /// @note hard constraint
+        /// @note hard binding
         if (primHandle.category == ZenoParticles::category_e::tracker) {
             const auto &eles = primHandle.getEles();
-            pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-                                        framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
-                auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
-                // retrieve motion from the associated boundary vert
-                auto deltaX = vtemp.pack(dim_c<3>, "ytilde", inds[1]) - vtemp.pack(dim_c<3>, "yhat", inds[1]);
-                auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
-                vtemp.tuple(dim_c<3>, "ytilde", inds[0]) = xn + deltaX;
-            });
+            pol(Collapse(eles.size()),
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
+                    auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                    // retrieve motion from the associated boundary vert
+                    auto deltaX = vtemp.pack(dim_c<3>, "ytilde", inds[1]) - vtemp.pack(dim_c<3>, "yhat", inds[1]);
+                    auto yn = vtemp.pack(dim_c<3>, "yn", inds[0]);
+                    vtemp.tuple(dim_c<3>, "ytilde", inds[0]) = yn + deltaX;
+                });
         }
     }
 }
@@ -478,7 +479,7 @@ void FastClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
-        auto newX = vtemp.pack<3>("xn", vi);
+        auto newX = vtemp.pack<3>("yn", vi);
         auto dv = (newX - vtemp.pack<3>("ytilde", vi)) / dt;
         auto vn = vtemp.pack<3>("vn", vi);
         vn += dv;
@@ -497,7 +498,7 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
         pol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
              asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
-                verts.tuple<3>("x", vi) = vtemp.pack<3>("xn", vOffset + vi);
+                verts.tuple<3>("x", vi) = vtemp.pack<3>("yn", vOffset + vi);
                 if (!asBoundary)
                     verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
             });
@@ -506,7 +507,7 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
         pol(Collapse(coVerts->size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<tiles_t *>(coVerts)),
              coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
-                verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "xn", coOffset + vi);
+                verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "yn", coOffset + vi);
                 // no need to update v here. positions are moved accordingly
                 // also, boundary velocies are set elsewhere
             });
