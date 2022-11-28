@@ -687,6 +687,14 @@ extern "C" __global__ void __closesthit__radiance()
         ior = 1;
     }
 
+    if(prd->is_test_ray==true)
+    {
+        prd->t1 = optixGetRayTmax();
+        prd->volumeHitSurface = true;
+        return;
+    }
+    prd->is_test_ray = false;
+    prd->volumeHitSurface = false;
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
     if(isLight==1)
@@ -885,7 +893,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
     float pl = rnd(prd->seed);
-    int lidx = GetLightIndex(pl, params.lights, params.num_lights);
+    //int lidx = GetLightIndex(pl, params.lights, params.num_lights);
     float sum = 0.0f;
     for(int lidx=0;lidx<params.num_lights;lidx++)
     {

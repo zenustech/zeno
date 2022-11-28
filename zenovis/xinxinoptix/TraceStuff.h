@@ -62,6 +62,8 @@ struct RadiancePRD
     vec3         extinctionQ[8];
     int          curMatIdx;
     float        CH;
+    bool         is_test_ray;
+    bool         volumeHitSurface;
 
     // cihou nanovdb
     float t0, t1;

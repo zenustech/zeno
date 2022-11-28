@@ -127,6 +127,7 @@ extern "C" __global__ void __raygen__rg()
         prd.isSS = false;
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
+        prd.is_test_ray = false;
         for(;;)
         {
             traceRadiance(
@@ -166,7 +167,7 @@ extern "C" __global__ void __raygen__rg()
                 
                 break;
             }
-            if(prd.depth>4){
+            if(prd.depth>8){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
                 if(rnd(prd.seed) > RRprob || prd.depth>16){
@@ -436,29 +437,32 @@ extern "C" __global__ void __intersection__volume()
 {
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
-    
-    const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
-    const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
-        sbt_data->gridVDB );
-    assert( grid );
-
-    // compute intersection points with the volume's bounds in index (object) space.
-    const float3 ray_orig = optixGetObjectRayOrigin();
-    const float3 ray_dir  = optixGetObjectRayDirection();
-
-    auto bbox = grid->indexBBox();
-    float t0 = optixGetRayTmin();
-    float t1 = optixGetRayTmax();
-    auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-        reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-
-    if( iRay.intersects( bbox, t0, t1 ) ) // t0 >= 0
+    RadiancePRD* prd = getPRD();
+    if(prd->volumeHitSurface==false)
     {
-        // report the exit point via payload
-        getPRD()->t1 = t1; //optixSetPayload_0( __float_as_uint( t1 ) );
-        // report the entry-point as hit-point
-        //auto kind = optixGetHitKind();
-        optixReportIntersection( fmaxf( t0, optixGetRayTmin() ), 0);
+        const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
+        const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
+            sbt_data->gridVDB );
+        assert( grid );
+
+        // compute intersection points with the volume's bounds in index (object) space.
+        const float3 ray_orig = optixGetObjectRayOrigin();
+        const float3 ray_dir  = optixGetObjectRayDirection();
+
+        auto bbox = grid->indexBBox();
+        float t0 = optixGetRayTmin();
+        float t1 = optixGetRayTmax();
+        auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+            reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+    
+        if( iRay.intersects( bbox, t0, t1 )) // t0 >= 0
+        {
+            // report the exit point via payload
+            getPRD()->t1 = t1; //optixSetPayload_0( __float_as_uint( t1 ) );
+            // report the entry-point as hit-point
+            //auto kind = optixGetHitKind();
+            optixReportIntersection( fmaxf( t0, optixGetRayTmin() ), 0);
+        }
     }
 }
 
@@ -503,10 +507,13 @@ inline __device__ float sampling(Acc& acc, nanovdb::Vec3f test_point_indexd) {
 
 extern "C" __global__ void __closesthit__radiance_volume()
 {
+    
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
 
     RadiancePRD* prd = getPRD();
+    if(prd->is_test_ray==true)
+        return;
     prd->attenuation2 = prd->attenuation;//scattering;
     prd->radiance = make_float3(0,0,0);
 
@@ -520,9 +527,32 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
 
-    const float t0 = optixGetRayTmax(); // world space
-    const float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+    
 
+
+    float t0 = optixGetRayTmax(); // world space
+    float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+
+    RadiancePRD testPRD;
+    testPRD.t1 = 1e17f;
+    testPRD.is_test_ray = true;
+    //prd->is_test_ray = true;
+    traceRadianceMasked(
+        params.handle,
+        ray_orig,
+        ray_dir,
+        0,
+        t1,
+        1,
+        &testPRD);
+
+    bool surface_inside_volume = false;
+    if(testPRD.t1 < t1)
+    {
+        t1 = testPRD.t1;
+        surface_inside_volume = true;
+    }
+    //t1 = prd->t1;
     const float t_max = t1 - t0; // world space
           float t_ele = 0;
 
@@ -532,16 +562,37 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float a;
     auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
     t_ele -= log(1 - rnd(prd->seed)) / 0.1;
-    test_point = ray_orig + (t0+t_ele) * ray_dir;
+    float test_t = t0 + t_ele;
+    if(test_t > t1)
+    {
+        test_t = t1;
+        if(surface_inside_volume){
+            test_t = t1 - 2e-5;
+            prd->volumeHitSurface = true;
+        }
+    }
+
+    test_point = ray_orig + test_t * ray_dir;
     auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
     auto v_final = sampling(acc, test_point_indexd);
     
     vec3 new_dir = ray_dir;
     
     if(v_final>0){
-        scattering = exp(-t_ele * v_final * 0.005 );
+        const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+                                              reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
+        auto start = grid->worldToIndexF( ray( t0 ) );
+        auto end   = grid->worldToIndexF( ray( test_t ) );
+
+        auto bbox = grid->indexBBox();
+        confine( bbox, start, end );
+
+        const float opacity = sbt_data->opacityHDDA;
+        
+        scattering = transmittanceHDDA( start, end, acc, 0.01 );;
         new_dir = DisneyBSDF::SampleScatterDirection(prd->seed);
-        ray_dir = new_dir;
+        
+        ray_dir = (prd->volumeHitSurface )? ray_dir : float3(new_dir);
 
     }
     // int8_t level = 4;
@@ -594,6 +645,106 @@ extern "C" __global__ void __closesthit__radiance_volume()
     prd->origin = ray_orig;
     prd->direction = ray_dir;
 
+    prd->radiance = make_float3(0.0f,0.0f,0.0f);
+    float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
+    float pl = rnd(prd->seed);
+    float sum = 0.0f;
+    for(int lidx=0;lidx<params.num_lights;lidx++)
+    {
+            ParallelogramLight light = params.lights[lidx];
+            float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+
+            // Calculate properties of light sample (for area based pdf)
+            float Ldist = length(light_pos - test_point);
+            float3 L = normalize(light_pos - test_point);
+            float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
+            float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
+            float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+
+    }
+    if(rnd(prd->seed)<=0.5) {
+        bool computed = false;
+        float ppl = 0;
+        for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
+            ParallelogramLight light = params.lights[lidx];
+            float2 z = sobolRnd2(prd->seed);
+            const float z1 = z.x;
+            const float z2 = z.y;
+            float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+            float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+
+            // Calculate properties of light sample (for area based pdf)
+            float tLdist = length(light_tpos - test_point);
+            float3 tL = normalize(light_tpos - test_point);
+            float tnDl = 1.0f; //clamp(dot(N, tL), 0.0f, 1.0f);
+            float tLnDl = clamp(-dot(light.normal, tL), 0.000001f, 1.0f);
+            float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+            ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
+            if (ppl > pl) {
+                float Ldist = length(light_pos - test_point) + 1e-6;
+                float3 L = normalize(light_pos - test_point);
+                float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
+                float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
+                float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+                float weight = 0.0f;
+                if (nDl > 0.0f && LnDl > 0.0f) {
+
+//                    RadiancePRD shadow_prd;
+//                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+//                    traceOcclusion(params.handle, P, L,
+//                                   1e-5f,         // tmin
+//                                   Ldist - 1e-5f, // tmax,
+//                                   &shadow_prd);
+
+                    //light_attenuation = shadow_prd.shadowAttanuation;
+                    //if (fmaxf(light_attenuation) > 0.0f) {
+
+                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
+                                 (length(light.emission)+1e-6f);
+                    //}
+                }
+                prd->LP = test_point;
+                prd->Ldir = L;
+                prd->nonThinTransHit = 1;
+                prd->Lweight = weight;
+
+                float3 lbrdf = make_float3(1.0) ;
+
+                prd->radiance = 2.0 * light.emission * lbrdf;
+                computed = true;
+            }
+        }
+    } else {
+        RadiancePRD shadow_prd2;
+        float3 lbrdf;
+        vec3 env_dir;
+        bool inside = false;
+
+        vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
+        auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
+                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
+        sun_dir = normalize(sun_dir);
+        prd->LP = test_point;
+        prd->Ldir = sun_dir;
+        prd->nonThinTransHit = 1;
+        prd->Lweight = 1.0;
+//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+//        traceOcclusion(params.handle, P, sun_dir,
+//                       1e-5f, // tmin
+//                       1e16f, // tmax,
+//                       &shadow_prd2);
+        lbrdf = make_float3(1.0) ;
+        prd->radiance = 2.0 * float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+                                       10, // be careful
+                                       .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
+    }
+    prd->emission =  make_float3(0);
+    prd->CH = 1.0;
+    prd->radiance *= v_final>0?1:0;
+    prd->depth += v_final>0?1:0;
     return;
 
     // if (scattering < 1.0) {

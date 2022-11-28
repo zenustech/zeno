@@ -736,7 +736,7 @@ static void createSBT( PathTracerState& state )
         rec.data.sigma_s = 0.3;
         rec.data.greenstein = 0.5;
 
-        OPTIX_CHECK( optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
+        OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
         hitgroup_records[sbt_idx] = rec;
 
         OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_occlusion_group, &rec ) );
