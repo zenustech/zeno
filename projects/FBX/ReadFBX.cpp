@@ -53,6 +53,7 @@ struct Mesh{
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     std::unordered_map<std::string, SMaterial> m_loadedMat;
     std::unordered_map<std::string, float> m_MatUdimSize;
+    std::unordered_map<std::string, std::vector<std::string>> m_BSName;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
@@ -152,7 +153,7 @@ struct Mesh{
         auto numAnimMesh = mesh->mNumAnimMeshes;
         float uv_scale = 1.0f;
 
-        zeno::log_info("FBX: Mesh name {}, vert count {}", meshName, mesh->mNumVertices);
+        zeno::log_info("FBX: Mesh name {}, vert count {} NumAnimMesh {}", meshName, mesh->mNumVertices, numAnimMesh);
 
         // Material
         if(mesh->mNumVertices)
@@ -211,7 +212,7 @@ struct Mesh{
             // So let's take the first one
             unsigned int bsNumVert = mesh->mAnimMeshes[0]->mNumVertices;
 
-            zeno::log_info("BS MeshName {} NumAnim {}", meshName, numAnimMesh);
+            zeno::log_info("FBX: BS MeshName {} NumAnim {}", meshName, numAnimMesh);
 
             std::vector<std::vector<SBSVertex>> blendShapeData;
             blendShapeData.resize(numAnimMesh);
@@ -219,7 +220,7 @@ struct Mesh{
             for(unsigned int a=0; a<numAnimMesh; a++){
                 auto& animMesh = mesh->mAnimMeshes[a];
                 unsigned int aNumV = animMesh->mNumVertices;
-
+                zeno::log_info("FBX: BSName {}", animMesh->mName.C_Str());
                 blendShapeData[a].resize(aNumV);
 
                 for(unsigned int i=0; i<aNumV; i++){
@@ -235,6 +236,8 @@ struct Mesh{
 
                     blendShapeData[a][i] = sbsVertex;
                 }
+
+                m_BSName[meshName].push_back(std::string(animMesh->mName.C_Str()));
             }
             fbxData.iBlendSData.value[meshName] = blendShapeData;
         }
@@ -802,6 +805,7 @@ struct Anim{
     BoneTree m_Bones;
 
     std::unordered_map<std::string, std::vector<SKeyMorph>> m_Morph;  // Value: NumKeys
+    std::unordered_map<std::string, std::vector<std::string>> m_MeshBSName;
 
     AnimInfo m_animInfo;
 
@@ -878,16 +882,16 @@ struct Anim{
 
     void setupBlendShape(const aiAnimation *animation){
         auto NumMorphChannel = animation->mNumMorphMeshChannels;
+        zeno::log_info("FBX: BlendShape NumMorphChannel {}", NumMorphChannel);
         if(NumMorphChannel){
             for(int j=0; j<NumMorphChannel; j++){
                 aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
                 std::string channelName(channel->mName.data);  // pPlane1*0 with *0
                 channelName = channelName.substr(0, channelName.find_last_of('*'));
                 zeno::log_info("FBX: BS Channel Name {}", channelName);
+                std::vector<SKeyMorph> keyMorph;
 
                 if(channel->mNumKeys) {
-                    std::vector<SKeyMorph> keyMorph;
-
                     zeno::log_info("FBX: BS NumKeys {} NumVal&Wei {}", channel->mNumKeys,
                                    channel->mKeys[0].mNumValuesAndWeights);
 
@@ -905,6 +909,22 @@ struct Anim{
                     }
 
                     m_Morph[channelName] = keyMorph;
+                }else{
+                    if(m_MeshBSName.find(channelName) != m_MeshBSName.end()){
+                        auto& bsData = m_MeshBSName[channelName];
+
+                        for(int i=0; i<bsData.size(); i++){
+                            SKeyMorph morph{};
+                            morph.m_Time = (float)i;
+                            morph.m_Weights = new double[bsData.size()];
+                            morph.m_Values = new unsigned int[bsData.size()];
+                            morph.m_Weights[i] = 0.0; morph.m_Values[i] = 0;
+                            keyMorph.push_back(morph);
+                        }
+                        m_Morph[channelName] = keyMorph;
+                    }else{
+                        zeno::log_info("FBX: BlendShape {} Not Found", channelName);
+                    }
                 }
             }
         }
@@ -989,6 +1009,7 @@ void readFBXFile(
         zeno::log_error("FBX: Invalid assimp scene");
 
     mesh.initMesh(scene);
+    anim.m_MeshBSName = mesh.m_BSName;
     anim.initAnim(scene, &mesh);
 
     mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
