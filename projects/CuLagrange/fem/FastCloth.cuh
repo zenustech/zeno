@@ -123,6 +123,7 @@ struct FastClothSystem : IObject {
             return coVerts->size() != 0;
         return false;
     }
+    /// @note geometry queries, parameter setup
     T maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary = true);
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T totalVolume(zs::CudaExecutionPolicy &pol);
@@ -143,11 +144,14 @@ struct FastClothSystem : IObject {
         auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
     }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
+
+    ///
     void initialize(zs::CudaExecutionPolicy &pol);
     FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
                     int PNCap, int CGCap, T dHat, T gravity);
 
+    /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
 
     void updateVelocities(zs::CudaExecutionPolicy &pol);
@@ -156,17 +160,24 @@ struct FastClothSystem : IObject {
     /// collision
     void findConstraints(zs::CudaExecutionPolicy &pol, T dHat);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
-    void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
+    /// @note given "xinit", computes x^{k+1}
+    bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
+    void softPhase(zs::CudaExecutionPolicy &pol);
+    void hardPhase(zs::CudaExecutionPolicy &pol);
+    bool constraintSatisfied(zs::CudaExecutionPolicy &pol);
+    T constraintEnergy(zs::CudaExecutionPolicy &pol);
+    // void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
 
     /// pipeline
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
-    void newtonKrylov(zs::CudaExecutionPolicy &pol);
-    void computeInertialAndGravityGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+    void subStepping(zs::CudaExecutionPolicy &pol);
+    // dynamics
+    void computeInertialAndCouplingAndForceGradient(zs::CudaExecutionPolicy &cudaPol);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
-    // constraint
-    void computeConstraints(zs::CudaExecutionPolicy &pol);
-    bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
-    T constraintResidual(zs::CudaExecutionPolicy &pol);
+    // boundary constraint
+    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol);
+    bool areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
+    T boundaryConstraintResidual(zs::CudaExecutionPolicy &pol);
 
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
@@ -249,15 +260,6 @@ struct FastClothSystem : IObject {
         return std::sqrt((B + Btight) * (B + Btight) + epsSlack);
     }
 
-    ///
-    /// initialization
-    /// cloth step
-    /// collision step
-    ///     soft phase
-    ///     hard phase
-
-    ///
-
     std::vector<PrimitiveHandle> prims;
     std::vector<PrimitiveHandle> auxPrims; // intended for hard constraint (tracker primitive)
     Ti coOffset, numDofs, numBouDofs;
@@ -273,6 +275,7 @@ struct FastClothSystem : IObject {
     // collision constraints (edge / non-edge)
     zs::Vector<pair_t> PP, E;
     zs::Vector<int> nPP, nE;
+    int npp, ne;
     tiles_t tempPP, tempE;
 
 #if 0
