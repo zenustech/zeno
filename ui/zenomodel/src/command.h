@@ -5,6 +5,7 @@
 #include "modeldata.h"
 
 class GraphsModel;
+class IGraphsModel;
 
 class AddNodeCommand : public QUndoCommand
 {
@@ -137,6 +138,22 @@ private:
     QPersistentModelIndex m_subgIdx;
     GraphsModel* m_model;
     QPointF m_pos;
+};
+
+class ModelDataCommand : public QUndoCommand
+{
+public:
+    ModelDataCommand(IGraphsModel* pModel, const QModelIndex& idx, const QVariant& oldData, const QVariant& newData, int role);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    const QVariant m_oldData;
+    const QVariant m_newData;
+    QString m_objPath;
+    QPersistentModelIndex m_index;
+    const int m_role;
 };
 
 

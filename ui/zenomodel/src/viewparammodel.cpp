@@ -387,6 +387,46 @@ void ViewParamModel::initCustomUI()
     appendRow(pRoot);
 }
 
+QModelIndex ViewParamModel::indexFromPath(const QString& path)
+{
+    QStringList lst = path.split("/", Qt::SkipEmptyParts);
+    if (lst.size() == 4)
+    {
+        const QString& root = lst[0];
+        const QString& tab = lst[1];
+        const QString& group = lst[2];
+        const QString& param = lst[3];
+        if (root != "root") return QModelIndex();
+
+        QStandardItem* rootItem = invisibleRootItem()->child(0);
+        if (!rootItem) return QModelIndex();
+
+        for (int i = 0; i < rootItem->rowCount(); i++)
+        {
+            QStandardItem* pTab = rootItem->child(i);
+            if (pTab->data(ROLE_VPARAM_NAME) == tab)
+            {
+                for (int j = 0; j < pTab->rowCount(); j++)
+                {
+                    QStandardItem* pGroup = pTab->child(j);
+                    if (pGroup->data(ROLE_VPARAM_NAME) == group)
+                    {
+                        for (int k = 0; k < pGroup->rowCount(); k++)
+                        {
+                            QStandardItem* pParam = pGroup->child(k);
+                            if (pParam->data(ROLE_VPARAM_NAME) == param)
+                            {
+                                return pParam->index();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return QModelIndex();
+}
+
 void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
 {
     //clear old data
@@ -520,9 +560,28 @@ QPersistentModelIndex ViewParamModel::nodeIdx() const
 
 QVariant ViewParamModel::data(const QModelIndex& index, int role) const
 {
-    if (role == ROLE_OBJID) {
-        if (m_nodeIdx.isValid())
-            return m_nodeIdx.data(role);
+    switch (role)
+    {
+        case ROLE_OBJID:    return m_nodeIdx.isValid() ? m_nodeIdx.data(role) : "";
+        case ROLE_OBJPATH:
+        {
+            QString path;
+            QStandardItem* pItem = itemFromIndex(index);
+            do
+            {
+                path = pItem->data(ROLE_VPARAM_NAME).toString() + path;
+                path = "/" + path;
+                pItem = pItem->parent();
+            } while (pItem);
+            if (m_bNodeUI) {
+                path = QString("node-param") + cPathSeperator + path;
+            }
+            else {
+                path = QString("panel-param") + cPathSeperator + path;
+            }
+            path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
+            return path;
+        }
     }
     return QStandardItemModel::data(index, role);
 }

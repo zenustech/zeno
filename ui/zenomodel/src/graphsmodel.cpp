@@ -7,6 +7,7 @@
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/scope_exit.h>
+#include "variantptr.h"
 
 
 class ApiLevelScope
@@ -277,6 +278,48 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
     return QModelIndex();
 }
 
+QModelIndex GraphsModel::indexFromPath(const QString& path)
+{
+    QStringList lst = path.split(cPathSeperator);
+    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param]:[param-layer-path]
+    if (lst.size() == 1)
+    {
+        const QString& subgName = lst[0];
+        return index(subgName);
+    }
+    else if (lst.size() == 2)
+    {
+        const QString& subgName = lst[0];
+        const QString& nodeIdent = lst[1];
+        const QModelIndex& subgIdx = index(subgName);
+        return index(nodeIdent, subgIdx);
+    }
+    else if (lst.size() == 4)
+    {
+        const QString& subgName = lst[0];
+        const QString& nodeIdent = lst[1];
+        const QString& paramCls = lst[2];
+        const QString& paramPath = lst[3];
+        const QModelIndex& subgIdx = index(subgName);
+        const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
+        if (!nodeIdx.isValid())
+            return QModelIndex();
+        if (paramCls == "node-param")
+        {
+            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_NODE));
+            QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
+            return paramIdx;
+        }
+        else if (paramCls == "panel-param")
+        {
+            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_PANEL));\
+            QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
+            return paramIdx;
+        }
+    }
+    return QModelIndex();
+}
+
 QVariant GraphsModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
@@ -284,10 +327,15 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
 
     switch (role)
     {
-    case Qt::DisplayRole:
-    case Qt::EditRole:
-    case ROLE_OBJNAME:
-        return m_subGraphs[index.row()]->name();
+        case Qt::DisplayRole:
+        case Qt::EditRole:
+        case ROLE_OBJNAME:
+            return m_subGraphs[index.row()]->name();
+        case ROLE_OBJPATH:
+        {
+            const QString& subgName = m_subGraphs[index.row()]->name();
+            return subgName;
+        }
     }
     return QVariant();
 }
@@ -1371,6 +1419,37 @@ void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, co
         pSubg->updateSocketDefl(id, info);
     }
 }
+
+void GraphsModel::AddTransactionCmd(
+    QAbstractItemModel* pTargetModel,
+    const QPersistentModelIndex& idx,
+    const QVariant& oldValue,
+    const QVariant& newValue,
+    int role)
+{
+    ModelDataCommand* pCmd = new ModelDataCommand(this, idx, oldValue, newValue, role);
+    m_stack->push(pCmd);
+}
+
+int GraphsModel::ExcuteApi(
+    const QPersistentModelIndex& idx,
+    const QVariant& value,
+    int role,
+    const QString& comment/*todo*/)
+{
+    if (!idx.isValid())
+        return -1;
+
+    QAbstractItemModel* pTargetModel = const_cast<QAbstractItemModel*>(idx.model());
+    if (!pTargetModel)
+        return -1;
+
+    const QVariant& oldValue = pTargetModel->data(idx, role);
+    ModelDataCommand* pCmd = new ModelDataCommand(this, idx, oldValue, value, role);
+    m_stack->push(pCmd);        //will call model->setData method.
+    return 0;
+}
+
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {

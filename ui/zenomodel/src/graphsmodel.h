@@ -57,6 +57,7 @@ public:
     QModelIndex subgByNodeId(uint32_t id) override;
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
+    QModelIndex indexFromPath(const QString& path) override;
     QModelIndex linkIndex(int r) override;
     QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
     QModelIndex parent(const QModelIndex& child) const override;
@@ -120,6 +121,17 @@ public:
     bool IsIOProcessing() const override;
     IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
     QModelIndexList findSubgraphNode(const QString& subgName) override;
+    void AddTransactionCmd(
+        QAbstractItemModel* pTargetModel,
+        const QPersistentModelIndex& idx,
+        const QVariant& oldValue,
+        const QVariant& newValue,
+        int role) override;
+    int ExcuteApi(
+        const QPersistentModelIndex& idx,
+        const QVariant& value,
+        int role,
+        const QString& comment) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);

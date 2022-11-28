@@ -242,6 +242,16 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
         delete item.outputsModel;
         item.outputsModel = nullptr;
     }
+    if (item.panelParams)
+    {
+        item.panelParams->clear();
+        delete item.panelParams;
+    }
+    if (item.nodeParams)
+    {
+        item.nodeParams->clear();
+        delete item.nodeParams;
+    }
 
     int row = index.row();
     QString id = m_row2Key[row];
@@ -400,6 +410,13 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         case ROLE_CUSTOMUI_NODE:
         {
             return QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
+        }
+        case ROLE_OBJPATH:
+        {
+            const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
+            const QString& subgPath = subgIdx.data(ROLE_OBJPATH).toString();
+            const QString& path = subgPath + cPathSeperator + item.objid;
+            return path;
         }
         default:
             return QVariant();

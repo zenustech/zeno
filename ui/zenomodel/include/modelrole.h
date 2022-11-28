@@ -8,6 +8,7 @@ enum MODEL_ROLE
 	ROLE_NODETYPE,
 	ROLE_OBJPOS,
 	ROLE_OBJRECT,
+	ROLE_OBJPATH,	// unique path for subgraph, node and param, even curvemodel.
 	ROLE_PARAMETERS,
 	ROLE_INPUTS,
 	ROLE_PARAMS_NO_DESC,

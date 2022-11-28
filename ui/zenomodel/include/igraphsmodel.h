@@ -91,6 +91,18 @@ public:
 	virtual LinkModel* linkModel() const = 0;
 	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
+	virtual void AddTransactionCmd(
+			QAbstractItemModel* pTargetModel,
+			const QPersistentModelIndex& idx,
+			const QVariant& oldValue,
+			const QVariant& newValue,
+			int role) = 0;
+	virtual int ExcuteApi(
+			const QPersistentModelIndex& idx,
+			const QVariant& value,
+			int role,
+			const QString& comment = "") = 0;
+	virtual QModelIndex indexFromPath(const QString& path) = 0;
 
 signals:
 	void clearLayout2();

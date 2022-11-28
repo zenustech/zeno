@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -146,6 +146,9 @@ border-top: 1px solid black;</string>
   <action name="actionRedo">
    <property name="text">
     <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
    </property>
   </action>
   <action name="actionDefault_layout">

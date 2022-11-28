@@ -237,3 +237,48 @@ void ImportNodesCommand::undo()
         m_model->removeNode(id, m_subgIdx, false);
     }
 }
+
+
+ModelDataCommand::ModelDataCommand(IGraphsModel* pModel, const QModelIndex& idx, const QVariant& oldData, const QVariant& newData, int role)
+    : m_model(pModel)
+    , m_oldData(oldData)
+    , m_newData(newData)
+    , m_role(role)
+    , m_index(idx)
+{
+    m_objPath = idx.data(ROLE_OBJPATH).toString();
+}
+
+void ModelDataCommand::redo()
+{
+    if (!m_index.isValid())
+    {
+        m_index = m_model->indexFromPath(m_objPath);
+        if (!m_index.isValid())
+            return;
+    }
+    else
+    {
+        //keep update the path.
+        m_objPath = m_index.data(ROLE_OBJPATH).toString();
+    }
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+    pModel->setData(m_index, m_newData, m_role);
+}
+
+void ModelDataCommand::undo()
+{
+    if (!m_index.isValid())
+    {
+        m_index = m_model->indexFromPath(m_objPath);
+        if (!m_index.isValid())
+            return;
+    }
+    else
+    {
+        //keep update the path.
+        m_objPath = m_index.data(ROLE_OBJPATH).toString();
+    }
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+    pModel->setData(m_index, m_oldData, m_role);
+}

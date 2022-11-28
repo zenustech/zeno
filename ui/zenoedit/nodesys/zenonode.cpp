@@ -252,10 +252,10 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     const QPersistentModelIndex perIdx(paramIdx);
 
     Callback_EditFinished cbUpdateParam = [=](QVariant newValue) {
-        if (!perIdx.isValid())
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (!pModel)
             return;
-        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
-        paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
+        pModel->ExcuteApi(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {
@@ -600,11 +600,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
 {
     QPersistentModelIndex perIdx(viewSockIdx);
     auto cbFuncRenameSock = [=](QString oldText, QString newText) {
-        if (!perIdx.isValid())
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (!pModel)
             return;
-        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
-        if (paramModel)
-            paramModel->setData(perIdx, newText, ROLE_PARAM_NAME);
+        pModel->ExcuteApi(perIdx, newText, ROLE_PARAM_NAME);
     };
 
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
@@ -716,11 +715,10 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     const QPersistentModelIndex perIdx(paramIdx);
 
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
-        if (!perIdx.isValid())
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (!pModel)
             return;
-        QAbstractItemModel* paramModel = const_cast<QAbstractItemModel*>(perIdx.model());
-        if (paramModel)
-            paramModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
+        int ret = pModel->ExcuteApi(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {

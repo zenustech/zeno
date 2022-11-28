@@ -61,6 +61,7 @@ public:
     explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
+    QModelIndex indexFromPath(const QString& path);
     void resetParams(const VPARAM_INFO& invisibleRoot);
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool isNodeModel() const;
