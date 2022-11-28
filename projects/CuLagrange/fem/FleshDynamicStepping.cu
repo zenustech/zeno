@@ -16,19 +16,28 @@
 #include <zeno/types/StringObject.h>
 
 #include "../geometry/linear_system/mfcg.hpp"
-#include "../geometry/kernel/calculate_bisector_normal.hpp"
+
 #include "../geometry/kernel/calculate_facet_normal.hpp"
 #include "../geometry/kernel/topology.hpp"
 #include "../geometry/kernel/compute_characteristic_length.hpp"
+#include "../geometry/kernel/calculate_bisector_normal.hpp"
+
+#include "../geometry/kernel/tiled_vector_ops.hpp"
+#include "../geometry/kernel/geo_math.hpp"
+
+#include "../geometry/kernel/calculate_edge_normal.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
 
-#include "collision_energy/vertex_face_collision.hpp"
 #include "collision_energy/vertex_face_sqrt_collision.hpp"
+#include "collision_energy/vertex_face_collision.hpp"
+#include "collision_energy/edge_edge_sqrt_collision.hpp"
 #include "collision_energy/edge_edge_collision.hpp"
-#include "collision_energy/edge_edge_sqrt_collition.hpp"
+
+
+
 
 #include "collision_energy/evaluate_collision.hpp"
 
@@ -684,7 +693,7 @@ struct FleshDynamicStepping : INode {
 
 
         constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec().sync(false);
+        auto cudaPol = cuda_exec();
     
 
         // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
@@ -781,7 +790,7 @@ struct FleshDynamicStepping : INode {
             // TILEVEC_OPS::add<3>(cudaPol,vtemp,"xp",1.0,"vp",dt,"xn");  
             TILEVEC_OPS::add<3>(cudaPol,vtemp,"xp",1.0,"vp",(T)0.0,"xn");  
         }
-        TILEVEC_OPS::fill<1>(cudaPol,vtemp,"bou_tag",zs::vec<T,1>::zeros());
+        TILEVEC_OPS::fill(cudaPol,vtemp,"bou_tag",(T)0.0);
 
 
         auto bvh_thickness = 5 * avgl;
@@ -789,8 +798,10 @@ struct FleshDynamicStepping : INode {
         int max_newton_iterations = 5;
         int nm_iters = 0;
 
-        while(nm_iters < max_newton_iterations) {
+        // make sure, at least one baraf simi-implicit step will be taken
+        auto res0 = 1e10;
 
+        while(nm_iters < max_newton_iterations) {
 
             match([&](auto &elasticModel) {
                 A.computeGradientAndHessian(cudaPol, elasticModel,vtemp,etemp);
@@ -847,22 +858,34 @@ struct FleshDynamicStepping : INode {
                     vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
             });
 
-
-            cudaPol(zs::range(verts.size()),
-                    [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
-                        auto newX = vtemp.pack<3>("xn", vi);
-                        verts.tuple<3>("x", vi) = newX;
-                        verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
-                    });
-
             T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization
             std::cout << "res[" << nm_iters << "] : " << res << std::endl;
             if(res < 1e-3)
                 break;
+
+            // keep dropping, to avoid explosion
+            if(res < res0)
+                res0 = res;
+            else {
+                // reverse 
+                cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),alpha] __device__(int i) mutable {
+                    vtemp.tuple<3>("xn", i) =
+                        vtemp.pack<3>("xn", i) - alpha * vtemp.pack<3>("dir", i);
+                });
+
+                break;
+            }
             nm_iters++;
         }
 
 
+
+        cudaPol(zs::range(verts.size()),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),dt] __device__(int vi) mutable {
+                    auto newX = vtemp.pack<3>("xn", vi);
+                    verts.tuple<3>("x", vi) = newX;
+                    verts.tuple<3>("v",vi) = (vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi))/dt;
+                });
 
         dtiles_t nodalForceVis(verts.get_allocator(),
             {
@@ -871,10 +894,10 @@ struct FleshDynamicStepping : INode {
             },verts.size());
 
 
-        cudaPol.syncCtx();
-        TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",nodalForceVis,"x");
-        TILEVEC_OPS::fill<3>(cudaPol,nodalForceVis,"dir",zs::vec<T,3>::zeros());
-        TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",nodalForceVis,"dir");
+
+        // TILEVEC_OPS::copy<3>(cudaPol,vtemp,"xn",nodalForceVis,"x");
+        // TILEVEC_OPS::fill<3>(cudaPol,nodalForceVis,"dir",zs::vec<T,3>::zeros());
+        // TILEVEC_OPS::assemble<3,4>(cudaPol,cptemp,"grad",nodalForceVis,"dir");
 
 
 

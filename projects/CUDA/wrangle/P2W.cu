@@ -130,14 +130,10 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             // PropertyTag can be used for structured binding automatically
             auto register_attrib_syms = [&opts](const std::vector<PropertyTag> &props, const std::string &prefix) {
                 for (auto [name, nchns] : props) {
-                    if (name == "x" || name == "v")
-                        zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
-                                       "now on to keep "
-                                       "consistent with cpu-side wrangles");
-                    if (name == "pos")
-                        name = "x";
-                    else if (name == "vel")
-                        name = "v";
+                    if (name == "x")
+                        opts.define_symbol(prefix + "pos", nchns);
+                    else if (name == "v")
+                        opts.define_symbol(prefix + "vel", nchns);
                     opts.define_symbol(prefix + name.asString(), nchns);
                 }
                 //def_sym(name.asString(), nchns);
@@ -199,6 +195,14 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
             constexpr auto tileSize = RM_CVREF_T(pars)::lane_width;
 
+            auto transTag = [](std::string str) {
+                if (str == "pos")
+                    str = "x";
+                else if (str == "vel")
+                    str = "v";
+                return str;
+            };
+
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
@@ -219,7 +223,7 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)curPars.numChannels(),
-                                                  (unsigned short)(curPars.getPropertyOffset(name) + dimid),
+                                                  (unsigned short)(curPars.getPropertyOffset(transTag(name)) + dimid),
                                                   aux};
 #if 0
                 fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i, name.c_str(), dimid,

@@ -1,5 +1,6 @@
 #include "Cloth.cuh"
 #include "Structures.hpp"
+#include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include <zeno/types/ListObject.h>
 
@@ -88,6 +89,22 @@ ClothSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, Ti &vOffset
     seOffset += getSurfEdges().size();
     svOffset += getSurfVerts().size();
 }
+typename ClothSystem::T ClothSystem::PrimitiveHandle::maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol,
+                                                                            zs::Vector<T> &temp) const {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto &verts = getVerts();
+    auto &edges = getSurfEdges();
+    temp.resize(edges.size());
+    auto &edgeLengths = temp;
+    pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
+                                 edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
+        auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+    });
+    auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
+    return tmp;
+}
 typename ClothSystem::T ClothSystem::PrimitiveHandle::averageNodalMass(zs::CudaExecutionPolicy &pol) const {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -103,6 +120,33 @@ typename ClothSystem::T ClothSystem::PrimitiveHandle::averageNodalMass(zs::CudaE
 }
 
 /// ClothSystem
+typename ClothSystem::T ClothSystem::maximumSurfEdgeLength(zs::CudaExecutionPolicy &pol, bool includeBoundary) {
+    using T = typename ClothSystem::T;
+    T maxEdgeLength = 0;
+    for (auto &&primHandle : prims) {
+        if (primHandle.isBoundary())
+            continue;
+        if (auto tmp = primHandle.maximumSurfEdgeLength(pol, temp); tmp > maxEdgeLength)
+            maxEdgeLength = tmp;
+    }
+    if (coVerts && includeBoundary) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto &verts = vtemp;
+        auto &edges = *coEdges;
+        temp.resize(edges.size());
+        auto &edgeLengths = temp;
+        pol(Collapse{edges.size()},
+            [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts), edgeLengths = proxy<space>(edgeLengths),
+             coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
+                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+            });
+        if (auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>()); tmp > maxEdgeLength)
+            maxEdgeLength = tmp;
+    }
+    return maxEdgeLength;
+}
 typename ClothSystem::T ClothSystem::averageNodalMass(zs::CudaExecutionPolicy &pol) {
     using T = typename ClothSystem::T;
     T sumNodalMass = 0;
@@ -118,6 +162,16 @@ typename ClothSystem::T ClothSystem::averageNodalMass(zs::CudaExecutionPolicy &p
         return sumNodalMass / sumNodes;
     else
         return 0;
+}
+void ClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
+    L = maximumSurfEdgeLength(pol, true) * 1.5;
+    B = L / std::sqrt(2);
+    Btight = B / 12;
+    LRef = 2 * L / 3;
+    LAda = B + Btight;
+    D = std::sqrt((B+Btight) * (B+Btight) - B * B) * (T)0.1;   // one-tenth of the actual vertex displacement limit, ref Sec.5
+    epsSlack = 9 * B * B / 16;
+    zeno::log_warn("automatically computed params: L[{}], D[{}]\n", L, D);
 }
 void ClothSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
@@ -327,7 +381,7 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), voffset = primHandle.vOffset, dt = dt,
-             avgNodeMass = avgNodeMass, augLagCoeff = augLagCoeff] __device__(int i) mutable {
+             avgNodeMass = avgNodeMass] __device__(int i) mutable {
                 auto x = verts.pack<3>("x", i);
                 auto v = verts.pack<3>("v", i);
 
@@ -399,9 +453,9 @@ void ClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
 }
 
-ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *coVerts, const tiles_t *coEdges,
-                         const tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel,
-                         T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
+ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coEdges, tiles_t *coEles,
+                         T dt, std::size_t estNumCps, bool withContact, T augLagCoeff, T pnRel, T cgRel, int PNCap,
+                         int CGCap, T dHat_, T gravity)
     : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       nPP{zsprims[0]->getParticles().get_allocator(), 1}, tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0},
       PE{estNumCps, zs::memsrc_e::um, 0}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -412,9 +466,8 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
                                                                                                      zs::memsrc_e::um,
                                                                                                      0},
       //
-      temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
-      csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles().get_allocator(), 1},
-      ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
+      temp{estNumCps, zs::memsrc_e::um, 0}, csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
+      ncsPT{zsprims[0]->getParticles().get_allocator(), 1}, ncsEE{zsprims[0]->getParticles().get_allocator(), 1},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
       pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0} {
@@ -444,7 +497,6 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
                      {"dir", 3},
                      {"xn", 3},
                      {"vn", 3},
-                     {"xn0", 3},
                      {"xtilde", 3},
                      {"xhat", 3}, // initial positions at the current substep (constraint,
                                   // extAccel)
@@ -461,10 +513,92 @@ ClothSystem::ClothSystem(std::vector<ZenoParticles *> zsprims, const tiles_t *co
     // dHat (static)
     this->dHat = dHat_ * std::sqrt(boxDiagSize2);
 
-    // check initial self intersections
-    // including proximity pairs
-    // do once
+    auto [mu_, lam_] = largestLameParams();
+    maxMu = mu_;
+    maxLam = lam_;
+
+    // check initial self intersections including proximity pairs, do once
     markSelfIntersectionPrimitives(cudaPol);
+}
+
+void ClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    // setup substep dt
+    ++substep;
+    dt = framedt * ratio;
+    curRatio += ratio;
+
+    projectDBC = false;
+    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
+        auto xn = vtemp.pack(dim_c<3>, "xn", vi);
+        vtemp.tuple(dim_c<3>, "xhat", vi) = xn;
+        auto newX = xn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
+        vtemp.tuple(dim_c<3>, "xtilde", vi) = newX;
+    });
+    if (coVerts)
+        if (auto coSize = coVerts->size(); coSize)
+            pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
+                                   coOffset = coOffset, dt = dt] __device__(int i) mutable {
+                auto xn = vtemp.pack(dim_c<3>, "xn", coOffset + i);
+                vtemp.tuple(dim_c<3>, "xhat", coOffset + i) = xn;
+                auto newX = xn + coverts.pack(dim_c<3>, "v", i) * dt;
+                vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
+            });
+    for (auto &primHandle : auxPrims) {
+        /// @note hard constraint
+        if (primHandle.category == ZenoParticles::category_e::tracker) {
+            const auto &eles = primHandle.getEles();
+            pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+                                        framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                // retrieve motion from the associated boundary vert
+                auto deltaX = vtemp.pack(dim_c<3>, "xtilde", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);
+                auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
+                vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+            });
+        }
+    }
+}
+
+void ClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
+        auto newX = vtemp.pack<3>("xn", vi);
+        auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
+        auto vn = vtemp.pack<3>("vn", vi);
+        vn += dv;
+        vtemp.tuple<3>("vn", vi) = vn;
+    });
+}
+
+void ClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
+        auto &verts = primHandle.getVerts();
+        // update velocity and positions
+        pol(zs::range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
+             asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
+                verts.tuple<3>("x", vi) = vtemp.pack<3>("xn", vOffset + vi);
+                if (!asBoundary)
+                    verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
+            });
+    }
+    if (coVerts)
+        if (auto coSize = coVerts->size(); coSize)
+            pol(Collapse(coSize),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<tiles_t *>(coVerts)),
+                 coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
+                    verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "xn", coOffset + vi);
+                    // no need to update v here. positions are moved accordingly
+                    // also, boundary velocies are set elsewhere
+                });
 }
 
 struct MakeClothSystem : INode {
@@ -478,10 +612,20 @@ struct MakeClothSystem : INode {
 
         auto cudaPol = zs::cuda_exec();
 
-        const typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
-        const typename ClothSystem::tiles_t *coEdges =
-            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
-        const typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
+        typename ClothSystem::tiles_t *coVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
+        typename ClothSystem::tiles_t *coEdges = zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
+        typename ClothSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
+#if 0
+        const typename ClothSystem::tiles_t *coSvs =
+            zsboundary ? &(*zsboundary)[ZenoParticles::s_surfVertTag] : nullptr;
+#endif
+
+        if (zsboundary) {
+            auto pol = cuda_exec();
+            compute_surface_neighbors(pol, *coEles, *coEdges, (*zsboundary)[ZenoParticles::s_surfVertTag]);
+            coEles->append_channels(pol, {{"nrm", 3}});
+            coEdges->append_channels(pol, {{"nrm", 3}});
+        }
 
         /// solver parameters
         auto input_est_num_cps = get_input2<int>("est_num_cps");

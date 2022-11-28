@@ -78,12 +78,14 @@ struct GetVDBPointsLeafCount : zeno::INode {
 //TODO: parallelize using concurrent vector
 struct VDBPointsToPrimitive : zeno::INode {
   virtual void apply() override {
+    std::cout<<"VDBPointsToPrimitive: 0 \n";
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
 
+    std::cout<<"VDBPointsToPrimitive: 1 \n";
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
     zeno::log_info("VDBPointsToPrimitive: particle leaf nodes: {}", leafs.size());
-
+    std::cout<<"VDBPointsToPrimitive: 2 \n";
     auto transform = grid->transformPtr();
 
     auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
@@ -95,13 +97,17 @@ struct VDBPointsToPrimitive : zeno::INode {
     if (hasVel) {
     auto &retvel = ret->add_attr<zeno::vec3f>("vel");
     std::vector<std::vector<std::tuple<zeno::vec3f,zeno::vec3f>>> data(leafs.size());
+    std::cout<<"VDBPointsToPrimitive: before data reserve\n";
     for(int i=0;i<leafs.size();i++)
     {
       data[i].resize(0);
       data[i].reserve(512*32);
     }
-    tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
+    std::cout<<"VDBPointsToPrimitive: begin tbb parallel for \n";
+    //tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
     //for (auto const &leaf: leafs)
+#pragma omp parallel for
+    for(size_t index = 0; index < leafs.size(); index++)
     {
       auto &leaf = leafs[index];
       //attributes
@@ -129,7 +135,8 @@ struct VDBPointsToPrimitive : zeno::INode {
         //retvel.emplace_back(v[0], v[1], v[2]);
         data[index].emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
       }
-    });
+    }//);
+    std::cout<<"VDBPointsToPrimitive: end tbb parallel for\n";
     std::vector<size_t> sum_table(data.size()+1);
     sum_table[0] = 0;
     for(size_t i=0;i<data.size();i++)

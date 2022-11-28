@@ -348,8 +348,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"dir", 3},
                       {"xn", 3},
                       {"vn", 3},
-                      {"x0", 3}, // initial positions
-                      {"xn0", 3},
+                      {"x0", 3},  // initial positions
+                      {"xn0", 3}, // for line search
                       {"xtilde", 3},
                       {"xhat", 3}, // initial positions at the current substep (constraint,
                                    // extforce)
@@ -516,7 +516,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         if (numNodes <= 2) {                                                                                     \
             front.reserve(sInds.size() * numNodes);                                                              \
             front.setCounter(sInds.size() * numNodes);                                                           \
-            pol(Collapse{sInds.size()}, [front = proxy<space>(selfStFront), numNodes] ZS_LAMBDA(int i) mutable { \
+            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
                 for (int j = 0; j != numNodes; ++j)                                                              \
                     front.assign(i *numNodes + j, i, j);                                                         \
             });                                                                                                  \
@@ -597,8 +597,7 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
 
     projectDBC = false;
     BCsatisfied = false;
-    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, ratio,
-                             localRatio = ratio / (1 - curRatio + ratio)] __device__(int vi) mutable {
+    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         int BCorder = vtemp("BCorder", vi);
         auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
         auto projVec = [&BCbasis, BCorder](auto &dx) {

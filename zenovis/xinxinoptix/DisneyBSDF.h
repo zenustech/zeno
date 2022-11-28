@@ -1238,6 +1238,34 @@ static __inline__ __device__ vec3 hdrSky(
     return col * params.sky_strength;
 }
 
+static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
+{
+    vec3 retColor;
+
+    temperatureInKelvins = clamp(temperatureInKelvins, 1000.0, 40000.0) / 100.0;
+
+    if (temperatureInKelvins <= 66.0)
+    {
+        retColor.x = 1.0;
+        retColor.y = saturate(0.39008157876901960784 * log(temperatureInKelvins) - 0.63184144378862745098);
+    }
+    else
+    {
+        float t = temperatureInKelvins - 60.0;
+        retColor.x = saturate(1.29293618606274509804 * pow(t, -0.1332047592f));
+        retColor.y = saturate(1.12989086089529411765 * pow(t, -0.0755148492f));
+    }
+
+    if (temperatureInKelvins >= 66.0)
+        retColor.z = 1.0;
+    else if(temperatureInKelvins <= 19.0)
+        retColor.z = 0.0;
+    else
+        retColor.z = saturate(0.54320678911019607843 * log(temperatureInKelvins - 10.0) - 1.19625408914);
+
+    return retColor;
+}
+
 static __inline__ __device__ vec3 envSky(
     vec3 dir,
     vec3 sunLightDir,
@@ -1248,8 +1276,9 @@ static __inline__ __device__ vec3 envSky(
     float absorption,
     float t
 ){
+    vec3 color;
     if (!params.usingHdrSky) {
-        return proceduralSky(
+        color = proceduralSky(
             dir,
             sunLightDir,
             windDir,
@@ -1261,8 +1290,14 @@ static __inline__ __device__ vec3 envSky(
         );
     }
     else {
-        return hdrSky(
+        color = hdrSky(
             dir
         );
     }
+    if (params.colorTemperatureMix > 0) {
+        vec3 colorTemp = colorTemperatureToRGB(params.colorTemperature);
+        colorTemp = mix(vec3(1, 1, 1), colorTemp, params.colorTemperatureMix);
+        color = color * colorTemp;
+    }
+    return color;
 }

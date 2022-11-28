@@ -43,6 +43,12 @@
         "hdf5"
       ]
     },
+    "opencv": {
+      "description": "Enable OpenCV nodes, for image operation support",
+      "dependencies": [
+        "opencv"
+      ]
+    },
     "cuda": {
       "description": "Enable CUDA nodes, for MPM simulation algorithm",
       "dependencies": [
@@ -54,6 +60,6 @@
     }
   },
   "default-features": [
-      "openvdb", "cgmesh", "alembic"
+      "openvdb", "cgmesh", "alembic", "opencv"
   ]
 }

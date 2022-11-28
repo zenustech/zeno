@@ -76,23 +76,108 @@ namespace zeno { namespace TILEVEC_OPS {
 
     template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
     void assemble(Pol& pol,
-        const SrcTileVec& src,const zs::SmallString& src_tag,
-        DstTileVec& dst,const zs::SmallString& dst_tag) {
+        const SrcTileVec& src,const zs::SmallString& srcTag,const zs::SmallString& srcTopoTag,
+        DstTileVec& dst,const zs::SmallString& dstTag) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            if(!src.hasProperty(srcTopoTag) || src.getChannelSize(srcTopoTag) != simplex_size)
+                throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel");
+            if(!src.hasProperty(srcTag))
+                throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
+            if(!dst.hasProperty(dstTag))
+                throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+
+            pol(range(src.size()),
+                [src = proxy<space>({},src),dst = proxy<space>({},dst),srcTag,srcTopoTag,dstTag] __device__(int si) mutable {
+                    auto inds = src.template pack<simplex_size>(srcTopoTag,si).reinterpret_bits(int_c);
+                    for(int i = 0;i != simplex_size;++i)
+                        if(inds[i] < 0)
+                            return;
+                    auto data = src.template pack<space_dim * simplex_size>(srcTag,si);
+                    for(int i = 0;i != simplex_size;++i)
+                            for(int d = 0;d != space_dim;++d)
+                                atomic_add(exec_cuda,&dst(dstTag,d,inds[i]),data[i*space_dim + d]);
+            });
+    }
+
+
+    template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
+    void assemble(Pol& pol,
+        const SrcTileVec& src,const zs::SmallString& srcTag,
+        DstTileVec& dst,const zs::SmallString& dstTag) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
             // TILEVEC_OPS::fill<space_dim>(pol,dst,"dir",zs::vec<T,space_dim>::uniform((T)0.0));
 
-            pol(range(src.size()),
-                [src = proxy<space>({},src),dst = proxy<space>({},dst),src_tag,dst_tag] __device__(int si) mutable {
-                    auto inds = src.template pack<simplex_size>("inds",si).reinterpret_bits(int_c);
+            // if(!src.hasProperty("inds") || src.getChannelSize("inds") != simplex_size)
+            //     throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel inds");
+
+            // pol(range(src.size()),
+            //     [src = proxy<space>({},src),dst = proxy<space>({},dst),src_tag,dst_tag] __device__(int si) mutable {
+            //         auto inds = src.template pack<simplex_size>("inds",si).reinterpret_bits(int_c);
+            //         for(int i = 0;i != simplex_size;++i)
+            //             if(inds[i] < 0)
+            //                 return;
+            //         auto data = src.template pack<space_dim * simplex_size>(src_tag,si);
+            //         for(int i = 0;i != simplex_size;++i)
+            //                 for(int d = 0;d != space_dim;++d)
+            //                     atomic_add(exec_cuda,&dst(dst_tag,d,inds[i]),data[i*space_dim + d]);
+            // });
+
+            assemble<space_dim,simplex_size>(pol,src,srcTag,"inds",dst,dstTag);
+    }
+
+
+
+    template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
+    void assemble_from(Pol& pol,
+        const SrcTileVec& src,const zs::SmallString& srcTag,
+        DstTileVec& dst,const zs::SmallString& dstTag,const zs::SmallString& dstTopoTag) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            if(!dst.hasProperty(dstTopoTag) || dst.getChannelSize(dstTopoTag) != simplex_size)
+                throw std::runtime_error("tiledvec_ops::assemble_from::invalid dst's topo channel");
+            if(!src.hasProperty(srcTag))
+                throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
+            if(!dst.hasProperty(dstTag))
+                throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+
+            pol(zs::range(dst.size()),
+                [dst = proxy<space>({},dst),src = proxy<space>({},src),srcTag,dstTag,dstTopoTag] __device__(int di) mutable {
+                    auto inds = dst.template pack<simplex_size>(dstTopoTag,di).reinterpret_bits(int_c);
                     for(int i = 0;i != simplex_size;++i)
-                        if(inds[i] < 0)
-                            return;
-                    auto data = src.template pack<space_dim * simplex_size>(src_tag,si);
-                    for(int i = 0;i != simplex_size;++i)
-                            for(int d = 0;d != space_dim;++d)
-                                atomic_add(exec_cuda,&dst(dst_tag,d,inds[i]),data[i*space_dim + d]);
+                        dst.template tuple<space_dim>(dstTag,di) += src.template pack<space_dim>(srcTag,inds[i]);
+            });
+
+    }
+
+    // maybe we also need a weighted assemble func
+
+    template<int space_dim,typename Pol,typename VTileVec>
+    void normalized_channel(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag, T eps = 1e-6) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        pol(range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),tag,eps] __device__(int vi) mutable {
+                auto d = vtemp.template pack<space_dim>(tag,vi);
+                auto dn = d.norm();
+                d = dn < eps ? d/dn : zs::vec<T,space_dim>::zeros();
+                vtemp.template tuple<space_dim>(tag,vi) = d;
+        });
+    }
+
+    template<int space_dim,typename Pol,typename VTileVec>
+    void uniform_scale(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,T s) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        pol(range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),tag,s] __device__(int vi) mutable {
+                vtemp.template tuple<space_dim>(tag,vi) = vtemp.template pack<space_dim>(tag,vi) * s;
             });
     }
 

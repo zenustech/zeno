@@ -35,6 +35,7 @@ struct VideoRecInfo
     int bitrate;
     int numMSAA = 0;
     int numOptix = 1;
+    bool saveAsImageSequence = false;
     VideoRecInfo() {
         res = { 0,0 };
         fps = bitrate = 0;
@@ -68,6 +69,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void resizeTransformHandler(int dir);
 
 private:
     bool m_mmb_pressed;

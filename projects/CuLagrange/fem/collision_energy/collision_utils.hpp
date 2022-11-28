@@ -35,7 +35,7 @@ namespace COLLISION_UTILS {
     }
 
 
-    constexpr VECTOR12 flatten(const std::vector<VECTOR3>& v) {
+    constexpr VECTOR12 flatten(const VECTOR3 v[4]) {
         auto res = VECTOR12::zeros();
         for(size_t i = 0;i < 4;++i)
             for(size_t j = 0;j < 3;++j)
@@ -48,7 +48,7 @@ namespace COLLISION_UTILS {
             m[i][col] = v[i];
     }
 
-    constexpr VECTOR3 getCol(MATRIX3x12& m,int col) {
+    constexpr VECTOR3 getCol(const MATRIX3x12& m,int col) {
         VECTOR3 res{0};
         for(int i = 0;i < 3;++i)
             res[i] = m[i][col];
@@ -627,19 +627,19 @@ namespace COLLISION_UTILS {
         // assert(triangleVertices.size() == 3);
         // assert(edgeVertices.size() == 2);
 
-        const VECTOR3& a = triangleVertices[0];
-        const VECTOR3& b = triangleVertices[1];
-        const VECTOR3& c = triangleVertices[2];
+        VECTOR3 a = triangleVertices[0];
+        VECTOR3 b = triangleVertices[1];
+        VECTOR3 c = triangleVertices[2];
 
-        const VECTOR3& origin = edgeVertices[0];
-        const VECTOR3& edgeDiff = (edgeVertices[1] - edgeVertices[0]);
-        const VECTOR3& direction = edgeDiff.normalized();
+        VECTOR3 origin = edgeVertices[0];
+        VECTOR3 edgeDiff = (edgeVertices[1] - edgeVertices[0]);
+        VECTOR3 direction = edgeDiff.normalized();
 
-        const VECTOR3 geometricNormal = ((b - a).cross(c - a)).normalized();
+        VECTOR3 geometricNormal = ((b - a).cross(c - a)).normalized();
 
-        const VECTOR3 diff = a - origin;
+        VECTOR3 diff = a - origin;
         REAL denom = direction.dot(geometricNormal);
-        if (fabs(denom) <= 0.0) return false;
+        if (zs::abs(denom) <= 0.0) return false;
 
         REAL t = diff.dot(geometricNormal) / denom;
         if (t < 0) return false;
@@ -677,14 +677,14 @@ namespace COLLISION_UTILS {
                                     n.dot(nb) / n.l2NormSqr(),
                                     n.dot(nc) / n.l2NormSqr());
                                     
-        const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
+        const REAL barySum = zs::abs(barycentric[0]) + zs::abs(barycentric[1]) + zs::abs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (fabs(barySum - 1.0) < 1e-6)
+        if (zs::abs(barySum - 1.0) < 1e-6)
         {
             const VECTOR3 nHat = n / n.norm();
             const REAL normalDistance = (nHat.dot(v - v0));
-            return fabs(normalDistance);
+            return zs::abs(normalDistance);
         }
 
         // project onto each edge, find the distance to each edge
@@ -749,14 +749,14 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
                                     n.dot(nb) / n.l2NormSqr(),
                                     n.dot(nc) / n.l2NormSqr());
                                     
-        barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
+        barySum = zs::abs(barycentric[0]) + zs::abs(barycentric[1]) + zs::abs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (fabs(barySum - 1.0) < 1e-6)
+        if (zs::abs(barySum - 1.0) < 1e-6)
         {
             const VECTOR3 nHat = n / n.norm();
             const REAL normalDistance = (nHat.dot(v - v0));
-            return fabs(normalDistance);
+            return zs::abs(normalDistance);
         }
 
         // project onto each edge, find the distance to each edge
@@ -824,10 +824,10 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
                                     n.dot(nb) / n.l2NormSqr(),
                                     n.dot(nc) / n.l2NormSqr());
                                     
-        const REAL barySum = fabs(barycentric[0]) + fabs(barycentric[1]) + fabs(barycentric[2]);
+        const REAL barySum = zs::abs(barycentric[0]) + zs::abs(barycentric[1]) + zs::abs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (fabs(barySum - 1.0) < 1e-6)
+        if (zs::abs(barySum - 1.0) < 1e-6)
             return true;
 
         return false;

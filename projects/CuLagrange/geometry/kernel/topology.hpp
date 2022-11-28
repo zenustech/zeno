@@ -61,7 +61,7 @@ namespace zeno {
                     verts = proxy<space>({},verts),
                     trisBvh = proxy<space>(trisBvh),
                     neighTag] ZS_LAMBDA(int ti) mutable {
-                auto tri = tris.template pack<3>("inds",ti).template reinterpret_bits(int_c);
+                auto tri = tris.template pack<3>("inds",ti).template reinterpret_bits<int>();
                 tris.template tuple<3>(neighTag,ti) = zs::vec<int,3>{-1,-1,-1}.template reinterpret_bits<float>();
                 for(int i = 0;i < 3; ++i) {
                     int a0 = tri[(i + 0) % 3];
@@ -170,7 +170,7 @@ namespace zeno {
                 verts = proxy<space>({},verts),
                 edges = proxy<space>({},edges),
                 tris = proxy<space>({},tris),neighTag] ZS_LAMBDA(int ei) mutable {
-                    auto einds = edges.template pack<2>("inds",ei).template reinterpret_bits(int_c);
+                    auto einds = edges.template pack<2>("inds",ei).template reinterpret_bits<int>();
                     auto a0 = einds[0];
                     auto a1 = einds[1];
                     auto v0 = verts.template pack<3>("x",a0);
