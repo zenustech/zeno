@@ -226,7 +226,7 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
     for(auto const&[k ,p]: objectConsistent){
         std::string nk = k+":"+std::to_string(increase_count);
         if(cins.may_emplace(nk)){
-            std::cout << "Emplace " << nk << " , " << k << "\n";
+            //std::cout << "Emplace " << nk << " , " << k << "\n";
             // Comparison
             // If zInfo is empty that mean the object is from AnotherStage
             auto zInfo = nameComparison[k];

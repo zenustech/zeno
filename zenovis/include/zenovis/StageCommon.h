@@ -1,16 +1,23 @@
 #pragma once
 
+#include <zeno/utils/envconfig.h>
+
 #include <string>
+#include <iostream>
 
 struct SyncInfo{
     std::string sMsg;
 };
 
 struct HandleStateInfo{
-    std::string cRepo = "http://test1:12345@192.168.3.11:8000/r/zeno_usd_test.git";
-    std::string cPath = "C:/Users/Public/zeno_usd_test";
-    std::string cServer = "192.168.3.11";
+    std::string cPath;
 
     std::function<void()> cUpdateFunction;
     std::function<void(SyncInfo)> cSyncCallback;
+
+    HandleStateInfo(){
+        cPath = zeno::envconfig::get("UsdRepoPath");
+
+        std::cout << "USD: State Info Path " << cPath << "\n";
+    }
 };
