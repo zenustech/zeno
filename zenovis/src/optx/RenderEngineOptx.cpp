@@ -9,6 +9,7 @@
 #include <zeno/types/CameraObject.h>
 #include <zenovis/ObjectsManager.h>
 #include <zeno/utils/UserData.h>
+#include <zeno/extra/TempNode.h>
 #include <zeno/utils/fileio.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
@@ -57,6 +58,7 @@ struct GraphicsManager {
             std::string mtlidkey;
         };
         struct DetPrimitive {
+            std::shared_ptr<zeno::PrimitiveObject> primSp;
         };
 
     struct ZxxGraphic : zeno::disable_copy {
@@ -181,11 +183,31 @@ struct GraphicsManager {
         explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
-            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
+            if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                // vvv deepcopy to cihou following inplace ops vvv
+                auto prim_in_lslislSp = std::make_shared<zeno::PrimitiveObject>(*prim_in0);
+                // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
+                auto prim_in = prim_in_lslislSp.get();
+
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
                 if(isRealTimeObject == 0 && isUniformCarrier == 0){
+        det = DetPrimitive{prim_in_lslislSp};
+        if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
+            // todo: zhxx, should comp normal after subd or before????
+            zeno::log_trace("computing subdiv {}", subdlevs);
+            (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
+                .set("prim", prim_in_lslislSp)
+                .set2<int>("levels", subdlevs)
+                .set2<std::string>("edgeCreaseAttr", "")
+                .set2<bool>("triangulate", false)
+                .set2<bool>("asQuadFaces", true)
+                .set2<bool>("hasLoopUVs", true)
+                .set2<bool>("delayTillIpc", false)
+                .call();  // will inplace subdiv prim
+            prim_in->userData().del("delayedSubdivLevels");
+        }
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
                         zeno::primTriangulateQuads(prim_in);
@@ -196,7 +218,7 @@ struct GraphicsManager {
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
                     if(prim_in->tris.size() && need_computeNormal)
                     {
-                        std::cout<<"computing normal\n";
+                        zeno::log_trace("computing normal");
                         zeno::primCalcNormal(prim_in,1);
                     }
                     computeTrianglesTangent(prim_in);
@@ -273,7 +295,6 @@ struct GraphicsManager {
                     }
                     //flatten here, keep the rest of codes unchanged.
 
-                    det = DetPrimitive{};
                     auto vs = (float const *)prim->verts.data();
                     std::map<std::string, std::pair<float const *, size_t>> vtab;
                     prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {

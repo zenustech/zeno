@@ -1115,7 +1115,7 @@ ZENDEFNODE(PrimQuadsLotSubdivision, {{
 
                            {
                                /* category: */
-                               "prim",
+                               "primitive",
                            }});
 }
 
