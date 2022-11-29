@@ -344,7 +344,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::primCalcNormal(&*prim, 1);
         }
         if (int subdlevs = prim->userData().get2<int>("delayedSubdivLevels", 0)) {
-            zeno::log_trace("computing subdiv");
+            // todo: zhxx, should comp normal after subd or before?
+            zeno::log_trace("computing subdiv {}", subdlevs);
             (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
                 .set("prim", primUnique)
                 .set2<int>("levels", subdlevs)
@@ -356,7 +357,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 .call();  // will inplace subdiv prim
             prim->userData().del("delayedSubdivLevels");
         }
-            zeno::primCalcNormal(&*prim, 1);
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
             zeno::primTriangulateQuads(&*prim);
