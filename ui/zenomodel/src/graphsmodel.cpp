@@ -8,22 +8,7 @@
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/scope_exit.h>
 #include "variantptr.h"
-
-
-class ApiLevelScope
-{
-public:
-    ApiLevelScope(GraphsModel* pModel) : m_model(pModel)
-    {
-        m_model->beginApiLevel();
-    }
-    ~ApiLevelScope()
-    {
-        m_model->endApiLevel();
-    }
-private:
-    GraphsModel* m_model;
-};
+#include "apilevelscope.h"
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -280,8 +265,8 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
 
 QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
-    QStringList lst = path.split(cPathSeperator);
-    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param]:[param-layer-path]
+    QStringList lst = path.split(cPathSeperator, Qt::SkipEmptyParts);
+    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
     if (lst.size() == 1)
     {
         const QString& subgName = lst[0];
@@ -312,9 +297,37 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
         }
         else if (paramCls == "panel-param")
         {
-            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_PANEL));\
+            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_PANEL));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
+        }
+        else if (paramCls == "core-param")
+        {
+            //decouples with IParamModel::data(ROLE_OBJPATH).
+            //format like /inputs/param-name   /params/param-name   /outputs/param-name
+            QStringList _lst = paramPath.split("/", Qt::SkipEmptyParts);
+            if (_lst.size() == 2)
+            {
+                const QString& _cls = _lst[0];
+                const QString& _name = _lst[1];
+                IParamModel* coreModel = nullptr;
+                if (_cls == "inputs")
+                {
+                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
+                }
+                else if (_cls == "params")
+                {
+                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+                }
+                else if (_cls == "outputs")
+                {
+                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
+                }
+                if (coreModel)
+                {
+                    return coreModel->index(_name);
+                }
+            }
         }
     }
     return QModelIndex();
@@ -921,14 +934,11 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
 
         SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph);
-
-        NODE_DATA nodeData2 = nodeData;
         if (onSubIOAdd(pGraph, nodeData))
             return;
         if (onListDictAdd(pGraph, nodeData))
             return;
-
-        pGraph->appendItem(nodeData2);
+        pGraph->appendItem(nodeData);
     }
 }
 
@@ -1358,36 +1368,6 @@ void GraphsModel::removeSubGraph(const QString& name)
     }
 }
 
-void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
-{
-    if (enableTransaction)
-    {
-        QModelIndex idx = index(id, subGpIdx);
-        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
-        //validate the name of SubInput/SubOutput
-        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
-        {
-            const QString& subgName = subGpIdx.data(ROLE_OBJNAME).toString();
-            QString correctName = UiHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
-            info.newValue = correctName;
-        }
-
-        UpdateDataCommand* pCmd = new UpdateDataCommand(id, info, this, subGpIdx);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        ApiLevelScope batch(this);
-
-        SubGraphModel* pGraph = subGraph(subGpIdx.row());
-        ZASSERT_EXIT(pGraph);
-        pGraph->updateParam(id, info.name, info.newValue);
-
-        const QModelIndex& nodeIdx = pGraph->index(id);
-        onSubIOUpdate(pGraph, nodeIdx, info);
-    }
-}
-
 QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 {
     QModelIndexList results;
@@ -1403,35 +1383,23 @@ QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
     return results;
 }
 
+void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
+{
+    const QModelIndex& nodeIdx = index(id, subGpIdx);
+    IParamModel* pModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+    const QModelIndex& paramIdx = pModel->index(info.name);
+    ModelSetData(paramIdx, info.newValue, ROLE_PARAM_VALUE);
+}
+
 void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
-    if (enableTransaction)
-    {
-        UpdateSockDeflCommand* pCmd = new UpdateSockDeflCommand(id, info, this, subGpIdx);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        ApiLevelScope batch(this);
-
-        SubGraphModel *pSubg = subGraph(subGpIdx.row());
-        ZASSERT_EXIT(pSubg);
-        pSubg->updateSocketDefl(id, info);
-    }
+    const QModelIndex& nodeIdx = index(id, subGpIdx);
+    IParamModel* pModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
+    const QModelIndex& paramIdx = pModel->index(info.name);
+    ModelSetData(paramIdx, info.newValue, ROLE_PARAM_VALUE);
 }
 
-void GraphsModel::AddTransactionCmd(
-    QAbstractItemModel* pTargetModel,
-    const QPersistentModelIndex& idx,
-    const QVariant& oldValue,
-    const QVariant& newValue,
-    int role)
-{
-    ModelDataCommand* pCmd = new ModelDataCommand(this, idx, oldValue, newValue, role);
-    m_stack->push(pCmd);
-}
-
-int GraphsModel::ExcuteApi(
+int GraphsModel::ModelSetData(
     const QPersistentModelIndex& idx,
     const QVariant& value,
     int role,
@@ -1453,25 +1421,8 @@ int GraphsModel::ExcuteApi(
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {
-    if (enableTransaction)
-    {
-        UpdateStateCommand* pCmd = new UpdateStateCommand(nodeid, info, this, subgIdx);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        SubGraphModel *pSubg = subGraph(subgIdx.row());
-        ZASSERT_EXIT(pSubg);
-        if (info.role != ROLE_OBJPOS && info.role != ROLE_COLLASPED)
-        {
-            ApiLevelScope batch(this);
-            pSubg->updateNodeStatus(nodeid, info);
-        }
-        else
-        {
-            pSubg->updateNodeStatus(nodeid, info);
-        }
-    }
+    QModelIndex nodeIdx = index(nodeid, subgIdx);
+    ModelSetData(nodeIdx, info.newValue, info.role);
 }
 
 void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& newInfo, const QModelIndex& subgIdx, bool enableTransaction)

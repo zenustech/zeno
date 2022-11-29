@@ -116,22 +116,18 @@ public:
     bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name) override;
 	void endTransaction() override;
+    void beginApiLevel() override;
+    void endApiLevel() override;
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
     IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
     QModelIndexList findSubgraphNode(const QString& subgName) override;
-    void AddTransactionCmd(
-        QAbstractItemModel* pTargetModel,
-        const QPersistentModelIndex& idx,
-        const QVariant& oldValue,
-        const QVariant& newValue,
-        int role) override;
-    int ExcuteApi(
+    int ModelSetData(
         const QPersistentModelIndex& idx,
         const QVariant& value,
         int role,
-        const QString& comment) override;
+        const QString& comment = "") override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -168,8 +164,6 @@ private:
     NODE_DATA _fork(const QString& forkSubgName);
     QString uniqueSubgraph(QString orginName);
 
-    void beginApiLevel();
-    void endApiLevel();
     void onApiBatchFinished();
 
     QVector<SubGraphModel*> m_subGraphs;

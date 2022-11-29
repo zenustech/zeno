@@ -232,23 +232,39 @@ bool IParamModel::hasChildren(const QModelIndex& parent) const
 
 QVariant IParamModel::data(const QModelIndex& index, int role) const
 {
-    QString name = nameFromRow(index.row());
+    const QString& name = nameFromRow(index.row());
     auto itItem = m_items.find(name);
     ZASSERT_EXIT(itItem != m_items.end(), QModelIndex());
     const _ItemInfo& item = m_items[name];
 
     switch (role)
     {
-    case Qt::DisplayRole:
-    case ROLE_PARAM_NAME:   return item.name;
-    case ROLE_PARAM_TYPE:   return item.type;
-    case ROLE_PARAM_CTRL:   return item.ctrl;
-    case ROLE_PARAM_VALUE:  return item.pConst;
-    case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
-    case ROLE_PARAM_SOCKETTYPE:     return m_class;
-    case ROLE_OBJID:
-        //return nodeid:
-        return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
+        case Qt::DisplayRole:
+        case ROLE_PARAM_NAME:   return item.name;
+        case ROLE_PARAM_TYPE:   return item.type;
+        case ROLE_PARAM_CTRL:   return item.ctrl;
+        case ROLE_PARAM_VALUE:  return item.pConst;
+        case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
+        case ROLE_PARAM_SOCKETTYPE:     return m_class;
+        case ROLE_OBJID:
+            return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
+        case ROLE_OBJPATH:
+        {
+            QString path;
+            path = QString("core-param") + cPathSeperator;
+            if (m_class == PARAM_INPUT) {
+                path += "/inputs";
+            }
+            else if (m_class == PARAM_PARAM) {
+                path += "/params";
+            }
+            else if (m_class == PARAM_OUTPUT) {
+                path += "/outputs";
+            }
+            path += "/" + name;
+            path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
+            return path;
+        }
     }
     return QVariant();
 }
@@ -276,6 +292,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                 return false;
 
             int row = m_key2Row[name];
+            ZASSERT_EXIT(row == index.row(), false);
             m_key2Row.remove(oldName);
             m_key2Row.insert(newName, row);
             m_row2Key[row] = newName;

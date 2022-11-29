@@ -283,11 +283,10 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QPersistentModelIndex perIdx(paramItem->index());
 
     Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
-        //trick implementation:
-        //todo: api scoped and transaction: undo/redo problem.
-        if (!m_idx.isValid() || !perIdx.isValid())
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (!pModel)
             return;
-        paramItem->setData(newValue, ROLE_PARAM_VALUE);
+        int ret = pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwitch = [=](bool bOn) {

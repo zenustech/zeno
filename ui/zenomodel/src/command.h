@@ -67,48 +67,6 @@ private:
     bool m_bAdded;
 };
 
-class UpdateDataCommand : public QUndoCommand
-{
-public:
-    UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    PARAM_UPDATE_INFO m_updateInfo;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
-};
-
-class UpdateSockDeflCommand : public QUndoCommand
-{
-public:
-    UpdateSockDeflCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    PARAM_UPDATE_INFO m_updateInfo;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
-};
-
-class UpdateStateCommand : public QUndoCommand
-{
-public:
-    UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    QString m_nodeid;
-    STATUS_UPDATE_INFO m_info;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
-};
-
 class UpdateBlackboardCommand : public QUndoCommand
 {
 public:
@@ -148,6 +106,8 @@ public:
     void undo() override;
 
 private:
+    void ensureIdxValid();
+
     IGraphsModel* m_model;
     const QVariant m_oldData;
     const QVariant m_newData;

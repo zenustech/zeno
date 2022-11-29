@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "modeldata.h"
 #include "zassert.h"
+#include "apilevelscope.h"
 
 
 AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
@@ -115,77 +116,6 @@ void RemoveLinkCommand::undo()
 }
 
 
-UpdateDataCommand::UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx)
-    : QUndoCommand()
-    , m_nodeid(nodeid)
-    , m_updateInfo(updateInfo)
-    , m_subgIdx(subgIdx)
-    , m_model(pModel)
-{
-}
-
-void UpdateDataCommand::redo()
-{
-    m_model->updateParamInfo(m_nodeid, m_updateInfo, m_subgIdx);
-}
-
-void UpdateDataCommand::undo()
-{
-    PARAM_UPDATE_INFO revertInfo;
-    revertInfo.name = m_updateInfo.name;
-    revertInfo.newValue = m_updateInfo.oldValue;
-    revertInfo.oldValue = m_updateInfo.newValue;
-    m_model->updateParamInfo(m_nodeid, revertInfo, m_subgIdx);
-}
-
-
-UpdateSockDeflCommand::UpdateSockDeflCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx)
-    : QUndoCommand()
-    , m_nodeid(nodeid)
-    , m_updateInfo(updateInfo)
-    , m_subgIdx(subgIdx)
-    , m_model(pModel)
-{
-}
-
-void UpdateSockDeflCommand::redo()
-{
-    m_model->updateSocketDefl(m_nodeid, m_updateInfo, m_subgIdx);
-}
-
-void UpdateSockDeflCommand::undo()
-{
-    PARAM_UPDATE_INFO revertInfo;
-    revertInfo.name = m_updateInfo.name;
-    revertInfo.newValue = m_updateInfo.oldValue;
-    revertInfo.oldValue = m_updateInfo.newValue;
-    m_model->updateSocketDefl(m_nodeid, revertInfo, m_subgIdx);
-}
-
-
-UpdateStateCommand::UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
-    : m_nodeid(nodeid)
-    , m_info(info)
-    , m_pModel(pModel)
-    , m_subgIdx(subgIdx)
-{
-}
-
-void UpdateStateCommand::redo()
-{
-    m_pModel->updateNodeStatus(m_nodeid, m_info, m_subgIdx);
-}
-
-void UpdateStateCommand::undo()
-{
-    STATUS_UPDATE_INFO info;
-    info.role = m_info.role;
-    info.newValue = m_info.oldValue;
-    info.oldValue = m_info.newValue;
-    m_pModel->updateNodeStatus(m_nodeid, info, m_subgIdx);
-}
-
-
 UpdateBlackboardCommand::UpdateBlackboardCommand(
         const QString& nodeid,
         BLACKBOARD_INFO newInfo,
@@ -249,36 +179,29 @@ ModelDataCommand::ModelDataCommand(IGraphsModel* pModel, const QModelIndex& idx,
     m_objPath = idx.data(ROLE_OBJPATH).toString();
 }
 
-void ModelDataCommand::redo()
+void ModelDataCommand::ensureIdxValid()
 {
     if (!m_index.isValid())
     {
-        m_index = m_model->indexFromPath(m_objPath);
-        if (!m_index.isValid())
-            return;
+        m_index = m_model->indexFromPath(m_objPath);    //restore the index because the index may be invalid after new/delete item.
     }
-    else
-    {
-        //keep update the path.
-        m_objPath = m_index.data(ROLE_OBJPATH).toString();
-    }
+}
+
+void ModelDataCommand::redo()
+{
+    ensureIdxValid();
+    //todo: setpos case.
+    ApiLevelScope scope(m_model);
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-    pModel->setData(m_index, m_newData, m_role);
+    if (pModel)
+        pModel->setData(m_index, m_newData, m_role);
 }
 
 void ModelDataCommand::undo()
 {
-    if (!m_index.isValid())
-    {
-        m_index = m_model->indexFromPath(m_objPath);
-        if (!m_index.isValid())
-            return;
-    }
-    else
-    {
-        //keep update the path.
-        m_objPath = m_index.data(ROLE_OBJPATH).toString();
-    }
+    ensureIdxValid();
+    ApiLevelScope scope(m_model);
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-    pModel->setData(m_index, m_oldData, m_role);
+    if (pModel)
+        pModel->setData(m_index, m_oldData, m_role);
 }

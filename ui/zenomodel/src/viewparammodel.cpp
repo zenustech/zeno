@@ -550,7 +550,30 @@ void ViewParamModel::onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int
     IParamModel* pModel = qobject_cast<IParamModel*>(sender());
     ZASSERT_EXIT(pModel);
     const QModelIndex& idx = pModel->index(first, 0, parent);
-    if (!idx.isValid()) return;
+    if (!idx.isValid())
+        return;
+
+    QStandardItem* rootItem = invisibleRootItem()->child(0);
+    if (!rootItem)
+        return;
+
+    for (int i = 0; i < rootItem->rowCount(); i++)
+    {
+        QStandardItem* pTab = rootItem->child(i);
+        for (int j = 0; j < pTab->rowCount(); j++)
+        {
+            QStandardItem* pGroup = pTab->child(j);
+            for (int k = 0; k < pGroup->rowCount(); k++)
+            {
+                VParamItem* pParam = static_cast<VParamItem*>(pGroup->child(k));
+                if (pParam->m_index == idx)
+                {
+                    pGroup->removeRow(k);
+                    return;
+                }
+            }
+        }
+    }
 }
 
 QPersistentModelIndex ViewParamModel::nodeIdx() const

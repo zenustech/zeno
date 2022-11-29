@@ -255,7 +255,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
-        pModel->ExcuteApi(perIdx, newValue, ROLE_PARAM_VALUE);
+        pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {
@@ -567,6 +567,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
             m_outSockets.remove(sockName);
         ZGraphicsLayout* pParentLayout = pSocketLayout->parentLayout();
         pParentLayout->removeLayout(pSocketLayout);
+        updateWhole();
     }
     else if (groupName == "Parameters")
     {
@@ -578,6 +579,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         ZGraphicsLayout* pParentLayout = paramLayout->parentLayout();
         if (pParentLayout)
             pParentLayout->removeLayout(paramLayout);
+        updateWhole();
     }
 }
 
@@ -603,7 +605,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
-        pModel->ExcuteApi(perIdx, newText, ROLE_PARAM_NAME);
+        pModel->ModelSetData(perIdx, newText, ROLE_PARAM_NAME);
     };
 
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
@@ -718,7 +720,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
-        int ret = pModel->ExcuteApi(perIdx, newValue, ROLE_PARAM_VALUE);
+        int ret = pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
     auto cbSwith = [=](bool bOn) {

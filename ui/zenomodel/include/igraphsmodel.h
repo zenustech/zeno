@@ -88,16 +88,12 @@ public:
 	virtual bool IsIOProcessing() const = 0;
     virtual void beginTransaction(const QString& name) = 0;
     virtual void endTransaction() = 0;
+    virtual void beginApiLevel() = 0;
+	virtual void endApiLevel() = 0;
 	virtual LinkModel* linkModel() const = 0;
 	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
-	virtual void AddTransactionCmd(
-			QAbstractItemModel* pTargetModel,
-			const QPersistentModelIndex& idx,
-			const QVariant& oldValue,
-			const QVariant& newValue,
-			int role) = 0;
-	virtual int ExcuteApi(
+	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,
 			const QVariant& value,
 			int role,
