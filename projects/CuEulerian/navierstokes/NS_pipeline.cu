@@ -27,16 +27,17 @@ struct ZSVDBToNavierStokesGrid : INode {
 
         auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
         spg.append_channels(zs::cuda_exec(), {
-                                                 {"v0", 3},
+                                                 {"v0", 3}, // velocity
                                                  {"v1", 3},
-                                                 {"p0", 1},
+                                                 {"p0", 1}, // pressure
                                                  {"p1", 1},
                                                  {"rho0", 1}, // smoke density
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
                                                  {"T1", 1},
-                                                 {"tmp", 3}, // FVM, BFECC, MultiGrid
-                                                 {"adv", 3}  // reflection
+                                                 {"tmp", 3},  // FVM, BFECC, MultiGrid
+                                                 {"adv", 3},  // reflection
+                                                 {"noise", 3} // Perlin noise
                                              });
         spg._background = 0.f;
 
