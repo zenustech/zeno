@@ -542,7 +542,7 @@ struct BulletGlueCompoundShape : IObject {
 		for (int i = 0; i < found.size(); i++) {
 			found[i] = i;
 		}
-		auto find = [&] (int i) {
+		auto find = [&] (int i) { // todo: zhxx optimize my djtesla 3q
 			while (i != found[i])
 				i = found[i];
 			return i;
@@ -570,12 +570,12 @@ struct BulletGlueCompoundShape : IObject {
                 compShape = std::make_shared<BulletCompoundShape>(std::move(compound));
             }
 
-            struct TmpChDat {
+            struct TempchDat {
                 btVector3 chOrig;
                 btMatrix3x3 chBasis;
                 std::shared_ptr<BulletCollisionShape> shape;
             };
-            std::vector<TmpChDat> tempchs;
+            std::vector<TempchDat> tempchs;
 
             void addChild(ChildData const &ch) {
                 auto chOrig = ch.trans.getOrigin();
@@ -594,7 +594,7 @@ struct BulletGlueCompoundShape : IObject {
                 btMatrix3x3 identMat;
                 identMat.setIdentity();
                 btTransform avgTrans(identMat, avgOrig);
-                return std::make_shared<BulletObject>(mass, avgTrans, compShape);
+                return std::make_shared<BulletObject>(mass, avgTrans, std::move(compShape));
             }
         };
         std::vector<CompData> comps(uniq.size());
