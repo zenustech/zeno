@@ -161,6 +161,7 @@ struct FastClothSystem : IObject {
     void findConstraints(zs::CudaExecutionPolicy &pol, T dHat);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
     /// @note given "xinit", computes x^{k+1}
+    void initialStepping(zs::CudaExecutionPolicy &pol);
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
     void hardPhase(zs::CudaExecutionPolicy &pol);
