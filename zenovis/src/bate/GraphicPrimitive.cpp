@@ -9,6 +9,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
+#include <zeno/extra/TempNode.h>
 #include <zenovis/Camera.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/Scene.h>
@@ -302,11 +303,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
-    std::unique_ptr<zeno::PrimitiveObject> primUnique;
+    std::shared_ptr<zeno::PrimitiveObject> primUnique;
     zeno::PrimitiveObject *prim;
 
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
-        : scene(scene_), primUnique(std::make_unique<zeno::PrimitiveObject>(*primArg)) {
+        : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
         prim = primUnique.get();
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -341,6 +342,20 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
+        }
+        if (int subdlevs = prim->userData().get2<int>("delayedSubdivLevels", 0)) {
+            // todo: zhxx, should comp normal after subd or before?
+            zeno::log_trace("computing subdiv {}", subdlevs);
+            (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
+                .set("prim", primUnique)
+                .set2<int>("levels", subdlevs)
+                .set2<std::string>("edgeCreaseAttr", "")
+                .set2<bool>("triangulate", false)
+                .set2<bool>("asQuadFaces", true)
+                .set2<bool>("hasLoopUVs", true)
+                .set2<bool>("delayTillIpc", false)
+                .call();  // will inplace subdiv prim
+            prim->userData().del("delayedSubdivLevels");
         }
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
