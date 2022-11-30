@@ -18,7 +18,6 @@ struct DrawOptions {
     int num_samples = 1;
     int msaa_samples = 0;
 
-    bool interactive = false;
     std::shared_ptr<IGraphicHandler> handler;
 
     glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};

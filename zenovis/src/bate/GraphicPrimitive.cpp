@@ -487,6 +487,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 triObj.ebo->bind_data(prim->tris.data(),
                                       tris_count * sizeof(prim->tris[0]));
                 triObj.vbo = nullptr;
+
             } else {
                 computeTrianglesTangent(&*prim);
                 parseTrianglesDrawBuffer(&*prim, triObj);

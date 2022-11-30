@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
@@ -36,6 +37,13 @@ enum {
     VIEW_COORD_SYS
 };
 
+enum {
+    PICK_OBJECT,
+    PICK_VERTEX,
+    PICK_LINE,
+    PICK_MESH
+};
+
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;
@@ -56,6 +64,12 @@ struct IGraphicHandler : IGraphicDraw {
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
 };
 
+struct IPicker : IGraphicDraw {
+    virtual std::string getPicked(int x, int y) = 0;
+    virtual std::string getPicked(int x0, int y0, int x1, int y1) = 0;
+    virtual void setPrimSet(const std::vector<std::string>& prims) = 0;
+};
+
 struct MakeGraphicVisitor {
     Scene *in_scene{};
     std::unique_ptr<IGraphic> out_result;
@@ -74,4 +88,7 @@ std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center, float scale);
 std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center, float scale);
 std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center, float scale);
+
+std::unique_ptr<IPicker> makeFrameBufferPicker(Scene *scene);
+std::unique_ptr<IGraphicDraw> makePrimitiveHighlight(Scene* scene);
 } // namespace zenovis
