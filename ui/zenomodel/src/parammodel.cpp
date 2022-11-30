@@ -334,11 +334,34 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             item.links = value.value<PARAM_LINKS>();
             break;
         }
+        case ROLE_ADDLINK:
+        {
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            ZASSERT_EXIT(linkIdx.isValid(), false);
+            item.links.append(linkIdx);
+            //if (item.ctrl == CONTROL_DICTPANEL)
+            //{
+            //    int j;
+            //    j = 0;
+            //}
+            break;
+        }
+        case ROLE_REMOVELINK:
+        {
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            ZASSERT_EXIT(linkIdx.isValid(), false);
+            item.links.removeAll(linkIdx);
+            //if (item.ctrl == CONTROL_DICTPANEL)
+            //{
+            //    int j;
+            //    j = 0;
+            //}
+            break;
+        }
         default:
             return false;
     }
     emit dataChanged(index, index, QVector<int>{role});     //legacy signal
-    emit mock_dataChanged(index, oldValue, role);   //custom signal.
     return true;
 }
 
@@ -538,8 +561,7 @@ bool IParamModel::addLinkToParam(const QString& sockName, const QModelIndex& lin
 
     item.links.append(linkIdx);
 
-    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});     //legacy signal
-    emit mock_dataChanged(idx, oldValue, ROLE_PARAM_LINKS);   //custom signal.
+    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});
 }
 
 bool IParamModel::removeLink(const QString& sockName, const QModelIndex& linkIdx)
@@ -557,8 +579,7 @@ bool IParamModel::removeLink(const QString& sockName, const QModelIndex& linkIdx
 
     item.links.removeOne(linkIdx);
 
-    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});     //legacy signal
-    emit mock_dataChanged(idx, oldValue, ROLE_PARAM_LINKS);   //custom signal.
+    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});
 }
 
 QStringList IParamModel::sockNames() const

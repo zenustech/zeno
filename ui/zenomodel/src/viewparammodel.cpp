@@ -152,6 +152,9 @@ QVariant VParamItem::data(int role) const
             return model()->data(index(), ROLE_OBJID);
         return "";
     }
+    case ROLE_ADDLINK:
+    case ROLE_REMOVELINK:
+        break;  //todo: link for custom param.
     case ROLE_VAPRAM_EDITTABLE:
     default:
         return QStandardItem::data(role);
@@ -496,6 +499,10 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
+                //until now we can init the control, because control is a "view" property, should be dependent with core data.
+                //todo: global control settings, like zfxCode, dict/list panel control, etc.
+                //PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc); 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);

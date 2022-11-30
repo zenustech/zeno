@@ -1227,8 +1227,10 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
         IParamModel* pOutputs = pGraph->paramModel(outIdx, PARAM_OUTPUT);
         ZASSERT_EXIT(pInputs && pOutputs);
 
-        pOutputs->removeLink(outSock, linkIdx);
-        pInputs->removeLink(inSock, linkIdx);
+        const QModelIndex& outSockIdx = pOutputs->index(outSock);
+        const QModelIndex& inSockIdx = pInputs->index(inSock);
+        pOutputs->setData(outSockIdx, linkIdx, ROLE_REMOVELINK);
+        pInputs->setData(inSockIdx, linkIdx, ROLE_REMOVELINK);
         m_linkModel->removeRow(linkIdx.row());
     }
 }
@@ -1287,9 +1289,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
         const QModelIndex& linkIdx = m_linkModel->index(row, 0);
 
         ZASSERT_EXIT(pInputs && pOutputs, QModelIndex());
-
-        pInputs->addLinkToParam(info.inputSock, linkIdx);
-        pOutputs->addLinkToParam(info.outputSock, linkIdx);
+        pInputs->setData(inParamIdx, linkIdx, ROLE_ADDLINK);
+        pOutputs->setData(outParamIdx, linkIdx, ROLE_ADDLINK);
 
         //todo: encapsulation when case grows.
         if (bAddDynamicSock)

@@ -358,6 +358,7 @@ ZSocketGroupItem::ZSocketGroupItem(
     if (bInput && 
         (coreType == "list" ||
         coreType == "dict" ||
+        coreType == "DictObject" ||
         coreType == "DictObject:NumericObject"))
     {
         QRectF rc = this->boundingRect();

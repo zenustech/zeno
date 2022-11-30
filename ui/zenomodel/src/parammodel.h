@@ -85,9 +85,6 @@ public:
 
     void clear();
 
-signals:
-    void mock_dataChanged(const QModelIndex& idx, const QVariant& oldValue, int role);
-
 private:
     QString nameFromRow(int row) const;
     bool _insertRow(int row,

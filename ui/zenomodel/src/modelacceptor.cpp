@@ -157,6 +157,53 @@ void ModelAcceptor::setViewRect(const QRectF& rc)
     m_currentGraph->setViewRect(rc);
 }
 
+void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
+{
+    if (!m_currentGraph)
+        return;
+
+    //legacy io formats.
+
+    //there is no info about whether the key belongs to input or output.
+    //have to classify by nodecls.
+    QModelIndex idx = m_currentGraph->index(id);
+    const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+    if (nodeName == "MakeDict")
+    {
+        for (auto keyName : keys)
+        {
+            addDictKey(id, keyName, true);
+        }
+    }
+    else if (nodeName == "ExtractDict")
+    {
+        for (auto keyName : keys)
+        {
+            addDictKey(id, keyName, false);
+        }
+    }
+    else if (nodeName == "MakeList")
+    {
+        //no need to do anything, because we have import the keys from inputs directly.
+    }
+}
+
+void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool bInput)
+{
+    if (!m_currentGraph)
+        return;
+
+    QModelIndex idx = m_currentGraph->index(id);
+    if (bInput)
+    {
+        m_currentGraph->setParamValue(PARAM_INPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
+    }
+    else
+    {
+        m_currentGraph->setParamValue(PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
+    }
+}
+
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
@@ -208,53 +255,6 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
     m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
     m_currentGraph->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-}
-
-void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
-{
-    if (!m_currentGraph)
-        return;
-
-    //legacy io formats.
-
-    //there is no info about whether the key belongs to input or output.
-    //have to classify by nodecls.
-    QModelIndex idx = m_currentGraph->index(id);
-    const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
-    if (nodeName == "MakeDict")
-    {
-        for (auto keyName : keys)
-        {
-            addDictKey(id, keyName, true);
-        }
-    }
-    else if (nodeName == "ExtractDict")
-    {
-        for (auto keyName : keys)
-        {
-            addDictKey(id, keyName, false);
-        }
-    }
-    else if (nodeName == "MakeList")
-    {
-        //no need to do anything, because we have import the keys from inputs directly.
-    }
-}
-
-void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool bInput)
-{
-    if (!m_currentGraph)
-        return;
-
-    QModelIndex idx = m_currentGraph->index(id);
-    if (bInput)
-    {
-        m_currentGraph->setParamValue(PARAM_INPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
-    }
-    else
-    {
-        m_currentGraph->setParamValue(PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
-    }
 }
 
 void ModelAcceptor::setInputSocket(
