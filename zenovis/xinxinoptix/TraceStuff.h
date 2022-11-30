@@ -67,7 +67,6 @@ struct RadiancePRD
 
     // cihou nanovdb
     float t0, t1;
-    float depthVDB;
     float transmittanceVDB;
     
     void         pushMat(vec3 extinction)

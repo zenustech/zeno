@@ -81,7 +81,8 @@ set(FILE_LIST
 
     # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume_cuda.h
     # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.cu
-    ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.h
+    # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/NanoVDB.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Ray.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/HDDA.h

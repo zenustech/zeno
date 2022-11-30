@@ -572,8 +572,6 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
     float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
-
-    prd->depthVDB = optixGetRayTmax();
     
     //N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );

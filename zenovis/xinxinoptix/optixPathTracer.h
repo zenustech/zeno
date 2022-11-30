@@ -95,8 +95,10 @@ struct HitGroupData
     float4* uniforms;
     cudaTextureObject_t textures[32];
 
+    // cihou nanovdb
     float opacityHDDA;
-    void* gridVDB;
+    void* densityGrid;
+    float3 colorVDB;
 
     float sigma_a, sigma_s;
     float greenstein; // -1 ~ 1

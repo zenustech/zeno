@@ -130,6 +130,8 @@ extern "C" __global__ void __raygen__rg()
         prd.is_test_ray = false;
         for(;;)
         {
+            //prd.attenuation2 = prd.attenuation;
+
             traceRadiance(
                     params.handle,
                     ray_origin,
@@ -148,8 +150,14 @@ extern "C" __global__ void __raygen__rg()
                            1e16f, // tmax,
                            &shadow_prd);
 
-            // if (shadow_prd.shadowAttanuation.x < 1.0f || shadow_prd.shadowAttanuation.y < 1.0f || shadow_prd.shadowAttanuation.z < 1.0f) {
-            //     printf("UUUUIUIUIUIUIUIUIUIUIUI x=%f y=%f z=%f \n\n", shadow_prd.shadowAttanuation.x, shadow_prd.shadowAttanuation.y, shadow_prd.shadowAttanuation.z);
+            prd.attenuation2 = prd.attenuation;
+
+            // if (prd.depth > 1) {
+
+            //     const uint3    launch_index = optixGetLaunchIndex();
+            //     const unsigned int image_index  = launch_index.y * params.width + launch_index.x;
+            //     params.frame_buffer[ image_index ] = make_color(prd.attenuation2);
+            //     return;
             // }
 
             radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
@@ -164,7 +172,7 @@ extern "C" __global__ void __raygen__rg()
                 prd.done = true;
             }
             if( prd.done ){
-                
+                prd.attenuation2 = prd.attenuation;
                 break;
             }
             if(prd.depth>8){
@@ -178,18 +186,15 @@ extern "C" __global__ void __raygen__rg()
             }
             if(prd.countEmitted == true)
                 prd.passed = true;
+
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            prd.attenuation2 = prd.attenuation;
+            //prd.attenuation2 = prd.attenuation;
             // if(prd.passed == false)
             //     ++depth;        
             //}else{
                 //prd.passed = false;
             //}
-            //result = prd.attenuation * prd.radiance;
-            //result = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
-            //result = prd.radiance * prd.attenuation2;
-            //result = shadow_prd.shadowAttanuation;
         }
     }
     while( --i );
@@ -220,12 +225,6 @@ extern "C" __global__ void __miss__radiance()
 {
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
-
-    // if (ix == 0 && iy == 0) {
-    //     printf("__miss__radiance \n");
-    // }
-
-    getPRD()->depthVDB = _INF_F;
 
     vec3 sunLightDir = vec3(
             params.sunLightDirX,
@@ -260,6 +259,10 @@ extern "C" __global__ void __miss__radiance()
     prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
+
+    if (prd->depth == 1) {
+        prd->attenuation = make_float3(0.0);
+    }
 
     if(length(prd->attenuation)<1e-7f){
         prd->done = true;
@@ -323,7 +326,7 @@ static __forceinline__ __device__ void traceRadianceMasked(
             tmax,
             0.0f,                     // rayTime
             (mask),
-            OPTIX_RAY_FLAG_NONE,
+            OPTIX_RAY_FLAG_DISABLE_ANYHIT,
             RAY_TYPE_RADIANCE,        // SBT offset
             RAY_TYPE_COUNT,           // SBT stride
             RAY_TYPE_RADIANCE,        // missSBTIndex
@@ -435,14 +438,12 @@ inline __device__ float transmittanceHDDA(
 
 extern "C" __global__ void __intersection__volume()
 {
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
     RadiancePRD* prd = getPRD();
     if(prd->volumeHitSurface==false)
     {
         const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
         const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
-            sbt_data->gridVDB );
+            sbt_data->densityGrid );
         assert( grid );
 
         // compute intersection points with the volume's bounds in index (object) space.
@@ -473,7 +474,7 @@ inline __device__ T __Lerp(float t, T s1, T s2) {
 }
 
 template <typename Acc>
-inline __device__ float sampling(Acc& acc, nanovdb::Vec3f test_point_indexd) {
+inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& test_point_indexd) {
 
     auto test_point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(test_point_indexd);
 
@@ -482,7 +483,6 @@ inline __device__ float sampling(Acc& acc, nanovdb::Vec3f test_point_indexd) {
     auto point_a = nanovdb::Coord(test_point_floor[0], test_point_floor[1], test_point_floor[2]);
 
         auto value_000 = acc.getValue(point_a);
-
         auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
 
         auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
@@ -507,28 +507,19 @@ inline __device__ float sampling(Acc& acc, nanovdb::Vec3f test_point_indexd) {
 
 extern "C" __global__ void __closesthit__radiance_volume()
 {
-    
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
-
     RadiancePRD* prd = getPRD();
     if(prd->is_test_ray==true)
         return;
-    prd->attenuation2 = prd->attenuation;//scattering;
+    //prd->attenuation2 = prd->attenuation;
     prd->radiance = make_float3(0,0,0);
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
-    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(sbt_data->gridVDB );
-
-    const auto& tree = grid->tree();
-    auto        acc  = tree.getAccessor();
+    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(sbt_data->densityGrid );
+    const auto& acc = grid->tree().getAccessor();
 
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
-
-    
-
 
     float t0 = optixGetRayTmax(); // world space
     float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
@@ -552,14 +543,17 @@ extern "C" __global__ void __closesthit__radiance_volume()
         t1 = testPRD.t1;
         surface_inside_volume = true;
     }
-    //t1 = prd->t1;
+
     const float t_max = t1 - t0; // world space
-          float t_ele = 0;
+    float t_ele = 0;
 
     auto test_point = ray_orig; 
+    float3 scattering = make_float3(1.0);
 
-    float scattering = 1.0;
-    float a;
+    float v_density = 0.0;
+
+#if (!_DELTA_TRACKING_) 
+
     auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
     t_ele -= log(1 - rnd(prd->seed)) / 0.1;
     float test_t = t0 + t_ele;
@@ -574,11 +568,11 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
     test_point = ray_orig + test_t * ray_dir;
     auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
-    auto v_final = sampling(acc, test_point_indexd);
+    v_density = linearSampling(acc, test_point_indexd);
     
     vec3 new_dir = ray_dir;
     
-    if(v_final>0){
+    if(v_density > 0){
         const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
                                               reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
         auto start = grid->worldToIndexF( ray( t0 ) );
@@ -589,59 +583,72 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         const float opacity = sbt_data->opacityHDDA;
         
-        scattering = transmittanceHDDA( start, end, acc, 0.01 );;
+        //scattering *= transmittanceHDDA( start, end, acc, 0.01 );;
         new_dir = DisneyBSDF::SampleScatterDirection(prd->seed);
-        
+
+        HenyeyGreenstein hg {sbt_data->greenstein};
+        float3 new_dir; float2 uu = {rnd(prd->seed), rnd(prd->seed)};
+        auto pdf = hg.Sample_p(-ray_dir,             new_dir, uu);
+        // //scattering *= pdf;
+
+        scattering *= sbt_data->colorVDB;        
         ray_dir = (prd->volumeHitSurface )? ray_dir : float3(new_dir);
-
     }
-    // int8_t level = 4;
-    // while(level-->0) {
 
-    //     auto prob = rnd(prd->seed);
-    //     auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
+#else
 
-    //     t_ele -= log(1 - prob) / sigma_t;
+    int8_t level = 4;
+    while(level-->0) {
 
-    //     test_point = ray_orig + (t0+t_ele) * ray_dir;
+        auto prob = rnd(prd->seed);
+        auto sigma_t = sbt_data->sigma_a + sbt_data->sigma_s;
 
-    //     if (t_ele >= t_max) {
-            
-    //         ray_orig = test_point;  
-    //         break;
-    //     } // over shoot, outside of volume
+        t_ele -= log(1 - prob) / sigma_t;
 
-    //     auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
+        if (t_ele >= t_max) {
 
-    //     // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, false>;
-    //     // float d = Sampler(acc)(test_point_indexd);
+            float t_tmp = t_max + surface_inside_volume? -1e-6 : 1e-6;
 
-    //     //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
-    //     //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
+            test_point = ray_orig + (t0+t_ele) * ray_dir;
+            break;
+        } // over shoot, outside of volume
 
-    //     auto v_final = sampling(acc, test_point_indexd);
+        test_point = ray_orig + (t0+t_ele) * ray_dir;
 
-    //     if (v_final > rnd(prd->seed)) {
+        auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
 
-    //         HenyeyGreenstein hg {sbt_data->greenstein};
+        // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, false>;
+        // float d = Sampler(acc)(test_point_indexd);
 
-    //         scattering = sbt_data->sigma_s / sigma_t;
-    //         ray_orig = test_point;
+        //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
+        //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
 
-    //         float3 new_dir; float2 uu = {rnd(prd->seed), rnd(prd->seed)};
-    //         auto pdf = hg.Sample_p(ray_dir,             new_dir, uu);
+        v_density = linearSampling(acc, test_point_indexd);
 
-    //         new_dir = DisneyBSDF::SampleScatterDirection(prd->seed);
+        if (rnd(prd->seed) < v_density) {
 
-    //         ray_dir = new_dir;
-    //         break;
-    //     } 
-    // }
+            HenyeyGreenstein hg {sbt_data->greenstein};
+
+            scattering = make_float3(sbt_data->sigma_s / sigma_t);
+            ray_orig = test_point;
+
+            float3 new_dir; float2 uu = {rnd(prd->seed), rnd(prd->seed)};
+            auto pdf = hg.Sample_p(ray_dir,             new_dir, uu);
+
+            scattering *= sbt_data->colorVDB;
+
+            ray_dir = new_dir;
+            break;
+
+        } else { v_density = 0; } 
+    }
+
+#endif // _DELTA_TRACKING_
 
     ray_orig = test_point;
 
     prd->attenuation *= scattering;
-
+    //prd->attenuation2 *= scattering;
     prd->origin = ray_orig;
     prd->direction = ray_dir;
 
@@ -743,73 +750,17 @@ extern "C" __global__ void __closesthit__radiance_volume()
     }
     prd->emission =  make_float3(0);
     prd->CH = 1.0;
-    prd->radiance *= v_final>0?1:0;
-    prd->depth += v_final>0?1:0;
+    prd->radiance *= v_density>0?1:0;
+    prd->depth += v_density>0?1:0;
     return;
-
-    // if (scattering < 1.0) {
-
-    // }
-
-    // // trace a continuation ray
-    // //
-    // // the continuation ray provides two things:
-    // //   - the radiance "entering the volume"
-    // //   - the "depth" to the next closest object intersected by the ray.
-    // // Note, that such an object might be inside the volume. In that case,
-    // // transmittance needs to be integrated through the volume along the ray
-    // // up to that closer hit-point.
-
-    // traceRadianceMasked(
-    //     params.handle,
-    //     ray_orig,
-    //     ray_dir,
-    //     0.0f,
-    //     1e16f,
-    //     (1|2), // visibility mask - limit intersections to solid objects
-    //     prd);
-
-    // const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-	// 	reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
-
-    // auto start = grid->worldToIndexF( ray( t0 ) );
-    // auto end   = grid->worldToIndexF( ray( fminf( prd->maxDistance, t1 ) ) );
-
-    // auto bbox = grid->indexBBox();
-    // confine( bbox, start, end );
-
-    // // compute transmittance from the entry-point into the volume to either
-    // // the ray's exit point out of the volume, or the hit point found by the
-    // // continuation ray, if that is closer.
-    // const float opacity = sbt_data->opacityHDDA;
-    // float transmittance = transmittanceHDDA( start, end, acc, opacity );
-
-    // //float3 result = payload.result * transmittance;
-
-    // // optixSetPayload_0( __float_as_uint( result.x ) );
-    // // optixSetPayload_1( __float_as_uint( result.y ) );
-    // // optixSetPayload_2( __float_as_uint( result.z ) );
-    // // optixSetPayload_3( __float_as_uint( 0.0f ) );
-
-    // //prd->attenuation2 = prd->attenuation;
-    // prd->attenuation *= transmittance;
-    // prd->attenuation2*= transmittance;
-    // prd->depthVDB = 0;
-
-    // //if (ix == 0 && iy == 0) {
-    //     //printf("thread x=%d y=%d attenuation=%f attenuation2=%f \n", ix, iy, prd->attenuation, prd->attenuation);
-    // //}
 }
 
 extern "C" __global__ void __anyhit__occlusion_volume()
 {
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
-
     const HitGroupData* sbt_data = ( HitGroupData* )optixGetSbtDataPointer();
 
-    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->gridVDB );
-    auto        acc = grid->tree().getAccessor();
+    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->densityGrid );
+    const auto& acc = grid->tree().getAccessor();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
@@ -823,7 +774,9 @@ extern "C" __global__ void __anyhit__occlusion_volume()
           float t_ele = 0;
 
     auto test_point = ray_orig; 
-    float _transmittance = 1.0;
+    float3 transmittance = make_float3(1.0f);
+
+#if (!_DELTA_TRACKING_) 
 
     const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
                                               reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
@@ -834,76 +787,48 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     confine( bbox, start, end );
 
     const float opacity = sbt_data->opacityHDDA;
-    _transmittance       *= transmittanceHDDA( start, end, acc, 0.05 );
-    //int32_t level = 0;
-    // while(level<20) {
+    float transHDDA = transmittanceHDDA( start, end, acc, sbt_data->opacityHDDA );
+    if (transHDDA < 1.0) {
+        transmittance *= transHDDA;
+        transmittance *= sbt_data->colorVDB;
+    }
 
-    //     auto prob = rnd(prd->seed);
-    //     auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
+#else
+    int32_t level = 0;
+    while(++level<16) {
 
-    //     level += 1;
+        auto prob = rnd(prd->seed);
+        auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
 
-    //     t_ele -= log(1 - prob) / sigma_t;
+        t_ele -= log(1 - prob) / sigma_t;
 
-    //     test_point = ray_orig + (t0+t_ele) * ray_dir;
+        test_point = ray_orig + (t0+t_ele) * ray_dir;
 
-    //     if (t_ele >= t_max) {
-    //         //ray_orig = test_point;
-    //         break;
-    //     } // over shoot, outside of volume
+        if (t_ele >= t_max) {
+            break;
+        } // over shoot, outside of volume
 
-    //     //ray_orig = test_point;
+        //ray_orig = test_point;
 
-    //     auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
-    //     auto v_final = sampling(acc, test_point_indexd);
+        auto test_point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
+        auto v_final = linearSampling(acc, test_point_indexd);
 
-    //     _transmittance *= 1 - max(0.0, v_final);
+        transmittance *= 1 - max(0.0, v_final);
 
-    //     // if (_transmittance < 0.1) {
-    //     //     float q = max(0.05, 1 - _transmittance);
-    //     //     if (rnd(prd->seed) < q) { _transmittance = 0; }
-    //     //     _transmittance /= 1-q;
-    //     // }
-    // }
+        // if (_transmittance < 0.1) {
+        //     float q = max(0.05, 1 - _transmittance);
+        //     if (rnd(prd->seed) < q) { _transmittance = 0; }
+        //     _transmittance /= 1-q;
+        // }
+        if (v_final > 0) {
+            transmittance *= sbt_data->colorVDB;
+        }
+    }
+#endif
 
-    //printf("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV %d \n\n", level);
-
-
-    prd->shadowAttanuation *= _transmittance;
+    prd->shadowAttanuation *= transmittance;
     optixIgnoreIntersection();
     //prd->origin = ray_orig;
     //prd->direction = ray_dir;
-    
     return;
-
-    // trace a continuation ray
-    // traceOcclusionMasked(
-    //     params.handle,
-    //     ray_orig,
-    //     ray_dir,
-    //     0.01f,
-    //     1e16f,
-    //     common_object_mask,
-    //     prd);
-
-    // float transmittance = prd->transmittanceVDB;
-
-    // // if the continuation ray didn't hit a solid, compute how much the volume
-    // // attenuates/shadows the light along the ray
-    // if( transmittance != 0.0f )
-    // {
-    //     const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-    //                                           reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ) );
-    //     auto start = grid->worldToIndexF( ray( t0 ) );
-    //     auto end   = grid->worldToIndexF( ray( t1 ) );
-
-    //     auto bbox = grid->indexBBox();
-    //     confine( bbox, start, end );
-
-    //     const float opacity = sbt_data->opacityHDDA;
-    //     transmittance       *= transmittanceHDDA( start, end, acc, opacity );
-    // }
-
-    // prd->transmittanceVDB = transmittance;
-    // prd->shadowAttanuation *= transmittance;
 }

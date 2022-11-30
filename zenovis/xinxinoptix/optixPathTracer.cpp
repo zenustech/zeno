@@ -729,12 +729,13 @@ static void createSBT( PathTracerState& state )
 
         std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
 
-        rec.data.gridVDB = reinterpret_cast<void*>( g_volume.d_volume );
+        rec.data.densityGrid = reinterpret_cast<void*>( g_volume.d_volume );
         rec.data.opacityHDDA = 0.25f;
+        rec.data.colorVDB  = make_float3(0.9, 0.0, 0.0);
 
         rec.data.sigma_a = 0.01;
         rec.data.sigma_s = 0.3;
-        rec.data.greenstein = 0.5;
+        rec.data.greenstein = 0.4;
 
         OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
         hitgroup_records[sbt_idx] = rec;
