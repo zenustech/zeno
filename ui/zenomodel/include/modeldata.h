@@ -16,7 +16,6 @@ enum PARAM_CONTROL {
     CONTROL_MULTILINE_STRING,
     CONTROL_COLOR,
     CONTROL_CURVE,
-    CONTROL_DICTKEY,
     CONTROL_HSLIDER,
     CONTROL_HSPINBOX,
     CONTROL_SPINBOX_SLIDER,
@@ -62,6 +61,13 @@ enum NODE_OPTION {
     OPT_MUTE = 1 << 1,
     OPT_VIEW = 1 << 2,
     OPT_PREP = 1 << 3
+};
+
+enum SOCKET_PROPERTY {
+    SOCKPROP_UNKNOWN = 0,
+    SOCKPROP_NORMAL = 1,
+    SOCKPROP_EDITABLE = 1 << 1,
+    SOCKPROP_MULTILINK = 1 << 2,
 };
 
 struct PARAM_INFO {
@@ -129,14 +135,17 @@ struct SOCKET_INFO {
     QVariant defaultValue;  // a native value or a curvemodel.
     QList<EdgeInfo> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
 
-    SOCKET_INFO() : control(CONTROL_NONE) {}
+    SOCKET_PROPERTY sockProp;
+
+    SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}
     SOCKET_INFO(const QString& id, const QString& name)
         : nodeid(id)
         , name(name)
         , control(CONTROL_NONE)
+        , sockProp(SOCKPROP_NORMAL)
     {}
     SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl)
-        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl)
+        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL)
     {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {

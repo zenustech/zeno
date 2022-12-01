@@ -92,37 +92,51 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if (input.info.control == CONTROL_DICTPANEL)
-                {
-                    if (input.info.type == "list")
-                    {
-                        QString _ident = UiHelper::generateUuid("MakeList");
-                        _ident = nameMangling(graphIdPrefix, _ident);
-                        AddStringList({ "addNode", "MakeList", _ident }, writer);
-                        for (int i = 0; i < input.info.links.size(); i++)
-                        {
-                            const EdgeInfo& link = input.info.links[i];
-                            QString outSock = link.outputSock;
-                            QString outId = nameMangling(graphIdPrefix, link.outputNode);
-                            QString _inName = QString("obj%1").arg(i);
-                            AddStringList({ "bindNodeInput", _ident, _inName, outId, outSock }, writer);
-                        }
-                        AddStringList({ "bindNodeInput", ident, inputName, _ident, "list" }, writer);
-                    }
-                    else
-                    {
+                const EdgeInfo& link = input.info.links[0];
+                const QString& outNode = link.outputNode;
+                const QString& outSock = link.outputSock;
+                const QModelIndex& outIdx = pGraphsModel->index(outNode, subgIdx);
+                const QModelIndex& outSockIdx = pGraphsModel->paramIndex(outIdx, PARAM_OUTPUT, outSock);
+                const QString& coreType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
 
-                    }
+                if (input.info.sockProp != SOCKPROP_MULTILINK ||
+                    ((coreType == "dict" || coreType == "list") && input.info.links.size() == 1))
+                {
+                    //normal case, including list/dictNode to other input list socket.
+                    const QString& newOutId = nameMangling(graphIdPrefix, outNode);
+                    AddStringList({ "bindNodeInput", ident, inputName, newOutId, outSock }, writer);
                 }
                 else
                 {
-                    for (EdgeInfo link : input.info.links)
+                    //special case, transfer multi-linked to MakeList/MakeDict.
+                    if (input.info.type == "list")
                     {
-                        QString outSock = link.outputSock;
-                        QString outId = link.outputNode;
-                        const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
-                        outId = nameMangling(graphIdPrefix, outId);
-                        AddStringList({ "bindNodeInput", ident, inputName, outId, outSock }, writer);
+                        //only few information about the output socket, we can only recognize by name.
+                        if (coreType == "list" && input.info.links.size() == 1)
+                        {
+                            //legacy way.
+                            //this case is for MakeList, MakeSmallList, etc. they output a socket named "list".
+                            const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
+                            AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
+                        }
+                        else
+                        {
+                            QString _ident = UiHelper::generateUuid("MakeList");
+                            _ident = nameMangling(graphIdPrefix, _ident);
+                            AddStringList({ "addNode", "MakeList", _ident }, writer);
+                            for (int i = 0; i < input.info.links.size(); i++)
+                            {
+                                const EdgeInfo& _link = input.info.links[i];
+                                const QString& newOutId = nameMangling(graphIdPrefix, _link.outputNode);
+                                QString _inName = QString("obj%1").arg(i);
+                                AddStringList({ "bindNodeInput", _ident, _inName, newOutId, _link.outputSock }, writer);
+                            }
+                            AddStringList({ "bindNodeInput", ident, inputName, _ident, "list" }, writer);
+                        }
+                    }
+                    else
+                    {
+                        //todo: dict
                     }
                 }
             }
@@ -152,7 +166,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (OUTPUT_SOCKET output : outputs) {
             //the output key of the dict has not descripted by the core, need to add it manually.
-            if (output.info.control == CONTROL_DICTKEY) {
+            if (output.info.sockProp & SOCKPROP_EDITABLE) {
                 AddStringList({"addNodeOutput", ident, output.info.name}, writer);
             }     
         }

@@ -445,11 +445,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     QModelIndex paramIdx = item.inputsModel->index(name);
                     if (!paramIdx.isValid())
                     {
-                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
+                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue);
                     }
                     else
                     {
-                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue, inSocket.info.control);
+                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue);
                     }
                 }
                 break;
@@ -467,11 +467,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     QModelIndex idx = item.outputsModel->index(name);
                     if (!idx.isValid())
                     {
-                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
+                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue);
                     }
                     else
                     {
-                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue, outSocket.info.control);
+                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue);
                     }
                 }
                 break;
@@ -489,11 +489,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                     QModelIndex idx = item.paramsModel->index(name);
                     if (!idx.isValid())
                     {
-                        item.paramsModel->appendRow(name, param.typeDesc, param.value, param.control);
+                        item.paramsModel->appendRow(name, param.typeDesc, param.value);
                     }
                     else
                     {
-                        item.paramsModel->setItem(idx, param.typeDesc, param.value, param.control);
+                        item.paramsModel->setItem(idx, param.typeDesc, param.value);
                     }
                 }
                 break;
@@ -570,7 +570,7 @@ bool SubGraphModel::setParamValue(
         {
             if (bAddIfNotExist)
             {
-                item.inputsModel->appendRow(sockName, type, value, ctrl);
+                item.inputsModel->appendRow(sockName, type, value);
             }
             else
             {
@@ -597,7 +597,7 @@ bool SubGraphModel::setParamValue(
         {
             if (bAddIfNotExist)
             {
-                item.paramsModel->appendRow(sockName, type, value, ctrl);
+                item.paramsModel->appendRow(sockName, type, value);
             }
             else
             {
@@ -624,7 +624,7 @@ bool SubGraphModel::setParamValue(
         {
             if (bAddIfNotExist)
             {
-                item.outputsModel->appendRow(sockName, type, value, ctrl);
+                item.outputsModel->appendRow(sockName, type, value);
             }
             else
             {

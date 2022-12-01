@@ -60,6 +60,8 @@ public:
     QModelIndex indexFromPath(const QString& path) override;
     QModelIndex linkIndex(int r) override;
     QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
+    QModelIndex paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName) override;
+
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;

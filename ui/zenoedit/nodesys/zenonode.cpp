@@ -618,7 +618,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     const QVariant& deflVal = viewSockIdx.data(ROLE_PARAM_VALUE);
     const PARAM_LINKS& links = viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
 
-    bool bEditableSock = ctrl == CONTROL_DICTKEY;
+    bool bEditableSock = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_EDITABLE;
     ZSocketLayout* pMiniLayout = new ZSocketLayout(viewSockIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
     pMiniLayout->setDebugName(sockName);
 

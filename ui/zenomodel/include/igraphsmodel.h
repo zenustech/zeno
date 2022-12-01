@@ -15,10 +15,13 @@ class IGraphsModel : public QAbstractItemModel
 	Q_OBJECT
 public:
 	explicit IGraphsModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
+
+	/* begin: node index: */
 	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override = 0;
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
+	/* end: node index: */
 
 	virtual QModelIndex nodeIndex(uint32_t id) = 0;
 	virtual QModelIndex subgIndex(uint32_t sid) = 0;
@@ -28,6 +31,8 @@ public:
 
 	virtual QModelIndex linkIndex(int r) = 0;
 	virtual QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
+
+	virtual QModelIndex paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName) = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
     virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;

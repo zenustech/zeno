@@ -194,14 +194,7 @@ void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool b
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    if (bInput)
-    {
-        m_currentGraph->setParamValue(PARAM_INPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
-    }
-    else
-    {
-        m_currentGraph->setParamValue(PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_DICTKEY);
-    }
+    m_currentGraph->setParamValue(bInput ? PARAM_INPUT : PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_NONE, SOCKPROP_MULTILINK);
 }
 
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
@@ -312,15 +305,16 @@ void ModelAcceptor::setInputSocket(
         {
             const QString& sockName = inSock;
             PARAM_CONTROL ctrl = CONTROL_NONE;
+            SOCKET_PROPERTY prop = SOCKPROP_NORMAL;
             if (nodeCls == "MakeDict")
             {
-                ctrl = CONTROL_DICTKEY;
+                prop = SOCKPROP_EDITABLE;
             }
             if (!outId.isEmpty() && !outSock.isEmpty())
             {
                 m_subgLinks.append(EdgeInfo(outId, id, outSock, inSock));
             }
-            pInputsModel->appendRow(sockName, "", "", ctrl);
+            pInputsModel->appendRow(sockName, "", "", prop);
         }
         else
         {

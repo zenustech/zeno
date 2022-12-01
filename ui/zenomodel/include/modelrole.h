@@ -15,6 +15,8 @@ enum MODEL_ROLE
 	ROLE_OUTPUTS,
 	ROLE_OPTIONS,
 	ROLE_COLLASPED,
+	ROLE_INPUT_PARAM,		//input param model index.
+	ROLE_OUTPUT_PARAM,		//output param model index.
 
 	ROLE_INPUT_MODEL,		//input socket model
 	ROLE_PARAM_MODEL,		//param model
@@ -43,6 +45,7 @@ enum MODEL_ROLE
 	ROLE_PARAM_CTRL,		//ui control
 	ROLE_PARAM_VALUE,
 	ROLE_PARAM_LINKS,
+	ROLE_PARAM_SOCKPROP,	//socket property, see SOCKET_PROPERTY.
 	ROLE_PARAM_SOCKETTYPE,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
 
 	//view param

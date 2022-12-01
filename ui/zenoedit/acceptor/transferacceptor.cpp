@@ -146,7 +146,8 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
             INPUT_SOCKET inputSocket;
             inputSocket.info.name = keyName;
             inputSocket.info.nodeid = id;
-            inputSocket.info.control = CONTROL_DICTKEY;
+            inputSocket.info.control = CONTROL_NONE;
+            inputSocket.info.sockProp = SOCKPROP_EDITABLE;
             inputSocket.info.type = "";
             inputs[keyName] = inputSocket;
             data[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -160,7 +161,8 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
             OUTPUT_SOCKET outputSocket;
             outputSocket.info.name = keyName;
             outputSocket.info.nodeid = id;
-            outputSocket.info.control = CONTROL_DICTKEY;
+            outputSocket.info.control = CONTROL_NONE;
+            outputSocket.info.sockProp = SOCKPROP_EDITABLE;
             outputSocket.info.type = "";
             outputs[keyName] = outputSocket;
             data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
@@ -219,7 +221,8 @@ void TransferAcceptor::setInputSocket(
             inSocket.info.name = inSock;
             if (nodeCls == "MakeDict")
             {
-                inSocket.info.control = CONTROL_DICTKEY;
+                inSocket.info.control = CONTROL_NONE;
+                inSocket.info.sockProp = SOCKPROP_EDITABLE;
             }
             inputs[inSock] = inSocket;
 

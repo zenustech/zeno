@@ -130,6 +130,12 @@ QVariant VParamItem::data(int role) const
             return m_info.typeDesc;
         return m_index.data(ROLE_PARAM_TYPE);
     }
+    case ROLE_PARAM_SOCKPROP:
+    {
+        if (!m_index.isValid())
+            return SOCKPROP_UNKNOWN;
+        return m_index.data(ROLE_PARAM_SOCKPROP);
+    }
     case ROLE_PARAM_LINKS:
     {
         if (!m_index.isValid())
@@ -498,11 +504,11 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
             {
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
-                //PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc); 
+                PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc); 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);
@@ -520,8 +526,9 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
             if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
             {
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
+                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QString& displayName = realName;  //todo: mapping name.
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc);
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);
@@ -540,7 +547,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
             {
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& displayName = realName;  //todo: mapping name.
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
+                PARAM_CONTROL ctrl = CONTROL_NONE;
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);

@@ -354,33 +354,6 @@ ZSocketGroupItem::ZSocketGroupItem(
     setFont(font);
     updateBoundingRect();
 
-    const QString& coreType = viewSockIdx.data(ROLE_PARAM_TYPE).toString();
-    if (bInput && 
-        (coreType == "list" ||
-        coreType == "dict" ||
-        coreType == "DictObject" ||
-        coreType == "DictObject:NumericObject"))
-    {
-        QRectF rc = this->boundingRect();
-
-        ImageElement elemSwitch;
-        elemSwitch.image = ":/icons/checkbox_unchecked.svg";
-        elemSwitch.imageHovered = ":/icons/checkbox_unchecked.svg";
-        elemSwitch.imageOn = ":/icons/checkbox_checked_cyan.svg";
-        elemSwitch.imageOnHovered = ":/icons/checkbox_checked_cyan.svg";
-
-        PARAM_CONTROL ctrl = (PARAM_CONTROL)m_viewSockIdx.data(ROLE_PARAM_CTRL).toInt();
-
-        ZenoImageItem* pSwitch = new ZenoImageItem(elemSwitch, ZenoStyle::dpiScaledSize(QSizeF(20, 20)), this);
-        pSwitch->setPos(rc.width() + 10, 0);
-        pSwitch->setCheckable(true);
-        pSwitch->toggle(ctrl == CONTROL_DICTPANEL);
-        QObject::connect(pSwitch, &ZenoImageItem::toggled, [=](bool bChecked) {
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_viewSockIdx.model());
-            pModel->setData(m_viewSockIdx, bChecked ? CONTROL_DICTPANEL : CONTROL_NONE, ROLE_PARAM_CTRL);
-        });
-    }
-
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 }

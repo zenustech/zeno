@@ -220,12 +220,12 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	{
 		QStringList inDictKeys, outDictKeys;
 		for (const INPUT_SOCKET& inSock : inputs) {
-			if (inSock.info.control == CONTROL_DICTKEY) {
+			if (inSock.info.sockProp & SOCKPROP_EDITABLE) {
 				inDictKeys.append(inSock.info.name);
 			}
 		}
 		for (const OUTPUT_SOCKET& outSock : outputs) {
-			if (outSock.info.control == CONTROL_DICTKEY) {
+			if (outSock.info.sockProp & SOCKPROP_EDITABLE) {
 				outDictKeys.append(outSock.info.name);
 			}
 		}

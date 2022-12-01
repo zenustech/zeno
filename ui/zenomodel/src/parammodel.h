@@ -18,8 +18,8 @@ public:
         QString type;
         QVariant pConst;    //const (default) value on socket or param.
         //CurveModel* pVar;   //variable on time frame.
-        PARAM_CONTROL ctrl;
         PARAM_LINKS links;
+        SOCKET_PROPERTY prop;
     };
 
     explicit IParamModel(
@@ -56,24 +56,19 @@ public:
         const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE,
-        const PARAM_LINKS& links = PARAM_LINKS());
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
 
     void appendRow(
         const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE,
-        const PARAM_LINKS& links = PARAM_LINKS());
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
 
     void setItem(
         const QModelIndex& idx,
         const QString& type,
         const QVariant& deflValue,
-        PARAM_CONTROL ctrl,
         const PARAM_LINKS& links = PARAM_LINKS());
-
-    bool addLinkToParam(const QString& sockName, const QModelIndex& linkIdx);
 
     bool removeLink(const QString& sockName, const QModelIndex& linkIdx);
 
@@ -91,8 +86,7 @@ private:
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        PARAM_CONTROL ctrl = CONTROL_NONE,
-        const PARAM_LINKS& links = PARAM_LINKS());
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
 

@@ -190,10 +190,6 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
-            case CONTROL_DICTKEY:
-            {
-                return nullptr; //no control expect key editor.
-            }
             case CONTROL_VEC2_INT:
             case CONTROL_VEC2_FLOAT:
             case CONTROL_VEC3_FLOAT:

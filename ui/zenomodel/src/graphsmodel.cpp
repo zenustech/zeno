@@ -258,6 +258,28 @@ QModelIndex GraphsModel::linkIndex(const QString& outNode,
     return QModelIndex();
 }
 
+QModelIndex GraphsModel::paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName)
+{
+    if (!nodeIdx.isValid())
+        return QModelIndex();
+
+    IParamModel* coreModel = nullptr;
+    if (cls == PARAM_INPUT)
+    {
+        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
+    }
+    else if (cls == PARAM_OUTPUT)
+    {
+        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
+    }
+    else if (cls == PARAM_PARAM)
+    {
+        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+    }
+    ZASSERT_EXIT(coreModel, QModelIndex());
+    return coreModel->index(sockName);
+}
+
 QModelIndex GraphsModel::parent(const QModelIndex& child) const
 {
     return QModelIndex();
@@ -1315,14 +1337,14 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                 const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
                 //need transcation.
                 //dynamic socket in dict grows by bottom direction.
-                PARAM_CONTROL ctrl = inNodeName == "MakeDict" ? CONTROL_DICTKEY :CONTROL_NONE;
-                pInputs->appendRow(newObjName, "", QVariant(), ctrl);
+                SOCKET_PROPERTY prop = inNodeName == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
+                pInputs->appendRow(newObjName, "", QVariant(), prop);
             }
             if (outNodeName == "ExtractDict" && info.outputSock == lastKey)
             {
                 //add a new
                 const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                pOutputs->appendRow(newObjName, "", QVariant(), CONTROL_DICTKEY);
+                pOutputs->appendRow(newObjName, "", QVariant(), SOCKPROP_EDITABLE);
             }
         }
         return linkIdx;
@@ -1684,7 +1706,8 @@ bool GraphsModel::onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
             inSocket.info.name = "obj0";
             if (descName == "MakeDict")
             {
-                inSocket.info.control = CONTROL_DICTKEY;
+                inSocket.info.control = CONTROL_NONE;
+                inSocket.info.sockProp = SOCKPROP_EDITABLE;
             }
             inputs.insert(inSocket.info.name, inSocket);
             nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -1702,7 +1725,8 @@ bool GraphsModel::onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
         if (maxObjId == -1)
         {
             outSocket.info.name = "obj0";
-            outSocket.info.control = CONTROL_DICTKEY;
+            outSocket.info.control = CONTROL_NONE;
+            outSocket.info.sockProp = SOCKPROP_EDITABLE;
             outputs.insert(outSocket.info.name, outSocket);
             nodeData2[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
         }
@@ -1758,7 +1782,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         for (QModelIndex subgNode : subgNodes)
         {
             IParamModel* sockModel = paramModel(subgNode, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-            sockModel->appendRow(nameValue, typeValue, deflVal, ctrl);
+            sockModel->appendRow(nameValue, typeValue, deflVal);
         }
     }
     else

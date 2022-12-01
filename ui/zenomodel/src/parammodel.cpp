@@ -38,11 +38,11 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             _ItemInfo& item = m_items[name];
 
             INPUT_SOCKET inSocket;
-            inSocket.info.control = item.ctrl;
             inSocket.info.defaultValue = item.pConst;
             inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
             inSocket.info.name = name;
             inSocket.info.type = item.type;
+            inSocket.info.sockProp = item.prop;
 
             for (auto linkIdx : item.links)
             {
@@ -77,11 +77,11 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
 
         {
             OUTPUT_SOCKET outSocket;
-            outSocket.info.control = item.ctrl;
             outSocket.info.defaultValue = item.pConst;
             outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
             outSocket.info.name = name;
             outSocket.info.type = item.type;
+            outSocket.info.sockProp = item.prop;
             for (auto linkIdx : item.links)
             {
                 EdgeInfo link;
@@ -114,7 +114,6 @@ bool IParamModel::getParams(PARAMS_INFO& params)
         {
             PARAM_INFO paramInfo;
             paramInfo.bEnableConnect = false;
-            paramInfo.control = item.ctrl;
             paramInfo.value = item.pConst;
             paramInfo.typeDesc = item.type;
             paramInfo.name = name;
@@ -129,11 +128,11 @@ void IParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
     for (INPUT_SOCKET inSocket : inputs)
     {
         _ItemInfo item;
-        item.ctrl = inSocket.info.control;
         item.name = inSocket.info.name;
         item.pConst = inSocket.info.defaultValue;
         item.type = inSocket.info.type;
-        appendRow(item.name, item.type, item.pConst, item.ctrl);
+        item.prop = inSocket.info.sockProp;
+        appendRow(item.name, item.type, item.pConst, item.prop);
     }
 }
 
@@ -142,11 +141,11 @@ void IParamModel::setParams(const PARAMS_INFO& params)
     for (PARAM_INFO paramInfo : params)
     {
         _ItemInfo item;
-        item.ctrl = paramInfo.control;
         item.name = paramInfo.name;
         item.pConst = paramInfo.value;
         item.type = paramInfo.typeDesc;
-        appendRow(item.name, item.type, item.pConst, item.ctrl);
+        item.prop = SOCKPROP_UNKNOWN;
+        appendRow(item.name, item.type, item.pConst, item.prop);
     }
 }
 
@@ -155,11 +154,11 @@ void IParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
     for (OUTPUT_SOCKET outSocket : outputs)
     {
         _ItemInfo item;
-        item.ctrl = outSocket.info.control;
         item.name = outSocket.info.name;
         item.pConst = outSocket.info.defaultValue;
         item.type = outSocket.info.type;
-        appendRow(item.name, item.type, item.pConst, item.ctrl);
+        item.prop = outSocket.info.sockProp;
+        appendRow(item.name, item.type, item.pConst, item.prop);
     }
 }
 
@@ -242,8 +241,9 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
         case Qt::DisplayRole:
         case ROLE_PARAM_NAME:   return item.name;
         case ROLE_PARAM_TYPE:   return item.type;
-        case ROLE_PARAM_CTRL:   return item.ctrl;
+        case ROLE_PARAM_CTRL:   return CONTROL_NONE;    //control belongs to view data, should ask for view model.
         case ROLE_PARAM_VALUE:  return item.pConst;
+        case ROLE_PARAM_SOCKPROP: return item.prop;
         case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
         case ROLE_PARAM_SOCKETTYPE:     return m_class;
         case ROLE_OBJID:
@@ -313,11 +313,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         case ROLE_PARAM_CTRL:
         {
-            if (item.ctrl == value.toInt())
-                return false;
-            oldValue = item.ctrl;
-            item.ctrl = (PARAM_CONTROL)value.toInt();
-            break;
+            return false;     //don't handle control issues.
         }
         case ROLE_PARAM_VALUE:
         {
@@ -339,11 +335,10 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
-            //if (item.ctrl == CONTROL_DICTPANEL)
-            //{
-            //    int j;
-            //    j = 0;
-            //}
+            if (item.prop == SOCKPROP_MULTILINK)
+            {
+                //todo: fill link info into value.
+            }
             break;
         }
         case ROLE_REMOVELINK:
@@ -351,11 +346,9 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.removeAll(linkIdx);
-            //if (item.ctrl == CONTROL_DICTPANEL)
-            //{
-            //    int j;
-            //    j = 0;
-            //}
+            if (item.prop == SOCKPROP_MULTILINK)
+            {
+            }
             break;
         }
         default:
@@ -390,7 +383,6 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             
             _ItemInfo& defl = m_items["defl"];
             defl.type = newType;
-            defl.ctrl = newCtrl;
             defl.pConst = newValue;
             emit dataChanged(idx_defl, idx_defl, QVector<int>{ROLE_PARAM_TYPE});
 
@@ -525,43 +517,24 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     return true;
 }
 
-void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
+void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
 {
     beginInsertRows(QModelIndex(), row, row);
-    bool ret = _insertRow(row, sockName, type, deflValue, ctrl, links);
+    bool ret = _insertRow(row, sockName, type, deflValue, prop);
     endInsertRows();
 }
 
-void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
+void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
 {
     int n = rowCount();
-    insertRow(n, sockName, type, deflValue, ctrl, links);
+    insertRow(n, sockName, type, deflValue, prop);
 }
 
-void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, PARAM_CONTROL ctrl, const PARAM_LINKS& links)
+void IParamModel::setItem(const QModelIndex& idx, const QString& type, const QVariant& deflValue, const PARAM_LINKS& links)
 {
     setData(idx, type, ROLE_PARAM_TYPE);
     setData(idx, deflValue, ROLE_PARAM_VALUE);
-    setData(idx, ctrl, ROLE_PARAM_CTRL);
     setData(idx, QVariant::fromValue(links), ROLE_PARAM_LINKS);
-}
-
-bool IParamModel::addLinkToParam(const QString& sockName, const QModelIndex& linkIdx)
-{
-    QModelIndex idx = index(sockName);
-    if (!idx.isValid())
-        return false;
-
-    QString name = nameFromRow(idx.row());
-    auto itItem = m_items.find(name);
-    ZASSERT_EXIT(itItem != m_items.end(), false);
-    _ItemInfo& item = m_items[name];
-
-    QVariant oldValue = QVariant::fromValue(item.links);
-
-    item.links.append(linkIdx);
-
-    emit dataChanged(idx, idx, QVector<int>{ROLE_PARAM_LINKS});
 }
 
 bool IParamModel::removeLink(const QString& sockName, const QModelIndex& linkIdx)
@@ -598,17 +571,32 @@ bool IParamModel::_insertRow(
     const QString& sockName,
     const QString& type,
     const QVariant& deflValue,
-    PARAM_CONTROL ctrl,
-    const PARAM_LINKS& links)
+    SOCKET_PROPERTY prop)
 {
     ZASSERT_EXIT(m_items.find(sockName) == m_items.end(), false);
     int nRows = m_items.size();
 
     _ItemInfo item;
     item.name = sockName;
-    item.ctrl = ctrl;
     item.pConst = deflValue;
     item.type = type;
+    item.prop = prop;
+
+    if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
+    {
+        item.type = "dict";
+        item.prop = SOCKPROP_MULTILINK;
+    }
+    else if (type == "list")
+    {
+        item.prop = SOCKPROP_MULTILINK;
+    }
+
+    //not type desc on list output socket, add it here.
+    if (m_class == PARAM_OUTPUT && sockName == "list" && type.isEmpty())
+    {
+        item.type = "list";
+    }
 
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
     //and we will import the links by method GraphsModel::addLink.
