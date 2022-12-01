@@ -2,7 +2,7 @@
 
 namespace zeno {
 
-__device__ __host__ PerlinNoise::vec3f PerlinNoise::perlin_hash22(vec3f p) {
+__device__ __host__ ZSPerlinNoise::vec3f ZSPerlinNoise::perlin_hash22(vec3f p) {
     p = vec3f(p.dot(vec3f(127.1f, 311.7f, 284.4f)), p.dot(vec3f(269.5f, 183.3f, 162.2f)),
               p.dot(vec3f(228.3f, 164.9f, 126.0f)));
     vec3f ret{};
@@ -14,7 +14,7 @@ __device__ __host__ PerlinNoise::vec3f PerlinNoise::perlin_hash22(vec3f p) {
     return ret;
 }
 
-__device__ __host__ float PerlinNoise::perlin_lev1(vec3f p) {
+__device__ __host__ float ZSPerlinNoise::perlin_lev1(vec3f p) {
     vec3f pi = vec3f{zs::floor(p[0]), zs::floor(p[1]), zs::floor(p[2])};
     vec3f pf = p - pi;
     vec3f w = pf * pf * (3.0f - 2.0f * pf);
@@ -34,7 +34,7 @@ __device__ __host__ float PerlinNoise::perlin_lev1(vec3f p) {
                                                      dot(perlin_hash22(pi + vec3f(1, 1, 1)), pf - vec3f(1, 1, 1))))));
 }
 
-__device__ __host__ float PerlinNoise::perlin(vec3f a, float power, float depth) {
+__device__ __host__ float ZSPerlinNoise::perlin(vec3f a, float power, float depth) {
     float total = 0;
     int n = (int)zs::ceil(depth);
     for (int i = 0; i < n; i++) {

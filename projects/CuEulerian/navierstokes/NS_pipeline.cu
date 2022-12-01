@@ -35,9 +35,8 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
                                                  {"T1", 1},
-                                                 {"tmp", 3},  // FVM, BFECC, MultiGrid
-                                                 {"adv", 3},  // reflection
-                                                 {"noise", 3} // Perlin noise
+                                                 {"tmp", 3}, // FVM, BFECC, MultiGrid
+                                                 {"adv", 3}  // reflection
                                              });
         spg._background = 0.f;
 
