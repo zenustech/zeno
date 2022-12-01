@@ -15,6 +15,7 @@
 #include <sstream>
 #include <functional>
 #include <regex>
+#include <sstream>
 
 namespace zeno {
 

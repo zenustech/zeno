@@ -311,6 +311,7 @@ void FakeTransformer::endTransform(bool moved) {
         for (auto &[obj_name, obj] : m_objects) {
             QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
             auto search_result = pModel->search(node_id, SEARCH_NODEID);
+            if (search_result.empty()) break;
             auto subgraph_index = search_result[0].subgIdx;
             auto node_index = search_result[0].targetIdx;
             auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
@@ -605,6 +606,7 @@ QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelI
         auto next_node_id = linked_edge.data(ROLE_INNODE).toString();
         if (next_node_id.contains("TransformPrimitive")) {
             auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
+            if (search_result.empty()) return {};
             auto linked_node_index = search_result[0].targetIdx;
             auto option = linked_node_index.data(ROLE_OPTIONS).toInt();
             if (option & OPT_VIEW) {

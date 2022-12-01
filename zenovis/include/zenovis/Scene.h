@@ -22,7 +22,7 @@ struct RenderManager;
 struct Scene : zeno::disable_copy {
     std::optional<zeno::vec4f> select_box = {};
     std::unordered_set<std::string> selected = {};
-    int select_mode;
+    int select_mode = 0;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements = {};
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
