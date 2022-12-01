@@ -1,13 +1,8 @@
-//
-// Created by ryan on 22-8-8.
-//
-
 #ifndef __VIEWPORT_TRANSFORM_H__
 #define __VIEWPORT_TRANSFORM_H__
 #include "zenovis.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-
 #include <zeno/types/PrimitiveObject.h>
 
 #include <QtWidgets>
@@ -66,6 +61,10 @@ class FakeTransformer {
     static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
         return {QVec3.x(), QVec3.y(), QVec3.z()};
     }
+    void markObjectInteractive(const std::string& obj_name);
+    void unmarkObjectInteractive(const std::string& obj_name);
+    void markObjectsInteractive();
+    void unmarkObjectsInteractive();
 
     static void print_mat4(std::string name, glm::mat4 mat) {
         qDebug() << name.c_str() << ":";

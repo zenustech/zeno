@@ -999,17 +999,17 @@ struct ToZSSurfaceMesh : INode {
 #endif
             for (auto &&tri : tris) {
                 {
-                    int i = 0, j = 1;
+                    int i = tri[0], j = tri[1];
                     if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
                         sedges.insert(vec2i{i, j});
                 }
                 {
-                    int i = 1, j = 2;
+                    int i = tri[1], j = tri[2];
                     if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
                         sedges.insert(vec2i{i, j});
                 }
                 {
-                    int i = 2, j = 0;
+                    int i = tri[2], j = tri[0];
                     if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
                         sedges.insert(vec2i{i, j});
                 }

@@ -11,12 +11,26 @@
 
 namespace zeno {
 
+void FastClothSystem::initialStepping(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    /// @brief Xinit
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
+        auto xk = vtemp.pack(dim_c<3>, "xn", i);
+        auto ykp1 = vtemp.pack(dim_c<3>, "yn", i);
+        auto diff = ykp1 - xk;
+        T coeff = 1;
+        if (auto len2 = diff.l2NormSqr(); len2 > limits<T>::epsilon() * 10)
+            coeff = zs::min(D / zs::sqrt(len2), (T)1);
+        vtemp.tuple(dim_c<3>, "xinit", i) = xk + coeff * diff;
+    });
+}
+
 void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    zs::CppTimer timer;
-    timer.tick();
+    // zs::CppTimer timer;
     if (enableContact) {
         nPP.setVal(0);
         if (enableContactSelf) {
@@ -104,12 +118,13 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     auto [npp_, ne_] = getConstraintCnt();
     npp = npp_;
     ne = ne_;
-    fmt::print("collision stepping [pp, edge constraints]: {}, {}", npp, ne);
+    fmt::print("collision stepping [pp, edge constraints]: {}, {}\n", npp, ne);
 
     ///
     /// @brief soft phase for constraints
     ///
     for (int l = 0; l != ISoft; ++l) {
+        // fmt::print(fg(fmt::color::orange_red), "\tstart soft phase [{}]\n", l);
         softPhase(pol);
     }
 
@@ -146,7 +161,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, i), 2 * (xinit(d) - xn(d)));
+            atomic_add(exec_cuda, &vtemp("xn", d, i), (xinit(d) - xn(d)));
         }
     });
     /// @note constraints
