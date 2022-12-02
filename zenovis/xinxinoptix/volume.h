@@ -7,9 +7,15 @@
 
 // #include <float.h>
 
-// #ifdef __CUDACC_RTC__ 
+#ifdef __CUDACC_RTC__ 
 
-#define _DELTA_TRACKING_ false
+    #define _CPU_GPU_ __device__
+#else
+
+    #define _CPU_GPU_ /* Nothing */
+#endif
+
+#define _DELTA_TRACKING_ true
 
 __device__
 inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
@@ -86,7 +92,7 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     #define M_PI 3.14159265358979323846
 #endif
 
-static float waveLength[] = {645.0f, 510.0f, 440.0f}; // RGB
+const static float3 lambdaRGB = {645.0f, 510.0f, 440.0f}; // RGB
 
 struct RayleighPhaseFunction {
  
@@ -101,9 +107,9 @@ struct RayleighPhaseFunction {
         float div = 1e-3;
 
         return float3 {
-            lambda_transmitance(waveLength[0] * div, height),
-            lambda_transmitance(waveLength[1] * div, height),
-            lambda_transmitance(waveLength[2] * div, height),
+            lambda_transmitance(lambdaRGB.x * div, height),
+            lambda_transmitance(lambdaRGB.y * div, height),
+            lambda_transmitance(lambdaRGB.z * div, height),
         };
     }
 
@@ -162,3 +168,53 @@ struct RayleighPhaseFunction {
 };
 
 // #endif
+
+// Spectrum Function Declarations
+__device__
+inline float Blackbody(float lambda, float T) {
+    if (T <= 0)
+        return 0;
+    const float c = 299792458.f;
+    const float h = 6.62606957e-34f;
+    const float kb = 1.3806488e-23f;
+    // Return emitted radiance for blackbody at wavelength _lambda_ 
+    float l = lambda * 1e-9f; 
+    float Le = (2 * h * c * c) / (powf(l, 5) * (expf((h * c) / (l * kb * T)) - 1));
+    //CHECK(!IsNaN(Le));
+    return Le;
+}
+
+class BlackbodySpectrum {
+  public:
+    // BlackbodySpectrum Public Methods
+    __device__
+    BlackbodySpectrum(float T) : T(T) {
+        // Compute blackbody normalization constant for given temperature
+        float lambdaMax = 2.8977721e-3f / T;
+        normalizationFactor = 1 / Blackbody(lambdaMax * 1e9f, T);
+    }
+
+    float operator()(float lambda) const {
+        return Blackbody(lambda, T) * normalizationFactor;
+    }
+
+    const static int NSpectrumSamples = 3;
+
+    float3 Sample(const float3 &lambda) const {
+        float3 s;
+
+        s.x = Blackbody(lambda.x, T) * normalizationFactor;
+        s.y = Blackbody(lambda.y, T) * normalizationFactor;
+        s.z = Blackbody(lambda.z, T) * normalizationFactor;
+
+        return s;
+    }
+
+    float MaxValue() const { return 1.f; }
+    //std::string ToString() const;
+
+  private:
+    // BlackbodySpectrum Private Members
+    float T;
+    float normalizationFactor;
+};

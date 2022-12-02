@@ -98,6 +98,8 @@ struct HitGroupData
     // cihou nanovdb
     float opacityHDDA;
     void* densityGrid;
+    void* tempGrid;
+    
     float3 colorVDB;
 
     float sigma_a, sigma_s;

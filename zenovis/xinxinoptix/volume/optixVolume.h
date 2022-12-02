@@ -19,15 +19,27 @@
 // also contains an affine transform relating index space (i.e. voxel
 // indices) to world-space.
 //
+
+struct GridWrapper {
+	nanovdb::GridHandle<> handle;
+	CUdeviceptr deviceptr = 0;
+	float inverse_max = 1.0;
+};
+
 struct Volume
 {
-    nanovdb::GridHandle<> handle;
-	CUdeviceptr d_volume = 0;
+	GridWrapper grid_density;
+    // nanovdb::GridHandle<> handle_density;
+	// CUdeviceptr d_density = 0;
+
+	GridWrapper grid_temp;
+	// nanovdb::GridHandle<> handle_temp;
+	// CUdeviceptr d_temp = 0;
 };
 
 void loadVolume( Volume& volume, const std::string& filename );
 void cleanupVolume( Volume& volume );
-void createGrid( Volume& volume, std::string filename, std::string gridname );
+void createGrid( GridWrapper& grid, std::string filename, std::string gridname );
 void getOptixTransform( const Volume& volume, float transform[] );
 sutil::Aabb worldAabb( const Volume& volume );
 

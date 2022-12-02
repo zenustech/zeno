@@ -166,8 +166,11 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
             //result += prd.emitted;
-            if(prd.countEmitted==false || prd.depth>0)
+            if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                //result += prd.emission * prd.attenuation2;
+                prd.emission = make_float3(0);
+            }
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
@@ -505,6 +508,27 @@ inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& test_point_inde
     return __Lerp(delta[2], value_0, value_1);
 }
 
+const static float temperatureOffset = 0;
+const static float temperatureScale = 100.0;
+
+__device__
+float3 leVDB(const HitGroupData* sbt_data, nanovdb::Vec3f& point) {
+    if (!sbt_data->tempGrid) 
+        return make_float3(0);
+
+    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(sbt_data->tempGrid );
+    const auto& acc = grid->tree().getAccessor();
+
+    auto temp = linearSampling(acc, point);
+        // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::TreeType, 1, false>;
+        // Float temp = Sampler(temperatureFloatGrid->tree())(pIndex);
+    temp = (temp - temperatureOffset) * temperatureScale;
+    if (temp < 100) 
+       return make_float3(0);
+
+    return BlackbodySpectrum(temp).Sample(lambdaRGB);
+}
+
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
@@ -548,8 +572,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float t_ele = 0;
 
     auto test_point = ray_orig; 
+    float3 emitting = make_float3(0.0);
     float3 scattering = make_float3(1.0);
-
+   
     float v_density = 0.0;
 
 #if (!_DELTA_TRACKING_) 
@@ -598,7 +623,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 #else
 
     int8_t level = 4;
-    while(level-->0) {
+    while(true) {
 
         auto prob = rnd(prd->seed);
         auto sigma_t = sbt_data->sigma_a + sbt_data->sigma_s;
@@ -608,7 +633,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
         if (t_ele >= t_max) {
 
             float t_tmp = t_max + surface_inside_volume? -1e-6 : 1e-6;
-
             test_point = ray_orig + (t0+t_ele) * ray_dir;
             break;
         } // over shoot, outside of volume
@@ -627,16 +651,22 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         if (rnd(prd->seed) < v_density) {
 
-            HenyeyGreenstein hg {sbt_data->greenstein};
+            HenyeyGreenstein hg {sbt_data->greenstein}; 
+            
+            float3 new_dir; 
+            float2 uu = {rnd(prd->seed), rnd(prd->seed)};
+            auto pdf = hg.Sample_p(ray_dir, new_dir, uu);
 
             scattering = make_float3(sbt_data->sigma_s / sigma_t);
-            ray_orig = test_point;
-
-            float3 new_dir; float2 uu = {rnd(prd->seed), rnd(prd->seed)};
-            auto pdf = hg.Sample_p(ray_dir,             new_dir, uu);
-
             scattering *= sbt_data->colorVDB;
 
+                auto le = leVDB(sbt_data, test_point_indexd);
+                le *= 1000 * sbt_data->sigma_a / sigma_t;
+                emitting = le * scattering;
+
+            scattering *= emitting;
+
+            ray_orig = test_point;
             ray_dir = new_dir;
             break;
 
@@ -647,6 +677,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
     ray_orig = test_point;
 
+    //prd->emission = emitting;
     prd->attenuation *= scattering;
     //prd->attenuation2 *= scattering;
     prd->origin = ray_orig;
@@ -748,7 +779,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
                                        10, // be careful
                                        .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
     }
-    prd->emission =  make_float3(0);
+    //prd->emission =  make_float3(0);
     prd->CH = 1.0;
     prd->radiance *= v_density>0?1:0;
     prd->depth += v_density>0?1:0;

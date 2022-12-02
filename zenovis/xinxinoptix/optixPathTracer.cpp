@@ -729,13 +729,14 @@ static void createSBT( PathTracerState& state )
 
         std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
 
-        rec.data.densityGrid = reinterpret_cast<void*>( g_volume.d_volume );
+        rec.data.densityGrid = reinterpret_cast<void*>( g_volume.grid_density.deviceptr );
+        rec.data.tempGrid = reinterpret_cast<void*>( g_volume.grid_temp.deviceptr );
         rec.data.opacityHDDA = 0.25f;
-        rec.data.colorVDB  = make_float3(0.9, 0.0, 0.0);
+        rec.data.colorVDB  = make_float3(1, 1, 1);
 
-        rec.data.sigma_a = 0.01;
-        rec.data.sigma_s = 0.3;
-        rec.data.greenstein = 0.4;
+        rec.data.sigma_a = 1;
+        rec.data.sigma_s = 1;
+        rec.data.greenstein = 0;
 
         OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
         hitgroup_records[sbt_idx] = rec;
@@ -1116,7 +1117,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
     xinxinoptix::using_hdr_sky(false);
 
-    loadVolume( g_volume, "/home/iaomw/Public/wdas_cloud_eighth.nvdb" );
+    loadVolume( g_volume, "/home/iaomw/Public/fire.nvdb" );
     buildVolumeAccel( g_volume_accel, g_volume, state.context );
 }
 

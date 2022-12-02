@@ -1,8 +1,11 @@
 #include "optixVolume.h"
+#include "vec_math.h"
 // #include "OptiXStuff.h"
 
+#include <cstdint>
 #include <sutil/Exception.h>
 #include <nanovdb/util/IO.h>
+#include <nanovdb/util/GridStats.h>
 
 #include <optix_stubs.h>
 #include <optix_function_table_definition.h>
@@ -10,6 +13,9 @@
 // ----------------------------------------------------------------------------
 // Functions for manipulating Volume instances
 // ----------------------------------------------------------------------------
+
+template< class T >
+using decay_t = typename std::decay<T>::type;
 
 void loadVolume( Volume& grid, const std::string& filename )
 {
@@ -23,12 +29,23 @@ void loadVolume( Volume& grid, const std::string& filename )
     for (auto& m : list) {
         std::cerr << "        " << m.gridName << std::endl;
     }
+
     assert( list.size() > 0 );
     // load the first grid in the file 
-    createGrid( grid, filename, list[0].gridName );
+    createGrid( grid.grid_density, filename, list[0].gridName );
+
+    auto tmp = grid.grid_density.handle.grid<float>();
+    nanovdb::gridStats(*tmp, nanovdb::StatsMode::All);
+
+    nanovdb::GridStats<nanovdb::NanoGrid<float>> state;
+    state(*tmp);
+
+    if (list.size() > 1) {
+        createGrid(grid.grid_temp, filename, list[1].gridName);
+    }
 }
 
- void createGrid( Volume& grid, std::string filename, std::string gridname )
+ void createGrid( GridWrapper& grid, std::string filename, std::string gridname )
 {
     nanovdb::GridHandle<> gridHdl;
 
@@ -48,16 +65,36 @@ void loadVolume( Volume& grid, const std::string& filename )
     // only concerned with volumetric data.
     auto* meta = gridHdl.gridMetaData();
     if( meta->isPointData() )
-        throw std::runtime_error("NanoVDB Point Data cannot be handled by VolumeViewer");
+        throw std::runtime_error("NanoVDB Point Data cannot be handled by Zeno Optix");
     if( meta->isLevelSet() )
-        throw std::runtime_error("NanoVDB Level Sets cannot be handled by VolumeViewer");
+        throw std::runtime_error("NanoVDB Level Sets cannot be handled by Zeno Optix");
 
     // NanoVDB files represent the sparse data-structure as flat arrays that can be
     // uploaded to the device "as-is".
     assert( gridHdl.size() != 0 );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.d_volume ), gridHdl.size() ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.d_volume ), gridHdl.data(), gridHdl.size(),
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(),
         cudaMemcpyHostToDevice ) );
+
+        auto* tmp_grid = gridHdl.grid<float>(); //.grid<nanovdb::FloatGrid>();
+        
+        auto vsize = tmp_grid->indexBBox().dim();
+        auto accessor = tmp_grid->getAccessor();
+
+        float max_value = 1.0;
+
+        //vsize[0]; vsize[1]; vsize[2];
+        for (int32_t i=0; i<vsize[0]; ++i) {
+            for (int32_t j=0; j<vsize[1]; ++j) {
+                for (int32_t k=0; k<vsize[2]; ++k) {
+                    auto coord = nanovdb::Coord(i, j, k);
+                    auto value = accessor.getValue(coord);
+                    max_value = fmaxf(max_value, value);
+                }
+            }
+        }
+
+        grid.inverse_max = 1.0f/max_value;
 
     grid.handle = std::move( gridHdl );
 }
@@ -66,7 +103,8 @@ void loadVolume( Volume& grid, const std::string& filename )
 void cleanupVolume( Volume& volume )
 {
     // OptiX cleanup
-	CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.d_volume ) ) );
+	CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_density.deviceptr ) ) );
+    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_temp.deviceptr ) ) );
 }
 
 void buildVolumeAccel( VolumeAccel& accel, const Volume& volume, const OptixDeviceContext& context )
@@ -78,7 +116,7 @@ void buildVolumeAccel( VolumeAccel& accel, const Volume& volume, const OptixDevi
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
 
     {
-        auto grid_handle = volume.handle.grid<float>();
+        auto grid_handle = volume.grid_density.handle.grid<float>();
 
 		// get this grid's aabb
         sutil::Aabb aabb;
@@ -178,20 +216,21 @@ void cleanupVolumeAccel( VolumeAccel& accel )
 	CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( accel.d_buffer ) ) );
 }
 
-void getOptixTransform( const Volume& grid, float transform[] )
+void getOptixTransform( const Volume& volume, float transform[] )
 {
     // Extract the index-to-world-space affine transform from the Grid and convert
     // to 3x4 row-major matrix for Optix.
-	auto* grid_handle = grid.handle.grid<float>();
+	auto* grid_handle = volume.grid_density.handle.grid<float>();
 	const nanovdb::Map& map = grid_handle->map();
 	transform[0] = map.mMatF[0]; transform[1] = map.mMatF[1]; transform[2]  = map.mMatF[2]; transform[3]  = map.mVecF[0];
 	transform[4] = map.mMatF[3]; transform[5] = map.mMatF[4]; transform[6]  = map.mMatF[5]; transform[7]  = map.mVecF[1];
 	transform[8] = map.mMatF[6]; transform[9] = map.mMatF[7]; transform[10] = map.mMatF[8]; transform[11] = map.mVecF[2];
 }
 
-sutil::Aabb worldAabb( const Volume& grid )
+sutil::Aabb worldAabb( const Volume& volume )
 {
-	auto* meta = grid.handle.gridMetaData();
+	auto* meta = volume.grid_density.handle.gridMetaData();
+
 	auto bbox = meta->worldBBox();
 	float3 min = { static_cast<float>( bbox.min()[0] ),
                    static_cast<float>( bbox.min()[1] ),
