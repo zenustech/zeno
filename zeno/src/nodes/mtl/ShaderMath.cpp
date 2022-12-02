@@ -155,6 +155,35 @@ ZENDEFNODE(ShaderBinaryMath, {
     {"shader"},
 });
 
+struct ShaderNormalMap : ShaderNodeClone<ShaderNormalMap> {
+    virtual int determineType(EmissionPass *em) override {
+        auto in1 = get_input("normalTexel");
+        auto in2 = get_input("scale");
+        em->determineType(in1.get());
+        em->determineType(in2.get());
+        return 3;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto in1 = em->determineExpr(get_input("normalTexel").get());
+        auto in2 = em->determineExpr(get_input("scale").get());
+
+        return em->emitCode(em->funcName("normalmap") + "(" + in1 + ", " + in2 + ")");
+    }
+};
+
+ZENDEFNODE(ShaderNormalMap, {
+    {
+        {"vec3f", "normalTexel", "0.5,0.5,1.0"},
+        {"float", "scale", "1"},
+    },
+    {
+        {"vec3f", "out"},
+    },
+    {},
+    {"shader"},
+});
+
 
 struct ShaderUnaryMath : ShaderNodeClone<ShaderUnaryMath> {
     virtual int determineType(EmissionPass *em) override {

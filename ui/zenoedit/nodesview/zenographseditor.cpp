@@ -875,11 +875,9 @@ void ZenoGraphsEditor::importMaterialX() {
                 edges.emplace_back(name, "in1", nodename);
             }
             else if (start_name == "normalmap") {
-                auto hNode = Zeno_AddNode(hGraph, "ShaderBinaryMath");
+                auto hNode = Zeno_AddNode(hGraph, "ShaderNormalMap");
                 node_id_mapping[name] = hNode;
-                Zeno_SetInputDefl(hNode, "op", std::string("normalmap"));
-                Zeno_SetInputDefl(hNode, "in2", 1.0);
-                edges.emplace_back(name, "in1",  nameNodeGraph + ms["in"]["nodename"]);
+                edges.emplace_back(name, "normalTexel",  nameNodeGraph + ms["in"]["nodename"]);
             }
             else if (start_name == "clamp") {
                 auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
