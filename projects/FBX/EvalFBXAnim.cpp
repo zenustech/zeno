@@ -353,6 +353,7 @@ struct EvalFBXAnim : zeno::INode {
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
         auto bsPrims = std::make_shared<zeno::ListObject>();
+        auto bsPrimsOrigin = std::make_shared<zeno::ListObject>();
         auto& meshName = fbxData->iMeshName.value_relName;
 
         matName->set(fbxData->iMeshName.value_matName);
@@ -360,6 +361,33 @@ struct EvalFBXAnim : zeno::INode {
 
         auto& kmValue = fbxData->iKeyMorph.value;
         auto& bsValue = fbxData->iBlendSData.value;
+        float gScale = evalOption.globalScale;
+
+        for(auto const& [bsName, bss]: bsValue){
+            std::cout << "BlendShape Key " << bsName << "\n";
+            for(int i=0; i< bss.size(); i++){
+                auto bsprim = std::make_shared<zeno::PrimitiveObject>();
+                auto &verAttr = bsprim->verts;
+                auto &indAttr = bsprim->tris;
+                auto &nrmAttr = bsprim->verts.add_attr<zeno::vec3f>("nrm");
+                auto &dnrmAttr = bsprim->verts.add_attr<zeno::vec3f>("dnrm");
+                auto &dposAttr = bsprim->verts.add_attr<zeno::vec3f>("dpos");
+                auto& bs = bss[i];
+                for(unsigned int j=0; j<bs.size(); j++){ // Mesh Vert
+                    auto& vdata = bs[j];
+                    auto& pos = vdata.position;
+                    auto& nrm = vdata.normal;
+                    auto& dpos = vdata.deltaPosition;
+                    auto& dnrm = vdata.deltaNormal;
+                    verAttr.emplace_back(pos.x * gScale, pos.y * gScale, pos.z * gScale);
+                    nrmAttr.emplace_back(nrm.x, nrm.y, nrm.z);
+                    dposAttr.emplace_back(dpos.x * gScale, dpos.y * gScale, dpos.z * gScale);
+                    dnrmAttr.emplace_back(dnrm.x, dnrm.y, dnrm.z);
+                }
+
+                bsPrimsOrigin->arr.emplace_back(bsprim);
+            }
+        }
 
         // TODO FBXData Write BlendShape
         if(bsValue.find(meshName) != bsValue.end()){
@@ -379,7 +407,6 @@ struct EvalFBXAnim : zeno::INode {
                 auto& kd = k[ki];
                 auto& kdn = k[kin];
                 float factor = (anim.m_CurrentFrame - kd.m_Time) / (kdn.m_Time - kd.m_Time);
-                float s = evalOption.globalScale;
                 for(unsigned int i=0; i<b.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
                     auto bsprim = std::make_shared<zeno::PrimitiveObject>();
                     auto &ver = bsprim->verts;
@@ -393,7 +420,7 @@ struct EvalFBXAnim : zeno::INode {
                         auto& vpos = v[j].deltaPosition;
                         //v[j].position;
                         auto& vnor = v[j].deltaNormal;
-                        ver.emplace_back(vpos.x*s, vpos.y*s, vpos.z*s);
+                        ver.emplace_back(vpos.x*gScale, vpos.y*gScale, vpos.z*gScale);
                         posb.emplace_back(0.0f, 0.0f, 0.0f);
                         bsw.emplace_back((float)w);
                         norm.emplace_back(vnor.x, vnor.y, vnor.z);
@@ -413,6 +440,7 @@ struct EvalFBXAnim : zeno::INode {
 
         set_output("prim", std::move(prim));
         set_output("bsPrims", std::move(bsPrims));
+        set_output("bsPrimsOrigin", std::move(bsPrimsOrigin));
         set_output("camera", std::move(iCamera));
         set_output("light", std::move(iLight));
         set_output("matName", std::move(matName));
@@ -431,7 +459,7 @@ ZENDEFNODE(EvalFBXAnim,
                    "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "matName", "meshName", "bsPrims",
+                   "prim", "camera", "light", "matName", "meshName", "bsPrims", "bsPrimsOrigin",
                    "transDict", "quatDict", "scaleDict",
                    "writeData"
                },  /* params: */

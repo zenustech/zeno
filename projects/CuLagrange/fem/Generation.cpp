@@ -880,6 +880,8 @@ struct ToZSSurfaceMesh : INode {
             tag = false_c;
 
         match([&](auto tag) {
+            using namespace zs;
+            constexpr auto space = zs::execspace_e::openmp;
             constexpr bool use_double = RM_CVREF_T(tag)::value;
             using T = conditional_t<use_double, double, float>;
             if constexpr (use_double)
@@ -989,14 +991,31 @@ struct ToZSSurfaceMesh : INode {
                 return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
             };
             std::set<vec2i, RM_CVREF_T(comp)> sedges(comp);
+#if 0
             auto ist = [&sedges](int i, int j) {
                 if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
                     sedges.insert(vec2i{i, j});
             };
+#endif
             for (auto &&tri : tris) {
-                ist(tri[0], tri[1]);
-                ist(tri[1], tri[2]);
-                ist(tri[2], tri[0]);
+                {
+                    int i = tri[0], j = tri[1];
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                        sedges.insert(vec2i{i, j});
+                }
+                {
+                    int i = tri[1], j = tri[2];
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                        sedges.insert(vec2i{i, j});
+                }
+                {
+                    int i = tri[2], j = tri[0];
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                        sedges.insert(vec2i{i, j});
+                }
+                // ist(tri[0], tri[1]);
+                // ist(tri[1], tri[2]);
+                // ist(tri[2], tri[0]);
             }
             auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
             surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, sedges.size(), zs::memsrc_e::host);
@@ -1005,60 +1024,9 @@ struct ToZSSurfaceMesh : INode {
             for (auto &&edge : sedges) {
                 sv("inds", 0, no) = reinterpret_bits<float>(edge[0]);
                 sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
-#if 0
-              if (no < 10 || no > sedges.size() - 10) {
-                  fmt::print("surf edge [{}] inds <{}, {}> (<{}, {}>)\n", no,
-                             edge[0], edge[1],
-                             reinterpret_bits<int>(sv("inds", 0, no)),
-                             reinterpret_bits<int>(sv("inds", 1, no)));
-              }
-#endif
                 no++;
             }
             surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-            if constexpr (false) { // debug
-                zs::HashTable<int, 2, int> surfEdgeTable{0};
-                surfEdgeTable.resize(ompExec, 3 * tris.size());
-                surfEdgeTable.reset(ompExec, true);
-                surfEdgeTable._cnt.setVal(0);
-
-                auto seTable = proxy<space>(surfEdgeTable);
-                using table_t = RM_CVREF_T(seTable);
-                using vec3i = zs::vec<int, 3>;
-                using vec2i = zs::vec<int, 2>;
-                ompExec(range(tris.size()), [&](int ei) {
-                    auto tri = tris[ei];
-                    seTable.insert(vec2i{tri[0], tri[1]});
-                    seTable.insert(vec2i{tri[1], tri[2]});
-                    seTable.insert(vec2i{tri[2], tri[0]});
-                });
-                Vector<int> surfEdgeCnt{1, memsrc_e::host};
-                surfEdgeCnt.setVal(0);
-                auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag + std::string("chk")];
-                surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, tris.size() * 3, zs::memsrc_e::host);
-                ompExec(range(seTable.size()),
-                        [&, edges = proxy<space>({}, surfEdges), cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
-                            auto edgeInds = seTable._activeKeys[i];
-                            if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
-                                no == table_t::sentinel_v || (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
-                                auto id = atomic_add(exec_omp, &cnt[0], 1);
-                                edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
-                                edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
-
-                                if (id < 500) {
-                                    fmt::print("{}-th entry ({}-th table edge) being pushed "
-                                               "<{}, {}> at {}\n",
-                                               i, no, edgeInds[0], edgeInds[1], id);
-                                }
-                            }
-                        });
-                auto seCntChk = surfEdgeCnt.getVal();
-                surfEdges.resize(seCntChk);
-                fmt::print("ref (correct): {}, zs win {}\n", sedges.size(), seCntChk);
-                for (auto &&[id, e] : zip(range(sedges.size()), surfEdgeTable._activeKeys)) {
-                    fmt::print("[{}]: <{}, {}>\n", id, e[0], e[1]);
-                }
-            }
 #if 0
       fmt::print("surf edge (addr: {}) sizes: {} (correct) - {} (actual)\n", (void*)&surfEdges, sedges.size(), surfEdges.size());
           {

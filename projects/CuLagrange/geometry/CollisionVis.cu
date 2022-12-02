@@ -7,6 +7,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 
+#include "TopoUtils.hpp"
 
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "kernel/calculate_facet_normal.hpp"
@@ -82,6 +83,8 @@ namespace zeno {
 
             // std::cout << "bvh_thickness : " << bvh_thickness << std::endl;
 
+            compute_surface_neighbors(cudaExec, tris, lines, points);
+#if 0
             tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3},{"fp_inds",3}});
             lines.append_channels(cudaExec,{{"fe_inds",2}});
             if(!compute_ff_neigh_topo(cudaExec,verts,tris,"ff_inds",bvh_thickness))
@@ -90,6 +93,7 @@ namespace zeno {
                 throw std::runtime_error("ZSInitTopoConnect::compute_face_neigh_topo fail");
             if(!compute_fp_neigh_topo(cudaExec,verts,points,tris,"fp_inds",bvh_thickness))
                 throw std::runtime_error("ZSInitTopoConnect::compute_face_point_neigh_topo fail");
+#endif
 
             set_output("zssurf",surf);
         }
@@ -575,13 +579,16 @@ namespace zeno {
 
             //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
             // });
-
+#if 0
+            update_surface_cell_normals(cudaExec, const_cast<ZenoParticles::particles_t&>(verts), "x", 0, const_cast<ZenoParticles::particles_t&>(tris), "nrm", lines, ceNrmTag);
+#else
             COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
                 verts,"x",
                 lines,
                 tris,
                 tris,"nrm",
                 lines,ceNrmTag);
+#endif
 
 
             set_output("ZSParticles",zsparticles);

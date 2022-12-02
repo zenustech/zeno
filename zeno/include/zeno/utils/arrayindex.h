@@ -46,4 +46,9 @@ std::size_t array_index_safe(std::initializer_list<T> arr, V const &val, std::st
     return it - std::begin(arr);
 }
 
+template <class T, class I>
+T const &array_lookup(std::initializer_list<T> arr, I const &index) {
+    return *std::next(std::begin(arr), index);
+}
+
 }

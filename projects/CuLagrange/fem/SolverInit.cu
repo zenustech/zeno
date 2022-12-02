@@ -516,7 +516,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         if (numNodes <= 2) {                                                                                     \
             front.reserve(sInds.size() * numNodes);                                                              \
             front.setCounter(sInds.size() * numNodes);                                                           \
-            pol(Collapse{sInds.size()}, [front = proxy<space>(selfStFront), numNodes] ZS_LAMBDA(int i) mutable { \
+            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
                 for (int j = 0; j != numNodes; ++j)                                                              \
                     front.assign(i *numNodes + j, i, j);                                                         \
             });                                                                                                  \

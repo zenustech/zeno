@@ -30,10 +30,11 @@ set(ZENO_EXTENSIONS
     CuEulerian
     CuLagrange
     Audio
-    Parameterization
+    ImgCV
     GUI
     PBD
     Python
+    Parameterization
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

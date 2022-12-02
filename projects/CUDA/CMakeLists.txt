@@ -53,10 +53,13 @@ target_sources(zeno PRIVATE
   wrangle/PNBVHW.cu
   wrangle/PPW.cu
   wrangle/TVW.cu
+  wrangle/VW.cu
 )
 
 # utils
 target_sources(zeno PRIVATE
+  utils/Conversion.cpp
+  utils/Primitives.cpp
   utils/IndexBuckets.cu
   utils/Primitives.cu
   utils/TopoUtils.cu

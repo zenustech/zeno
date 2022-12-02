@@ -439,7 +439,8 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
 };
 
 struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
-  using spg_t = zs::SparseGrid<3, zs::f32, 8>;
+  template <int level = 0> using grid_t = zs::SparseGrid<3, zs::f32, (8 >> level)>;
+  using spg_t = grid_t<0>;
 
   auto &getSparseGrid() noexcept { return spg; }
   const auto &getSparseGrid() const noexcept { return spg; }
@@ -462,8 +463,25 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
     return false;
   }
 
+  template <int level = 0>
+  auto &getLevel() {
+    if constexpr (level == 0)
+      return spg;
+    else if constexpr (level == 1)
+      return spg1;
+    else if constexpr (level == 2)
+      return spg2;
+    else if constexpr (level == 3)
+      return spg3;
+    else return spg;
+  }
+
   spg_t spg;
   std::map<std::string, std::any> metas;
+
+  grid_t<1> spg1;
+  grid_t<2> spg2;
+  grid_t<3> spg3;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {
