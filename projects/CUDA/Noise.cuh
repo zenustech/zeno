@@ -12,4 +12,14 @@ struct ZSPerlinNoise {
     static __device__ __host__ float perlin(vec3f a, float power, float depth);
 };
 
-}
+struct ZSPerlinNoise1 {
+    static __device__ __host__ float fade(float t);
+
+    static __device__ __host__ int inc(int num);
+
+    static __device__ __host__ float grad(int hash, float x, float y, float z);
+
+    static __device__ __host__ float perlin(float x, float y, float z);
+};
+
+} // namespace zeno
