@@ -16,7 +16,6 @@
 
 namespace zeno {
 
-
 struct PrimitiveLineSolidify : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -29,6 +28,8 @@ struct PrimitiveLineSolidify : zeno::INode {
         if (closeRing) sealEnd = false;
 
         intptr_t n = prim->verts.size();
+        std::vector<std::vector<int>> curves;
+
         if (n >= 2 && count >= 2) {
 
             //TICK(linesort);
@@ -37,7 +38,7 @@ struct PrimitiveLineSolidify : zeno::INode {
             //TOCK(linesort);
 
             //TICK(resizeprim);
-            prim->lines.clear();
+            //prim->lines.clear();
             prim->tris.clear();
             prim->quads.clear();
 
@@ -102,7 +103,7 @@ struct PrimitiveLineSolidify : zeno::INode {
                     else
                         return std::false_type{};
                 }();
-
+prim->verts.add_attr<zeno::vec3f>("uv");
 #pragma omp parallel for
             for (intptr_t i = 0; i < n; i++) {
                 auto currpos = prim->verts[i];
@@ -113,12 +114,12 @@ struct PrimitiveLineSolidify : zeno::INode {
                     if constexpr (has_radius_attr.value)
                         offs *= radattr[i];
                     prim->verts[i + n * a] = currpos + offs;
+                    prim->verts.attr<zeno::vec3f>("uv")[i + n * a] = zeno::vec3f((float)a/(float)count, (float)i/(float)n, 0);
                 }
             }
 
             });
             //TOCK(dupverts);
-
             //TICK(emitfaces);
             boolean_switch(isTri, [&] (auto isTri) {
 
@@ -131,30 +132,57 @@ struct PrimitiveLineSolidify : zeno::INode {
                 }
 
 #pragma omp parallel for
-                for (intptr_t i = 0; i < n - 1; i++) {
+                for (int i=0; i<prim->lines.size();i++)
+                {
+                    int v0 = prim->lines[i][0];
+                    int v1 = prim->lines[i][1];
                     for (int a = 0; a < count - 1; a++) {
-                        int p1 = i + n * a;
-                        int p2 = i + n * (a+1);
-                        int p3 = i+1 + n * (a+1);
-                        int p4 = i+1 + n * a;
+                        int p1 = v0 + n * a;
+                        int p2 = v0 + n * (a+1);
+                        int p3 = v1 + n * (a+1);
+                        int p4 = v1 + n * a;
                         if constexpr (isTri.value) {
-                            prim->tris[(i * count + a)*2] = {p1, p2, p3};
-                            prim->tris[(i * count + a)*2+1] = {p1, p3, p4};
+                            prim->tris[(v0 * count + a)*2] = {p1, p2, p3};
+                            prim->tris[(v0 * count + a)*2+1] = {p1, p3, p4};
                         } else {
-                            prim->quads[i * count + a] = {p1, p2, p3, p4};
+                            prim->quads[v0 * count + a] = {p1, p2, p3, p4};
                         }
                     }
-                    int p1 = i + n * (count-1);
-                    int p2 = i + n * 0;
-                    int p3 = i+1 + n * 0;
-                    int p4 = i+1 + n * (count-1);
+                    int p1 = v0 + n * (count-1);
+                    int p2 = v0 + n * 0;
+                    int p3 = v1 + n * 0;
+                    int p4 = v1 + n * (count-1);
                     if constexpr (isTri.value) {
-                        prim->tris[(i * count + count-1)*2] = {p1, p2, p3};
-                        prim->tris[(i * count + count-1)*2+1] = {p1, p3, p4};
+                        prim->tris[(v0 * count + count-1)*2] = {p1, p2, p3};
+                        prim->tris[(v0 * count + count-1)*2+1] = {p1, p3, p4};
                     } else {
-                        prim->quads[i * count + count-1] = {p1, p2, p3, p4};
+                        prim->quads[v0 * count + count-1] = {p1, p2, p3, p4};
                     }
                 }
+//                for (intptr_t i = 0; i < n - 1; i++) {
+//                    for (int a = 0; a < count - 1; a++) {
+//                        int p1 = i + n * a;
+//                        int p2 = i + n * (a+1);
+//                        int p3 = i+1 + n * (a+1);
+//                        int p4 = i+1 + n * a;
+//                        if constexpr (isTri.value) {
+//                            prim->tris[(i * count + a)*2] = {p1, p2, p3};
+//                            prim->tris[(i * count + a)*2+1] = {p1, p3, p4};
+//                        } else {
+//                            prim->quads[i * count + a] = {p1, p2, p3, p4};
+//                        }
+//                    }
+//                    int p1 = i + n * (count-1);
+//                    int p2 = i + n * 0;
+//                    int p3 = i+1 + n * 0;
+//                    int p4 = i+1 + n * (count-1);
+//                    if constexpr (isTri.value) {
+//                        prim->tris[(i * count + count-1)*2] = {p1, p2, p3};
+//                        prim->tris[(i * count + count-1)*2+1] = {p1, p3, p4};
+//                    } else {
+//                        prim->quads[i * count + count-1] = {p1, p2, p3, p4};
+//                    }
+//                }
                 if (closeRing) {
                     for (int a = 0; a < count - 1; a++) {
                         int p1 = n-1 + n * a;
@@ -211,7 +239,7 @@ struct PrimitiveLineSolidify : zeno::INode {
             //TOCK(copyattr);
 
         }
-
+        prim->lines.clear();
         set_output("prim", std::move(prim));
     }
 };
