@@ -40,7 +40,6 @@ struct ZSGridPerlinNoise : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        zs::Vector<int> flag{1, zs::memsrc_e::um};
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), tag, nchns, frequency = zs::vec<float, 3>::from_array(frequency),
              offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, amplitude, attenuation,
@@ -97,5 +96,125 @@ ZENDEFNODE(ZSGridPerlinNoise, {/* inputs: */
                                {},
                                /* category: */
                                {"Eulerian"}});
+
+struct ZSGridCurlNoise : INode {
+    virtual void apply() override {
+        auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("GridAttribute");
+        bool isStaggered = get_input2<bool>("staggered");
+        auto frequency = get_input2<vec3f>("Frequency");
+        auto offset = get_input2<vec3f>("Offset");
+        auto amplitude = get_input2<float>("Amplitude");
+        auto mean = get_input2<float>("MeanNoise");
+
+        auto tag = src_tag(zsSPG, attrTag);
+
+        auto &spg = zsSPG->spg;
+        auto block_cnt = spg.numBlocks();
+
+        if (!spg.hasProperty(tag))
+            throw std::runtime_error(fmt::format("GridAttribute [{}] doesn't exist!", tag.asString()));
+        if (spg.getPropertySize(tag) != 3)
+            throw std::runtime_error(fmt::format("GridAttribute [{}] must have 3 channels!", tag.asString()));
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if (isStaggered) {
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), tag, frequency = zs::vec<float, 3>::from_array(frequency),
+                 offset = zs::vec<float, 3>::from_array(offset), amplitude,
+                 mean] __device__(int blockno, int cellno) mutable {
+                    constexpr float eps = 1e-4f;
+                    float pln1, pln2, curl;
+                    // u
+                    auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, 0);
+                    auto pp = frequency * wcoord_face - offset;
+
+                    curl = 0;
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1] + eps, pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1] - eps, pp[2]);
+                    curl += (pln1 - pln2) / (2.f * eps);
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] + eps);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] - eps);
+                    curl -= (pln1 - pln2) / (2.f * eps);
+
+                    spgv(tag, 0, blockno, cellno) += amplitude * curl + mean;
+
+                    // v
+                    wcoord_face = spgv.wStaggeredCoord(blockno, cellno, 1);
+                    pp = frequency * wcoord_face - offset;
+
+                    curl = 0;
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] + eps);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] - eps);
+                    curl += (pln1 - pln2) / (2.f * eps);
+                    pln1 = ZSPerlinNoise1::perlin(pp[0] + eps, pp[1], pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0] - eps, pp[1], pp[2]);
+                    curl -= (pln1 - pln2) / (2.f * eps);
+
+                    spgv(tag, 1, blockno, cellno) += amplitude * curl + mean;
+
+                    // w
+                    wcoord_face = spgv.wStaggeredCoord(blockno, cellno, 2);
+                    pp = frequency * wcoord_face - offset;
+
+                    curl = 0;
+                    pln1 = ZSPerlinNoise1::perlin(pp[0] + eps, pp[1], pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0] - eps, pp[1], pp[2]);
+                    curl += (pln1 - pln2) / (2.f * eps);
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1] + eps, pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1] - eps, pp[2]);
+                    curl -= (pln1 - pln2) / (2.f * eps);
+
+                    spgv(tag, 2, blockno, cellno) += amplitude * curl + mean;
+                });
+        } else {
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), tag, frequency = zs::vec<float, 3>::from_array(frequency),
+                 offset = zs::vec<float, 3>::from_array(offset), amplitude,
+                 mean] __device__(int blockno, int cellno) mutable {
+                    constexpr float eps = 1e-5f;
+                    float pln1, pln2, dPln[3];
+
+                    auto wcoord = spgv.wCoord(blockno, cellno);
+                    auto pp = frequency * wcoord - offset;
+
+                    pln1 = ZSPerlinNoise1::perlin(pp[0] + eps, pp[1], pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0] - eps, pp[1], pp[2]);
+                    dPln[0] = (pln1 - pln2) / (2.f * eps);
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1] + eps, pp[2]);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1] - eps, pp[2]);
+                    dPln[1] = (pln1 - pln2) / (2.f * eps);
+                    pln1 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] + eps);
+                    pln2 = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2] - eps);
+                    dPln[2] = (pln1 - pln2) / (2.f * eps);
+
+                    auto curl = zs::vec<float, 3>{dPln[1] - dPln[2], dPln[2] - dPln[0], dPln[0] - dPln[1]};
+                    curl = amplitude * curl + mean;
+
+                    spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
+                        spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + curl;
+                });
+        }
+
+        set_output("SparseGrid", zsSPG);
+    }
+};
+
+ZENDEFNODE(ZSGridCurlNoise, {/* inputs: */
+                             {"SparseGrid",
+                              {"string", "GridAttribute", "v"},
+                              {"bool", "staggered", "1"},
+                              {"vec3f", "Frequency", "1, 1, 1"},
+                              {"vec3f", "Offset", "0, 0, 0"},
+                              {"float", "Amplitude", "1.0"},
+                              {"float", "MeanNoise", "0"}},
+                             /* outputs: */
+                             {"SparseGrid"},
+                             /* params: */
+                             {},
+                             /* category: */
+                             {"Eulerian"}});
 
 } // namespace zeno
