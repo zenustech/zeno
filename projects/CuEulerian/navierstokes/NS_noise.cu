@@ -20,14 +20,13 @@ struct ZSGridPerlinNoise : INode {
     virtual void apply() override {
         auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto attrTag = get_input2<std::string>("GridAttribute");
-
         auto frequency = get_input2<vec3f>("Frequency");
         auto offset = get_input2<vec3f>("Offset");
         auto roughness = get_input2<float>("Roughness");
-        auto turbulence = get_input2<float>("Turbulence");
+        auto turbulence = get_input2<int>("Turbulence");
+        auto amplitude = get_input2<float>("Amplitude");
         auto attenuation = get_input2<float>("Attenuation");
-        auto average = get_input2<float>("MeanNoise");
-        auto strength = get_input2<float>("Amplitude");
+        auto mean = get_input2<float>("MeanNoise");
 
         auto tag = src_tag(zsSPG, attrTag);
 
@@ -44,29 +43,35 @@ struct ZSGridPerlinNoise : INode {
         zs::Vector<int> flag{1, zs::memsrc_e::um};
         pol(zs::Collapse{block_cnt, spg.block_size},
             [spgv = zs::proxy<space>(spg), tag, nchns, frequency = zs::vec<float, 3>::from_array(frequency),
-             offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, attenuation, average,
-             strength] __device__(int blockno, int cellno) mutable {
+             offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, amplitude, attenuation,
+             mean] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
-                auto p = frequency * wcoord - offset;
+                auto pp = frequency * wcoord - offset;
+
+                float scale = amplitude;
 
                 if (nchns == 3) {
-#if 0
-                    zs::vec<float, 3> pln{
-                        ZSPerlinNoise::perlin(zs::vec<float, 3>{p[0], p[1], p[2]}, roughness, turbulence),
-                        ZSPerlinNoise::perlin(zs::vec<float, 3>{p[1], p[2], p[0]}, roughness, turbulence),
-                        ZSPerlinNoise::perlin(zs::vec<float, 3>{p[2], p[0], p[1]}, roughness, turbulence)};
-#endif
-
-                    auto noise = average + pln * strength;
+                    // fractal Brownian motion
+                    auto fbm = zs::vec<float, 3>::uniform(0);
+                    for (int i = 0; i < turbulence; ++i, pp *= 2.f, scale *= roughness) {
+                        zs::vec<float, 3> pln{ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]),
+                                              ZSPerlinNoise1::perlin(pp[1], pp[2], pp[0]),
+                                              ZSPerlinNoise1::perlin(pp[2], pp[0], pp[1])};
+                        fbm += scale * pln;
+                    }
+                    auto noise = zs::vec<float, 3>{zs::pow(fbm[0], attenuation), zs::pow(fbm[1], attenuation),
+                                                   zs::pow(fbm[2], attenuation)} +
+                                 mean;
 
                     spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
                         spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + noise;
                 } else if (nchns == 1) {
-#if 0
-                    float pln = ZSPerlinNoise::perlin(p, roughness, turbulence);
-#endif
-
-                    float noise = average + pln * strength;
+                    float fbm = 0;
+                    for (int i = 0; i < turbulence; ++i, pp *= 2.f, scale *= roughness) {
+                        float pln = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]);
+                        fbm += scale * pln;
+                    }
+                    auto noise = zs::pow(fbm, attenuation) + mean;
 
                     spgv(tag, blockno, cellno) += noise;
                 }
@@ -82,10 +87,10 @@ ZENDEFNODE(ZSGridPerlinNoise, {/* inputs: */
                                 {"vec3f", "Frequency", "1, 1, 1"},
                                 {"vec3f", "Offset", "0, 0, 0"},
                                 {"float", "Roughness", "0.5"},
-                                {"float", "Turbulence", "4"},
+                                {"int", "Turbulence", "4"},
+                                {"float", "Amplitude", "1.0"},
                                 {"float", "Attenuation", "1.0"},
-                                {"float", "MeanNoise", "0"},
-                                {"float", "Amplitude", "1"}},
+                                {"float", "MeanNoise", "0"}},
                                /* outputs: */
                                {"SparseGrid"},
                                /* params: */
