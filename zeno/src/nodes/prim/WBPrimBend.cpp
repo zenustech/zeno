@@ -10,6 +10,8 @@
 #include <random>
 #include <cmath>
 
+#include <stdexcept>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -524,6 +526,18 @@ struct VisVec3Attribute : INode {
         // 构建新的可视化的 Prim
         auto primVis = std::make_shared<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
+        
+        for(auto key:prim->attr_keys())
+        {
+            if (key != "pos")
+                std::visit(
+                    [&primVis, key](auto &&ref) {
+                        using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                        primVis->add_attr<T>(key);
+                    },
+                    prim->attr(key));
+        }
+
         primVis->lines.resize(prim->size());
 
         auto &visColor = primVis->add_attr<vec3f>("clr");
@@ -533,6 +547,22 @@ struct VisVec3Attribute : INode {
         {
             int i = iPrim * 2;
             primVis->verts[i] = prim->verts[iPrim];
+            for (auto key : prim->attr_keys()) {
+                if (key != "pos")
+                    std::visit(
+                        [i, iPrim](auto &&dst, auto &&src) {
+                            using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
+                            using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                            if constexpr (std::is_same_v<DstT, SrcT>) {
+                                dst[i] = src[iPrim];
+                                dst[i + 1] = src[iPrim];
+                            } else {
+                                throw std::runtime_error("the same attr of both primitives are of different types.");
+                            }
+                        },
+                        primVis->attr(key), prim->attr(key));
+            }
+
             visColor[i] = color;
             ++i; // primVis
             auto a=attr[iPrim];

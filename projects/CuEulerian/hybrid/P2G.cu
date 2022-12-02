@@ -41,7 +41,8 @@ struct ZSPrimitiveToSparseGrid : INode {
                 }
             });
 
-        zeno::log_warn("check P2G activate success state: {}\n", (bool)spg._table._buildSuccess.getVal());
+        if (int tag = spg._table._buildSuccess.getVal(); tag == 0)
+            zeno::log_error("check P2G activate success state: {}\n", tag);
 
         const auto nbs = spg.numBlocks();
         spg.resizeGrid(nbs);
@@ -78,8 +79,11 @@ struct ZSPrimitiveToSparseGrid : INode {
                 tab3.insert(bcoord / 8, i, true);
             });
 
-            zeno::log_warn("check P2G multigrid activate success state: {}, {}, {}\n", (bool)table1._buildSuccess.getVal(),
-                           (bool)table2._buildSuccess.getVal(), (bool)table3._buildSuccess.getVal());
+            int tag1 = table1._buildSuccess.getVal();
+            int tag2 = table2._buildSuccess.getVal();
+            int tag3 = table3._buildSuccess.getVal();
+            if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                zeno::log_error("check P2G multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
         }
     }
 
