@@ -5,8 +5,10 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 #include "util/apphelper.h"
+#include "variantptr.h"
 
 using namespace JsonHelper;
+
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
@@ -93,50 +95,60 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             else
             {
                 const EdgeInfo& link = input.info.links[0];
-                const QString& outNode = link.outputNode;
-                const QString& outSock = link.outputSock;
-                const QModelIndex& outIdx = pGraphsModel->index(outNode, subgIdx);
-                const QModelIndex& outSockIdx = pGraphsModel->paramIndex(outIdx, PARAM_OUTPUT, outSock);
-                const QString& coreType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
+                const QModelIndex& outIdx = pGraphsModel->index(link.outputNode, subgIdx);
+                const QModelIndex& outSockIdx = pGraphsModel->paramIndex(outIdx, PARAM_OUTPUT, link.outputSock);
+                const QString& outSockType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
 
                 if (input.info.sockProp != SOCKPROP_MULTILINK ||
-                    ((coreType == "dict" || coreType == "list") && input.info.links.size() == 1))
+                    ((outSockType == "dict" || outSockType == "list") && input.info.links.size() == 1))
                 {
                     //normal case, including list/dictNode to other input list socket.
-                    const QString& newOutId = nameMangling(graphIdPrefix, outNode);
-                    AddStringList({ "bindNodeInput", ident, inputName, newOutId, outSock }, writer);
+                    const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
+                    AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
                 }
                 else
                 {
-                    //special case, transfer multi-linked to MakeList/MakeDict.
-                    if (input.info.type == "list")
+                    const QModelIndex& inSockIdx = pGraphsModel->paramIndex(idx, PARAM_INPUT, inputName);
+                    const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
+                    //only few information about the output socket, we can only recognize by name.
+                    if ((outSockType == "list" || outSockType == "dict") && input.info.links.size() == 1)
                     {
-                        //only few information about the output socket, we can only recognize by name.
-                        if (coreType == "list" && input.info.links.size() == 1)
-                        {
-                            //legacy way.
-                            //this case is for MakeList, MakeSmallList, etc. they output a socket named "list".
-                            const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
-                            AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
-                        }
-                        else
-                        {
-                            QString _ident = UiHelper::generateUuid("MakeList");
-                            _ident = nameMangling(graphIdPrefix, _ident);
-                            AddStringList({ "addNode", "MakeList", _ident }, writer);
-                            for (int i = 0; i < input.info.links.size(); i++)
-                            {
-                                const EdgeInfo& _link = input.info.links[i];
-                                const QString& newOutId = nameMangling(graphIdPrefix, _link.outputNode);
-                                QString _inName = QString("obj%1").arg(i);
-                                AddStringList({ "bindNodeInput", _ident, _inName, newOutId, _link.outputSock }, writer);
-                            }
-                            AddStringList({ "bindNodeInput", ident, inputName, _ident, "list" }, writer);
-                        }
+                        //legacy way.
+                        //this case is for MakeList, MakeSmallList, etc. they output a socket named "list".
+                        const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
+                        AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
                     }
                     else
                     {
-                        //todo: dict
+                        ZASSERT_EXIT(inSockType == "list" || inSockType == "dict");
+
+                        bool bList = inSockType == "list";
+                        QString _tmpNode = bList ? "MakeList" : "MakeDict";
+                        QString _ident = UiHelper::generateUuid(_tmpNode);
+                        _ident = nameMangling(graphIdPrefix, _ident);
+                        AddStringList({ "addNode", _tmpNode, _ident }, writer);
+
+                        QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(inSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+                        for (int i = 0; i < input.info.links.size(); i++)
+                        {
+                            const EdgeInfo& _link = input.info.links[i];
+                            const QString& newOutId = nameMangling(graphIdPrefix, _link.outputNode);
+                            //find corresponding obj key.
+                            QString objKey;
+                            for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+                            {
+                                if (pKeyObjModel->index(r, 1).data() == newOutId)
+                                {
+                                    objKey = pKeyObjModel->index(r, 0).data().toString();
+                                    break;
+                                }
+                            }
+                            if (!objKey.isEmpty())
+                            {
+                                AddStringList({ "bindNodeInput", _ident, objKey, newOutId, _link.outputSock }, writer);
+                            }
+                        }
+                        AddStringList({ "bindNodeInput", ident, inputName, _ident, bList ? "list" : "dict" }, writer);
                     }
                 }
             }

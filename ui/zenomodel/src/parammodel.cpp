@@ -2,7 +2,9 @@
 #include "zassert.h"
 #include "igraphsmodel.h"
 #include "linkmodel.h"
+#include "variantptr.h"
 #include <zenomodel/include/uihelper.h>
+#include <zeno/utils/scope_exit.h>
 
 
 IParamModel::IParamModel(
@@ -16,6 +18,7 @@ IParamModel::IParamModel(
     , m_subgIdx(subgIdx)
     , m_model(pModel)
     , m_class(paramType)
+    , m_bRetryLinkOp(false)
 {
     Q_ASSERT(m_model);
 }
@@ -265,6 +268,14 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
             path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
             return path;
         }
+        case ROLE_VPARAM_LINK_MODEL:
+        {
+            if (item.customData.find(role) != item.customData.end())
+            {
+                return item.customData[role];
+            }
+            break;
+        }
     }
     return QVariant();
 }
@@ -335,9 +346,23 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
-            if (item.prop == SOCKPROP_MULTILINK)
+            if (item.prop == SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
             {
-                //todo: fill link info into value.
+                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                int rowCnt = pModel->rowCount();
+                QStringList keyNames;
+                for (int i = 0; i < rowCnt; i++)
+                {
+                    QString key = pModel->index(i, 0).data().toString();
+                    keyNames.push_back(key);
+                }
+                const QString& newKeyName = UiHelper::getUniqueName(keyNames, "obj", false);
+                const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
+
+                QStandardItem* pObjItem = new QStandardItem(outNode);
+                pObjItem->setData(linkIdx, ROLE_LINK_IDX);
+                pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
             }
             break;
         }
@@ -346,8 +371,18 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.removeAll(linkIdx);
-            if (item.prop == SOCKPROP_MULTILINK)
+            if (!m_bRetryLinkOp && item.prop == SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
             {
+                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                for (int r = 0; r < pModel->rowCount(); r++)
+                {
+                    if (pModel->index(r, 1).data() == linkIdx.data(ROLE_OUTNODE))
+                    {
+                        pModel->removeRow(r);
+                        break;
+                    }
+                }
             }
             break;
         }
@@ -598,6 +633,18 @@ bool IParamModel::_insertRow(
         item.type = "list";
     }
 
+    if (item.prop == SOCKPROP_MULTILINK)
+    {
+        QStandardItemModel* pTblModel = new QStandardItemModel(0, 2, this);
+        item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<QStandardItemModel>::asVariant(pTblModel);
+        connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
+        //connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
+        //    const QString& keyName = pTblModel->index(first, 0).data().toString();
+        //    const QString& objId = pTblModel->index(first, 1).data().toString();
+
+        //});
+    }
+
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
     //and we will import the links by method GraphsModel::addLink.
 
@@ -630,4 +677,20 @@ bool IParamModel::_insertRow(
 
     m_model->markDirty();
     return true;
+}
+
+void IParamModel::onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    QStandardItemModel* pTblModel = qobject_cast<QStandardItemModel*>(sender());
+    ZASSERT_EXIT(pTblModel);
+
+    const QString& keyName = pTblModel->index(first, 0).data().toString();
+
+    const QModelIndex& idxObj = pTblModel->index(first, 1);
+    const QString& objId = idxObj.data().toString();
+    QModelIndex linkIdx = idxObj.data(ROLE_LINK_IDX).toModelIndex();
+
+    m_bRetryLinkOp = true;
+    zeno::scope_exit sp([this](){ m_bRetryLinkOp = false; });
+    m_model->removeLink(linkIdx, m_subgIdx, true);
 }

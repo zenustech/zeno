@@ -539,7 +539,13 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type.isEmpty()) {
         return CONTROL_NONE;
-    } else {
+    }
+    else if (type == "dict")
+    {
+        //control by multilink socket property. see SOCKET_PROPERTY
+        return CONTROL_NONE;
+    }
+    else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
     }
@@ -764,13 +770,16 @@ int UiHelper::getMaxObjId(const QList<QString> &lst)
     return maxObjId;
 }
 
-QString UiHelper::getUniqueName(const QList<QString>& existNames, const QString& prefix)
+QString UiHelper::getUniqueName(const QList<QString>& existNames, const QString& prefix, bool bWithBrackets)
 {
-    int n = 1;
+    int n = 0;
     QString name;
     do
     {
-        name = prefix + "(" + QString::number(n++) + ")";
+        if (bWithBrackets)
+            name = prefix + "(" + QString::number(n++) + ")";
+        else
+            name = prefix + QString::number(n++);
     } while (existNames.contains(name));
     return name;
 }

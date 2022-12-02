@@ -17,6 +17,7 @@
 #include "variantptr.h"
 #include "zassert.h"
 #include "zspinboxslider.h"
+#include "zdicttableview.h"
 
 
 namespace zenoui
@@ -324,7 +325,14 @@ namespace zenoui
             }
             case CONTROL_DICTPANEL:
             {
-                //todo
+                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(value);
+                if (pModel)
+                {
+                    ZDictTableView* tableView = new ZDictTableView;
+                    tableView->setModel(pModel);
+                    return tableView;
+                }
+                break;
             }
             default:
                 return nullptr;

@@ -136,6 +136,12 @@ QVariant VParamItem::data(int role) const
             return SOCKPROP_UNKNOWN;
         return m_index.data(ROLE_PARAM_SOCKPROP);
     }
+    case ROLE_VPARAM_LINK_MODEL:
+    {
+        if (!m_index.isValid())
+            return QVariant();
+        return m_index.data(ROLE_VPARAM_LINK_MODEL);
+    }
     case ROLE_PARAM_LINKS:
     {
         if (!m_index.isValid())
@@ -506,9 +512,12 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& displayName = realName;  //todo: mapping name.
                 //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
+                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_MULTILINK;
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
-                PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc); 
+                //todo: dictpanel should be choosed by custom param manager globally.
+                PARAM_CONTROL ctrl = bMultiLink ? CONTROL_DICTPANEL : UiHelper::getControlType(typeDesc);
+
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);

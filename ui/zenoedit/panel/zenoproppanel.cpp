@@ -275,10 +275,14 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     const QString& tabName = pTabItem->data(ROLE_VPARAM_NAME).toString();
     const QString& groupName = pGroupItem->data(ROLE_VPARAM_NAME).toString();
     const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
-    const QVariant& val = paramItem->data(ROLE_PARAM_VALUE);
+    QVariant val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
     const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
     CONTROL_PROPERTIES pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    if (ctrl == CONTROL_DICTPANEL)
+    {
+        val = paramItem->data(ROLE_VPARAM_LINK_MODEL);
+    }
 
     QPersistentModelIndex perIdx(paramItem->index());
 
@@ -294,8 +298,6 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     };
 
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch, pros);
-    //if (!pControl)
-    //    return false;
 
     QLabel* pLabel = new QLabel(paramName);
     pLabel->setProperty("cssClass", "proppanel");

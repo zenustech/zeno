@@ -19,6 +19,7 @@ public:
         QVariant pConst;    //const (default) value on socket or param.
         //CurveModel* pVar;   //variable on time frame.
         PARAM_LINKS links;
+        QMap<int, QVariant> customData;
         SOCKET_PROPERTY prop;
     };
 
@@ -80,6 +81,9 @@ public:
 
     void clear();
 
+private slots:
+    void onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+
 private:
     QString nameFromRow(int row) const;
     bool _insertRow(int row,
@@ -98,6 +102,7 @@ private:
     QMap<int, QString> m_row2Key;
     QMap<QString, _ItemInfo> m_items;
     IGraphsModel* m_model;
+    bool m_bRetryLinkOp;        //...
 };
 
 #endif

@@ -9,6 +9,8 @@ enum MODEL_ROLE
 	ROLE_OBJPOS,
 	ROLE_OBJRECT,
 	ROLE_OBJPATH,	// unique path for subgraph, node and param, even curvemodel.
+	ROLE_LINK_IDX,	// link index
+	ROLE_SUBGRAPH_IDX,	// subgraph index.
 	ROLE_PARAMETERS,
 	ROLE_INPUTS,
 	ROLE_PARAMS_NO_DESC,
@@ -56,6 +58,7 @@ enum MODEL_ROLE
     ROLE_VPARAM_ACTIVE_TABINDEX,    //active tab index
     ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 	ROLE_VPARAM_CTRL_PROPERTIES,
+	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
 };
 
 enum LOG_ROLE
