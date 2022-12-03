@@ -4,7 +4,7 @@
 ZDictTableView::ZDictTableView(QWidget* parent)
     : QTableView(parent)
 {
-
+    horizontalHeader()->setStretchLastSection(true);
 }
 
 void ZDictTableView::keyReleaseEvent(QKeyEvent* event)

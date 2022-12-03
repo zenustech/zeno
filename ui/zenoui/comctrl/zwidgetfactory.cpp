@@ -26,8 +26,7 @@ namespace zenoui
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,
-        Callback_EditFinished cbFunc,
-        CALLBACK_SWITCH cbSwitch,
+        CallbackCollection cbSet,
         const CONTROL_PROPERTIES& properties
     )
     {
@@ -43,7 +42,7 @@ namespace zenoui
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     const QVariant& newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                     });
                 return pLineEdit;
             }
@@ -64,7 +63,7 @@ namespace zenoui
                 ");
                 pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
                 QObject::connect(pCheckbox, &QCheckBox::stateChanged, [=](int state) {
-                    cbFunc(state);
+                    cbSet.cbEditFinished(state);
                 });
                 return pCheckbox;
             }
@@ -79,7 +78,7 @@ namespace zenoui
                 QObject::connect(pathLineEdit, &ZLineEdit::btnClicked, [=]() {
                     bool bRead = ctrl == CONTROL_READPATH;
                     QString path;
-                    cbSwitch(true);
+                    cbSet.cbSwitch(true);
                     if (bRead) {
                         path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
                     }
@@ -88,16 +87,16 @@ namespace zenoui
                     }
                     if (path.isEmpty())
                     {
-                        cbSwitch(false);
+                        cbSet.cbSwitch(false);
                         return;
                     }
                     pathLineEdit->setText(path);
                     emit pathLineEdit->textEditFinished();
                     pathLineEdit->clearFocus();
-                    cbSwitch(false);
+                    cbSet.cbSwitch(false);
                 });
                 QObject::connect(pathLineEdit, &ZLineEdit::textEditFinished, [=]() {
-                    cbFunc(pathLineEdit->text());
+                    cbSet.cbEditFinished(pathLineEdit->text());
                 });
                 return pathLineEdit;
             }
@@ -121,7 +120,7 @@ namespace zenoui
                 pTextEdit->setPalette(pal);
 
                 QObject::connect(pTextEdit, &ZTextEdit::editFinished, [=]() {
-                    cbFunc(pTextEdit->toPlainText());
+                    cbSet.cbEditFinished(pTextEdit->toPlainText());
                 });
                 return pTextEdit;
             }
@@ -134,7 +133,7 @@ namespace zenoui
                     ZenoHeatMapEditor editor(grad);
                     editor.exec();
                     QLinearGradient newGrad = editor.colorRamps();
-                    cbFunc(QVariant::fromValue(newGrad));
+                    cbSet.cbEditFinished(QVariant::fromValue(newGrad));
                 });
                 return pBtn;
             }
@@ -168,7 +167,7 @@ namespace zenoui
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
                     UI_VECTYPE vec = pVecEdit->vec();
                     const QVariant& newValue = QVariant::fromValue(vec);
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                 });
                 return pVecEdit;
             }
@@ -192,11 +191,11 @@ namespace zenoui
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
                 QObject::connect(pComboBox, &QComboBox::textActivated, [=](const QString& text) {
-                    cbFunc(text);
+                    cbSet.cbEditFinished(text);
                 });
 #else
                 QObject::connect(pComboBox, &QComboBox::activated, [=](const QString& text) {
-                    cbFunc(text);
+                    cbSet.cbEditFinished(text);
                 });
 #endif
                 return pComboBox;
@@ -218,7 +217,7 @@ namespace zenoui
                         ZASSERT_EXIT(pEditor->curveCount() == 1);
                         CurveModel* pCurveModel = pEditor->getCurve(0);
                         const QVariant& newValue = QVariantPtr<CurveModel>::asVariant(pCurveModel);
-                        cbFunc(newValue);
+                        cbSet.cbEditFinished(newValue);
                     });
                 });
                 return pBtn;
@@ -259,7 +258,7 @@ namespace zenoui
                     pSlider->setRange(from, to);
                 }
                 QObject::connect(pSlider, &QSlider::valueChanged, [=](int value) {
-                    cbFunc(value);
+                    cbSet.cbEditFinished(value);
                 });
                 return pSlider;
             }
@@ -319,7 +318,7 @@ namespace zenoui
                     pSlider->setRange(from, to);
                 }
                 QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int value) {
-                    cbFunc(value);
+                    cbSet.cbEditFinished(value);
                 });
                 return pSlider;
             }
@@ -330,6 +329,21 @@ namespace zenoui
                 {
                     ZDictTableView* tableView = new ZDictTableView;
                     tableView->setModel(pModel);
+                    QItemSelectionModel* pSelModel = tableView->selectionModel();
+                    QObject::connect(pSelModel, &QItemSelectionModel::selectionChanged, [=](const QItemSelection& selected, const QItemSelection& deselected) {
+                        auto lst = selected.indexes();
+                        if (lst.size() == 1)
+                        {
+                            QModelIndex selIdx = lst[0];
+                            if (selIdx.column() == 1)
+                            {
+                                QModelIndex linkIdx = selIdx.data(ROLE_LINK_IDX).toModelIndex();
+                                QModelIndex outNodeIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
+                                if (cbSet.cbNodeSelected)
+                                    cbSet.cbNodeSelected(outNodeIdx);
+                            }
+                        }
+                    });
                     return tableView;
                 }
                 break;

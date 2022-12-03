@@ -345,7 +345,7 @@ void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
         if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
         {
             //undo/redo issues
-            pEditor->onCommandDispatched(content, bTriggered);
+            pEditor->onCommandDispatched(pAction, bTriggered);
         }
         if (ZenoSpreadsheet* pSpreadsheet = qobject_cast<ZenoSpreadsheet*>(wid))
         {

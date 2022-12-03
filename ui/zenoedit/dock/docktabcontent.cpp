@@ -146,9 +146,12 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
         rx.indexIn(percent);
         auto caps = rx.capturedTexts();
         qreal scale = caps[1].toFloat() / 100.;
-        m_pEditor->onAction(m_pEditor->tr("zoom"), {scale});
+        QAction act("zoom");
+        m_pEditor->onAction(&act, {scale});
     };
-    QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", funcZoomEdited, CALLBACK_SWITCH(), props));
+    CallbackCollection cbSet;
+    cbSet.cbEditFinished = funcZoomEdited;
+    QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
@@ -183,24 +186,27 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
 
     connect(pListView, &ZToolBarButton::toggled, m_pEditor, &ZenoGraphsEditor::onSubnetListPanel);
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {
-        m_pEditor->onAction(m_pEditor->tr("Collaspe"));
+        QAction act("Collaspe");
+        m_pEditor->onAction(&act);
     });
     connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
-        m_pEditor->onAction(m_pEditor->tr("Expand"));
+        QAction act("Expand");
+        m_pEditor->onAction(&act);
     });
     connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
-        m_pEditor->onAction(m_pEditor->tr("CustomUI"));
+        QAction act("CustomUI");
+        m_pEditor->onAction(&act);
     });
 
     pVLayout->addWidget(m_pEditor);
     setLayout(pVLayout);
 }
 
-void DockContent_Editor::onCommandDispatched(const QString& name, bool bTriggered)
+void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
     if (m_pEditor)
     {
-        m_pEditor->onCommandDispatched(name, bTriggered);
+        m_pEditor->onCommandDispatched(pAction, bTriggered);
     }
 }
 

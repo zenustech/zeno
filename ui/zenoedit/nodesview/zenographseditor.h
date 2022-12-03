@@ -42,8 +42,8 @@ public slots:
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
     void onSubnetListPanel(bool bShow);
-    void onAction(const QString& text, const QVariantList& args = QVariantList());
-    void onCommandDispatched(const QString& name, bool bTriggered);
+    void onAction(QAction* pAction, const QVariantList& args = QVariantList());
+    void onCommandDispatched(QAction* pAction, bool bTriggered);
 
 signals:
     void zoomed(qreal);

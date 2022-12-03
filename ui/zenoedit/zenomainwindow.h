@@ -30,6 +30,7 @@ public:
     void setTimelineInfo(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     DisplayWidget *getDisplayWidget();
+    void dispatchCommand(QAction* pAction, bool bTriggered);
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;

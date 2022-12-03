@@ -31,6 +31,7 @@ public:
     void select(const QString& id);
     void markError(const QString& nodeid);
     void clearMark();
+    QGraphicsItem* getNode(const QString& id);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

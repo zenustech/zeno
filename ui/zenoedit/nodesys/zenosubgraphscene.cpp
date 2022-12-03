@@ -268,6 +268,12 @@ QModelIndex ZenoSubGraphScene::subGraphIndex() const
     return m_subgIdx;
 }
 
+QGraphicsItem* ZenoSubGraphScene::getNode(const QString& id)
+{
+    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end(), nullptr);
+    return m_nodes[id];
+}
+
 void ZenoSubGraphScene::select(const QString& id)
 {
     clearSelection();

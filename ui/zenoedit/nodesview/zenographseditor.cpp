@@ -576,16 +576,17 @@ void ZenoGraphsEditor::onSubnetListPanel(bool bShow)
 
 void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 {
-    onAction(pAction->text());
+    onAction(pAction);
 }
 
-void ZenoGraphsEditor::onCommandDispatched(const QString& name, bool bTriggered)
+void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
-    onAction(name);
+    onAction(pAction);
 }
 
-void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
+void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
 {
+    const QString& text = pAction->text();
     if (text == "Collaspe")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
@@ -694,5 +695,14 @@ void ZenoGraphsEditor::onAction(const QString& text, const QVariantList& args)
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         pGraphsModel->redo();
+    }
+    else if (text == "Select Node")
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        QModelIndex nodeIdx = pAction->data().toModelIndex();
+        if (nodeIdx.isValid())
+            pView->focusOn(nodeIdx.data(ROLE_OBJID).toString());
+            //pView->scene()->select(nodeIdx.data(ROLE_OBJID).toString());
     }
 }

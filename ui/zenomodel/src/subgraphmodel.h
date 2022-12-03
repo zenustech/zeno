@@ -95,8 +95,7 @@ public:
         const QString& sockName,
         const QVariant& value,
         const QString& type = "",
-        PARAM_CONTROL ctrl = CONTROL_NONE,
-        bool bAddIfNotExist = true);
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
 
     QString name() const;
     void setName(const QString& name);

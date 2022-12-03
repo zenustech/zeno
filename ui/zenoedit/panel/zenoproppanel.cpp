@@ -66,6 +66,22 @@ static QString initTabWidgetQss()
         }");
 }
 
+class RetryScope
+{
+public:
+    RetryScope(bool& bRetry)
+        : m_bRetry(bRetry)
+    {
+        m_bRetry = true;
+    }
+    ~RetryScope()
+    {
+        m_bRetry = false;
+    }
+private:
+    bool& m_bRetry;
+};
+
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -130,6 +146,11 @@ void ZenoPropPanel::clearLayout()
 
 void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
+    if (m_bReentry)
+        return;
+
+    RetryScope scope(m_bReentry);
+
     clearLayout();
     QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
@@ -279,25 +300,34 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
     const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
     CONTROL_PROPERTIES pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+
+    QPersistentModelIndex perIdx(paramItem->index());
+    CallbackCollection cbSet;
+
     if (ctrl == CONTROL_DICTPANEL)
     {
         val = paramItem->data(ROLE_VPARAM_LINK_MODEL);
+        cbSet.cbNodeSelected = [=](const QModelIndex& outNodeIdx) {
+            QAction act("Select Node");
+            act.setData(outNodeIdx);
+
+            RetryScope scope(m_bReentry);
+            zenoApp->getMainWindow()->dispatchCommand(&act, true);
+        };
     }
 
-    QPersistentModelIndex perIdx(paramItem->index());
-
-    Callback_EditFinished cbEditFinish = [=](QVariant newValue) {
+    cbSet.cbEditFinished = [=](QVariant newValue) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
         int ret = pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
-    auto cbSwitch = [=](bool bOn) {
+    cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
     };
 
-    QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbEditFinish, cbSwitch, pros);
+    QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
     QLabel* pLabel = new QLabel(paramName);
     pLabel->setProperty("cssClass", "proppanel");

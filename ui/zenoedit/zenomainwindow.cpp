@@ -98,7 +98,13 @@ void ZenoMainWindow::initMenu()
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
 {
     QAction* pAction = qobject_cast<QAction*>(sender());
-    if (!pAction) return;
+    dispatchCommand(pAction, bTriggered);
+}
+
+void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
+{
+    if (!pAction)
+        return;
 
     //dispatch to every panel.
     auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);

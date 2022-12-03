@@ -11,4 +11,13 @@ typedef std::function<void(QVariant state)> Callback_EditFinished;
 
 typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 
+typedef std::function<void(const QModelIndex& idx)> Callback_NodeSelected;
+
+struct CallbackCollection
+{
+    Callback_EditFinished cbEditFinished;
+    CALLBACK_SWITCH cbSwitch;
+    Callback_NodeSelected cbNodeSelected;
+};
+
 #endif

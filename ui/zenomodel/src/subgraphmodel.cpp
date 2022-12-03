@@ -545,8 +545,7 @@ bool SubGraphModel::setParamValue(
         const QString& sockName,
         const QVariant& value,
         const QString& type,
-        PARAM_CONTROL ctrl,
-        bool bAddIfNotExist)
+        SOCKET_PROPERTY sockProp)
 {
     _NodeItem item;
     if (!itemFromIndex(idx, item))
@@ -554,13 +553,7 @@ bool SubGraphModel::setParamValue(
 
     if (cls == PARAM_INPUT)
     {
-        if (!item.inputsModel)
-        {
-            if (bAddIfNotExist)
-                item.inputsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
-            else
-                return false;
-        }
+        ZASSERT_EXIT(item.inputsModel, false);
         const QModelIndex& paramIdx = item.inputsModel->index(sockName);
         if (paramIdx.isValid())
         {
@@ -568,26 +561,14 @@ bool SubGraphModel::setParamValue(
         }
         else
         {
-            if (bAddIfNotExist)
-            {
-                item.inputsModel->appendRow(sockName, type, value);
-            }
-            else
-            {
-                return false;
-            }
+            //add if not exist.
+            item.inputsModel->appendRow(sockName, type, value, sockProp);
         }
         return true;
     }
     else if (cls == PARAM_PARAM)
     {
-        if (!item.paramsModel)
-        {
-            if (bAddIfNotExist)
-                item.paramsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
-            else
-                return false;
-        }
+        ZASSERT_EXIT(item.paramsModel, false);
         const QModelIndex& paramIdx = item.paramsModel->index(sockName);
         if (paramIdx.isValid())
         {
@@ -595,26 +576,13 @@ bool SubGraphModel::setParamValue(
         }
         else
         {
-            if (bAddIfNotExist)
-            {
-                item.paramsModel->appendRow(sockName, type, value);
-            }
-            else
-            {
-                return false;
-            }
+            item.paramsModel->appendRow(sockName, type, value, sockProp);
         }
         return true;
     }
     else if (cls == PARAM_OUTPUT)
     {
-        if (!item.outputsModel)
-        {
-            if (bAddIfNotExist)
-                item.outputsModel = new IParamModel(cls, m_pGraphsModel, m_pGraphsModel->indexBySubModel(this), idx, this);
-            else
-                return false;
-        }
+        ZASSERT_EXIT(item.outputsModel, false);
         const QModelIndex& paramIdx = item.outputsModel->index(sockName);
         if (paramIdx.isValid())
         {
@@ -622,14 +590,7 @@ bool SubGraphModel::setParamValue(
         }
         else
         {
-            if (bAddIfNotExist)
-            {
-                item.outputsModel->appendRow(sockName, type, value);
-            }
-            else
-            {
-                return false;
-            }
+            item.outputsModel->appendRow(sockName, type, value, sockProp);
         }
         return true;
     }

@@ -34,7 +34,7 @@ class DockContent_Editor : public QWidget
     Q_OBJECT
 public:
     explicit DockContent_Editor(QWidget* parent = nullptr);
-    void onCommandDispatched(const QString& name, bool bTriggered);
+    void onCommandDispatched(QAction* pAction, bool bTriggered);
 
 private:
     ZenoGraphsEditor* m_pEditor;

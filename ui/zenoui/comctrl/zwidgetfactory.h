@@ -11,8 +11,7 @@ namespace zenoui
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,
-        Callback_EditFinished cbFunc,
-        CALLBACK_SWITCH cbSwitch,
+        CallbackCollection cbSet,
         const CONTROL_PROPERTIES& properties = CONTROL_PROPERTIES()
     );
 

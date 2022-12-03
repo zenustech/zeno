@@ -163,6 +163,17 @@ void _ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
     focusOn(rec.id, rec.pos, false);
 }
 
+void _ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
+{
+	QGraphicsItem* pItem = m_scene->getNode(nodeId);
+	if (pItem)
+	{
+        QRectF rcBounding = pItem->sceneBoundingRect();
+        rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width() / 10., rcBounding.height() / 10.);
+        fitInView(rcBounding, Qt::KeepAspectRatio);
+	}
+}
+
 void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool isError)
 {
     if (isError)
@@ -567,4 +578,14 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 void ZenoSubGraphView::setZoom(const qreal& scale)
 {
 	m_view->setScale(scale);
+}
+
+void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
+{
+	m_view->focusOnWithNoSelect(nodeId);
+}
+
+void ZenoSubGraphView::focusOn(const QString& nodeId)
+{
+	m_view->focusOn(nodeId, QPointF(), false);
 }
