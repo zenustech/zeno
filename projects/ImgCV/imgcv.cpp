@@ -63,9 +63,39 @@ struct CVImageRead : CVINode {
     void apply() override {
         auto path = get_input2<std::string>("path");
         auto mode = get_input2<std::string>("mode");
-        cv::ImreadModes flags = array_lookup({cv::IMREAD_COLOR, cv::IMREAD_GRAYSCALE, cv::IMREAD_UNCHANGED},
-            array_index_safe({"COLOR", "GRAYSCALE", "UNCHANGED"}, mode, "mode"));
+        auto is255 = get_input2<bool>("is255");
+        cv::ImreadModes flags = array_lookup(
+            {cv::IMREAD_COLOR, cv::IMREAD_GRAYSCALE, cv::IMREAD_UNCHANGED, cv::IMREAD_UNCHANGED},
+            array_index_safe({"RGB", "GRAY", "RGBA", "UNCHANGED"}, mode, "mode"));
         auto image = std::make_shared<CVImageObject>(cv::imread(path, flags));
+        if (mode == "RGBA") {
+            if (is255) {
+                image->image.convertTo(image->image, 
+                                       image->image.channels() == 1 ? CV_8UC1 :
+                                       image->image.channels() == 2 ? CV_8UC2 :
+                                       image->image.channels() == 3 ? CV_8UC3 :
+                                       CV_8UC4);
+            } else {
+                image->image.convertTo(image->image, 
+                                       image->image.channels() == 1 ? CV_32FC1 :
+                                       image->image.channels() == 2 ? CV_32FC2 :
+                                       image->image.channels() == 3 ? CV_32FC3 :
+                                       CV_32FC4);
+            }
+            if (image->image.channels() == 1) {
+                cv::cvtColor(image->image, image->image, cv::COLOR_GRAY2BGRA);
+            } else if (image->image.channels() == 3) {
+                cv::cvtColor(image->image, image->image, cv::COLOR_BGR2BGRA);
+            }
+        } else {
+            if (!is255) {
+                image->image.convertTo(image->image, 
+                                       image->image.channels() == 1 ? CV_32FC1 :
+                                       image->image.channels() == 2 ? CV_32FC2 :
+                                       image->image.channels() == 3 ? CV_32FC3 :
+                                       CV_32FC4);
+            }
+        }
         set_output("image", std::move(image));
     }
 };
@@ -73,10 +103,67 @@ struct CVImageRead : CVINode {
 ZENDEFNODE(CVImageRead, {
     {
         {"readpath", "path", ""},
-        {"enum COLOR GRAYSCALE UNCHANGED", "mode", "COLOR"},
+        {"enum RGB GRAY RGBA UNCHANGED", "mode", "RGB"},
+        {"bool", "is255", "1"},
     },
     {
         {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageSepRGBAlpha : CVINode {
+    void apply() override {
+        auto image = get_input<CVImageObject>("imageRGBA");
+        auto imageRGB = std::make_shared<CVImageObject>();
+        cv::cvtColor(image->image, imageRGB->image, cv::COLOR_BGRA2BGR);
+        std::vector<cv::Mat> channels;
+        cv::split(image->image, channels);
+        auto imageAlpha = std::make_shared<CVImageObject>(channels.back());
+        if (!get_input2<bool>("alphaAsGray")) {
+            cv::cvtColor(imageAlpha->image, imageAlpha->image, cv::COLOR_GRAY2BGR);
+        }
+        set_output("imageRGB", std::move(imageRGB));
+        set_output("imageAlpha", std::move(imageAlpha));
+    }
+};
+
+ZENDEFNODE(CVImageSepRGBAlpha, {
+    {
+        {"CVImageObject", "imageRGBA"},
+        {"bool", "alphaAsGray", "0"},
+    },
+    {
+        {"CVImageObject", "imageRGB"},
+        {"CVImageObject", "imageAlpha"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageSepRGBChannel : CVINode {
+    void apply() override {
+        auto image = get_input<CVImageObject>("imageRGB");
+        std::vector<cv::Mat> channels;
+        cv::split(image->image, channels);
+        auto imageB = std::make_shared<CVImageObject>(channels.at(0));
+        auto imageG = std::make_shared<CVImageObject>(channels.at(1));
+        auto imageR = std::make_shared<CVImageObject>(channels.at(2));
+        set_output("imageR", std::move(imageR));
+        set_output("imageG", std::move(imageG));
+        set_output("imageB", std::move(imageG));
+    }
+};
+
+ZENDEFNODE(CVImageSepRGBChannel, {
+    {
+        {"CVImageObject", "imageRGB"},
+    },
+    {
+        {"CVImageObject", "imageR"},
+        {"CVImageObject", "imageG"},
+        {"CVImageObject", "imageB"},
     },
     {},
     {"opencv"},
@@ -97,6 +184,23 @@ ZENDEFNODE(CVImageShow, {
         {"CVImageObject", "image"},
         {"string", "title", "imshow"},
         {"bool", "waitKey", "1"},
+    },
+    {
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVWaitKey : CVINode {
+    void apply() override {
+        auto delay = get_input2<int>("delay");
+        cv::waitKey(delay);
+    }
+};
+
+ZENDEFNODE(CVWaitKey, {
+    {
+        {"int", "delay", "0"},
     },
     {
     },
@@ -165,7 +269,11 @@ struct CVImageBlend : CVINode {
         auto image1 = get_input_array("image1");
         auto image2 = get_input_array("image2");
         auto is255 = get_input2<bool>("is255");
+        auto inverse = get_input2<bool>("inverse");
         auto resimage = std::make_shared<CVImageObject>();
+        if (inverse) {
+            std::swap(image1, image2);
+        }
         if (has_input<NumericObject>("factor")) {
             auto factor = get_input2<float>("factor");
             cv::addWeighted(image1, 1 - factor, image2, factor, 0, resimage->image);
@@ -190,6 +298,7 @@ ZENDEFNODE(CVImageBlend, {
         {"CVImageObject", "image1"},
         {"CVImageObject", "image2"},
         {"float", "factor", "0.5"},
+        {"bool", "inverse", "0"},
         {"bool", "is255", "1"},
     },
     {
@@ -264,7 +373,7 @@ ZENDEFNODE(CVImageCvtColor, {
             "BGRA2BGR "
             "BGR2HSV "
             "HSV2BGR "
-            , "mode", "BGR2GRAY"},
+            , "mode", "GRAY2BGR"},
     },
     {
         {"CVImageObject", "resimage"},
@@ -295,30 +404,78 @@ ZENDEFNODE(CVImageGrayscale, {
     {"opencv"},
 });
 
-struct CVImageMonoColor : CVINode {
+struct CVImageFillColor : CVINode {
     void apply() override {
-        auto likeimage = get_input<CVImageObject>("likeimage");
+        auto likeimage = get_input<CVImageObject>("image");
         auto is255 = get_input2<bool>("is255");
         auto color = tocvvec<float>(get_input2<vec3f>("color"));
-        auto image = std::make_shared<CVImageObject>(likeimage->image.clone());
-        if (is255) {
-            cv::Point3_<unsigned char> cval;
-            cval.x = (unsigned char)std::clamp(color[0] * 255.f, 0.f, 255.f);
-            cval.y = (unsigned char)std::clamp(color[1] * 255.f, 0.f, 255.f);
-            cval.z = (unsigned char)std::clamp(color[2] * 255.f, 0.f, 255.f);
-            image->image.setTo(cv::Scalar_<unsigned char>(cval.x, cval.y, cval.z));
+        auto image = get_input2<bool>("inplace") ? likeimage
+            : std::make_shared<CVImageObject>(likeimage->image.clone());
+        if (has_input("mask")) {
+            auto mask = get_input<CVImageObject>("mask");
+            if (is255) {
+                cv::Point3_<unsigned char> cval;
+                cval.x = (unsigned char)std::clamp(color[0] * 255.f, 0.f, 255.f);
+                cval.y = (unsigned char)std::clamp(color[1] * 255.f, 0.f, 255.f);
+                cval.z = (unsigned char)std::clamp(color[2] * 255.f, 0.f, 255.f);
+                image->image.setTo(cv::Scalar(cval.x, cval.y, cval.z), mask->image);
+            } else {
+                image->image.setTo(cv::Scalar(color[0], color[1], color[2]), mask->image);
+            }
         } else {
-            image->image.setTo(cv::Scalar(color[0], color[1], color[2]));
+            if (is255) {
+                cv::Point3_<unsigned char> cval;
+                cval.x = (unsigned char)std::clamp(color[0] * 255.f, 0.f, 255.f);
+                cval.y = (unsigned char)std::clamp(color[1] * 255.f, 0.f, 255.f);
+                cval.z = (unsigned char)std::clamp(color[2] * 255.f, 0.f, 255.f);
+                image->image.setTo(cv::Scalar(cval.x, cval.y, cval.z));
+            } else {
+                image->image.setTo(cv::Scalar(color[0], color[1], color[2]));
+            }
         }
         set_output("image", std::move(image));
     }
 };
 
-ZENDEFNODE(CVImageMonoColor, {
+ZENDEFNODE(CVImageFillColor, {
     {
-        {"CVImageObject", "likeimage"},
+        {"CVImageObject", "image"},
+        {"optional CVImageObject", "mask"},
         {"bool", "is255", "1"},
         {"vec3f", "color", "1,1,1"},
+        {"bool", "inplace", "0"},
+    },
+    {
+        {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageCopyMask : CVINode {
+    void apply() override {
+        auto likeimage = get_input<CVImageObject>("image");
+        auto srcimage = get_input<CVImageObject>("srcImage");
+        auto is255 = get_input2<bool>("is255");
+        auto image = get_input2<bool>("inplace") ? likeimage
+            : std::make_shared<CVImageObject>(likeimage->image.clone());
+        if (has_input("mask")) {
+            auto mask = get_input<CVImageObject>("mask");
+            image->image.setTo(srcimage->image, mask->image);
+        } else {
+            image->image.setTo(srcimage->image);
+        }
+        set_output("image", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVImageCopyMask, {
+    {
+        {"CVImageObject", "image"},
+        {"CVImageObject", "srcImage"},
+        {"optional CVImageObject", "mask"},
+        {"bool", "is255", "1"},
+        {"bool", "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
@@ -329,14 +486,15 @@ ZENDEFNODE(CVImageMonoColor, {
 
 struct CVImageGradColor : CVINode {
     void apply() override {
-        auto likeimage = get_input<CVImageObject>("likeimage"); // TODO: if no likeimage, create Mat::zeros from custom shape
+        auto likeimage = get_input<CVImageObject>("image");
         auto angle = get_input2<float>("angle");
         auto scale = get_input2<float>("scale");
         auto offset = get_input2<float>("offset");
         auto is255 = get_input2<bool>("is255");
         auto color1 = tocvvec<float>(get_input2<vec3f>("color1"));
         auto color2 = tocvvec<float>(get_input2<vec3f>("color2"));
-        auto image = std::make_shared<CVImageObject>(likeimage->image.clone());
+        auto image = get_input2<bool>("inplace") ? likeimage
+            : std::make_shared<CVImageObject>(likeimage->image.clone());
         vec2i shape(image->image.size[1], image->image.size[0]);
         vec2f invshape = 1.f / shape;
         angle *= (std::atan(1.f) * 4) / 180;
@@ -366,13 +524,14 @@ struct CVImageGradColor : CVINode {
 
 ZENDEFNODE(CVImageGradColor, {
     {
-        {"CVImageObject", "likeimage"},
+        {"CVImageObject", "image"},
         {"float", "angle", "0"},     // rotation clock-wise
         {"float", "scale", "1"},     // thickness of gradient
         {"float", "offset", "0.5"},  // 0 to 1
         {"bool", "is255", "1"},
         {"vec3f", "color1", "0,0,0"},
         {"vec3f", "color2", "1,1,1"},
+        {"bool", "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},

@@ -134,17 +134,16 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
             auto path = get_input<StringObject>("path")->get(); // std::string
             auto lower_path = path;
             transform(lower_path.begin(), lower_path.end(), lower_path.begin(), ::tolower);
-            zeno::log_info("{} -> {}", path, lower_path);
-            bool isWave = false;
-            auto *pFile = strrchr(path.c_str(),'.');
+            zeno::log_debug("{} -> {}", path, lower_path);
+            auto *pFile = strrchr(lower_path.c_str(),'.');
 
             if(pFile !=NULL) {
                 if (strcmp(pFile, ".wav") == 0) {
-                    zeno::log_info("is wave");
+                    zeno::log_debug("is wave");
                     auto result = zeno::readWav(path);
                     set_output("wave", result);
                 } else if (strcmp(pFile, ".mp3") == 0) {
-                    zeno::log_info("is mp3");
+                    zeno::log_debug("is mp3");
                     auto result = zeno::readMp3(path);
                     set_output("wave", result);
                 }
