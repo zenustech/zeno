@@ -68,6 +68,9 @@ struct CVImageRead : CVINode {
             {cv::IMREAD_COLOR, cv::IMREAD_GRAYSCALE, cv::IMREAD_UNCHANGED, cv::IMREAD_UNCHANGED},
             array_index_safe({"RGB", "GRAY", "RGBA", "UNCHANGED"}, mode, "mode"));
         auto image = std::make_shared<CVImageObject>(cv::imread(path, flags));
+        if (image->image.empty()) {
+            zeno::log_error("opencv failed to read image file: {}", path);
+        }
         if (mode == "RGBA") {
             if (is255) {
                 image->image.convertTo(image->image, 
@@ -113,7 +116,7 @@ ZENDEFNODE(CVImageRead, {
     {"opencv"},
 });
 
-struct CVImageSepRGBAlpha : CVINode {
+struct CVSepRGBAlpha : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("imageRGBA");
         auto imageRGB = std::make_shared<CVImageObject>();
@@ -129,7 +132,7 @@ struct CVImageSepRGBAlpha : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageSepRGBAlpha, {
+ZENDEFNODE(CVSepRGBAlpha, {
     {
         {"CVImageObject", "imageRGBA"},
         {"bool", "alphaAsGray", "0"},
@@ -142,7 +145,7 @@ ZENDEFNODE(CVImageSepRGBAlpha, {
     {"opencv"},
 });
 
-struct CVImageSepRGBChannel : CVINode {
+struct CVSepRGBChannel : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("imageRGB");
         std::vector<cv::Mat> channels;
@@ -156,7 +159,7 @@ struct CVImageSepRGBChannel : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageSepRGBChannel, {
+ZENDEFNODE(CVSepRGBChannel, {
     {
         {"CVImageObject", "imageRGB"},
     },
@@ -334,7 +337,7 @@ ZENDEFNODE(CVImageInvert, {
     {"opencv"},
 });
 
-struct CVImageCvtColor : CVINode {
+struct CVConvertColor : CVINode {
     void apply() override {
         auto image = get_input_array("image");
         auto mode = get_input2<std::string>("mode");
@@ -361,7 +364,7 @@ struct CVImageCvtColor : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageCvtColor, {
+ZENDEFNODE(CVConvertColor, {
     {
         {"CVImageObject", "image"},
         {
@@ -452,7 +455,7 @@ ZENDEFNODE(CVImageFillColor, {
     {"opencv"},
 });
 
-struct CVImageCopyMask : CVINode {
+struct CVImageMaskedAssign : CVINode {
     void apply() override {
         auto likeimage = get_input<CVImageObject>("image");
         auto srcimage = get_input<CVImageObject>("srcImage");
@@ -469,7 +472,7 @@ struct CVImageCopyMask : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageCopyMask, {
+ZENDEFNODE(CVImageMaskedAssign, {
     {
         {"CVImageObject", "image"},
         {"CVImageObject", "srcImage"},
@@ -484,7 +487,153 @@ ZENDEFNODE(CVImageCopyMask, {
     {"opencv"},
 });
 
-struct CVImageGradColor : CVINode {
+struct CVImageBlit : CVINode {
+    void apply() override {
+        auto likeimage = get_input<CVImageObject>("image");
+        auto srcimage = get_input<CVImageObject>("srcImage");
+        auto is255 = get_input2<bool>("is255");
+        auto image = get_input2<bool>("inplace") ? likeimage
+            : std::make_shared<CVImageObject>(likeimage->image.clone());
+        auto x0 = get_input2<int>("X0");
+        auto y0 = get_input2<int>("Y0");
+        auto dx = srcimage->image.cols;
+        auto dy = srcimage->image.rows;
+        //zeno::log_warn("dx {} dy {}", dx, dy);
+        cv::Rect roirect(x0, y0, dx, dy);
+        auto roi = image->image(roirect);
+        if (has_input("mask")) {
+            auto mask = get_input<CVImageObject>("mask");
+            if (get_input2<bool>("isAlphaMask")) {
+                auto factor = mask->image, image1 = roi, image2 = srcimage->image;
+                cv::Mat factorinv, tmp1, tmp2;
+                if (is255) {
+                    cv::bitwise_not(factor, factorinv);
+                } else {
+                    cv::invert(factor, factorinv);
+                }
+                cv::multiply(image1, factorinv, tmp1, is255 ? 1.f / 255.f : 1.f);
+                cv::multiply(image2, factor, tmp2, is255 ? 1.f / 255.f : 1.f);
+                cv::add(tmp1, tmp2, tmp2);
+                tmp2.copyTo(roi);
+            } else {
+                srcimage->image.copyTo(roi, mask->image);
+            }
+        } else {
+            srcimage->image.copyTo(roi);
+        }
+        set_output("image", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVImageBlit, {
+    {
+        {"CVImageObject", "image"},
+        {"CVImageObject", "srcImage"},
+        {"int", "X0", "0"},
+        {"int", "Y0", "0"},
+        {"optional CVImageObject", "mask"},
+        {"bool", "isAlphaMask", "1"},
+        {"bool", "is255", "1"},
+        {"bool", "inplace", "0"},
+    },
+    {
+        {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageCrop : CVINode {
+    void apply() override {
+        auto srcimage = get_input<CVImageObject>("srcimage");
+        auto is255 = get_input2<bool>("is255");
+        auto isDeep = get_input2<bool>("deepCopy");
+        auto x0 = get_input2<int>("X0");
+        auto y0 = get_input2<int>("Y0");
+        auto dx = get_input2<int>("DX");
+        auto dy = get_input2<int>("DY");
+        cv::Rect roirect(x0, y0, dx, dy);
+        auto roi = srcimage->image(roirect);
+        if (isDeep) roi = roi.clone();
+        auto image = std::make_shared<CVImageObject>(std::move(roi));
+        set_output("image", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVImageCrop, {
+    {
+        {"CVImageObject", "srcimage"},
+        {"int", "X0", "0"},
+        {"int", "Y0", "0"},
+        {"int", "DX", "32"},
+        {"int", "DY", "32"},
+        {"bool", "is255", "1"},
+        {"bool", "deepCopy", "1"},
+    },
+    {
+        {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVMakeImage : CVINode {
+    void apply() override {
+        auto likeimage = get_input<CVImageObject>("image");
+        auto srcimage = get_input<CVImageObject>("srcImage");
+        auto mode = get_input2<std::string>("mode");
+        auto isWhite = get_input2<bool>("whiteBg");
+        auto is255 = get_input2<bool>("is255");
+        auto w = get_input2<int>("width");
+        auto h = get_input2<int>("height");
+        int ty = array_lookup(is255 ?
+                              make_array(CV_8UC3, CV_8UC1, CV_8UC4) :
+                              make_array(CV_32FC3, CV_32FC1, CV_32FC4),
+            array_index_safe({"RGB", "GRAY", "RGBA"}, mode, "mode"));
+        auto image = std::make_shared<CVImageObject>(cv::Mat(h, w, ty, cv::Scalar::all(
+                    isWhite ? (is255 ? 1 : 255) : 0)));
+        set_output("image", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVMakeImage, {
+    {
+        {"int", "width", "512"},
+        {"int", "height", "512"},
+        {"enum RGB GRAY RGBA", "mode", "RGB"},
+        {"bool", "whiteBg", "0"},
+        {"bool", "is255", "1"},
+    },
+    {
+        {"CVImageObject", "image"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVGetImageSize : CVINode {
+    void apply() override {
+        auto image = get_input<CVImageObject>("image");
+        set_output2("width", image->image.cols);
+        set_output2("height", image->image.rows);
+        set_output2("channels", image->image.channels());
+    }
+};
+
+ZENDEFNODE(CVGetImageSize, {
+    {
+        {"CVImageObject", "image"},
+    },
+    {
+        {"int", "width"},
+        {"int", "height"},
+        {"int", "channels"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageFillGrad : CVINode {
     void apply() override {
         auto likeimage = get_input<CVImageObject>("image");
         auto angle = get_input2<float>("angle");
@@ -505,16 +654,16 @@ struct CVImageGradColor : CVINode {
             image->image.forEach<cv::Point3_<unsigned char>>([&] (cv::Point3_<unsigned char> &val, const int *pos) {
                 vec2i posv(pos[1], pos[0]);
                 float f = dot(posv * invshape * 2 - 1, dir) * invscale + neoffset, omf = 1 - f;
-                val.x = (unsigned char)std::clamp((omf * color1[0] + f * color2[2]) * 255.f, 0.f, 255.f);
-                val.y = (unsigned char)std::clamp((omf * color1[1] + f * color2[2]) * 255.f, 0.f, 255.f);
+                val.x = (unsigned char)std::clamp((omf * color1[0] + f * color2[0]) * 255.f, 0.f, 255.f);
+                val.y = (unsigned char)std::clamp((omf * color1[1] + f * color2[1]) * 255.f, 0.f, 255.f);
                 val.z = (unsigned char)std::clamp((omf * color1[2] + f * color2[2]) * 255.f, 0.f, 255.f);
             });
         } else {
             image->image.forEach<cv::Point3_<float>>([&] (cv::Point3_<float> &val, const int *pos) {
                 vec2i posv(pos[1], pos[0]);
                 float f = dot(posv * invshape * 2 - 1, dir) * invscale + neoffset, omf = 1 - f;
-                val.x = omf * color1[0] + f * color2[2];
-                val.y = omf * color1[1] + f * color2[2];
+                val.x = omf * color1[0] + f * color2[0];
+                val.y = omf * color1[1] + f * color2[1];
                 val.z = omf * color1[2] + f * color2[2];
             });
         }
@@ -522,7 +671,7 @@ struct CVImageGradColor : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageGradColor, {
+ZENDEFNODE(CVImageFillGrad, {
     {
         {"CVImageObject", "image"},
         {"float", "angle", "0"},     // rotation clock-wise
