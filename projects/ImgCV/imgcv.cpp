@@ -45,16 +45,28 @@ struct CVINode : INode {
         }
     }
 
-    cv::_InputArray get_input_array(std::string const &name) {
+    cv::_InputArray get_input_array(std::string const &name, bool inversed = false) {
         if (has_input<NumericObject>(name)) {
             auto num = get_input<NumericObject>(name);
             bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
             return std::visit([&] (auto const &val) -> cv::_InputArray {
-                auto ret = tocvvec(val);
+                auto ret = tocvvec(inversed ? 1 - val : val);
                 return is255 ? ret * 255 : ret;
             }, num->value);
         } else {
-            return get_input<CVImageObject>(name)->image;
+            auto img = get_input<CVImageObject>(name)->image;
+            if (inversed) {
+                cv::Mat newimg;
+                bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
+                if (is255) {
+                    cv::bitwise_not(img, newimg);
+                } else {
+                    cv::invert(img, newimg);
+                }
+                return newimg;
+            } else {
+                return img;
+            }
         }
     }
 };
@@ -116,7 +128,7 @@ ZENDEFNODE(CVImageRead, {
     {"opencv"},
 });
 
-struct CVSepRGBAlpha : CVINode {
+struct CVSepAlpha : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("imageRGBA");
         auto imageRGB = std::make_shared<CVImageObject>();
@@ -132,7 +144,7 @@ struct CVSepRGBAlpha : CVINode {
     }
 };
 
-ZENDEFNODE(CVSepRGBAlpha, {
+ZENDEFNODE(CVSepAlpha, {
     {
         {"CVImageObject", "imageRGBA"},
         {"bool", "alphaAsGray", "0"},
@@ -145,7 +157,7 @@ ZENDEFNODE(CVSepRGBAlpha, {
     {"opencv"},
 });
 
-struct CVSepRGBChannel : CVINode {
+struct CVImageSepRGB : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("imageRGB");
         std::vector<cv::Mat> channels;
@@ -159,7 +171,7 @@ struct CVSepRGBChannel : CVINode {
     }
 };
 
-ZENDEFNODE(CVSepRGBChannel, {
+ZENDEFNODE(CVImageSepRGB, {
     {
         {"CVImageObject", "imageRGB"},
     },
@@ -245,8 +257,9 @@ ZENDEFNODE(CVImageAdd, {
 
 struct CVImageMultiply : CVINode {
     void apply() override {
-        auto image1 = get_input_array("image1");
-        auto image2 = get_input_array("image2");
+        auto image1 = get_input_array("image");
+        auto inverse = get_input2<bool>("inverse");
+        auto image2 = get_input_array("factor", inverse);
         auto is255 = get_input2<bool>("is255");
         auto resimage = std::make_shared<CVImageObject>();
         cv::multiply(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
@@ -256,8 +269,9 @@ struct CVImageMultiply : CVINode {
 
 ZENDEFNODE(CVImageMultiply, {
     {
-        {"CVImageObject", "image1"},
-        {"CVImageObject", "image2"},
+        {"CVImageObject", "image"},
+        {"float"/*or CVImageObject*/, "factor"},
+        {"bool", "inverse", "0"},
         {"bool", "is255", "1"},
     },
     {
@@ -300,7 +314,7 @@ ZENDEFNODE(CVImageBlend, {
     {
         {"CVImageObject", "image1"},
         {"CVImageObject", "image2"},
-        {"float", "factor", "0.5"},
+        {"float"/*or CVImageObject*/, "factor", "0.5"},
         {"bool", "inverse", "0"},
         {"bool", "is255", "1"},
     },
@@ -498,13 +512,46 @@ struct CVImageBlit : CVINode {
         auto y0 = get_input2<int>("Y0");
         auto dx = srcimage->image.cols;
         auto dy = srcimage->image.rows;
+        auto maxx = image->image.cols;
+        auto maxy = image->image.rows;
         //zeno::log_warn("dx {} dy {}", dx, dy);
+        int sx0 = 0, sy0 = 0;
+        bool hasmodroi = false;
+        if (x0 < 0) {
+            dx -= -x0;
+            sx0 = -x0;
+            x0 = 0;
+            hasmodroi = true;
+        }
+        if (y0 < 0) {
+            dy -= -y0;
+            sy0 = -y0;
+            y0 = 0;
+            hasmodroi = true;
+        }
+        if (x0 + dx > maxx) {
+            dx = maxx - x0;
+            hasmodroi = true;
+        }
+        if (y0 + dy > maxy) {
+            dy = maxy - y0;
+            hasmodroi = true;
+        }
+        //zeno::log_warn("x0 {} y0 {} dx {} dy {} sx0 {} sy0 {}", x0, y0, dx, dy, sx0, sy0);
         cv::Rect roirect(x0, y0, dx, dy);
         auto roi = image->image(roirect);
+        auto srcroi = srcimage->image;
+        if (hasmodroi) {
+            srcroi = srcroi(cv::Rect(sx0, sy0, dx, dy));
+        }
         if (has_input("mask")) {
             auto mask = get_input<CVImageObject>("mask");
+            auto factor = mask->image;
+            if (hasmodroi) {
+                factor = factor(cv::Rect(sx0, sy0, dx, dy));
+            }
             if (get_input2<bool>("isAlphaMask")) {
-                auto factor = mask->image, image1 = roi, image2 = srcimage->image;
+                auto image1 = roi, image2 = srcroi;
                 cv::Mat factorinv, tmp1, tmp2;
                 if (is255) {
                     cv::bitwise_not(factor, factorinv);
@@ -516,10 +563,10 @@ struct CVImageBlit : CVINode {
                 cv::add(tmp1, tmp2, tmp2);
                 tmp2.copyTo(roi);
             } else {
-                srcimage->image.copyTo(roi, mask->image);
+                srcroi.copyTo(roi, factor);
             }
         } else {
-            srcimage->image.copyTo(roi);
+            srcroi.copyTo(roi);
         }
         set_output("image", std::move(image));
     }
