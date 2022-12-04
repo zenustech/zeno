@@ -54,18 +54,18 @@ struct CVINode : INode {
                 return is255 ? ret * 255 : ret;
             }, num->value);
         } else {
-            auto img = get_input<CVImageObject>(name)->image;
             if (inversed) {
                 cv::Mat newimg;
+                auto img = get_input<CVImageObject>(name)->image;
                 bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
                 if (is255) {
                     cv::bitwise_not(img, newimg);
                 } else {
                     cv::invert(img, newimg);
                 }
-                return newimg;
+                return std::move(newimg);
             } else {
-                return img;
+                return get_input<CVImageObject>(name)->image;
             }
         }
     }
