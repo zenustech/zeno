@@ -45,16 +45,28 @@ struct CVINode : INode {
         }
     }
 
-    cv::_InputArray get_input_array(std::string const &name) {
+    cv::_InputArray get_input_array(std::string const &name, bool inversed = false) {
         if (has_input<NumericObject>(name)) {
             auto num = get_input<NumericObject>(name);
             bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
             return std::visit([&] (auto const &val) -> cv::_InputArray {
-                auto ret = tocvvec(val);
+                auto ret = tocvvec(inversed ? 1 - val : val);
                 return is255 ? ret * 255 : ret;
             }, num->value);
         } else {
-            return get_input<CVImageObject>(name)->image;
+            auto img = get_input<CVImageObject>(name)->image;
+            if (inversed) {
+                cv::Mat newimg;
+                bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
+                if (is255) {
+                    cv::bitwise_not(img, newimg);
+                } else {
+                    cv::invert(img, newimg);
+                }
+                return newimg;
+            } else {
+                return img;
+            }
         }
     }
 };
@@ -246,8 +258,8 @@ ZENDEFNODE(CVImageAdd, {
 struct CVImageMultiply : CVINode {
     void apply() override {
         auto image1 = get_input_array("image");
-        auto image2 = get_input_array("factor");
         auto inverse = get_input2<bool>("inverse");
+        auto image2 = get_input_array("factor", inverse);
         auto is255 = get_input2<bool>("is255");
         auto resimage = std::make_shared<CVImageObject>();
         cv::multiply(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
@@ -259,6 +271,7 @@ ZENDEFNODE(CVImageMultiply, {
     {
         {"CVImageObject", "image"},
         {"float"/*or CVImageObject*/, "factor"},
+        {"bool", "inverse", "0"},
         {"bool", "is255", "1"},
     },
     {
