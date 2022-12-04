@@ -58,7 +58,7 @@ private:
     ViewParamModel* m_model;
 
     Ui::EditParamLayoutDlg* m_ui;
-    const QPersistentModelIndex m_index;
+    const QPersistentModelIndex m_nodeIdx;
 };
 
 

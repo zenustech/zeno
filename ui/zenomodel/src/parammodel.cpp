@@ -324,7 +324,8 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         case ROLE_PARAM_CTRL:
         {
-            return false;     //don't handle control issues.
+            //return false;     //don't handle control issues.
+            break;  //help to parse control value to other view model.
         }
         case ROLE_PARAM_VALUE:
         {
