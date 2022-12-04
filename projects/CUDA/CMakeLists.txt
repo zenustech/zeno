@@ -21,6 +21,7 @@ set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 
 add_subdirectory(zpc)
+add_subdirectory(RXMesh)
 
 add_library(zshelper INTERFACE)
 target_include_directories(zshelper INTERFACE
