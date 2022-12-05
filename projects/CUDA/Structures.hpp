@@ -125,6 +125,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
+  static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
   ZenoParticles() = default;
   ~ZenoParticles() = default;
