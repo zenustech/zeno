@@ -310,7 +310,8 @@ struct ZSMaintainSparseGrid : INode {
                     }
 #endif
                 });
-            zeno::log_warn("check build success state: {}\n", (bool)spg._table._buildSuccess.getVal());
+            if (int tag = spg._table._buildSuccess.getVal(); tag == 0)
+                zeno::log_error("check build success state: {}\n", tag);
 
             // slide the window
             nbsOffset += newNbs;
@@ -322,7 +323,8 @@ struct ZSMaintainSparseGrid : INode {
         if (nbsOffset > numMarked) {
             spg.resizeGrid(nbsOffset);
             newNbs = nbsOffset - numMarked;
-            zs::memset(mem_device, (void *)spg._grid.tileOffset(numMarked), 0, (std::size_t)newNbs * spg._grid.tileBytes());
+            zs::memset(mem_device, (void *)spg._grid.tileOffset(numMarked), 0,
+                       (std::size_t)newNbs * spg._grid.tileBytes());
 
             if (tag == "sdf") {
                 // special treatment for "sdf" property
@@ -385,8 +387,11 @@ struct ZSMaintainSparseGrid : INode {
                 tab3.insert(bcoord / 8, i, true);
             });
 
-            zeno::log_warn("check multigrid build success state: {}, {}, {}\n", (bool)table1._buildSuccess.getVal(),
-                           (bool)table2._buildSuccess.getVal(), (bool)table3._buildSuccess.getVal());
+            int tag1 = table1._buildSuccess.getVal();
+            int tag2 = table2._buildSuccess.getVal();
+            int tag3 = table3._buildSuccess.getVal();
+            if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                zeno::log_error("check multigrid build success state: {}, {}, {}\n", tag1, tag2, tag3);
         }
     }
 
