@@ -13,8 +13,9 @@
 namespace zeno {
 
 template <typename IV>
-static zs::Vector<zs::AABBBox<3, float>>
-retrieve_bounding_volumes(zs::OmpExecutionPolicy &pol, const std::vector<vec3f> &pos, const std::vector<IV> &eles, float thickness) {
+static zs::Vector<zs::AABBBox<3, float>> retrieve_bounding_volumes(zs::OmpExecutionPolicy &pol,
+                                                                   const std::vector<vec3f> &pos,
+                                                                   const std::vector<IV> &eles, float thickness) {
     using namespace zs;
     using T = float;
     using bv_t = AABBBox<3, T>;
@@ -35,8 +36,8 @@ retrieve_bounding_volumes(zs::OmpExecutionPolicy &pol, const std::vector<vec3f> 
     return ret;
 }
 
-static zs::Vector<zs::AABBBox<3, float>>
-retrieve_bounding_volumes(zs::OmpExecutionPolicy &pol, const std::vector<vec3f> &pos, float thickness) {
+static zs::Vector<zs::AABBBox<3, float>> retrieve_bounding_volumes(zs::OmpExecutionPolicy &pol,
+                                                                   const std::vector<vec3f> &pos, float thickness) {
     using namespace zs;
     using T = float;
     using bv_t = AABBBox<3, T>;
@@ -207,6 +208,15 @@ struct QueryClosestPrimitive : zeno::INode {
             });
 
             KVPair mi{std::numeric_limits<float>::max(), -1};
+            std::vector<KVPair> out(1);
+            reduce(pol, std::begin(kvs), std::end(kvs), std::begin(out), KVPair{std::numeric_limits<float>::max(), -1},
+                   [](const auto &a, const auto &b) {
+                       if (a < b)
+                           return a;
+                       else
+                           return b;
+                   });
+#if 0
 // ref:
 // https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
 #ifndef _MSC_VER
@@ -221,6 +231,9 @@ struct QueryClosestPrimitive : zeno::INode {
                 if (kvs[i].dist < mi.dist)
                     mi = kvs[i];
             }
+#endif
+            mi = out[0];
+
             pid = mi.pid;
             dist = mi.dist;
             bvhId = ids[pid];
@@ -294,61 +307,59 @@ ZENDEFNODE(QueryClosestPrimitive, {
 #endif
 
 struct EmbedPrimitiveBvh : zeno::INode {
-  virtual void apply() override {
-    using zsbvh_t = ZenoLinearBvh;
-    using bvh_t = zsbvh_t::lbvh_t;
-    using bv_t = bvh_t::Box;
+    virtual void apply() override {
+        using zsbvh_t = ZenoLinearBvh;
+        using bvh_t = zsbvh_t::lbvh_t;
+        using bv_t = bvh_t::Box;
 
-    auto prim = get_input<zeno::PrimitiveObject>("prim");
-    auto &userData = prim->userData();
-    float thickness =
-        has_input("thickness")
-            ? get_input<zeno::NumericObject>("thickness")->get<float>()
-            : 0.f;
-    auto primType = get_input2<std::string>("prim_type");
-    auto bvhTag = get_input2<std::string>("bvh_tag");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &userData = prim->userData();
+        float thickness = has_input("thickness") ? get_input<zeno::NumericObject>("thickness")->get<float>() : 0.f;
+        auto primType = get_input2<std::string>("prim_type");
+        auto bvhTag = get_input2<std::string>("bvh_tag");
 
-    auto pol = zs::omp_exec();
+        auto pol = zs::omp_exec();
 
-    zs::Vector<bv_t> bvs;
-    std::shared_ptr<zsbvh_t> zsbvh;
-    ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
-    if (primType == "point") {
-        bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), thickness);
-        et = ZenoLinearBvh::point;
-    } else if (primType == "line") {
-        bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->lines.values, thickness);
-        et = ZenoLinearBvh::curve;
-    } else if (primType == "tri") {
-        bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->tris.values, thickness);
-        et = ZenoLinearBvh::surface;
-    } else if (primType == "quad") {
-        bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->quads.values, thickness);
-        et = ZenoLinearBvh::tet;
+        zs::Vector<bv_t> bvs;
+        std::shared_ptr<zsbvh_t> zsbvh;
+        ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
+        if (primType == "point") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), thickness);
+            et = ZenoLinearBvh::point;
+        } else if (primType == "line") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->lines.values, thickness);
+            et = ZenoLinearBvh::curve;
+        } else if (primType == "tri") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->tris.values, thickness);
+            et = ZenoLinearBvh::surface;
+        } else if (primType == "quad") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->quads.values, thickness);
+            et = ZenoLinearBvh::tet;
+        }
+        if (!userData.has(bvhTag)) { // build
+            zsbvh = std::make_shared<zsbvh_t>();
+            zsbvh->et = et;
+            bvh_t &bvh = zsbvh->get();
+            bvh.build(pol, bvs);
+            userData.set(bvhTag, zsbvh);
+        } else { // refit
+            zsbvh = std::dynamic_pointer_cast<zsbvh_t>(userData.get(bvhTag));
+            zsbvh->et = et;
+            bvh_t &bvh = zsbvh->get();
+            bvh.refit(pol, bvs);
+        }
+        set_output("prim", std::move(prim));
     }
-    if (!userData.has(bvhTag)) {    // build
-        zsbvh = std::make_shared<zsbvh_t>();
-        zsbvh->et = et; 
-        bvh_t &bvh = zsbvh->get();
-        bvh.build(pol, bvs);
-        userData.set(bvhTag, zsbvh);
-    } else {    // refit
-        zsbvh = std::dynamic_pointer_cast<zsbvh_t>(userData.get(bvhTag));
-        zsbvh->et = et; 
-        bvh_t &bvh = zsbvh->get();
-        bvh.refit(pol, bvs);
-    }
-    set_output("prim", std::move(prim));
-  }
 };
 
-ZENDEFNODE(EmbedPrimitiveBvh,
-           {
-               {{"PrimitiveObject", "prim"}, {"float", "thickness", "0"}, {"enum point line tri quad", "prim_type", "auto"}, {"string", "bvh_tag", "bvh"}},
-               {{"PrimitiveObject", "prim"}},
-               {},
-               {"zenofx"},
-           });
-
+ZENDEFNODE(EmbedPrimitiveBvh, {
+                                  {{"PrimitiveObject", "prim"},
+                                   {"float", "thickness", "0"},
+                                   {"enum point line tri quad", "prim_type", "auto"},
+                                   {"string", "bvh_tag", "bvh"}},
+                                  {{"PrimitiveObject", "prim"}},
+                                  {},
+                                  {"zenofx"},
+                              });
 
 } // namespace zeno
