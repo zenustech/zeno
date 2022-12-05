@@ -250,6 +250,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
+    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 2}; 
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -268,9 +269,13 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         const auto &edges = primHandle.getSurfEdges();
         pol(Collapse(edges.size()),
             [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset] __device__(int i) mutable {
-                seInds.tuple(dim_c<2>, "inds", seoffset + i) =
-                    (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset).reinterpret_bits(float_c);
+             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab)] __device__(int i) mutable {
+                auto edge = (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset); 
+                seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+                if (auto no = eTab.insert(edge); no < 0)
+                {
+                    printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]); 
+                }
             });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),

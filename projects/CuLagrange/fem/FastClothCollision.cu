@@ -80,6 +80,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     auto &svfront = withBoundary ? boundarySvFront : selfSvFront;
     pol(Collapse{svfront.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+         eTab = proxy<space>(eTab), 
          // exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts),
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), front = proxy<space>(svfront),
          PP = proxy<space>(PP), nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat,
@@ -95,7 +96,8 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
                 // edge or not
-
+                if (eTab.query(ivec2 {vi, vj}) >= 0 || eTab.query(ivec2 {vj, vi}) >= 0)
+                    return; 
                 if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nPP[0], 1);
                     PP[no] = pair_t{vi, vj};
