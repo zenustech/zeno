@@ -32,8 +32,8 @@ struct PrimitiveAttrPicker : zeno::INode {
         auto new_attr = get_input<StringObject>("newAttr");
         if (!new_attr->get().empty()) {
             auto prim = get_input<PrimitiveObject>("prim");
-            auto new_value = get_input2<int>("attrVal");
-            auto &attr = prim->add_attr<int>(new_attr->get());
+            auto new_value = get_input2<float>("attrVal");
+            auto &attr = prim->add_attr<float>(new_attr->get());
             for (const auto& idx : selected_indices)
                 attr[idx] = new_value;
         }
@@ -48,7 +48,7 @@ ZENDEFNODE(PrimitiveAttrPicker, {
     {"PrimitiveObject", "prim"},
     {"enum point line triangle", "mode", "point"},
     {"string", "newAttr", ""},
-    {"int", "attrVal", ""},
+    {"float", "attrVal", ""},
     },
     // outputs
     {{"list"}},
