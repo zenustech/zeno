@@ -57,6 +57,7 @@ struct SFBXReadOption {
     bool makePrim = false;
     bool enableUDIM = false;
     bool generate = false;
+    bool triangulate = false;
 };
 
 struct SFBXEvalOption {
@@ -537,7 +538,9 @@ struct IVertices : zeno::IObjectClone<IVertices>{
 };
 
 struct IIndices : zeno::IObjectClone<IIndices>{
-    std::vector<unsigned int> value;
+    std::vector<unsigned int> valueTri;
+    std::vector<unsigned int> valueLoops;
+    std::vector<zeno::vec2i> valuePolys;
 };
 
 struct IBlendSData : zeno::IObjectClone<IBlendSData>{
