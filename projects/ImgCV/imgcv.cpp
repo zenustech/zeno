@@ -45,29 +45,29 @@ struct CVINode : INode {
         }
     }
 
-    template <class T>
-    static cv::_InputArray tocvinputarr(T const &val) {
-        if constexpr (is_vec_n<T> == 4) {
-            return cv::_InputArray(make_array(val[3], val[2], val[1], val[0]).data(), 4);
-        } else if constexpr (is_vec_n<T> == 3) {
-            return cv::_InputArray(make_array(val[2], val[1], val[0]).data(), 3);
-        } else if constexpr (is_vec_n<T> == 2) {
-            return cv::_InputArray(make_array(val[1], val[0]).data(), 2);
-        } else {
-            return cv::_InputArray((double)val);
-        }
-    }
+    //template <class T>
+    //static cv::_InputArray tocvinputarr(T const &val) {
+        //if constexpr (is_vec_n<T> == 4) {
+            //return cv::_InputArray(make_array(val[3], val[2], val[1], val[0]).data(), 4);
+        //} else if constexpr (is_vec_n<T> == 3) {
+            //return cv::_InputArray(make_array(val[2], val[1], val[0]).data(), 3);
+        //} else if constexpr (is_vec_n<T> == 2) {
+            //return cv::_InputArray(make_array(val[1], val[0]).data(), 2);
+        //} else {
+            //return cv::_InputArray((double)val);
+        //}
+    //}
 
-    cv::_InputArray get_input_array(std::string const &name, bool inversed = false) {
-        if (has_input<NumericObject>(name)) {
-            auto num = get_input<NumericObject>(name);
-            bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
-            return 155.f;
-            return std::visit([&] (auto const &val) -> cv::_InputArray {
-                auto tmp = inversed ? 1 - val : val;
-                return tocvinputarr(is255 ? tmp * 255 : tmp);
-            }, num->value);
-        } else {
+    cv::Mat get_input_image(std::string const &name, bool inversed = false) {
+        //if (has_input<NumericObject>(name)) {
+            //auto num = get_input<NumericObject>(name);
+            //bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
+            //return 155.f;
+            //return std::visit([&] (auto const &val) -> cv::_InputArray {
+                //auto tmp = inversed ? 1 - val : val;
+                //return tocvinputarr(is255 ? tmp * 255 : tmp);
+            //}, num->value);
+        //} else {
             if (inversed) {
                 cv::Mat newimg;
                 auto img = get_input<CVImageObject>(name)->image;
@@ -81,7 +81,7 @@ struct CVINode : INode {
             } else {
                 return get_input<CVImageObject>(name)->image;
             }
-        }
+        //}
     }
 };
 
@@ -200,7 +200,7 @@ ZENDEFNODE(CVImageSepRGB, {
 
 struct CVImageShow : CVINode {
     void apply() override {
-        auto image = get_input_array("image");
+        auto image = get_input_image("image");
         auto title = get_input2<std::string>("title");
         cv::imshow(title, image);
         if (get_input2<bool>("waitKey"))
@@ -239,8 +239,8 @@ ZENDEFNODE(CVWaitKey, {
 
 struct CVImageAdd : CVINode {
     void apply() override {
-        auto image1 = get_input_array("image1");
-        auto image2 = get_input_array("image2");
+        auto image1 = get_input_image("image1");
+        auto image2 = get_input_image("image2");
         auto weight1 = get_input2<float>("weight1");
         auto weight2 = get_input2<float>("weight2");
         auto constant = get_input2<float>("constant");
@@ -271,13 +271,21 @@ ZENDEFNODE(CVImageAdd, {
 
 struct CVImageMultiply : CVINode {
     void apply() override {
-        auto image1 = get_input_array("image");
+        auto image1 = get_input_image("image");
         auto inverse = get_input2<bool>("inverse");
-        auto image2 = get_input_array("factor", inverse);
         auto is255 = get_input2<bool>("is255");
-        auto resimage = std::make_shared<CVImageObject>();
-        cv::multiply(image1, cv::_InputArray(100.f), resimage->image, is255 ? 1.f / 255.f : 1.f);
-        set_output("resimage", std::move(resimage));
+        if (has_input<NumericObject>("factor")) {
+            auto factor = get_input2<float>("factor");
+            if (inverse) factor = 1 - factor;
+            auto resimage = std::make_shared<CVImageObject>();
+            cv::multiply(image1, factor, resimage->image, is255 ? 1.f / 255.f : 1.f);
+            set_output("resimage", std::move(resimage));
+        } else {
+            auto image2 = get_input_image("factor", inverse);
+            auto resimage = std::make_shared<CVImageObject>();
+            cv::multiply(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
+            set_output("resimage", std::move(resimage));
+        }
     }
 };
 
@@ -297,9 +305,9 @@ ZENDEFNODE(CVImageMultiply, {
 
 struct CVImageDivide : CVINode {
     void apply() override {
-        auto image1 = get_input_array("image");
+        auto image1 = get_input_image("image");
         auto inverse = get_input2<bool>("inverse");
-        auto image2 = get_input_array("factor", inverse);
+        auto image2 = get_input_image("factor", inverse);
         auto is255 = get_input2<bool>("is255");
         auto resimage = std::make_shared<CVImageObject>();
         cv::divide(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
@@ -323,8 +331,8 @@ ZENDEFNODE(CVImageDivide, {
 
 struct CVImageBlend : CVINode {
     void apply() override {
-        auto image1 = get_input_array("image1");
-        auto image2 = get_input_array("image2");
+        auto image1 = get_input_image("image1");
+        auto image2 = get_input_image("image2");
         auto is255 = get_input2<bool>("is255");
         auto inverse = get_input2<bool>("inverse");
         auto resimage = std::make_shared<CVImageObject>();
@@ -335,7 +343,7 @@ struct CVImageBlend : CVINode {
             auto factor = get_input2<float>("factor");
             cv::addWeighted(image1, 1 - factor, image2, factor, 0, resimage->image);
         } else {
-            auto factor = get_input_array("factor");
+            auto factor = get_input_image("factor");
             cv::Mat factorinv, tmp1, tmp2;
             if (is255) {
                 cv::bitwise_not(factor, factorinv);
@@ -367,7 +375,7 @@ ZENDEFNODE(CVImageBlend, {
 
 struct CVImageInvert : CVINode {
     void apply() override {
-        auto image = get_input_array("image");
+        auto image = get_input_image("image");
         auto is255 = get_input2<bool>("is255");
         auto resimage = std::make_shared<CVImageObject>();
         if (is255) {
@@ -393,7 +401,7 @@ ZENDEFNODE(CVImageInvert, {
 
 struct CVConvertColor : CVINode {
     void apply() override {
-        auto image = get_input_array("image");
+        auto image = get_input_image("image");
         auto mode = get_input2<std::string>("mode");
         cv::ColorConversionCodes code = array_lookup({
             cv::COLOR_BGR2GRAY,
@@ -441,7 +449,7 @@ ZENDEFNODE(CVConvertColor, {
 
 struct CVImageGrayscale : CVINode {
     void apply() override {
-        auto image = get_input_array("image");
+        auto image = get_input_image("image");
         auto resimage = std::make_shared<CVImageObject>();
         cv::Mat tmp;
         cv::cvtColor(image, tmp, cv::COLOR_BGR2GRAY);
