@@ -114,6 +114,7 @@ struct ZSNSPressureProject : INode {
 
         auto dx = spg.voxelSize()[0];
 
+        pol.sync(false);
         for (int iter = 0; iter < nIter; ++iter) {
             // a simple implementation of red-black SOR
             for (int clr = 0; clr != 2; ++clr) {
@@ -141,6 +142,66 @@ struct ZSNSPressureProject : INode {
                         spgv("p0", icoord) = p_this;
                     }
                 });
+#elif 1
+                using value_type = typename RM_CVREF_T(spg)::value_type;
+                constexpr int side_length = RM_CVREF_T(spg)::side_length;
+                static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
+                // 7 * sizeof(float) = 28 Bytes / block
+                constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
+                constexpr std::size_t tpb = 6;
+                constexpr std::size_t cuda_block_size = bucket_size * tpb;
+                pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
+                    [spgv = zs::proxy<space>(spg), sor, clr, cst = sor * dx * dx * rho, ts_c = zs::wrapv<bucket_size>{},
+                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+                     blockCnt = block_cnt] __device__(int bid, int tid) mutable {
+                        // load halo
+                        using vec3i = zs::vec<int, 3>;
+                        using spg_t = RM_CVREF_T(spgv);
+                        constexpr int tile_size = decltype(ts_c)::value;
+
+                        auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
+                        auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
+                        if (blockno >= blockCnt)
+                            return;
+
+                        auto bcoord = spgv._table._activeKeys[blockno];
+
+                        if (((bcoord[0] & 1) ^ (bcoord[1] & 1) ^ (bcoord[2] & 1)) == clr)
+                            return;
+
+                        /// (0, 0, 0),
+                        /// (0, 0, 1), (0, 0, -1),
+                        /// (0, 1, 0), (0, -1, 0),
+                        /// (1, 0, 0), (-1, 0, 0)
+                        auto loadVal = [&spgv, &tile, &bcoord, pOffset](int k) {
+                            auto coord = bcoord;
+                            coord[k / 2] += k & 1 ? 1 : -1;
+                            int bno = spgv._table.tile_query(tile, coord);
+                            if (bno >= 0)
+                                return spgv(pOffset, bno, 0);
+                            else
+                                return (value_type)0;
+                        };
+                        auto div = spgv.value("tmp", blockno, 0);
+                        value_type stclVal = 0;
+                        const auto lane_id = tile.thread_rank();
+                        if (lane_id == 0)
+                            // stclVal = (1 - sor) * spgv(pOffset, blockno, 0) - sor * div * dx * dx * rho / 6;
+                            stclVal = (1 - sor) * spgv(pOffset, blockno, 0) - div * cst / 6;
+                        for (int j = 0; j < 6; ++j) {
+                            auto tmp = sor * loadVal(j) / 6;
+                            if (lane_id == j + 1)
+                                stclVal = tmp;
+                        }
+                        for (int stride = 1; stride <= 4; stride <<= 1) {
+                            auto tmp = tile.shfl(stclVal, lane_id + stride);
+                            if (lane_id + stride < 7)
+                                stclVal += tmp;
+                        }
+
+                        if (lane_id == 0)
+                            spgv(pOffset, blockno, 0) = stclVal;
+                    });
 #else
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
@@ -211,6 +272,7 @@ struct ZSNSPressureProject : INode {
 #endif
             }
         }
+        pol.sync(true);
     }
 
     template <int level>
@@ -225,6 +287,7 @@ struct ZSNSPressureProject : INode {
 
         auto dx = spg.voxelSize()[0];
 
+        pol.sync(false);
         for (int iter = 0; iter < nIter; ++iter) {
             for (int clr = 0; clr != 2; ++clr) {
                 if (false) {
@@ -273,7 +336,7 @@ struct ZSNSPressureProject : INode {
                     });
                 } else {
                     constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
-                    constexpr std::size_t tpb = 2;
+                    constexpr std::size_t tpb = 4;
                     constexpr std::size_t cuda_block_size = bucket_size * tpb;
                     pol.shmem(arena_size * sizeof(value_type) * tpb);
                     pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
@@ -516,6 +579,7 @@ struct ZSNSPressureProject : INode {
                 }
             } // switch block color
         }     // sor iteration
+        pol.sync(true);
     }
 
     template <int level> float residual(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
