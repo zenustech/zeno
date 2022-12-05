@@ -33,7 +33,7 @@ namespace {
 
 struct CVINode : INode {
     template <class To = double, class T>
-    static auto tocvvec(T const &val) {
+    static auto tocvscalar(T const &val) {
         if constexpr (is_vec_n<T> == 4) {
             return cv::Scalar_<To>(val[3], val[2], val[1], val[0]);
         } else if constexpr (is_vec_n<T> == 3) {
@@ -45,13 +45,27 @@ struct CVINode : INode {
         }
     }
 
+    template <class T>
+    static cv::_InputArray tocvinputarr(T const &val) {
+        if constexpr (is_vec_n<T> == 4) {
+            return cv::_InputArray(make_array(val[3], val[2], val[1], val[0]).data(), 4);
+        } else if constexpr (is_vec_n<T> == 3) {
+            return cv::_InputArray(make_array(val[2], val[1], val[0]).data(), 3);
+        } else if constexpr (is_vec_n<T> == 2) {
+            return cv::_InputArray(make_array(val[1], val[0]).data(), 2);
+        } else {
+            return cv::_InputArray((double)val);
+        }
+    }
+
     cv::_InputArray get_input_array(std::string const &name, bool inversed = false) {
         if (has_input<NumericObject>(name)) {
             auto num = get_input<NumericObject>(name);
             bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
+            return 155.f;
             return std::visit([&] (auto const &val) -> cv::_InputArray {
-                auto ret = tocvvec(inversed ? 1 - val : val);
-                return is255 ? ret * 255 : ret;
+                auto tmp = inversed ? 1 - val : val;
+                return tocvinputarr(is255 ? tmp * 255 : tmp);
             }, num->value);
         } else {
             if (inversed) {
@@ -262,7 +276,7 @@ struct CVImageMultiply : CVINode {
         auto image2 = get_input_array("factor", inverse);
         auto is255 = get_input2<bool>("is255");
         auto resimage = std::make_shared<CVImageObject>();
-        cv::multiply(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
+        cv::multiply(image1, cv::_InputArray(100.f), resimage->image, is255 ? 1.f / 255.f : 1.f);
         set_output("resimage", std::move(resimage));
     }
 };
@@ -270,7 +284,33 @@ struct CVImageMultiply : CVINode {
 ZENDEFNODE(CVImageMultiply, {
     {
         {"CVImageObject", "image"},
-        {"float"/*or CVImageObject*/, "factor"},
+        {"float"/*or CVImageObject*/, "factor", "1"},
+        {"bool", "inverse", "0"},
+        {"bool", "is255", "1"},
+    },
+    {
+        {"CVImageObject", "resimage"},
+    },
+    {},
+    {"opencv"},
+});
+
+struct CVImageDivide : CVINode {
+    void apply() override {
+        auto image1 = get_input_array("image");
+        auto inverse = get_input2<bool>("inverse");
+        auto image2 = get_input_array("factor", inverse);
+        auto is255 = get_input2<bool>("is255");
+        auto resimage = std::make_shared<CVImageObject>();
+        cv::divide(image1, image2, resimage->image, is255 ? 1.f / 255.f : 1.f);
+        set_output("resimage", std::move(resimage));
+    }
+};
+
+ZENDEFNODE(CVImageDivide, {
+    {
+        {"CVImageObject", "image"},
+        {"float"/*or CVImageObject*/, "factor", "1"},
         {"bool", "inverse", "0"},
         {"bool", "is255", "1"},
     },
@@ -425,7 +465,7 @@ struct CVImageFillColor : CVINode {
     void apply() override {
         auto likeimage = get_input<CVImageObject>("image");
         auto is255 = get_input2<bool>("is255");
-        auto color = tocvvec<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         if (has_input("mask")) {
@@ -687,8 +727,8 @@ struct CVImageFillGrad : CVINode {
         auto scale = get_input2<float>("scale");
         auto offset = get_input2<float>("offset");
         auto is255 = get_input2<bool>("is255");
-        auto color1 = tocvvec<float>(get_input2<vec3f>("color1"));
-        auto color2 = tocvvec<float>(get_input2<vec3f>("color2"));
+        auto color1 = tocvscalar<float>(get_input2<vec3f>("color1"));
+        auto color2 = tocvscalar<float>(get_input2<vec3f>("color2"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         vec2i shape(image->image.size[1], image->image.size[0]);
@@ -739,7 +779,7 @@ ZENDEFNODE(CVImageFillGrad, {
 struct CVImageDrawPoly : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("image");
-        auto color = tocvvec<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
         if (!get_input2<bool>("inplace"))
             image = std::make_shared<CVImageObject>(*image);
         auto prim = get_input<PrimitiveObject>("prim");
