@@ -155,12 +155,15 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
 void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+
+    T descentStepsize = 0.5f; 
     /// @note shape matching
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
+            vtemp("dir", d, i) = 0; 
             atomic_add(exec_cuda, &vtemp("xn", d, i), (xinit(d) - xn(d)));
         }
     });
@@ -188,8 +191,8 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto grad = zs::vec<T, 6>{-t14, -t15, -t16, t14, t15, t16};
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, pp[0]), -grad(d));
-            atomic_add(exec_cuda, &vtemp("xn", d, pp[1]), -grad(3 + d));
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[0]), -grad(d)); 
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[1]), -grad(3 + d)); 
         }
     });
 
@@ -216,8 +219,17 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto grad = zs::vec<T, 6>{t14, t15, t16, -t14, -t15, -t16};
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, e[0]), -grad(d));
-            atomic_add(exec_cuda, &vtemp("xn", d, e[1]), -grad(3 + d));
+            atomic_add(exec_cuda, &vtemp("dir", d, e[0]), -grad(d));
+            atomic_add(exec_cuda, &vtemp("dir", d, e[1]), -grad(3 + d));
+        }
+    });
+    pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), 
+            descentStepsize] __device__(int i) mutable {
+        auto dir = vtemp.pack(dim_c<3>, "dir", i);
+        auto xn = vtemp.pack(dim_c<3>, "xn", i); 
+#pragma unroll 3
+        for (int d = 0; d < 3; ++d) {
+            atomic_add(exec_cuda, &vtemp("xn", d, i), (xn(d) + descentStepsize * dir(d)));
         }
     });
 }
@@ -398,8 +410,10 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         }
 
         /// @brief backtracking if discrete constraints violated
-        if (temp.getVal() == 1)
+        if (temp.getVal() == 1) {
+            alpha /= 2;
             continue;
+        }
 
         ///
         /// @note objective decreases adequately. ref 4.2.2, item 2

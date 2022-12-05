@@ -576,10 +576,10 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
         /// start collision solver
         ///
-        initialStepping(pol);
+        initialStepping(pol); 
 
         // x^{k+1}
-        findConstraints(pol, dHat);
+        findConstraints(pol, dHat); // DWX: it seems that "xn" in "initialStepping" should be replaced by "x_init"; paper 4.3.2 
 
         /// @brief backup xn for potential hard phase
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
