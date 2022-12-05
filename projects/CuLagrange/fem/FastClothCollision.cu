@@ -237,7 +237,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto xn = vtemp.pack(dim_c<3>, "xn", i); 
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, i), (xn(d) + descentStepsize * dir(d)));
+            atomic_add(exec_cuda, &vtemp("xn", d, i), descentStepsize * dir(d));
         }
     });
 }
