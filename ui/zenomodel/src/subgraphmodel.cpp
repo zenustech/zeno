@@ -246,11 +246,13 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     {
         item.panelParams->clear();
         delete item.panelParams;
+        item.panelParams = nullptr;
     }
     if (item.nodeParams)
     {
         item.nodeParams->clear();
         delete item.nodeParams;
+        item.nodeParams = nullptr;
     }
 
     int row = index.row();
@@ -751,16 +753,17 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
         return false;
     }
 
+    QUuid uuid = QUuid::createUuid();
+    uint32_t ident = uuid.data1;
+    m_num2strId[ident] = id;
+    m_str2numId[id] = ident;
+
     _NodeItem& item = m_nodes[id];
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
     item = nodeData2Item(nodeData, nodeIdx);
 
-    QUuid uuid = QUuid::createUuid();
-    uint32_t ident = uuid.data1;
-    m_num2strId[ident] = id;
-    m_str2numId[id] = ident;
     m_pGraphsModel->markDirty();
     return true;
 }
