@@ -9,6 +9,8 @@
 #include <memory>
 #include <map>
 
+struct LiveManager;
+
 namespace zenovis {
 
 struct ObjectsManager : zeno::disable_copy {
@@ -17,6 +19,7 @@ struct ObjectsManager : zeno::disable_copy {
 
     std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
     bool needUpdateLight = true;
+    Scene* scene;
 
     template <class T = void>
     auto pairs() const {

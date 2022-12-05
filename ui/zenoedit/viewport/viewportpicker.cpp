@@ -13,6 +13,7 @@
 #include <zeno/funcs/ObjectGeometryInfo.h>
 
 #include <functional>
+#include <sstream>
 #include <regex>
 
 namespace zeno {

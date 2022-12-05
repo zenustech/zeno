@@ -1,4 +1,5 @@
 #include <zenovis/Scene.h>
+#include <zenovis/LiveManager.h>
 #include <zenovis/Camera.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
@@ -26,7 +27,8 @@ void Scene::loadGLAPI(void *procaddr) {
 Scene::~Scene() = default;
 
 Scene::Scene()
-    : camera(std::make_unique<Camera>()),
+    : liveMan(std::make_unique<LiveManager>()),
+      camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
       objectsMan(std::make_unique<ObjectsManager>()),
@@ -34,6 +36,9 @@ Scene::Scene()
 
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
+
+    liveMan->scene = this;
+    objectsMan->scene = this;
 
     if (zeno::envconfig::get("OPTX"))
         switchRenderEngine("optx");

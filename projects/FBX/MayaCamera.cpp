@@ -419,5 +419,24 @@ ZENO_DEFNODE(LightNode)({
     {"shader"},
 });
 
+struct LiveMeshNode : INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        prim->userData().set2("IsLiveObject", 1);
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(LiveMeshNode)({
+    {
+    },
+    {
+        "prim"
+    },
+    {
+    },
+    {"FBX"},
+});
+
 }
 }

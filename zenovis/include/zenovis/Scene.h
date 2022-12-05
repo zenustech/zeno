@@ -12,6 +12,7 @@
 
 namespace zenovis {
 
+struct LiveManager;
 struct Camera;
 struct DrawOptions;
 struct ShaderManager;
@@ -20,6 +21,7 @@ struct ObjectsManager;
 struct RenderManager;
 
 struct Scene : zeno::disable_copy {
+    std::unique_ptr<LiveManager> liveMan;
     std::optional<zeno::vec4f> select_box = {};
     std::unordered_set<std::string> selected = {};
     int select_mode;
