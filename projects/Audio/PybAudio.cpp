@@ -85,6 +85,8 @@ namespace {
             std::sort(v.begin(), v.end());
             auto midhist = v[v.size() / 2];
             auto powvar = std::max(0.f, sumpower - midhist);
+            powvar *= get_input2<float>("scale");
+            powvar = std::min(powvar, get_input2<float>("maximum"));
             set_output2("powvar", powvar);
         }
     };
@@ -92,6 +94,8 @@ namespace {
         {
             {"float", "sumpower"},
             {"int", "winwidth", "20"},
+            {"int", "scale", "1"},
+            {"int", "maximum", "1"},
         },
         {
             {"float", "powvar"},

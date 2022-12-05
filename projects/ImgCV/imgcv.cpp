@@ -223,7 +223,9 @@ ZENDEFNODE(CVImageShow, {
 struct CVWaitKey : CVINode {
     void apply() override {
         auto delay = get_input2<int>("delay");
-        cv::waitKey(delay);
+        int kc = cv::waitKey(delay);
+        set_output2("hasPressed", kc != -1);
+        set_output2("keyCode", kc);
     }
 };
 
@@ -232,6 +234,8 @@ ZENDEFNODE(CVWaitKey, {
         {"int", "delay", "0"},
     },
     {
+        {"bool", "hasPressed"},
+        {"int", "keyCode"},
     },
     {},
     {"opencv"},
@@ -277,6 +281,7 @@ struct CVImageMultiply : CVINode {
         if (has_input<NumericObject>("factor")) {
             auto factor = get_input2<float>("factor");
             if (inverse) factor = 1 - factor;
+            if (is255) factor = 255 * factor;
             auto resimage = std::make_shared<CVImageObject>();
             cv::multiply(image1, factor, resimage->image, is255 ? 1.f / 255.f : 1.f);
             set_output("resimage", std::move(resimage));
