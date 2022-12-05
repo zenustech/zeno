@@ -26,7 +26,7 @@ void FastClothSystem::initialStepping(zs::CudaExecutionPolicy &pol) {
     });
 }
 
-void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
+void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
@@ -34,13 +34,13 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
     if (enableContact) {
         nPP.setVal(0);
         if (enableContactSelf) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
+            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
             svBvh.refit(pol, pBvs);
             /// @note all cloth edge lower-bound constraints inheritly included
             findCollisionConstraints(pol, dHat, false);
         }
         if (hasBoundary()) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
+            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
             bouSvBvh.refit(pol, pBvs);
             findCollisionConstraints(pol, dHat, true);
             // for repulsion
@@ -123,6 +123,13 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief soft phase for constraints
     ///
+    pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+        auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
+#pragma unroll 3
+        for (int d = 0; d < 3; ++d) {
+            vtemp("xn", d, i) = xinit(d); // soft phase optimization starts from xinit
+        }
+    });
     for (int l = 0; l != ISoft; ++l) {
         // fmt::print(fg(fmt::color::orange_red), "\tstart soft phase [{}]\n", l);
         softPhase(pol);
@@ -163,8 +170,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            vtemp("dir", d, i) = 0; 
-            atomic_add(exec_cuda, &vtemp("xn", d, i), (xinit(d) - xn(d)));
+            vtemp("dir", d, i) = 2.0f * (xinit(d) - xn(d)); // minus grad of ||x-xinit||^2
         }
     });
     /// @note constraints

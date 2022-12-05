@@ -158,7 +158,7 @@ struct FastClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat);
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag = "xinit");
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
     /// @note given "xinit", computes x^{k+1}
     void initialStepping(zs::CudaExecutionPolicy &pol);

@@ -509,7 +509,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
     /// @brief collect pairs only once depending on x^init
     /// @note ref: Sec 4.3.2
-    findConstraints(pol, dHat);
+    // findConstraints(pol, dHat); disabled for now 
 
     /// optimizer
     for (int k = 0; k != K; ++k) {
@@ -579,7 +579,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         initialStepping(pol); 
 
         // x^{k+1}
-        findConstraints(pol, dHat); // DWX: it seems that "xn" in "initialStepping" should be replaced by "x_init"; paper 4.3.2 
+        findConstraints(pol, dHat); // DWX: paper 4.3.2; do only once in the future
 
         /// @brief backup xn for potential hard phase
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
