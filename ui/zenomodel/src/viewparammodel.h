@@ -59,6 +59,7 @@ class ViewParamModel : public QStandardItemModel
     Q_OBJECT
 public:
     explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
+    ~ViewParamModel();
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
     QModelIndex indexFromPath(const QString& path);

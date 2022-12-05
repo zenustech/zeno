@@ -7,6 +7,7 @@
 #include "jsonhelper.h"
 #include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/viewparammodel.h>
+#include <zenomodel/include/iparammodel.h>
 #include <QUuid>
 
 
@@ -1400,3 +1401,19 @@ int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
     }
     return -1;
 }
+
+QModelIndex UiHelper::findSubInputIdx(IGraphsModel* pModel, const QString& paramName, const QModelIndex& subgIdx)
+{
+    QModelIndexList nodes = pModel->searchInSubgraph("SubInput", subgIdx);
+    for (QModelIndex subInput : nodes)
+    {
+        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInput.data(ROLE_PARAM_MODEL));
+        QModelIndex nameIdx = paramModel->index("name");
+        if (nameIdx.data(ROLE_PARAM_VALUE) == paramName)
+        {
+            return subInput;
+        }
+    }
+    return QModelIndex();
+}
+

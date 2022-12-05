@@ -205,11 +205,14 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.control)
                 return;
             m_info.control = (PARAM_CONTROL)value.toInt();
+            // no need to notify the core param, only update the view param itself.
+            /*
             if (m_index.isValid())
             {
                 QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
                 pModel->setData(m_index, value, role);
             }
+            */
             qobject_cast<ViewParamModel*>(model())->markDirty();
             return;
         }
@@ -349,6 +352,10 @@ ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphs
     , m_bDirty(false)
 {
     setup("");
+}
+
+ViewParamModel::~ViewParamModel()
+{
 }
 
 void ViewParamModel::setup(const QString& customUI)

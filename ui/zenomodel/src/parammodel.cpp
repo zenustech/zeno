@@ -244,7 +244,7 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
         case Qt::DisplayRole:
         case ROLE_PARAM_NAME:   return item.name;
         case ROLE_PARAM_TYPE:   return item.type;
-        case ROLE_PARAM_CTRL:   return CONTROL_NONE;    //control belongs to view data, should ask for view model.
+        case ROLE_PARAM_CTRL:   return m_tempControl;    //control belongs to view data, only offer the control used to sync.
         case ROLE_PARAM_VALUE:  return item.pConst;
         case ROLE_PARAM_SOCKPROP: return item.prop;
         case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
@@ -324,8 +324,15 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         case ROLE_PARAM_CTRL:
         {
-            //return false;     //don't handle control issues.
-            break;  //help to parse control value to other view model.
+            PARAM_CONTROL newCtrl = (PARAM_CONTROL)value.toInt();
+            // there isn't control on core param, but we can sync the new control to all view param,
+            // through this api.
+            onControlToBeNotified(item, newCtrl);
+
+            m_tempControl = newCtrl;
+            zeno::scope_exit sp([=]() { m_tempControl = CONTROL_NONE; });
+            emit dataChanged(index, index, QVector<int>{role});
+            return true;
         }
         case ROLE_PARAM_VALUE:
         {
@@ -390,7 +397,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
         default:
             return false;
     }
-    emit dataChanged(index, index, QVector<int>{role});     //legacy signal
+    emit dataChanged(index, index, QVector<int>{role});
     return true;
 }
 
@@ -500,6 +507,35 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             }
             m_model->updateSubgDesc(subgName, desc);
             //no need to update all subgraph node because it causes disturbance.
+        }
+    }
+}
+
+void IParamModel::onControlToBeNotified(const _ItemInfo& item, PARAM_CONTROL newCtrl)
+{
+    if (m_model->IsIOProcessing())
+        return;
+
+    const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    if (nodeName == "SubInput" || nodeName == "SubOutput")
+    {
+        bool bInput = nodeName == "SubInput";
+        const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        ZASSERT_EXIT(m_items.find("defl") != m_items.end() &&
+            m_items.find("name") != m_items.end() &&
+            m_items.find("type") != m_items.end());
+        const QString& sockName = m_items["name"].pConst.toString();
+
+        if (item.name == "defl")
+        {
+            QModelIndexList subgNodes = m_model->findSubgraphNode(subgName);
+            for (auto idx : subgNodes)
+            {
+                // update socket for current subgraph node.
+                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+                QModelIndex paramIdx = sockModel->index(m_items["name"].pConst.toString());
+                sockModel->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
+            }
         }
     }
 }

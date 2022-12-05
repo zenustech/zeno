@@ -424,7 +424,7 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
 void ZEditParamLayoutDlg::onApply()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    if (pGraphsModel->IsSubGraphNode(m_nodeIdx))
+    if (pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel())
     {
         //sync to core param model first, and then the coreparam model will notify the view param model to update.
         QStandardItem* _root = m_proxyModel->invisibleRootItem();
@@ -447,54 +447,64 @@ void ZEditParamLayoutDlg::onApply()
                 QSet<QString> vNames, coreNames;
                 for (int r = 0; r < pGroup->rowCount(); r++)
                     vNames.insert(pGroup->child(r)->data(ROLE_VPARAM_NAME).toString());
-                //IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_INPUT_MODEL));
                 INPUT_SOCKETS inputs = m_nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
                 for (QString coreName : inputs.keys())
                     coreNames.insert(coreName);
 
                 QSet<QString> existNames = vNames & coreNames;
                 QSet<QString> newNames = vNames - existNames;
-                QSet<QString> oldNames = coreNames - existNames;
+                QSet<QString> deleteKeys = coreNames - existNames;
 
-                QModelIndexList nodes = pGraphsModel->searchInSubgraph("SubInput", subgIdx);
-                //remove the old names.
-                for (QString oldName : oldNames)
+                for (int r = 0; r < pGroup->rowCount(); r++)
                 {
-                    // remove the SubInput node with the name of the oldName, in the subgraph.
-                    for (QModelIndex subInput : nodes)
+                    QStandardItem* pItem = pGroup->child(r);
+                    const QString& vName = pItem->data(ROLE_VPARAM_NAME).toString();
+                    const QString& coreName = pItem->data(ROLE_PARAM_NAME).toString();
+                    const QString& typeDesc = pItem->data(ROLE_PARAM_TYPE).toString();
+
+                    if (coreName.isEmpty())
                     {
-                        PARAMS_INFO params = subInput.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-                        if (params["name"].value == oldName)
-                        {
-                            pGraphsModel->removeNode(subInput.data(ROLE_OBJID).toString(), subgIdx, true);
-                        }
-                    }
-                }
-                //add the new names.
-                for (QString newName : newNames)
-                {
-                    for (int r = 0; r < pGroup->rowCount(); r++)
-                    {
-                        QStandardItem* pItem = pGroup->child(r);
-                        const QString& typeDesc = pItem->data(ROLE_PARAM_TYPE).toString();
-                        const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
+                        //new param.
                         PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
-                        if (pItem->data(ROLE_VPARAM_NAME).toString() == newName)
-                        {
-                            QString objId = NodesMgr::createNewNode(pGraphsModel, subgIdx, "SubInput", QPointF(0, 0));
-                            const QModelIndex& nodeIdx = pGraphsModel->index(objId, subgIdx);
-                            IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-                            paramModel->setItem(paramModel->index("name"), "string", newName);
-                            paramModel->setItem(paramModel->index("type"), "string", typeDesc);
-                            paramModel->setItem(paramModel->index("defl"), typeDesc, defl);
-                            //todo: set control for subInput and subgraphNode.
-                        }
+                        const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
+
+                        QString objId = NodesMgr::createNewNode(pGraphsModel, subgIdx, "SubInput", QPointF(0, 0));
+                        const QModelIndex& nodeIdx = pGraphsModel->index(objId, subgIdx);
+                        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+                        paramModel->setItem(paramModel->index("name"), "string", vName);
+                        paramModel->setItem(paramModel->index("type"), "string", typeDesc);
+
+                        const QModelIndex& idxDefl = paramModel->index("defl");
+                        paramModel->setItem(idxDefl, typeDesc, defl);
+                        paramModel->setData(idxDefl, ctrl, ROLE_PARAM_CTRL);
+                    }
+                    else if (coreName != vName)
+                    {
+                        // rename
+                        deleteKeys.remove(coreName);
+
+                        const QModelIndex& subInput = UiHelper::findSubInputIdx(pGraphsModel, coreName, subgIdx);
+                        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInput.data(ROLE_PARAM_MODEL));
+                        QModelIndex nameIdx = paramModel->index("name");
+                        //update the value on "name" in SubInput.
+                        paramModel->setData(nameIdx, vName, ROLE_PARAM_VALUE);
+                    }
+                    else
+                    {
+                        //update issues.
                     }
                 }
-                //compare the existing names.
-                for (QString existName : existNames)
-                {
 
+                //remove core param
+                QStringList removeList;
+                for (QString oldName : deleteKeys)
+                {
+                    const QModelIndex& subInput = UiHelper::findSubInputIdx(pGraphsModel, oldName, subgIdx);
+                    removeList.append(subInput.data(ROLE_OBJID).toString());
+                }
+                for (QString ident : removeList)
+                {
+                    pGraphsModel->removeNode(ident, subgIdx, true);
                 }
             }
             else if (groupName == "Out Sockets")

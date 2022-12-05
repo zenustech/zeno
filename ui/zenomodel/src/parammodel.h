@@ -93,6 +93,7 @@ private:
         SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
+    void onControlToBeNotified(const _ItemInfo& item, PARAM_CONTROL newCtrl);
 
     const QPersistentModelIndex m_nodeIdx;
     const QPersistentModelIndex m_subgIdx;
@@ -102,7 +103,11 @@ private:
     QMap<int, QString> m_row2Key;
     QMap<QString, _ItemInfo> m_items;
     IGraphsModel* m_model;
-    bool m_bRetryLinkOp;        //...
+
+    //only used to sync to all view param, it will not be a reference to a control on view.
+    PARAM_CONTROL m_tempControl;
+
+    bool m_bRetryLinkOp;
 };
 
 #endif
