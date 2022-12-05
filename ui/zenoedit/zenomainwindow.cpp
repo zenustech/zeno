@@ -27,7 +27,6 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 
-
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_pEditor(nullptr)
@@ -53,6 +52,7 @@ ZenoMainWindow::~ZenoMainWindow()
 void ZenoMainWindow::init()
 {
     initMenu();
+    initLive();
     initDocks();
     verticalLayout();
     //onlyEditorLayout();
@@ -61,6 +61,10 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+}
+
+void ZenoMainWindow::initLive() {
+
 }
 
 void ZenoMainWindow::initMenu() {
