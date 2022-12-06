@@ -452,6 +452,26 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     }
 }
 
+QStringList UiHelper::getCoreTypeList()
+{
+    static QStringList types = {
+        "int",
+        "bool",
+        "float",
+        "string",
+        "vec2f",
+        "vec2i",
+        "vec3f",
+        "vec3i",
+        "vec4f",
+        "vec4i",
+        "writepath",
+        "readpath",
+        "color",
+        "curve"
+    };
+    return types;
+}
 
 QStringList UiHelper::getAllControls()
 {

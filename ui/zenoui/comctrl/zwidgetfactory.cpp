@@ -260,6 +260,22 @@ namespace zenoui
                 QObject::connect(pSlider, &QSlider::valueChanged, [=](int value) {
                     cbSet.cbEditFinished(value);
                 });
+
+                QObject::connect(pSlider, &QSlider::sliderPressed, [=]() {
+                    QRect rc = pSlider->rect();
+                    QPoint br = pSlider->mapToGlobal(rc.bottomRight());
+                    QPoint pos = QCursor::pos();
+                    pos.setY(br.y());
+                    QToolTip::showText(pos, QString("%1").arg(pSlider->value()), nullptr);
+                });
+
+                QObject::connect(pSlider, &QSlider::sliderMoved, [=](int value) {
+                    QRect rc = pSlider->rect();
+                    QPoint br = pSlider->mapToGlobal(rc.bottomRight());
+                    QPoint pos = QCursor::pos();
+                    pos.setY(br.y());
+                    QToolTip::showText(pos, QString("%1").arg(value), nullptr);
+                });
                 return pSlider;
             }
             case CONTROL_HSPINBOX:
@@ -317,6 +333,7 @@ namespace zenoui
                     int to = properties["max"].toInt();
                     pSlider->setRange(from, to);
                 }
+                pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int value) {
                     cbSet.cbEditFinished(value);
                 });

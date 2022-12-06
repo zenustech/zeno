@@ -216,6 +216,15 @@ void VParamItem::setData(const QVariant& value, int role)
             qobject_cast<ViewParamModel*>(model())->markDirty();
             return;
         }
+        case ROLE_PARAM_TYPE:
+        {
+            if (m_index.isValid())
+            {
+                //only update core type by editing SubInput/SubOutput.
+            }
+            m_info.typeDesc = value.toString();
+            break;
+        }
         case ROLE_PARAM_VALUE:
         {
             if (m_index.isValid())
@@ -226,6 +235,8 @@ void VParamItem::setData(const QVariant& value, int role)
             }
             else
             {
+                if (value == m_info.value)
+                    return;
                 m_info.value = value;
                 qobject_cast<ViewParamModel*>(model())->markDirty();
             }

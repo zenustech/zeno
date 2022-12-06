@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1019</width>
+    <width>1015</width>
     <height>767</height>
    </rect>
   </property>
@@ -126,8 +126,25 @@
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="editName"/>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>hint</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="cbTypes"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="editLabel"/>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Control</string>
+           </property>
+          </widget>
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_3">
@@ -143,28 +160,31 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_4">
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="editName"/>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="lblType">
            <property name="text">
-            <string>Type</string>
+            <string>type</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="editLabel"/>
+         <item row="5" column="1">
+          <widget class="QLineEdit" name="editHint"/>
          </item>
          <item row="2" column="1">
           <widget class="QComboBox" name="cbControl"/>
          </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_5">
+         <item row="4" column="0">
+          <widget class="QLabel" name="lblDefaultValue">
            <property name="text">
-            <string>hint</string>
+            <string>default value</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QLineEdit" name="editHint"/>
+         <item row="4" column="1">
+          <widget class="QWidget" name="widget" native="true"/>
          </item>
         </layout>
        </item>

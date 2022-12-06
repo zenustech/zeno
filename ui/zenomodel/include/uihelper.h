@@ -41,6 +41,7 @@ public:
     static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);
     static PARAM_CONTROL getControlByDesc(const QString& descName);
+    static QStringList getCoreTypeList();
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);

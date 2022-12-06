@@ -51,6 +51,7 @@ private slots:
     void onMaxEditFinished();
     void onStepEditFinished();
     void onControlItemChanged(int);
+    void onTypeItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
 
 private:
@@ -59,6 +60,7 @@ private:
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
+    static const int rowValueControl = 4;
 };
 
 
