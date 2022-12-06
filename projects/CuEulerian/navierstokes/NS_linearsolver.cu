@@ -42,10 +42,10 @@ struct ZSNSPressureProject : INode {
         auto block_cnt = spg.numBlocks();
 
         // take zero as initial guess
-        pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg)] __device__(int cellno) mutable {
-            auto icoord = spgv.iCoord(cellno);
-            spgv("p0", icoord) = 0.f;
-        });
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg), pOffset = spg.getPropertyOffset("p0")] __device__(int cellno) mutable {
+                spgv(pOffset, cellno / spgv.block_size, cellno % spgv.block_size) = 0.f;
+            });
     }
 
     template <int level, typename Ti>
