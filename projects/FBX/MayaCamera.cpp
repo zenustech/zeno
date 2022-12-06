@@ -26,6 +26,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include <fstream>
+
 #define SET_CAMERA_DATA                         \
     out_pos->set(n->pos);                       \
     out_up->set(n->up);                         \
@@ -461,7 +463,16 @@ struct LiveMeshNode : INode {
         auto vertSrc = get_input2<std::string>("vertSrc");
 
         if(! vertSrc.empty()){
+            std::cout << "src vert " << vertSrc.size() << "\n";
             using json = nlohmann::json;
+
+            //std::fstream file;
+            //file.open("sample_file.txt", std::ios_base::out);
+            //if(!file.is_open())
+            //    std::cout<<"Unable to open the file.\n";
+            //file<<vertSrc;
+            //file.close();
+
             json parseData = json::parse(vertSrc);
             int vertices_size = parseData["vertices"].size();
             int vertexCount_size = parseData["vertexCount"].size();
@@ -505,6 +516,7 @@ struct LiveCameraNode : INode{
         auto camSrc = get_input2<std::string>("camSrc");
 
         if(! camSrc.empty()){
+            std::cout << "src came " << camSrc.size() << "\n";
             using json = nlohmann::json;
             json parseData = json::parse(camSrc);
             int translation_size = parseData["translation"].size();
@@ -518,9 +530,9 @@ struct LiveCameraNode : INode{
             float rotateX = ingredient.translation[3];
             float rotateY = ingredient.translation[4];
             float rotateZ = ingredient.translation[5];
-            float scaleX = ingredient.translation[6];
-            float scaleY = ingredient.translation[7];
-            float scaleZ = ingredient.translation[8];
+            //float scaleX = ingredient.translation[6];
+            //float scaleY = ingredient.translation[7];
+            //float scaleZ = ingredient.translation[8];
 
             glm::mat4 transMatrixR = glm::translate(glm::vec3(transX, transY, -transZ));
             glm::mat4 transMatrixL = glm::translate(glm::vec3(transX, transY, transZ));
@@ -541,7 +553,7 @@ struct LiveCameraNode : INode{
 
             camera->pos = zeno::vec3f(transX, transY, transZ);
             camera->view = zeno::vec3f(rotMatrix[2][0], rotMatrix[2][1], rotMatrix[2][2]);
-            camera->up = -zeno::vec3f(rotMatrix[1][0], rotMatrix[1][1], rotMatrix[1][2]);
+            camera->up = zeno::vec3f(rotMatrix[1][0], rotMatrix[1][1], rotMatrix[1][2]);
             std::cout << "RotateMatrix\n\t" << rotMatrix[0][0] << " " << rotMatrix[0][1] << " " << rotMatrix[0][2]
                       << "\n\t" << rotMatrix[1][0] << " " << rotMatrix[1][1] << " " << rotMatrix[1][2]
                       << "\n\t" << rotMatrix[2][0] << " " << rotMatrix[2][1] << " " << rotMatrix[2][2] << "\n";

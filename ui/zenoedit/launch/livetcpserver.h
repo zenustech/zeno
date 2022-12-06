@@ -15,7 +15,8 @@ public:
     explicit LiveTcpServer(QObject *parent = 0);
 
 signals:
-
+    void sendVertDone();
+    void sendCamDone();
 public slots:
     void newConnection();
     void onReadyRead();
@@ -23,6 +24,9 @@ public slots:
 private:
     QTcpServer *server;
     QTcpSocket* tcpSocket;
+    int receiveType = 0;
+    std::string vertTmp;
+    std::string cameTmp;
 public:
     LiveObjectData liveData;
 };
