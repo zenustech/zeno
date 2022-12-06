@@ -174,7 +174,7 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
 
 void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-    QStandardItem* pCurrentItem = m_proxyModel->itemFromIndex(current);
+    VParamItem* pCurrentItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(current));
     if (!pCurrentItem)  return;
 
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -208,10 +208,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     else if (type == VPARAM_PARAM)
     {
         const QString& paramName = name;
-        PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrentItem->data(ROLE_PARAM_CTRL).toInt();
+        PARAM_CONTROL ctrl = pCurrentItem->m_info.control;
         const QString& ctrlName = getControl(ctrl).name;
-        const QString& dataType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
-        const QVariant& deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+        const QString& dataType = pCurrentItem->m_info.typeDesc;
+        const QVariant& deflVal = pCurrentItem->m_info.value;
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
         CONTROL_PROPERTIES controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
 
@@ -424,12 +424,6 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
 {
     const QString& controlName = m_ui->cbControl->itemText(idx);
     PARAM_CONTROL ctrl = UiHelper::getControlByDesc(controlName);
-    if (ctrl == CONTROL_NONE)
-    {
-        zeno::log_warn("no control name {}", controlName.toStdString());
-        return;
-    }
-
     QModelIndex layerIdx = m_ui->paramsView->currentIndex();
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
@@ -442,7 +436,18 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
     QModelIndex layerIdx = m_ui->paramsView->currentIndex();
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
-    m_proxyModel->setData(layerIdx, dataType, ROLE_PARAM_TYPE);
+
+    VParamItem* pItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(layerIdx));
+    pItem->m_info.typeDesc = dataType;
+    pItem->m_info.control = UiHelper::getControlType(dataType);
+    pItem->m_info.value = UiHelper::initVariantByControl(pItem->m_info.control);
+
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem)
+    {
+        QWidget* pControlWidget = pLayoutItem->widget();
+        delete pControlWidget;
+    }
 
     //update control list
     QStringList items = UiHelper::getControlLists(dataType);
@@ -527,11 +532,11 @@ void ZEditParamLayoutDlg::onApply()
 
                 for (int r = 0; r < pGroup->rowCount(); r++)
                 {
-                    QStandardItem* pItem = pGroup->child(r);
-                    const QString& vName = pItem->data(ROLE_VPARAM_NAME).toString();
+                    VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
+                    const QString& vName = pItem->m_info.name;
                     const QString& coreName = pItem->data(ROLE_PARAM_NAME).toString();
-                    const QString& typeDesc = pItem->data(ROLE_PARAM_TYPE).toString();
-                    const QVariant& deflVal = pItem->data(ROLE_PARAM_VALUE);
+                    const QString& typeDesc = pItem->m_info.typeDesc;
+                    const QVariant& deflVal = pItem->m_info.value;
                     PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
 
                     if (coreName.isEmpty())

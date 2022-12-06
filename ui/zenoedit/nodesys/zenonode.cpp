@@ -419,6 +419,10 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                     pParamLayout->addItem(pNewControl);
                     m_params[sockName].param_control = pNewControl;
                 }
+                else
+                {
+                    m_params[sockName].param_control = nullptr;
+                }
                 updateWhole();
                 break;
             }

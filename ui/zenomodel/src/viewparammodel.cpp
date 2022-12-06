@@ -36,6 +36,7 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
             const QString& newType = topLeft.data(ROLE_PARAM_TYPE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
             m_pItem->m_info.control = newCtrl;
+            m_pItem->m_info.typeDesc = newType;
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
         }
         if (roles.contains(ROLE_PARAM_NAME))
@@ -48,6 +49,8 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
             PARAM_CONTROL ctrl = (PARAM_CONTROL)topLeft.data(ROLE_PARAM_CTRL).toInt();
             m_pItem->m_info.control = ctrl;
         }
+        if (roles.contains(ROLE_PARAM_VALUE))
+            m_pItem->m_info.value = topLeft.data(ROLE_PARAM_VALUE);
         emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
     }
 }
@@ -530,6 +533,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& displayName = realName;  //todo: mapping name.
                 //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
+                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
                 bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_MULTILINK;
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
@@ -538,6 +542,8 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
+                paramItem->m_info.typeDesc = typeDesc;
+                paramItem->m_info.value = value;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 pItem->appendRow(paramItem);
@@ -555,11 +561,15 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QString& displayName = realName;  //todo: mapping name.
+                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
+
                 PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc);
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
+                paramItem->m_info.typeDesc = typeDesc;
+                paramItem->m_info.value = value;
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -573,12 +583,17 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
             if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
             {
                 const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
+                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QString& displayName = realName;  //todo: mapping name.
+                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
+
                 PARAM_CONTROL ctrl = CONTROL_NONE;
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
+                paramItem->m_info.typeDesc = typeDesc;
+                paramItem->m_info.value = value;
                 pItem->appendRow(paramItem);
                 break;
             }

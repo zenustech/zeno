@@ -455,6 +455,7 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
 QStringList UiHelper::getCoreTypeList()
 {
     static QStringList types = {
+        "",
         "int",
         "bool",
         "float",
@@ -504,7 +505,7 @@ QStringList UiHelper::getControlLists(const QString& type)
         ctrls = { CONTROL_ENUM }; //todo
     }
     else if (type == "NumericObject") { ctrls = { CONTROL_FLOAT }; }
-    else { ctrls = { }; }
+    else { ctrls = { CONTROL_NONE }; }
 
     QStringList ctrlNames;
     for (PARAM_CONTROL ctrl : ctrls)
