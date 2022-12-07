@@ -77,7 +77,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
-            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
+            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(1.0))),
         });
         auto commonCode = em.getCommonCode();
 
@@ -137,7 +137,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
         {"vec3f", "emission", "0,0,0"},
-        {"float", "opacity", "0"},
+        {"float", "opacity", "1"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"list", "tex2dList"},//TODO: bate's asset manager
