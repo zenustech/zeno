@@ -292,85 +292,36 @@ struct ZSNSPressureProject : INode {
         pol.sync(false);
         for (int iter = 0; iter < nIter; ++iter) {
             for (int clr = 0; clr != 2; ++clr) {
-                if (false) {
-                    constexpr int tile_size = zs::math::min((int)RM_CVREF_T(spg)::block_size, (int)32);
-                    pol(zs::range(block_cnt * tile_size), [spgv = zs::proxy<space>(spg), dx, rho, clr, sor,
-                                                           depth = 3 - level,
-                                                           ts_c = zs::wrapv<tile_size>{}] __device__(int tid) mutable {
-                        constexpr int side_length = RM_CVREF_T(spgv)::side_length;
-                        constexpr int half_block_size = RM_CVREF_T(spgv)::block_size / 2;
-                        constexpr int tile_size = decltype(ts_c)::value;
-                        auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
-                        auto blockno = tid / tile_size;
+                constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
+                constexpr std::size_t tpb = 4;
+                constexpr std::size_t cuda_block_size = bucket_size * tpb;
+                pol.shmem(arena_size * sizeof(value_type) * tpb);
+                pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
+                    [spgv = zs::proxy<space>(spg), dx, rho, clr, sor, ts_c = zs::wrapv<bucket_size>{},
+                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+                     blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
+                        // load halo
+                        using vec3i = zs::vec<int, 3>;
+                        using spg_t = RM_CVREF_T(spgv);
+                        constexpr int side_length = spg_t::side_length;
+                        constexpr int side_area = side_length * side_length;
+                        constexpr int halo_side_length = side_length + 2;
+                        constexpr int arena_size = halo_side_length * halo_side_length * halo_side_length;
 
-                        auto bcoord = spgv._table._activeKeys[blockno];
-                        if ((((bcoord[0] & side_length) ^ (bcoord[1] & side_length) ^ (bcoord[2] & side_length)) >>
-                             depth) == clr)
+                        constexpr int block_size = spg_t::block_size;
+                        constexpr int half_block_size = spg_t::block_size / 2;
+                        constexpr int tile_size = decltype(ts_c)::value;
+
+                        auto halo_index = [](int i, int j, int k) {
+                            return i * (halo_side_length * halo_side_length) + j * halo_side_length + k;
+                        };
+                        auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
+                        auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
+                        if (blockno >= blockCnt)
                             return;
 
-                        for (int c_clr = 0; c_clr != 2; ++c_clr) {
-                            for (int cno = tile.thread_rank(); cno < half_block_size; cno += tile_size) {
-                                auto cellno = (cno << 1) | c_clr;
-
-                                auto ccoord = spgv.local_offset_to_coord(cellno);
-                                auto icoord = bcoord + ccoord;
-
-                                float div = spgv.value("tmp", blockno, cellno);
-
-                                const int stcl = 1; // stencil point in each side
-                                float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
-
-                                for (int i = -stcl; i <= stcl; ++i) {
-                                    p_x[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(i, 0, 0));
-                                    p_y[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, i, 0));
-                                    p_z[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, 0, i));
-                                }
-
-                                float p_this =
-                                    (1.f - sor) * p_x[stcl] +
-                                    sor *
-                                        ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dx * dx * rho) /
-                                        6.f;
-
-                                spgv("p0", blockno, cellno) = p_this;
-                            }
-                        }
-                    });
-                } else {
-                    constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
-                    constexpr std::size_t tpb = 4;
-                    constexpr std::size_t cuda_block_size = bucket_size * tpb;
-                    pol.shmem(arena_size * sizeof(value_type) * tpb);
-                    pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
-                        [spgv = zs::proxy<space>(spg), dx, rho, clr, sor, ts_c = zs::wrapv<bucket_size>{},
-                         tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"), blockCnt = block_cnt,
-                         depth = 3 - level] __device__(value_type * shmem, int bid, int tid) mutable {
-                            // load halo
-                            using vec3i = zs::vec<int, 3>;
-                            using spg_t = RM_CVREF_T(spgv);
-                            constexpr int side_length = spg_t::side_length;
-                            constexpr int side_area = side_length * side_length;
-                            constexpr int halo_side_length = side_length + 2;
-                            constexpr int arena_size = halo_side_length * halo_side_length * halo_side_length;
-
-                            constexpr int block_size = spg_t::block_size;
-                            constexpr int half_block_size = spg_t::block_size / 2;
-                            constexpr int tile_size = decltype(ts_c)::value;
-
-                            auto halo_index = [](int i, int j, int k) {
-                                return i * (halo_side_length * halo_side_length) + j * halo_side_length + k;
-                            };
-                            auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
-                            auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
-                            if (blockno >= blockCnt)
-                                return;
-
-                            shmem += (tid / tile_size) * arena_size;
-                            auto bcoord = spgv._table._activeKeys[blockno];
-
-                            if ((((bcoord[0] & side_length) ^ (bcoord[1] & side_length) ^ (bcoord[2] & side_length)) >>
-                                 depth) == clr)
-                                return;
+                        shmem += (tid / tile_size) * arena_size;
+                        auto bcoord = spgv._table._activeKeys[blockno];
 
 #if 0
                             if constexpr (true) {
@@ -396,126 +347,125 @@ struct ZSNSPressureProject : INode {
                             }
 #endif
 
-                            auto block = spgv.block(blockno);
-                            for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
-                                auto localCoord = spg_t::local_offset_to_coord(cid);
-                                shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)] =
-                                    block(pOffset, cid);
+                        auto block = spgv.block(blockno);
+                        for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                            auto localCoord = spg_t::local_offset_to_coord(cid);
+                            shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)] =
+                                block(pOffset, cid);
+                        }
+
+                        // back
+                        int bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, -side_length});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, j + 1, 0)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, side_length - 1}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, j + 1, 0)] = 0; // no pressure
+                            }
+                        // front
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, side_length});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 0; // no pressure
                             }
 
-                            // back
-                            int bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, -side_length});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, j + 1, 0)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, side_length - 1}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, j + 1, 0)] = 0; // no pressure
-                                }
-                            // front
-                            bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, side_length});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 0; // no pressure
-                                }
+                        // bottom
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, -side_length, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, 0, j + 1)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{i, side_length - 1, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, 0, j + 1)] = 0; // no pressure
+                            }
+                        // up
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, side_length, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 0; // no pressure
+                            }
 
-                            // bottom
-                            bno = spgv._table.tile_query(tile, bcoord + vec3i{0, -side_length, 0});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, 0, j + 1)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{i, side_length - 1, j}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, 0, j + 1)] = 0; // no pressure
-                                }
-                            // up
-                            bno = spgv._table.tile_query(tile, bcoord + vec3i{0, side_length, 0});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 0; // no pressure
-                                }
+                        // left
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{-side_length, 0, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(0, i + 1, j + 1)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{side_length - 1, i, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(0, i + 1, j + 1)] = 0; // no pressure
+                            }
+                        // right
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{side_length, 0, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
+                                    block(pOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
+                            }
 
-                            // left
-                            bno = spgv._table.tile_query(tile, bcoord + vec3i{-side_length, 0, 0});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(0, i + 1, j + 1)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{side_length - 1, i, j}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(0, i + 1, j + 1)] = 0; // no pressure
-                                }
-                            // right
-                            bno = spgv._table.tile_query(tile, bcoord + vec3i{side_length, 0, 0});
-                            if (bno >= 0) {
-                                auto block = spgv.block(bno);
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
-                                        block(pOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
-                                }
-                            } else
-                                for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
-                                    int i = id / side_length;
-                                    int j = id % side_length;
-                                    shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
-                                }
+                        __threadfence();
+                        tile.sync();
 
-                            __threadfence();
-                            tile.sync();
+                        {
+                            for (int cno = tile.thread_rank(); cno < half_block_size; cno += tile_size) {
+                                auto cellno = (cno << 1) | clr;
 
-                            for (int c_clr = 0; c_clr != 2; ++c_clr) {
+                                auto ccoord = spgv.local_offset_to_coord(cellno);
+                                float div = spgv.value("tmp", blockno, cellno);
 
-                                for (int cno = tile.thread_rank(); cno < half_block_size; cno += tile_size) {
-                                    auto cellno = (cno << 1) | c_clr;
+                                float p_x[2], p_y[2], p_z[2], p_self{};
 
-                                    auto ccoord = spgv.local_offset_to_coord(cellno);
-                                    float div = spgv.value("tmp", blockno, cellno);
-
-                                    float p_x[2], p_y[2], p_z[2], p_self{};
-
-                                    ccoord += 1;
+                                ccoord += 1;
 
 #if 0
                                     auto check = [&](const auto offset) {
@@ -545,40 +495,40 @@ struct ZSNSPressureProject : INode {
                                     }
 #endif
 
-                                    auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
-                                    p_self = shmem[idx];
-                                    p_x[0] = shmem[idx - halo_side_length * halo_side_length];
-                                    p_x[1] = shmem[idx + halo_side_length * halo_side_length];
+                                auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
+                                p_self = shmem[idx];
+                                p_x[0] = shmem[idx - halo_side_length * halo_side_length];
+                                p_x[1] = shmem[idx + halo_side_length * halo_side_length];
 
-                                    p_y[0] = shmem[idx - halo_side_length];
-                                    p_y[1] = shmem[idx + halo_side_length];
+                                p_y[0] = shmem[idx - halo_side_length];
+                                p_y[1] = shmem[idx + halo_side_length];
 
-                                    p_z[0] = shmem[idx - 1];
-                                    p_z[1] = shmem[idx + 1];
+                                p_z[0] = shmem[idx - 1];
+                                p_z[1] = shmem[idx + 1];
 
-                                    float p_this = (1.f - sor) * p_self +
-                                                   sor *
-                                                       ((p_x[0] + p_x[1] + p_y[0] + p_y[1] + p_z[0] + p_z[1]) -
-                                                        div * dx * dx * rho) /
-                                                       6.f;
+                                float p_this =
+                                    (1.f - sor) * p_self +
+                                    sor *
+                                        ((p_x[0] + p_x[1] + p_y[0] + p_y[1] + p_z[0] + p_z[1]) - div * dx * dx * rho) /
+                                        6.f;
 
-                                    // spgv(pOffset, blockno, cellno) = p_this;
-                                    shmem[idx] = p_this;
-                                }
-
-                                __threadfence();
-                                // tile.sync();
+                                // spgv(pOffset, blockno, cellno) = p_this;
+                                shmem[idx] = p_this;
                             }
 
-                            //
-                            for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
-                                auto localCoord = spg_t::local_offset_to_coord(cid);
-                                block(pOffset, cid) =
-                                    shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)];
-                            }
-                        });
-                    pol.shmem(0);
-                }
+                            __threadfence();
+                            // tile.sync();
+                        }
+
+                        //
+                        for (int cid = tile.thread_rank(); cid < half_block_size; cid += tile_size) {
+                            auto cellno = (cid << 1) | clr;
+                            auto localCoord = spg_t::local_offset_to_coord(cellno);
+                            block(pOffset, cellno) =
+                                shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)];
+                        }
+                    });
+                pol.shmem(0);
             } // switch block color
         }     // sor iteration
         pol.sync(true);
@@ -604,12 +554,16 @@ struct ZSNSPressureProject : INode {
 
         // residual
         size_t cell_cnt = block_cnt * spg.block_size;
-        zs::Vector<float> res{spg.get_allocator(), block_cnt};
-        res.reset(0);
+        zs::Vector<float> res{spg.get_allocator(), 0};
+        if constexpr (level == 0) {
+            res.resize(block_cnt);
+            res.reset(0);
+        }
 
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, rho,
              ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+             computeMax_c = zs::wrapv<(level == 0)>{},
              blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
@@ -764,11 +718,14 @@ struct ZSNSPressureProject : INode {
 
                     spgv("tmp", 1, blockno, cellno) = m_residual;
 
-                    zs::atomic_max(zs::exec_cuda, &res[blockno], zs::abs(m_residual));
+                    if constexpr (RM_CVREF_T(computeMax_c)::value)
+                        zs::atomic_max(zs::exec_cuda, &res[blockno], zs::abs(m_residual));
                 }
             });
 
-        float max_residual = reduce(pol, res, thrust::maximum<float>{});
+        float max_residual = zs::limits<float>::max();
+        if constexpr (level == 0)
+            max_residual = reduce(pol, res, thrust::maximum<float>{});
         return max_residual;
     }
 
@@ -850,12 +807,12 @@ struct ZSNSPressureProject : INode {
 #if ENABLE_PROFILE
             s_timer.tick();
 #endif
-            float res = residual<level>(pol, NSGrid, rho);
+            residual<level>(pol, NSGrid, rho);
 #if ENABLE_PROFILE
             s_timer.tock();
             s_coarseResTime += s_timer.elapsed();
 #endif
-            printf("MG level %d residual: %e\n", level, res);
+            // printf("MG level %d residual: %e\n", level, res);
         } else {
             if constexpr (level != 0)
                 clearInit<level>(pol, NSGrid);
@@ -873,13 +830,13 @@ struct ZSNSPressureProject : INode {
 #if ENABLE_PROFILE
             s_timer.tick();
 #endif
-            float res = residual<level>(pol, NSGrid, rho);
+            residual<level>(pol, NSGrid, rho);
 #if ENABLE_PROFILE
             s_timer.tock();
             s_residualTime[0] += s_timer.elapsed();
             s_residualTime[level + 1] += s_timer.elapsed();
 #endif
-            printf("MG level %d residual: %e\n", level, res);
+            // printf("MG level %d residual: %e\n", level, res);
 
 #if ENABLE_PROFILE
             s_timer.tick();
@@ -947,7 +904,7 @@ struct ZSNSPressureProject : INode {
             });
 
         // Multi-grid solver with V-Cycle
-        // const float tolerence = 1e-6;
+        const float tolerence = 1e-6;
         printf("========MultiGrid V-cycle Begin========\n");
 
 #if ENABLE_PROFILE
@@ -960,13 +917,12 @@ struct ZSNSPressureProject : INode {
 #endif
 
         for (int iter = 0; iter < maxIter; ++iter) {
-            printf("-----%dth V-cycle-----\n", iter);
             multigrid<0>(pol, NSGrid.get(), rho);
-#if 0
+
             float res = residual<0>(pol, NSGrid.get(), rho);
+            printf("%dth V-cycle residual: %e\n", iter, res);
             if (res < tolerence)
                 break;
-#endif
         }
 
 #if ENABLE_PROFILE
