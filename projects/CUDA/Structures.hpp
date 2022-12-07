@@ -125,6 +125,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
+  static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
   ZenoParticles() = default;
   ~ZenoParticles() = default;
@@ -365,11 +366,13 @@ struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
 };
 
 struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
+  enum element_e { point, curve, surface, tet };
   using lbvh_t = zs::LBvh<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return bvh; }
   const auto &get() const noexcept { return bvh; }
   lbvh_t bvh;
   zs::f32 thickness;
+  element_e et{point};
 };
 
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {

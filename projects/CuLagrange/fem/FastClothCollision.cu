@@ -26,7 +26,7 @@ void FastClothSystem::initialStepping(zs::CudaExecutionPolicy &pol) {
     });
 }
 
-void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
+void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
@@ -34,13 +34,13 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat) {
     if (enableContact) {
         nPP.setVal(0);
         if (enableContactSelf) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
+            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
             svBvh.refit(pol, pBvs);
             /// @note all cloth edge lower-bound constraints inheritly included
             findCollisionConstraints(pol, dHat, false);
         }
         if (hasBoundary()) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
+            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
             bouSvBvh.refit(pol, pBvs);
             findCollisionConstraints(pol, dHat, true);
             // for repulsion
@@ -80,6 +80,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     auto &svfront = withBoundary ? boundarySvFront : selfSvFront;
     pol(Collapse{svfront.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+         eTab = proxy<space>(eTab), 
          // exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts),
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), front = proxy<space>(svfront),
          PP = proxy<space>(PP), nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat,
@@ -95,7 +96,8 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
                 // edge or not
-
+                if (eTab.query(ivec2 {vi, vj}) >= 0 || eTab.query(ivec2 {vj, vi}) >= 0)
+                    return; 
                 if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nPP[0], 1);
                     PP[no] = pair_t{vi, vj};
@@ -123,6 +125,13 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief soft phase for constraints
     ///
+    pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+        auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
+#pragma unroll 3
+        for (int d = 0; d < 3; ++d) {
+            vtemp("xn", d, i) = xinit(d); // soft phase optimization starts from xinit
+        }
+    });
     for (int l = 0; l != ISoft; ++l) {
         // fmt::print(fg(fmt::color::orange_red), "\tstart soft phase [{}]\n", l);
         softPhase(pol);
@@ -155,13 +164,15 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
 void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+
+    T descentStepsize = 0.5f; 
     /// @note shape matching
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, i), (xinit(d) - xn(d)));
+            vtemp("dir", d, i) = 2.0f * (xinit(d) - xn(d)); // minus grad of ||x-xinit||^2
         }
     });
     /// @note constraints
@@ -188,8 +199,8 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto grad = zs::vec<T, 6>{-t14, -t15, -t16, t14, t15, t16};
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, pp[0]), -grad(d));
-            atomic_add(exec_cuda, &vtemp("xn", d, pp[1]), -grad(3 + d));
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[0]), -grad(d)); 
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[1]), -grad(3 + d)); 
         }
     });
 
@@ -216,8 +227,17 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         auto grad = zs::vec<T, 6>{t14, t15, t16, -t14, -t15, -t16};
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("xn", d, e[0]), -grad(d));
-            atomic_add(exec_cuda, &vtemp("xn", d, e[1]), -grad(3 + d));
+            atomic_add(exec_cuda, &vtemp("dir", d, e[0]), -grad(d));
+            atomic_add(exec_cuda, &vtemp("dir", d, e[1]), -grad(3 + d));
+        }
+    });
+    pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), 
+            descentStepsize] __device__(int i) mutable {
+        auto dir = vtemp.pack(dim_c<3>, "dir", i);
+        auto xn = vtemp.pack(dim_c<3>, "xn", i); 
+#pragma unroll 3
+        for (int d = 0; d < 3; ++d) {
+            atomic_add(exec_cuda, &vtemp("xn", d, i), descentStepsize * dir(d));
         }
     });
 }
@@ -398,8 +418,10 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         }
 
         /// @brief backtracking if discrete constraints violated
-        if (temp.getVal() == 1)
+        if (temp.getVal() == 1) {
+            alpha /= 2;
             continue;
+        }
 
         ///
         /// @note objective decreases adequately. ref 4.2.2, item 2

@@ -12,8 +12,10 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 
+#include <sstream>
 #include <functional>
 #include <regex>
+#include <sstream>
 
 namespace zeno {
 

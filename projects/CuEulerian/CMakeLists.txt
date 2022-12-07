@@ -12,13 +12,14 @@ target_sources(zeno PRIVATE
   oceanfft/Ocean.cu
 )
 
-# fluid
+#[[ fluid
 target_sources(zeno PRIVATE
   volume/VolumeTopology.cu
   volume/VolumeOperator.cu
   volume/Transfer.cu
   volume/Conversion.cu
 )
+]]
 
 # shallow water
 target_sources(zeno PRIVATE
@@ -37,6 +38,7 @@ target_sources(zeno PRIVATE
   navierstokes/NS_linearsolver.cu
   navierstokes/NS_topo.cu
   navierstokes/NS_tracer.cu
+  navierstokes/NS_noise.cu
 )
 
 # hybrid

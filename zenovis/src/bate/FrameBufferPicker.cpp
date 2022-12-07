@@ -317,6 +317,7 @@ struct FrameBufferPicker : IPicker {
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
                 if (scene->select_mode == zenovis::PICK_OBJECT) {
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
                     // shader uniform
                     obj_shader->use();
                     scene->camera->set_program_uniforms(obj_shader);
@@ -325,13 +326,14 @@ struct FrameBufferPicker : IPicker {
                     ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
                     CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
                     ebo->unbind();
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
                 if (scene->select_mode == zenovis::PICK_VERTEX) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LEQUAL));
-                    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
                     // ----- draw points -----
                     vert_shader->use();
@@ -357,7 +359,7 @@ struct FrameBufferPicker : IPicker {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
-                    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw lines -----
                     prim_shader->use();
                     scene->camera->set_program_uniforms(prim_shader);
@@ -406,7 +408,7 @@ struct FrameBufferPicker : IPicker {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LESS));
-                    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw triangles -----
                     prim_shader->use();
                     scene->camera->set_program_uniforms(prim_shader);
