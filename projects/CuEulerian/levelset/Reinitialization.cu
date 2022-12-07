@@ -38,13 +38,19 @@ struct ZSRenormalizeSDF : INode {
                     auto dx = sdfv.voxelSize()[0];
                     auto dt = 0.5 * dx;
 
-                    float ls_this = sdfv.value("sdf", icoord);
+                    float ls_this = sdfv.value("sdf", cellno / sdfv.block_size, cellno % sdfv.block_size);
                     float ls_x[5], ls_y[5], ls_z[5];
                     for (int i = -2; i <= 2; ++i) {
                         // stencil with nuemann boundary condition
-                        ls_x[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0)) : ls_this;
-                        ls_y[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0)) : ls_this;
-                        ls_z[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i)) ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i)) : ls_this;
+                        ls_x[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0))
+                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0))
+                                          : ls_this;
+                        ls_y[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0))
+                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0))
+                                          : ls_this;
+                        ls_z[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i))
+                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i))
+                                          : ls_this;
                     }
 
                     float lx_w = scheme::HJ_WENO3(ls_x[3], ls_x[2], ls_x[1], ls_x[0], 1.0f, dx);
@@ -89,7 +95,7 @@ struct ZSRenormalizeSDF : INode {
                     float S0 = ls_x[2] / zs::sqrt(ls_x[2] * ls_x[2] + (lx_sq + ly_sq + lz_sq) * dx * dx);
                     float df = -S0 * (zs::sqrt(lx_sq + ly_sq + lz_sq) - 1.0);
 
-                    sdf_tmpv("sdf", icoord) = ls_this + df * dt;
+                    sdf_tmpv("sdf", cellno / sdfv.block_size, cellno % sdfv.block_size) = ls_this + df * dt;
                 });
             std::swap(sdf, sdf_tmp);
         }

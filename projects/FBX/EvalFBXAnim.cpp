@@ -34,7 +34,9 @@ struct EvalAnim{
     std::unordered_map<std::string, SAnimBone> m_AnimBones;
 
     std::vector<SVertex> m_Vertices;
-    std::vector<unsigned int> m_Indices;
+    std::vector<unsigned int> m_IndicesTris;
+    std::vector<unsigned int> m_IndicesLoops;
+    std::vector<zeno::vec2i> m_IndicesPolys;
 
     std::unordered_map<std::string, int> m_JointCorrespondingIndex;
 
@@ -45,7 +47,9 @@ struct EvalAnim{
         m_animInfo = *animInfo;
 
         m_Vertices = fbxData->iVertices.value;
-        m_Indices = fbxData->iIndices.value;
+        m_IndicesTris = fbxData->iIndices.valueTri;
+        m_IndicesPolys = fbxData->iIndices.valuePolys;
+        m_IndicesLoops = fbxData->iIndices.valueLoops;
 
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
@@ -227,11 +231,20 @@ struct EvalAnim{
 
     void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
-        auto &ind = prim->tris;
+        auto &trisInd = prim->tris;
+        auto &polys = prim->polys;
+        auto &loops = prim->loops;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &posb = prim->verts.add_attr<zeno::vec3f>("posb");
         auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
+        bool isTris = false;
+        if(m_IndicesLoops.size() == 0){
+            isTris = true;
+        }else{
+            isTris = false;
+        }
+        std::cout << "mesh size loops " << m_IndicesLoops.size() << " tris " << m_IndicesTris.size() << " is tris " << isTris <<"\n";
         for(int i=0;i<m_FbxData.jointIndices_elementSize;i++){
             prim->verts.add_attr<float>("jointIndice_" + std::to_string(i));
             prim->verts.add_attr<float>("jointWeight_" + std::to_string(i));
@@ -285,22 +298,34 @@ struct EvalAnim{
             clr0.emplace_back(vco.r, vco.g, vco.b);
         }
 
-        for(unsigned int i=0; i<m_Indices.size(); i+=3){
-            zeno::vec3i incs(m_Indices[i],m_Indices[i+1],m_Indices[i+2]);
-            ind.push_back(incs);
+        if(isTris) {
+            for (unsigned int i = 0; i < m_IndicesTris.size(); i += 3) {
+                zeno::vec3i incs(m_IndicesTris[i], m_IndicesTris[i + 1], m_IndicesTris[i + 2]);
+                trisInd.push_back(incs);
+            }
+        }else{
+            for (unsigned int i = 0; i < m_IndicesLoops.size(); i ++) {
+                loops.emplace_back(m_IndicesLoops[i]);
+            }
+            for (unsigned int i = 0; i < m_IndicesPolys.size(); i ++) {
+                polys.emplace_back(m_IndicesPolys[i]);
+            }
         }
 
         auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        for(unsigned int i=0; i<ind.size(); i++){
-            unsigned int _i1 = ind[i][0];
-            unsigned int _i2 = ind[i][1];
-            unsigned int _i3 = ind[i][2];
-            uv0[i] = zeno::vec3f(m_Vertices[_i1].texCoord[0], m_Vertices[_i1].texCoord[1], 0);
-            uv1[i] = zeno::vec3f(m_Vertices[_i2].texCoord[0], m_Vertices[_i2].texCoord[1], 0);
-            uv2[i] = zeno::vec3f(m_Vertices[_i3].texCoord[0], m_Vertices[_i3].texCoord[1], 0);
-
+        if(isTris) {
+            for (unsigned int i = 0; i < trisInd.size(); i++) {
+                unsigned int _i1 = trisInd[i][0];
+                unsigned int _i2 = trisInd[i][1];
+                unsigned int _i3 = trisInd[i][2];
+                uv0[i] = zeno::vec3f(m_Vertices[_i1].texCoord[0], m_Vertices[_i1].texCoord[1], 0);
+                uv1[i] = zeno::vec3f(m_Vertices[_i2].texCoord[0], m_Vertices[_i2].texCoord[1], 0);
+                uv2[i] = zeno::vec3f(m_Vertices[_i3].texCoord[0], m_Vertices[_i3].texCoord[1], 0);
+            }
+        }else{
+            // TODO add uv attr to loops
         }
     }
 };
