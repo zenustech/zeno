@@ -256,7 +256,6 @@ struct ZSNSPressureProject : INode {
                         loadToShmem(5, bcoord + vec3i{1, 0, 0});
                         loadToShmem(6, bcoord + vec3i{-1, 0, 0});
 
-                        __threadfence();
                         tile.sync();
 
                         if (tile.thread_rank() == 0) {
@@ -453,19 +452,17 @@ struct ZSNSPressureProject : INode {
                                 shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
                             }
 
-                        __threadfence();
                         tile.sync();
 
-                        {
-                            for (int cno = tile.thread_rank(); cno < half_block_size; cno += tile_size) {
-                                auto cellno = (cno << 1) | clr;
+                        for (int cno = tile.thread_rank(); cno < half_block_size; cno += tile_size) {
+                            auto cellno = (cno << 1) | clr;
 
-                                auto ccoord = spgv.local_offset_to_coord(cellno);
-                                float div = spgv.value("tmp", blockno, cellno);
+                            auto ccoord = spgv.local_offset_to_coord(cellno);
+                            float div = spgv.value("tmp", blockno, cellno);
 
-                                float p_x[2], p_y[2], p_z[2], p_self{};
+                            float p_x[2], p_y[2], p_z[2], p_self{};
 
-                                ccoord += 1;
+                            ccoord += 1;
 
 #if 0
                                     auto check = [&](const auto offset) {
@@ -495,30 +492,27 @@ struct ZSNSPressureProject : INode {
                                     }
 #endif
 
-                                auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
-                                p_self = shmem[idx];
-                                p_x[0] = shmem[idx - 1];
-                                p_x[1] = shmem[idx + 1];
+                            auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
+                            p_self = shmem[idx];
+                            p_x[0] = shmem[idx - 1];
+                            p_x[1] = shmem[idx + 1];
 
-                                p_y[0] = shmem[idx - halo_side_length];
-                                p_y[1] = shmem[idx + halo_side_length];
+                            p_y[0] = shmem[idx - halo_side_length];
+                            p_y[1] = shmem[idx + halo_side_length];
 
-                                p_z[0] = shmem[idx - halo_side_length * halo_side_length];
-                                p_z[1] = shmem[idx + halo_side_length * halo_side_length];
+                            p_z[0] = shmem[idx - halo_side_length * halo_side_length];
+                            p_z[1] = shmem[idx + halo_side_length * halo_side_length];
 
-                                float p_this =
-                                    (1.f - sor) * p_self +
-                                    sor *
-                                        ((p_x[0] + p_x[1] + p_y[0] + p_y[1] + p_z[0] + p_z[1]) - div * dx * dx * rho) /
-                                        6.f;
+                            float p_this =
+                                (1.f - sor) * p_self +
+                                sor * ((p_x[0] + p_x[1] + p_y[0] + p_y[1] + p_z[0] + p_z[1]) - div * dx * dx * rho) /
+                                    6.f;
 
-                                // spgv(pOffset, blockno, cellno) = p_this;
-                                shmem[idx] = p_this;
-                            }
-
-                            __threadfence();
-                            // tile.sync();
+                            // spgv(pOffset, blockno, cellno) = p_this;
+                            shmem[idx] = p_this;
                         }
+
+                        tile.sync();
 
                         //
                         for (int cid = tile.thread_rank(); cid < half_block_size; cid += tile_size) {
@@ -691,7 +685,6 @@ struct ZSNSPressureProject : INode {
                         shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
                     }
 
-                __threadfence();
                 tile.sync();
 
                 for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
@@ -720,6 +713,7 @@ struct ZSNSPressureProject : INode {
                         zs::atomic_max(zs::exec_cuda, &res[blockno], zs::abs(m_residual));
                 }
             });
+        pol.shmem(0);
 
         float max_residual = zs::limits<float>::max();
         if constexpr (level == 0)
@@ -761,6 +755,7 @@ struct ZSNSPressureProject : INode {
 
                 spgv_c("tmp", blockno, cellno) = res_sum;
             });
+        pol.shmem(0);
     }
 
     template <int level> void prolongation(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
@@ -786,6 +781,7 @@ struct ZSNSPressureProject : INode {
 
                 spgv_f("p0", blockno, cellno) += shmem[cellno_c];
             });
+        pol.shmem(0);
     }
 
     template <int level> void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
@@ -944,7 +940,6 @@ struct ZSNSPressureProject : INode {
                         shmem[halo_index(halo_side_length - 1, i, j)] = 0; // zero velocity
                     }
 
-                __threadfence();
                 tile.sync();
 
                 for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
@@ -981,7 +976,6 @@ struct ZSNSPressureProject : INode {
                         shmem[halo_index(i, halo_side_length - 1, j)] = 0; // zero velocity
                     }
 
-                __threadfence();
                 tile.sync();
 
                 for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
@@ -1018,7 +1012,6 @@ struct ZSNSPressureProject : INode {
                         shmem[halo_index(i, j, halo_side_length - 1)] = 0; // zero velocity
                     }
 
-                __threadfence();
                 tile.sync();
 
                 for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
@@ -1037,8 +1030,9 @@ struct ZSNSPressureProject : INode {
                     zs::atomic_max(zs::exec_cuda, &rhs[blockno], zs::abs(div_term));
                 }
             });
-        float rhs_max = reduce(pol, rhs, thrust::maximum<float>{});
+        pol.shmem(0);
 
+        float rhs_max = reduce(pol, rhs, thrust::maximum<float>{});
         return rhs_max;
     }
 
@@ -1144,7 +1138,6 @@ struct ZSNSPressureProject : INode {
                         shmem[halo_index(i + 1, j + 1, 0)] = 0; // zero pressure
                     }
 
-                __threadfence();
                 tile.sync();
 
                 for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
@@ -1166,6 +1159,7 @@ struct ZSNSPressureProject : INode {
                     }
                 }
             });
+        pol.shmem(0);
 
         update_cur(NSGrid, "v");
     }
@@ -1188,6 +1182,10 @@ struct ZSNSPressureProject : INode {
 #if 1
         float rhs_max = rightHandSide(pol, NSGrid.get(), dt);
 #else
+        size_t cell_cnt = block_cnt * spg.block_size;
+        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
+        res.reset(0);
+
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, dt,
              vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
