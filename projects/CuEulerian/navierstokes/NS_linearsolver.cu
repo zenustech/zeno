@@ -22,7 +22,7 @@
 
 namespace zeno {
 
-#define ENABLE_PROFILE 1
+#define ENABLE_PROFILE 0
 
 struct ZSNSPressureProject : INode {
 
@@ -46,7 +46,7 @@ struct ZSNSPressureProject : INode {
         // take zero as initial guess
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), pOffset = spg.getPropertyOffset("p0")] __device__(int cellno) mutable {
-                spgv(pOffset, cellno / spgv.block_size, cellno % spgv.block_size) = 0.f;
+                spgv(pOffset, cellno) = 0.f;
             });
     }
 
@@ -820,7 +820,7 @@ struct ZSNSPressureProject : INode {
 #if ENABLE_PROFILE
             s_timer.tick();
 #endif
-            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 6 + 3 * level);
 #if ENABLE_PROFILE
             s_timer.tock();
             s_smoothTime[0] += s_timer.elapsed();
@@ -863,7 +863,7 @@ struct ZSNSPressureProject : INode {
 #if ENABLE_PROFILE
             s_timer.tick();
 #endif
-            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 4);
+            coloredSOR<level>(pol, NSGrid, rho, 1.2f, 6 + 3 * level);
 #if ENABLE_PROFILE
             s_timer.tock();
             s_smoothTime[0] += s_timer.elapsed();
@@ -886,9 +886,14 @@ struct ZSNSPressureProject : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
+        size_t cell_cnt = block_cnt * spg.block_size;
+        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
+        res.reset(0);
+
         // velocity divergence (source term)
         pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, dt,
+             vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
 
                 float u_x[2], u_y[2], u_z[2];
@@ -900,11 +905,14 @@ struct ZSNSPressureProject : INode {
 
                 float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx / dt;
 
-                spgv("tmp", icoord) = div_term;
+                spgv("tmp", cellno / spgv.block_size, cellno % spgv.block_size) = div_term;
+
+                reduce_max(cellno, cell_cnt, zs::abs(div_term), res[cellno / 32]);
             });
+        float rhs_max = reduce(pol, res, thrust::maximum<float>{});
 
         // Multi-grid solver with V-Cycle
-        const float tolerence = 1e-6;
+        const float tolerence = 1e-5;
         printf("========MultiGrid V-cycle Begin========\n");
 
 #if ENABLE_PROFILE
@@ -920,7 +928,8 @@ struct ZSNSPressureProject : INode {
             multigrid<0>(pol, NSGrid.get(), rho);
 
             float res = residual<0>(pol, NSGrid.get(), rho);
-            printf("%dth V-cycle residual: %e\n", iter, res);
+            res /= rhs_max;
+            printf("%dth V-cycle residual: %e\n", iter + 1, res);
             if (res < tolerence)
                 break;
         }
@@ -942,21 +951,21 @@ struct ZSNSPressureProject : INode {
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), dx, dt, rho, vSrcTag = src_tag(NSGrid, "v"), vDstTag = dst_tag(NSGrid, "v"),
-             pSrcTag = src_tag(NSGrid, "p")] __device__(int cellno) mutable {
+             pOffset = spg.getPropertyOffset(src_tag(NSGrid, "p"))] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
-                float p_this = spgv.value(pSrcTag, icoord);
+                float p_this = spgv.value(pOffset, cellno);
 
                 for (int ch = 0; ch < 3; ++ch) {
-                    float u = spgv.value(vSrcTag, ch, icoord);
+                    float u = spgv.value(vSrcTag, ch, cellno / spgv.block_size, cellno % spgv.block_size);
 
                     zs::vec<int, 3> offset{0, 0, 0};
                     offset[ch] = -1;
 
-                    float p_m = spgv.value(pSrcTag, icoord + offset);
+                    float p_m = spgv.value(pOffset, icoord + offset);
 
                     u -= (p_this - p_m) / dx * dt / rho;
 
-                    spgv(vDstTag, ch, icoord) = u;
+                    spgv(vDstTag, ch, cellno / spgv.block_size, cellno % spgv.block_size) = u;
                 }
             });
         update_cur(NSGrid, "v");
