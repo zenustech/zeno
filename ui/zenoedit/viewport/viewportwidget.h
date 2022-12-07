@@ -7,6 +7,7 @@
 #include "comctrl/zmenu.h"
 #include "common.h"
 #include "viewporttransform.h"
+#include "viewportpicker.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -59,7 +60,7 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event);
+    // void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
@@ -70,6 +71,9 @@ public:
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
     void resizeTransformHandler(int dir);
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
 
 private:
     bool m_mmb_pressed;
@@ -87,6 +91,7 @@ private:
 
     QSet<int> m_pressedKeys;
     std::unique_ptr<zeno::FakeTransformer> transformer;
+    std::unique_ptr<zeno::Picker> picker;
 };
 
 class ViewportWidget : public QGLWidget
@@ -109,6 +114,9 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
 
 signals:
     void frameRecorded(int);
@@ -117,7 +125,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    // void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -155,6 +163,7 @@ public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();
+    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 signals:
     void frameUpdated(int new_frame);

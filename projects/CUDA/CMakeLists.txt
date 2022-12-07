@@ -58,7 +58,10 @@ target_sources(zeno PRIVATE
 
 # utils
 target_sources(zeno PRIVATE
+  utils/Conversion.cpp
+  utils/Primitives.cpp
   utils/IndexBuckets.cu
   utils/Primitives.cu
   utils/TopoUtils.cu
+  utils/Noise.cu
 )

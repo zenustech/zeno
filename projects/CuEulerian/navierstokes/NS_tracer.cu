@@ -99,7 +99,7 @@ struct ZSTracerAdvectDiffuse : INode {
             // Finite Volume Method (FVM)
             // numrtical flux of tracer
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), diffuse, dx, tag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, tag = src_tag(NSGrid, tag),
                  vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
 
@@ -125,9 +125,6 @@ struct ZSTracerAdvectDiffuse : INode {
                             flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
                         else
                             flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
-
-                        // diffusion flux
-                        flux[ch] -= diffuse * (trc[ch][2] - trc[ch][1]) / dx;
                     }
 
                     for (int ch = 0; ch < 3; ++ch) {
@@ -160,6 +157,33 @@ struct ZSTracerAdvectDiffuse : INode {
                 });
         } else {
             throw std::runtime_error(fmt::format("Advection scheme [{}] not found!", scheme));
+        }
+
+        if (diffuse > 0) {
+            // diffusion
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, diffuse, trcSrcTag = src_tag(NSGrid, tag),
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+
+                    const int stcl = 1; // stencil point in each side
+                    float trc_x[2 * stcl + 1], trc_y[2 * stcl + 1], trc_z[2 * stcl + 1];
+
+                    for (int i = -stcl; i <= stcl; ++i) {
+                        trc_x[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
+                        trc_y[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
+                        trc_z[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                    }
+
+                    float trc_xx = scheme::central_diff_2nd(trc_x[0], trc_x[1], trc_x[2], dx);
+                    float trc_yy = scheme::central_diff_2nd(trc_y[0], trc_y[1], trc_y[2], dx);
+                    float trc_zz = scheme::central_diff_2nd(trc_z[0], trc_z[1], trc_z[2], dx);
+
+                    float diff_term = diffuse * (trc_xx + trc_yy + trc_zz);
+
+                    spgv(trcDstTag, blockno, cellno) = trc_x[1] + diff_term * dt;
+                });
+            update_cur(NSGrid, tag);
         }
     }
 
@@ -195,7 +219,8 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                    {"Eulerian"}});
 
 struct ZSTracerEmission : INode {
-    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF) {
+    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF,
+                 bool fromObj) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -207,14 +232,19 @@ struct ZSTracerEmission : INode {
         auto dx = spg.voxelSize()[0];
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx,
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx, fromObj,
              tag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
                 if (emit_sdf <= 1.5f * dx) {
                     // fix me: naive emission
-                    spgv(tag, blockno, cellno) = 1.0;
+                    spgv(tag, blockno, cellno) = 1.f;
+                }
+
+                if (fromObj) {
+                    if (spgv.value("mark", blockno, cellno) > 0.5f)
+                        spgv(tag, blockno, cellno) = 1.f;
                 }
             });
     }
@@ -222,26 +252,33 @@ struct ZSTracerEmission : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto EmitSDF = get_input<ZenoSparseGrid>("EmitterSDF");
+        auto fromObj = get_input2<bool>("fromObjBoundary");
+
+        if (!NSGrid->getSparseGrid().hasProperty("mark")) {
+            fromObj = false;
+        }
 
         auto pol = zs::cuda_exec();
 
         if (get_input2<bool>("Density"))
-            compute(pol, "rho", NSGrid.get(), EmitSDF.get());
+            compute(pol, "rho", NSGrid.get(), EmitSDF.get(), fromObj);
         if (get_input2<bool>("Temperature"))
-            compute(pol, "T", NSGrid.get(), EmitSDF.get());
+            compute(pol, "T", NSGrid.get(), EmitSDF.get(), fromObj);
 
         set_output("NSGrid", NSGrid);
     }
 };
 
-ZENDEFNODE(ZSTracerEmission, {/* inputs: */
-                              {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}},
-                              /* outputs: */
-                              {"NSGrid"},
-                              /* params: */
-                              {},
-                              /* category: */
-                              {"Eulerian"}});
+ZENDEFNODE(
+    ZSTracerEmission,
+    {/* inputs: */
+     {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}, {"bool", "fromObjBoundary", "0"}},
+     /* outputs: */
+     {"NSGrid"},
+     /* params: */
+     {},
+     /* category: */
+     {"Eulerian"}});
 
 struct ZSSmokeBuoyancy : INode {
     void apply() override {
@@ -271,8 +308,12 @@ struct ZSSmokeBuoyancy : INode {
                     zs::vec<int, 3> offset{0, 0, 0};
                     offset[ch] = -1;
 
-                    float rho_face = spgv.value(rhoSrcTag, icoord + offset);
-                    float T_face = spgv.value(TSrcTag, icoord + offset);
+                    auto [bno, cno] = spgv.decomposeCoord(icoord + offset);
+                    float rho_face = 0, T_face = 0;
+                    if (bno >= 0) {
+                        rho_face = spgv.value(rhoSrcTag, bno, cno);
+                        T_face = spgv.value(TSrcTag, bno, cno);
+                    }
 
                     rho_face = 0.5f * (rho_this + rho_face);
                     T_face = 0.5f * (T_this + T_face);
