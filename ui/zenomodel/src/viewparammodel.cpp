@@ -4,6 +4,7 @@
 #include "modelrole.h"
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
+#include <zenomodel/customui/customuirw.h>
 
 
 static const char* qsToString(const QString& qs)
@@ -250,6 +251,30 @@ void VParamItem::setData(const QVariant& value, int role)
     QStandardItem::setData(value, role);
 }
 
+void VParamItem::read(QDataStream& in)
+{
+    QString jsonParam;
+    in >> jsonParam;
+    
+    rapidjson::Document doc;
+    QByteArray bytes = jsonParam.toUtf8();
+    doc.Parse(bytes);
+
+    zenomodel::importParam("", doc.GetObject());
+}
+
+void VParamItem::write(QDataStream& out) const
+{
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    zenomodel::exportItem(this, writer);
+
+    QString content = QString(s.GetString());
+    //QByteArray arr = content.toUtf8();
+    out << content;
+    //out.writeBytes(arr.data(), arr.length());
+}
+
 VParamItem* VParamItem::getItem(const QString& uniqueName) const
 {
     for (int r = 0; r < rowCount(); r++)
@@ -366,6 +391,7 @@ ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphs
     , m_bDirty(false)
 {
     setup("");
+    setItemPrototype(new VParamItem(VPARAM_PARAM, ""));
 }
 
 ViewParamModel::~ViewParamModel()
@@ -663,6 +689,31 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
         }
     }
     return QStandardItemModel::data(index, role);
+}
+
+QMimeData* ViewParamModel::mimeData(const QModelIndexList& indexes) const
+{
+    QMimeData* mimeD = QAbstractItemModel::mimeData(indexes);
+    if (indexes.size() > 0)
+    {
+        QModelIndex index = indexes.at(0);
+        VParamItem* node = (VParamItem*)itemFromIndex(index);
+        QByteArray encoded;
+        QDataStream stream(&encoded, QIODevice::WriteOnly);
+        node->write(stream);
+        const QString format = QStringLiteral("application/x-qstandarditemmodeldatalist");
+        mimeD->setData(format, encoded);
+    }
+    else
+    {
+        mimeD->setData("Node/NodePtr", "NULL");
+    }
+    return mimeD;
+}
+
+bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+{
+    return QStandardItemModel::dropMimeData(data, action, row, column, parent);
 }
 
 bool ViewParamModel::isNodeModel() const

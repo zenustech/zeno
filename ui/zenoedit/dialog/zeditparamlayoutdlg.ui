@@ -104,7 +104,13 @@
         </widget>
        </item>
        <item>
-        <widget class="QTreeView" name="paramsView">
+        <widget class="CustomParamTreeView" name="paramsView">
+         <property name="dragDropMode">
+          <enum>QAbstractItemView::DragDrop</enum>
+         </property>
+         <property name="defaultDropAction">
+          <enum>Qt::MoveAction</enum>
+         </property>
          <attribute name="headerVisible">
           <bool>false</bool>
          </attribute>
@@ -299,10 +305,10 @@
                 <number>1</number>
                </property>
                <attribute name="horizontalHeaderVisible">
-                <bool>true</bool>
+                <bool>false</bool>
                </attribute>
                <attribute name="verticalHeaderVisible">
-                <bool>true</bool>
+                <bool>false</bool>
                </attribute>
                <row/>
                <column/>
@@ -427,6 +433,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CustomParamTreeView</class>
+   <extends>QTreeView</extends>
+   <header>zenoedit/itemview/customparamtreeview.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

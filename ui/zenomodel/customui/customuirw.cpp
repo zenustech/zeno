@@ -7,9 +7,9 @@
 #include <rapidjson/document.h>
 
 
-namespace zenoio
+namespace zenomodel
 {
-    void exportItem(VParamItem* pItem, RAPIDJSON_WRITER& writer)
+    void exportItem(const VParamItem* pItem, RAPIDJSON_WRITER& writer)
     {
         JsonObjBatch batch(writer);
 
@@ -135,6 +135,68 @@ namespace zenoio
         }
     }
 
+    VPARAM_INFO importParam(const QString& paramName, const rapidjson::Value& paramVal)
+    {
+        VPARAM_INFO param;
+        param.vType = VPARAM_PARAM;
+
+        if (paramVal.HasMember("core-param"))
+        {
+            const rapidjson::Value& coreParam = paramVal["core-param"];
+            ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), param);
+
+            param.coreParam = QString::fromLocal8Bit(coreParam["name"].GetString());
+            const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
+
+            if (cls == "input")
+            {
+                param.m_cls = PARAM_INPUT;
+            }
+            else if (cls == "parameter")
+            {
+                param.m_cls = PARAM_PARAM;
+            }
+            else if (cls == "output")
+            {
+                param.m_cls = PARAM_OUTPUT;
+            }
+            else
+            {
+                param.m_cls = PARAM_UNKNOWN;
+            }
+        }
+
+        ZASSERT_EXIT(paramVal.HasMember("control"), param);
+        const rapidjson::Value& controlObj = paramVal["control"];
+
+        const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
+        param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        param.m_info.name = paramName;
+
+        if (controlObj.HasMember("value"))
+        {
+            param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
+        }
+        if (controlObj.HasMember("items"))
+        {
+            //combobox
+            ZASSERT_EXIT(controlObj["items"].IsArray(), param);
+            QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
+            param.controlInfos["items"] = lstItems;
+        }
+        if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
+        {
+            int step = controlObj["step"].GetInt();
+            int min = controlObj["min"].GetInt();
+            int max = controlObj["max"].GetInt();
+            param.controlInfos["step"] = step;
+            param.controlInfos["min"] = min;
+            param.controlInfos["max"] = max;
+        }
+
+        return param;
+    }
+
     VPARAM_INFO importCustomUI(const rapidjson::Value& jsonCutomUI)
     {
         VPARAM_INFO invisibleRoot;
@@ -157,63 +219,7 @@ namespace zenoio
                     const QString& paramName = paramObj.name.GetString();
                     const rapidjson::Value& paramVal = paramObj.value;
 
-                    VPARAM_INFO param;
-                    param.vType = VPARAM_PARAM;
-
-                    if (paramVal.HasMember("core-param"))
-                    {
-                        const rapidjson::Value& coreParam = paramVal["core-param"];
-                        ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), invisibleRoot);
-
-                        param.coreParam = QString::fromLocal8Bit(coreParam["name"].GetString());
-                        const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
-
-                        if (cls == "input")
-                        {
-                            param.m_cls = PARAM_INPUT;
-                        }
-                        else if (cls == "parameter")
-                        {
-                            param.m_cls = PARAM_PARAM;
-                        }
-                        else if (cls == "output")
-                        {
-                            param.m_cls = PARAM_OUTPUT;
-                        }
-                        else
-                        {
-                            param.m_cls = PARAM_UNKNOWN;
-                        }
-                    }
-
-                    ZASSERT_EXIT(paramVal.HasMember("control"), invisibleRoot);
-                    const rapidjson::Value& controlObj = paramVal["control"];
-
-                    const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
-                    param.m_info.control = UiHelper::getControlByDesc(ctrlName);
-                    param.m_info.name = paramName;
-
-                    if (controlObj.HasMember("value"))
-                    {
-                        param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
-                    }
-                    if (controlObj.HasMember("items"))
-                    {
-                        //combobox
-                        ZASSERT_EXIT(controlObj["items"].IsArray(), invisibleRoot);
-                        QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
-                        param.controlInfos["items"] = lstItems;
-                    }
-                    if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
-                    {
-                        int step =  controlObj["step"].GetInt();
-                        int min = controlObj["min"].GetInt();
-                        int max = controlObj["max"].GetInt();
-                        param.controlInfos["step"] = step;
-                        param.controlInfos["min"] = min;
-                        param.controlInfos["max"] = max;
-                    }
-
+                    VPARAM_INFO param = importParam(paramName, paramVal);
                     group.children.append(param);
                 }
 

@@ -599,6 +599,23 @@ void ZEditParamLayoutDlg::onApply()
     }
     else
     {
+        QStandardItem* pRoot = m_proxyModel->invisibleRootItem()->child(0);
+        QStandardItem* pTab = pRoot->child(0);
+        for (int i = 0; i < pTab->rowCount(); i++)
+        {
+            QStandardItem* pGroup = pTab->child(i);
+            const QString& groupName = pGroup->text();
+            if (groupName == "In Sockets")
+            {
+                for (int r = 0; r < pGroup->rowCount(); r++)
+                {
+                    VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
+                    int j;
+                    j = 0;
+                }
+            }
+        }
+
         m_model->markDirty();
         m_model->clone(m_proxyModel);
     }

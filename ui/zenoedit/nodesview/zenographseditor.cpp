@@ -734,10 +734,8 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
     else if (text == "Select Node")
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
         QModelIndex nodeIdx = pAction->data().toModelIndex();
-        if (nodeIdx.isValid())
+        if (pView && nodeIdx.isValid())
             pView->focusOn(nodeIdx.data(ROLE_OBJID).toString());
-            //pView->scene()->select(nodeIdx.data(ROLE_OBJID).toString());
     }
 }

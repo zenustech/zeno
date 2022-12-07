@@ -1,11 +1,12 @@
 #include "zsgreader.h"
 #include <zenomodel/include/uihelper.h>
+#include <zenomodel/customui/customuirw.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "zenoedit/util/log.h"
 #include "variantptr.h"
 #include "common.h"
-#include "../customui/customuirw.h"
+#include <zenomodel/customui/customuirw.h>
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -380,7 +381,7 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
 
 void ZsgReader::_parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
 {
-    VPARAM_INFO invisibleRoot = zenoio::importCustomUI(jsonCutomUI);
+    VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
     pAcceptor->addCustomUI(id, bNodeUI, invisibleRoot);
 }
 

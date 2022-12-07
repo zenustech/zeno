@@ -5,7 +5,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
 #include <zenomodel/include/viewparammodel.h>
-#include <zenoio/customui/customuirw.h>
+#include <zenomodel/customui/customuirw.h>
 
 using namespace zeno::iotags;
 
@@ -276,7 +276,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	if (viewParams && viewParams->isDirty())
 	{
 		writer.Key("customui-panel");
-		zenoio::exportCustomUI(viewParams, writer);
+		zenomodel::exportCustomUI(viewParams, writer);
 	}
 
 	//custom ui for node
@@ -284,7 +284,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	if (viewNodeParams && viewNodeParams->isDirty())
 	{
 		writer.Key("customui-node");
-		zenoio::exportCustomUI(viewNodeParams, writer);
+		zenomodel::exportCustomUI(viewNodeParams, writer);
 	}
 }
 
