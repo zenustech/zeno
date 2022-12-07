@@ -5,7 +5,9 @@
 #include "style/zenostyle.h"
 #include "zeno/extra/assetDir.h"
 #include <zeno/utils/logger.h>
+#include "zenoedit/settings/zsettings.h"
 #include "AudioFile.h"
+#define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 
@@ -73,6 +75,8 @@ int main(int argc, char *argv[])
                                  {"bitrate", "bitrate", "bitrate"},
                                  {"fps", "fps", "fps"},
                                  {"configFilePath", "configFilePath", "configFilePath"},
+                                 {"cachePath", "cachePath", "cachePath"},
+                                 {"cacheNum", "cacheNum", "cacheNum"},
                                  {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
                              });
         cmdParser.process(a);
@@ -93,6 +97,20 @@ int main(int argc, char *argv[])
         if (cmdParser.isSet("configFilePath")) {
             param.configFilePath = cmdParser.value("configFilePath");
             zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
+        }
+        if (cmdParser.isSet("cachePath")) {
+            QString text = cmdParser.value("cachePath");
+            text.replace('\\', '/');
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencachedir", text);
+            if (!QDir(text).exists()) {
+                QDir().mkdir(text);
+            }
+        }
+        if (cmdParser.isSet("cacheNum")) {
+            QString text2 = cmdParser.value("cacheNum");
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencachenum", text2);
         }
         if (cmdParser.isSet("exitWhenRecordFinish"))
             param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";

@@ -17,7 +17,7 @@ class ZTimeline : public QWidget
 public:
     ZTimeline(QWidget* parent = nullptr);
     QPair<int, int> fromTo() const;
-    void setFromTo(int from, int to);
+    void initFromTo(int from, int to);
     bool isAlways() const;
     void setAlways(bool bOn);
     void resetSlider();

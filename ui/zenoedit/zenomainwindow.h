@@ -27,7 +27,7 @@ public:
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
-    void setTimelineInfo(TIMELINE_INFO info);
+    void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     DisplayWidget *getDisplayWidget();
     void dispatchCommand(QAction* pAction, bool bTriggered);

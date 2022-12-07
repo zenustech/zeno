@@ -170,7 +170,7 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
         return [] (int i) {
             return i;
         };
-    }, [&] {
+    }, [&, &seedAttr = seedAttr] {
         auto &seedArr = prim->verts.attr<int>(seedAttr);
         return [&] (int i) {
             return seedArr[i];

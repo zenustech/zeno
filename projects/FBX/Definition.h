@@ -1,6 +1,7 @@
 #ifndef ZENO_FBX_DEFINITION_H
 #define ZENO_FBX_DEFINITION_H
 
+#include <limits>
 #include <iostream>
 #include <algorithm>
 #include <zeno/utils/log.h>
@@ -56,6 +57,13 @@ struct SFBXReadOption {
     bool makePrim = false;
     bool enableUDIM = false;
     bool generate = false;
+    bool triangulate = false;
+};
+
+struct SFBXEvalOption {
+    bool writeData = false;
+    bool interAnimData = false;
+    float globalScale = 1.0f;
 };
 
 struct SKeyPosition {
@@ -91,7 +99,12 @@ struct SAnimBone {
 
     aiMatrix4x4 m_LocalTransform;
     std::string m_Name;
+    float m_MaxTimeStamp = std::numeric_limits<float>::min();
+    float m_MinTimeStamp = std::numeric_limits<float>::max();
 
+#define GET_TIME_STAMP \
+m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp); \
+m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
     void initBone(std::string name, const aiNodeAnim* channel){
         m_Name = name;
@@ -104,6 +117,8 @@ struct SAnimBone {
             data.position = aiPosition;
             data.timeStamp = timeStamp;
             m_Positions.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         m_NumRotations = channel->mNumRotationKeys;
@@ -115,6 +130,8 @@ struct SAnimBone {
             data.orientation = aiOrientation;
             data.timeStamp = timeStamp;
             m_Rotations.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         m_NumScalings = channel->mNumScalingKeys;
@@ -126,10 +143,14 @@ struct SAnimBone {
             data.scale = scale;
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
+
+            GET_TIME_STAMP
         }
 
         //zeno::log_info("----- N {} NP {} NR {} NS {}",
         //               m_Name, m_NumPositions, m_NumRotations, m_NumScalings);
+        //std::cout << "FBX: Anim Bone MaxTimeStamp " << m_MaxTimeStamp
+        //          << " MinTimeStamp " << m_MinTimeStamp << std::endl;
     }
 
     void update(float animationTime) {
@@ -146,7 +167,7 @@ struct SAnimBone {
 
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
-            if (animationTime < m_Positions[index + 1].timeStamp)
+            if (animationTime <= m_Positions[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -154,7 +175,7 @@ struct SAnimBone {
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
-            if (animationTime < m_Rotations[index + 1].timeStamp)
+            if (animationTime <= m_Rotations[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -162,7 +183,7 @@ struct SAnimBone {
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
-            if (animationTime < m_Scales[index + 1].timeStamp)
+            if (animationTime <= m_Scales[index + 1].timeStamp)
                 return index;
         }
         _getIndexWarn(animationTime);
@@ -304,6 +325,20 @@ struct SDefaultMatProp{
         val.emplace("displacement", COMMON_DEFAULT_defaultColor);
         return val;
     }
+};
+
+
+struct SFBXData : zeno::IObjectClone<SFBXData>{
+    int jointIndices_elementSize = 0;
+    std::vector<std::string> jointNames;
+    std::vector<std::string> joints;
+    std::vector<std::string> blendShapes;
+    std::unordered_map<int, std::vector<float>> blendShapeWeights_timeSamples;
+    std::vector<aiMatrix4x4> bindTransforms;
+    std::vector<aiMatrix4x4> restTransforms;
+    std::unordered_map<int, std::vector<zeno::vec4f>> rotations_timeSamples;
+    std::unordered_map<int, std::vector<zeno::vec3f>> scales_timeSamples;
+    std::unordered_map<int, std::vector<zeno::vec3f>> translations_timeSamples;
 };
 
 struct SMaterial : zeno::IObjectClone<SMaterial>{
@@ -478,6 +513,8 @@ struct BoneTree : zeno::IObjectClone<BoneTree>{
 struct AnimInfo : zeno::IObjectClone<AnimInfo>{
     float duration;
     float tick;
+    float maxTimeStamp;
+    float minTimeStamp;
 };
 
 struct IMaterial : zeno::IObjectClone<IMaterial>{
@@ -501,7 +538,9 @@ struct IVertices : zeno::IObjectClone<IVertices>{
 };
 
 struct IIndices : zeno::IObjectClone<IIndices>{
-    std::vector<unsigned int> value;
+    std::vector<unsigned int> valueTri;
+    std::vector<unsigned int> valueLoops;
+    std::vector<zeno::vec2i> valuePolys;
 };
 
 struct IBlendSData : zeno::IObjectClone<IBlendSData>{

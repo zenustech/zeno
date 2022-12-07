@@ -24,6 +24,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	, m_dragMove(false)
     , m_menu(nullptr)
 	, m_pSearcher(nullptr)
+	, m_bControlActive(false)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -187,7 +188,7 @@ void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool 
         if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
         {
             QRectF rcBounding = pNode->sceneBoundingRect();
-            rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
+            //rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
             fitInView(rcBounding, Qt::KeepAspectRatio);
         }
     }
@@ -195,10 +196,40 @@ void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool 
 
 void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
 {
+	if (!pScene)
+		return;
+
     m_scene = pScene;
     setScene(m_scene);
     QRectF rect = m_scene->nodesBoundingRect();
     fitInView(rect, Qt::KeepAspectRatio);
+
+	//install event filter for scrollable control.
+	for (ZenoParamWidget* pWidget : m_scene->getScrollControls())
+	{
+		onScrollControlAdded(pWidget);
+	}
+	connect(m_scene, SIGNAL(scrollControlAdded(ZenoParamWidget*)), this, SLOT(onScrollControlAdded(ZenoParamWidget*)));
+}
+
+void _ZenoSubGraphView::onScrollControlAdded(ZenoParamWidget* pControl)
+{
+    if (!pControl)
+        return;
+
+    if (ZComboBox* pCombobox = qobject_cast<ZComboBox*>(pControl->widget()))
+    {
+        connect(pCombobox, &ZComboBox::beforeShowPopup, this, [=]() {
+            m_bControlActive = true;
+        });
+        connect(pCombobox, &ZComboBox::afterHidePopup, this, [=]() {
+            m_bControlActive = false;
+        });
+    }
+    else if (ZenoParamMultilineStr* pMulti = qobject_cast<ZenoParamMultilineStr*>(pControl))
+    {
+        //need to scroll on multilinestr? ambigious with scene.
+    }
 }
 
 void _ZenoSubGraphView::setPath(const QString& path)
@@ -267,6 +298,12 @@ void _ZenoSubGraphView::resetTransform()
 	m_factor = 1.0;
 }
 
+void _ZenoSubGraphView::scrollContentsBy(int dx, int dy)
+{
+	if (!m_bControlActive)
+		QGraphicsView::scrollContentsBy(dx, dy);
+}
+
 void _ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::MidButton)
@@ -322,12 +359,28 @@ void _ZenoSubGraphView::mouseDoubleClickEvent(QMouseEvent* event)
 
 void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
 {
-	qreal zoomFactor = 1;
-    if (event->angleDelta().y() > 0)
-        zoomFactor = 1.25;
-    else if (event->angleDelta().y() < 0)
-        zoomFactor = 1 / 1.25;
-    gentle_zoom(zoomFactor);
+    if (!m_bControlActive)
+    {
+        qreal zoomFactor = 1;
+        if (event->angleDelta().y() > 0)
+            zoomFactor = 1.25;
+        else if (event->angleDelta().y() < 0)
+            zoomFactor = 1 / 1.25;
+        gentle_zoom(zoomFactor);
+    }
+	else
+		return QGraphicsView::wheelEvent(event);
+}
+
+bool _ZenoSubGraphView::eventFilter(QObject* watched, QEvent* event)
+{
+	return QGraphicsView::eventFilter(watched, event);
+}
+
+void _ZenoSubGraphView::focusOutEvent(QFocusEvent* event)
+{
+	QGraphicsView::focusOutEvent(event);
+	m_bControlActive = false;
 }
 
 void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)

@@ -71,6 +71,16 @@ void ZenoMainWindow::init()
 
 void ZenoMainWindow::initMenu()
 {
+    //to merge:
+/*
+        QAction *pAction = new QAction(tr("New"), pFile);
+        pAction->setCheckable(false);
+        pAction->setShortcut(QKeySequence(("Ctrl+N")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
+        //QMenu *pNewMenu = new QMenu;
+        //QAction *pNewGraph = pNewMenu->addAction("New Scene");
+        connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
+ */
     auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
     for (QAction* action : actions)
     {
@@ -540,8 +550,9 @@ void ZenoMainWindow::exportGraph() {
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
-            JsonArrayBatch batch(writer);
+            writer.StartArray();
             serializeScene(pModel, writer);
+            writer.EndArray();
             content = QString(s.GetString());
         }
     }
@@ -555,7 +566,7 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    setTimelineInfo(pGraphs->timeInfo());
+    resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -671,20 +682,19 @@ void ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
-    if (pModel && pModel->isDirty()) {
-        QMessageBox msgBox =
-            QMessageBox(QMessageBox::Question, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, this);
+    if (!zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
+        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
         msgBox.setPalette(pal);
         int ret = msgBox.exec();
         if (ret & QMessageBox::Yes) {
-            saveAs();
+            save();
         }
     }
     pGraphsMgm->clear();
     //clear timeline info.
-    setTimelineInfo(TIMELINE_INFO());
+    resetTimeline(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save()
@@ -728,10 +738,10 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     return info;
 }
 
-void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     m_pTimeline->setAlways(info.bAlways);
-    m_pTimeline->setFromTo(info.beginFrame, info.endFrame);
+    m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
 }
 
 void ZenoMainWindow::onFeedBack()

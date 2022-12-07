@@ -62,7 +62,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = getControlType(socketType);
+                inputSocket.info.control = ctrlType;
                 inputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
@@ -100,7 +100,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
-                outputSocket.info.control = getControlType(socketType);
+                outputSocket.info.control = ctrlType;
                 outputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);

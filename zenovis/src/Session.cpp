@@ -36,8 +36,14 @@ Scene* Session::get_scene() const {
     return impl->scene.get();
 }
 void Session::set_window_size(int nx, int ny) {
-    impl->scene->camera->m_nx = nx;
-    impl->scene->camera->m_ny = ny;
+    impl->scene->camera->setResolution(nx, ny);
+}
+
+std::tuple<int, int> Session::get_window_size() {
+    return {
+        impl->scene->camera->m_nx,
+        impl->scene->camera->m_ny,
+    };
 }
 
 void Session::set_show_grid(bool show_grid) {
@@ -173,10 +179,6 @@ bool Session::load_objects() {
 
 void Session::set_render_engine(std::string const &name) {
     impl->scene->switchRenderEngine(name);
-}
-
-void Session::set_interactive(bool interactive) {
-    impl->scene->drawOptions->interactive = interactive;
 }
 
 void Session::set_handler(std::shared_ptr<IGraphicHandler> &handler) {

@@ -16,6 +16,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zfx/cuda.h>
 #include <zfx/zfx.h>
@@ -128,8 +129,13 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
             auto register_attrib_syms = [&opts](const std::vector<PropertyTag> &props, const std::string &prefix) {
-                for (auto &&[name, nchns] : props)
+                for (auto [name, nchns] : props) {
+                    if (name == "x")
+                        opts.define_symbol(prefix + "pos", nchns);
+                    else if (name == "v")
+                        opts.define_symbol(prefix + "vel", nchns);
                     opts.define_symbol(prefix + name.asString(), nchns);
+                }
                 //def_sym(name.asString(), nchns);
             };
             register_attrib_syms(props, "@");
@@ -189,6 +195,14 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
             constexpr auto tileSize = RM_CVREF_T(pars)::lane_width;
 
+            auto transTag = [](std::string str) {
+                if (str == "pos")
+                    str = "x";
+                else if (str == "vel")
+                    str = "v";
+                return str;
+            };
+
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
@@ -209,11 +223,11 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                                                   (unsigned short)unitBytes,
                                                   (unsigned short)tileSize,
                                                   (unsigned short)curPars.numChannels(),
-                                                  (unsigned short)(curPars.getChannelOffset(name) + dimid),
+                                                  (unsigned short)(curPars.getPropertyOffset(transTag(name)) + dimid),
                                                   aux};
 #if 0
                 fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i, name.c_str(), dimid,
-                           curPars.getChannelOffset(name), curPars.numChannels());
+                           curPars.getPropertyOffset(name), curPars.numChannels());
 #endif
             }
             auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

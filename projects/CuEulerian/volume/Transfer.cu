@@ -202,7 +202,7 @@ struct PrimitiveToZSLevelSet : INode {
         // at most one block per particle
         ls._backgroundValue = dx * 2;
         ls._table = typename SpLsT::table_t{pos.size() + numEles, memsrc_e::device, 0};
-        ls._table.reset(cudaPol, true);
+        ls._table.reset(true);
 
         Vector<IV> mi{1, memsrc_e::device, 0}, ma{1, memsrc_e::device, 0};
         mi.setVal(IV::uniform(limits<int>::max()));

@@ -61,6 +61,14 @@ namespace DisneyBSDF{
         v = normalize(vec3(dot(T,v), dot(B,v), dot(N,v)));
     }
 
+    static __inline__ __device__
+    void rotateTangent(vec3& _T, vec3& _B, vec3 N, float rotInRadian) {
+        vec3 T = normalize(cos(rotInRadian) * _T - sin(rotInRadian) * _B);
+        vec3 B = normalize(sin(rotInRadian) * _T + cos(rotInRadian) * _B);
+        _T = T;
+        _B = B;
+    }
+
     static __inline__ __device__ 
     void pdf(
         float metallic,
@@ -237,7 +245,7 @@ namespace DisneyBSDF{
         else
             color = baseColor;
 
-        float c = (HoL * HoV) / (NoL * NoV);
+        float c = (HoL * HoV) / (NoL * NoV + 1e-7);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
@@ -289,7 +297,7 @@ namespace DisneyBSDF{
             float fss90 = HoL * HoL * roughness;
             float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
 
-            float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
+            float ss = 1.25f * (fss * (1.0f / (NoL + NoV + 1e-6) - 0.5f) + 0.5f);
             h = ss;
         }
 
@@ -309,6 +317,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -331,6 +340,7 @@ namespace DisneyBSDF{
         float nDl)
 
     {
+        rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926);
         //Onb tbn = Onb(N);
         world2local(wi, T ,B, N);
         world2local(wo, T ,B, N);
@@ -744,20 +754,20 @@ namespace DisneyBSDF{
             //either go out or turn in
             if (rnd(seed) <= subsurface && subsurface > 0.001f)
             {
-                //keep in, no flag change
+                //go out, flag change
                 wi = -wi;
                 isSS = true;
                 if (thin) {
                     color = sqrt(transmittanceColor);
                 } else {
+                    flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(sssColor, scatterDistance);
                     color = vec3(1.0f);//no attenuation happen
                 }
             }else
             {
-                flag = transmissionEvent;
-                color = transmittanceColor;
+                color = vec3(1.0f);
             }
         }
 
@@ -845,6 +855,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -871,6 +882,7 @@ namespace DisneyBSDF{
         bool& isSS
             )
     {
+        rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926);
         world2local(wo, T, B, N);
         float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
 
@@ -1215,4 +1227,77 @@ static __inline__ __device__ vec3 proceduralSky(
     vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
+}
+
+static __inline__ __device__ vec3 hdrSky(
+        vec3 dir
+){
+    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float v = asin(dir.y) / 3.1415926 + 0.5;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
+    return col * params.sky_strength;
+}
+
+static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
+{
+    vec3 retColor;
+
+    temperatureInKelvins = clamp(temperatureInKelvins, 1000.0, 40000.0) / 100.0;
+
+    if (temperatureInKelvins <= 66.0)
+    {
+        retColor.x = 1.0;
+        retColor.y = saturate(0.39008157876901960784 * log(temperatureInKelvins) - 0.63184144378862745098);
+    }
+    else
+    {
+        float t = temperatureInKelvins - 60.0;
+        retColor.x = saturate(1.29293618606274509804 * pow(t, -0.1332047592f));
+        retColor.y = saturate(1.12989086089529411765 * pow(t, -0.0755148492f));
+    }
+
+    if (temperatureInKelvins >= 66.0)
+        retColor.z = 1.0;
+    else if(temperatureInKelvins <= 19.0)
+        retColor.z = 0.0;
+    else
+        retColor.z = saturate(0.54320678911019607843 * log(temperatureInKelvins - 10.0) - 1.19625408914);
+
+    return retColor;
+}
+
+static __inline__ __device__ vec3 envSky(
+    vec3 dir,
+    vec3 sunLightDir,
+    vec3 windDir,
+    int steps,
+    float coverage,
+    float thickness,
+    float absorption,
+    float t
+){
+    vec3 color;
+    if (!params.usingHdrSky) {
+        color = proceduralSky(
+            dir,
+            sunLightDir,
+            windDir,
+            steps,
+            coverage,
+            thickness,
+            absorption,
+            t
+        );
+    }
+    else {
+        color = hdrSky(
+            dir
+        );
+    }
+    if (params.colorTemperatureMix > 0) {
+        vec3 colorTemp = colorTemperatureToRGB(params.colorTemperature);
+        colorTemp = mix(vec3(1, 1, 1), colorTemp, params.colorTemperatureMix);
+        color = color * colorTemp;
+    }
+    return color;
 }

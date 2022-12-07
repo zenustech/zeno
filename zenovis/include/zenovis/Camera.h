@@ -42,6 +42,7 @@ struct Camera {
         return (float)m_nx / (float)m_ny;
     }
 
+    void setResolution(int nx, int ny);
     void setCamera(zeno::CameraData const &cam);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar);
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);

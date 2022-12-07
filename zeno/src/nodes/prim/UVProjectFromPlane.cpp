@@ -40,6 +40,18 @@ struct UVProjectFromPlane : zeno::INode {
             uv1[i] = uv[tri[1]];
             uv2[i] = uv[tri[2]];
         }
+
+        if(prim->loops.size()){
+            prim->loops.add_attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                auto lo = prim->loops[i];
+                prim->loops.attr<int>("uvs")[i] = lo;
+            }
+            prim->uvs.resize(prim->size());
+            for (auto i = 0; i < prim->size(); i++) {
+                prim->uvs[i] = {uv[i][0], uv[i][1]};
+            }
+        }
         set_output("outPrim", std::move(prim));
     }
 };

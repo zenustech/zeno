@@ -187,9 +187,9 @@ void ZenoGraphsEditor::onSearchOptionClicked()
     pAnnotation->setCheckable(true);
     pAnnotation->setEnabled(false);
 
-	QAction* pWrangle = new QAction(tr("wrangle snippet"));
+	QAction* pWrangle = new QAction(tr("Parameter"));
     pWrangle->setCheckable(true);
-    pWrangle->setChecked(m_searchOpts & SEARCH_WRANGLE);
+    pWrangle->setChecked(m_searchOpts & SEARCH_ARGS);
 
 	pOptionsMenu->addAction(pNode);
 	pOptionsMenu->addAction(pSubnet);
@@ -219,9 +219,9 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 
 	connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
 		if (bChecked)
-			m_searchOpts |= SEARCH_WRANGLE;
+			m_searchOpts |= SEARCH_ARGS;
 		else
-			m_searchOpts &= (~(int)SEARCH_WRANGLE);
+			m_searchOpts &= (~(int)SEARCH_ARGS);
 		});
 
 	pOptionsMenu->exec(QCursor::pos());
@@ -521,7 +521,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
 				pModel->appendRow(pItem);
             }
         }
-        else if (res.type == SEARCH_NODECLS)
+        else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS)
         {
             QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
 			QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
@@ -541,7 +541,8 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
             }
 
             QString nodeName = res.targetIdx.data(ROLE_OBJNAME).toString();
-            QStandardItem* pItem = new QStandardItem(nodeName);
+            QString nodeIdent = res.targetIdx.data(ROLE_OBJID).toString();
+            QStandardItem* pItem = new QStandardItem(nodeIdent);
             pItem->setData(nodeName, ROLE_OBJNAME);
             pItem->setData(res.targetIdx.data(ROLE_OBJID).toString(), ROLE_OBJID);
 		    parentItem->appendRow(pItem);
@@ -566,6 +567,32 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
     {
         QString subgName = index.data(ROLE_OBJNAME).toString();
         activateTab(subgName);
+    }
+}
+
+void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
+{
+    ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+    if (pView)
+    {
+        ZenoSubGraphScene* pScene = pView->scene();
+        QModelIndexList nodes = pScene->selectNodesIndice();
+        const QModelIndex& subgIdx = pScene->subGraphIndex();
+        for (QModelIndex idx : nodes)
+        {
+            STATUS_UPDATE_INFO info;
+            int options = idx.data(ROLE_OPTIONS).toInt();
+            info.oldValue = options;
+            if (bOn) {
+                options |= OPT_VIEW;
+            }
+            else {
+                options ^= OPT_VIEW;
+            }
+            info.role = ROLE_OPTIONS;
+            info.newValue = options;
+            m_model->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+        }
     }
 }
 
@@ -600,6 +627,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
         ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
+    }
+    else if (text == tr("Open View"))
+    {
+        toggleViewForSelected(false);
+    }
+    else if (text == tr("Clear View"))
+    {
+        toggleViewForSelected(false);
     }
     else if (text == "CustomUI")
     {

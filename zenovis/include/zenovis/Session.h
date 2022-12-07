@@ -25,6 +25,7 @@ struct Session : zeno::disable_copy {
     void new_frame();
     bool load_objects();
     void set_window_size(int nx, int ny);
+    std::tuple<int, int> get_window_size();
     void set_curr_frameid(int frameid);
     int get_curr_frameid();
     void set_show_grid(bool flag);
@@ -44,7 +45,6 @@ struct Session : zeno::disable_copy {
     void set_normal_check(bool check);
     void set_render_wireframe(bool render_wireframe);
     void set_render_engine(std::string const &name);
-    void set_interactive(bool interactive);
     void set_handler(std::shared_ptr<IGraphicHandler> &handler);
     bool focus_on_node(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void load_opengl_api(void *procaddr);

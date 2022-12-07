@@ -7,6 +7,7 @@
 #include "comctrl/zmenu.h"
 #include "common.h"
 #include "viewporttransform.h"
+#include "viewportpicker.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -33,6 +34,9 @@ struct VideoRecInfo
     QPair<int, int> frameRange;
     int fps;
     int bitrate;
+    int numMSAA = 0;
+    int numOptix = 1;
+    bool saveAsImageSequence = false;
     VideoRecInfo() {
         res = { 0,0 };
         fps = bitrate = 0;
@@ -56,14 +60,20 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
+    // void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
     void lookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void resizeTransformHandler(int dir);
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
 
 private:
     bool m_mmb_pressed;
@@ -81,12 +91,13 @@ private:
 
     QSet<int> m_pressedKeys;
     std::unique_ptr<zeno::FakeTransformer> transformer;
+    std::unique_ptr<zeno::Picker> picker;
 };
 
-class ViewportWidget : public QOpenGLWidget
+class ViewportWidget : public QGLWidget
 {
     Q_OBJECT
-    typedef QOpenGLWidget _base;
+    typedef QGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
@@ -100,8 +111,12 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void cameraLookTo(int dir);
     void clearTransformer();
+    void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
 
 signals:
     void frameRecorded(int);
@@ -110,6 +125,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
+    // void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -145,6 +161,7 @@ public slots:
     void onSliderValueChanged(int);
     void onFinished();
     void onCommandDispatched(const QString& name, bool bTriggered);
+    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 signals:
     void frameUpdated(int new_frame);

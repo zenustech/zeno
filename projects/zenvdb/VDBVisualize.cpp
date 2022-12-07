@@ -431,8 +431,8 @@ ZENDEFNODE(VDBVoxelAsParticles, {
 
 
 struct VDBLeafAsParticles : INode {
-    virtual void apply() override {
-        auto ingrid = get_input<VDBFloatGrid>("vdbGrid");
+    template <typename VDBGridPtr>
+    auto LeafAsParticle(VDBGridPtr ingrid) {
         auto const &grid = ingrid->m_grid;
         auto h = grid->voxelSize()[0];
         tbb::concurrent_vector<vec3f> pos;
@@ -452,6 +452,28 @@ struct VDBLeafAsParticles : INode {
         for (int i = 0; i < pos.size(); i++) {
             primPos[i] = pos[i];
         }
+
+        return prim;
+    }
+    virtual void apply() override {
+        auto ingrid = get_input<VDBGrid>("vdbGrid");
+        auto vdbType = ingrid->getType();
+
+        std::shared_ptr<zeno::PrimitiveObject> prim(nullptr);
+
+        if (vdbType == "FloatGrid")
+            prim = LeafAsParticle(std::dynamic_pointer_cast<VDBFloatGrid>(ingrid));
+        else if (vdbType == "Int32Grid")
+            prim = LeafAsParticle(std::dynamic_pointer_cast<VDBIntGrid>(ingrid));
+        else if (vdbType == "Vec3fGrid")
+            prim = LeafAsParticle(std::dynamic_pointer_cast<VDBFloat3Grid>(ingrid));
+        else if (vdbType == "Vec3IGrid")
+            prim = LeafAsParticle(std::dynamic_pointer_cast<VDBInt3Grid>(ingrid));
+        else if (vdbType == "PointDataGrid")
+            prim = LeafAsParticle(std::dynamic_pointer_cast<VDBPointsGrid>(ingrid));
+        else 
+            throw std::runtime_error("VDB type not found.");
+
         set_output("primPars", std::move(prim));
     }
 };

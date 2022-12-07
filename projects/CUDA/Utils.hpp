@@ -726,7 +726,7 @@ inline void identify_boundary_indices(ExecPol &pol, ZenoPartition &partition,
                          marks = proxy<space>(marks)] ZS_LAMBDA(Ti bi) mutable {
     using table_t = RM_CVREF_T(table);
     auto bcoord = table._activeKeys[bi];
-    using key_t = typename table_t::key_t;
+    using key_t = typename table_t::key_type;
     bool isBoundary =
         (table.query(bcoord + key_t{-side_length, 0, 0}) ==
              table_t::sentinel_v ||
@@ -807,7 +807,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
     using grid_t = RM_CVREF_T(grid);
     auto pos = prims.template pack<3>("x", i);
     auto index = (pos * dxinv - 0.5f);
-    typename table_t::key_t coord{};
+    typename table_t::key_type coord{};
     for (int d = 0; d != 3; ++d)
       coord[d] = lower_trunc(index[d]);
     auto ccoord = coord & (grid_t::side_length - 1);
@@ -833,7 +833,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
     using grid_t = RM_CVREF_T(grid);
     auto pos = prims.template pack<3>("x", i);
     auto index = (pos * dxinv - 0.5f);
-    typename table_t::key_t coord{};
+    typename table_t::key_type coord{};
     for (int d = 0; d != 3; ++d)
       coord[d] = lower_trunc(index[d]);
     auto ccoord = coord & (grid_t::side_length - 1);
@@ -873,14 +873,14 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
          table = proxy<space>(table), grid = proxy<space>(grid),
          degree] ZS_LAMBDA(Ti ei) mutable {
           using grid_t = RM_CVREF_T(grid);
-          auto pos = table_t::key_t::zeros();
+          auto pos = table_t::key_type::zeros();
           for (int d = 0; d != degree; ++d) {
             auto ind = reinterpret_bits<int>(eles("inds", d, ei));
             pos += pars.template pack<3>("x", ind);
           }
           pos /= degree;
           auto index = (pos * dxinv - 0.5f);
-          typename table_t::key_t coord{};
+          typename table_t::key_type coord{};
           for (int d = 0; d != 3; ++d)
             coord[d] = lower_trunc(index[d]);
           auto ccoord = coord & (grid_t::side_length - 1);
@@ -907,14 +907,14 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
                       table = proxy<space>(table), grid = proxy<space>(grid),
                       degree] ZS_LAMBDA(Ti ei) mutable {
       using grid_t = RM_CVREF_T(grid);
-      auto pos = table_t::key_t::zeros();
+            auto pos = table_t::key_type::zeros();
       for (int d = 0; d != degree; ++d) {
         auto ind = reinterpret_bits<int>(eles("inds", d, ei));
         pos += pars.template pack<3>("x", ind);
       }
       pos /= degree;
       auto index = (pos * dxinv - 0.5f);
-      typename table_t::key_t coord{};
+      typename table_t::key_type coord{};
       for (int d = 0; d != 3; ++d)
         coord[d] = lower_trunc(index[d]);
       auto ccoord = coord & (grid_t::side_length - 1);

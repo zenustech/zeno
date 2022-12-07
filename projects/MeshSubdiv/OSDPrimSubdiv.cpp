@@ -2,6 +2,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 //#include <opensubdiv/far/topologyDescriptor.h>
 //#include <opensubdiv/far/stencilTableFactory.h>
 //#include <opensubdiv/osd/cpuEvaluator.h>
@@ -132,7 +133,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
-    if (prim->loops.size() && prim->loop_uvs.size())
+    if (!(prim->loops.size() && prim->loops.has_attr("uvs")))
         hasLoopUVs = false;
 
         //nCoarseVerts=0,
@@ -200,7 +201,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             /*auto &loopsInd = loopsIndTab.emplace_back();*/
             uvsInd.resize(polysInd.size());
             int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
-            auto &loop_uvs = prim->loop_uvs;
+            auto &loop_uvs = prim->loops.attr<int>("uvs");
             for (int i = 0; i < prim->polys.size(); i++) {
                 auto [base, len] = prim->polys[i];
                 if (len <= 2) continue;
@@ -558,7 +559,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             }
 
             if (hasLoopUVs) {
-                auto &loop_uvs = prim->loop_uvs;
+                auto &loop_uvs = prim->loops.attr<int>("uvs");
                 loop_uvs.resize(nfaces * 4);
 
                 for (int face = 0; face < nfaces; ++face) {
@@ -599,6 +600,11 @@ struct OSDPrimSubdiv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
+        if (get_input2<bool>("delayTillIpc") && levels) {  // cihou zhxx
+            prim->userData().set2("delayedSubdivLevels", levels);
+            set_output("prim", std::move(prim));
+            return;
+        }
         auto edgeCreaseAttr = get_input2<std::string>("edgeCreaseAttr");
         bool triangulate = get_input2<bool>("triangulate");
         bool asQuadFaces = get_input2<bool>("asQuadFaces");
@@ -616,6 +622,7 @@ ZENO_DEFNODE(OSDPrimSubdiv)({
         {"bool", "triangulate", "1"},
         {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},
+        {"bool", "delayTillIpc", "0"},
     },
     {
         "prim",

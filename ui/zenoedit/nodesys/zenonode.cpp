@@ -23,6 +23,7 @@
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
+#include <viewport/viewportwidget.h>
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
@@ -1005,7 +1006,13 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
                 pEditor->onPageActivated(subGraphIndex(), index());
             }
         }
+        // for temp support to show handler via transform node
+        else if (name.contains("TransformPrimitive"))
+        {
+            auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+            viewport->changeTransformOperation(nodeId());
     }
+}
 }
 
 void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)

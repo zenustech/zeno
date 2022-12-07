@@ -43,6 +43,27 @@ void RecordVideoMgr::recordFrame()
     {
         m_timer->stop();
         Zenovis::GetInstance().blockSignals(false);
+
+        if (m_recordInfo.saveAsImageSequence) {
+            emit recordFinished();
+            return;
+        }
+
+        {
+            QString dir_path = m_recordInfo.record_path + "/P/";
+            QDir qDir = QDir(dir_path);
+            qDir.setNameFilters(QStringList("*.png"));
+            QStringList fileList = qDir.entryList(QDir::Files);
+            fileList.removeOne(".");
+            fileList.removeOne("..");
+            fileList.sort();
+            for (auto i = 0; i < fileList.size(); i++) {
+                auto new_name = dir_path + zeno::format("{:06d}.png", i).c_str();
+                auto old_name = dir_path + fileList.at(i);
+                QFile::rename(old_name,new_name);
+            }
+        }
+
         QString path = m_recordInfo.record_path + "/P/%06d.png";
         QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
         QStringList cmd = { "ffmpeg", "-y", "-r", QString::number(m_recordInfo.fps), "-i", path, "-c:v", "mpeg4", "-b:v", QString::number(m_recordInfo.bitrate) + "k", outPath};
@@ -70,14 +91,17 @@ void RecordVideoMgr::recordFrame()
     auto record_file = zeno::format("{}/P/{:06d}.png", m_recordInfo.record_path.toStdString(), m_currFrame);
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    scene->drawOptions->num_samples = 64;
+    auto old_num_samples = scene->drawOptions->num_samples;
+    scene->drawOptions->num_samples = m_recordInfo.numOptix;
+    scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
-    QVector2D oldRes = m_view->cameraRes();
-    //m_view->setCameraRes(m_recordInfo.res);
-    //m_view->setCameraRes(QVector2D(1280,720));
+    auto [x, y] = Zenovis::GetInstance().getSession()->get_window_size();
 
     auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
+    Zenovis::GetInstance().getSession()->set_window_size( (int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
     Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname);
+    Zenovis::GetInstance().getSession()->set_window_size(x, y);
+    scene->drawOptions->num_samples = old_num_samples;
 
     m_pics.append(QString::fromStdString(record_file));
 

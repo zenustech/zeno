@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <zeno/types/DummyObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/parallel_reduce.h>
@@ -40,8 +41,8 @@ template <typename T, typename Op> __forceinline__ __device__ void reduce_to(int
 }
 
 template <typename TransOp, typename ReduceOp>
-static float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp top, ReduceOp rop,
-                         std::string attrToReduce) {
+float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp top, ReduceOp rop,
+                  std::string attrToReduce) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     using T = typename ZenoParticles::particles_t::value_type;
@@ -56,7 +57,6 @@ static float prim_reduce(typename ZenoParticles::particles_t &verts, float e, Tr
     cudaPol(range(verts.size()), [res = proxy<space>(res), verts = proxy<space>({}, verts), offset, nwarps, nchn, top,
                                   rop] ZS_LAMBDA(int i) mutable {
         auto [mask, numValid] = warp_mask(i, nwarps);
-        auto locid = threadIdx.x & 31;
         float v = top(verts(offset, i));
         while (--nchn) {
             v = rop(top(verts(offset++, i)), v);
@@ -71,18 +71,17 @@ static float prim_reduce(typename ZenoParticles::particles_t &verts, float e, Tr
 
 struct ZSPrimitiveReduction : zeno::INode {
     struct pass_on {
-        constexpr auto operator()(auto v) const noexcept {
+        template <typename T> constexpr T operator()(T v) const noexcept {
             return v;
         }
     };
     struct getabs {
-        constexpr auto operator()(auto v) const noexcept {
+        template <typename T> constexpr T operator()(T v) const noexcept {
             return zs::abs(v);
         }
     };
     virtual void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto prim = get_input<ZenoParticles>("ZSParticles");
         auto &verts = prim->getParticles();
         auto attrToReduce = get_input2<std::string>("attr");
@@ -126,5 +125,23 @@ ZENDEFNODE(ZSPrimitiveReduction, {/* inputs: */ {
                                   {
                                       "primitive",
                                   }});
+
+struct ZSGetUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<ZenoParticles>("object");
+        auto key = get_param<std::string>("key");
+        auto hasValue = object->userData().has(key);
+        auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+        set_output2("hasValue", hasValue);
+        set_output("data", std::move(data));
+    }
+};
+
+ZENDEFNODE(ZSGetUserData, {
+                              {"object"},
+                              {"data", {"bool", "hasValue"}},
+                              {{"string", "key", ""}},
+                              {"lifecycle"},
+                          });
 
 } // namespace zeno

@@ -5,6 +5,7 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
+#include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -18,17 +19,10 @@
 #include "zensim/physics/plasticity_models/NonAssociativeVonMises.hpp"
 #include "zensim/resource/Resource.h"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
-
-struct ZpcInitializer {
-  ZpcInitializer() {
-    printf("Initializing Zpc resource\n");
-    (void)zs::Resource::instance();
-    printf("Initialized Zpc resource!\n");
-  }
-};
 
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
@@ -124,12 +118,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   using dtiles_t = zs::TileVector<zs::f64, 32>;
   using lbvh_t = zs::LBvh<3>;
 
+  static constexpr auto s_userDataTag = "userdata";
   static constexpr auto s_particleTag = "particles";
   static constexpr auto s_elementTag = "elements";
   static constexpr auto s_edgeTag = "edges";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
+  static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
   ZenoParticles() = default;
   ~ZenoParticles() = default;
@@ -253,6 +249,16 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
     return std::any_cast<T>(metas.at(tag));
   }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  const UserData &userData() const {
+    return readMeta(s_userDataTag, zs::wrapt<const UserData &>{});
+  }
+  UserData &userData() {
+    return readMeta(s_userDataTag, zs::wrapt<UserData &>{});
+  }
   bool hasBvh(const std::string &tag) const {
     // return auxSpatialData.find(tag) != auxSpatialData.end();
     if (auto it = auxSpatialData.find(tag); it != auxSpatialData.end())
@@ -288,7 +294,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
 
 struct ZenoPartition : IObjectClone<ZenoPartition> {
   using Ti = int; // entry count
-  using table_t = zs::HashTable<int, 3, Ti, zs::ZSPmrAllocator<false>>;
+  using table_t = zs::bcht<zs::vec<int, 3>, int, true, zs::universal_hash<zs::vec<int, 3>>, 32>;
   using tag_t = zs::Vector<int>;
   using indices_t = zs::Vector<Ti>;
 
@@ -360,11 +366,13 @@ struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
 };
 
 struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
+  enum element_e { point, curve, surface, tet };
   using lbvh_t = zs::LBvh<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return bvh; }
   const auto &get() const noexcept { return bvh; }
   lbvh_t bvh;
   zs::f32 thickness;
+  element_e et{point};
 };
 
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
@@ -431,6 +439,52 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
 
   levelset_t levelset;
   std::string transferScheme;
+};
+
+struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
+  template <int level = 0> using grid_t = zs::SparseGrid<3, zs::f32, (8 >> level)>;
+  using spg_t = grid_t<0>;
+
+  auto &getSparseGrid() noexcept { return spg; }
+  const auto &getSparseGrid() const noexcept { return spg; }
+
+  template <typename T>
+  decltype(auto) setMeta(const std::string &tag, T &&val) {
+    return metas[tag] = FWD(val);
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  bool hasMeta(const std::string &tag) const {
+    if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+
+  template <int level = 0>
+  auto &getLevel() {
+    if constexpr (level == 0)
+      return spg;
+    else if constexpr (level == 1)
+      return spg1;
+    else if constexpr (level == 2)
+      return spg2;
+    else if constexpr (level == 3)
+      return spg3;
+    else return spg;
+  }
+
+  spg_t spg;
+  std::map<std::string, std::any> metas;
+
+  grid_t<1> spg1;
+  grid_t<2> spg2;
+  grid_t<3> spg3;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {

@@ -9,6 +9,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
+#include <zeno/extra/TempNode.h>
 #include <zenovis/Camera.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/Scene.h>
@@ -99,15 +100,24 @@ static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
     bool has_uv =
         tris.has_attr("uv0") && tris.has_attr("uv1") && tris.has_attr("uv2");
     //printf("!!has_uv = %d\n", has_uv);
+    const zeno::vec3f *uv0_data = nullptr;
+    const zeno::vec3f *uv1_data = nullptr;
+    const zeno::vec3f *uv2_data = nullptr;
+    if(has_uv)
+    {
+        uv0_data = tris.attr<zeno::vec3f>("uv0").data();
+        uv1_data = tris.attr<zeno::vec3f>("uv1").data();
+        uv2_data = tris.attr<zeno::vec3f>("uv2").data();
+    }
 #pragma omp parallel for
     for (size_t i = 0; i < prim->tris.size(); ++i) {
         if (has_uv) {
             const auto &pos0 = pos[tris[i][0]];
             const auto &pos1 = pos[tris[i][1]];
             const auto &pos2 = pos[tris[i][2]];
-            auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
-            auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
-            auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
+            auto uv0 = uv0_data[i];
+            auto uv1 = uv1_data[i];
+            auto uv2 = uv2_data[i];
 
             auto edge0 = pos1 - pos0;
             auto edge1 = pos2 - pos0;
@@ -293,11 +303,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
-    std::unique_ptr<zeno::PrimitiveObject> primUnique;
+    std::shared_ptr<zeno::PrimitiveObject> primUnique;
     zeno::PrimitiveObject *prim;
 
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
-        : scene(scene_), primUnique(std::make_unique<zeno::PrimitiveObject>(*primArg)) {
+        : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
         prim = primUnique.get();
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -332,6 +342,20 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
+        }
+        if (int subdlevs = prim->userData().get2<int>("delayedSubdivLevels", 0)) {
+            // todo: zhxx, should comp normal after subd or before?
+            zeno::log_trace("computing subdiv {}", subdlevs);
+            (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
+                .set("prim", primUnique)
+                .set2<int>("levels", subdlevs)
+                .set2<std::string>("edgeCreaseAttr", "")
+                .set2<bool>("triangulate", false)
+                .set2<bool>("asQuadFaces", true)
+                .set2<bool>("hasLoopUVs", true)
+                .set2<bool>("delayTillIpc", false)
+                .call();  // will inplace subdiv prim
+            prim->userData().del("delayedSubdivLevels");
         }
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
@@ -463,6 +487,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 triObj.ebo->bind_data(prim->tris.data(),
                                       tris_count * sizeof(prim->tris[0]));
                 triObj.vbo = nullptr;
+
             } else {
                 computeTrianglesTangent(&*prim);
                 parseTrianglesDrawBuffer(&*prim, triObj);

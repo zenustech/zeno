@@ -137,6 +137,10 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             panel->clear();
         }
     }
+    else if (m_type == DOCK_VIEW) {
+        auto* displayWidget = qobject_cast<DisplayWidget*>(widget());
+        displayWidget->onNodeSelected(subgIdx, nodes, select);
+    }
 }
 
 DOCK_TYPE ZenoDockWidget::type() const

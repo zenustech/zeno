@@ -269,28 +269,103 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     return texture;
 
 }
+inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
+{
+    auto texture = std::make_shared<cuTexture>();
+    std::vector<float4> data;
+    data.resize(nx*ny);
+    for(int j=0;j<ny;j++)
+        for(int i=0;i<nx;i++)
+        {
+            size_t idx = j*nx + i;
+            data[idx] = {
+                    nc>=1?img[idx*nc + 0]:0,
+                    nc>=2?img[idx*nc + 1]:0,
+                    nc>=3?img[idx*nc + 2]:0,
+                    nc>=4?img[idx*nc + 3]:0,
+            };
+        }
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture space alloc failed\n";
+        return 0;
+    }
+    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
+                             nx * sizeof(float) * 4,
+                             nx * sizeof(float) * 4,
+                             ny,
+                             cudaMemcpyHostToDevice);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    cudaResourceDesc resourceDescriptor = { };
+    resourceDescriptor.resType = cudaResourceTypeArray;
+    resourceDescriptor.res.array.array = texture->gpuImageArray;
+    cudaTextureDesc textureDescriptor = { };
+    textureDescriptor.addressMode[0] = cudaAddressModeWrap;
+    textureDescriptor.addressMode[1] = cudaAddressModeWrap;
+    textureDescriptor.borderColor[0] = 0.0f;
+    textureDescriptor.borderColor[1] = 0.0f;
+    textureDescriptor.disableTrilinearOptimization = 1;
+    textureDescriptor.filterMode = cudaFilterModeLinear;
+    textureDescriptor.normalizedCoords = true;
+    textureDescriptor.readMode = cudaReadModeElementType;
+    textureDescriptor.sRGB = 0;
+    rc = cudaCreateTextureObject(&texture->texture, &resourceDescriptor, &textureDescriptor, nullptr);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture creation failed\n";
+        texture->texture = 0;
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    return texture;
+}
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline std::optional<std::string> sky_tex;
 inline void addTexture(std::string path)
 {
-    std::cout<<"loading texture "<<path<<std::endl;
-    if(g_tex.find(path)!=g_tex.end())
-    {
+    zeno::log_debug("loading texture :{}", path);
+    if(g_tex.count(path)) {
         return;
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
-    if(!img){
-        std::cout<<"load texture "<<path.c_str()<<" failed\n";
-        g_tex[path] = std::make_shared<cuTexture>();
-        return;
+    zeno::log_info("is hdr: {}", stbi_is_hdr(path.c_str()));
+    if (stbi_is_hdr(path.c_str())) {
+        float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
+        if(!img){
+            zeno::log_error("loading texture failed:{}", path);
+            g_tex[path] = std::make_shared<cuTexture>();
+            return;
+        }
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        assert(img);
+        g_tex[path] = makeCudaTexture(img, nx, ny, nc);
+        stbi_image_free(img);
     }
-    nx = std::max(nx, 1);
-    ny = std::max(ny, 1);
-    assert(img);
-    g_tex[path] = makeCudaTexture(img, nx, ny, nc);
-    stbi_image_free(img);
+    else {
+        unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
+        if(!img){
+            zeno::log_error("loading hdr texture failed:{}", path);
+            g_tex[path] = std::make_shared<cuTexture>();
+            return;
+        }
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        assert(img);
+        g_tex[path] = makeCudaTexture(img, nx, ny, nc);
+        stbi_image_free(img);
+    }
+    for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
+        zeno::log_info("-{}", i->first);
+    }
 }
 struct rtMatShader
 {

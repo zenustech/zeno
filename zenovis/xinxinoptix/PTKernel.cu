@@ -8,6 +8,7 @@
 
 extern "C" {
 __constant__ Params params;
+
 }
 //------------------------------------------------------------------------------
 //
@@ -121,9 +122,23 @@ extern "C" __global__ void __raygen__rg()
                     prd.maxDistance,  // tmax
                     &prd );
 
+            vec3 radiance = vec3(prd.radiance);
+            vec3 oldradiance = radiance;
+            RadiancePRD shadow_prd;
+            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
+            traceOcclusion(params.handle, prd.LP, prd.Ldir,
+                           1e-5f, // tmin
+                           1e16f, // tmax,
+                           &shadow_prd);
+            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
+            radiance = radiance + vec3(prd.emission);
+
+            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
+
             //result += prd.emitted;
             if(prd.countEmitted==false || prd.depth>0)
-                result += prd.radiance * prd.attenuation2/(prd.prob2);
+                result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
@@ -132,13 +147,13 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
             if(prd.depth>4){
-               //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f); 
+                //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
                 if(rnd(prd.seed) > RRprob || prd.depth>16){
                     prd.done=true;
 
                 }
-                prd.attenuation = prd.attenuation / RRprob;
+                prd.attenuation = prd.attenuation / (RRprob + 1e-5);
             }
             if(prd.countEmitted == true)
                 prd.passed = true;
@@ -186,20 +201,18 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
-
+    prd->CH = 0.0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = proceduralSky(
-            normalize(prd->direction), 
-            sunLightDir, 
-            make_float3(0., 0., 1.), 
+        prd->radiance = envSky(
+            normalize(prd->direction),
+            sunLightDir,
+            make_float3(0., 0., 1.),
             40, // be careful
             .45,
             15.,
             1.030725 * 0.3,
             params.elapsedTime
         );
-
-        //prd->radiance = vec3(0,0,0);
         prd->done      = true;
         return;
     }

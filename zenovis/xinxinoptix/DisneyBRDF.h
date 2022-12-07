@@ -122,7 +122,7 @@ static __inline__ __device__ float pdfClearCoat(float NoH, float ccAlpha)
 static __inline__ __device__ 
 float ThinTransmissionRoughness(float ior, float roughness)
 {
-    return clamp((0.65f * ior - 0.35f)*roughness, 0.0f, 1.0f);
+    return clamp((0.65f * ior - 0.35f)*roughness, 0.01f, 1.0f);
 }
 static __inline__ __device__
 void CalculateAnisotropicParams(float roughness, float anisotropic, float &ax, float &ay)

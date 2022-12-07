@@ -16,6 +16,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include <zensim/execution/ExecutionPolicy.hpp>
 #include <zensim/physics/ConstitutiveModel.hpp>
@@ -129,7 +130,11 @@ struct ZSParticleParticleWrangler : INode {
         }
 
         /// symbols
-        auto def_sym = [&opts](const std::string &prefix, const std::string &key, int dim) {
+        auto def_sym = [&opts](const std::string &prefix, std::string key, int dim) {
+            if (key == "x")
+                opts.define_symbol(prefix + "pos", dim);
+            else if (key == "v")
+                opts.define_symbol(prefix + "vel", dim);
             opts.define_symbol(prefix + key, dim);
         };
 
@@ -196,6 +201,14 @@ struct ZSParticleParticleWrangler : INode {
             cuLinkDestroy((CUlinkState)state);
         }
 
+        auto transTag = [](std::string str) {
+            if (str == "pos")
+                str = "x";
+            else if (str == "vel")
+                str = "v";
+            return str;
+        };
+
         /// symbols
         zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
         auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
@@ -218,7 +231,7 @@ struct ZSParticleParticleWrangler : INode {
                                               (unsigned short)unitBytes,
                                               (unsigned short)tileSize,
                                               (unsigned short)targetParPtr->numChannels(),
-                                              (unsigned short)(targetParPtr->getChannelOffset(name) + dimid),
+                                              (unsigned short)(targetParPtr->getPropertyOffset(transTag(name)) + dimid),
                                               (unsigned short)isNeighborProperty};
         }
         auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

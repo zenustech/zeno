@@ -141,7 +141,7 @@ struct ResampleZSLevelSet : INode {
         ls.append_channels(cudaPol, {tag}); // would also check channel dimension
 
         fmt::print("tag: [{}, {}] at {} (out of {}) in dst, [{}] (out of {}) in ref.\n", tag.name, tag.numChannels,
-                   ls.getChannelOffset(tag.name), ls.numChannels(), refLs.getChannelOffset(tag.name),
+                   ls.getPropertyOffset(tag.name), ls.numChannels(), refLs.getPropertyOffset(tag.name),
                    refLs.numChannels());
         cudaPol(Collapse{ls.numBlocks(), ls.block_size},
                 [ls = proxy<execspace_e::cuda>(ls), refLs = proxy<execspace_e::cuda>(refLs), tag] __device__(
@@ -212,7 +212,7 @@ struct ResampleZSLevelSet : INode {
                                     is_spls_v<typename RM_CVREF_T(refLsPtr)::element_type>> {
                 PropertyTag tag{};
                 tag.name = propertyName;
-                tag.numChannels = refLsPtr->getChannelSize(propertyName);
+                tag.numChannels = refLsPtr->getPropertySize(propertyName);
                 if (tag.numChannels == 0)
                     throw std::runtime_error(fmt::format("property [{}] not exists in the source field", propertyName));
                 lsPtr->printTransformation("dst");

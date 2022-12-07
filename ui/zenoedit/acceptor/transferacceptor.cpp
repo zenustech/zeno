@@ -273,6 +273,29 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
     }
     else
     {
+        if (nodeCls == "MakeCurvemap" && (name == "_POINTS" || name == "_HANDLERS"))
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_NONVISIBLE;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            return;
+        }
+        if (nodeCls == "MakeHeatmap" && name == "_RAMPS")
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_COLOR;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            return;
+        }
+
         PARAMS_INFO _params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
         _params[name].value = var;
         data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(_params);

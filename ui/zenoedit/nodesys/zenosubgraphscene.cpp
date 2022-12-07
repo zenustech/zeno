@@ -18,6 +18,7 @@
 #include "util/log.h"
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/iparammodel.h>
 
 
@@ -300,6 +301,19 @@ void ZenoSubGraphScene::clearMark()
         }
     }
     m_errNodes.clear();
+}
+
+QList<ZenoParamWidget*> ZenoSubGraphScene::getScrollControls() const
+{
+    return m_scrollControls;
+}
+
+void ZenoSubGraphScene::addScrollControl(ZenoParamWidget* pWidget)
+{
+    if (!pWidget)
+        return;
+    m_scrollControls.append(pWidget);
+    emit scrollControlAdded(pWidget);
 }
 
 void ZenoSubGraphScene::undo()
