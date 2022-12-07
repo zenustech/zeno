@@ -410,6 +410,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
+                        {"yk", 3}, 
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
