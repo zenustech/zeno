@@ -110,6 +110,7 @@ struct ShaderFinalize : INode {
 
 ZENDEFNODE(ShaderFinalize, {
     {
+        {"string", "mtlid", "Mat1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -118,9 +119,6 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "thickness", "0.0"},
         {"vec3f", "sssParam", "1,1,1"},
         {"vec3f", "sssColor", "1.0,1.0,1.0"},
-        {"float", "foliage", "0"},
-        {"float", "skin", "0"},
-        {"float", "curvature", "0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
         {"float", "anisoRotation", "0.0"},
@@ -139,23 +137,9 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
         {"vec3f", "emission", "0,0,0"},
-        {"float", "exposure", "1.0"},
-        {"float", "ao", "1.0"},
-        {"float", "toon", "0.0"},
-        {"float", "stroke", "1.0"},
-        {"vec3f", "shape", "-0.5,0.5,0"},
-        {"float", "style", "1.0"},
-        {"float", "strokeNoise", "1"},
-        {"vec3f", "shad", "0,0,0"},
-        {"vec3f", "strokeTint", "0,0,0"},
         {"float", "opacity", "0"},
-        {"float", "reflection", "0"},
-        {"float", "reflectID", "-1"},
-        {"float", "isCamera", "0"},
-        {"float", "isVoxelDomain", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
     },
     {
