@@ -24,7 +24,6 @@
 
 //#include <GLFW/glfw3.h>
 
-
 #include <array>
 #include <cstring>
 #include <fstream>
@@ -32,6 +31,71 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
+// #if 1
+extern "C" {
+    void initTextureDevData(int nx, int ny);
+    void computeTexture(
+        float4* texptr,
+        int nx,
+        int ny
+        , 
+        float3 sunLightDir,
+        float3 windDir,
+        int step,
+        float coverage, 
+        float thickness,
+        float absorption,
+        float time
+    );
+    void freeTexture();
+}
+
+// #else
+
+// inline float4* devptr;
+// inline bool initialized = false;
+
+// #if defined(__CUDACC__)
+// __global__ 
+// void pskycu(
+//     float4* data//, 
+//     // to be added
+//     //nx, ny, 
+// )
+// {
+//     printf("Hello!"); 
+// }
+
+//     void initTextureDevData(int nx, int ny)
+//     {
+//         // naive way first
+//         if(!initialized) {
+//             cudaMalloc((void**)&devptr, nx*ny*sizeof(float4));
+//             initialized = true;
+//         }
+//     }
+
+//     void computeTexture(
+//         float4* texptr
+//         // to be added
+//     )
+//     {
+//         // 1,1 for test
+//         pskycu<<<1, 1>>>(devptr);
+//         cudaDeviceSynchronize();
+//         cudamemcpy(texptr, devptr, cudaMemcpyDeviceToHost);
+//     }
+// #else
+//     extern void initTextureDevData(int nx, int ny);
+//     extern void computeTexture(
+//         float4* texptr
+//         // to be added
+//     );
+// #endif
+
+// #endif
+
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
     std::cerr << "[" << std::setw( 2 ) << level << "][" << std::setw( 12 ) << tag << "]: " << message << "\n";
@@ -325,54 +389,55 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
     }
     return texture;
 }
-
-inline float4 psky(float u, float v)
-{
-    // dir with differnt definition?
-    // float3 dir = make_float3(-cos(u)*sin(v), -cos(v), sin(u)*sin(v));
-
-    // float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
-    // float v = asin(dir.y) / 3.1415926 + 0.5;
-    float3 dir = make_float3(
-        -cos(u*2*3.1415926)*sin(v*3.1415926),  
-        -cos(v*3.1415926),
-        sin(u*2*3.1415926)*sin(v*3.1415926)
-    );
-
-    // debug
-//     if(dir.x < 0.0)
-//     {
-//         return {1.0, 0.0, 0.0, 0.0};
-//     }
-//     return {0.0, 0.0, 1.0, 0.0};
-
-    return make_float4(0.5*(dir.x+1),0.5*(dir.y+1),0.5*(dir.z+1),0.0);
-}
-inline std::shared_ptr<cuTexture> makeCudaTexture(int nx, int ny)
+inline std::shared_ptr<cuTexture> makeCudaTexture(int nx, int ny
+    , 
+    float3 sunLightDir,
+    float3 windDir,
+    int step, // be careful
+    float coverage, 
+    float thickness,
+    float absorption,
+    float time
+)
 {
     auto texture = std::make_shared<cuTexture>();
+
+    // naive way first
+    // device data allocation 
+    initTextureDevData(nx, ny);
+    // host data allocation 
+    // need to have a way to access this? 
+    // think how to update and change tex later
     std::vector<float4> data;
     data.resize(nx*ny);
-    for(int j=0;j<ny;j++)
-        for(int i=0;i<nx;i++)
-        {
-            size_t idx = j*nx + i;
-            data[idx] = psky(
-                static_cast<float>(i)/nx,
-                static_cast<float>(j)/ny
-            );
-        }
+    computeTexture(data.data(), nx, ny
+        , 
+        sunLightDir,
+        windDir,
+        step,
+        coverage,
+        thickness,
+        absorption,
+        time
+    );
+
+    // left the rest to the hangge procedure using comeback data to generate cuTexture
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
     }
-    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
-                             nx * sizeof(float) * 4,
-                             nx * sizeof(float) * 4,
-                             ny,
-                             cudaMemcpyHostToDevice);
+
+    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, 
+                            data.data(),
+                            nx * sizeof(float) * 4,
+                            nx * sizeof(float) * 4,
+                            ny,
+                            cudaMemcpyHostToDevice
+                            );
+
+
     if (rc != cudaSuccess) {
         std::cout<<"texture data copy failed\n";
         cudaFreeArray(texture->gpuImageArray);
@@ -400,11 +465,46 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(int nx, int ny)
         texture->gpuImageArray = nullptr;
         return 0;
     }
+    freeTexture();
     return texture;
 }
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::optional<std::string> sky_tex;
+// need a special version of addTexture
+inline void addTexture(
+    float3 sunLightDir,
+    float3 windDir,
+    int step, // be careful
+    float coverage, 
+    float thickness,
+    float absorption,
+    float time
+)
+{
+    zeno::log_debug("WTF??????");
+    // BE CAREFUL！！！！！ UPDATE ONLY WHEN NEEDED!!!!
+    // if(g_tex.count("procedural_sky")) {
+    //     return;
+    // }
+    g_tex["procedural_sky"] = makeCudaTexture(
+        // 2048, 2048 // deadly slow
+        // 1024, 1024 // still
+        512, 512 // runtime speed penalty for writing texture???
+        , 
+        sunLightDir,
+        windDir,
+        step, // be careful
+        coverage, 
+        thickness,
+        absorption,
+        time
+    );
+    for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
+        zeno::log_info("-{}", i->first);
+    }
+}
+
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
@@ -416,10 +516,22 @@ inline void addTexture(std::string path)
     zeno::log_info("is hdr: {}", stbi_is_hdr(path.c_str()));
     // Trying first
     // a so fxxking stupid approach
-    if(strcmp(path.c_str(), "procedural_sky")==0) {
-        g_tex[path] = makeCudaTexture(32, 32);
-    }
-    else if (stbi_is_hdr(path.c_str())) {
+    // CONFLICT: checkout line 683 in RenderEngineOptx.cpp 
+    // if(strcmp(path.c_str(), "procedural_sky")==0) {
+    //     zeno::log_error("psky:{}", path); //debug
+    //     g_tex[path] = makeCudaTexture(2048, 2048
+    //         , 
+    //         sunLightDir,
+    //         windDir,
+    //         step, // be careful
+    //         coverage, 
+    //         thickness,
+    //         absorption,
+    //         time
+    //     );
+    // }
+    // else 
+    if (stbi_is_hdr(path.c_str())) {
         float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading texture failed:{}", path);

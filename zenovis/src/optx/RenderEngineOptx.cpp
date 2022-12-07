@@ -342,27 +342,53 @@ struct GraphicsManager {
                 xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
                                         prim->verts[3].data(), prim->verts[4].data());
             }
-            else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
-                sky_found = true;
+            // else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
+            //     sky_found = true;
 
-                // TODO: Check any change in parameters
-                // only update if there is
+            //     // TODO: Check any change in parameters
+            //     // only update if there is
 
-                // zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
-                // float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
-                // zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
-                // float timeStart = prim_in->userData().get2<float>("timeStart");
-                // float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                OptixUtil::sky_tex = "procedural_sky";
-                OptixUtil::addTexture("procedural_sky");
-                // xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
-            }
+            //     // zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
+            //     // float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+            //     // zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+            //     // float timeStart = prim_in->userData().get2<float>("timeStart");
+            //     // float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
+            //     OptixUtil::sky_tex = "procedural_sky";
+            //     OptixUtil::addTexture("procedural_sky");
+            //     // xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+            // }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 OptixUtil::sky_tex = path;
-                OptixUtil::addTexture(path);
+
+                // a fvcking ugly approach again
+                bool usepsky = prim_in->userData().get2<float>("psky");
+                if(usepsky) {
+                    float timeStart = prim_in->userData().get2<float>("timeStart");
+                    float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
+                    auto &ud = zeno::getSession().userData();
+                    int frameid = ud.get2<int>("frameid", 0);
+                    float time = timeStart + timeSpeed * frameid;
+                    // time cal succeed
+                    OptixUtil::addTexture(
+                        make_float3(
+                            sin(-45.0f / 180.f * M_PI),
+                            cos(-45.0f / 180.f * M_PI) * sin(60.0f / 180.f * M_PI),
+                            cos(-45.0f / 180.f * M_PI) * cos(60.0f / 180.f * M_PI)
+                        ),
+                        make_float3(0., 0., 1.),
+                        40, // be careful
+                        .45,
+                        15.,
+                        1.030725 * 0.3,
+                        time
+                    );
+                }
+                else{
+                    OptixUtil::addTexture(path);
+                }
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
             }
         }

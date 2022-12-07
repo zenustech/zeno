@@ -45,6 +45,9 @@ struct HDRSky : INode {
         prim->userData().set2("HDRSky", std::move(path));
         prim->userData().set2("evnTexRotation", std::move(get_input2<float>("rotation")));
         prim->userData().set2("evnTexStrength", std::move(get_input2<float>("strength")));
+        prim->userData().set2("psky", std::move(get_input2<bool>("psky")));
+        prim->userData().set2("timeStart", std::move(get_input2<float>("timeStart")));
+        prim->userData().set2("timeSpeed", std::move(get_input2<float>("timeSpeed")));
         set_output("HDRSky", std::move(prim));
     }
 };
@@ -54,6 +57,9 @@ ZENDEFNODE(HDRSky, {
         {"readpath", "path"},
         {"float", "rotation", "0"},
         {"float", "strength", "1"},
+        {"bool", "psky", "0"},
+        {"float", "timeStart", "0"},
+        {"float", "timeSpeed", "0.1"},
     },
     {
         {"HDRSky"},
