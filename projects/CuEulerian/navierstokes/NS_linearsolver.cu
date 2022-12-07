@@ -497,14 +497,14 @@ struct ZSNSPressureProject : INode {
 
                                 auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
                                 p_self = shmem[idx];
-                                p_x[0] = shmem[idx - halo_side_length * halo_side_length];
-                                p_x[1] = shmem[idx + halo_side_length * halo_side_length];
+                                p_x[0] = shmem[idx - 1];
+                                p_x[1] = shmem[idx + 1];
 
                                 p_y[0] = shmem[idx - halo_side_length];
                                 p_y[1] = shmem[idx + halo_side_length];
 
-                                p_z[0] = shmem[idx - 1];
-                                p_z[1] = shmem[idx + 1];
+                                p_z[0] = shmem[idx - halo_side_length * halo_side_length];
+                                p_z[1] = shmem[idx + halo_side_length * halo_side_length];
 
                                 float p_this =
                                     (1.f - sor) * p_self +
@@ -553,7 +553,6 @@ struct ZSNSPressureProject : INode {
         pol.shmem(arena_size * sizeof(value_type) * tpb);
 
         // residual
-        size_t cell_cnt = block_cnt * spg.block_size;
         zs::Vector<float> res{spg.get_allocator(), 0};
         if constexpr (level == 0) {
             res.resize(block_cnt);
@@ -561,9 +560,8 @@ struct ZSNSPressureProject : INode {
         }
 
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
-            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, rho,
-             ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
-             computeMax_c = zs::wrapv<(level == 0)>{},
+            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), dx, rho, ts_c = zs::wrapv<bucket_size>{},
+             tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"), computeMax_c = zs::wrapv<(level == 0)>{},
              blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
@@ -577,7 +575,7 @@ struct ZSNSPressureProject : INode {
                 constexpr int tile_size = decltype(ts_c)::value;
 
                 auto halo_index = [](int i, int j, int k) {
-                    return i * (halo_side_length * halo_side_length) + j * halo_side_length + k;
+                    return k * (halo_side_length * halo_side_length) + j * halo_side_length + i;
                 };
 
                 auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
@@ -873,6 +871,174 @@ struct ZSNSPressureProject : INode {
         return;
     }
 
+    float rightHandSide(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float dt) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+        auto dx = spg.voxelSize()[0];
+
+        // shared memory
+        using value_type = typename RM_CVREF_T(spg)::value_type;
+        constexpr int side_length = RM_CVREF_T(spg)::side_length;
+        constexpr int arena_size = (side_length + 1) * (side_length + 1) * (side_length + 1);
+        constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
+        constexpr std::size_t tpb = 4;
+        constexpr std::size_t cuda_block_size = bucket_size * tpb;
+        pol.shmem(arena_size * sizeof(value_type) * tpb);
+
+        // maximum rhs
+        zs::Vector<float> rhs{spg.get_allocator(), block_cnt};
+        rhs.reset(0);
+
+        // velocity divergence (source term)
+        pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
+            [spgv = zs::proxy<space>(spg), rhs = zs::proxy<space>(rhs), ts_c = zs::wrapv<bucket_size>{},
+             tpb_c = zs::wrapv<tpb>{}, overDxDt = 1.f / dx / dt, blockCnt = block_cnt,
+             vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
+                                                                               int tid) mutable {
+                // load halo
+                using vec3i = zs::vec<int, 3>;
+                using spg_t = RM_CVREF_T(spgv);
+                constexpr int side_length = spg_t::side_length;
+                constexpr int side_area = side_length * side_length;
+                constexpr int halo_side_length = side_length + 1;
+                constexpr int arena_size = halo_side_length * halo_side_length * halo_side_length;
+
+                constexpr int block_size = spg_t::block_size;
+                constexpr int tile_size = decltype(ts_c)::value;
+
+                auto halo_index = [](int i, int j, int k) {
+                    return k * (halo_side_length * halo_side_length) + j * halo_side_length + i;
+                };
+
+                auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
+                auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
+                if (blockno >= blockCnt)
+                    return;
+
+                shmem += (tid / tile_size) * arena_size;
+                auto bcoord = spgv._table._activeKeys[blockno];
+
+                //-------------------u-------------------
+                auto block = spgv.block(blockno);
+                for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                    auto localCoord = spg_t::local_offset_to_coord(cid);
+                    shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 0, cid);
+                }
+
+                // right
+                int bno = spgv._table.tile_query(tile, bcoord + vec3i{side_length, 0, 0});
+                if (bno >= 0) {
+                    auto block = spgv.block(bno);
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(halo_side_length - 1, i, j)] =
+                            block(vOffset + 0, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                    }
+                } else
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(halo_side_length - 1, i, j)] = 0; // zero velocity
+                    }
+
+                __syncthreads();
+
+                for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
+                    auto ccoord = spgv.local_offset_to_coord(cellno);
+                    auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
+
+                    float u_x[2];
+                    u_x[0] = shmem[idx];
+                    u_x[1] = shmem[idx + 1];
+
+                    spgv("tmp", blockno, cellno) = (u_x[1] - u_x[0]) * overDxDt;
+                }
+
+                //-------------------v-------------------
+                for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                    auto localCoord = spg_t::local_offset_to_coord(cid);
+                    shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 1, cid);
+                }
+
+                // top
+                bno = spgv._table.tile_query(tile, bcoord + vec3i{0, side_length, 0});
+                if (bno >= 0) {
+                    auto block = spgv.block(bno);
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(i, halo_side_length - 1, j)] =
+                            block(vOffset + 1, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                    }
+                } else
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(i, halo_side_length - 1, j)] = 0; // zero velocity
+                    }
+
+                __syncthreads();
+
+                for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
+                    auto ccoord = spgv.local_offset_to_coord(cellno);
+                    auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
+
+                    float u_y[2];
+                    u_y[0] = shmem[idx];
+                    u_y[1] = shmem[idx + halo_side_length];
+
+                    spgv("tmp", blockno, cellno) += (u_y[1] - u_y[0]) * overDxDt;
+                }
+
+                //-------------------w-------------------
+                for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                    auto localCoord = spg_t::local_offset_to_coord(cid);
+                    shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 2, cid);
+                }
+
+                // back
+                bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, side_length});
+                if (bno >= 0) {
+                    auto block = spgv.block(bno);
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(i, j, halo_side_length - 1)] =
+                            block(vOffset + 2, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                    }
+                } else
+                    for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                        int i = id / side_length;
+                        int j = id % side_length;
+                        shmem[halo_index(i, j, halo_side_length - 1)] = 0; // zero velocity
+                    }
+
+                __syncthreads();
+
+                for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
+                    auto ccoord = spgv.local_offset_to_coord(cellno);
+                    auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
+
+                    float u_z[2];
+                    u_z[0] = shmem[idx];
+                    u_z[1] = shmem[idx + halo_side_length * halo_side_length];
+
+                    float div_term = spgv.value("tmp", blockno, cellno);
+                    div_term += (u_z[1] - u_z[0]) * overDxDt;
+
+                    spgv("tmp", blockno, cellno) = div_term;
+
+                    zs::atomic_max(zs::exec_cuda, &rhs[blockno], zs::abs(div_term));
+                }
+            });
+        float rhs_max = reduce(pol, rhs, thrust::maximum<float>{});
+
+        return rhs_max;
+    }
+
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
@@ -886,30 +1052,7 @@ struct ZSNSPressureProject : INode {
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        size_t cell_cnt = block_cnt * spg.block_size;
-        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
-        res.reset(0);
-
-        // velocity divergence (source term)
-        pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, dx, dt,
-             vSrcTag = src_tag(NSGrid, "v")] __device__(int cellno) mutable {
-                auto icoord = spgv.iCoord(cellno);
-
-                float u_x[2], u_y[2], u_z[2];
-                for (int i = 0; i <= 1; ++i) {
-                    u_x[i] = spgv.value(vSrcTag, 0, icoord + zs::vec<int, 3>(i, 0, 0));
-                    u_y[i] = spgv.value(vSrcTag, 1, icoord + zs::vec<int, 3>(0, i, 0));
-                    u_z[i] = spgv.value(vSrcTag, 2, icoord + zs::vec<int, 3>(0, 0, i));
-                }
-
-                float div_term = ((u_x[1] - u_x[0]) + (u_y[1] - u_y[0]) + (u_z[1] - u_z[0])) / dx / dt;
-
-                spgv("tmp", cellno / spgv.block_size, cellno % spgv.block_size) = div_term;
-
-                reduce_max(cellno, cell_cnt, zs::abs(div_term), res[cellno / 32]);
-            });
-        float rhs_max = reduce(pol, res, thrust::maximum<float>{});
+        float rhs_max = rightHandSide(pol, NSGrid.get(), dt);
 
         // Multi-grid solver with V-Cycle
         const float tolerence = 1e-5;
