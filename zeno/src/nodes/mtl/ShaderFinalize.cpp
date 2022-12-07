@@ -23,6 +23,7 @@ struct ShaderFinalize : INode {
             em.commonCode += get_input<StringObject>("commonCode")->get();
 
         auto code = em.finalizeCode({
+            {1, "mat_base"},
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -30,7 +31,9 @@ struct ShaderFinalize : INode {
             {1, "mat_subsurface"},
             {1, "mat_thickness"},
             {3, "mat_sssParam"},
+            {1, "mat_sssScale"},
             {3, "mat_sssColor"},
+            {3, "mat_transmissionColor"},
             {1, "mat_specularTint"},
             {1, "mat_anisotropic"},
             {1, "mat_anisoRotation"},
@@ -49,8 +52,10 @@ struct ShaderFinalize : INode {
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
             {3, "mat_emission"},
+            {1, "mat_emissionIntensity"},
             {1,"mat_opacity"},
         }, {
+            get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
@@ -58,7 +63,9 @@ struct ShaderFinalize : INode {
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssScale", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("transmissionColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
@@ -76,7 +83,8 @@ struct ShaderFinalize : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
-            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(1))),
+            get_input<IObject>("emissionIntensity", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(1.0))),
         });
         auto commonCode = em.getCommonCode();
@@ -111,6 +119,7 @@ struct ShaderFinalize : INode {
 ZENDEFNODE(ShaderFinalize, {
     {
         {"string", "mtlid", "Mat1"},
+        {"float", "base", "1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -118,7 +127,9 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "subsurface", "0.0"},
         {"float", "thickness", "0.0"},
         {"vec3f", "sssParam", "1,1,1"},
+        {"float", "sssScale", "1"},
         {"vec3f", "sssColor", "1.0,1.0,1.0"},
+        {"vec3f", "transmissionColor", "1.0,1.0,1.0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
         {"float", "anisoRotation", "0.0"},
@@ -136,7 +147,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "normal", "0,0,1"},
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
-        {"vec3f", "emission", "0,0,0"},
+        {"vec3f", "emission", "1,1,1"},
+        {"float", "emissionIntensity", "0"},
         {"float", "opacity", "1"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},

@@ -208,7 +208,7 @@ namespace DisneyBSDF{
 
     static __inline__ __device__
     vec3 EvaluateDisneySpecTransmission(
-        vec3 baseColor,
+        vec3 transmissionColor,
         float metallic,
         float ior,
         float specularTint,
@@ -241,9 +241,9 @@ namespace DisneyBSDF{
         float F = BRDFBasics::fresnelDielectric(dot(wm, wo), 1.0f, ior, false);
         vec3 color;
         if(thin)
-            color = sqrt(baseColor);
+            color = sqrt(transmissionColor);
         else
-            color = baseColor;
+            color = transmissionColor;
 
         float c = (HoL * HoV) / (NoL * NoV + 1e-7);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
@@ -311,6 +311,7 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float3 EvaluateDisney(
         vec3 baseColor,
+        vec3 transmissionColor,
         float metallic,
         float subsurface,
         float specular,
@@ -399,7 +400,7 @@ namespace DisneyBSDF{
             float tax, tay;
             BRDFBasics::CalculateAnisotropicParams(rscaled, anisotropic, tax, tay);
 
-            float3 transmission = EvaluateDisneySpecTransmission(baseColor,metallic,ior,specularTint,roughness, tax, tay, thin, is_inside,wo,wi);
+            float3 transmission = EvaluateDisneySpecTransmission(transmissionColor,metallic,ior,specularTint,roughness, tax, tay, thin, is_inside,wo,wi);
             reflectance += transmissionW * transmission;
 
             float forwardTransmissivePdfW;

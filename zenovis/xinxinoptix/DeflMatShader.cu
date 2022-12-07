@@ -55,6 +55,7 @@ MatInput const &attrs) {
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
+    float mat_base = 1.0;
     vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
     float mat_metallic = 0.0;
     float mat_roughness = 0.5;
@@ -77,9 +78,12 @@ MatInput const &attrs) {
     float mat_scatterStep = 0.0f;
     float mat_smoothness = 0.0f;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    vec3  mat_transmissionColor = vec3(1.0f,1.0f,1.0f);
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
+    float mat_sssScale = 1.0;
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
-    vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
+    vec3  mat_emission = vec3(0.0f, 0.0f,0.0f);
+    float mat_emissionIntensity = 0.0;
     float mat_displacement = 0.0f;
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -90,7 +94,7 @@ MatInput const &attrs) {
         return mats;
     }else {
         /* MODME */
-        mats.basecolor = mat_basecolor;
+        mats.basecolor = mat_basecolor * mat_base;
         mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
         mats.roughness = clamp(mat_roughness, 0.01, 0.99);
         mats.subsurface = mat_subsurface;
@@ -104,7 +108,7 @@ MatInput const &attrs) {
         mats.clearcoatGloss = mat_clearcoatGloss;
         mats.opacity = 1.0 - mat_opacity;
         mats.nrm = mat_normal;
-        mats.emission = mat_emission;
+        mats.emission = mat_emission * mat_emissionIntensity;
         mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
         mats.ior = mat_ior;
         mats.scatterDistance = mat_scatterDistance;
@@ -112,7 +116,8 @@ MatInput const &attrs) {
         mats.thin = mat_thin;
         mats.doubleSide = mat_doubleSide;
         mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
+        mats.transmissionColor = mat_transmissionColor;
+        mats.sssParam = mat_sssParam * mat_sssScale;
         mats.scatterStep = mat_scatterStep;
         mats.smoothness = mat_smoothness;
         return mats;
@@ -669,6 +674,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
     auto sssColor = mats.sssParam;
+    auto transmissionColor = mats.transmissionColor;
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
     prd->opacity = opacity;
@@ -955,7 +961,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->Lweight = weight;
 
                 float3 lbrdf = DisneyBSDF::EvaluateDisney(
-                    basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
+                    basecolor, transmissionColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
                     clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
                     dot(N, L));
@@ -985,7 +991,7 @@ extern "C" __global__ void __closesthit__radiance()
 //                       1e16f, // tmax,
 //                       &shadow_prd2);
         lbrdf = DisneyBSDF::EvaluateDisney(
-            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
+            basecolor, transmissionColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
