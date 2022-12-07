@@ -250,7 +250,7 @@ struct FastClothSystem : IObject {
     /// @brief initial displacement limit during the start of K iteration collision steps
     T D = 0.25;
     /// @brief coupling coefficients between cloth dynamics and collision dynamics
-    T sigma = 80000; // s^{-2}
+    T sigma = 8; // s^{-2}
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]

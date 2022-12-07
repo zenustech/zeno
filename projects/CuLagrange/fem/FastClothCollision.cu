@@ -96,7 +96,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
                 // edge or not
-                if (eTab.query(ivec2 {vi, vj}) >= 0 || eTab.query(ivec2 {vj, vi}) >= 0)
+                if (eTab.single_query(ivec2 {vi, vj}) >= 0 || eTab.single_query(ivec2 {vj, vi}) >= 0)
                     return; 
                 if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nPP[0], 1);
@@ -133,16 +133,18 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
         }
     });
     for (int l = 0; l != ISoft; ++l) {
-        // fmt::print(fg(fmt::color::orange_red), "\tstart soft phase [{}]\n", l);
         softPhase(pol);
     }
 
     ///
     /// @brief check whether constraints satisfied
     ///
+#if 0 
     if (constraintSatisfied(pol))
         return true;
-
+#else 
+    return true; // close hard phase for now (the hard phase has bugs currently)
+#endif 
     if (!enableHardPhase)
         return false;
 
@@ -165,7 +167,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    T descentStepsize = 0.5f; 
+    T descentStepsize = 1e-5f; 
     /// @note shape matching
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
