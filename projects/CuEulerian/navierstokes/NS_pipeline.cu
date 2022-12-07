@@ -253,11 +253,7 @@ struct ZSNSAdvectDiffuse : INode {
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        zs::vec<float, 3> u_adv;
-                        u_adv[0] = spgv.iStaggeredCellSample(advTag, 0, icoord, ch);
-                        u_adv[1] = spgv.iStaggeredCellSample(advTag, 1, icoord, ch);
-                        u_adv[2] = spgv.iStaggeredCellSample(advTag, 2, icoord, ch);
-
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
@@ -274,11 +270,7 @@ struct ZSNSAdvectDiffuse : INode {
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        zs::vec<float, 3> u_adv;
-                        u_adv[0] = spgv.iStaggeredCellSample(advTag, 0, icoord, ch);
-                        u_adv[1] = spgv.iStaggeredCellSample(advTag, 1, icoord, ch);
-                        u_adv[2] = spgv.iStaggeredCellSample(advTag, 2, icoord, ch);
-
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
@@ -294,11 +286,7 @@ struct ZSNSAdvectDiffuse : INode {
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        zs::vec<float, 3> u_adv;
-                        u_adv[0] = spgv.iStaggeredCellSample(advTag, 0, icoord, ch);
-                        u_adv[1] = spgv.iStaggeredCellSample(advTag, 1, icoord, ch);
-                        u_adv[2] = spgv.iStaggeredCellSample(advTag, 2, icoord, ch);
-
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face + u_adv * dt);
@@ -315,11 +303,7 @@ struct ZSNSAdvectDiffuse : INode {
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        zs::vec<float, 3> u_adv;
-                        u_adv[0] = spgv.iStaggeredCellSample(advTag, 0, icoord, ch);
-                        u_adv[1] = spgv.iStaggeredCellSample(advTag, 1, icoord, ch);
-                        u_adv[2] = spgv.iStaggeredCellSample(advTag, 2, icoord, ch);
-
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
                         auto wcoord_face_src = wcoord_face - u_adv * dt;
 
@@ -344,10 +328,7 @@ struct ZSNSAdvectDiffuse : INode {
                     auto icoord = spgv.iCoord(blockno, cellno);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        zs::vec<float, 3> u_adv;
-                        u_adv[0] = spgv.iStaggeredCellSample(advTag, 0, icoord, ch);
-                        u_adv[1] = spgv.iStaggeredCellSample(advTag, 1, icoord, ch);
-                        u_adv[2] = spgv.iStaggeredCellSample(advTag, 2, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
 
                         int x = ch;
                         int y = (ch + 1) % 3;
