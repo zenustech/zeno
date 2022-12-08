@@ -110,7 +110,7 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
 
         // prepare preconditioner
         for (int d = 0; d != 3; ++d)
-            vtemp("P", d * 3 + d, i) += ((m + 1) * sigma);
+            vtemp("P", d * 3 + d, i) += (m * (sigma + 1.0f));
     });
     /// @brief extforce (only grad modified)
     for (auto &primHandle : prims) {
@@ -445,6 +445,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         const auto ratio = (T)1 / (T)IInit;
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
             auto dir = vtemp.pack(dim_c<3>, "dir", i);
+            vtemp.tuple(dim_c<3>, "yk", i) = vtemp.pack(dim_c<3>, "yn", i); // record current yn in yk
             vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "xn", i) + ratio * dir;
         });
 
@@ -496,7 +497,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 throw std::runtime_error("collision step in initialization fails!\n");
             /// done collision solver
 
-            if (++i != IInit)
+            if (++i == IInit)
                 break;
 
             /// @brief update xinit for the next initialization iteration
@@ -505,6 +506,9 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + ratio * dir;
             });
         }
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA (int i) mutable {
+            vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yk", i); // restore yn from yk 
+        }); 
     }
 
     /// @brief collect pairs only once depending on x^init
