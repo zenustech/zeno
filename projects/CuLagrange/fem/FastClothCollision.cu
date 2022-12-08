@@ -139,12 +139,11 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief check whether constraints satisfied
     ///
-#if 0
     if (constraintSatisfied(pol))
+    {
+        fmt::print(fg(fmt::color::red),"\tsoft phase finished successfully!\n"); 
         return true;
-#else 
-    return true; // close hard phase for now (the hard phase has bugs currently)
-#endif 
+    }
     if (!enableHardPhase)
         return false;
 
@@ -167,7 +166,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    T descentStepsize = 0.5f; 
+    T descentStepsize = 0.1f; 
     /// @note shape matching
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
@@ -180,13 +179,13 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     /// @note constraints
     pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), rho = rho, dHat2 = dHat * dHat] __device__(int i) mutable {
         auto pp = PP[i];
-        auto v0 = vtemp.pack(dim_c<3>, "xn", pp[0]); 
-        auto v1 = vtemp.pack(dim_c<3>, "xn", pp[1]); 
+        auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]); 
+        auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]); 
         // ||v0 - v1||^2 >= (B + Bt)^2 + epsSlack 
         // c(x) = ||v0 - v1||^2 - (B + Bt)^2
-        if ((v0 - v1).l2NormSqr() >= dHat2)
+        if ((x0 - x1).l2NormSqr() >= dHat2)
             return; 
-        auto grad0 = - rho * (T)2.0 * (v0 - v1);
+        auto grad0 = - rho * (T)2.0 * (x0 - x1);
 #pragma unroll 3
         for (int d = 0; d < 3; d++) {
             atomic_add(exec_cuda, &vtemp("dir", d, pp[0]), -grad0(d)); 
@@ -197,14 +196,14 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), rho = rho, 
         maxLen2 = L * L - epsSlack] __device__(int i) mutable {
         auto e = E[i];
-        auto v0 = vtemp.pack(dim_c<3>, "xn", e[0]); 
-        auto v1 = vtemp.pack(dim_c<3>, "xn", e[1]); 
+        auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]); 
+        auto x1 = vtemp.pack(dim_c<3>, "xn", e[1]); 
         // ||v0 - v1||^2 <= L^2 - epsSlack 
         // i.e. L^2 - ||v0 - v1||^2 >= epsSlack
         // c(x) = L^2 - ||v0 - v1||^2
-        if ((v0 - v1).l2NormSqr() <= maxLen2)
+        if ((x0 - x1).l2NormSqr() <= maxLen2)
             return; 
-        auto grad0 = rho * (T)2.0 * (v0 - v1);
+        auto grad0 = rho * (T)2.0 * (x0 - x1);
 #pragma unroll 3
         for (int d = 0; d < 3; d++) {
             atomic_add(exec_cuda, &vtemp("dir", d, e[0]), -grad0(d)); 
@@ -234,9 +233,13 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
     });
     /// @note constraints
     pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mu = mu,
-                     Btot2 = (B + Btight) * (B + Btight), eps = epsSlack] __device__(int i) mutable {
+                     Btot2 = (B + Btight) * (B + Btight), eps = epsSlack, dHat2 = dHat * dHat] __device__(int i) mutable {
         auto pp = PP[i];
-        zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
+        auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]); 
+        auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]); 
+        if ((x0 - x1).l2NormSqr() >= dHat2)
+            return; 
+        zs::vec<T, 3> vs[2] = {x0, x1};
         const auto &a = vs[0];
         const auto &b = vs[1];
         const auto t2 = a[0] * 2;
@@ -295,9 +298,13 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
     pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mu = mu, L2 = L * L,
-                    eps = epsSlack] __device__(int i) mutable {
+                    eps = epsSlack, maxLen2 = L * L - epsSlack] __device__(int i) mutable {
         auto e = E[i];
-        zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", e[0]), vtemp.pack(dim_c<3>, "xn", e[1])};
+        auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]); 
+        auto x1 = vtemp.pack(dim_c<3>, "xn", e[1]); 
+        if ((x0 - x1).l2NormSqr() <= maxLen2)
+            return; 
+        zs::vec<T, 3> vs[2] = {x0, x1};
         const auto &a = vs[0];
         const auto &b = vs[1];
         const auto t2 = a[0] * 2;
@@ -379,16 +386,16 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         ///
         temp.setVal(0);
         pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mark = proxy<space>(temp),
-                         dHat2 = dHat * dHat] __device__(int i) mutable {
+                         threshold = (B + Btight) * (B + Btight)] __device__(int i) mutable { // no constraints margin here according to paper 4.2.2
             auto pp = PP[i];
             auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
             auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]);
-            if (auto d2 = dist2_pp(x0, x1); d2 < dHat2)
+            if (auto d2 = dist2_pp(x0, x1); d2 < threshold)
                 mark[0] = 1;
         });
         if (temp.getVal() == 0) {
             pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mark = proxy<space>(temp),
-                            threshold = L * L - epsSlack] __device__(int i) mutable {
+                            threshold = L * L] __device__(int i) mutable { // no constraints margin here according to paper 4.2.2
                 auto e = E[i];
                 auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]);
                 auto x1 = vtemp.pack(dim_c<3>, "xn", e[1]);
@@ -400,6 +407,7 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         /// @brief backtracking if discrete constraints violated
         if (temp.getVal() == 1) {
             alpha /= 2;
+            fmt::print("\t[back-tracing] alpha: {} constraint not satisfied\n", alpha); 
             continue;
         }
 
@@ -408,7 +416,10 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
         ///
         auto E = constraintEnergy(pol);
         if (E <= E0 + alpha * c1m)
+        {
+            fmt::print("\t[back-tracing] alpha: {} line search finished!\n", alpha);
             break;
+        }
         alpha /= 2;
     } while (true);
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);
@@ -419,16 +430,16 @@ bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol) {
     constexpr auto space = execspace_e::cuda;
     temp.setVal(0);
     pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mark = proxy<space>(temp),
-                     dHat2 = dHat * dHat] __device__(int i) mutable {
+                     threshold = (B + Btight) * (B + Btight) + epsCond] __device__(int i) mutable { // epsCond: paper 4.2.2
         auto pp = PP[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
         auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]);
-        if (auto d2 = dist2_pp(x0, x1); d2 < dHat2)
+        if (auto d2 = dist2_pp(x0, x1); d2 < threshold)
             mark[0] = 1;
     });
     if (temp.getVal() == 0) {
         pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mark = proxy<space>(temp),
-                        threshold = L * L - epsSlack] __device__(int i) mutable {
+                        threshold = L * L - epsCond] __device__(int i) mutable { // epsCond: paper 4.2.2
             auto e = E[i];
             auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]);
             auto x1 = vtemp.pack(dim_c<3>, "xn", e[1]);

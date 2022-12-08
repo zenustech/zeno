@@ -212,7 +212,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #if 0
     rho = avgNodeMass * coOffset / totalVolume(pol);
 #else 
-    rho = 0.03;
+    rho = 0.1;
 #endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
