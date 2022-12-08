@@ -3,29 +3,28 @@
 #include <numeric>
 #include <iostream>
 namespace zeno {
-struct PBDSetFixedPoint : zeno::INode {
+struct PBDPin : zeno::INode {
 private:
 
 public:
     virtual void apply() override {
         //get data
         auto prim = get_input<PrimitiveObject>("prim");
-        auto fixedPoint = get_input<NumericObject>("fixedPoint")->get<int>();
+        auto pointToPin = get_input<NumericObject>("pointToPin")->get<int>();
 
         auto & invMass = prim->verts.attr<float>("invMass");
         auto & pos = prim->verts;
 
         // set fixed
-        invMass[fixedPoint] = 0.0;
+        invMass[pointToPin] = 0.0;
 
         // output
         set_output("outPrim", std::move(prim));
     };
 };
-
-ZENDEFNODE(PBDSetFixedPoint, {// inputs:
+ZENDEFNODE(PBDPin, {// inputs:
                 {
-                    {"prim", {"float","fixedPoint",""}}
+                    {"prim", {"float","pointToPin",""}}
                 },
                  // outputs:
                  {"outPrim"},

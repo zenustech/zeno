@@ -247,7 +247,7 @@ ZENO_DEFNODE()RAW");
     {)RAW");
         for (auto const &[_, entry] : desc.outputs) {
             if (entry.info.name == "DST") continue;
-            res.append(R"RAW({")RAW");
+            // res.append(R"RAW({")RAW");
             res.append(R"RAW({")RAW");
             res.append(entry.info.type);
             res.append(R"RAW(", ")RAW");

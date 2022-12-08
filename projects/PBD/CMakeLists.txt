@@ -7,6 +7,7 @@ PBDPostSolve.cpp
 PBDPreSolve.cpp
 PBDCollision.cpp
 PBDRestPos.cpp
+# easyCube.cpp
 )
 add_subdirectory(PBDCloth)
 # add_subdirectory(PBF)

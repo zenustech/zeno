@@ -763,6 +763,10 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
 
 	m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    // CHUNLEI:
+    // QPushButton *b1 = new QPushButton(this);
+    // b1->setText("hello");
 }
 
 DisplayWidget::~DisplayWidget()

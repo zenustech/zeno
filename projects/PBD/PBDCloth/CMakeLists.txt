@@ -4,7 +4,7 @@ target_sources(zeno PRIVATE
     PBDClothInit.cpp
     buildEdgeFromQuads.cpp
     buildAdjacentTris.cpp
-    PBDSetFixedPoint.cpp
+    PBDPin.cpp
     PBDSolveDihedralConstraint.cpp
     PBDDihedralConstraint.cpp
     buildEdgeFromTris.cpp
