@@ -258,13 +258,20 @@ struct CVImageAdd : CVINode {
     }
 };
 
-ZENDEFNODE(CVImageAdd, {
+struct CVImageSubtract : CVINode {
+    void apply() override {
+        auto image1 = get_input_image("image1");
+        auto image2 = get_input_image("image2");
+        auto resimage = std::make_shared<CVImageObject>();
+        cv::subtract(image1, image2, resimage->image);
+        set_output("resimage", std::move(resimage));
+    }
+};
+
+ZENDEFNODE(CVImageSubtract, {
     {
         {"CVImageObject", "image1"},
         {"CVImageObject", "image2"},
-        {"float", "weight1", "1"},
-        {"float", "weight2", "1"},
-        {"float", "constant", "0"},
     },
     {
         {"CVImageObject", "resimage"},
