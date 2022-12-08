@@ -189,6 +189,7 @@ typename FastClothSystem::T FastClothSystem::totalVolume(zs::CudaExecutionPolicy
 }
 
 void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
+#if 0 // use default params in the paper for current testing 
     L = maximumSurfEdgeLength(pol, true) * 1.5;
     B = L / std::sqrt(2);
     Btight = B / 12;
@@ -200,6 +201,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     updateHardPhaseFunctionCoefficients(epsSlack);
     epsCond = epsSlack / 20;
     // dHat (static), for priximity query
+#endif 
     dHat = proximityRadius();
     // soft phase coeff
     auto [mu_, lam_] = largestLameParams();
@@ -207,7 +209,11 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
+#if 0
     rho = avgNodeMass * coOffset / totalVolume(pol);
+#else 
+    rho = 0.03;
+#endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
 }
