@@ -251,16 +251,91 @@ void VParamItem::setData(const QVariant& value, int role)
     QStandardItem::setData(value, role);
 }
 
+#ifdef ENABLE_DRAG_DROP_ITEM
+
+QMimeData *ViewParamModel::mimeData(const QModelIndexList &indexes) const {
+    QMimeData *mimeD = QAbstractItemModel::mimeData(indexes);
+    if (indexes.size() > 0) {
+        QModelIndex index = indexes.at(0);
+        VParamItem *node = (VParamItem *)itemFromIndex(index);
+        QByteArray encoded;
+        QDataStream stream(&encoded, QIODevice::WriteOnly);
+        stream << index.row() << index.column();
+        stream << index.data(ROLE_VPARAM_NAME).toString();
+        /*stream << node->index();*/
+        //encodeData(indexes, stream);
+        node->write(stream);
+        const QString format = QStringLiteral("application/x-qstandarditemmodeldatalist");
+        mimeD->setData(format, encoded);
+    } else {
+        mimeD->setData("Node/NodePtr", "NULL");
+    }
+    return mimeD;
+}
+
 void VParamItem::read(QDataStream& in)
 {
+    QString paramName;
+    in >> paramName;
+
     QString jsonParam;
     in >> jsonParam;
-    
+
     rapidjson::Document doc;
     QByteArray bytes = jsonParam.toUtf8();
     doc.Parse(bytes);
 
-    zenomodel::importParam("", doc.GetObject());
+    VPARAM_INFO param = zenomodel::importParam(paramName, doc.GetObject());
+    m_tempInfo = param;
+}
+
+bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+{
+    bool ret = QStandardItemModel::dropMimeData(data, action, row, column, parent);
+    if (!ret)
+        return ret;
+
+    QModelIndex newVParamIdx = this->index(row, column, parent);
+    if (!newVParamIdx.isValid())
+        return ret;
+
+    VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(newVParamIdx));
+    //mapping core.
+    const QString& coreparam = pItem->m_tempInfo.coreParam;
+    pItem->m_info = pItem->m_tempInfo.m_info;
+    if (!coreparam.isEmpty())
+    {
+        if (pItem->m_tempInfo.m_cls == PARAM_INPUT)
+        {
+            IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_INPUT_MODEL));
+            pItem->m_index = inputsModel->index(coreparam);
+        }
+        else if (pItem->m_tempInfo.m_cls == PARAM_PARAM)
+        {
+            IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_PARAM_MODEL));
+            pItem->m_index = paramsModel->index(coreparam);
+        }
+        else if (pItem->m_tempInfo.m_cls == PARAM_OUTPUT)
+        {
+            IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_OUTPUT_MODEL));
+            pItem->m_index = outputsModel->index(coreparam);
+        }
+        pItem->setData(true, ROLE_VPARAM_IS_COREPARAM);
+
+        //copy inner type and value.
+        if (pItem->m_index.isValid())
+        {
+            pItem->m_info.typeDesc = pItem->m_index.data(ROLE_PARAM_TYPE).toString();
+            pItem->m_info.value = pItem->m_index.data(ROLE_PARAM_VALUE);
+        }
+    }
+    else
+    {
+        pItem->setData(false, ROLE_VPARAM_IS_COREPARAM);
+    }
+    
+    pItem->setData(pItem->m_tempInfo.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
+    return true;
 }
 
 void VParamItem::write(QDataStream& out) const
@@ -270,10 +345,10 @@ void VParamItem::write(QDataStream& out) const
     zenomodel::exportItem(this, writer);
 
     QString content = QString(s.GetString());
-    //QByteArray arr = content.toUtf8();
     out << content;
-    //out.writeBytes(arr.data(), arr.length());
 }
+
+#endif
 
 VParamItem* VParamItem::getItem(const QString& uniqueName) const
 {
@@ -687,34 +762,17 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
             path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
             return path;
         }
+        case ROLE_INPUT_MODEL:
+        case ROLE_PARAM_MODEL:
+        case ROLE_OUTPUT_MODEL:
+            if (m_nodeIdx.isValid())
+                return m_nodeIdx.data(role);
+            break;
     }
     return QStandardItemModel::data(index, role);
 }
 
-QMimeData* ViewParamModel::mimeData(const QModelIndexList& indexes) const
-{
-    QMimeData* mimeD = QAbstractItemModel::mimeData(indexes);
-    if (indexes.size() > 0)
-    {
-        QModelIndex index = indexes.at(0);
-        VParamItem* node = (VParamItem*)itemFromIndex(index);
-        QByteArray encoded;
-        QDataStream stream(&encoded, QIODevice::WriteOnly);
-        node->write(stream);
-        const QString format = QStringLiteral("application/x-qstandarditemmodeldatalist");
-        mimeD->setData(format, encoded);
-    }
-    else
-    {
-        mimeD->setData("Node/NodePtr", "NULL");
-    }
-    return mimeD;
-}
 
-bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
-{
-    return QStandardItemModel::dropMimeData(data, action, row, column, parent);
-}
 
 bool ViewParamModel::isNodeModel() const
 {

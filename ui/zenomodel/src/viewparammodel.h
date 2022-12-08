@@ -7,6 +7,8 @@
 
 #include <rapidxml/rapidxml_print.hpp>
 
+#define ENABLE_DRAG_DROP_ITEM
+
 using namespace rapidxml;
 
 struct VParamItem;
@@ -36,6 +38,7 @@ struct VParamItem : public QStandardItem
     //for easy to debug, store here rather than QStandardItem internal data:
     PARAM_INFO m_info;
     VPARAM_TYPE vType;
+    VPARAM_INFO m_tempInfo;
 
     ProxySlotObject m_proxySlot;
 
@@ -52,8 +55,10 @@ struct VParamItem : public QStandardItem
     rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName) const;
     bool operator==(VParamItem* rItem) const;
+#ifdef ENABLE_DRAG_DROP_ITEM
     void read(QDataStream& in) override;
     void write(QDataStream& out) const override;
+#endif
 };
 
 class ViewParamModel : public QStandardItemModel
@@ -70,8 +75,10 @@ public:
     bool isNodeModel() const;
     bool isDirty() const;
     void markDirty();
+#ifdef ENABLE_DRAG_DROP_ITEM
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+#endif
 
 public slots:
     void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
