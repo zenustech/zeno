@@ -502,7 +502,7 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
     }
 }
 
-void ZEditParamLayoutDlg::onApply()
+void ZEditParamLayoutDlg::applySubgraphNode()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel())
@@ -523,104 +523,106 @@ void ZEditParamLayoutDlg::onApply()
             QStandardItem* pGroup = pTab->child(i);
             ZASSERT_EXIT(pGroup);
             const QString& groupName = pGroup->text();
+
+            if (groupName != "In Sockets" && groupName != "Out Sockets")
+            {
+                continue;
+            }
+
+            bool bSubInput = groupName == "In Sockets";
+
+            QSet<QString> deleteParams;
             if (groupName == "In Sockets")
             {
-                QSet<QString> deleteParams;
                 INPUT_SOCKETS inputs = m_nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
                 for (QString coreName : inputs.keys())
                     deleteParams.insert(coreName);
-
-                for (int r = 0; r < pGroup->rowCount(); r++)
-                {
-                    VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
-                    const QString& vName = pItem->m_info.name;
-                    const QString& coreName = pItem->data(ROLE_PARAM_NAME).toString();
-                    const QString& typeDesc = pItem->m_info.typeDesc;
-                    const QVariant& deflVal = pItem->m_info.value;
-                    PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
-
-                    if (coreName.isEmpty())
-                    {
-                        //new added param.
-                        const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
-
-                        QString subIO_ident = NodesMgr::createNewNode(pGraphsModel, subgIdx, "SubInput", QPointF(0, 0));
-                        const QModelIndex& nodeIdx = pGraphsModel->index(subIO_ident, subgIdx);
-                        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-                        paramModel->setItem(paramModel->index("name"), "string", vName);
-                        paramModel->setItem(paramModel->index("type"), "string", typeDesc);
-
-                        const QModelIndex& idxDefl = paramModel->index("defl");
-                        paramModel->setItem(idxDefl, typeDesc, defl);
-                        paramModel->setData(idxDefl, ctrl, ROLE_PARAM_CTRL);
-                    }
-                    else if (coreName != "SRC" && coreName != "DST")
-                    {
-                        // rename
-                        bool bNameChanged = coreName != vName;
-
-                        const QModelIndex& subInput = UiHelper::findSubInputIdx(pGraphsModel, coreName, subgIdx);
-                        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInput.data(ROLE_PARAM_MODEL));
-                        const QModelIndex& nameIdx = paramModel->index("name");
-                        const QModelIndex& typeIdx = paramModel->index("type");
-                        const QModelIndex& deflIdx = paramModel->index("defl");
-
-                        //update the value on "name" in SubInput.
-                        paramModel->setData(nameIdx, vName, ROLE_PARAM_VALUE);
-                        //update type and value if necessaily.
-                        paramModel->setData(typeIdx, typeDesc, ROLE_PARAM_VALUE);
-                        paramModel->setData(deflIdx, deflVal, ROLE_PARAM_VALUE);
-                        // set control and then will sync to all view param.
-                        paramModel->setData(deflIdx, ctrl, ROLE_PARAM_CTRL);
-                    }
-
-                    deleteParams.remove(coreName);
-                }
-
-                //remove core param
-                QStringList removeList;
-                for (QString delCoreParam : deleteParams)
-                {
-                    const QModelIndex& subInput = UiHelper::findSubInputIdx(pGraphsModel, delCoreParam, subgIdx);
-                    removeList.append(subInput.data(ROLE_OBJID).toString());
-                }
-                for (QString ident : removeList)
-                {
-                    //currently, the param about subgraph is construct or deconstruct by SubInput/SubOutput node.
-                    //so, we have to remove or add the SubInput/SubOutput node to affect the params.
-                    pGraphsModel->removeNode(ident, subgIdx, true);
-                }
             }
-            else if (groupName == "Out Sockets")
+            else
             {
+                OUTPUT_SOCKETS outputs = m_nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+                for (QString coreName : outputs.keys())
+                    deleteParams.insert(coreName);
+            }
 
+            for (int r = 0; r < pGroup->rowCount(); r++)
+            {
+                VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
+                const QString& vName = pItem->m_info.name;
+                const QString& coreName = pItem->data(ROLE_PARAM_NAME).toString();
+                const QString& typeDesc = pItem->m_info.typeDesc;
+                const QVariant& deflVal = pItem->m_info.value;
+                PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
+
+                if (coreName.isEmpty())
+                {
+                    //new added param.
+                    const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
+
+                    QPointF pos(0, 0);
+                    //todo: node arrangement.
+
+                    QString subIO_ident = NodesMgr::createNewNode(pGraphsModel, subgIdx, bSubInput ? "SubInput" : "SubOutput", pos);
+                    const QModelIndex& nodeIdx = pGraphsModel->index(subIO_ident, subgIdx);
+                    IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+                    paramModel->setItem(paramModel->index("name"), "string", vName);
+                    paramModel->setItem(paramModel->index("type"), "string", typeDesc);
+
+                    const QModelIndex& idxDefl = paramModel->index("defl");
+                    paramModel->setItem(idxDefl, typeDesc, defl);
+                    paramModel->setData(idxDefl, ctrl, ROLE_PARAM_CTRL);
+
+                    //have to bind new param idx on subgraph node.
+                    IParamModel *_subgnode_paramModel =
+                        QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
+                    pItem->mapCoreParam(_subgnode_paramModel->index(vName));
+                }
+                else if (coreName != "SRC" && coreName != "DST")
+                {
+                    // rename
+                    bool bNameChanged = coreName != vName;
+
+                    const QModelIndex& subInOutput = UiHelper::findSubInOutputIdx(pGraphsModel, bSubInput, coreName, subgIdx);
+                    IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInOutput.data(ROLE_PARAM_MODEL));
+                    const QModelIndex& nameIdx = paramModel->index("name");
+                    const QModelIndex& typeIdx = paramModel->index("type");
+                    const QModelIndex& deflIdx = paramModel->index("defl");
+
+                    //update the value on "name" in SubInput/SubOutput.
+                    paramModel->setData(nameIdx, vName, ROLE_PARAM_VALUE);
+                    //update type and value if necessaily.
+                    paramModel->setData(typeIdx, typeDesc, ROLE_PARAM_VALUE);
+                    paramModel->setData(deflIdx, deflVal, ROLE_PARAM_VALUE);
+                    // set control and then will sync to all view param.
+                    paramModel->setData(deflIdx, ctrl, ROLE_PARAM_CTRL);
+                }
+
+                deleteParams.remove(coreName);
+            }
+
+            //remove core param
+            QStringList removeList;
+            for (QString delCoreParam : deleteParams)
+            {
+                const QModelIndex& subInOutput = UiHelper::findSubInOutputIdx(pGraphsModel, bSubInput, delCoreParam, subgIdx);
+                removeList.append(subInOutput.data(ROLE_OBJID).toString());
+            }
+            for (QString ident : removeList)
+            {
+                //currently, the param about subgraph is construct or deconstruct by SubInput/SubOutput node.
+                //so, we have to remove or add the SubInput/SubOutput node to affect the params.
+                pGraphsModel->removeNode(ident, subgIdx, true);
             }
         }
-        //m_model->markDirty();
-        //m_model->clone(m_proxyModel);
+        //and then have to clone, for the specific order.
     }
-    else
-    {
-        QStandardItem* pRoot = m_proxyModel->invisibleRootItem()->child(0);
-        QStandardItem* pTab = pRoot->child(0);
-        for (int i = 0; i < pTab->rowCount(); i++)
-        {
-            QStandardItem* pGroup = pTab->child(i);
-            const QString& groupName = pGroup->text();
-            if (groupName == "In Sockets")
-            {
-                for (int r = 0; r < pGroup->rowCount(); r++)
-                {
-                    VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
-                    int j;
-                    j = 0;
-                }
-            }
-        }
+}
 
-        m_model->markDirty();
-        m_model->clone(m_proxyModel);
-    }
+void ZEditParamLayoutDlg::onApply()
+{
+    applySubgraphNode();
+    m_model->markDirty();
+    m_model->clone(m_proxyModel);
 }
 
 void ZEditParamLayoutDlg::onOk()

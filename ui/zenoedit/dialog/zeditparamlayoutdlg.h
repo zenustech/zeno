@@ -55,6 +55,8 @@ private slots:
     void onComboTableItemsCellChanged(int row, int column);
 
 private:
+    void applySubgraphNode();
+
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
 

@@ -1423,8 +1423,8 @@ int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
     return -1;
 }
 
-QModelIndex UiHelper::findSubInputIdx(IGraphsModel* pModel, const QString& paramName, const QModelIndex& subgIdx)
-{
+QModelIndex UiHelper::findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
+                                         const QModelIndex &subgIdx) {
     QModelIndexList nodes = pModel->searchInSubgraph("SubInput", subgIdx);
     for (QModelIndex subInput : nodes)
     {

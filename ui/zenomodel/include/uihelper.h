@@ -67,7 +67,8 @@ public:
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
     static int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
-    static QModelIndex findSubInputIdx(IGraphsModel* pModel, const QString& paramName, const QModelIndex& subgIdx);
+    static QModelIndex findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
+                                          const QModelIndex &subgIdx);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
