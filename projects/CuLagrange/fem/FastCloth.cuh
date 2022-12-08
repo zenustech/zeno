@@ -209,7 +209,7 @@ struct FastClothSystem : IObject {
     bool enableContactSelf = true;
     bool projectDBC = false;
     T augLagCoeff = 1e4;
-    T dHat = 0.0025;
+    T dHat = 8;
     vec3 extAccel;
 
     T boxDiagSize2 = 0;
@@ -250,7 +250,7 @@ struct FastClothSystem : IObject {
     /// @brief initial displacement limit during the start of K iteration collision steps
     T D = 0.25;
     /// @brief coupling coefficients between cloth dynamics and collision dynamics
-    T sigma = 8; // s^{-2}
+    T sigma = 8; // s^{-2} // TODO: use sigma(8e4) * dt2 to replace sigma in energy terms
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]

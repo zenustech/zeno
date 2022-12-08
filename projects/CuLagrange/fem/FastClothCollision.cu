@@ -139,7 +139,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief check whether constraints satisfied
     ///
-#if 0 
+#if 0
     if (constraintSatisfied(pol))
         return true;
 #else 
@@ -167,7 +167,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    T descentStepsize = 1e-5f; 
+    T descentStepsize = 0.5f; 
     /// @note shape matching
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
@@ -178,59 +178,37 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
     /// @note constraints
-    pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), rho = rho] __device__(int i) mutable {
+    pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), rho = rho, dHat2 = dHat * dHat] __device__(int i) mutable {
         auto pp = PP[i];
-        zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
-        const auto &a = vs[0];
-        const auto &b = vs[1];
-        const auto t2 = a[0] * 2;
-        const auto t3 = a[1] * 2;
-        const auto t4 = a[2] * 2;
-        const auto t5 = b[0] * 2;
-        const auto t6 = b[1] * 2;
-        const auto t7 = b[2] * 2;
-        const auto t8 = -t5;
-        const auto t9 = -t6;
-        const auto t10 = -t7;
-        const auto t11 = t2 + t8;
-        const auto t12 = t3 + t9;
-        const auto t13 = t4 + t10;
-        const auto t14 = rho * t11;
-        const auto t15 = rho * t12;
-        const auto t16 = rho * t13;
-        auto grad = zs::vec<T, 6>{-t14, -t15, -t16, t14, t15, t16};
+        auto v0 = vtemp.pack(dim_c<3>, "xn", pp[0]); 
+        auto v1 = vtemp.pack(dim_c<3>, "xn", pp[1]); 
+        // ||v0 - v1||^2 >= (B + Bt)^2 + epsSlack 
+        // c(x) = ||v0 - v1||^2 - (B + Bt)^2
+        if ((v0 - v1).l2NormSqr() >= dHat2)
+            return; 
+        auto grad0 = - rho * (T)2.0 * (v0 - v1);
 #pragma unroll 3
-        for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("dir", d, pp[0]), -grad(d)); 
-            atomic_add(exec_cuda, &vtemp("dir", d, pp[1]), -grad(3 + d)); 
-        }
-    });
+        for (int d = 0; d < 3; d++) {
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[0]), -grad0(d)); 
+            atomic_add(exec_cuda, &vtemp("dir", d, pp[1]), grad0(d)); 
+        } 
+    }); 
 
-    pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), rho = rho] __device__(int i) mutable {
+    pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), rho = rho, 
+        maxLen2 = L * L - epsSlack] __device__(int i) mutable {
         auto e = E[i];
-        zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", e[0]), vtemp.pack(dim_c<3>, "xn", e[1])};
-        const auto &a = vs[0];
-        const auto &b = vs[1];
-        const auto t2 = a[0] * 2;
-        const auto t3 = a[1] * 2;
-        const auto t4 = a[2] * 2;
-        const auto t5 = b[0] * 2;
-        const auto t6 = b[1] * 2;
-        const auto t7 = b[2] * 2;
-        const auto t8 = -t5;
-        const auto t9 = -t6;
-        const auto t10 = -t7;
-        const auto t11 = t2 + t8;
-        const auto t12 = t3 + t9;
-        const auto t13 = t4 + t10;
-        const auto t14 = rho * t11;
-        const auto t15 = rho * t12;
-        const auto t16 = rho * t13;
-        auto grad = zs::vec<T, 6>{t14, t15, t16, -t14, -t15, -t16};
+        auto v0 = vtemp.pack(dim_c<3>, "xn", e[0]); 
+        auto v1 = vtemp.pack(dim_c<3>, "xn", e[1]); 
+        // ||v0 - v1||^2 <= L^2 - epsSlack 
+        // i.e. L^2 - ||v0 - v1||^2 >= epsSlack
+        // c(x) = L^2 - ||v0 - v1||^2
+        if ((v0 - v1).l2NormSqr() <= maxLen2)
+            return; 
+        auto grad0 = rho * (T)2.0 * (v0 - v1);
 #pragma unroll 3
-        for (int d = 0; d < 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("dir", d, e[0]), -grad(d));
-            atomic_add(exec_cuda, &vtemp("dir", d, e[1]), -grad(3 + d));
+        for (int d = 0; d < 3; d++) {
+            atomic_add(exec_cuda, &vtemp("dir", d, e[0]), -grad0(d)); 
+            atomic_add(exec_cuda, &vtemp("dir", d, e[1]), grad0(d)); 
         }
     });
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), 
