@@ -555,10 +555,24 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         // PREPARE P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack<3, 3>("P", i);
+#if 0
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
                 vtemp.tuple<9>("P", i) = inverse(mat);
             else
                 vtemp.tuple<9>("P", i) = mat3::identity();
+#else 
+            // diag preconditioner for tiny node mass 
+            mat3 tempP; 
+            for (int d = 0; d < 3; d++)
+            {
+                auto elem = vtemp("P", d * 3 + d, i);
+                if (elem > limits<T>::epsilon() * 10)
+                    tempP(d, d) = 1.0f / elem;
+                else 
+                    tempP(d, d) = 1.0f; 
+            }
+            vtemp.tuple(dim_c<9>, "P", i) = tempP; 
+#endif 
         });
         // prepare float edition
         // convertHessian(pol);
