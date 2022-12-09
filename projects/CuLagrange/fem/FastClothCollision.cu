@@ -139,11 +139,13 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     /// @brief check whether constraints satisfied
     ///
+    findConstraints(pol, dHat); 
     if (constraintSatisfied(pol))
     {
-        fmt::print(fg(fmt::color::red),"\tsoft phase finished successfully!\n"); 
+        fmt::print(fg(fmt::color::yellow),"\tsoft phase finished successfully!\n"); 
         return true;
     }
+    fmt::print(fg(fmt::color::red),"\tsoft phase failed!\n"); 
     if (!enableHardPhase)
         return false;
 
@@ -434,6 +436,31 @@ bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol) {
         auto pp = PP[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
         auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]);
+        auto x0k = vtemp.pack(dim_c<3>, "xk", pp[0]); 
+        auto x1k = vtemp.pack(dim_c<3>, "xk", pp[1]); 
+        auto ek = x1k - x0k, ek1 = x1 - x0; 
+        auto dir = ek1 - ek; 
+        auto de2 = dir.l2NormSqr(); 
+        if (de2 > limits<T>::epsilon()) // check continuous constraints 4.2.1 & 4.1
+        {
+            auto numerator = -ek.dot(dir); 
+            auto t = numerator / de2; 
+            if (t > 0 && t < 1)
+            {
+                auto et = t * dir + ek;
+                printf("t: %f, et.l2NormSqr: %f, threshold: %f\n", 
+                    (float)t, (float)(et.l2NormSqr()), (float)threshold); 
+                if (et.l2NormSqr() < threshold)
+                {
+                    // printf("et.l2NormSqr: %f\n", (float)(et.l2NormSqr())); 
+                    mark[0] = 1; 
+                    return; 
+                }
+            }
+        } else {
+            printf("\t\tcontinuous constraints met small edge displacement^2: %f(*1e-3)\n", 
+                (float)(1e3f * de2)); 
+        }
         if (auto d2 = dist2_pp(x0, x1); d2 < threshold)
             mark[0] = 1;
     });
