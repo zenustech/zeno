@@ -566,6 +566,7 @@ struct CVImageBlit : CVINode {
         auto likeimage = get_input<CVImageObject>("image");
         auto srcimage = get_input<CVImageObject>("srcImage");
         auto is255 = get_input2<bool>("is255");
+        auto centered = get_input2<bool>("centered");
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         auto x0 = get_input2<int>("X0");
@@ -574,6 +575,10 @@ struct CVImageBlit : CVINode {
         auto dy = srcimage->image.rows;
         auto maxx = image->image.cols;
         auto maxy = image->image.rows;
+        if (centered) {
+            x0 += dx / 2;
+            y0 += dy / 2;
+        }
         //zeno::log_warn("dx {} dy {}", dx, dy);
         int sx0 = 0, sy0 = 0;
         bool hasmodroi = false;
@@ -638,6 +643,7 @@ ZENDEFNODE(CVImageBlit, {
         {"CVImageObject", "srcImage"},
         {"int", "X0", "0"},
         {"int", "Y0", "0"},
+        {"bool", "centered", "0"},
         {"optional CVImageObject", "mask"},
         {"bool", "isAlphaMask", "1"},
         {"bool", "is255", "1"},
