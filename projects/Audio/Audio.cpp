@@ -84,6 +84,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     }
     result->userData().set("SampleRate",std::make_shared<zeno::NumericObject>((int)info.hz));
     result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)sample_len));
+    result->userData().set("LengthInSeconds", std::make_shared<zeno::NumericObject>((float)sample_len/(float)info.hz));
 
     return std::move(result);
 }

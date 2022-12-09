@@ -876,6 +876,46 @@ ZENDEFNODE(CVImageDrawPoly, {
     {"opencv"},
 });
 
+struct CVImagePutText : CVINode {
+    void apply() override {
+        auto likeimage = get_input<CVImageObject>("image");
+        auto image = get_input2<bool>("inplace") ? likeimage
+            : std::make_shared<CVImageObject>(likeimage->image.clone());
+        auto text = get_input2<std::string>("text");
+        auto fontFace = get_input2<int>("fontFace");
+        auto thickness = get_input2<int>("thickness");
+        auto antialias = get_input2<bool>("antialias");
+        auto scale = get_input2<float>("scale");
+        auto is255 = get_input2<bool>("is255");
+        auto color = tocvscalar<double>(get_input2<vec3f>("color") * (is255 ? 255 : 1));
+        cv::Point org(get_input2<int>("X0"), get_input2<int>("Y0"));
+        cv::putText(image->image, text, org, fontFace, scale, color,
+                    thickness, antialias ? cv::LINE_AA : cv::LINE_8);
+        set_output("resimage", std::move(image));
+    }
+};
+
+ZENDEFNODE(CVImagePutText, {
+    {
+        {"CVImageObject", "image"},
+        {"string", "text", "Hello, World"},
+        {"int", "X0", "0"},
+        {"int", "Y0", "0"},
+        {"bool", "is255", "1"},
+        {"vec3f", "color", "1,1,1"},
+        {"float", "scale", "1"},
+        {"int", "thickness", "1"},
+        {"int", "fontFace", "0"},
+        {"bool", "antialias", "0"},
+        {"bool", "inplace", "0"},
+    },
+    {
+        {"CVImageObject", "resimage"},
+    },
+    {},
+    {"opencv"},
+});
+
 }
 
 }
