@@ -1,8 +1,8 @@
-#include "PBF.h"
-#include "CellHelpers.h"
+#include "PBF_BVH.h"
+#include "SPHKernels.h"
 using namespace zeno;
 
-void PBF::preSolve()
+void PBF_BVH::preSolve()
 {
     auto &pos = prim->verts;
     for (int i = 0; i < numParticles; i++)
@@ -12,14 +12,14 @@ void PBF::preSolve()
     for (int i = 0; i < numParticles; i++)
     {
         vec3f tempVel = vel[i];
-        tempVel += gravity * dt;
+        tempVel += externForce * dt;
         pos[i] += tempVel * dt;
         boundaryHandling(pos[i]);
     }
 }
 
 
-void PBF::boundaryHandling(vec3f & p)
+void PBF_BVH::boundaryHandling(vec3f & p)
 {
     vec3f bmin = bounds_min + pRadius;
     vec3f bmax = bounds_max - pRadius;
@@ -34,20 +34,21 @@ void PBF::boundaryHandling(vec3f & p)
     }
 }
 
-void PBF::solve()
+void PBF_BVH::solve()
 {
-    auto &pos = prim->verts;
 
     computeLambda();
 
     computeDpos();
 
     //apply the dpos to the pos
+    auto &pos = prim->verts;
     for (size_t i = 0; i < numParticles; i++)
         pos[i] += dpos[i];
 }
 
-void PBF::computeLambda()
+// old way
+void PBF_BVH::computeLambda()
 {
     lambda.clear();
     lambda.resize(numParticles);
@@ -76,7 +77,8 @@ void PBF::computeLambda()
     }
 }
 
-void PBF::computeDpos()
+
+void PBF_BVH::computeDpos()
 {
     dpos.clear();
     dpos.resize(numParticles);
@@ -99,7 +101,7 @@ void PBF::computeDpos()
 }
 
 //helper for computeDpos()
-inline float PBF::computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h)
+inline float PBF_BVH::computeScorr(const vec3f& distVec, float coeffDq, float coeffK, float h)
 {
     float x = kernelPoly6(length(distVec), h) / kernelPoly6(coeffDq * h, h);
     x = x * x;
@@ -108,7 +110,7 @@ inline float PBF::computeScorr(const vec3f& distVec, float coeffDq, float coeffK
 }
 
 
-void PBF::postSolve()
+void PBF_BVH::postSolve()
 {
     auto &pos = prim->verts;
 
@@ -117,3 +119,35 @@ void PBF::postSolve()
 }
 
 
+void PBF_BVH::neighborSearch(std::shared_ptr<PrimitiveObject> prim)
+{
+    auto &pos = prim->verts;
+
+    //清零
+    neighborList.clear();
+    neighborList.resize(pos.size());
+
+    lbvh->refit();
+    
+    //邻域搜索
+    buildNeighborList(pos, neighborSearchRadius, lbvh.get(), neighborList);
+}
+
+
+void PBF_BVH::buildNeighborList(const std::vector<vec3f> &pos, float searchRadius, const zeno::LBvh *lbvh, std::vector<std::vector<int>> & list)
+{
+    auto radius2 = searchRadius*searchRadius;
+    #pragma omp parallel for
+    for (int i = 0; i < pos.size(); i++) 
+    {
+        //BVH的使用
+        lbvh->iter_neighbors(pos[i], [&](int j) 
+            {
+                if (lengthSquared(pos[i] - pos[j]) < radius2 && j!=i)
+                {
+                    list[i].emplace_back(j);
+                }
+            }
+        );
+    }
+}
