@@ -744,9 +744,9 @@ struct ZSNSPressureProject : INode {
                 auto ccoord = spgv_c.local_offset_to_coord(cellno) * 2;
 
                 float res_sum = 0;
-                for (int k = 0; k < 2; ++k)
+                for (int i = 0; i < 2; ++i)
                     for (int j = 0; j < 2; ++j)
-                        for (int i = 0; i < 2; ++i) {
+                        for (int k = 0; k < 2; ++k) {
                             auto ccoord_f = ccoord + vec3i{i, j, k};
                             auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
                             res_sum += shmem[cellno_f];
