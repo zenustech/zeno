@@ -494,14 +494,14 @@ struct ZSNSPressureProject : INode {
 
                             auto idx = halo_index(ccoord[0], ccoord[1], ccoord[2]);
                             p_self = shmem[idx];
-                            p_x[0] = shmem[idx - 1];
-                            p_x[1] = shmem[idx + 1];
+                            p_x[0] = shmem[idx - halo_side_length * halo_side_length];
+                            p_x[1] = shmem[idx + halo_side_length * halo_side_length];
 
                             p_y[0] = shmem[idx - halo_side_length];
                             p_y[1] = shmem[idx + halo_side_length];
 
-                            p_z[0] = shmem[idx - halo_side_length * halo_side_length];
-                            p_z[1] = shmem[idx + halo_side_length * halo_side_length];
+                            p_z[0] = shmem[idx - 1];
+                            p_z[1] = shmem[idx + 1];
 
                             float p_this =
                                 (1.f - sor) * p_self +
@@ -881,7 +881,7 @@ struct ZSNSPressureProject : INode {
         constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
         constexpr std::size_t tpb = 4;
         constexpr std::size_t cuda_block_size = bucket_size * tpb;
-        pol.shmem(arena_size * sizeof(value_type) * tpb);
+        pol.shmem(arena_size * sizeof(value_type) * tpb * 2);
 
         // maximum rhs
         zs::Vector<float> rhs{spg.get_allocator(), block_cnt};
@@ -913,7 +913,8 @@ struct ZSNSPressureProject : INode {
                 if (blockno >= blockCnt)
                     return;
 
-                shmem += (tid / tile_size) * arena_size;
+                shmem += (tid / tile_size) * arena_size * 2;
+                auto outputShmem = shmem + arena_size;
                 auto bcoord = spgv._table._activeKeys[blockno];
 
                 //-------------------u-------------------
@@ -950,7 +951,7 @@ struct ZSNSPressureProject : INode {
                     u_x[0] = shmem[idx];
                     u_x[1] = shmem[idx + 1];
 
-                    spgv("tmp", blockno, cellno) = (u_x[1] - u_x[0]) * overDxDt;
+                    outputShmem[idx] = (u_x[1] - u_x[0]) * overDxDt;
                 }
 
                 //-------------------v-------------------
@@ -986,7 +987,7 @@ struct ZSNSPressureProject : INode {
                     u_y[0] = shmem[idx];
                     u_y[1] = shmem[idx + halo_side_length];
 
-                    spgv("tmp", blockno, cellno) += (u_y[1] - u_y[0]) * overDxDt;
+                    outputShmem[idx] += (u_y[1] - u_y[0]) * overDxDt;
                 }
 
                 //-------------------w-------------------
@@ -1022,7 +1023,7 @@ struct ZSNSPressureProject : INode {
                     u_z[0] = shmem[idx];
                     u_z[1] = shmem[idx + halo_side_length * halo_side_length];
 
-                    float div_term = spgv.value("tmp", blockno, cellno);
+                    float div_term = outputShmem[idx];
                     div_term += (u_z[1] - u_z[0]) * overDxDt;
 
                     spgv("tmp", blockno, cellno) = div_term;
