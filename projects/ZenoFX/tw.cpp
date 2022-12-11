@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -72,8 +72,8 @@ struct TrianglesWrangle : zeno::INode {
             trueapply(prim->tris);
         } else if (type == "quads") {
             trueapply(prim->quads);
-        //} else if (type == "polys") {
-            //trueapply(prim->polys);
+        } else if (type == "polys") {
+            trueapply(prim->polys);
         } else if (type == "loops") {
             trueapply(prim->loops);
         } else {
@@ -104,19 +104,19 @@ struct TrianglesWrangle : zeno::INode {
             dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
         });
-	for (int p = 0; p < npoly; p++) {
-        prim->foreach_attr([&] (auto const &key, auto const &attr) {
-            int dim = ([] (auto const &v) {
-                using T = std::decay_t<decltype(v[0])>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
-                else if constexpr (std::is_same_v<T, float>) return 1;
-                else return 0;
-            })(attr);
-	 	key = std::to_string(p) + key;
-            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol('@' + key, dim);
-        });
-	}
+	//for (int p = 0; p < npoly; p++) {
+        //prim->foreach_attr([&] (auto const &key, auto const &attr) {
+            //int dim = ([] (auto const &v) {
+                //using T = std::decay_t<decltype(v[0])>;
+                //if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                //else if constexpr (std::is_same_v<T, float>) return 1;
+                //else return 0;
+            //})(attr);
+		 //key = std::to_string(p) + key;
+            //dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            //opts.define_symbol('@' + key, dim);
+        //});
+	//}
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -218,29 +218,29 @@ struct TrianglesWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-	std::map<std::string, std::array<std::vector<char>, npoly>> tmparrs;
+	//std::map<std::string, std::array<std::vector<char>, npoly>> tmparrs;
         std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
-            if (name.size() > 1 && '0' <= name[1] && name[1] <= '9') {
-		int p = name[1] - '0';
-		prim.attr_visit(name.substr(2),
-            	[&, dimid_ = dimid] (auto const &arr) {
-                	iob.base = (float *)tmparr.data() + dimid_;
-                	iob.count = tmparr.size();
-                	iob.stride = sizeof(tmparr[0]) / sizeof(float);
-		});
-	    } else {
+            //if (name.size() > 1 && '0' <= name[1] && name[1] <= '9') {
+		//int p = name[1] - '0';
+		//prim.attr_visit(name.substr(2),
+                //[&, dimid_ = dimid] (auto const &arr) {
+                    //iob.base = (float *)tmparr.data() + dimid_;
+                    //iob.count = tmparr.size();
+                    //iob.stride = sizeof(tmparr[0]) / sizeof(float);
+		//});
+		//} else {
             tris.attr_visit(name.substr(1),
             [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             });
-		}
+		//}
             chs[i] = iob;
         }
         vectors_wrangle(exec, chs);
@@ -249,7 +249,9 @@ struct TrianglesWrangle : zeno::INode {
 
 ZENDEFNODE(TrianglesWrangle, {
     {{"PrimitiveObject", "prim"},
-     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"},
+     {"enum points lines tris quads loops polys", "faceType", "tris"}},
+    },
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
