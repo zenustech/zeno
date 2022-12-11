@@ -265,7 +265,8 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
 
     const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
-    QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith);
+    const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith, ctrlProps);
     return pControl;
 }
 
@@ -735,8 +736,9 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
     const QString& sockType = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
+    const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
-    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith);
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith, ctrlProps);
     return pControl;
 }
 

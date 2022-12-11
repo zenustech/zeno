@@ -12,7 +12,7 @@ namespace zenoui
         PARAM_CONTROL ctrl,
         const QString& type,
         CallbackCollection cbSet,
-        const CONTROL_PROPERTIES& properties = CONTROL_PROPERTIES()
+        const QVariant& properties = QVariant()
     );
 
     bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl);

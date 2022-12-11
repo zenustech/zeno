@@ -120,7 +120,7 @@ private:
     bool itemFromIndex(const QModelIndex& index, _NodeItem& retNode) const;
     bool _removeRow(const QModelIndex &index);
     NODE_DATA item2NodeData(const _NodeItem& item) const;
-    _NodeItem nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx);
+    void nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
 
     QString m_name;
     QMap<QString, int> m_key2Row;

@@ -12,8 +12,7 @@ TestNormalWidget::TestNormalWidget()
 
     QString type = "";
     QStringList items = {"23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps"};
-    CONTROL_PROPERTIES properties;
-    properties["items"] = items;
+    QVariant properties = items;
 
     CallbackCollection cbSet;
 
@@ -23,9 +22,11 @@ TestNormalWidget::TestNormalWidget()
     QWidget* pSlider = zenoui::createWidget(10, CONTROL_HSLIDER, "int", cbSet, properties);
     pLayout->addWidget(pSlider);
 
-    properties["singleStep"] = 1;
-    properties["from"] = 1;
-    properties["to"] = 100;
+    SLIDER_INFO sliderInfo;
+    sliderInfo.step = 1;
+    sliderInfo.min = 1;
+    sliderInfo.max = 100;
+    properties = QVariant::fromValue(sliderInfo);
 
     QWidget* pSpinBox = zenoui::createWidget(10, CONTROL_SPINBOX_SLIDER, "int", cbSet, properties);
     pLayout->addWidget(pSpinBox);

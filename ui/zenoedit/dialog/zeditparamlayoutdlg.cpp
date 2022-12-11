@@ -213,7 +213,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         const QString& dataType = pCurrentItem->m_info.typeDesc;
         QVariant deflVal = pCurrentItem->m_info.value;
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
-        CONTROL_PROPERTIES controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+        QVariant controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
         {
             BlockSignalScope scope(m_ui->cbControl);
@@ -276,21 +276,16 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         {
             m_ui->stackProperties->setCurrentIndex(2);
             bool bIntVal = dataType == "int";
-            if (controlProperties.find("step") != controlProperties.end())
-            {
-                QVariant step = controlProperties["step"];
-                m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
-            }
-            if (controlProperties.find("min") != controlProperties.end())
-            {
-                QVariant min = controlProperties["min"];
-                m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
-            }
-            if (controlProperties.find("max") != controlProperties.end())
-            {
-                QVariant max = controlProperties["max"];
-                m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
-            }
+            SLIDER_INFO sliderInfo = controlProperties.value<SLIDER_INFO>();
+
+            QVariant step = sliderInfo.step;
+            m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
+
+            QVariant min = sliderInfo.min;
+            m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
+
+            QVariant max = sliderInfo.max;
+            m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
         }
         else
         {

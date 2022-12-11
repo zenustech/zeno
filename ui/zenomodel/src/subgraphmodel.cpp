@@ -100,35 +100,33 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     return data;
 }
 
-SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx)
+void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret)
 {
-    _NodeItem item;
-
-    item.objid = data[ROLE_OBJID].toString();
-    item.objCls = data[ROLE_OBJNAME].toString();
-    item.viewpos = data[ROLE_OBJPOS].toPointF();
-    item.bCollasped = data[ROLE_COLLASPED].toBool();
-    item.options = data[ROLE_OPTIONS].toInt();
-    item.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
+    ret.objid = data[ROLE_OBJID].toString();
+    ret.objCls = data[ROLE_OBJNAME].toString();
+    ret.viewpos = data[ROLE_OBJPOS].toPointF();
+    ret.bCollasped = data[ROLE_COLLASPED].toBool();
+    ret.options = data[ROLE_OPTIONS].toInt();
+    ret.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
-    item.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
-    item.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
-    item.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+    ret.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
+    ret.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
+    ret.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
-    item.panelParams = new ViewParamModel(false, nodeIdx, m_pGraphsModel, this);
-    item.nodeParams = new ViewParamModel(true, nodeIdx, m_pGraphsModel, this);
+    ret.panelParams = new ViewParamModel(false, nodeIdx, m_pGraphsModel, this);
+    ret.nodeParams = new ViewParamModel(true, nodeIdx, m_pGraphsModel, this);
 
-    for (ViewParamModel* viewParamModel : QList{ item.panelParams, item.nodeParams })
+    for (ViewParamModel* viewParamModel : QList{ ret.panelParams, ret.nodeParams })
     {
-        connect(item.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(item.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
+        connect(ret.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(ret.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
 
-        connect(item.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(item.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
+        connect(ret.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(ret.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
 
-        connect(item.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(item.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
+        connect(ret.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
+        connect(ret.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
     }
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
@@ -138,18 +136,16 @@ SubGraphModel::_NodeItem SubGraphModel::nodeData2Item(const NODE_DATA& data, con
     if (!inputs.isEmpty())
     {
         //will emit signal rowsInserted.
-        item.inputsModel->setInputSockets(inputs);
+        ret.inputsModel->setInputSockets(inputs);
     }
     if (!params.isEmpty())
     {
-        item.paramsModel->setParams(params);
+        ret.paramsModel->setParams(params);
     }
     if (!outputs.isEmpty())
     {
-        item.outputsModel->setOutputSockets(outputs);
+        ret.outputsModel->setOutputSockets(outputs);
     }
-
-    return item;
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -762,7 +758,7 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    item = nodeData2Item(nodeData, nodeIdx);
+    nodeData2Item(nodeData, nodeIdx, item);
 
     m_pGraphsModel->markDirty();
     return true;

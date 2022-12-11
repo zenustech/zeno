@@ -82,6 +82,14 @@ struct PARAM_INFO {
 };
 Q_DECLARE_METATYPE(PARAM_INFO)
 
+struct SLIDER_INFO {
+    qreal step;
+    qreal min;
+    qreal max;
+    SLIDER_INFO() : step(1.), min(0.), max(0.) {}
+};
+Q_DECLARE_METATYPE(SLIDER_INFO)
+
 typedef QMap<QString, QVariant> CONTROL_PROPERTIES;
 Q_DECLARE_METATYPE(CONTROL_PROPERTIES)
 

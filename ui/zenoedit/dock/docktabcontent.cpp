@@ -137,8 +137,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
     QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
-    CONTROL_PROPERTIES props;
-    props["items"] = items;
+    QVariant props = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
         const QString& percent = newValue.toString();

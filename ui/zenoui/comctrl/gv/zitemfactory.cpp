@@ -74,7 +74,8 @@ namespace zenoui
         const QString& type,
         Callback_EditFinished cbFunc,
         QGraphicsScene* scene,
-        CALLBACK_SWITCH cbSwitch
+        CALLBACK_SWITCH cbSwitch,
+        const QVariant& controlProps
     )
     {
         ZtfUtil& inst = ZtfUtil::GetInstance();
@@ -237,7 +238,8 @@ namespace zenoui
             }
             case CONTROL_ENUM:
             {
-                QStringList items = type.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+                QStringList items = controlProps.toStringList();
+
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
                 pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));

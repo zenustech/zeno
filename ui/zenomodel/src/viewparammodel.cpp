@@ -5,6 +5,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
 #include <zenomodel/customui/customuirw.h>
+#include "globalcontrolmgr.h"
 
 
 static const char* qsToString(const QString& qs)
@@ -643,6 +644,8 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
     const QModelIndex& idx = pModel->index(first, 0, parent);
     if (!idx.isValid()) return;
 
+    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+
     QStandardItem* pRoot = invisibleRootItem();
     PARAM_CLASS cls = pModel->paramClass();
     if (cls == PARAM_INPUT)
@@ -661,7 +664,18 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
                 //todo: dictpanel should be choosed by custom param manager globally.
-                PARAM_CONTROL ctrl = bMultiLink ? CONTROL_DICTPANEL : UiHelper::getControlByType(typeDesc);
+                QVariant props;
+                PARAM_CONTROL ctrl = CONTROL_NONE;
+                if (bMultiLink)
+                {
+                    ctrl = CONTROL_DICTPANEL;
+                }
+                else
+                {
+                    CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
+                    ctrl = infos.ctrl;
+                    props = infos.props;
+                }
 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
@@ -669,6 +683,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 paramItem->m_info.value = value;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
+                paramItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -686,11 +701,14 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& displayName = realName;  //todo: mapping name.
                 const QVariant& value = idx.data(ROLE_PARAM_VALUE);
 
-                PARAM_CONTROL ctrl = UiHelper::getControlByType(typeDesc);
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-                paramItem->m_info.control = ctrl;
+
+                CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
+
+                paramItem->m_info.control = infos.ctrl;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
+                paramItem->setData(infos.props, ROLE_VPARAM_CTRL_PROPERTIES);
                 paramItem->m_info.typeDesc = typeDesc;
                 paramItem->m_info.value = value;
                 pItem->appendRow(paramItem);

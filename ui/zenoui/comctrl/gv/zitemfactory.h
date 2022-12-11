@@ -12,7 +12,8 @@ namespace zenoui
         const QString& type,
         Callback_EditFinished cbFunc,
         QGraphicsScene* scene,
-        CALLBACK_SWITCH cbSwitch
+        CALLBACK_SWITCH cbSwitch,
+        const QVariant& controlProps
     );
 }
 

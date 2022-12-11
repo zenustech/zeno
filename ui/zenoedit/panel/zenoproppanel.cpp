@@ -299,7 +299,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QVariant val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
     const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
-    CONTROL_PROPERTIES pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    const QVariant& pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
