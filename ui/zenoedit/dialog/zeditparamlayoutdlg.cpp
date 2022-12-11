@@ -211,7 +211,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         PARAM_CONTROL ctrl = pCurrentItem->m_info.control;
         const QString& ctrlName = getControl(ctrl).name;
         const QString& dataType = pCurrentItem->m_info.typeDesc;
-        const QVariant& deflVal = pCurrentItem->m_info.value;
+        QVariant deflVal = pCurrentItem->m_info.value;
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
         CONTROL_PROPERTIES controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
 
@@ -233,6 +233,8 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         cbSets.cbEditFinished = [=](QVariant newValue) {
             pCurrentItem->setData(newValue, ROLE_PARAM_VALUE);
         };
+        if (!deflVal.isValid())
+            deflVal = UiHelper::initVariantByControl(ctrl);
 
         QWidget* valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
         if (valueControl)

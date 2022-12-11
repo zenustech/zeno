@@ -289,6 +289,28 @@ void VParamItem::read(QDataStream& in)
     m_tempInfo = param;
 }
 
+Qt::ItemFlags ViewParamModel::flags(const QModelIndex& index) const
+{
+    Qt::ItemFlags itemFlags = QStandardItemModel::flags(index);
+    VParamItem* item = static_cast<VParamItem*>(itemFromIndex(index));
+    if (!item)
+        return itemFlags;
+
+    if (item->vType == VPARAM_PARAM)
+    {
+        itemFlags &= ~Qt::ItemIsDropEnabled;
+    }
+    else if (item->vType == VPARAM_GROUP)
+    {
+        itemFlags &= ~Qt::ItemIsDragEnabled;
+    }
+    else
+    {
+        itemFlags &= ~(Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
+    }
+    return itemFlags;
+}
+
 bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
 {
     bool ret = QStandardItemModel::dropMimeData(data, action, row, column, parent);

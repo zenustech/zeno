@@ -78,6 +78,7 @@ public:
 #ifdef ENABLE_DRAG_DROP_ITEM
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
 #endif
 
 public slots:

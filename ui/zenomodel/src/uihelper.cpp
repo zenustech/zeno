@@ -695,7 +695,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         case CONTROL_CURVE:
         {
-            CurveModel* pModel = curve_util::deflModel(nullptr);
+            CurveModel* pModel = curve_util::deflModel(nullptr);    //todo: how to set parent?
             return QVariantPtr<CurveModel>::asVariant(pModel);
         }
         case CONTROL_VEC4_FLOAT:
