@@ -171,6 +171,7 @@ namespace zenomodel
 
         const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
         param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);
         param.m_info.name = paramName;
 
         if (controlObj.HasMember("value"))

@@ -58,7 +58,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = input_triple[0].GetString();
                 const QString &socketName = input_triple[1].GetString();
                 const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlByType(socketType);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
@@ -76,7 +76,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = param_triple[0].GetString();
                 const QString &socketName = param_triple[1].GetString();
                 const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlByType(socketType);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
@@ -96,7 +96,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = output_triple[0].GetString();
                 const QString &socketName = output_triple[1].GetString();
                 const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlByType(socketType);
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
@@ -121,7 +121,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 
 bool UiHelper::validateVariant(const QVariant& var, const QString& type)
 {
-    PARAM_CONTROL control = getControlType(type);
+    PARAM_CONTROL control = getControlByType(type);
     QVariant::Type varType = var.type();
 
     switch (control) {
@@ -202,7 +202,7 @@ QVariant UiHelper::initDefaultValue(const QString& type)
 
 QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString &type)
 {
-    auto control = getControlType(type);
+    auto control = getControlByType(type);
     switch (control) {
     case CONTROL_INT:
     {
@@ -516,7 +516,7 @@ QStringList UiHelper::getControlLists(const QString& type)
 }
 
 
-PARAM_CONTROL UiHelper::getControlType(const QString &type)
+PARAM_CONTROL UiHelper::getControlByType(const QString &type)
 {
     if (type.isEmpty()) {
         return CONTROL_NONE;
@@ -570,6 +570,34 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
+    }
+}
+
+QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
+{
+    switch (ctrl) {
+    case CONTROL_INT: return "int";
+    case CONTROL_FLOAT: return "float";
+    case CONTROL_BOOL:  return "bool";
+    case CONTROL_MULTILINE_STRING:
+    case CONTROL_STRING: return "string";
+    case CONTROL_VEC2_FLOAT: return "vec2f";
+    case CONTROL_VEC2_INT: return "vec2i";
+    case CONTROL_VEC3_FLOAT: return "vec3f";
+    case CONTROL_VEC3_INT: return "vec3i";
+    case CONTROL_VEC4_FLOAT:    return "vec4f";
+    case CONTROL_VEC4_INT: return "vec4i";
+    case CONTROL_WRITEPATH: return "string";
+    case CONTROL_READPATH: return "string";
+    case CONTROL_COLOR: return "color";     //todo: is vec3?
+    case CONTROL_CURVE: return "curve";
+    case CONTROL_ENUM: return "string";
+    case CONTROL_HSLIDER:
+    case CONTROL_HSPINBOX:
+    case CONTROL_SPINBOX_SLIDER:
+         return "int";
+    default:
+        return "";
     }
 }
 

@@ -419,7 +419,7 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
         if (item.name == "type")
         {
             const QString& newType = item.pConst.toString();
-            PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
+            PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             const QVariant& newValue = UiHelper::initDefaultValue(newType);
 
             const QModelIndex& idx_defl = index("defl");

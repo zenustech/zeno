@@ -439,7 +439,7 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
 
     VParamItem* pItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(layerIdx));
     pItem->m_info.typeDesc = dataType;
-    pItem->m_info.control = UiHelper::getControlType(dataType);
+    pItem->m_info.control = UiHelper::getControlByType(dataType);
     pItem->m_info.value = UiHelper::initVariantByControl(pItem->m_info.control);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -489,7 +489,7 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
             m_ui->editCoreParamName->setText(newName);
             m_ui->editCoreParamType->setText(typeDesc);
 
-            PARAM_CONTROL newCtrl = UiHelper::getControlType(typeDesc);
+            PARAM_CONTROL newCtrl = UiHelper::getControlByType(typeDesc);
             pViewItem->setData(newCtrl, ROLE_PARAM_CTRL);
         }
         else

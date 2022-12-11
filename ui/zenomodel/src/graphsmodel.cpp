@@ -454,7 +454,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				INPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-				socket.info.control = UiHelper::getControlType(type);
+				socket.info.control = UiHelper::getControlByType(type);
 				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.inputs[name] = socket;
 			}
@@ -469,7 +469,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-				socket.info.control = UiHelper::getControlType(type);
+				socket.info.control = UiHelper::getControlByType(type);
 				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.outputs[name] = socket;
 			}
@@ -484,7 +484,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				paramInfo.bEnableConnect = false;
 				paramInfo.name = name;
 				paramInfo.typeDesc = type;
-				paramInfo.control = UiHelper::getControlType(type);
+				paramInfo.control = UiHelper::getControlByType(type);
 				paramInfo.defaultValue = UiHelper::parseStringByType(defl, type);
 				//thers is no "value" in descriptor, but it's convient to initialize param value. 
 				paramInfo.value = paramInfo.defaultValue;
@@ -1752,7 +1752,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     const QString& nameValue = nameIdx.data(ROLE_PARAM_VALUE).toString();
     const QString& typeValue = typeIdx.data(ROLE_PARAM_VALUE).toString();
     QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
-    PARAM_CONTROL ctrl = UiHelper::getControlType(typeValue);
+    PARAM_CONTROL ctrl = UiHelper::getControlByType(typeValue);
 
     const QString& subnetNodeName = pSubModel->name();
 
@@ -1877,7 +1877,7 @@ void GraphsModel::onSubIOUpdate(SubGraphModel* pGraph, const QModelIndex& nodeId
             const QString& sockName = nameIdx.data(ROLE_PARAM_VALUE).toString();
             const QVariant& deflVal = deflIdx.data(ROLE_PARAM_VALUE);
             const QString& newType = info.newValue.toString();
-            PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
+            PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
 
             // type change, so the control of the defl will be changed.
             paramsModel->setData(deflIdx, newType, ROLE_PARAM_TYPE);

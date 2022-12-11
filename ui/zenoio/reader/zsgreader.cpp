@@ -521,7 +521,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType);
+                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
                         INPUT_SOCKET inputSocket;
                         inputSocket.info = SOCKET_INFO("", socketName);
                         inputSocket.info.type = socketType;
@@ -553,7 +553,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType);
+                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
                         PARAM_INFO paramInfo;
                         paramInfo.bEnableConnect = false;
                         paramInfo.control = ctrlType;
@@ -585,7 +585,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType);
+                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
                         OUTPUT_SOCKET outputSocket;
                         outputSocket.info = SOCKET_INFO("", socketName);
                         outputSocket.info.type = socketType;

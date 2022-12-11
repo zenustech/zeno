@@ -36,7 +36,8 @@ public:
     static bool validateVariant(const QVariant& var, const QString& type);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
-    static PARAM_CONTROL getControlType(const QString& type);
+    static PARAM_CONTROL getControlByType(const QString& type);
+    static QString getTypeByControl(PARAM_CONTROL ctrl);
     static QStringList getControlLists(const QString& type);
     static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);

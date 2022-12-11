@@ -35,7 +35,7 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
         if (roles.contains(ROLE_PARAM_TYPE))
         {
             const QString& newType = topLeft.data(ROLE_PARAM_TYPE).toString();
-            PARAM_CONTROL newCtrl = UiHelper::getControlType(newType);
+            PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             m_pItem->m_info.control = newCtrl;
             m_pItem->m_info.typeDesc = newType;
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
@@ -639,7 +639,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
                 //todo: dictpanel should be choosed by custom param manager globally.
-                PARAM_CONTROL ctrl = bMultiLink ? CONTROL_DICTPANEL : UiHelper::getControlType(typeDesc);
+                PARAM_CONTROL ctrl = bMultiLink ? CONTROL_DICTPANEL : UiHelper::getControlByType(typeDesc);
 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
@@ -664,7 +664,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 const QString& displayName = realName;  //todo: mapping name.
                 const QVariant& value = idx.data(ROLE_PARAM_VALUE);
 
-                PARAM_CONTROL ctrl = UiHelper::getControlType(typeDesc);
+                PARAM_CONTROL ctrl = UiHelper::getControlByType(typeDesc);
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
                 paramItem->m_info.control = ctrl;
                 paramItem->mapCoreParam(idx);
