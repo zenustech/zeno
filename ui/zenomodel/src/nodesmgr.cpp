@@ -73,14 +73,6 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
         descInputs.insert("SRC", srcSocket);
     }
 
-    if (descInputs.lastKey() != "SRC")
-    {
-        //ensure that the "SRC" is the last key in sockets.
-        INPUT_SOCKET srcSocket = descInputs["SRC"];
-        descInputs.remove("SRC");
-        descInputs.insert("SRC", srcSocket);
-    }
-
     if (descInputs.find("curve") != descInputs.end())
     {
         INPUT_SOCKET& input = descInputs["curve"];

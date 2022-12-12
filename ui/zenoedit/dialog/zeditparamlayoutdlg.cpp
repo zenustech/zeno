@@ -514,6 +514,8 @@ void ZEditParamLayoutDlg::applySubgraphNode()
         const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
         const QModelIndex& subgIdx = pGraphsModel->index(subgName);
 
+        QVector<QString> newInputsKeys, newOutputsKeys;
+
         QStandardItem* pTab = pRoot->child(0);
         for (int i = 0; i < pTab->rowCount(); i++)
         {
@@ -546,7 +548,7 @@ void ZEditParamLayoutDlg::applySubgraphNode()
             {
                 VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
                 const QString& vName = pItem->m_info.name;
-                const QString& coreName = pItem->data(ROLE_PARAM_NAME).toString();
+                QString coreName = pItem->data(ROLE_PARAM_NAME).toString();
                 const QString& typeDesc = pItem->m_info.typeDesc;
                 const QVariant& deflVal = pItem->m_info.value;
                 PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
@@ -554,6 +556,7 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                 if (coreName.isEmpty())
                 {
                     //new added param.
+                    coreName = vName;
                     const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
 
                     QPointF pos(0, 0);
@@ -595,6 +598,11 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                 }
 
                 deleteParams.remove(coreName);
+
+                if (bSubInput)
+                    newInputsKeys.push_back(coreName);
+                else
+                    newOutputsKeys.push_back(coreName);
             }
 
             //remove core param
@@ -612,6 +620,24 @@ void ZEditParamLayoutDlg::applySubgraphNode()
             }
         }
         //and then have to clone, for the specific order.
+
+        //first, we have to rearrange the order of the params on this subnet, by arranging it's descriptor.
+        NODE_DESC descSubg;
+        pGraphsModel->getDescriptor(subgName, descSubg);
+
+        INPUT_SOCKETS newInputs;
+        for (QString sockName : newInputsKeys)
+            newInputs.insert(sockName, descSubg.inputs[sockName]);
+        descSubg.inputs = newInputs;
+
+        OUTPUT_SOCKETS newOutputs;
+        for (QString sockName : newOutputsKeys)
+            newOutputs.insert(sockName, descSubg.outputs[sockName]);
+        descSubg.outputs = newOutputs;
+
+        pGraphsModel->updateSubgDesc(subgName, descSubg);
+
+        //second, update all other subgraph nodes
     }
 }
 
