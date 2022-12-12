@@ -1453,14 +1453,14 @@ int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
 
 QModelIndex UiHelper::findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
                                          const QModelIndex &subgIdx) {
-    QModelIndexList nodes = pModel->searchInSubgraph("SubInput", subgIdx);
-    for (QModelIndex subInput : nodes)
+    QModelIndexList nodes = pModel->searchInSubgraph(bSubInput ? "SubInput" : "SubOutput", subgIdx);
+    for (QModelIndex subInOutput : nodes)
     {
-        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInput.data(ROLE_PARAM_MODEL));
+        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInOutput.data(ROLE_PARAM_MODEL));
         QModelIndex nameIdx = paramModel->index("name");
         if (nameIdx.data(ROLE_PARAM_VALUE) == paramName)
         {
-            return subInput;
+            return subInOutput;
         }
     }
     return QModelIndex();
