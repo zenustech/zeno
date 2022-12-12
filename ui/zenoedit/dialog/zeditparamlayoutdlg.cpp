@@ -556,7 +556,6 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                 if (coreName.isEmpty())
                 {
                     //new added param.
-                    coreName = vName;
                     const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
 
                     QPointF pos(0, 0);
@@ -600,9 +599,9 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                 deleteParams.remove(coreName);
 
                 if (bSubInput)
-                    newInputsKeys.push_back(coreName);
+                    newInputsKeys.push_back(vName);     //vName is core name.
                 else
-                    newOutputsKeys.push_back(coreName);
+                    newOutputsKeys.push_back(vName);
             }
 
             //remove core param
