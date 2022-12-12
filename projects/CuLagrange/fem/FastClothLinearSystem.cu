@@ -48,7 +48,7 @@ void FastClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStri
     pol(zs::range(coOffset),
         [execTag, vtemp = proxy<space>(vtemp), sigma = sigma, wsOffset, dxOffset, bOffset] __device__(int i) mutable {
             auto m = vtemp(wsOffset, i);
-            auto dx = vtemp.pack(dim_c<3>, dxOffset, i) * (m + 1) * sigma;
+            auto dx = vtemp.pack(dim_c<3>, dxOffset, i) * m * (sigma + 1.0f);
             for (int d = 0; d != 3; ++d)
                 atomic_add(execTag, &vtemp(bOffset + d, i), dx(d));
         });

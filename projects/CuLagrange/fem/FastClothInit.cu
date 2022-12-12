@@ -189,6 +189,7 @@ typename FastClothSystem::T FastClothSystem::totalVolume(zs::CudaExecutionPolicy
 }
 
 void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
+#if 0 // use default params in the paper for current testing 
     L = maximumSurfEdgeLength(pol, true) * 1.5;
     B = L / std::sqrt(2);
     Btight = B / 12;
@@ -200,6 +201,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     updateHardPhaseFunctionCoefficients(epsSlack);
     epsCond = epsSlack / 20;
     // dHat (static), for priximity query
+#endif 
     dHat = proximityRadius();
     // soft phase coeff
     auto [mu_, lam_] = largestLameParams();
@@ -207,7 +209,11 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
+#if 0
     rho = avgNodeMass * coOffset / totalVolume(pol);
+#else 
+    rho = 0.1;
+#endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
 }
@@ -250,6 +256,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
+    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 2}; 
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -268,9 +275,13 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         const auto &edges = primHandle.getSurfEdges();
         pol(Collapse(edges.size()),
             [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset] __device__(int i) mutable {
-                seInds.tuple(dim_c<2>, "inds", seoffset + i) =
-                    (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset).reinterpret_bits(float_c);
+             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab)] __device__(int i) mutable {
+                auto edge = (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset); 
+                seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+                if (auto no = eTab.insert(edge); no < 0)
+                {
+                    printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]); 
+                }
             });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
@@ -405,6 +416,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
+                        {"yk", 3}, 
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)

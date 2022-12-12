@@ -308,8 +308,12 @@ struct ZSSmokeBuoyancy : INode {
                     zs::vec<int, 3> offset{0, 0, 0};
                     offset[ch] = -1;
 
-                    float rho_face = spgv.value(rhoSrcTag, icoord + offset);
-                    float T_face = spgv.value(TSrcTag, icoord + offset);
+                    auto [bno, cno] = spgv.decomposeCoord(icoord + offset);
+                    float rho_face = 0, T_face = 0;
+                    if (bno >= 0) {
+                        rho_face = spgv.value(rhoSrcTag, bno, cno);
+                        T_face = spgv.value(TSrcTag, bno, cno);
+                    }
 
                     rho_face = 0.5f * (rho_this + rho_face);
                     T_face = 0.5f * (T_this + T_face);
