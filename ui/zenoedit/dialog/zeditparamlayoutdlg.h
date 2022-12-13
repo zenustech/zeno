@@ -56,6 +56,12 @@ private slots:
 
 private:
     void applySubgraphNode();
+    void updateSubgParamControl(
+            IGraphsModel* pGraphsModel,
+            const QString& subgName,
+            bool bSubInput,
+            const QString& paramName,
+            PARAM_CONTROL ctrl);
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;

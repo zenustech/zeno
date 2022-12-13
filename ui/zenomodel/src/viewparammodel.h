@@ -70,6 +70,7 @@ public:
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
     QModelIndex indexFromPath(const QString& path);
+    QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
     void resetParams(const VPARAM_INFO& invisibleRoot);
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool isNodeModel() const;

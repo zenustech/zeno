@@ -30,30 +30,30 @@ ProxySlotObject::~ProxySlotObject()
 
 void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (topLeft == m_pItem->m_index)
+    if (topLeft == m_pItem->m_index && !roles.isEmpty())
     {
+        int role = roles[0];
         QModelIndex viewIdx = m_pItem->index();
-        if (roles.contains(ROLE_PARAM_TYPE))
+        if (role == ROLE_PARAM_TYPE)
         {
-            const QString& newType = topLeft.data(ROLE_PARAM_TYPE).toString();
+            const QString &newType = topLeft.data(ROLE_PARAM_TYPE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             m_pItem->m_info.control = newCtrl;
             m_pItem->m_info.typeDesc = newType;
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
-        if (roles.contains(ROLE_PARAM_NAME))
+        else if (ROLE_PARAM_NAME == role)
         {
             m_pItem->m_info.name = topLeft.data(ROLE_PARAM_NAME).toString();
-            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, { ROLE_VPARAM_NAME });
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_VPARAM_NAME});
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
-        if (roles.contains(ROLE_PARAM_CTRL))
+        else if (ROLE_PARAM_VALUE == role)
         {
-            PARAM_CONTROL ctrl = (PARAM_CONTROL)topLeft.data(ROLE_PARAM_CTRL).toInt();
-            m_pItem->m_info.control = ctrl;
-        }
-        if (roles.contains(ROLE_PARAM_VALUE))
             m_pItem->m_info.value = topLeft.data(ROLE_PARAM_VALUE);
-        emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+        }
     }
 }
 
@@ -587,6 +587,45 @@ QModelIndex ViewParamModel::indexFromPath(const QString& path)
     return QModelIndex();
 }
 
+QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &coreParam)
+{
+    QStandardItem* rootItem = invisibleRootItem()->child(0);
+    if (!rootItem)
+        return QModelIndex();
+
+    for (int i = 0; i < rootItem->rowCount(); i++)
+    {
+        QStandardItem* pTab = rootItem->child(i);
+        for (int j = 0; j < pTab->rowCount(); j++)
+        {
+            QStandardItem* pGroup = pTab->child(j);
+            if (cls == PARAM_INPUT && pGroup->data(ROLE_VPARAM_NAME).toString() == "In Sockets")
+            {
+                for (int k = 0; k < pGroup->rowCount(); k++)
+                {
+                    VParamItem* pParam = static_cast<VParamItem*>(pGroup->child(k));
+                    if (pParam->data(ROLE_PARAM_NAME) == coreParam)
+                    {
+                        return pParam->index();
+                    }
+                }
+            }
+            else if (cls == PARAM_OUTPUT && pGroup->data(ROLE_VPARAM_NAME).toString() == "Out Sockets")
+            {
+                for (int k = 0; k < pGroup->rowCount(); k++)
+                {
+                    VParamItem* pParam = static_cast<VParamItem*>(pGroup->child(k));
+                    if (pParam->data(ROLE_PARAM_NAME) == coreParam)
+                    {
+                        return pParam->index();
+                    }
+                }
+            }
+        }
+    }
+    return QModelIndex();
+}
+
 void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
 {
     //clear old data
@@ -626,7 +665,13 @@ void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
                 }
                 paramItem->m_info = param.m_info;
                 paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
-
+                if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
+                {
+                    //register subnet param control.
+                    const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                    GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
+                                                                paramItem->m_info.control);
+                }
                 pGroupItem->appendRow(paramItem);
             }
             pTabItem->appendRow(pGroupItem);
@@ -673,8 +718,8 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 else
                 {
                     CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
-                    ctrl = infos.ctrl;
-                    props = infos.props;
+                    ctrl = infos.control;
+                    props = infos.controlProps;
                 }
 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
@@ -705,10 +750,10 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
 
                 CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
 
-                paramItem->m_info.control = infos.ctrl;
+                paramItem->m_info.control = infos.control;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-                paramItem->setData(infos.props, ROLE_VPARAM_CTRL_PROPERTIES);
+                paramItem->setData(infos.controlProps, ROLE_VPARAM_CTRL_PROPERTIES);
                 paramItem->m_info.typeDesc = typeDesc;
                 paramItem->m_info.value = value;
                 pItem->appendRow(paramItem);
@@ -808,6 +853,8 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
             if (m_nodeIdx.isValid())
                 return m_nodeIdx.data(role);
             break;
+        case ROLE_NODE_IDX:
+            return m_nodeIdx;
     }
     return QStandardItemModel::data(index, role);
 }

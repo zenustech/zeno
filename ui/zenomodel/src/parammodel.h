@@ -93,7 +93,6 @@ private:
         SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
-    void onControlToBeNotified(const _ItemInfo& item, PARAM_CONTROL newCtrl);
 
     const QPersistentModelIndex m_nodeIdx;
     const QPersistentModelIndex m_subgIdx;

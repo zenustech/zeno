@@ -3,6 +3,7 @@
 #include "igraphsmodel.h"
 #include "linkmodel.h"
 #include "variantptr.h"
+#include "globalcontrolmgr.h"
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/scope_exit.h>
 
@@ -21,6 +22,13 @@ IParamModel::IParamModel(
     , m_bRetryLinkOp(false)
 {
     Q_ASSERT(m_model);
+
+    if (m_model->IsSubGraphNode(nodeIdx))
+    {
+        GlobalControlMgr &mgr = GlobalControlMgr::instance();
+        connect(this, &IParamModel::rowsInserted, &mgr, &GlobalControlMgr::onCoreParamsInserted);
+        connect(this, &IParamModel::rowsAboutToBeRemoved, &mgr, &GlobalControlMgr::onCoreParamsAboutToBeRemoved);
+    }
 }
 
 IParamModel::~IParamModel()
@@ -251,6 +259,8 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
         case ROLE_PARAM_SOCKETTYPE:     return m_class;
         case ROLE_OBJID:
             return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
+        case ROLE_NODE_IDX:
+            return m_nodeIdx;
         case ROLE_OBJPATH:
         {
             QString path;
@@ -312,6 +322,12 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             newItem.name = newName;
             m_items.remove(oldName);
             m_items.insert(newName, newItem);
+
+            if (m_model->IsSubGraphNode(m_nodeIdx))
+            {
+                const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                GlobalControlMgr::instance().onParamRename(nodeCls, m_class, oldName, newName);
+            }
             break;
         }
         case ROLE_PARAM_TYPE:
@@ -321,18 +337,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             oldValue = item.type;
             item.type = value.toString();
             break;
-        }
-        case ROLE_PARAM_CTRL:
-        {
-            PARAM_CONTROL newCtrl = (PARAM_CONTROL)value.toInt();
-            // there isn't control on core param, but we can sync the new control to all view param,
-            // through this api.
-            onControlToBeNotified(item, newCtrl);
-
-            m_tempControl = newCtrl;
-            zeno::scope_exit sp([=]() { m_tempControl = CONTROL_NONE; });
-            emit dataChanged(index, index, QVector<int>{role});
-            return true;
         }
         case ROLE_PARAM_VALUE:
         {
@@ -422,6 +426,8 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             const QVariant& newValue = UiHelper::initDefaultValue(newType);
 
+            GlobalControlMgr::instance().onParamUpdated(subgName, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, newCtrl);
+
             const QModelIndex& idx_defl = index("defl");
             
             _ItemInfo& defl = m_items["defl"];
@@ -437,13 +443,11 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             {
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.type = newType;
-                desc.inputs[sockName].info.control = newCtrl;
             }
             else
             {
                 ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
                 desc.outputs[sockName].info.type = newType;
-                desc.outputs[sockName].info.control = newCtrl;
             }
             m_model->updateSubgDesc(subgName, desc);
 
@@ -455,7 +459,6 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
                 IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
                 QModelIndex paramIdx = sockModel->index(sockName);
                 sockModel->setData(paramIdx, newType, ROLE_PARAM_TYPE);
-                sockModel->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
             }
         }
         else if (item.name == "name")
@@ -507,35 +510,6 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             }
             m_model->updateSubgDesc(subgName, desc);
             //no need to update all subgraph node because it causes disturbance.
-        }
-    }
-}
-
-void IParamModel::onControlToBeNotified(const _ItemInfo& item, PARAM_CONTROL newCtrl)
-{
-    if (m_model->IsIOProcessing())
-        return;
-
-    const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    if (nodeName == "SubInput" || nodeName == "SubOutput")
-    {
-        bool bInput = nodeName == "SubInput";
-        const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-        ZASSERT_EXIT(m_items.find("defl") != m_items.end() &&
-            m_items.find("name") != m_items.end() &&
-            m_items.find("type") != m_items.end());
-        const QString& sockName = m_items["name"].pConst.toString();
-
-        if (item.name == "defl")
-        {
-            QModelIndexList subgNodes = m_model->findSubgraphNode(subgName);
-            for (auto idx : subgNodes)
-            {
-                // update socket for current subgraph node.
-                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-                QModelIndex paramIdx = sockModel->index(m_items["name"].pConst.toString());
-                sockModel->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
-            }
         }
     }
 }
@@ -675,11 +649,6 @@ bool IParamModel::_insertRow(
         QStandardItemModel* pTblModel = new QStandardItemModel(0, 2, this);
         item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<QStandardItemModel>::asVariant(pTblModel);
         connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
-        //connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int last) {
-        //    const QString& keyName = pTblModel->index(first, 0).data().toString();
-        //    const QString& objId = pTblModel->index(first, 1).data().toString();
-
-        //});
     }
 
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.

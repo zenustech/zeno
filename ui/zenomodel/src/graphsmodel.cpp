@@ -9,6 +9,7 @@
 #include <zeno/utils/scope_exit.h>
 #include "variantptr.h"
 #include "apilevelscope.h"
+#include "globalcontrolmgr.h"
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -159,6 +160,8 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
         m_nodesCate[cate].nodes.removeAll(oldName);
         m_nodesCate[cate].nodes.append(newName);
     }
+
+    GlobalControlMgr::instance().onSubGraphRename(oldName, newName);
 
     emit graphRenamed(oldName, newName);
 }
@@ -1197,6 +1200,10 @@ bool GraphsModel::IsSubGraphNode(const QModelIndex& nodeIdx) const
         return false;
 
     QString nodeName = nodeIdx.data(ROLE_OBJNAME).toString();
+    if (IsIOProcessing() && m_subgsDesc.find(nodeName) != m_subgsDesc.end())
+    {
+        return true;
+    }
     return subGraph(nodeName) != nullptr;
 }
 

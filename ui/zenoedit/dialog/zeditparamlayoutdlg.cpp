@@ -9,6 +9,7 @@
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenoui/comctrl/zwidgetfactory.h>
+#include <zenomodel/include/globalcontrolmgr.h>
 #include "variantptr.h"
 
 
@@ -499,6 +500,31 @@ void ZEditParamLayoutDlg::onChooseParamClicked()
     }
 }
 
+void ZEditParamLayoutDlg::updateSubgParamControl(
+            IGraphsModel* pGraphsModel,
+            const QString& subgName,
+            bool bSubInput,
+            const QString& coreParam,
+            PARAM_CONTROL ctrl)
+{
+    //update control for every subgraph node, which the name is `subgName`, for the param named `paramName`.
+    PARAM_CLASS cls = bSubInput ? PARAM_INPUT : PARAM_OUTPUT;
+    GlobalControlMgr::instance().onParamUpdated(subgName, cls, coreParam, ctrl);
+
+    QModelIndexList subgNodes = pGraphsModel->findSubgraphNode(subgName);
+    for (auto idx : subgNodes)
+    {
+        for (auto role : {ROLE_CUSTOMUI_NODE, ROLE_CUSTOMUI_PANEL})
+        {
+            ViewParamModel *paramsModel = QVariantPtr<ViewParamModel>::asPtr(idx.data(role));
+            QModelIndex viewIdx = paramsModel->indexFromName(cls, coreParam);
+            VParamItem *pItem = static_cast<VParamItem *>(paramsModel->itemFromIndex(viewIdx));
+            pItem->m_info.control = ctrl;
+            emit pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
+        }
+    }
+}
+
 void ZEditParamLayoutDlg::applySubgraphNode()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -551,7 +577,7 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                 QString coreName = pItem->data(ROLE_PARAM_NAME).toString();
                 const QString& typeDesc = pItem->m_info.typeDesc;
                 const QVariant& deflVal = pItem->m_info.value;
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
+                const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
 
                 if (coreName.isEmpty())
                 {
@@ -575,6 +601,8 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                     IParamModel *_subgnode_paramModel =
                         QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
                     pItem->mapCoreParam(_subgnode_paramModel->index(vName));
+
+                    updateSubgParamControl(pGraphsModel, subgName, bSubInput, vName, ctrl);
                 }
                 else if (coreName != "SRC" && coreName != "DST")
                 {
@@ -594,6 +622,8 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                     paramModel->setData(deflIdx, deflVal, ROLE_PARAM_VALUE);
                     // set control and then will sync to all view param.
                     paramModel->setData(deflIdx, ctrl, ROLE_PARAM_CTRL);
+
+                    updateSubgParamControl(pGraphsModel, subgName, bSubInput, vName, ctrl);
                 }
 
                 deleteParams.remove(coreName);
