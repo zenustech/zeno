@@ -1448,6 +1448,13 @@ int GraphsModel::ModelSetData(
     return 0;
 }
 
+int GraphsModel::undoRedo_updateSubgDesc(const QString& descName, const NODE_DESC& desc)
+{
+    UpdateSubgDescCommand *pCmd = new UpdateSubgDescCommand(this, descName, desc);
+    m_stack->push(pCmd);
+    return 0;
+}
+
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {

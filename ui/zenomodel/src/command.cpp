@@ -205,3 +205,22 @@ void ModelDataCommand::undo()
     if (pModel)
         pModel->setData(m_index, m_oldData, m_role);
 }
+
+
+UpdateSubgDescCommand::UpdateSubgDescCommand(IGraphsModel *pModel, const QString &subgraphName, const NODE_DESC newDesc)
+    : m_model(pModel)
+    , m_subgName(subgraphName)
+    , m_newDesc(newDesc)
+{
+    m_model->getDescriptor(m_subgName, m_oldDesc);
+}
+
+void UpdateSubgDescCommand::redo()
+{
+    m_model->updateSubgDesc(m_subgName, m_newDesc);
+}
+
+void UpdateSubgDescCommand::undo()
+{
+    m_model->updateSubgDesc(m_subgName, m_oldDesc);
+}

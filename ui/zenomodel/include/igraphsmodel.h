@@ -103,6 +103,7 @@ public:
 			const QVariant& value,
 			int role,
 			const QString& comment = "") = 0;
+	virtual int undoRedo_updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual QModelIndex indexFromPath(const QString& path) = 0;
 
 signals:

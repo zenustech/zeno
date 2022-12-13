@@ -130,6 +130,7 @@ public:
         const QVariant& value,
         int role,
         const QString& comment = "") override;
+    int undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);

@@ -179,8 +179,6 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     VParamItem* pCurrentItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(current));
     if (!pCurrentItem)  return;
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-
     const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
     m_ui->editName->setText(name);
     bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
@@ -228,7 +226,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             m_ui->cbControl->setCurrentText(ctrlName);
 
             m_ui->cbTypes->setCurrentText(dataType);
-            m_ui->cbTypes->setEnabled(!bCoreParam || pGraphsModel->IsSubGraphNode(m_nodeIdx));
+            m_ui->cbTypes->setEnabled(!bCoreParam || m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
         }
 
         CallbackCollection cbSets;
@@ -241,7 +239,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         QWidget* valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
         if (valueControl)
         {
-            valueControl->setEnabled(pGraphsModel->IsSubGraphNode(m_nodeIdx));
+            valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
             m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         }
 
@@ -519,9 +517,7 @@ void ZEditParamLayoutDlg::updateSubgParamControl(
         {
             ViewParamModel *paramsModel = QVariantPtr<ViewParamModel>::asPtr(idx.data(role));
             QModelIndex viewIdx = paramsModel->indexFromName(cls, coreParam);
-            VParamItem *pItem = static_cast<VParamItem *>(paramsModel->itemFromIndex(viewIdx));
-            pItem->m_info.control = ctrl;
-            emit pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
+            m_pGraphsModel->ModelSetData(viewIdx, ctrl, ROLE_PARAM_CTRL);
         }
     }
 }
@@ -591,16 +587,17 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                     QString subIO_ident = NodesMgr::createNewNode(pGraphsModel, subgIdx, bSubInput ? "SubInput" : "SubOutput", pos);
                     const QModelIndex& nodeIdx = pGraphsModel->index(subIO_ident, subgIdx);
                     IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-                    paramModel->setItem(paramModel->index("name"), "string", vName);
-                    paramModel->setItem(paramModel->index("type"), "string", typeDesc);
-
+                    const QModelIndex& idxName = paramModel->index("name");
+                    const QModelIndex& idxType = paramModel->index("type");
                     const QModelIndex& idxDefl = paramModel->index("defl");
-                    paramModel->setItem(idxDefl, typeDesc, defl);
-                    paramModel->setData(idxDefl, ctrl, ROLE_PARAM_CTRL);
+
+                    m_pGraphsModel->ModelSetData(idxName, vName, ROLE_PARAM_VALUE);
+                    m_pGraphsModel->ModelSetData(idxType, typeDesc, ROLE_PARAM_VALUE);
+                    m_pGraphsModel->ModelSetData(idxDefl, typeDesc, ROLE_PARAM_TYPE);
+                    m_pGraphsModel->ModelSetData(idxDefl, defl, ROLE_PARAM_VALUE);
 
                     //have to bind new param idx on subgraph node.
-                    IParamModel *_subgnode_paramModel =
-                        QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
+                    IParamModel *_subgnode_paramModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
                     pItem->mapCoreParam(_subgnode_paramModel->index(vName));
 
                     updateSubgParamControl(pGraphsModel, subgName, bSubInput, vName, ctrl);
@@ -617,12 +614,12 @@ void ZEditParamLayoutDlg::applySubgraphNode()
                     const QModelIndex& deflIdx = paramModel->index("defl");
 
                     //update the value on "name" in SubInput/SubOutput.
-                    paramModel->setData(nameIdx, vName, ROLE_PARAM_VALUE);
+                    m_pGraphsModel->ModelSetData(nameIdx, vName, ROLE_PARAM_VALUE);
                     //update type and value if necessaily.
-                    paramModel->setData(typeIdx, typeDesc, ROLE_PARAM_VALUE);
-                    paramModel->setData(deflIdx, deflVal, ROLE_PARAM_VALUE);
+                    m_pGraphsModel->ModelSetData(typeIdx, typeDesc, ROLE_PARAM_VALUE);
+                    m_pGraphsModel->ModelSetData(deflIdx, deflVal, ROLE_PARAM_VALUE);
                     // set control and then will sync to all view param.
-                    paramModel->setData(deflIdx, ctrl, ROLE_PARAM_CTRL);
+                    m_pGraphsModel->ModelSetData(deflIdx, ctrl, ROLE_PARAM_CTRL);
 
                     updateSubgParamControl(pGraphsModel, subgName, bSubInput, vName, ctrl);
                 }
@@ -665,7 +662,7 @@ void ZEditParamLayoutDlg::applySubgraphNode()
             newOutputs.insert(sockName, descSubg.outputs[sockName]);
         descSubg.outputs = newOutputs;
 
-        pGraphsModel->updateSubgDesc(subgName, descSubg);
+        pGraphsModel->undoRedo_updateSubgDesc(subgName, descSubg);
 
         //second, update all other subgraph nodes
     }
@@ -673,8 +670,10 @@ void ZEditParamLayoutDlg::applySubgraphNode()
 
 void ZEditParamLayoutDlg::onApply()
 {
-    applySubgraphNode();
+    m_pGraphsModel->beginTransaction("edit custom param for node");
+    zeno::scope_exit scope([=]() { m_pGraphsModel->endTransaction(); });
 
+    applySubgraphNode();
     bool bNodeUI = m_model->isNodeModel();
     VPARAM_INFO root = m_proxyModel->exportParams();
     m_pGraphsModel->ModelSetData(m_nodeIdx, QVariant::fromValue(root), bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);

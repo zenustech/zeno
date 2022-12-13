@@ -62,6 +62,7 @@ enum MODEL_ROLE
     ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 	ROLE_VPARAM_CTRL_PROPERTIES,
 	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
+	ROLE_VPARAM_COREIDX,        // set core idx
 };
 
 enum LOG_ROLE

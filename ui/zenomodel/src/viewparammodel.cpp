@@ -210,16 +210,8 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_info.control)
                 return;
             m_info.control = (PARAM_CONTROL)value.toInt();
-            // no need to notify the core param, only update the view param itself.
-            /*
-            if (m_index.isValid())
-            {
-                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                pModel->setData(m_index, value, role);
-            }
-            */
             qobject_cast<ViewParamModel*>(model())->markDirty();
-            return;
+            break;
         }
         case ROLE_PARAM_TYPE:
         {
@@ -245,6 +237,14 @@ void VParamItem::setData(const QVariant& value, int role)
                 m_info.value = value;
                 qobject_cast<ViewParamModel*>(model())->markDirty();
             }
+        }
+        case ROLE_VPARAM_COREIDX:
+        {
+            QPersistentModelIndex coreIdx = value.toPersistentModelIndex();
+            if (coreIdx == m_index)
+                return;
+            mapCoreParam(coreIdx);
+            break;
         }
         case ROLE_VAPRAM_EDITTABLE:
             break;

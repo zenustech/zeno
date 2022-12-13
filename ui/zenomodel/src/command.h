@@ -116,5 +116,19 @@ private:
     const int m_role;
 };
 
+class UpdateSubgDescCommand : public QUndoCommand
+{
+public:
+    UpdateSubgDescCommand(IGraphsModel* pModel, const QString& subgraphName, const NODE_DESC newDesc);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    const QString m_subgName;
+    NODE_DESC m_oldDesc;
+    NODE_DESC m_newDesc;
+};
+
 
 #endif
