@@ -316,7 +316,9 @@ struct FrameBufferPicker : IPicker {
                 vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
+                bool pick_particle = false;
                 if (scene->select_mode == zenovis::PICK_OBJECT) {
+                    pick_particle = prim->tris->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     // shader uniform
                     obj_shader->use();
@@ -329,7 +331,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->select_mode == zenovis::PICK_VERTEX) {
+                if (scene->select_mode == zenovis::PICK_VERTEX || pick_particle) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glDepthFunc(GL_LEQUAL));
@@ -343,7 +345,7 @@ struct FrameBufferPicker : IPicker {
 
                     // ----- draw object to cover invisible points -----
                     empty_and_offset_shader->use();
-                    empty_and_offset_shader->set_uniform("offset", 0.001f);
+                    empty_and_offset_shader->set_uniform("offset", 0.00001f);
                     scene->camera->set_program_uniforms(empty_and_offset_shader);
 
                     auto tri_count = prim->tris.size();
