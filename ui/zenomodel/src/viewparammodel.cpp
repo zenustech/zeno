@@ -626,6 +626,66 @@ QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &corePa
     return QModelIndex();
 }
 
+VPARAM_INFO ViewParamModel::exportParams() const
+{
+    VPARAM_INFO root;
+    QStandardItem* rootItem = invisibleRootItem()->child(0);
+    if (!rootItem)
+        return root;
+
+    root.m_cls = PARAM_UNKNOWN;
+    root.vType = VPARAM_ROOT;
+    for (int i = 0; i < rootItem->rowCount(); i++)
+    {
+        QStandardItem* pTab = rootItem->child(i);
+
+        VPARAM_INFO tab;
+        tab.m_cls = PARAM_UNKNOWN;
+        tab.vType = VPARAM_TAB;
+        tab.m_info.name = pTab->data(ROLE_VPARAM_NAME).toString();
+
+        for (int j = 0; j < pTab->rowCount(); j++)
+        {
+            QStandardItem* pGroup = pTab->child(j);
+            VPARAM_INFO group;
+            group.m_cls = PARAM_UNKNOWN;
+            group.vType = VPARAM_GROUP;
+            group.m_info.name = pGroup->data(ROLE_VPARAM_NAME).toString();
+
+            for (int k = 0; k < pGroup->rowCount(); k++)
+            {
+                VParamItem* pParam = static_cast<VParamItem*>(pGroup->child(k));
+                VPARAM_INFO param;
+                if (group.m_info.name == "In Sockets")
+                {
+                    param.m_cls = PARAM_INPUT;
+                }
+                else if (group.m_info.name == "Parameters")
+                {
+                    param.m_cls = PARAM_PARAM;
+                }
+                else if (group.m_info.name == "Out Sockets")
+                {
+                    param.m_cls = PARAM_OUTPUT;
+                }
+                else
+                {
+                    param.m_cls = PARAM_UNKNOWN;
+                }
+                param.vType = VPARAM_PARAM;
+                param.controlInfos = pParam->data(ROLE_VPARAM_CTRL_PROPERTIES);
+                param.coreParam = pParam->data(ROLE_PARAM_NAME).toString();
+                param.m_info = pParam->m_info;
+
+                group.children.append(param);
+            }
+            tab.children.append(group);
+        }
+        root.children.append(tab);
+    }
+    return root;
+}
+
 void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
 {
     //clear old data
@@ -650,17 +710,20 @@ void ViewParamModel::resetParams(const VPARAM_INFO& invisibleRoot)
                     if (param.m_cls == PARAM_INPUT)
                     {
                         IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_INPUT_MODEL));
-                        paramItem->m_index = inputsModel->index(coreparam);
+                        QModelIndex coreIdx = inputsModel->index(coreparam);
+                        paramItem->mapCoreParam(coreIdx);
                     }
                     else if (param.m_cls == PARAM_PARAM)
                     {
                         IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_PARAM_MODEL));
-                        paramItem->m_index = paramsModel->index(coreparam);
+                        QModelIndex coreIdx = paramsModel->index(coreparam);
+                        paramItem->mapCoreParam(coreIdx);
                     }
                     else if (param.m_cls == PARAM_OUTPUT)
                     {
                         IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_OUTPUT_MODEL));
-                        paramItem->m_index = outputsModel->index(coreparam);
+                        QModelIndex coreIdx = outputsModel->index(coreparam);
+                        paramItem->mapCoreParam(coreIdx);
                     }
                 }
                 paramItem->m_info = param.m_info;

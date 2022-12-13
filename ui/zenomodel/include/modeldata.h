@@ -197,7 +197,7 @@ struct VPARAM_INFO
     QString coreParam;
     PARAM_CLASS m_cls;
     QVector<VPARAM_INFO> children;
-    CONTROL_PROPERTIES controlInfos;
+    QVariant controlInfos;
 
     VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN) {}
 };

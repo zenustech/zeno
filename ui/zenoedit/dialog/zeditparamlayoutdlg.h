@@ -65,6 +65,7 @@ private:
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
+    IGraphsModel* m_pGraphsModel;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;

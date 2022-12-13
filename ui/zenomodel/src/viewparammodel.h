@@ -72,6 +72,7 @@ public:
     QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
     void resetParams(const VPARAM_INFO& invisibleRoot);
+    VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool isNodeModel() const;
     bool isDirty() const;

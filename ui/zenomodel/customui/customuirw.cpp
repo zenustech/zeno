@@ -183,16 +183,18 @@ namespace zenomodel
             //combobox
             ZASSERT_EXIT(controlObj["items"].IsArray(), param);
             QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
-            param.controlInfos["items"] = lstItems;
+            param.controlInfos = lstItems;
         }
         if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
         {
             int step = controlObj["step"].GetInt();
             int min = controlObj["min"].GetInt();
             int max = controlObj["max"].GetInt();
-            param.controlInfos["step"] = step;
-            param.controlInfos["min"] = min;
-            param.controlInfos["max"] = max;
+            SLIDER_INFO sliderInfo;
+            sliderInfo.max = max;
+            sliderInfo.min = min;
+            sliderInfo.step = step;
+            param.controlInfos = QVariant::fromValue(sliderInfo);
         }
 
         return param;

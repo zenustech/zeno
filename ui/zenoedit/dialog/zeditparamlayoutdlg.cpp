@@ -84,6 +84,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     , m_model(nullptr)
     , m_proxyModel(nullptr)
     , m_nodeIdx(nodeIdx)
+    , m_pGraphsModel(pGraphsModel)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -104,7 +105,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     m_model = qobject_cast<ViewParamModel*>(pModel);
     ZASSERT_EXIT(m_model);
 
-    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), pGraphsModel, this);
+    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), m_pGraphsModel, this);
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);
@@ -673,8 +674,10 @@ void ZEditParamLayoutDlg::applySubgraphNode()
 void ZEditParamLayoutDlg::onApply()
 {
     applySubgraphNode();
-    m_model->markDirty();
-    m_model->clone(m_proxyModel);
+
+    bool bNodeUI = m_model->isNodeModel();
+    VPARAM_INFO root = m_proxyModel->exportParams();
+    m_pGraphsModel->ModelSetData(m_nodeIdx, QVariant::fromValue(root), bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);
 }
 
 void ZEditParamLayoutDlg::onOk()

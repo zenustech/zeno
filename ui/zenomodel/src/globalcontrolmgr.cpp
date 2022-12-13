@@ -39,8 +39,8 @@ void GlobalControlMgr::onParamUpdated(const QString& nodeCls, PARAM_CLASS cls, c
 {
     CONTROL_INFO info(nodeCls, cls, coreParam, CONTROL_NONE, QVariant());
     int idx = m_infos.indexOf(info);
-    ZASSERT_EXIT(idx != -1);
-    m_infos[idx].control = newCtrl;
+    if (idx != -1)
+        m_infos[idx].control = newCtrl;
 }
 
 CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS cls, const QString& coreParam, const QString& coreType)
