@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 #include <QtWidgets>
+#include "launch/livetcpserver.h"
 #include "dock/zenodockwidget.h"
 #include "panel/zenolights.h"
 #include "common.h"
@@ -24,6 +25,7 @@ public:
     void resetTimeline(TIMELINE_INFO info);
 
     ZenoLights* lightPanel = nullptr;
+    LiveTcpServer liveTcpServer;
 
 public slots:
     void openFileDialog();
@@ -55,6 +57,7 @@ protected:
 private:
     void init();
     void initMenu();
+    void initLive();
     void initDocks();
     void verticalLayout();
     void onlyEditorLayout();
