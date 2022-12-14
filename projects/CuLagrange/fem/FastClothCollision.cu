@@ -43,14 +43,13 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
             auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
             bouSvBvh.refit(pol, pBvs);
             findCollisionConstraints(pol, dHat, true);
-            // for repulsion
-            // findBoundaryCellCollisionConstraints(pol, dHat);
         }
-        frontManageRequired = false;
     }
     /// @note check upper-bound constraints for cloth edges
     nE.setVal(0);
     for (auto &primHandle : prims) {
+        if (primHandle.isBoundary())
+            continue; 
         auto &ses = primHandle.getSurfEdges();
         pol(Collapse{ses.size()},
             [ses = proxy<space>({}, ses), vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), nE = proxy<space>(nE),
@@ -60,12 +59,13 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
                 const auto &vj = vij[1];
                 auto pi = vtemp.pack(dim_c<3>, "xn", vi);
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
-                if (auto d2 = dist2_pp(pi, pj); d2 > threshold) {
+                if (auto d2 = dist2_pp(pi, pj); d2 >= threshold) {
                     auto no = atomic_add(exec_cuda, &nE[0], 1);
                     E[no] = vij;
                 }
             });
     }
+    std::tie(npp, ne) = getConstraintCnt(); 
 }
 
 #define PROFILE_CD 0
@@ -77,39 +77,30 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     pol.profile(PROFILE_CD);
     /// pt
     const auto &svbvh = withBoundary ? bouSvBvh : svBvh;
-    auto &svfront = withBoundary ? boundarySvFront : selfSvFront;
-    pol(Collapse{svfront.size()},
+    pol(Collapse{svInds.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
          eTab = proxy<space>(eTab), 
-         // exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts),
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), front = proxy<space>(svfront),
+         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), 
          PP = proxy<space>(PP), nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat,
-         voffset = withBoundary ? coOffset : 0, frontManageRequired = frontManageRequired] __device__(int i) mutable {
-            auto vi = front.prim(i);
-            vi = reinterpret_bits<int>(svInds("inds", vi));
+         voffset = withBoundary ? coOffset : 0, withBoundary] __device__(int i) mutable {
+            auto vi = reinterpret_bits<int>(svInds("inds", i));
             auto pi = vtemp.pack(dim_c<3>, "xn", vi);
             auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
             auto f = [&](int svI) {
-                // if (exclTris[stI]) return;
                 auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
-                if (vi > vj)
+                if ((!withBoundary) && (vi >= vj))
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
-                // edge or not
-                if (eTab.single_query(ivec2 {vi, vj}) >= 0 || eTab.single_query(ivec2 {vj, vi}) >= 0)
+                // skip edges for point-point lower-bound constraints 
+                if (!withBoundary && (eTab.single_query(ivec2 {vi, vj}) >= 0 || eTab.single_query(ivec2 {vj, vi}) >= 0))
                     return; 
-                if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
+                if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
                     auto no = atomic_add(exec_cuda, &nPP[0], 1);
                     PP[no] = pair_t{vi, vj};
                 }
             };
-            if (frontManageRequired)
-                bvh.iter_neighbors(bv, i, front, f);
-            else
-                bvh.iter_neighbors(bv, front.node(i), f);
+            bvh.iter_neighbors(bv, f);
         });
-    if (frontManageRequired)
-        svfront.reorder(pol);
     pol.profile(false);
 }
 
@@ -117,9 +108,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    auto [npp_, ne_] = getConstraintCnt();
-    npp = npp_;
-    ne = ne_;
+    std::tie(npp, ne) = getConstraintCnt();
     fmt::print("collision stepping [pp, edge constraints]: {}, {}\n", npp, ne);
 
     ///
@@ -392,6 +381,27 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
             auto pp = PP[i];
             auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
             auto x1 = vtemp.pack(dim_c<3>, "xn", pp[1]);
+            auto x0k = vtemp.pack(dim_c<3>, "xk", pp[0]); 
+            auto x1k = vtemp.pack(dim_c<3>, "xk", pp[1]); 
+            auto ek = x1k - x0k, ek1 = x1 - x0; 
+            auto dir = ek1 - ek; 
+            auto de2 = dir.l2NormSqr(); 
+            if (de2 > limits<T>::epsilon()) // check continuous constraints 4.2.1 & 4.1
+            {
+                auto numerator = -ek.dot(dir); 
+                auto t = numerator / de2; 
+                if (t > 0 && t < 1)
+                {
+                    auto et = t * dir + ek;
+                    if (et.l2NormSqr() < threshold)
+                    {
+                        printf("linesearch t: %f, et.l2NormSqr: %f, threshold: %f\n", 
+                            (float)t, (float)(et.l2NormSqr()), (float)threshold); 
+                        mark[0] = 1; 
+                        return; 
+                    }
+                }
+            } 
             if (auto d2 = dist2_pp(x0, x1); d2 < threshold)
                 mark[0] = 1;
         });
@@ -448,19 +458,15 @@ bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol) {
             if (t > 0 && t < 1)
             {
                 auto et = t * dir + ek;
-                printf("t: %f, et.l2NormSqr: %f, threshold: %f\n", 
-                    (float)t, (float)(et.l2NormSqr()), (float)threshold); 
                 if (et.l2NormSqr() < threshold)
                 {
-                    // printf("et.l2NormSqr: %f\n", (float)(et.l2NormSqr())); 
+                    printf("t: %f, et.l2NormSqr: %f, threshold: %f\n", 
+                        (float)t, (float)(et.l2NormSqr()), (float)threshold); 
                     mark[0] = 1; 
                     return; 
                 }
             }
-        } else {
-            printf("\t\tcontinuous constraints met small edge displacement^2: %f(*1e-3)\n", 
-                (float)(1e3f * de2)); 
-        }
+        } 
         if (auto d2 = dist2_pp(x0, x1); d2 < threshold)
             mark[0] = 1;
     });

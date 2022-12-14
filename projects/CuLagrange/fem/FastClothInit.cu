@@ -343,7 +343,6 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         }
 
     /// spatial accel initialization
-    frontManageRequired = true;
 #define init_front(sInds, front)                                                                           \
     {                                                                                                      \
         auto numNodes = front.numNodes();                                                                  \
@@ -365,12 +364,10 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     {
         auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
         svBvh.build(pol, ptBvs);
-        init_front(svInds, selfSvFront);
     }
     if (hasBoundary()) {
         auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
         bouSvBvh.build(pol, ptBvs);
-        init_front(svInds, boundarySvFront);
     }
     updateWholeBoundingBoxSize(pol);
     /// update grad pn residual tolerance
