@@ -273,16 +273,54 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             });
         }
         const auto &edges = primHandle.getSurfEdges();
+        Vector<int> tmpAdjVerts {vtemp.get_allocator(), estNumCps};
+        auto adjVerts = tmpAdjVerts;
+        Vector<int> adjVertsOff {vtemp.get_allocator(), vtemp.size()};
+        Vector<int> adjVertsDeg {vtemp.get_allocator(), vtemp.size()};  
+        Vector<int> adjLen {vtemp.get_allocator(), 1};
+        adjLen.setVal(0); 
+        adjVertsDeg.reset(0); 
+        constexpr int intHalfLen = sizeof(int) * 4;
         pol(Collapse(edges.size()),
             [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab)] __device__(int i) mutable {
+             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts), 
+             adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg), intHalfLen] __device__(int i) mutable {
                 auto edge = (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset); 
                 seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+                auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+                tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1]; 
+                atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
+                adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+                tmpAdjVerts[adjNo] = (edge[1] << intHalfLen) + edge[0]; 
+                atomic_add(exec_cuda, &adjVertsDeg[edge[1]], 1); 
                 if (auto no = eTab.insert(edge); no < 0)
                 {
                     printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]); 
                 }
             });
+        auto aN = adjLen.getVal(); 
+        tmpAdjVerts.resize(aN); 
+        adjVerts.resize(aN); 
+        radix_sort(pol, tmpAdjVerts.begin(), tmpAdjVerts.end(), adjVerts.begin()); 
+        exclusive_scan(pol, adjVertsDeg.begin(), adjVertsDeg.end(), adjVertsOff.begin());
+        pol(range(vtemp.size()), 
+            [adjVerts = proxy<space>(adjVerts), adjVertsOff = proxy<space>(adjVertsOff), eTab = proxy<space>(eTab), 
+            vN = vtemp.size(), aN, intHalfLen] __device__ (int vi) mutable {
+                int idxSt = adjVertsOff[vi]; 
+                int idxEnd = vi < vN - 1 ? adjVertsOff[vi + 1] : aN;
+                for (int j = idxSt; j < idxEnd; j++)
+                {
+                    for (int k = j + 1; k < idxEnd; k++)
+                    {
+                        int vj = adjVerts[j] - (vi << intHalfLen); 
+                        int vk = adjVerts[k] - (vi << intHalfLen); 
+                        auto edge = ivec2 {vj, vk}; 
+                        if (auto no = eTab.single_query(edge); no < 0)
+                            eTab.insert(edge);                         
+                    }
+                } 
+            }); 
+
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
