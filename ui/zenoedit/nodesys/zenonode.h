@@ -90,6 +90,7 @@ protected:
 	void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void focusOutEvent(QFocusEvent *event) override;
     //ZenoNode:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
@@ -134,6 +135,8 @@ private:
 
     bool m_bError;
     bool m_bEnableSnap;
+    bool m_bMoving;     //pos change flag.
+    QPointF m_lastMovig;    //last moving pos.
 
     // when zoom out the view, the view of node will be displayed as text with large size font.
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.

@@ -174,10 +174,14 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
-        while (m_tabWidget->count() > 0) {
-            QWidget *wid = m_tabWidget->widget(0);
-            m_tabWidget->removeTab(0);
-            delete wid;
+        if (m_tabWidget)
+        {
+            while (m_tabWidget->count() > 0)
+            {
+                QWidget *wid = m_tabWidget->widget(0);
+                m_tabWidget->removeTab(0);
+                delete wid;
+            }
         }
     });
     connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
