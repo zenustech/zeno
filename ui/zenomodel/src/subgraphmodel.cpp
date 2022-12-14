@@ -135,7 +135,7 @@ void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& node
 
     if (!inputs.isEmpty())
     {
-        //will emit signal rowsInserted.
+        //will emit signal rowsInserted, then view param will be created on ret.panelParams/ret.nodeParams
         ret.inputsModel->setInputSockets(inputs);
     }
     if (!params.isEmpty())
@@ -145,6 +145,16 @@ void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& node
     if (!outputs.isEmpty())
     {
         ret.outputsModel->setOutputSockets(outputs);
+    }
+
+    //copy/paste/import case:
+    if (data.find(ROLE_CUSTOMUI_NODE_IO) != data.end())
+    {
+        ret.nodeParams->resetParams(data[ROLE_CUSTOMUI_NODE_IO].value<VPARAM_INFO>());
+    }
+    if (data.find(ROLE_CUSTOMUI_PANEL_IO) != data.end())
+    {
+        ret.panelParams->resetParams(data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>());
     }
 }
 

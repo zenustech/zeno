@@ -172,6 +172,14 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     connect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
     connect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
     connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
+        //clear all
+        while (m_tabWidget->count() > 0) {
+            QWidget *wid = m_tabWidget->widget(0);
+            m_tabWidget->removeTab(0);
+            delete wid;
+        }
+    });
     connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
         clearLayout();
     });
@@ -369,7 +377,8 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     connect(pGroupWidget, &ZExpandableSection::stateChanged, this, [=](bool bCollasped) {
         if (!m_idx.isValid())
             return;
-        pGroupItem->setData(bCollasped, ROLE_VPARAM_COLLASPED);
+        //todo: search groupitem by model, not by the pointer directly.
+        //pGroupItem->setData(bCollasped, ROLE_VPARAM_COLLASPED);
     });
     return true;
 }

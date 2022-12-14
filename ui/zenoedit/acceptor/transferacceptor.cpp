@@ -401,7 +401,9 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
 
 void TransferAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot)
 {
-    //todo
+    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+    int role = bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO;
+    m_nodes[id][role] = QVariant::fromValue(invisibleRoot);
 }
 
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const
