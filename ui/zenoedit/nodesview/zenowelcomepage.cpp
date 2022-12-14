@@ -15,6 +15,12 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 
 	m_ui->btnNew->setProperty("cssClass", "welcomepage");
     m_ui->btnOpen->setProperty("cssClass", "welcomepage");
+    m_ui->lblCurrVer->setProperty("cssClass", "welcomepage");
+    m_ui->lblLink->setProperty("cssClass", "welcomepage");
+    m_ui->lblWhatsNew->setProperty("cssClass", "welcomepage");
+    m_ui->lblRecentFiles->setProperty("cssClass", "welcomepage");
+    m_ui->label->setProperty("cssClass", "welcomepage_label");
+    m_ui->lblLogo->setProperty("cssClass", "welcomepage_name");
 
     m_ui->lblManual->setText(tr("ZENO Manual"));
     m_ui->lblManual->setFont(QFont("HarmonyOS Sans", 11));

@@ -125,28 +125,7 @@
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">QComboBox {
-    border: 0px;
-    border-radius: 1px;
-    padding: 3px 5px 3px 10px;
-    font: 14px 'HarmonyOS Sans';
-    color: #FFFFFF;
-    background: #24282E;
-}
-
-QComboBox::drop-down {
-    subcontrol-position: center right;
-    border: none;
-    background: transparent;
-}
-
-QComboBox::down-arrow {
-    image: url(:/icons/combobox-dropdown.svg);
-}
-
-QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
-    image: url(:/icons/combobox-dropdown-on.svg);
-}</string>
+        <string notr="true"></string>
        </property>
        <property name="editable">
         <bool>false</bool>

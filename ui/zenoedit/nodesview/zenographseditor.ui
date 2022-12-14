@@ -391,48 +391,7 @@ QTreeView::item:selected:!active {
            <bool>true</bool>
           </property>
           <property name="styleSheet">
-           <string notr="true">QTabBar {
-	background-color: #2D3239;
-	font-weight: bold;
-}
-
-QTabWidget::pane { /* The tab widget frame */
-    border: 0px;
-}
-
-QTabBar::tab {
-    background: #2D3239;
-	color:  #737B85;
-	border-right: 1px solid rgb(24, 29, 33);
-	font: 12pt 'Segoe UI';
-}
-
-QTabBar::tab:first {
-    border-left: 1px solid rgb(36, 36, 36);
-}
-
-QTabBar::tab:top {
-    padding: 4px 12px 4px 12px;
-}
-
-QTabBar::tab:top:first {
-    margin-left: 0px;
-}
-
-QTabBar::tab:!selected { font-weight: normal; }
-
-QTabBar::tab:selected {
-    background: #191D21;
-	color: #C3D2DF;
-}
-
-QTabBar::close-button {
-    image: url(:/icons/closebtn.svg);
-    subcontrol-position: right;
-}
-QTabBar::close-button:hover {
-    image: url(:/icons/closebtn_on.svg);
-}</string>
+           <string notr="true"></string>
           </property>
           <property name="documentMode">
            <bool>true</bool>

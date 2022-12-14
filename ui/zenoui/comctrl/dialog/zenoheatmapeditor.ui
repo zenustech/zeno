@@ -96,68 +96,12 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="QComboBox" name="cbPreset">
-       <property name="styleSheet">
-        <string notr="true">
-							 QComboBox {
-							 border: 0.5px solid rgba(0,0,0,1);
-							 border-radius: 0px;
-							 padding: 1px 18px 1px 3px;
-							 min-width: 6em;
-							 background: #2B2B2B;
-							 color: #8A8A8C;
-							 font: 14px &quot;HarmonyOS Sans&quot;;
-							 }
-
-							 /* QComboBox gets the &quot;on&quot; state when the popup is open */
-							 QComboBox:!editable:on, QComboBox::drop-down:editable:on {
-							 background: rgb(78,78,78);
-							 }
-
-							 /*
-							 QComboBox:on { // shift the text when the popup opens
-							 padding-top: 3px;
-							 padding-left: 4px;
-							 }
-
-							 QComboBox::down-arrow:on { // shift the arrow when popup is open
-							 top: 1px;
-							 left: 1px;
-							 }
-							 */
-
-							 QComboBox::drop-down {
-							 subcontrol-origin: padding;
-							 subcontrol-position: top right;
-							 width: 15px;
-
-							 border-left-width: 0px;
-							 border-left-color: darkgray;
-							 border-left-style: solid;
-							 border-top-right-radius: 3px;
-							 border-bottom-right-radius: 3px;
-							 }
-
-
-							 QComboBox::down-arrow {
-							 image: url(&quot;:/icons/ic_direction_pullDown.svg&quot;);
-							 }
-
-						 </string>
-       </property>
-      </widget>
+      <widget class="QComboBox" name="cbPreset"/>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QLabel" name="lblPosition">
-         <property name="styleSheet">
-          <string notr="true">QLabel
-{
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #8A8A8C;
-}</string>
-         </property>
          <property name="text">
           <string>Position:</string>
          </property>
@@ -222,18 +166,7 @@
           </size>
          </property>
          <property name="styleSheet">
-          <string notr="true">QPushButton
-{
-	padding-top: 2.5px;
-	padding-left: 6px;
-	padding-right: 6px;
-	padding-bottom: 2.5px;
-	border: 0.5px solid rgba(0,0,0,1);
-    border-radius: 2px;
-	background-color: #2B2B2B;
-	font: 14px 'HarmonyOS Sans';
-	color: #8A8A8C;
-}</string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>Add</string>
@@ -249,18 +182,7 @@
           </size>
          </property>
          <property name="styleSheet">
-          <string notr="true">QPushButton
-{
-	padding-top: 2.5px;
-	padding-left: 6px;
-	padding-right: 6px;
-	padding-bottom: 2.5px;
-	border: 0.5px solid rgba(0,0,0,1);
-    border-radius: 2px;
-	background-color: #2B2B2B;
-	font: 14px 'HarmonyOS Sans';
-	color: #8A8A8C;
-}</string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>Delete</string>
@@ -726,12 +648,7 @@ QSlider::handle:horizontal {
          <item>
           <widget class="QLabel" name="lblRGB">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	padding: 0px;
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #9D9DA3;
-}</string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>RGB</string>
@@ -740,14 +657,6 @@ QSlider::handle:horizontal {
          </item>
          <item>
           <widget class="QLabel" name="lblHSV">
-           <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	padding: 0px;
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #4C4C4E;
-}</string>
-           </property>
            <property name="text">
             <string>HSV</string>
            </property>
@@ -772,11 +681,7 @@ QSlider::handle:horizontal {
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #8A8A8C;
-}</string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>R</string>
@@ -846,11 +751,7 @@ QSlider::handle:horizontal {
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #8A8A8C;
-}</string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>G</string>
@@ -916,11 +817,7 @@ QSlider::handle:horizontal {
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 12px &quot;HarmonyOS Sans&quot;;
-	color: #8A8A8C;
-}</string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>B</string>

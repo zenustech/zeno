@@ -40,6 +40,34 @@ QSizeF ZenoStyle::dpiScaledSize(const QSizeF& sz)
     return QSizeF(ZenoStyle::dpiScaled(sz.width()), ZenoStyle::dpiScaled(sz.height()));
 }
 
+QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
+    if (sheet.isEmpty()) {
+        return sheet;
+    }
+
+    qreal scale = ZenoStyle::dpiScaled(1);
+    if (scale == 1.0) {
+        return sheet;
+    }
+
+    QString tempStyle = sheet;
+    QRegExp rx("\\d+px", Qt::CaseInsensitive);
+    rx.setMinimal(true);
+    int index = -1;
+    while ((index = rx.indexIn(tempStyle, index + 1)) >= 0) {
+        int capLen = rx.cap(0).length() - 2;
+        QString strNum = tempStyle.mid(index, capLen);
+        strNum = QString::number(qRound(strNum.toInt() * scale));
+        tempStyle.replace(index, capLen, strNum);
+        index += strNum.length();
+        if (index > tempStyle.size() - 2) {
+            break;
+        }
+    }
+
+    return tempStyle;
+}
+
 QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const
 {
     return base::sizeFromContents(type, option, size, widget);

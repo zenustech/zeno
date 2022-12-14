@@ -22,6 +22,7 @@ ZTimeline::ZTimeline(QWidget* parent)
     m_ui->comboBox->addItems(items);
     m_ui->comboBox->setItemDelegate(new ZComboBoxItemDelegate2(m_ui->comboBox));
     m_ui->comboBox->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_ui->comboBox->setProperty("cssClass", "newstyle");
  
     setFocusPolicy(Qt::ClickFocus);
     //QPalette pal = palette();

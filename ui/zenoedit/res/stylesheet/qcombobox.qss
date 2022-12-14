@@ -56,3 +56,32 @@ QComboBox[cssClass="newstyle"]::down-arrow {
 QComboBox[cssClass="newstyle"]::down-arrow:on, QComboBox[cssClass="newstyle"]::down-arrow:hover {
     image: url(:/icons/combobox-dropdown-on.svg);
 }
+
+QComboBox[cssClass="preset"] {
+    border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 0px;
+    padding: 1px 18px 1px 3px;
+    min-width: 6em;
+    background: #2B2B2B;
+    color: #8A8A8C;
+    font: 14px "HarmonyOS Sans";
+}
+
+QComboBox[cssClass="preset"]:!editable:on, QComboBox[cssClass="preset"]::drop-down:editable:on {
+    background: rgb(78,78,78);
+}
+
+QComboBox[cssClass="preset"]::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    border-left-width: 0px;
+    border-left-color: darkgray;
+    border-left-style: solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+QComboBox[cssClass="preset"]::down-arrow {
+    image: url(":/icons/ic_direction_pullDown.svg");
+}

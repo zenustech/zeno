@@ -27,45 +27,6 @@
 #include <zenoui/comctrl/zspinboxslider.h>
 
 
-static QString initTabWidgetQss()
-{
-    return QString::fromUtf8("\
-            QTabBar {\
-                background-color: #22252C;\
-                border-bottom: 1px solid rgb(24, 29, 33);\
-                border-right: 0px;\
-            }\
-            \
-            QTabBar::tab {\
-                background: #22252C;\
-                color: #737B85;\
-                border-top: 1px solid rgb(24,29,33);\
-                border-right: 1px solid rgb(24, 29, 33);\
-                border-bottom: 1px solid rgb(24, 29, 33);\
-                padding: 2px 16px 3px 16px;\
-            }\
-            \
-            QTabBar::tab:top {\
-                padding: 2px 16px 3px 16px;\
-            }\
-            \
-            QTabBar::tab:selected {\
-                background: #2D3239;\
-                color: #C3D2DF;\
-                border-bottom: 0px;\
-                /*only way to disable the padding when selected*/\
-                padding: 0px 16px 3px 16px;\
-            }\
-            \
-            QTabBar::close-button {\
-                image: url(:/icons/closebtn.svg);\
-                subcontrol-position: right;\
-            }\
-            QTabBar::close-button:hover {\
-                image: url(:/icons/closebtn_on.svg);\
-        }");
-}
-
 class RetryScope
 {
 public:
@@ -194,7 +155,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     if (!pRoot) return;
 
     m_tabWidget = new QTabWidget;
-    m_tabWidget->setStyleSheet(initTabWidgetQss());
+    m_tabWidget->tabBar()->setProperty("cssClass", "propanel");
     m_tabWidget->setDocumentMode(true);
     m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(false);
@@ -338,7 +299,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
     QLabel* pLabel = new QLabel(paramName);
-    pLabel->setProperty("cssClass", "proppanel");
+    pLabel->setProperty("cssClass", "proppanel-itemname");
 
     pGroupLayout->addWidget(pLabel, row, 0, Qt::AlignLeft);
     if (pControl)

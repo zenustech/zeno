@@ -1,5 +1,6 @@
 #include "zshadowbutton.h"
 #include <zenoui/comctrl/effect/innershadoweffect.h>
+#include "style/zenostyle.h"
 
 
 ZShadowButton::ZShadowButton(QWidget* parent)
@@ -53,7 +54,7 @@ void ZShadowButton::initStylesheet(qreal padding_left, qreal padding_top, qreal 
                       //.arg(QString::number(border_radius))
                       .arg(bold ? "bold" : "")
                       .arg(QString::number(fontsize));
-    setStyleSheet(qss);
+    setStyleSheet(ZenoStyle::dpiScaleSheet(qss));
 }
 
 void ZShadowButton::initShadow()

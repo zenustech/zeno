@@ -244,3 +244,16 @@ QPushButton[cssClass="proppanel"]:hover
 {
 	color: #FFFFFF;
 }
+
+QPushButton[cssClass="color_button"]
+{
+	padding-top: 2.5px;
+	padding-left: 6px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+	border: 0.5px solid rgba(0,0,0,1);
+	border-radius: 2px;
+	background-color: #2B2B2B;
+	font: 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+}

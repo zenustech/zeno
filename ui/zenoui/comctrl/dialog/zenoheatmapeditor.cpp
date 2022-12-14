@@ -410,6 +410,15 @@ void ZenoHeatMapEditor::init(const QLinearGradient& grad)
 	initRamps(grad);
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
+    m_ui->cbPreset->setProperty("cssClass", "preset");
+    m_ui->btnAdd->setProperty("cssClass", "color_button");
+    m_ui->btnDelete->setProperty("cssClass", "color_button");
+    m_ui->lblRGB->setProperty("cssClass", "rgb");
+    m_ui->lblHSV->setProperty("cssClass", "rgb");
+    m_ui->lblGorS->setProperty("cssClass", "color_label");
+    m_ui->lblRorH->setProperty("cssClass", "color_label");
+    m_ui->lblBorV->setProperty("cssClass", "color_label");
+    m_ui->lblPosition->setProperty("cssClass", "color_label");
 	//m_ui->clrHex->setFont(QFont("HarmonyOS Sans", 10));
 	initColorView();
 }
