@@ -343,7 +343,7 @@ ZSocketGroupItem::ZSocketGroupItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(viewSockIdx, sockName, bInput, elem, ZenoStyle::dpiScaledSize(QSizeF(cSocketWidth, cSocketHeight)), this);
+    m_socket = new ZenoSocketItem(viewSockIdx, bInput, elem, ZenoStyle::dpiScaledSize(QSizeF(cSocketWidth, cSocketHeight)), this);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
     });
@@ -366,11 +366,6 @@ ZenoSocketItem* ZSocketGroupItem::socketItem() const
 QPointF ZSocketGroupItem::getPortPos()
 {
     return m_socket->sceneBoundingRect().center();
-}
-
-bool ZSocketGroupItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
-{
-    return m_socket->getSocketInfo(bInput, nodeid, sockName);
 }
 
 QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -418,7 +413,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     elem.imageOn = ":/icons/socket-on.svg";
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
-    m_socket = new ZenoSocketItem(viewSockIdx, sockName, bInput, elem, ZenoStyle::dpiScaledSize(QSizeF(cSocketWidth, cSocketHeight)), this);
+    m_socket = new ZenoSocketItem(viewSockIdx, bInput, elem, ZenoStyle::dpiScaledSize(QSizeF(cSocketWidth, cSocketHeight)), this);
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
@@ -463,12 +458,6 @@ QPointF ZSocketEditableItem::getPortPos()
 ZenoSocketItem* ZSocketEditableItem::socketItem() const
 {
     return m_socket;
-}
-
-bool ZSocketEditableItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
-{
-    //todo: get from m_paramIdx;
-    return m_socket->getSocketInfo(bInput, nodeid, sockName);
 }
 
 QVariant ZSocketEditableItem::itemChange(GraphicsItemChange change, const QVariant& value)

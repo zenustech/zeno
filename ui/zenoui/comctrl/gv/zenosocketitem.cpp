@@ -7,7 +7,6 @@
 
 ZenoSocketItem::ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        const QString& sockName,
         bool bInput,
         const ImageElement& elem,
         const QSizeF& sz,
@@ -57,11 +56,6 @@ QPointF ZenoSocketItem::center() const
     }
 }
 
-QString ZenoSocketItem::name() const
-{
-    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_VPARAM_NAME).toString() : "";
-}
-
 QModelIndex ZenoSocketItem::paramIndex() const
 {
     return m_viewSockIdx;
@@ -79,16 +73,14 @@ QRectF ZenoSocketItem::boundingRect() const
     return rc;
 }
 
-bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
+bool ZenoSocketItem::isInputSocket() const
 {
-    Q_ASSERT(m_viewSockIdx.isValid(), false);
-    if (!m_viewSockIdx.isValid())
-        return false;
+    return m_bInput;
+}
 
-    bInput = m_bInput;
-    nodeid = m_viewSockIdx.data(ROLE_OBJID).toString();
-    sockName = name();
-    return true;
+QString ZenoSocketItem::nodeIdent() const
+{
+    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_OBJID).toString() : "";
 }
 
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
@@ -98,7 +90,6 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
 
     if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
     {
-        QString sockName = name();
         if (m_viewSockIdx.isValid())
         {
             PARAM_LINKS links = m_viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();

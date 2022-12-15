@@ -129,7 +129,7 @@ void LinkCommand::redo()
 {
     if (m_bAdd)
     {
-        m_model->addLink(m_fromSock, m_toSock, true);
+        m_model->addLink(m_fromSock, m_toSock);
     }
     else
     {
@@ -147,7 +147,7 @@ void LinkCommand::undo()
     }
     else
     {
-        m_model->addLink(m_fromSock, m_toSock, true);
+        m_model->addLink(m_fromSock, m_toSock);
     }
 }
 

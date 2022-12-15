@@ -49,7 +49,6 @@ public:
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
     void markError(bool isError);
-    void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
 
     QString nodeId() const;
     QString nodeName() const;

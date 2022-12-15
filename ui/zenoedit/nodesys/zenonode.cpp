@@ -771,40 +771,6 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
 	}
 }
 
-void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx)
-{
-    for (auto name : m_inSockets.keys())
-    {
-        auto socketLayout = m_inSockets[name];
-        if (socketLayout->socketItem() == pSocketItem)
-        {
-            bInput = true;
-            sockName = name;
-            scenePos = pSocketItem->center();
-            const QModelIndex& paramIdx = pSocketItem->paramIndex();
-            const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (!links.isEmpty())
-                linkIdx = links[0];
-            return;
-        }
-    }
-    for (auto name : m_outSockets.keys())
-    {
-        auto socketLayout = m_outSockets[name];
-        if (socketLayout->socketItem() == pSocketItem)
-        {
-            bInput = false;
-            sockName = name;
-            scenePos = pSocketItem->center();
-            const QModelIndex& paramIdx = pSocketItem->paramIndex();
-            const PARAM_LINKS& links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (!links.isEmpty())
-                linkIdx = links[0];
-            return;
-        }
-    }
-}
-
 void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected)
 {
     if (bInput) {

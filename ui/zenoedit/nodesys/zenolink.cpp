@@ -65,14 +65,13 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QString sockName, QPointF fixedPos, bool fixInput)
+ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput)
     : ZenoLink(nullptr)
     , m_fixedSocket(socketItem)
     , m_fixedPos(fixedPos)
     , m_floatingPos(fixedPos)
     , m_bfixInput(fixInput)
     , m_nodeId(nodeId)
-    , m_sockName(sockName)
     , m_adsortedSocket(nullptr)
 {
     m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
@@ -122,12 +121,11 @@ void ZenoTempLink::setFloatingPos(QPointF pos)
     update();
 }
 
-void ZenoTempLink::getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput)
+void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput)
 {
     nodeId = m_nodeId;
     fixedPos = m_fixedPos;
     bFixedInput = m_bfixInput;
-    sockName = m_sockName;
 }
 
 ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const

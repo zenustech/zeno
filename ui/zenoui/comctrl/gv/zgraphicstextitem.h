@@ -107,7 +107,6 @@ public:
 
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -136,7 +135,6 @@ public:
     void updateSockName(const QString& name);
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
 protected:

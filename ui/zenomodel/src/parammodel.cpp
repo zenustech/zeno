@@ -359,9 +359,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
 
-            QModelIndex fromSock = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
-            QModelIndex toSock = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-
             QString nodeId, nodeCls;
             if (m_nodeIdx.isValid())
             {

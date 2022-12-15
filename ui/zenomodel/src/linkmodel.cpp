@@ -65,8 +65,10 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
     case ROLE_OUTSOCK: return fromSock.data(ROLE_PARAM_NAME).toString();
     case ROLE_INNODE:  return toSock.data(ROLE_OBJID).toString();
     case ROLE_INSOCK:  return toSock.data(ROLE_PARAM_NAME).toString();
-    case ROLE_INNODE_IDX:  return toSock;
-    case ROLE_OUTNODE_IDX: return fromSock;
+    case ROLE_INSOCK_IDX:   return toSock;
+    case ROLE_OUTSOCK_IDX:  return fromSock;
+    case ROLE_INNODE_IDX:   return toSock.data(ROLE_NODE_IDX);
+    case ROLE_OUTNODE_IDX:  return fromSock.data(ROLE_NODE_IDX);
     default:
         return QVariant();
     }

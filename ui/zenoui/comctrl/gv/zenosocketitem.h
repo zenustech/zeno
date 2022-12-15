@@ -22,7 +22,6 @@ public:
 
     ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        const QString& sockName,
         bool bInput,
         const ImageElement &elem,
         const QSizeF &sz,
@@ -32,9 +31,9 @@ public:
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
-    QString name() const;
     QModelIndex paramIndex() const;
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
+    bool isInputSocket() const;
+    QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 

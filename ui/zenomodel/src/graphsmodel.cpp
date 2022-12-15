@@ -1252,8 +1252,8 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, bool enableTr
     {
         ApiLevelScope batch(this);
 
-        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-        const QModelIndex& inSockIdx = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
+        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+        const QModelIndex& inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
 
         QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(inSockIdx.model());
         QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(outSockIdx.model());
