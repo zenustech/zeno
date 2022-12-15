@@ -113,7 +113,7 @@ void ModelAcceptor::EndSubgraph()
 
             GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
             const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
-            pGraphsModel->addLink(link, subgIdx, false);
+            pGraphsModel->addLink(link, false);
         }
     }
 

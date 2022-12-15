@@ -20,13 +20,10 @@ public:
             Callback_EditContentsChange cb
             );
     ~ZSocketLayout();
-    QPointF getPortPos();
     void setControl(QGraphicsItem* pControl);
     void setValue(const QVariant& value);
     void updateSockName(const QString& name);
-    QGraphicsItem* textItem() const;
     QGraphicsItem* control() const;
-    QGraphicsWidget* widgetControl() const;
     ZenoSocketItem* socketItem() const;
     QPersistentModelIndex viewSocketIdx() const;
 

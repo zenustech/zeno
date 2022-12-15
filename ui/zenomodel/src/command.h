@@ -41,7 +41,7 @@ private:
 class AddLinkCommand : public QUndoCommand
 {
 public:
-    AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    AddLinkCommand(EdgeInfo info, GraphsModel* pModel);
 	void redo() override;
 	void undo() override;
 
@@ -55,14 +55,13 @@ private:
 class RemoveLinkCommand : public QUndoCommand
 {
 public:
-    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel);
     void redo() override;
     void undo() override;
 
 private:
     EdgeInfo m_info;
     GraphsModel* m_model;
-    QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_linkIdx;
     bool m_bAdded;
 };

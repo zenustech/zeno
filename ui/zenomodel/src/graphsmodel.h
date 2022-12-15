@@ -72,7 +72,8 @@ public:
 
     //IGraphsModel
 
-	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
+    QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
+    QModelIndex nodeIndex(const QString &ident) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -86,10 +87,9 @@ public:
             bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
-    void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void removeLink(const QPersistentModelIndex& linkIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) override;
-    QModelIndex addLink2(const QModelIndex& fromSock, const QModelIndex& toSock) override;
+    QModelIndex addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction = false) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

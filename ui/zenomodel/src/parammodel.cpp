@@ -544,7 +544,7 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     {
         for (const QPersistentModelIndex& linkIdx : item.links)
         {
-            m_model->removeLink(linkIdx, m_subgIdx, true);
+            m_model->removeLink(linkIdx, true);
         }
     }
 
@@ -698,5 +698,5 @@ void IParamModel::onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first
 
     m_bRetryLinkOp = true;
     zeno::scope_exit sp([this](){ m_bRetryLinkOp = false; });
-    m_model->removeLink(linkIdx, m_subgIdx, true);
+    m_model->removeLink(linkIdx, true);
 }

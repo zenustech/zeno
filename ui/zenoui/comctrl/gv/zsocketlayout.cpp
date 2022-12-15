@@ -46,26 +46,9 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
     addItem(m_control, Qt::AlignRight);
 }
 
-QGraphicsItem* ZSocketLayout::textItem() const
-{
-    return m_text;
-}
-
 QGraphicsItem* ZSocketLayout::control() const
 {
     return m_control;
-}
-
-QGraphicsWidget* ZSocketLayout::widgetControl() const
-{
-    QGraphicsWidget::Type;
-    int type = m_control->type();
-    if (QGraphicsProxyWidget* pWidgetItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(m_control))
-        return pWidgetItem;
-    else if (QGraphicsWidget* pWidgetItem = qgraphicsitem_cast<QGraphicsWidget*>(m_control))
-        return pWidgetItem;
-    else
-        return nullptr;
 }
 
 ZenoSocketItem* ZSocketLayout::socketItem() const
@@ -86,11 +69,6 @@ ZenoSocketItem* ZSocketLayout::socketItem() const
 QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
 {
     return m_viewSockIdx;
-}
-
-QPointF ZSocketLayout::getPortPos()
-{
-    return socketItem()->sceneBoundingRect().center();
 }
 
 void ZSocketLayout::updateSockName(const QString& name)

@@ -370,7 +370,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     if (groupName == "In Sockets")
     {
         ZASSERT_EXIT(m_inSockets.find(paramName) != m_inSockets.end());
-        ZSocketLayout* pControlLayout = pControlLayout = m_inSockets[paramName];
+        ZSocketLayout* pControlLayout = m_inSockets[paramName];
         QGraphicsItem* pControl = nullptr;
         if (pControlLayout)
             pControl = pControlLayout->control();

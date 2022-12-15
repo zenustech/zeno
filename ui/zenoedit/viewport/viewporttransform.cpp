@@ -537,7 +537,7 @@ void FakeTransformer::createNewTransformNode(QString& node_id, const std::string
         out_sock,
         "prim"
     };
-    pModel->addLink(edge, subgraph_index, false);
+    pModel->addLink(edge, false);
 
     auto user_data = m_objects[obj_name]->userData();
 
