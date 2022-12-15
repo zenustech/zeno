@@ -166,12 +166,12 @@ struct PrimSample2D : zeno::INode {
 ZENDEFNODE(PrimSample2D, {
     {
         {"PrimitiveObject", "prim"},
+        {"readpath", "imagePath"},
         {"string", "uvChannel", "uv"},
         {"string", "targetChannel", "clr"},
-        {"readpath", "imagePath"},
-        {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"float", "remapMin", "0"},
         {"float", "remapMax", "1"},
+        {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"vec3f", "borderColor", "0,0,0"},
     },
     {
