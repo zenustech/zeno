@@ -114,6 +114,44 @@ void RemoveLinkCommand::undo()
 }
 
 
+LinkCommand::LinkCommand(bool bAddLink, const QPersistentModelIndex& fromSock, const QPersistentModelIndex& toSock, GraphsModel* pModel)
+    : QUndoCommand()
+    , m_bAdd(bAddLink)
+    , m_fromSock(fromSock)
+    , m_toSock(toSock)
+    , m_model(pModel)
+{
+    m_fromSockObj = m_fromSock.data(ROLE_OBJPATH).toString();
+    m_toSockObj = m_toSock.data(ROLE_OBJPATH).toString();
+}
+
+void LinkCommand::redo()
+{
+    if (m_bAdd)
+    {
+        m_model->addLink(m_fromSock, m_toSock, true);
+    }
+    else
+    {
+        QModelIndex linkIdx = m_model->linkModel()->index(m_fromSock, m_toSock);
+        m_model->removeLink(linkIdx);
+    }
+}
+
+void LinkCommand::undo()
+{
+    if (m_bAdd)
+    {
+        QModelIndex linkIdx = m_model->linkModel()->index(m_fromSock, m_toSock);
+        m_model->removeLink(linkIdx);
+    }
+    else
+    {
+        m_model->addLink(m_fromSock, m_toSock, true);
+    }
+}
+
+
 UpdateBlackboardCommand::UpdateBlackboardCommand(
         const QString& nodeid,
         BLACKBOARD_INFO newInfo,

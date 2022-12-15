@@ -55,6 +55,7 @@ public:
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
 	virtual QModelIndex addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;

@@ -702,6 +702,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             }
 
             pGraphsModel->beginTransaction(tr("add Link"));
+            zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
 
             //remove the old Link first.
             if (oldLink.isValid())
@@ -719,9 +720,9 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     pGraphsModel->removeLink(linkIdx, true);
             }
 
-            EdgeInfo info(outNode, inNode, outSock, inSock);
-            pGraphsModel->addLink(info, true, true);
-            pGraphsModel->endTransaction();
+            pGraphsModel->addLink(fromSockIdx, toSockIdx, true);
+            //EdgeInfo info(outNode, inNode, outSock, inSock);
+            //pGraphsModel->addLink(info, true, true);
             return;
         }
     }

@@ -358,7 +358,19 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
-            if (item.prop == SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
+
+            QModelIndex fromSock = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
+            QModelIndex toSock = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
+
+            QString nodeId, nodeCls;
+            if (m_nodeIdx.isValid())
+            {
+                nodeId = m_nodeIdx.data(ROLE_OBJID).toString();
+                nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+            }
+
+            const bool bInputAdding = linkIdx.data(ROLE_INNODE) == nodeId;
+            if (item.prop == SOCKPROP_MULTILINK && bInputAdding)
             {
                 QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
@@ -375,6 +387,28 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                 QStandardItem* pObjItem = new QStandardItem(outNode);
                 pObjItem->setData(linkIdx, ROLE_LINK_IDX);
                 pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
+            }
+            if (!m_model->IsIOProcessing() &&
+                (nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
+            {
+                QStringList lst = sockNames();
+                int maxObjId = UiHelper::getMaxObjId(lst);
+                if (maxObjId == -1)
+                    maxObjId = 0;
+                QString maxObjSock = QString("obj%1").arg(maxObjId);
+                QString lastKey = lst.last();
+
+                if ((nodeCls == "MakeList" || nodeCls == "MakeDict") && name == lastKey)
+                {
+                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
+                    SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
+                    appendRow(newObjName, "", QVariant(), prop);
+                }
+                else if (nodeCls == "ExtractDict" && name == lastKey)
+                {
+                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
+                    appendRow(newObjName, "", QVariant(), SOCKPROP_EDITABLE);
+                }
             }
             break;
         }

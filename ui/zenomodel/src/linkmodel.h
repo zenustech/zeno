@@ -38,6 +38,7 @@ public:
 
     //LinkModel
     int addLink(const QModelIndex& fromSock, const QModelIndex& toSock);
+    QModelIndex index(const QModelIndex& fromSock, const QModelIndex& toSock);
     void setInputSocket(const QModelIndex& index, const QModelIndex& sockIdx);
     void setOutputSocket(const QModelIndex& index, const QModelIndex& sockIdx);
     void clear();

@@ -48,7 +48,6 @@ public:
 private:
 	EdgeInfo m_info;
 	GraphsModel* m_model;
-	QPersistentModelIndex m_subgIdx;
 	QPersistentModelIndex m_linkIdx;
 };
 
@@ -64,6 +63,22 @@ private:
     GraphsModel* m_model;
     QPersistentModelIndex m_linkIdx;
     bool m_bAdded;
+};
+
+class LinkCommand : public QUndoCommand
+{
+public:
+    LinkCommand(bool bAddLink, const QPersistentModelIndex& fromSock, const QPersistentModelIndex& toSock, GraphsModel* pModel);
+    void redo() override;
+    void undo() override;
+
+private:
+    const bool m_bAdd;
+    QPersistentModelIndex m_fromSock;
+    QPersistentModelIndex m_toSock;
+    QString m_fromSockObj;
+    QString m_toSockObj;
+    GraphsModel* m_model;
 };
 
 class UpdateBlackboardCommand : public QUndoCommand

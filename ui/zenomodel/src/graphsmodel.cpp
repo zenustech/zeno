@@ -1264,6 +1264,29 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, bool enableTr
     }
 }
 
+QModelIndex GraphsModel::addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        LinkCommand* pCmd = new LinkCommand(true, fromSock, toSock, this);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        ApiLevelScope scope(this);
+
+        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(fromSock.model());
+        QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(toSock.model());
+
+        int row = m_linkModel->addLink(fromSock, toSock);
+        const QModelIndex &linkIdx = m_linkModel->index(row, 0);
+
+        pInputs->setData(toSock, linkIdx, ROLE_ADDLINK);
+        pOutputs->setData(fromSock, linkIdx, ROLE_ADDLINK);
+    }
+    return QModelIndex();
+}
+
 QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction)
 {
     if (enableTransaction)
@@ -1305,40 +1328,6 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool bAddDynamicSock, boo
         ZASSERT_EXIT(pInputs && pOutputs, QModelIndex());
         pInputs->setData(inParamIdx, linkIdx, ROLE_ADDLINK);
         pOutputs->setData(outParamIdx, linkIdx, ROLE_ADDLINK);
-
-        //todo: encapsulation when case grows.
-        if (bAddDynamicSock)
-        {
-            const QString& inNodeName = inIdx.data(ROLE_OBJNAME).toString();
-            const QString& outNodeName = outIdx.data(ROLE_OBJNAME).toString();
-
-            QStringList lst;
-            if (inNodeName == "MakeList" || inNodeName == "MakeDict")
-                lst = pInputs->sockNames();
-            else
-                lst = pOutputs->sockNames();
-            int maxObjId = UiHelper::getMaxObjId(lst);
-            if (maxObjId == -1)
-                maxObjId = 0;
-            QString maxObjSock = QString("obj%1").arg(maxObjId);
-            QString lastKey = lst.last();
-
-            if ((inNodeName == "MakeList" || inNodeName == "MakeDict") && info.inputSock == lastKey)
-            {
-                //add a new
-                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                //need transcation.
-                //dynamic socket in dict grows by bottom direction.
-                SOCKET_PROPERTY prop = inNodeName == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
-                pInputs->appendRow(newObjName, "", QVariant(), prop);
-            }
-            if (outNodeName == "ExtractDict" && info.outputSock == lastKey)
-            {
-                //add a new
-                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                pOutputs->appendRow(newObjName, "", QVariant(), SOCKPROP_EDITABLE);
-            }
-        }
         return linkIdx;
     }
 }
