@@ -4,6 +4,7 @@ target_sources(zeno PRIVATE ${FBX_SOURCE})
 zeno_disable_warning(${FBX_SOURCE})
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE ../../zenovis/stbi/include)
+target_include_directories(zeno PRIVATE ../../ui/include)
 
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT FALSE CACHE BOOL "GUN TMD ASS" FORCE)
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT FALSE CACHE BOOL "GUN TMD ASS" FORCE)

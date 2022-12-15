@@ -3,6 +3,8 @@
 #include <zeno/types/NumericObject.h>
 #include <stdexcept>
 #include "zeno/utils/log.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <tinygltf/stb_image.h>
 
 namespace zeno {
 struct UVProjectFromPlane : zeno::INode {
@@ -60,6 +62,95 @@ ZENDEFNODE(UVProjectFromPlane, {
     {
         {"PrimitiveObject", "prim"},
         {"PrimitiveObject", "refPlane"},
+    },
+    {
+        {"PrimitiveObject", "outPrim"}
+    },
+    {},
+    {"primitive"},
+});
+
+static zeno::vec2i uvRepeat(vec3f uv, int w, int h) {
+    int iu = int(uv[0] * (w-1)) % w;
+    if (iu < 0) {
+        iu += w;
+    }
+    int iv = int(uv[1] * (h-1)) % h;
+    if (iv < 0) {
+        iv += h;
+    }
+    return {iu, iv};
+}
+static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h) {
+    int iu = clamp(int(uv[0] * (w-1)), 0, (w-1));
+    int iv = clamp(int(uv[1] * (h-1)), 0, (h-1));
+    return {iu, iv};
+}
+
+static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) {
+    int iu = uv[0];
+    int iv = uv[1];
+    int start = (iu + iv * w) * n;
+    float r = float(data[start]) / 255.0f;
+    float g = float(data[start+1]) / 255.0f;
+    float b = float(data[start+2]) / 255.0f;
+    return {r, g, b};
+}
+
+struct PrimSampleTextureToAttr : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto srcChannel = get_input2<std::string>("uvChannel");
+        auto dstChannel = get_input2<std::string>("targetChannel");
+        auto imagePath = get_input2<std::string>("imagePath");
+        auto wrap = get_input2<std::string>("wrap");
+        auto borderColor = get_input2<vec3f>("borderColor");
+        int w, h, n;
+        stbi_set_flip_vertically_on_load(true);
+        uint8_t* data = stbi_load(imagePath.c_str(), &w, &h, &n, 0);
+        auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
+        auto &uv = prim->attr<zeno::vec3f>(srcChannel);
+        std::function<zeno::vec3f(vec3f, const uint8_t*, int, int, int, vec3f)> queryColor;
+        if (wrap == "REPEAT") {
+            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+                auto iuv = uvRepeat(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        }
+        else if (wrap == "CLAMP_TO_EDGE") {
+            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+                auto iuv = uvClampToEdge(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        }
+        else if (wrap == "CLAMP_TO_BORDER") {
+            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f clr)-> vec3f {
+                if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
+                    return clr;
+                }
+                auto iuv = uvClampToEdge(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        }
+        else {
+            throw std::runtime_error("wrap type error");
+        }
+
+        for (auto i = 0; i < uv.size(); i++) {
+            clr[i] = queryColor(uv[i], data, w, h, n, borderColor);
+        }
+        stbi_image_free(data);
+        set_output("outPrim", std::move(prim));
+    }
+};
+ZENDEFNODE(PrimSampleTextureToAttr, {
+    {
+        {"PrimitiveObject", "prim"},
+        {"string", "uvChannel", "uv"},
+        {"string", "targetChannel", "clr"},
+        {"readpath", "imagePath"},
+        {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
+        {"vec3f", "borderColor", "0,0,0"},
     },
     {
         {"PrimitiveObject", "outPrim"}

@@ -181,10 +181,6 @@ void Session::set_render_engine(std::string const &name) {
     impl->scene->switchRenderEngine(name);
 }
 
-void Session::set_interactive(bool interactive) {
-    impl->scene->drawOptions->interactive = interactive;
-}
-
 void Session::set_handler(std::shared_ptr<IGraphicHandler> &handler) {
     impl->scene->drawOptions->handler = handler;
 }

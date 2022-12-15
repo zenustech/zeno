@@ -55,8 +55,10 @@ struct Mesh{
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     std::unordered_map<std::string, SMaterial> m_loadedMat;
     std::unordered_map<std::string, float> m_MatUdimSize;
+    std::unordered_map<std::string, std::vector<std::string>> m_BSName;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
+    unsigned int m_PolysIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
     SFBXReadOption m_readOption;
 
@@ -155,6 +157,7 @@ struct Mesh{
         float uv_scale = 1.0f;
 
         //zeno::log_info("FBX: Mesh name {}, vert count {}", meshName, mesh->mNumVertices);
+        //zeno::log_info("FBX: Mesh name {}, vert count {} NumAnimMesh {}", meshName, mesh->mNumVertices, numAnimMesh);
 
         // Material
         if(mesh->mNumVertices)
@@ -213,7 +216,7 @@ struct Mesh{
             // So let's take the first one
             unsigned int bsNumVert = mesh->mAnimMeshes[0]->mNumVertices;
 
-            zeno::log_info("BS MeshName {} NumAnim {}", meshName, numAnimMesh);
+            zeno::log_info("FBX: BS MeshName {} NumAnim {}", meshName, numAnimMesh);
 
             std::vector<std::vector<SBSVertex>> blendShapeData;
             blendShapeData.resize(numAnimMesh);
@@ -221,7 +224,7 @@ struct Mesh{
             for(unsigned int a=0; a<numAnimMesh; a++){
                 auto& animMesh = mesh->mAnimMeshes[a];
                 unsigned int aNumV = animMesh->mNumVertices;
-
+                zeno::log_info("FBX: BSName {}", animMesh->mName.C_Str());
                 blendShapeData[a].resize(aNumV);
 
                 for(unsigned int i=0; i<aNumV; i++){
@@ -237,35 +240,56 @@ struct Mesh{
 
                     blendShapeData[a][i] = sbsVertex;
                 }
+
+                m_BSName[meshName].push_back(std::string(animMesh->mName.C_Str()));
             }
             fbxData.iBlendSData.value[meshName] = blendShapeData;
         }
 
         // Indices
+        int start = 0;
+        int polysCount = 0;
         for(unsigned int j = 0; j < mesh->mNumFaces; j++)
         {
             aiFace face = mesh->mFaces[j];
             //zeno::log_info("-----");
             for(unsigned int j = 0; j < face.mNumIndices; j++) {
-                fbxData.iIndices.value.push_back(face.mIndices[j] + m_VerticesIncrease);
+                if(m_readOption.triangulate) {
+                    fbxData.iIndices.valueTri.push_back(face.mIndices[j] + m_VerticesIncrease);
+                }else{
+                    fbxData.iIndices.valueLoops.push_back(face.mIndices[j] + m_VerticesIncrease);
+                }
                 //zeno::log_info(" {}", face.mIndices[j] + m_VerticesIncrease);
             }
+            if(! m_readOption.triangulate) {
+                fbxData.iIndices.valuePolys.emplace_back(start, face.mNumIndices);
+            }
+            start+=face.mNumIndices;
+            polysCount++;
         }
 
         // FBXBone
         extractBone(mesh);
-
-        unsigned int offsetIndices = fbxData.iIndices.value.size() - m_IndicesIncrease;
+        int sizeOff = 0;
+        if(m_readOption.triangulate){
+            sizeOff = fbxData.iIndices.valueTri.size();
+        }else{
+            sizeOff = fbxData.iIndices.valueLoops.size();
+        }
+        unsigned int offsetIndices = sizeOff - m_IndicesIncrease;
         m_VerticesSlice[meshName] = std::vector<unsigned int>
                 {static_cast<unsigned int>(m_VerticesIncrease),  // Vert Start
                  m_VerticesIncrease + mesh->mNumVertices,  // Vert End
                  mesh->mNumBones,
                  m_IndicesIncrease,  // Indices Start
-                 static_cast<unsigned int>(m_IndicesIncrease + offsetIndices)  // Indices End
+                 static_cast<unsigned int>(m_IndicesIncrease + offsetIndices),  // Indices End
+                 m_PolysIncrease,  // Mesh Polys Count Start
+                 m_PolysIncrease + polysCount  // Mesh Polys Count End
                  };
         m_MeshPaths[meshName] = std::move(path);
 
         m_IndicesIncrease += offsetIndices;
+        m_PolysIncrease += polysCount;
         m_VerticesIncrease += mesh->mNumVertices;
     }
 
@@ -700,6 +724,8 @@ struct Mesh{
             unsigned int verBoneNum = verSlice[2];
             unsigned int indicesStart = verSlice[3];
             unsigned int indicesEnd = verSlice[4];
+            unsigned int polysCountStart = verSlice[5];
+            unsigned int polysCountEnd = verSlice[6];
 
             // TODO full support blend bone-animation and mesh-animation, See SimTrans.fbx
             bool foundMeshBone = bones.find(relMeshName) != bones.end();
@@ -735,18 +761,32 @@ struct Mesh{
             sub_prim->userData().set2("P_Type", "UsdGeomMesh");
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
-            std::vector<unsigned int> sub_indices;
+            std::vector<unsigned int> sub_TriIndices;
+            std::vector<unsigned int> sub_LoopsIndices;
+            std::vector<zeno::vec2i> sub_PolysIndices;
 
-            for(unsigned int i=indicesStart; i<indicesEnd; i+=3){
-                auto i1 = fbxData.iIndices.value[i]-verStart;
-                auto i2 = fbxData.iIndices.value[i+1]-verStart;
-                auto i3 = fbxData.iIndices.value[i+2]-verStart;
-                zeno::vec3i incs(i1, i2, i3);
-                sub_prim->tris.push_back(incs);
-                sub_indices.push_back(i1);
-                sub_indices.push_back(i2);
-                sub_indices.push_back(i3);
+            if(m_readOption.triangulate) {
+                for (unsigned int i = indicesStart; i < indicesEnd; i += 3) {
+                    auto i1 = fbxData.iIndices.valueTri[i] - verStart;
+                    auto i2 = fbxData.iIndices.valueTri[i + 1] - verStart;
+                    auto i3 = fbxData.iIndices.valueTri[i + 2] - verStart;
+                    zeno::vec3i incs(i1, i2, i3);
+                    sub_prim->tris.push_back(incs);
+                    sub_TriIndices.push_back(i1);
+                    sub_TriIndices.push_back(i2);
+                    sub_TriIndices.push_back(i3);
+                }
+            }else{
+                for (unsigned int i = polysCountStart; i < polysCountEnd; i++) {
+                    sub_PolysIndices.emplace_back(fbxData.iIndices.valuePolys[i]);
+                }
+                for (unsigned int i = indicesStart; i < indicesEnd; i++) {
+                    auto l1 = fbxData.iIndices.valueLoops[i] - verStart;
+                    sub_LoopsIndices.push_back(l1);
+                }
+
             }
+
             for(unsigned int i=verStart; i< verEnd; i++){
                 sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
                                              fbxData.iVertices.value[i].position.y,
@@ -756,7 +796,9 @@ struct Mesh{
                 sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
 
-            sub_data->iIndices.value = sub_indices;
+            sub_data->iIndices.valueTri = sub_TriIndices;
+            sub_data->iIndices.valueLoops = sub_LoopsIndices;
+            sub_data->iIndices.valuePolys = sub_PolysIndices;
             sub_data->iVertices.value = sub_vertices;
             sub_data->iMeshName.value = meshName;
             sub_data->iMeshName.value_relName = relMeshName;
@@ -791,6 +833,8 @@ struct Mesh{
     void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim, std::string path){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
+        auto &polys = prim->polys;
+        auto &loops = prim->loops;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
@@ -809,11 +853,19 @@ struct Mesh{
             clr0.emplace_back(vc.r, vc.g, vc.b);
         }
 
-        for(unsigned int i=0; i<fbxData.iIndices.value.size(); i+=3){
-            zeno::vec3i incs(fbxData.iIndices.value[i],
-                             fbxData.iIndices.value[i+1],
-                             fbxData.iIndices.value[i+2]);
-            ind.push_back(incs);
+        if(m_readOption.triangulate) {
+            for (unsigned int i = 0; i < fbxData.iIndices.valueTri.size(); i += 3) {
+                zeno::vec3i incs(fbxData.iIndices.valueTri[i], fbxData.iIndices.valueTri[i + 1],
+                                 fbxData.iIndices.valueTri[i + 2]);
+                ind.push_back(incs);
+            }
+        }else{
+            for (unsigned int i = 0; i < fbxData.iIndices.valueLoops.size(); i ++) {
+                loops.emplace_back(fbxData.iIndices.valueLoops[i]);
+            }
+            for(int i=0; i<fbxData.iIndices.valuePolys.size(); i++){
+                polys.emplace_back(fbxData.iIndices.valuePolys[i]);
+            }
         }
     }
 };
@@ -823,6 +875,7 @@ struct Anim{
     BoneTree m_Bones;
 
     std::unordered_map<std::string, std::vector<SKeyMorph>> m_Morph;  // Value: NumKeys
+    std::unordered_map<std::string, std::vector<std::string>> m_MeshBSName;
 
     AnimInfo m_animInfo;
 
@@ -899,16 +952,16 @@ struct Anim{
 
     void setupBlendShape(const aiAnimation *animation){
         auto NumMorphChannel = animation->mNumMorphMeshChannels;
+        zeno::log_info("FBX: BlendShape NumMorphChannel {}", NumMorphChannel);
         if(NumMorphChannel){
             for(int j=0; j<NumMorphChannel; j++){
                 aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
                 std::string channelName(channel->mName.data);  // pPlane1*0 with *0
                 channelName = channelName.substr(0, channelName.find_last_of('*'));
                 zeno::log_info("FBX: BS Channel Name {}", channelName);
+                std::vector<SKeyMorph> keyMorph;
 
                 if(channel->mNumKeys) {
-                    std::vector<SKeyMorph> keyMorph;
-
                     zeno::log_info("FBX: BS NumKeys {} NumVal&Wei {}", channel->mNumKeys,
                                    channel->mKeys[0].mNumValuesAndWeights);
 
@@ -926,6 +979,22 @@ struct Anim{
                     }
 
                     m_Morph[channelName] = keyMorph;
+                }else{
+                    if(m_MeshBSName.find(channelName) != m_MeshBSName.end()){
+                        auto& bsData = m_MeshBSName[channelName];
+
+                        for(int i=0; i<bsData.size(); i++){
+                            SKeyMorph morph{};
+                            morph.m_Time = (float)i;
+                            morph.m_Weights = new double[bsData.size()];
+                            morph.m_Values = new unsigned int[bsData.size()];
+                            morph.m_Weights[i] = 0.0; morph.m_Values[i] = 0;
+                            keyMorph.push_back(morph);
+                        }
+                        m_Morph[channelName] = keyMorph;
+                    }else{
+                        zeno::log_info("FBX: BlendShape {} Not Found", channelName);
+                    }
                 }
             }
         }
@@ -965,11 +1034,15 @@ void readFBXFile(
 
     if(true) {
         importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
-        scene = importer.ReadFile(fbx_path, aiProcess_Triangulate
-                                                //| aiProcess_FlipUVs
-                                                //| aiProcess_CalcTangentSpace
-                                                | aiProcess_ImproveCacheLocality
-                                                | aiProcess_JoinIdenticalVertices);
+        if(readOption.triangulate){
+            scene = importer.ReadFile(fbx_path, aiProcess_Triangulate
+                                                    //| aiProcess_FlipUVs
+                                                    //| aiProcess_CalcTangentSpace
+                                                    | aiProcess_ImproveCacheLocality
+                                                    | aiProcess_JoinIdenticalVertices);
+        }else{
+            scene = importer.ReadFile(fbx_path, aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices);
+        }
     }else{
             bool nopointslines = false;
             float g_smoothAngle = 80.f;
@@ -1010,6 +1083,7 @@ void readFBXFile(
         zeno::log_error("FBX: Invalid assimp scene");
 
     mesh.initMesh(scene);
+    anim.m_MeshBSName = mesh.m_BSName;
     anim.initAnim(scene, &mesh);
 
     mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
@@ -1036,7 +1110,8 @@ void readFBXFile(
 
     zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
     zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
-    zeno::log_info("FBX: Total Indices count {}", mesh.fbxData.iIndices.value.size());
+    zeno::log_info("FBX: Total Indices count {}", mesh.fbxData.iIndices.valueTri.size());
+    zeno::log_info("FBX: Total Loops count {}", mesh.fbxData.iIndices.valueLoops.size());
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -1065,6 +1140,7 @@ struct ReadFBXPrim : zeno::INode {
         auto primitive = get_param<bool>("primitive");
         auto generate = get_input2<bool>("generate");
         auto invOpacity = get_param<bool>("invOpacity");
+        auto triangulate = get_param<bool>("triangulate");
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
         if(invOpacity)
@@ -1074,6 +1150,8 @@ struct ReadFBXPrim : zeno::INode {
         if(generate)
             readOption.generate = true;
         readOption.primPath = primPath;
+        if(triangulate)
+            readOption.triangulate = true;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
@@ -1125,6 +1203,7 @@ ZENDEFNODE(ReadFBXPrim,
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
                 {"bool", "invOpacity", "true"},
                 {"bool", "primitive", "false"},
+                {"bool", "triangulate", "true"},
                },  /* category: */
                {
                    "FBX",

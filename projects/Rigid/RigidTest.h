@@ -1,3 +1,4 @@
+#include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
 
 // bullet basics
@@ -67,7 +68,7 @@ struct BulletObject : zeno::IObject {
     std::unique_ptr<btRigidBody> body;
     std::shared_ptr<BulletCollisionShape> colShape;
     btScalar mass = 0.f;
-    btTransform trans;
+    //btTransform trans;
 
     BulletObject(btScalar mass_,
                  btTransform const &trans,
@@ -537,5 +538,6 @@ struct BulletMultiBodyJointMotor : zeno::IObject {
         jointMotor = std::make_unique<btMultiBodyJointMotor>(mb, linkIndex, linkDof, desiredVelocity, maxMotorImpulse);
     }
 };
+
 
 #endif //ZENO_RIGIDTEST_H

@@ -14,6 +14,7 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
+    std::unique_ptr<IGraphicDraw> primHighlight;
     Scene *scene;
 
     auto setupState() {
@@ -33,10 +34,11 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
         hudGraphics.push_back(makeGraphicSelectBox(scene));
+
+        primHighlight = makePrimitiveHighlight(scene);
     }
 
     void update() override {
-        if (scene->drawOptions->interactive) graphicsMan->graphics.clear();
         // USD
 //        graphicsMan->load_objects(scene->objectsMan->pairsShared());
         graphicsMan->load_objects(scene->stageMan->pairsShared());
@@ -49,9 +51,11 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-        for (auto const &[key, gra] : graphicsMan->graphics.pairs<IGraphicDraw>()) {
-            gra->draw();
-        }
+        graphicsMan->draw();
+//        for (auto const &[key, gra] : graphicsMan->graphics.pairs<IGraphicDraw>()) {
+//            gra->draw();
+//        }
+        primHighlight->draw();
         if (scene->drawOptions->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();

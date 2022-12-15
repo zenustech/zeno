@@ -35,7 +35,8 @@ struct FastClothSystem : IObject {
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
-    static constexpr T s_constraint_residual = 1e-2;
+    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>; 
+    static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
     inline static const char s_meanMassTag[] = "MeanMass";
@@ -158,9 +159,10 @@ struct FastClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat);
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag = "xinit");
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
     /// @note given "xinit", computes x^{k+1}
+    void initialStepping(zs::CudaExecutionPolicy &pol);
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
     void hardPhase(zs::CudaExecutionPolicy &pol);
@@ -189,7 +191,7 @@ struct FastClothSystem : IObject {
 
     // contacts
     auto getConstraintCnt() const {
-        return zs::make_tuple(nPP.getVal(), nE.getVal());
+        return std::make_tuple(nPP.getVal(), nE.getVal());
     }
 
     // sim params
@@ -207,7 +209,7 @@ struct FastClothSystem : IObject {
     bool enableContactSelf = true;
     bool projectDBC = false;
     T augLagCoeff = 1e4;
-    T dHat = 0.0025;
+    T dHat = 8;
     vec3 extAccel;
 
     T boxDiagSize2 = 0;
@@ -248,7 +250,7 @@ struct FastClothSystem : IObject {
     /// @brief initial displacement limit during the start of K iteration collision steps
     T D = 0.25;
     /// @brief coupling coefficients between cloth dynamics and collision dynamics
-    T sigma = 80000; // s^{-2}
+    T sigma = 8; // s^{-2} // TODO: use sigma(8e4) * dt2 to replace sigma in energy terms
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
@@ -277,6 +279,7 @@ struct FastClothSystem : IObject {
     zs::Vector<int> nPP, nE;
     int npp, ne;
     tiles_t tempPP, tempE;
+    etab_t eTab;        // global surface edge hash table
 
 #if 0
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -298,7 +301,6 @@ struct FastClothSystem : IObject {
     bvh_t svBvh;    // for simulated objects
     bvh_t bouSvBvh; // for collision objects
     bvfront_t selfSvFront, boundarySvFront;
-    bool frontManageRequired;
     T dt, framedt, curRatio;
 };
 

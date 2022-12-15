@@ -12,10 +12,81 @@
 #include <zeno/types/PrimitiveObject.h>
 
 #include "../utils.cuh"
+#include "zeno/utils/log.h"
 
 namespace zeno {
 
 struct ZSPrimitiveToSparseGrid : INode {
+    template <zs::kernel_e knl>
+    void activate_block(zs::CudaExecutionPolicy &pol, ZenoParticles *parObjPtr, ZenoSparseGrid *zsSPG,
+                        size_t num_pars) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &pars = parObjPtr->getParticles();
+        auto &spg = zsSPG->getSparseGrid();
+
+        spg.resizePartition(pol, num_pars + spg.numBlocks());
+        spg._table._buildSuccess.setVal(1);
+        pol(range(pars.size()),
+            [spgv = proxy<space>(spg), pars = proxy<space>({}, pars)] __device__(std::size_t pi) mutable {
+                using spg_t = RM_CVREF_T(spgv);
+
+                auto pos = pars.pack(dim_c<3>, "x", pi);
+                auto arena = spgv.wArena(pos, wrapv<knl>{});
+                for (auto loc : arena.range()) {
+                    auto coord = arena.coord(loc);
+                    auto bcoord = coord - (coord & (spg_t::side_length - 1));
+                    spgv._table.insert(bcoord);
+                }
+            });
+
+        if (int tag = spg._table._buildSuccess.getVal(); tag == 0)
+            zeno::log_error("check P2G activate success state: {}\n", tag);
+
+        const auto nbs = spg.numBlocks();
+        spg.resizeGrid(nbs);
+
+        /// @brief adjust multigrid accordingly
+        // grid
+        auto &spg1 = zsSPG->spg1;
+        spg1.resize(pol, nbs);
+        auto &spg2 = zsSPG->spg2;
+        spg2.resize(pol, nbs);
+        auto &spg3 = zsSPG->spg3;
+        spg3.resize(pol, nbs);
+        // table
+        {
+            const auto &table = spg._table;
+            auto &table1 = spg1._table;
+            auto &table2 = spg2._table;
+            auto &table3 = spg3._table;
+            table1.reset(true);
+            table1._cnt.setVal(nbs);
+            table2.reset(true);
+            table2._cnt.setVal(nbs);
+            table3.reset(true);
+            table3._cnt.setVal(nbs);
+
+            table1._buildSuccess.setVal(1);
+            table2._buildSuccess.setVal(1);
+            table3._buildSuccess.setVal(1);
+            pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
+                             tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
+                auto bcoord = table._activeKeys[i];
+                tab1.insert(bcoord / 2, i, true);
+                tab2.insert(bcoord / 4, i, true);
+                tab3.insert(bcoord / 8, i, true);
+            });
+
+            int tag1 = table1._buildSuccess.getVal();
+            int tag2 = table2._buildSuccess.getVal();
+            int tag3 = table3._buildSuccess.getVal();
+            if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                zeno::log_error("check P2G multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
+        }
+    }
+
     template <zs::kernel_e knl>
     void replace_local_staggered(zs::CudaExecutionPolicy &pol, ZenoParticles *parObjPtr, ZenoSparseGrid *zsSPG,
                                  zs::SmallString dstTag, const int nchns) {
@@ -147,6 +218,7 @@ struct ZSPrimitiveToSparseGrid : INode {
         bool isStaggered = get_input2<bool>("staggered");
         bool needInit = get_input2<bool>("initialize");
         bool needNormalize = get_input2<bool>("normalize");
+        bool needActivate = get_input2<bool>("activateBlock");
 
         auto tag = src_tag(zsSPG, attrTag);
 
@@ -185,6 +257,21 @@ struct ZSPrimitiveToSparseGrid : INode {
 
         std::vector<PropertyTag> add_tags{{"weight", isStaggered ? 3 : 1}, {"mark", 1}};
         spg.append_channels(cudaPol, add_tags);
+
+        // Activate blocks containing particles
+        if (needActivate) {
+            // count total number of particles
+            size_t num_pars = 0;
+            for (auto &&parObjPtr : parObjPtrs) {
+                num_pars += parObjPtr->numParticles();
+            }
+            for (auto &&parObjPtr : parObjPtrs) {
+                match([&](auto knlTag) {
+                    constexpr auto knt = decltype(knlTag)::value;
+                    activate_block<knt>(cudaPol, parObjPtr, zsSPG.get(), num_pars);
+                })(knl);
+            }
+        }
 
         // Initialize (in case of the 1st prim): clear weight, mark
         if (needInit) {
@@ -277,7 +364,8 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                          {"enum linear quadratic cubic", "Kernel", "quadratic"},
                                          {"bool", "staggered", "0"},
                                          {"bool", "initialize", "1"},
-                                         {"bool", "normalize", "1"}},
+                                         {"bool", "normalize", "1"},
+                                         {"bool", "activateBlock", "0"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */

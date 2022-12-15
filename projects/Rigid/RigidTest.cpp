@@ -511,6 +511,201 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"Bullet"},
 });
 
+struct BulletGlueCompoundShape : IObject {
+    struct ChildData {
+        float mass;
+        btTransform trans;
+        std::shared_ptr<BulletCollisionShape> shape;
+    };
+	std::vector<ChildData> children;
+	std::vector<std::shared_ptr<BulletObject>> objs;
+	std::vector<std::pair<int, int>> glues;
+
+    void clearChildren() {
+        children.clear();
+    }
+
+	void addChild(float mass, btTransform trans, std::shared_ptr<BulletCollisionShape> child) {
+		children.push_back({mass, std::move(trans), std::move(child)});
+	}
+
+	void clearGlues() {
+		glues.clear();
+	}
+
+	void addGlue(int src, int dst) {
+		glues.emplace_back(src, dst);
+	}
+
+	void solveGlueToComps() {
+		std::vector<int> found(children.size());
+		for (int i = 0; i < found.size(); i++) {
+			found[i] = i;
+		}
+		auto find = [&] (int i) { // todo: zhxx optimize my djtesla 3q
+			while (i != found[i])
+				i = found[i];
+			return i;
+		};
+		for (auto const &[g1, g2]: glues) {
+			int f1 = find(g1);
+			int f2 = find(g2);
+			found[f2] = f1;
+		}
+		std::vector<int> island(children.size());
+		std::map<int, int> uniq;
+		for (int i = 0; i < found.size(); i++) {
+			auto [it, succ] = uniq.emplace(find(i), (int)uniq.size());
+			island[i] = it->second;
+		}
+        struct CompData {
+            float mass;
+            btVector3 sumOrig;
+            std::shared_ptr<BulletCompoundShape> compShape;
+
+            CompData() {
+                mass = 0;
+                sumOrig = btVector3(0, 0, 0);
+                auto compound = std::make_unique<btCompoundShape>();
+                compShape = std::make_shared<BulletCompoundShape>(std::move(compound));
+            }
+
+            struct TempchDat {
+                btVector3 chOrig;
+                btMatrix3x3 chBasis;
+                std::shared_ptr<BulletCollisionShape> shape;
+            };
+            std::vector<TempchDat> tempchs;
+
+            void addChild(ChildData const &ch) {
+                auto chOrig = ch.trans.getOrigin();
+                auto chBasis = ch.trans.getBasis();
+                sumOrig += chOrig * ch.mass;
+                mass += ch.mass;
+                tempchs.push_back({chOrig, chBasis, ch.shape});
+            }
+
+            std::shared_ptr<BulletObject> finalizeChildren() {
+                auto avgOrig = sumOrig / mass;
+                for (auto const &tch: tempchs) {
+                    btTransform tchtrans(tch.chBasis, tch.chOrig - avgOrig);
+                    compShape->addChild(tchtrans, tch.shape);
+                }
+                btMatrix3x3 identMat;
+                identMat.setIdentity();
+                btTransform avgTrans(identMat, avgOrig);
+                return std::make_shared<BulletObject>(mass, avgTrans, std::move(compShape));
+            }
+        };
+        std::vector<CompData> comps(uniq.size());
+		for (int i = 0; i < children.size(); i++) {
+			comps[island[i]].addChild(children[i]);
+		}
+        objs.clear();
+        objs.resize(comps.size());
+		for (int i = 0; i < comps.size(); i++) {
+            objs[i] = comps[i].finalizeChildren();
+		}
+	}
+};
+
+struct BulletMakeGlueCompoundShape : zeno::INode {
+	virtual void apply() override {
+		auto compound = std::make_shared<BulletGlueCompoundShape>();
+		set_output("compound", std::move(compound));
+	}
+};
+
+ZENDEFNODE(BulletMakeGlueCompoundShape, {
+	{
+	},
+	{
+		"shape",
+	},
+	{},
+	{"Bullet"},
+});
+
+/*
+struct BulletMakeGlueObjectList : zeno::INode {
+    std::shared_ptr<ListObject> objectList = std::make_shared<ListObject>();
+
+    virtual void apply() override {
+        auto shape = get_input<BulletGlueCompoundShape>("glueCompShape");
+        auto mass = get_input<zeno::NumericObject>("mass")->get<float>();
+        auto trans = get_input<BulletTransform>("trans");
+        objectList->arr.clear();
+        for (auto const &comp: shape->comps) {
+            auto object = std::make_shared<BulletObject>(
+                mass, trans->trans, comp);
+            object->body->setDamping(0, 0);
+            objectList->arr.push_back(std::move(object));
+        }
+        log_debug("glueobjeclist length={}", objectList->arr.size());
+        set_output("objectList", std::move(objectList));
+    }
+};
+
+ZENDEFNODE(BulletMakeGlueObjectList, {
+    {"glueCompShape", "trans", {"float", "mass", "0"}},
+    {"objectList"},
+    {},
+    {"Bullet"},
+});
+       */
+
+struct BulletGlueCompoundAddChild : zeno::INode {
+    virtual void apply() override {
+        auto compound = get_input<BulletGlueCompoundShape>("compound");
+        auto childShape = get_input<BulletCollisionShape>("childShape");
+        auto trans = get_input<BulletTransform>("trans")->trans;
+        auto mass = get_input2<float>("mass");
+
+        compound->addChild(mass, std::move(trans), std::move(childShape));
+        set_output("compound", get_input("compound"));
+    }
+};
+
+ZENDEFNODE(BulletGlueCompoundAddChild, {
+	{
+		"compound",
+		"childShape",
+		"trans",
+        {"float", "mass"},
+	},
+	{
+		"compound",
+	},
+	{},
+	{"Bullet"},
+});
+
+struct BulletGlueCompoundUpdateGlueList : zeno::INode {
+    virtual void apply() override {
+        auto compound = get_input<BulletGlueCompoundShape>("compound");
+        auto glueList = get_input<ListObject>("glueListVec2i")->getLiterial<vec2i>();
+	compound->clearGlues();
+    for (int i = 0; i < glueList.size(); i++) {
+        auto [x, y] = glueList[i];
+        compound->addGlue(x, y);
+    }
+    compound->solveGlueToComps();
+        set_output("compound", get_input("compound"));
+    }
+};
+
+ZENDEFNODE(BulletGlueCompoundUpdateGlueList, {
+	{
+		"compound",
+		"glueListVec2i",
+	},
+	{
+		"compound",
+	},
+	{},
+	{"Bullet"},
+});
+
 struct BulletColShapeCalcLocalInertia : zeno::INode {
 	virtual void apply() override {
 		auto isCompound = (get_param<std::string>("isCompound") == "true");

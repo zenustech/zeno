@@ -110,7 +110,7 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
 
         // prepare preconditioner
         for (int d = 0; d != 3; ++d)
-            vtemp("P", d * 3 + d, i) += ((m + 1) * sigma);
+            vtemp("P", d * 3 + d, i) += (m * (sigma + 1.0f));
     });
     /// @brief extforce (only grad modified)
     for (auto &primHandle : prims) {
@@ -445,9 +445,18 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         const auto ratio = (T)1 / (T)IInit;
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
             auto dir = vtemp.pack(dim_c<3>, "dir", i);
-            vtemp.tuple(dim_c<3>, "xinit", i) = vtemp.pack(dim_c<3>, "xn", i) + ratio * dir;
+            vtemp.tuple(dim_c<3>, "yk", i) = vtemp.pack(dim_c<3>, "yn", i); // record current yn in yk
+            vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "xn", i) + ratio * dir;
         });
+
         for (int i = 0; true;) {
+            /// start collision solver
+            ///
+            /// @brief Xinit
+            initialStepping(pol);
+
+            fmt::print(fg(fmt::color::alice_blue), "init iter [{}]\n", i);
+
             findConstraints(pol, dHat);
 
             /// @brief backup xn for potential hard phase
@@ -457,11 +466,28 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             /// @brief collision handling
             bool success = false;
             /// @note ref: sec 4.3.4
-            for (int r = 0; r != R; ++r) {
+            int r = 0;
+            for (; r != R; ++r) {
                 if (success = collisionStep(pol, false); success)
                     break;
             }
+#if 0
+            if (success) {
+                fmt::print(fg(fmt::color::alice_blue), "done pure soft collision iters {} out of {}\n", r, R);
+                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), n = numDofs] ZS_LAMBDA(int i) mutable {
+                    auto xk = vtemp.pack(dim_c<3>, "xk", i);
+                    auto xn = vtemp.pack(dim_c<3>, "xn", i);
+                    auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
+                    if (i < 8 || i > n - 2) {
+                        printf("par [%d]: xn <%f, %f, %f>, xk <%f, %f, %f> -> xinit <%f, %f, %f>\n", i, xn[0], xn[1],
+                               xn[2], xk[0], xk[1], xk[2], xinit[0], xinit[1], xinit[2]);
+                    }
+                });
+            }
+#endif
+
             if (!success) {
+                /// @brief restore xn with xk for hard phase
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
                 });
@@ -469,21 +495,25 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             }
             if (!success)
                 throw std::runtime_error("collision step in initialization fails!\n");
+            /// done collision solver
 
-            if (++i != IInit)
+            if (++i == IInit)
                 break;
 
             /// @brief update xinit for the next initialization iteration
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
                 auto dir = vtemp.pack(dim_c<3>, "dir", i);
-                vtemp.tuple(dim_c<3>, "xinit", i) = vtemp.pack(dim_c<3>, "xinit", i) + ratio * dir;
+                vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + ratio * dir;
             });
         }
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA (int i) mutable {
+            vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yk", i); // restore yn from yk 
+        }); 
     }
 
     /// @brief collect pairs only once depending on x^init
     /// @note ref: Sec 4.3.2
-    findConstraints(pol, dHat);
+    // findConstraints(pol, dHat); disabled for now 
 
     /// optimizer
     for (int k = 0; k != K; ++k) {
@@ -525,10 +555,24 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         // PREPARE P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack<3, 3>("P", i);
+#if 0
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
                 vtemp.tuple<9>("P", i) = inverse(mat);
             else
                 vtemp.tuple<9>("P", i) = mat3::identity();
+#else 
+            // diag preconditioner for tiny node mass 
+            mat3 tempP; 
+            for (int d = 0; d < 3; d++)
+            {
+                auto elem = vtemp("P", d * 3 + d, i);
+                if (elem > limits<T>::epsilon() * 10)
+                    tempP(d, d) = 1.0f / elem;
+                else 
+                    tempP(d, d) = 1.0f; 
+            }
+            vtemp.tuple(dim_c<9>, "P", i) = tempP; 
+#endif 
         });
         // prepare float edition
         // convertHessian(pol);
@@ -548,20 +592,12 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + vtemp.pack(dim_c<3>, "dir", i);
         });
 
-        /// collision solver
-        /// @brief Xinit
-        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
-            auto xk = vtemp.pack(dim_c<3>, "xn", i);
-            auto ykp1 = vtemp.pack(dim_c<3>, "yn", i);
-            auto diff = ykp1 - xk;
-            T coeff = 1;
-            if (auto len2 = diff.l2NormSqr(); len2 > limits<T>::epsilon() * 10)
-                coeff = zs::min(D / zs::sqrt(len2), (T)1);
-            vtemp.tuple(dim_c<3>, "xinit", i) = xk + coeff * diff;
-        });
+        /// start collision solver
+        ///
+        initialStepping(pol); 
 
         // x^{k+1}
-        findConstraints(pol, dHat);
+        findConstraints(pol, dHat); // DWX: paper 4.3.2; do only once in the future
 
         /// @brief backup xn for potential hard phase
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
@@ -574,6 +610,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 break;
         }
         if (!success) {
+            /// @brief restore xn with xk for hard phase
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                 vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
             });
@@ -582,6 +619,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if (!success) {
             throw std::runtime_error("collision step failure!\n");
         }
+        /// done collision solver
     }
 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
