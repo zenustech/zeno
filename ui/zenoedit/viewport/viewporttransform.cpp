@@ -40,9 +40,7 @@ FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
 
 void FakeTransformer::addObject(const std::string& name) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // USD
-    //auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
-    auto object = dynamic_cast<PrimitiveObject*>(scene->stageMan->get(name).value());
+    auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
     zeno::vec3f bmin, bmax;

@@ -217,9 +217,7 @@ void CameraControl::changeTransformOperation(const QString& node) {
     auto opt = transformer->getTransOpt();
     transformer->clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // USD
-    //for (auto const &[key, _] : scene->objectsMan->pairs()) {
-    for (auto const &[key, _] : scene->stageMan->pairs()) {
+    for (auto const &[key, _] : scene->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
             transformer->addObject(key);
@@ -363,9 +361,7 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
     auto rdir = screenToWorldRay(x, y);
     float min_t = std::numeric_limits<float>::max();
     std::string name;
-    // USD
-    //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-    for (auto const &[key, ptr] : scene->stageMan->pairs()) {
+    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
         zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
         zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
         zeno::vec3f bmin, bmax;
@@ -509,9 +505,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 auto rdir = screenToWorldRay(x, y);
                 float min_t = std::numeric_limits<float>::max();
                 std::string name("");
-                // USD
-                //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                for (auto const &[key, ptr] : scene->stageMan->pairs()) {
+                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
                     zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
                     zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
                     zeno::vec3f bmin,bmax;
@@ -551,9 +545,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 auto down_normWS = QVector3D::crossProduct(right_down, left_down);
 
                 std::vector<std::string> passed_prim;
-                // USD
-                //for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                for (auto const &[key, ptr] : scene->stageMan->pairs()) {
+                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
                     zeno::vec3f c;
                     float radius;
                     if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
