@@ -140,6 +140,11 @@ ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
     setMouseTracking(true);
 }
 
+void ZTextLabel::setHoverCursor(Qt::CursorShape shape)
+{
+    m_hoverCursor = shape;
+}
+
 void ZTextLabel::setUnderline(bool bUnderline)
 {
     m_bUnderline = bUnderline;

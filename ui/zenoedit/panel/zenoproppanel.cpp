@@ -341,12 +341,19 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
 
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
-    QLabel* pLabel = new QLabel(paramName);
-    pLabel->setProperty("cssClass", "proppanel");
+    ZTextLabel* pLabel = new ZTextLabel(paramName);
+    pLabel->setFont(QFont("Segoe UI Semibold", 12));
+    pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
+    pLabel->setHoverCursor(Qt::ArrowCursor);
+    //pLabel->setProperty("cssClass", "proppanel");
 
-    pGroupLayout->addWidget(pLabel, row, 0, Qt::AlignLeft);
+    ZIconLabel *pIcon = new ZIconLabel;
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg");
+    pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
+
+    pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
     if (pControl)
-        pGroupLayout->addWidget(pControl, row, 1);
+        pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
@@ -367,8 +374,8 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     pGroupWidget->setCollasped(bCollaspe);
     QGridLayout* pLayout = new QGridLayout;
     pLayout->setContentsMargins(10, 15, 0, 15);
-    pLayout->setColumnStretch(0, 1);
-    pLayout->setColumnStretch(1, 3);
+    pLayout->setColumnStretch(1, 1);
+    pLayout->setColumnStretch(2, 3);
     pLayout->setSpacing(10);
     for (int k = 0; k < pGroupItem->rowCount(); k++)
     {

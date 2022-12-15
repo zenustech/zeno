@@ -53,6 +53,7 @@ class ZTextLabel : public QLabel
 public:
     ZTextLabel(QWidget* parent = nullptr);
     ZTextLabel(const QString& text, QWidget* parent = nullptr);
+    void setHoverCursor(Qt::CursorShape shape);
     void setTextColor(const QColor& clr);
     void setBackgroundColor(const QColor& clr);
     void setUnderline(bool bUnderline);

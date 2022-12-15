@@ -1,6 +1,6 @@
 QLabel[cssClass="proppanel"]
 {
-	font: 16px "HarmonyOS Sans";
+	font: 16px "Segoe UI Semibold";
 	color: rgba(255, 255, 255, 0.7);
 }
 
