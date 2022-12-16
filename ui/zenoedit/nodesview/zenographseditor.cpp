@@ -723,9 +723,10 @@ void ZenoGraphsEditor::importMaterialX() {
 
     std::unordered_map<std::string, ZENO_HANDLE> node_id_mapping;
     std::unordered_map<std::string, ZENO_HANDLE> extract_out_socket;
-    std::unordered_map<std::string, ZENO_HANDLE> image_index;
+    std::unordered_map<std::string, std::unordered_map<std::string, uint32_t>> image_index;
     std::unordered_map<std::string, ZENO_HANDLE> image_node;
     std::unordered_map<std::string, ZVARIANT> constants;
+    std::unordered_map<std::string, std::string> ss_link_node_graph;
     std::unordered_set<std::string> ss_nodes;
     std::vector<std::tuple<std::string, std::string, std::string>> edges;
     std::vector<std::tuple<std::string, std::string, std::string>> ss_edges;
@@ -771,6 +772,9 @@ void ZenoGraphsEditor::importMaterialX() {
             std::string type = m.count("type")? m["type"]: "";
             std::string link_node = m.count("output")? m["output"]: "";
             std::string node_graph = m.count("nodegraph")? m["nodegraph"] + ":": "";
+            if (m.count("nodegraph")) {
+                ss_link_node_graph[std_surf_name] = node_graph;
+            }
             QString value = QString::fromStdString(m.count("value")? m["value"]: "");
     //        zeno::log_info("{}:{}:{}", name, type, value.toStdString());
             if (name_map.count(name) == 0) {
@@ -920,7 +924,7 @@ void ZenoGraphsEditor::importMaterialX() {
             else if (start_name == "image") {
                 auto hNode = Zeno_AddNode(hGraph, "MakeTexture2D");
                 node_id_mapping[name] = hNode;
-                image_index[name] = image_index.size();
+                image_index[nameNodeGraph][name] = image_index[nameNodeGraph].size();
                 std::string file_path = zeno::format("{}/{}", dir_path, ms["file"]["value"]);
                 Zeno_SetInputDefl(hNode, "path", file_path);
                 edges.emplace_back(name, "coord", nameNodeGraph + ms["texcoord"]["nodename"]);
@@ -933,11 +937,11 @@ void ZenoGraphsEditor::importMaterialX() {
     }
 
     // specially deal with image node
-    {
+    for (const std::string& ss_node: ss_nodes) {
         auto nMakeSmallList = Zeno_AddNode(hGraph, "MakeSmallList");
-        auto nStandardSurface = node_id_mapping[*ss_nodes.begin()];
+        auto nStandardSurface = node_id_mapping[ss_node];
         Zeno_AddLink(nMakeSmallList, "list", nStandardSurface, "tex2dList");
-        for (const auto& [name, index]: image_index) {
+        for (const auto& [name, index]: image_index[ss_link_node_graph[ss_node]]) {
             ZENO_ERROR err = Zeno_AddLink(node_id_mapping[name], "tex", nMakeSmallList, zeno::format("obj{}", index));
             if (err) {
                 zeno::log_error("Image {}, {}", name, index);
