@@ -143,4 +143,12 @@ namespace zeno
 
     }; // struct InstancingObject
 
+    struct InstMatrixObject
+        : IObjectClone<InstMatrixObject>
+    {
+        zeno::vec3f translate = {0, 0, 0};
+        zeno::vec3f rotate = {0, 0, 0};
+        zeno::vec3f scale = {1, 1, 1};
+    };
+
 } // namespace zeno

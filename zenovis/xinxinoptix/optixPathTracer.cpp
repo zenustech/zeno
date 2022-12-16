@@ -48,6 +48,11 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/envconfig.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -260,6 +265,25 @@ static std::vector<float3> g_diffuse_colors= // MAT_COUNT
 */
 std::map<std::string, int> g_mtlidlut; // MAT_COUNT
 
+struct InstData
+{
+    std::vector<Vertex> vertices = {{0,0,0},{0,0,0},{0,0,0}};
+    std::vector<Vertex> clr = {{0,0,0},{0,0,0},{0,0,0}};
+    std::vector<Vertex> nrm = {{0,0,0},{0,0,0},{0,0,0}};
+    std::vector<Vertex> uv = {{0,0,0},{0,0,0},{0,0,0}};
+    std::vector<Vertex> tan = {{0,0,0},{0,0,0},{0,0,0}};
+    std::vector<uint32_t> mat_indices = {0,0,0};
+    std::vector<uint16_t> lightMark = {0};
+
+    std::size_t staticMeshNum = 0;
+    std::size_t staticVertNum = 0;
+    std::vector<std::shared_ptr<smallMesh>> staticMeshPieces = {};
+    std::vector<std::shared_ptr<smallMesh>> meshPieces = {};
+
+    PathTracerState state;
+};
+std::unordered_map<std::string, InstData> g_instLUT;
+std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatLUT;
 
 //------------------------------------------------------------------------------
 //
@@ -504,7 +528,7 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
-static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh)
+static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh, std::vector<Vertex> &vertices)
 {
     //
     // copy mesh data to device
@@ -546,9 +570,9 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->verts.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & mesh->dverts;
+    triangle_input.triangleArray.vertexBuffers               = vertices.empty() ? nullptr : & mesh->dverts;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.numSbtRecords               = vertices.empty() ? 1 : g_mtlidlut.size();
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = mesh->dmats;
     triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
     triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
@@ -627,7 +651,20 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     std::cout<<"IAS begin"<<std::endl;
     timer.tick();
     float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
-    const size_t num_instances = m_meshes.size();
+    size_t num_instances = m_meshes.size();
+    for (auto &[instID, instData] : g_instLUT)
+    {
+        auto it = g_instMatLUT.find(instID);
+        if (it != g_instMatLUT.end())
+        {
+            auto& instMat = it->second;
+            num_instances += instData.meshPieces.size() * instMat.size();
+        }
+        else
+        {
+            num_instances += instData.meshPieces.size();
+        }
+    }
     std::vector<OptixInstance> optix_instances( num_instances );
     unsigned int sbt_offset = 0;
     for( size_t i = 0; i < m_meshes.size(); ++i )
@@ -644,6 +681,57 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         memcpy( optix_instance.transform, mat4x4, sizeof( float ) * 12 );
 
         //sbt_offset += static_cast<unsigned int>( mesh->verts.size() ) * rayTypeCount;  // one sbt record per GAS build input per RAY_TYPE
+    }
+    int optixInstIdx = m_meshes.size();
+    for (auto &[instID, instData] : g_instLUT)
+    {
+        auto it = g_instMatLUT.find(instID);
+        if (it != g_instMatLUT.end())
+        {
+            auto& instMat = it->second;
+            for (std::size_t j = 0; j < instMat.size(); ++j)
+            {
+                auto& mat = instMat[j];
+                float instMat4x4[12] = {
+                    mat[0][0], mat[1][0], mat[2][0], mat[3][0], 
+                    mat[0][1], mat[1][1], mat[2][1], mat[3][1], 
+                    mat[0][2], mat[1][2], mat[2][2], mat[3][2]};
+
+                for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
+                {
+                    auto mesh = instData.meshPieces[i];
+                    auto &optix_instance = optix_instances[optixInstIdx];
+                    memset(&optix_instance, 0, sizeof(OptixInstance));
+
+                    optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+                    optix_instance.instanceId = static_cast<unsigned int>(optixInstIdx);
+
+                    optix_instance.visibilityMask = 1;
+                    optix_instance.traversableHandle = mesh->gas_handle;
+                    memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
+
+                    ++optixInstIdx;
+                }
+            }
+        }
+        else
+        {
+            for(std::size_t i = 0; i < instData.meshPieces.size(); ++i)
+            {
+                auto mesh = instData.meshPieces[i];
+                auto& optix_instance = optix_instances[optixInstIdx];
+                memset(&optix_instance, 0, sizeof(OptixInstance));
+
+                optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+                optix_instance.instanceId = static_cast<unsigned int>(optixInstIdx);
+
+                optix_instance.visibilityMask = 1;
+                optix_instance.traversableHandle = mesh->gas_handle;
+                memcpy(optix_instance.transform, mat4x4, sizeof(float) * 12);
+
+                ++optixInstIdx;
+            }
+        }
     }
     timer.tock("done IAS middle");
     std::cout<<"IAS middle\n";
@@ -704,25 +792,25 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     std::cout<<"IAS end\n";
     //zeno::log_info("build IAS end");
 }
-static void buildMeshAccel( PathTracerState& state )
+static void buildMeshAccel( PathTracerState& state, std::vector<Vertex> &vertices, std::vector<uint32_t> &mat_indices)
 {
     //
     // copy mesh data to device
     //
-    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+    const size_t vertices_size_in_bytes = vertices.size() * sizeof( Vertex );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-                g_vertices.data(), vertices_size_in_bytes,
+                vertices.data(), vertices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
 
-    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
+    const size_t mat_indices_size_in_bytes = mat_indices.size() * sizeof( uint32_t );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
-                g_mat_indices.data(),
+                mat_indices.data(),
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
@@ -736,10 +824,10 @@ static void buildMeshAccel( PathTracerState& state )
     triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
-    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & state.d_vertices;
+    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( vertices.size() );
+    triangle_input.triangleArray.vertexBuffers               = vertices.empty() ? nullptr : & state.d_vertices;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.numSbtRecords               = vertices.empty() ? 1 : g_mtlidlut.size();
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = state.d_mat_indices;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
@@ -1080,7 +1168,7 @@ static size_t staticMeshNum = 0;
 static size_t staticVertNum = 0;
 void splitMesh(std::vector<Vertex> & verts, 
 std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start = 0);
+std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start, std::size_t localStaticVertNum);
 std::vector<std::shared_ptr<smallMesh>> g_StaticMeshPieces;
 std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 static void updatedrawobjects();
@@ -1094,16 +1182,21 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     //timer.tock("STATIC: updateStaticDrawObjects");
     staticMeshNum = 0;
     staticVertNum = 0;
+    for (auto &[_, instData] : g_instLUT)
+    {
+        instData.staticMeshNum = 0;
+        instData.staticVertNum = 0;
+    }
     if(!using20xx) {
         //static mesh changed, we need rebuild it
         //timer.tick();
-        splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0);
+        splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, staticVertNum);
         //timer.tock("STATIC: splitMesh");
 
         //timer.tick();
         for(int i=0;i<g_meshPieces.size();i++)
         {
-            buildMeshAccelSplitMesh(state, g_meshPieces[i]);
+            buildMeshAccelSplitMesh(state, g_meshPieces[i], g_vertices);
         }
         //timer.tock("STATIC: buildMeshAccelSplitMesh");
         //printf("%d mesh pieces\n", (int)g_meshPieces.size());
@@ -1119,6 +1212,25 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
         g_mat_indices.resize(vertSize/3);
         g_lightMark.resize(vertSize/3);
 
+        for (auto &[instID, instData] : g_instLUT)
+        {
+            splitMesh(instData.vertices, instData.mat_indices, instData.meshPieces, 0, instData.staticVertNum);
+            for (int i = 0; i < instData.meshPieces.size(); ++i)
+            {
+                buildMeshAccelSplitMesh(instData.state, instData.meshPieces[i], instData.vertices);
+            }
+
+            instData.staticMeshNum = instData.meshPieces.size();
+
+            std::size_t instVertSize = 1024 * 3 * instData.meshPieces.size();
+            instData.vertices.resize(instVertSize);
+            instData.clr.resize(instVertSize);
+            instData.nrm.resize(instVertSize);
+            instData.tan.resize(instVertSize);
+            instData.uv.resize(instVertSize);
+            instData.mat_indices.resize(instVertSize / 3);
+            instData.lightMark.resize(instVertSize / 3);
+        }
     }
 }
 void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate) {
@@ -1174,7 +1286,30 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNe
                 light_mark_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
-    buildMeshAccel( state );
+    buildMeshAccel( state, g_vertices, g_mat_indices );
+
+    for (auto &[instID, instData] : g_instLUT)
+    {
+        const size_t inst_vertices_size_in_bytes = instData.vertices.size() * sizeof(Vertex);
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_vertices.reset()), inst_vertices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)instData.state.d_vertices), instData.vertices.data(), inst_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_clr.reset()), inst_vertices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)instData.state.d_clr), instData.clr.data(), inst_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_uv.reset()), inst_vertices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)instData.state.d_uv), instData.uv.data(), inst_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_nrm.reset()), inst_vertices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)instData.state.d_nrm), instData.nrm.data(), inst_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_tan.reset()), inst_vertices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)instData.state.d_tan), instData.tan.data(), inst_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        const size_t inst_mat_indices_size_in_bytes = instData.mat_indices.size() * sizeof(uint32_t);
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_mat_indices.reset()), inst_mat_indices_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)instData.state.d_mat_indices), instData.mat_indices.data(), inst_mat_indices_size_in_bytes, cudaMemcpyHostToDevice));
+        const size_t inst_light_mark_size_in_bytes = instData.lightMark.size() * sizeof(unsigned short);
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_lightMark.reset()), inst_light_mark_size_in_bytes));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)instData.state.d_lightMark), instData.lightMark.data(), inst_light_mark_size_in_bytes, cudaMemcpyHostToDevice));
+        
+        buildMeshAccel(instData.state, instData.vertices, instData.mat_indices);
+    }
 //#else
     } else {
 #define WXL 1
@@ -1261,12 +1396,103 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNe
                               light_mark_size_in_bytes, cudaMemcpyHostToDevice));
         timer.tock("done dynamic mesh update");
         std::cout << "end copy\n";
-        splitMesh(g_vertices, g_mat_indices, g_meshPieces, staticMeshNum);
+        splitMesh(g_vertices, g_mat_indices, g_meshPieces, staticMeshNum, staticVertNum);
         //std::cout<<"split mesh done\n";
         //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
         for (int i = staticMeshNum; i < g_meshPieces.size(); i++) {
-            buildMeshAccelSplitMesh(state, g_meshPieces[i]);
+            buildMeshAccelSplitMesh(state, g_meshPieces[i], g_vertices);
         }
+
+        std::cout << "begin copy\n";
+        timer.tick();
+        for (auto &[instID, instData] : g_instLUT)
+        {
+            std::size_t inst_vertices_size_in_bytes = instData.vertices.size() * sizeof(Vertex);
+            std::size_t inst_static_vertices_size_in_bytes = instData.staticVertNum * sizeof(Vertex);
+            std::size_t inst_dynamic_vertices_size_in_bytes = inst_vertices_size_in_bytes - inst_static_vertices_size_in_bytes;
+            bool inst_realloced;
+            std::size_t inst_offset = 0;
+            std::size_t inst_numBytes = inst_vertices_size_in_bytes;
+            auto inst_updateRange = [&](InstData &instData_)
+            {
+                if (!inst_realloced && WXL) {
+                    inst_offset = instData_.staticVertNum * sizeof(Vertex);
+                    inst_numBytes = inst_dynamic_vertices_size_in_bytes;
+                } else {
+                    inst_offset = 0;
+                    inst_numBytes = inst_vertices_size_in_bytes;
+                }
+            };
+#if WXL
+            inst_realloced = instData.state.d_vertices.resize(inst_vertices_size_in_bytes, inst_dynamic_vertices_size_in_bytes);
+            instData.state.d_clr.resize(inst_vertices_size_in_bytes, inst_dynamic_vertices_size_in_bytes);
+            instData.state.d_uv.resize(inst_vertices_size_in_bytes, inst_dynamic_vertices_size_in_bytes);
+            instData.state.d_nrm.resize(inst_vertices_size_in_bytes, inst_dynamic_vertices_size_in_bytes);
+            instData.state.d_tan.resize(inst_vertices_size_in_bytes, inst_dynamic_vertices_size_in_bytes);
+            std::size_t inst_reservedCap = instData.state.d_vertices.capacity - inst_vertices_size_in_bytes;
+            if (inst_reservedCap > 0)
+            {
+                CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_vertices) + inst_vertices_size_in_bytes, 0, inst_reservedCap));
+                CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_clr) + inst_vertices_size_in_bytes, 0, inst_reservedCap));
+                CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_uv) + inst_vertices_size_in_bytes, 0, inst_reservedCap));
+                CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_nrm) + inst_vertices_size_in_bytes, 0, inst_reservedCap));
+                CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_tan) + inst_vertices_size_in_bytes, 0, inst_reservedCap));
+            }
+#else
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_vertices.reset()), inst_vertices_size_in_bytes));
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_clr.reset()), inst_vertices_size_in_bytes));
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_uv.reset()), inst_vertices_size_in_bytes));
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_nrm.reset()), inst_vertices_size_in_bytes));
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_tan.reset()), inst_vertices_size_in_bytes));
+#endif
+            inst_updateRange(instData);
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_vertices) + inst_offset,
+                                  (char *)instData.vertices.data() + inst_offset, inst_numBytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_clr) + inst_offset,
+                                  (char *)instData.clr.data() + inst_offset, inst_numBytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_uv) + inst_offset,
+                                  (char *)instData.uv.data() + inst_offset, inst_numBytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_nrm) + inst_offset,
+                                  (char *)instData.nrm.data() + inst_offset, inst_numBytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_tan) + inst_offset,
+                                  (char *)instData.tan.data() + inst_offset, inst_numBytes, cudaMemcpyHostToDevice));
+            if (staticNeedUpdate && inst_offset != 0) {
+                CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_vertices),
+                                      (char *)instData.vertices.data(), inst_static_vertices_size_in_bytes,
+                                      cudaMemcpyHostToDevice));
+                CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_clr), (char *)instData.clr.data(),
+                                      inst_static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+                CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_uv), (char *)instData.uv.data(),
+                                      inst_static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+                CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_nrm), (char *)instData.nrm.data(),
+                                      inst_static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+                CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)instData.state.d_tan), (char *)instData.tan.data(),
+                                      inst_static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            }
+
+            const std::size_t inst_mat_indices_size_in_bytes = instData.mat_indices.size() * sizeof(uint32_t);
+            const std::size_t inst_light_mark_size_in_bytes = instData.lightMark.size() * sizeof(unsigned short);
+#if WXL
+            instData.state.d_mat_indices.resize(inst_mat_indices_size_in_bytes);
+            instData.state.d_lightMark.resize(inst_light_mark_size_in_bytes);
+#else
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_mat_indices.reset()), inst_mat_indices_size_in_bytes));
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&instData.state.d_lightMark.reset()), inst_light_mark_size_in_bytes));
+#endif
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)instData.state.d_mat_indices), instData.mat_indices.data(),
+                                  inst_mat_indices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)instData.state.d_lightMark), instData.lightMark.data(),
+                                  inst_light_mark_size_in_bytes, cudaMemcpyHostToDevice));
+            timer.tock("done dynamic mesh update");
+            std::cout << "end copy\n";
+            splitMesh(instData.vertices, instData.mat_indices, instData.meshPieces, instData.staticMeshNum, instData.staticVertNum);
+            //std::cout<<"split mesh done\n";
+            //std::cout<<"mesh pieces:"<<instData.meshPieces.size()<<std::endl;
+            for (int i = instData.staticMeshNum; i < instData.meshPieces.size(); i++) {
+                buildMeshAccelSplitMesh(instData.state, instData.meshPieces[i], instData.vertices);
+            }
+        }
+
         buildInstanceAccel(state, 2, g_meshPieces);
     }
 //#endif
@@ -1495,6 +1721,7 @@ void optixupdateend() {
 
 struct DrawDat {
     std::string mtlid;
+    std::string instID;
     std::vector<float> verts;
     std::vector<int> tris;
     std::map<std::string, std::vector<float>> vertattrs;
@@ -1510,9 +1737,9 @@ struct DrawDat {
 static std::map<std::string, DrawDat> drawdats;
 
 void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start)
+std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start, std::size_t localStaticVertNum)
 {
-    size_t num_tri = (verts.size()-staticVertNum)/3;
+    size_t num_tri = (verts.size()-localStaticVertNum)/3;
     oMeshes.resize(start);
     size_t tris_per_mesh = 1024;
     size_t num_iter = num_tri/tris_per_mesh + 1;
@@ -1523,10 +1750,10 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start)
         {
             size_t idx = i*tris_per_mesh + j;
             if(idx<num_tri){
-                m->verts.emplace_back(verts[staticVertNum + idx*3+0]);
-                m->verts.emplace_back(verts[staticVertNum + idx*3+1]);
-                m->verts.emplace_back(verts[staticVertNum + idx*3+2]);
-                m->mat_idx.emplace_back(mat_idx[staticVertNum/3 + idx]);
+                m->verts.emplace_back(verts[localStaticVertNum + idx*3+0]);
+                m->verts.emplace_back(verts[localStaticVertNum + idx*3+1]);
+                m->verts.emplace_back(verts[localStaticVertNum + idx*3+2]);
+                m->mat_idx.emplace_back(mat_idx[localStaticVertNum/3 + idx]);
                 m->idx.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
             }
         }
@@ -1543,9 +1770,12 @@ static void updateStaticDrawObjects() {
     g_mat_indices.clear();
     g_lightMark.clear();
     size_t n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos)
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")!=key.npos && dat.instID == "Default")
+        {
             n += dat.tris.size()/3;
+        }
     }
     g_vertices.resize(n * 3);
     g_clr.resize(n*3);
@@ -1555,8 +1785,10 @@ static void updateStaticDrawObjects() {
     g_mat_indices.resize(n);
     g_lightMark.resize(n);
     n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos) {
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")!=key.npos && dat.instID == "Default")
+        {
             auto it = g_mtlidlut.find(dat.mtlid);
             int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
@@ -1662,12 +1894,148 @@ static void updateStaticDrawObjects() {
             n += dat.tris.size() / 3;
         }
     }
+
+    std::unordered_map<std::string, std::size_t> numVertsLUT; 
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")!=key.npos && dat.instID != "Default")
+        {
+            numVertsLUT[dat.instID] += dat.tris.size() / 3;
+        }
+    }
+    for (auto &[instID, numVerts] : numVertsLUT)
+    {
+        auto &instData = g_instLUT[instID];
+        instData.vertices.resize(numVerts * 3);
+        instData.clr.resize(numVerts * 3);
+        instData.nrm.resize(numVerts * 3);
+        instData.uv.resize(numVerts * 3);
+        instData.tan.resize(numVerts * 3);
+        instData.mat_indices.resize(numVerts);
+        instData.lightMark.resize(numVerts);
+
+        numVerts = 0;
+    }
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")!=key.npos && dat.instID != "Default")
+        {
+            auto it = g_mtlidlut.find(dat.mtlid);
+            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+
+            auto &instData = g_instLUT[dat.instID];
+            auto &numVerts = numVertsLUT[dat.instID];
+            for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
+            {
+                instData.mat_indices[numVerts + i] = mtlindex;
+                instData.lightMark[numVerts + i] = 0;
+                instData.vertices[(numVerts + i) * 3 + 0] = {
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.vertices[(numVerts + i) * 3 + 1] = {
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.vertices[(numVerts + i) * 3 + 2] = {
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.clr[(numVerts + i) * 3 + 0] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.clr[(numVerts + i) * 3 + 1] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.clr[(numVerts + i) * 3 + 2] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.nrm[(numVerts + i) * 3 + 0] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.nrm[(numVerts + i) * 3 + 1] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.nrm[(numVerts + i) * 3 + 2] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.uv[(numVerts + i) * 3 + 0] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.uv[(numVerts + i) * 3 + 1] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.uv[(numVerts + i) * 3 + 2] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.tan[(numVerts + i) * 3 + 0] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.tan[(numVerts + i) * 3 + 1] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.tan[(numVerts + i) * 3 + 2] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+            }
+            numVerts += dat.tris.size() / 3;
+        }
+    }
 }
 static void updatedrawobjects() {
     size_t n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")==key.npos)
-            n += dat.tris.size()/3;
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")==key.npos && dat.instID == "Default")
+        {
+            n += dat.tris.size() / 3;
+        }
     }
 
     g_vertices.resize(staticVertNum + n * 3);
@@ -1678,8 +2046,32 @@ static void updatedrawobjects() {
     g_mat_indices.resize(staticVertNum/3 + n);
     g_lightMark.resize(staticVertNum/3 + n);
     n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")==key.npos) {
+
+    std::unordered_map<std::string, std::size_t> numVertsLUT; 
+    for (auto const &[key, dat]: drawdats)
+    {
+        if (key.find(":static:") == key.npos && dat.instID != "Default")
+        {
+            numVertsLUT[dat.instID] += dat.tris.size() / 3;
+        }
+    }
+    for (auto &[instID, numVerts] : numVertsLUT)
+    {
+        auto &instData = g_instLUT[instID];
+        instData.vertices.resize(instData.staticVertNum + numVerts * 3);
+        instData.clr.resize(instData.staticVertNum + numVerts * 3);
+        instData.nrm.resize(instData.staticVertNum + numVerts * 3);
+        instData.uv.resize(instData.staticVertNum + numVerts * 3);
+        instData.tan.resize(instData.staticVertNum + numVerts * 3);
+        instData.mat_indices.resize(instData.staticVertNum / 3 + numVerts);
+        instData.lightMark.resize(instData.staticVertNum / 3 + numVerts);
+        numVerts = 0;
+    }
+
+    for (auto const &[key, dat] : drawdats)
+    {
+        if (key.find(":static:") == key.npos && dat.instID == "Default")
+        {
             auto it = g_mtlidlut.find(dat.mtlid);
             int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
@@ -1811,14 +2203,124 @@ static void updatedrawobjects() {
 //        g_mat_indices.push_back(0);
 //        g_lightMark.push_back(1);
 //    }
+    for (auto const &[key, dat]: drawdats)
+    {
+        if(key.find(":static:")==key.npos && dat.instID != "Default")
+        {
+            auto it = g_mtlidlut.find(dat.mtlid);
+            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
 
+            auto &instData = g_instLUT[dat.instID];
+            auto &numVerts = numVertsLUT[dat.instID];
+            for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
+            {
+                instData.mat_indices[instData.staticVertNum/3 + numVerts + i] = mtlindex;
+                instData.lightMark[instData.staticVertNum/3 + numVerts + i] = 0;
+                instData.vertices[instData.staticVertNum + (numVerts + i) * 3 + 0] = {
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.vertices[instData.staticVertNum + (numVerts + i) * 3 + 1] = {
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.vertices[instData.staticVertNum + (numVerts + i) * 3 + 2] = {
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
 
+                instData.clr[instData.staticVertNum + (numVerts + i) * 3 + 0] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.clr[instData.staticVertNum + (numVerts + i) * 3 + 1] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.clr[instData.staticVertNum + (numVerts + i) * 3 + 2] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.nrm[instData.staticVertNum + (numVerts + i) * 3 + 0] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.nrm[instData.staticVertNum + (numVerts + i) * 3 + 1] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.nrm[instData.staticVertNum + (numVerts + i) * 3 + 2] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.uv[instData.staticVertNum + (numVerts + i) * 3 + 0] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.uv[instData.staticVertNum + (numVerts + i) * 3 + 1] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+               instData.uv[instData.staticVertNum + (numVerts + i) * 3 + 2] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                instData.tan[instData.staticVertNum + (numVerts + i) * 3 + 0] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                instData.tan[instData.staticVertNum + (numVerts + i) * 3 + 1] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                instData.tan[instData.staticVertNum + (numVerts + i) * 3 + 2] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+            }
+            numVerts += dat.tris.size() / 3;
+        }
+    }
 }
 
-void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, const std::string &instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
     //ZENO_P(mtlid);
     dat.mtlid = mtlid;
+    dat.instID = instID;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
     //TODO: flatten just here... or in renderengineoptx.cpp
@@ -1829,6 +2331,65 @@ void load_object(std::string const &key, std::string const &mtlid, float const *
 
 void unload_object(std::string const &key) {
     drawdats.erase(key);
+}
+
+struct InstTrs
+{
+    std::string instID;
+    std::vector<float> translate;
+    std::vector<float> rotate;
+    std::vector<float> scale;
+};
+
+static std::unordered_map<std::string, InstTrs> instTrsLUT;
+
+void load_inst(const std::string &key, const std::string &instID, std::size_t numInsts, const float *translate, const float *rotate, const float *scale)
+{
+    InstTrs &instTrs = instTrsLUT[key];
+    instTrs.instID = instID;
+    instTrs.translate.assign(translate, translate + numInsts * 3);
+    instTrs.rotate.assign(rotate, rotate + numInsts * 3);
+    instTrs.scale.assign(scale, scale + numInsts * 3);
+}
+
+void unload_inst(const std::string &key)
+{
+    instTrsLUT.erase(key);
+}
+
+void UpdateInst()
+{
+    for (auto &[key, instTrs] : instTrsLUT)
+    {
+        const auto& instID = instTrs.instID;
+        auto& instMat = g_instMatLUT[instID];
+
+        const auto& numInstMats = instTrs.translate.size() / 3;
+        instMat.resize(numInstMats);
+
+        for (int i = 0; i < numInstMats; ++i)
+        {
+            auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
+            auto rotateXMat = glm::rotate(instTrs.rotate[3 * i + 0], glm::vec3(1, 0, 0));
+            auto rotateYMat = glm::rotate(instTrs.rotate[3 * i + 1], glm::vec3(0, 1, 0));
+            auto rotateZMat = glm::rotate(instTrs.rotate[3 * i + 2], glm::vec3(0, 0, 1));
+            auto scaleMat = glm::scale(glm::vec3(instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]));
+            instMat[i] = translateMat * rotateZMat * rotateYMat * rotateXMat * scaleMat;
+        }
+
+        for (int i = 0; i < numInstMats; ++i)
+        {
+            for (int j = 0; j < 4; ++j)
+            {
+                for (int k = 0; k < 4; ++k)
+                {
+                    std::cout << instMat[i][j][k] << ", ";
+                }
+            }
+            std::cout << "\n";
+        }
+
+    }
 }
 
 void set_window_size(int nx, int ny) {
