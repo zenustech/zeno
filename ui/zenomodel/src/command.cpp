@@ -70,32 +70,30 @@ void RemoveNodeCommand::undo()
 }
 
 
-AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel)
     : QUndoCommand()
     , m_info(info)
-	, m_model(pModel)
-	, m_subgIdx(subgIdx)
+    , m_model(pModel)
 {
 }
 
 void AddLinkCommand::redo()
 {
-    QModelIndex idx = m_model->addLink(m_info, m_subgIdx, true);
+    QModelIndex idx = m_model->addLink(m_info, true);
     ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
 
 void AddLinkCommand::undo()
 {
-    m_model->removeLink(m_linkIdx, m_subgIdx);
+    m_model->removeLink(m_linkIdx);
 }
 
 
-RemoveLinkCommand::RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+RemoveLinkCommand::RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel)
     : QUndoCommand()
     , m_linkIdx(linkIdx)
     , m_model(pModel)
-    , m_subgIdx(subgIdx)
 {
     m_info.inputNode = linkIdx.data(ROLE_INNODE).toString();
     m_info.inputSock = linkIdx.data(ROLE_INSOCK).toString();
@@ -105,14 +103,52 @@ RemoveLinkCommand::RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel*
 
 void RemoveLinkCommand::redo()
 {
-    m_model->removeLink(m_linkIdx, m_subgIdx);
+    m_model->removeLink(m_linkIdx);
 }
 
 void RemoveLinkCommand::undo()
 {
-	QModelIndex idx = m_model->addLink(m_info, m_subgIdx, true);
+    QModelIndex idx = m_model->addLink(m_info, true);
     ZASSERT_EXIT(idx.isValid());
-	m_linkIdx = QPersistentModelIndex(idx);
+    m_linkIdx = QPersistentModelIndex(idx);
+}
+
+
+LinkCommand::LinkCommand(bool bAddLink, const QPersistentModelIndex& fromSock, const QPersistentModelIndex& toSock, GraphsModel* pModel)
+    : QUndoCommand()
+    , m_bAdd(bAddLink)
+    , m_fromSock(fromSock)
+    , m_toSock(toSock)
+    , m_model(pModel)
+{
+    m_fromSockObj = m_fromSock.data(ROLE_OBJPATH).toString();
+    m_toSockObj = m_toSock.data(ROLE_OBJPATH).toString();
+}
+
+void LinkCommand::redo()
+{
+    if (m_bAdd)
+    {
+        m_model->addLink(m_fromSock, m_toSock, true);
+    }
+    else
+    {
+        QModelIndex linkIdx = m_model->linkModel()->index(m_fromSock, m_toSock);
+        m_model->removeLink(linkIdx);
+    }
+}
+
+void LinkCommand::undo()
+{
+    if (m_bAdd)
+    {
+        QModelIndex linkIdx = m_model->linkModel()->index(m_fromSock, m_toSock);
+        m_model->removeLink(linkIdx);
+    }
+    else
+    {
+        m_model->addLink(m_fromSock, m_toSock, true);
+    }
 }
 
 

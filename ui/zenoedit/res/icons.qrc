@@ -270,5 +270,9 @@
     <file>icons/toolbar_search_light.svg</file>
     <file>icons/toolbar_localSetting_idle.svg</file>
     <file>icons/toolbar_localSetting_light.svg</file>
+    <file>icons/parameter_key-frame_correct.svg</file>
+    <file>icons/parameter_key-frame_hover.svg</file>
+    <file>icons/parameter_key-frame_idle.svg</file>
+    <file>icons/parameter_key-frame_not-confirm.svg</file>
 </qresource>
 </RCC>

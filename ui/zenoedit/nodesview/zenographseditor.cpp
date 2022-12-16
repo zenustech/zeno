@@ -454,6 +454,8 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
 
 void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)
 {
+    if (!m_model)
+        return;
     QStandardItemModel* logModel = qobject_cast<QStandardItemModel*>(sender());
     const QModelIndex& idx = logModel->index(first, 0, parent);
     if (idx.isValid())

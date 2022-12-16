@@ -246,6 +246,16 @@ void VParamItem::setData(const QVariant& value, int role)
             mapCoreParam(coreIdx);
             break;
         }
+        case ROLE_ADDLINK:
+        case ROLE_REMOVELINK:
+        {
+            if (m_index.isValid())
+            {
+                QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
+                bool ret = pModel->setData(m_index, value, role);
+            }
+            break;
+        }
         case ROLE_VAPRAM_EDITTABLE:
             break;
     }

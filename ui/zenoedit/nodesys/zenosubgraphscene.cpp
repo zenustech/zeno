@@ -538,14 +538,13 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
         viewRemoveLink(linkIdx);
 
         socketPos = m_nodes[outNode]->getPortPos(false, outSock);
-        ZenoSocketItem* pSocketItem = m_nodes[outNode]->getSocketItem(false, outSock);
+        pSocketItem = m_nodes[outNode]->getSocketItem(false, outSock);
         m_tempLink = new ZenoTempLink(pSocketItem, outNode, outSock, socketPos, false);
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
     }
     else
     {
-        ZenoSocketItem *pSocketItem = m_nodes[nodeid]->getSocketItem(bInput, sockName);
         m_tempLink = new ZenoTempLink(pSocketItem, nodeid, sockName, socketPos, bInput);
         addItem(m_tempLink);
     }
@@ -703,10 +702,11 @@ void ZenoSubGraphScene::onTempLinkClosed()
             }
 
             pGraphsModel->beginTransaction(tr("add Link"));
+            zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
 
             //remove the old Link first.
             if (oldLink.isValid())
-                pGraphsModel->removeLink(oldLink, m_subgIdx, true);
+                pGraphsModel->removeLink(oldLink, true);
 
             //remove the edge in inNode:inSock, if exists.
             SOCKET_PROPERTY prop = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -717,13 +717,12 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
                 m_nodes[inNode]->getSocketInfoByItem(targetSock, sockName, socketPos, bTargetInput, linkIdx);
                 if (linkIdx.isValid())
-                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+                    pGraphsModel->removeLink(linkIdx, true);
             }
 
-            EdgeInfo info(outNode, inNode, outSock, inSock);
-            pGraphsModel->addLink(info, m_subgIdx, true, true);
-            //pGraphsModel->addLink2(fromSockIdx, toSockIdx);
-            pGraphsModel->endTransaction();
+            pGraphsModel->addLink(fromSockIdx, toSockIdx, true);
+            //EdgeInfo info(outNode, inNode, outSock, inSock);
+            //pGraphsModel->addLink(info, true, true);
             return;
         }
     }
@@ -731,7 +730,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
     if (oldLink.isValid())
     {
-        pGraphsModel->removeLink(oldLink, m_subgIdx, true);
+        pGraphsModel->removeLink(oldLink, true);
     }
 }
 
@@ -845,7 +844,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 pGraphsModel->beginTransaction("remove nodes and links");
                 for (const QModelIndex &linkIdx : links)
                 {
-                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+                    pGraphsModel->removeLink(linkIdx, true);
                 }
                 for (const QModelIndex &nodeIdx : nodes)
                 {

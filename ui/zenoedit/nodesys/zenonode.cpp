@@ -39,6 +39,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_NameItem(nullptr)
     , m_bError(false)
     , m_bEnableSnap(false)
+    , m_bMoving(false)
     , m_bodyLayout(nullptr)
     , m_bUIInited(false)
     , m_inputsLayout(nullptr)
@@ -370,7 +371,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     if (groupName == "In Sockets")
     {
         ZASSERT_EXIT(m_inSockets.find(paramName) != m_inSockets.end());
-        ZSocketLayout* pControlLayout = pControlLayout = m_inSockets[paramName];
+        ZSocketLayout* pControlLayout = m_inSockets[paramName];
         QGraphicsItem* pControl = nullptr;
         if (pControlLayout)
             pControl = pControlLayout->control();
@@ -988,6 +989,11 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     }
 }
 
+void ZenoNode::focusOutEvent(QFocusEvent* event)
+{
+    _base::focusOutEvent(event);
+}
+
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
@@ -1026,6 +1032,65 @@ void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
+    if (m_bMoving)
+    {
+        m_bMoving = false;
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        QPointF newPos = event->scenePos();
+        QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
+        if (newPos != oldPos)
+        {
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OBJPOS;
+            info.newValue = m_lastMovig;
+            info.oldValue = oldPos;
+            pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
+
+            bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+            QRectF rc = m_headerWidget->sceneBoundingRect();
+
+            emit inSocketPosChanged();
+            emit outSocketPosChanged();
+
+            m_lastMovig = QPointF();
+        }
+    }
+}
+
+QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if (!m_bUIInited)
+        return value;
+
+    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    {
+        bool bSelected = isSelected();
+        m_headerWidget->toggle(bSelected);
+        m_bodyWidget->toggle(bSelected);
+
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        mainWin->onNodesSelected(m_subGpIndex, { index() }, bSelected);
+    }
+    else if (change == QGraphicsItem::ItemPositionChange)
+    {
+        m_bMoving = true;
+        if (m_bEnableSnap)
+        {
+            QPointF pos = value.toPointF();
+            int x = pos.x(), y = pos.y();
+            x = x - x % SCENE_GRID_SIZE;
+            y = y - y % SCENE_GRID_SIZE;
+            return QPointF(x, y);
+        }
+    }
+    else if (change == QGraphicsItem::ItemPositionHasChanged)
+    {
+        m_bMoving = true;
+        m_lastMovig = value.toPointF();
+        emit inSocketPosChanged();
+        emit outSocketPosChanged();
+    }
+    return value;
 }
 
 void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
@@ -1132,54 +1197,6 @@ void ZenoNode::onOptionsUpdated(int options)
     m_pStatusWidgets->blockSignals(true);
     m_pStatusWidgets->setOptions(options);
     m_pStatusWidgets->blockSignals(false);
-}
-
-QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
-{
-    if (!m_bUIInited)
-        return value;
-
-    if (change == QGraphicsItem::ItemSelectedHasChanged)
-    {
-        bool bSelected = isSelected();
-        m_headerWidget->toggle(bSelected);
-        m_bodyWidget->toggle(bSelected);
-
-        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        mainWin->onNodesSelected(m_subGpIndex, { index() }, bSelected);
-    }
-    else if (change == QGraphicsItem::ItemPositionChange)
-    {
-        if (m_bEnableSnap)
-        {
-            QPointF pos = value.toPointF();
-            int x = pos.x(), y = pos.y();
-            x = x - x % SCENE_GRID_SIZE;
-            y = y - y % SCENE_GRID_SIZE;
-            return QPointF(x, y);
-        }
-    }
-    else if (change == QGraphicsItem::ItemPositionHasChanged)
-    {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        QPointF newPos = value.toPointF();
-        QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
-        if (newPos != oldPos)
-        {
-            STATUS_UPDATE_INFO info;
-            info.role = ROLE_OBJPOS;
-            info.newValue = newPos;
-            info.oldValue = oldPos;
-            pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
-
-            bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-            QRectF rc = m_headerWidget->sceneBoundingRect();
-
-            emit inSocketPosChanged();
-            emit outSocketPosChanged();
-        }
-    }
-    return value;
 }
 
 void ZenoNode::updateWhole()

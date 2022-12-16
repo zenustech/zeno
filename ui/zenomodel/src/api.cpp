@@ -182,7 +182,7 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     info.outputSock = QString::fromStdString(outSock);
 
     bool bAddDynamicSock = false;
-    pModel->addLink(info, subgIdx, bAddDynamicSock);
+    pModel->addLink(info, bAddDynamicSock);
     return Err_NoError;
 }
 
@@ -207,7 +207,7 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
                                             QString::fromStdString(inSock));
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    pModel->removeLink(linkIdx, subgIdx);
+    pModel->removeLink(linkIdx);
     return Err_NoError;
 }
 

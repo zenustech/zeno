@@ -41,9 +41,6 @@ public:
 signals:
     void clicked(bool bInput);
 
-public slots:
-    void socketNamePosition(const QPointF& nameScenePos);
-
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;

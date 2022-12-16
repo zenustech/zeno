@@ -136,6 +136,17 @@ int LinkModel::addLink(const QModelIndex& fromSock, const QModelIndex& toSock)
     return row;
 }
 
+QModelIndex LinkModel::index(const QModelIndex& fromSock, const QModelIndex& toSock)
+{
+    for (int r = 0; r < m_items.size(); r++)
+    {
+        _linkItem& item = m_items[r];
+        if (item.fromSock == fromSock && item.toSock == toSock)
+            return index(r, 0);
+    }
+    return QModelIndex();
+}
+
 void LinkModel::clear()
 {
     while (rowCount() > 0)
