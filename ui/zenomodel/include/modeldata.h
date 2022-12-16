@@ -68,6 +68,7 @@ enum SOCKET_PROPERTY {
     SOCKPROP_NORMAL = 1,
     SOCKPROP_EDITABLE = 1 << 1,
     SOCKPROP_MULTILINK = 1 << 2,
+    SOCKPROP_DICTPANEL = 1 << 3,
 };
 
 struct PARAM_INFO {
@@ -143,7 +144,7 @@ struct SOCKET_INFO {
     QVariant defaultValue;  // a native value or a curvemodel.
     QList<EdgeInfo> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
 
-    SOCKET_PROPERTY sockProp;
+    int sockProp;
 
     SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}
     SOCKET_INFO(const QString& id, const QString& name)

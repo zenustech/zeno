@@ -20,7 +20,7 @@ public:
         //CurveModel* pVar;   //variable on time frame.
         PARAM_LINKS links;
         QMap<int, QVariant> customData;
-        SOCKET_PROPERTY prop;
+        int prop;
     };
 
     explicit IParamModel(
@@ -57,13 +57,13 @@ public:
         const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+        int prop = SOCKPROP_NORMAL);
 
     void appendRow(
         const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+        int prop = SOCKPROP_NORMAL);
 
     void setItem(
         const QModelIndex& idx,
@@ -90,7 +90,7 @@ private:
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+        int prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
 

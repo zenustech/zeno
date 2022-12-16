@@ -74,6 +74,7 @@ public:
     void setStretch(QList<int> stretchs);
     void setAlignment(QGraphicsItem* item, Qt::Alignment flag);
     void setSpacing(qreal spacing);
+    void setHorizontal(bool bHor);
     qreal spacing() const;
     void setContentsMargin(qreal top, qreal left, qreal bottom, qreal right);
     QMargins getContentsMargin() const;

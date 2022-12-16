@@ -5,6 +5,7 @@
 #include "variantptr.h"
 #include "zenoparamwidget.h"
 #include "zveceditoritem.h"
+#include "zdictpanel.h"
 
 
 ZGraphicsLayout::ZGraphicsLayout(bool bHor)
@@ -13,6 +14,11 @@ ZGraphicsLayout::ZGraphicsLayout(bool bHor)
     , m_bHorizontal(bHor)
     , m_parentItem(nullptr)
 {
+}
+
+void ZGraphicsLayout::setHorizontal(bool bHor)
+{
+    m_bHorizontal = bHor;
 }
 
 ZGraphicsLayout::~ZGraphicsLayout()
@@ -286,6 +292,12 @@ QSizeF ZGraphicsLayout::calculateSize()
     QSizeF szMargin(m_margins.left() + m_margins.right(), m_margins.top() + m_margins.bottom());
     size += szMargin;
 
+    if (m_dbgName == "dict")
+    {
+        int j;
+        j = 0;
+    }
+
     for (int i = 0; i < m_items.size(); i++)
     {
         auto item = m_items[i];
@@ -491,6 +503,13 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
                 continue;
         }
 
+        //use to debug.
+        if (pLayout && pLayout->m_dbgName == "dict")
+        {
+            int j;
+            j = 0;
+        }
+
         if (pLayout)
         {
             qreal sz = 0;
@@ -589,6 +608,12 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
 
 void ZGraphicsLayout::setup(QRectF rc)
 {
+    if (m_dbgName == "debugdict")
+    {
+        int j;
+        j = 0;
+    }
+
     //set geometry relative to item which owns this layout, indicated by rc.
     m_geometry = rc;
     rc = rc.marginsRemoved(m_margins);

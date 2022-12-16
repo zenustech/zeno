@@ -633,7 +633,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
         return;
 
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    if (ZenoSocketItem *targetSock = m_tempLink->getAdsorbedSocket())
+    if (ZenoSocketItem* targetSock = m_tempLink->getAdsorbedSocket())
     {
         if (!targetSock->paramIndex().data(ROLE_VPARAM_IS_COREPARAM).toBool())
         {
@@ -662,10 +662,6 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 toSockIdx = targetSock->paramIndex();
             }
 
-            QString inNode = toSockIdx.data(ROLE_OBJID).toString();
-
-            PARAM_CONTROL toSockCtrl = (PARAM_CONTROL)toSockIdx.data(ROLE_PARAM_CTRL).toInt();
-
             const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
             if (oldLink.isValid())
             {
@@ -687,7 +683,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             //remove the edge in inNode:inSock, if exists.
             SOCKET_PROPERTY prop = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-            if (bTargetInput && prop != SOCKPROP_MULTILINK && targetSock)
+            if (bTargetInput && prop != SOCKPROP_MULTILINK)
             {
                 QPersistentModelIndex linkIdx;
                 const QModelIndex& paramIdx = targetSock->paramIndex();

@@ -32,6 +32,19 @@ int ZenoSocketItem::type() const
     return Type;
 }
 
+void ZenoSocketItem::setContentMargins(qreal left, qreal top, qreal right, qreal bottom)
+{
+    sTopMargin = top;
+    sBottomMargin = bottom;
+    if (m_bInput) {
+        sHorLargeMargin = left;
+        sHorSmallMargin = right;
+    } else {
+        sHorLargeMargin = right;
+        sHorSmallMargin = left;
+    }
+}
+
 void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
 {
     m_offsetToName = offsetToName;
@@ -70,7 +83,8 @@ QRectF ZenoSocketItem::boundingRect() const
     else {
         rc = rc.adjusted(-sHorSmallMargin, -sTopMargin, sHorLargeMargin, sBottomMargin);
     }
-    return rc;
+    return QRectF(0, 0, rc.width(), rc.height());
+    //return rc;
 }
 
 bool ZenoSocketItem::isInputSocket() const

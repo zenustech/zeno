@@ -335,8 +335,6 @@ ZSocketGroupItem::ZSocketGroupItem(
     , m_bInput(bInput)
     , m_viewSockIdx(viewSockIdx)
 {
-    ZASSERT_EXIT(m_viewSockIdx.isValid());
-
     ImageElement elem;
     elem.image = ":/icons/socket-off.svg";
     elem.imageHovered = ":/icons/socket-hover.svg";

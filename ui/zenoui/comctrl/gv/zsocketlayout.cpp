@@ -1,37 +1,68 @@
 #include "zsocketlayout.h"
 #include "zenosocketitem.h"
+#include "zlayoutbackground.h"
 #include "zgraphicstextitem.h"
 #include "zassert.h"
 #include "style/zenostyle.h"
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/igraphsmodel.h>
+#include "zdictpanel.h"
 
 
 ZSocketLayout::ZSocketLayout(
+        IGraphsModel* pModel,
         const QPersistentModelIndex& viewSockIdx,
-        const QString& sockName,
         bool bInput,
-        bool editable,
-        Callback_OnSockClicked cbSock,
-        Callback_EditContentsChange cb
+        Callback_OnSockClicked cbSock
     )
     : ZGraphicsLayout(true)
     , m_text(nullptr)
     , m_control(nullptr)
     , m_bInput(bInput)
-    , m_bEditable(editable)
+    , m_bEditable(false)
     , m_viewSockIdx(viewSockIdx)
 {
-    if (m_bEditable) {
-        m_text = new ZSocketEditableItem(viewSockIdx, sockName, bInput, cbSock, cb);
+    QString sockName;
+    int sockProp = 0;
+    if (!viewSockIdx.isValid())
+    {
+        //test case.
+        sockName = "test";
     }
-    else {
-        m_text = new ZSocketGroupItem(viewSockIdx, sockName, bInput, cbSock);
-    }
-    if (m_bInput)
-        addItem(m_text, Qt::AlignVCenter);
     else
-        addItem(m_text, Qt::AlignRight | Qt::AlignVCenter);
+    {
+        sockName = viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+        sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+        m_bEditable = sockProp & SOCKPROP_EDITABLE;
+    }
 
-    setSpacing(ZenoStyle::dpiScaled(32));
+    if (m_bEditable)
+    {
+        Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
+            pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
+        };
+        m_text = new ZSocketEditableItem(viewSockIdx, sockName, m_bInput, cbSock, cbFuncRenameSock);
+        addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
+        setSpacing(ZenoStyle::dpiScaled(32));
+    }
+    else if (sockProp & SOCKPROP_DICTPANEL)
+    {
+        setDebugName("dict socket");
+
+        setHorizontal(false);
+        m_text = new ZSocketGroupItem(viewSockIdx, sockName, m_bInput, cbSock);
+        addItem(m_text/*, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter*/);
+
+        ZDictPanel* panel = new ZDictPanel;
+        addItem(panel);
+        setSpacing(ZenoStyle::dpiScaled(0));
+    }
+    else
+    {
+        m_text = new ZSocketGroupItem(viewSockIdx, sockName, m_bInput, cbSock);
+        addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
+        setSpacing(ZenoStyle::dpiScaled(32));
+    }
 }
 
 ZSocketLayout::~ZSocketLayout()
@@ -84,14 +115,5 @@ void ZSocketLayout::updateSockName(const QString& name)
         ZSocketGroupItem* pGroup = static_cast<ZSocketGroupItem*>(m_text);
         if (pGroup)
             pGroup->setText(name);
-    }
-}
-
-void ZSocketLayout::setValue(const QVariant& value)
-{
-    int type = m_control->type();
-    switch (type)
-    {
-        //...
     }
 }

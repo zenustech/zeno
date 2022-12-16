@@ -28,6 +28,7 @@ public:
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
+    void setContentMargins(qreal left, qreal top, qreal right, qreal bottom);
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
@@ -56,10 +57,10 @@ private:
 
     const QPersistentModelIndex m_viewSockIdx;
 
-    const int sHorLargeMargin;
-    const int sTopMargin;
-    const int sHorSmallMargin;
-    const int sBottomMargin;
+    int sHorLargeMargin;
+    int sTopMargin;
+    int sHorSmallMargin;
+    int sBottomMargin;
 
     const bool m_bInput;
 };

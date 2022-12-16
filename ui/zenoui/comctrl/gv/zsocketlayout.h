@@ -7,21 +7,19 @@
 class ZenoSocketItem;
 class ZSimpleTextItem;
 class ZSocketGroupItem;
+class IGraphsModel;
 
 class ZSocketLayout : public ZGraphicsLayout
 {
 public:
     ZSocketLayout(
+            IGraphsModel* pModel,
             const QPersistentModelIndex& viewSockIdx,
-            const QString& sockName,
             bool bInput,
-            bool editable,
-            Callback_OnSockClicked cbSock,
-            Callback_EditContentsChange cb
+            Callback_OnSockClicked cbSock
             );
     ~ZSocketLayout();
     void setControl(QGraphicsItem* pControl);
-    void setValue(const QVariant& value);
     void updateSockName(const QString& name);
     QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;

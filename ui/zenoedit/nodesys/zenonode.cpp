@@ -227,6 +227,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
+    m_paramsLayout->setDebugName("Params Layout");
     m_bodyLayout->addLayout(m_paramsLayout);
 
     m_inputsLayout = initSockets(inputsItem, true, pScene);
@@ -608,14 +609,7 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
 
 ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
-    QPersistentModelIndex perIdx(viewSockIdx);
-    auto cbFuncRenameSock = [=](QString oldText, QString newText) {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (!pModel)
-            return;
-        pModel->ModelSetData(perIdx, newText, ROLE_PARAM_NAME);
-    };
-
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     Callback_OnSockClicked cbSockOnClick = [=](ZenoSocketItem* pSocketItem) {
         emit socketClicked(pSocketItem);
     };
@@ -626,8 +620,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     const QVariant& deflVal = viewSockIdx.data(ROLE_PARAM_VALUE);
     const PARAM_LINKS& links = viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
 
-    bool bEditableSock = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_EDITABLE;
-    ZSocketLayout* pMiniLayout = new ZSocketLayout(viewSockIdx, sockName, bInput, bEditableSock, cbSockOnClick, cbFuncRenameSock);
+    ZSocketLayout* pMiniLayout = new ZSocketLayout(pModel, viewSockIdx, bInput, cbSockOnClick);
     pMiniLayout->setDebugName(sockName);
 
     if (bInput)

@@ -367,7 +367,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             }
 
             const bool bInputAdding = linkIdx.data(ROLE_INNODE) == nodeId;
-            if (item.prop == SOCKPROP_MULTILINK && bInputAdding)
+            if (item.prop & SOCKPROP_MULTILINK && bInputAdding)
             {
                 QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
@@ -414,7 +414,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.removeAll(linkIdx);
-            if (!m_bRetryLinkOp && item.prop == SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
+            if (!m_bRetryLinkOp && item.prop & SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
             {
                 QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
@@ -594,14 +594,14 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     return true;
 }
 
-void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
+void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, int prop)
 {
     beginInsertRows(QModelIndex(), row, row);
     bool ret = _insertRow(row, sockName, type, deflValue, prop);
     endInsertRows();
 }
 
-void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
+void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, int prop)
 {
     int n = rowCount();
     insertRow(n, sockName, type, deflValue, prop);
@@ -648,7 +648,7 @@ bool IParamModel::_insertRow(
     const QString& sockName,
     const QString& type,
     const QVariant& deflValue,
-    SOCKET_PROPERTY prop)
+    int prop)
 {
     ZASSERT_EXIT(m_items.find(sockName) == m_items.end(), false);
     int nRows = m_items.size();
@@ -662,7 +662,7 @@ bool IParamModel::_insertRow(
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
         item.type = "dict";
-        item.prop = SOCKPROP_MULTILINK;
+        item.prop = SOCKPROP_MULTILINK | SOCKPROP_DICTPANEL;
     }
     else if (type == "list")
     {
@@ -675,7 +675,7 @@ bool IParamModel::_insertRow(
         item.type = "list";
     }
 
-    if (item.prop == SOCKPROP_MULTILINK)
+    if (item.prop & SOCKPROP_MULTILINK)
     {
         QStandardItemModel* pTblModel = new QStandardItemModel(0, 2, this);
         item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<QStandardItemModel>::asVariant(pTblModel);
