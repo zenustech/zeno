@@ -149,13 +149,6 @@
          </item>
          <item>
           <widget class="QLabel" name="lblLogo">
-           <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 36px &quot;HarmonyOS Sans&quot;;
-	color: rgb(255, 255, 255);
-}</string>
-           </property>
            <property name="text">
             <string>ZENO</string>
            </property>
@@ -190,13 +183,6 @@
            </item>
            <item>
             <widget class="QLabel" name="label">
-             <property name="styleSheet">
-              <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(255, 255, 255);
-}</string>
-             </property>
              <property name="text">
               <string>by ZENUS</string>
              </property>
@@ -344,13 +330,6 @@
            </item>
            <item>
             <widget class="QLabel" name="lblRecentFiles">
-             <property name="styleSheet">
-              <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(133, 130, 128);
-}</string>
-             </property>
              <property name="text">
               <string>Recent Files</string>
              </property>
@@ -419,13 +398,6 @@
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
               <widget class="QLabel" name="lblCurrVer">
-               <property name="styleSheet">
-                <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(133, 130, 128);
-}</string>
-               </property>
                <property name="text">
                 <string>Current Version: 2.0.1</string>
                </property>
@@ -449,13 +421,6 @@
              </item>
              <item>
               <widget class="QLabel" name="lblWhatsNew">
-               <property name="styleSheet">
-                <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(133, 130, 128);
-}</string>
-               </property>
                <property name="text">
                 <string>What’s New ?</string>
                </property>
@@ -481,13 +446,6 @@
            </item>
            <item>
             <widget class="QLabel" name="lblLink">
-             <property name="styleSheet">
-              <string notr="true">QLabel
-{
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgb(133, 130, 128);
-}</string>
-             </property>
              <property name="text">
               <string>Link:</string>
              </property>

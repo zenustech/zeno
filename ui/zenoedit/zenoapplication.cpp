@@ -7,6 +7,7 @@
 #include "launch/ztcpserver.h"
 #include "launch/corelaunch.h"
 #include "startup/zstartup.h"
+#include <style/zenostyle.h>
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -41,7 +42,7 @@ QString ZenoApplication::readQss(const QString& qssPath)
     file.setFileName(qssPath);
     ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     ZASSERT_EXIT(ret, "");
-    return file.readAll();
+    return ZenoStyle::dpiScaleSheet(file.readAll());
 }
 
 void ZenoApplication::initStyleSheets()
@@ -56,6 +57,8 @@ void ZenoApplication::initStyleSheets()
     qss += readQss(":/stylesheet/scrollbar.qss");
     qss += readQss(":/stylesheet/spinbox.qss");
     qss += readQss(":/stylesheet/mainwindow.qss");
+    qss += readQss(":/stylesheet/checkbox.qss");
+    qss += readQss(":/stylesheet/tabwidget.qss");
     setStyleSheet(qss);
 }
 

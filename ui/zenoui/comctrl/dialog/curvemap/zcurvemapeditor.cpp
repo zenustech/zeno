@@ -34,6 +34,7 @@ void ZCurveMapEditor::initUI()
 
     m_ui->btnLoadPreset->setProperty("cssClass", "curve-preset");
     m_ui->btnSavePreset->setProperty("cssClass", "curve-preset");
+    m_ui->cbIsTimeline->setProperty("cssClass", "curve-timeline");
 
     //todo: move to ui file.
     m_pGroupHdlType = new QButtonGroup(this);

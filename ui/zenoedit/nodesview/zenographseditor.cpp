@@ -57,6 +57,8 @@ void ZenoGraphsEditor::initUI()
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
     m_ui->graphsViewTab->setIconSize(ZenoStyle::dpiScaledSize(QSize(20,20)));
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
+    m_ui->graphsViewTab->setProperty("cssClass", "graphicsediter");
+    m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
 
     initRecentFiles();
 }

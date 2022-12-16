@@ -200,7 +200,8 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
     m_bodyLayout->setSpacing(5);
-    m_bodyLayout->setContentsMargin(16, 16, 16, 16);
+    qreal margin = ZenoStyle::dpiScaled(16);
+    m_bodyLayout->setContentsMargin(margin, margin, margin, margin);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
     QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));

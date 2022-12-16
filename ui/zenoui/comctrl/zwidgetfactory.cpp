@@ -49,18 +49,6 @@ namespace zenoui
             case CONTROL_BOOL:
             {
                 QCheckBox* pCheckbox = new QCheckBox;
-                pCheckbox->setStyleSheet("\
-                    QCheckBox::indicator{\
-                        width: 16px;\
-                        height: 16px;\
-                    }\
-                    QCheckBox::indicator:unchecked {\
-                        image: url(:/icons/checkbox-idle.svg);\
-                    }\
-                    QCheckBox::indicator:checked {\
-                        image: url(:/icons/checkbox-light.svg);\
-                    }\
-                ");
                 pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
                 QObject::connect(pCheckbox, &QCheckBox::stateChanged, [=](int state) {
                     cbSet.cbEditFinished(state);
@@ -217,7 +205,7 @@ namespace zenoui
             case CONTROL_HSLIDER:
             {
                 QSlider* pSlider = new QSlider(Qt::Horizontal);
-                pSlider->setStyleSheet("\
+                pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet("\
                     QSlider::groove:horizontal {\
                         height: 4px;\
                         background: #707D9C;\
@@ -235,7 +223,7 @@ namespace zenoui
                     QSlider::sub-page:horizontal {\
                         background: #707D9C;\
                     }\
-                ");
+                "));
                 pSlider->setValue(value.toInt());
 
                 SLIDER_INFO sliderInfo = properties.value<SLIDER_INFO>();
@@ -266,40 +254,7 @@ namespace zenoui
             case CONTROL_HSPINBOX:
             {
                 QSpinBox* pSpinBox = new QSpinBox;
-                pSpinBox->setStyleSheet("\
-                    QSpinBox {\
-                        background: #191D21;\
-                        height: 28px;\
-                        color: #C3D2DF;\
-                        font: 14px 'Segoe UI';\
-                    }\
-                    \
-                    QSpinBox::down-button  {\
-                        subcontrol-origin: margin;\
-                        subcontrol-position: center left;\
-                        image: url(:/icons/leftArrow.svg);\
-                        background-color: #191D21;\
-                        height: 24px;\
-                        width: 20px;\
-                    }\
-                    \
-                    QSpinBox::down-button:hover {\
-                        image: url(:/icons/leftArrow-on.svg);\
-                    }\
-                    \
-                    QSpinBox::up-button  {\
-                        subcontrol-origin: margin;\
-                        subcontrol-position: center right;\
-                        image: url(:/icons/rightArrow.svg);\
-                        background-color: #191D21;\
-                        height: 24px;\
-                        width: 20px;\
-                    }\
-                    \
-                    QSpinBox::up-button:hover {\
-                        image: url(:/icons/rightArrow-on.svg);\
-                    }\
-                ");
+                pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
                 return pSpinBox;
             }

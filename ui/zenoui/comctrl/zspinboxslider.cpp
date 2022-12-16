@@ -12,7 +12,7 @@ ZSpinBoxSlider::ZSpinBoxSlider(QWidget* parent)
     QHBoxLayout* pLayout = new QHBoxLayout;
 
     m_pSpinbox = new QSpinBox;
-    m_pSpinbox->setStyleSheet("\
+    m_pSpinbox->setStyleSheet(ZenoStyle::dpiScaleSheet("\
                     QSpinBox {\
                         background: #191D21;\
                         height: 28px;\
@@ -46,12 +46,12 @@ ZSpinBoxSlider::ZSpinBoxSlider(QWidget* parent)
                     QSpinBox::up-button:hover {\
                         image: url(:/icons/rightArrow-on.svg);\
                     }\
-                ");
+                "));
     m_pSpinbox->setAlignment(Qt::AlignCenter);
     m_pSpinbox->setFixedWidth(ZenoStyle::dpiScaled(80));
 
     m_pSlider = new QSlider(Qt::Horizontal);
-    m_pSlider->setStyleSheet("\
+    m_pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet("\
         QSlider::groove:horizontal {\
             height: 4px;\
             background: #707D9C;\
@@ -69,7 +69,7 @@ ZSpinBoxSlider::ZSpinBoxSlider(QWidget* parent)
         QSlider::sub-page:horizontal {\
             background: #707D9C;\
         }\
-    ");
+    "));
 
     setValue(0);
 

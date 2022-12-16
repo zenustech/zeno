@@ -140,11 +140,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_8">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Tangent    Left X</string>
@@ -164,11 +160,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_10">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Right X</string>
@@ -195,11 +187,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_9">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Tangent    Left Y</string>
@@ -219,11 +207,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_11">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Right Y</string>
@@ -245,11 +229,7 @@ QTreeView::item:selected:!active {
        <item row="0" column="2">
         <widget class="QLabel" name="label_3">
          <property name="styleSheet">
-          <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+          <string notr="true"></string>
          </property>
          <property name="text">
           <string>Point X</string>
@@ -327,11 +307,7 @@ QTreeView::item:selected:!active {
        <item row="1" column="2">
         <widget class="QLabel" name="label_4">
          <property name="styleSheet">
-          <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+          <string notr="true"></string>
          </property>
          <property name="text">
           <string>Point Y</string>
@@ -341,11 +317,7 @@ QTreeView::item:selected:!active {
        <item row="2" column="2">
         <widget class="QLabel" name="label_5">
          <property name="styleSheet">
-          <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+          <string notr="true"></string>
          </property>
          <property name="text">
           <string>Handle type</string>
@@ -410,11 +382,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_6">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Frame</string>
@@ -460,11 +428,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_7">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Value</string>
@@ -497,11 +461,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>X Range</string>
@@ -610,11 +570,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_2">
            <property name="styleSheet">
-            <string notr="true">QLabel
-{
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(133, 130, 128);
-}</string>
+            <string notr="true"></string>
            </property>
            <property name="text">
             <string>Y Range</string>
@@ -747,24 +703,7 @@ QTreeView::item:selected:!active {
        <item row="2" column="0">
         <widget class="QCheckBox" name="cbIsTimeline">
          <property name="styleSheet">
-          <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_normal.svg);
-}</string>
+          <string notr="true"></string>
          </property>
          <property name="text">
           <string>timeline</string>

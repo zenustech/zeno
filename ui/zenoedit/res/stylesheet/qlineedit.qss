@@ -76,6 +76,7 @@ QLineEdit[cssClass="zeno2_2_lineedit"] {
     background-color: #191D21;
     selection-background-color: #4B9EF4;
     color: #C3D2DF;
+    font: 14px 'HarmonyOS Sans';
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
@@ -91,4 +92,11 @@ QTextEdit {
 QTextEdit[cssClass="proppanel"] {
     background-color: #191D21;
     color: #FFFFFF;
+}
+QPlainTextEdit[cssClass="logpanel"]
+{
+    color: #A3B1C0; 
+    background-color: rgb(24,29,33); 
+    border: 1px solid rgb(18,20,22);
+    font:12px 'HarmonyOS Sans';
 }
