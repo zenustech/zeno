@@ -168,7 +168,7 @@ struct ExtractMaterialShader : zeno::INode
         virtual void apply() override
         {
             auto obj = get_input<zeno::IObject>("object");
-            auto isL = get_input2<int>("islight");
+            auto isLight = get_input2<int>("islight");
             auto inverdir = get_input2<int>("invertdir");
 
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
@@ -187,7 +187,7 @@ struct ExtractMaterialShader : zeno::INode
                 }
             }
 
-            obj->userData().set2("isRealTimeObject", std::move(isL));
+            obj->userData().set2("isLight", std::move(isLight));
             set_output("object", std::move(obj));
         }
     };

@@ -14,10 +14,11 @@ struct HandleStateInfo{
 
     std::function<void()> cUpdateFunction;
     std::function<void(SyncInfo)> cSyncCallback;
+    int cPort;
 
     HandleStateInfo(){
         cPath = zeno::envconfig::get("UsdRepoPath");
-
-        std::cout << "USD: State Info Path " << cPath << "\n";
+        cPort = zeno::envconfig::getInt("ServerPort");
+        std::cout << "USD: State Info Path " << cPath << " Port " << cPort << "\n";
     }
 };

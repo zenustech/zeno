@@ -531,7 +531,7 @@ void ZenoLights::modifyLightData() {
             prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
         }
 
-        scene->objectsMan->needUpdateLight = true;
+        scene->stageMan->needUpdateLight = true;
         zenoApp->getMainWindow()->updateViewport();
     }else{
         zeno::log_info("modifyLightData not found {}", name);
@@ -596,7 +596,7 @@ void ZenoLights::modifySunLightDir() {
         ud.set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
         ud.set2("colorTemperature", std::move(colorTemperatureValue));
     }
-    scene->objectsMan->needUpdateLight = true;
+    scene->stageMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -623,7 +623,7 @@ void ZenoLights::write_param_into_node(const QString& primid) {
             const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
-                if (ud.get2<int>("isRealTimeObject", 0)) {
+                if (ud.get2<int>("isLight", 0)) {
                     auto p = ud.get2<zeno::vec3f>("pos");
                     auto s = ud.get2<zeno::vec3f>("scale");
                     auto r = ud.get2<zeno::vec3f>("rotate");

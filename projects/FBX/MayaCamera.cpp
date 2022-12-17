@@ -307,7 +307,7 @@ ZENO_DEFNODE(CameraEval)({
 
 struct LightNode : INode {
     virtual void apply() override {
-        auto isL = get_input2<int>("islight");
+        auto isLight = get_input2<int>("islight");
         auto inverdir = get_input2<int>("invertdir");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
@@ -394,7 +394,8 @@ struct LightNode : INode {
             }
         }
 
-        prim->userData().set2("isRealTimeObject", std::move(isL));
+        prim->userData().set2("isRealTimeObject", std::move(1));
+        prim->userData().set2("isLight", std::move(isLight));
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));

@@ -39,6 +39,8 @@ struct StageManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<
         std::map<std::string, std::shared_ptr<zeno::IObject>>>> convertObjects;
 
+    std::map<std::string, std::shared_ptr<zeno::IObject>> unProcessedObjects;
+
     // ZenoObject - Light
     std::map<std::string, std::shared_ptr<zeno::IObject>> zenoLightObjects;
 
@@ -47,6 +49,7 @@ struct StageManager : zeno::disable_copy {
 
     int increase_count = 0;
     int sync_count = 0;
+    bool needUpdateLight = false;
 
     StageManager();
     ~StageManager();

@@ -96,7 +96,7 @@ struct StageSyncServer{
     }
 
     //constructor for accepting connection from client
-    StageSyncServer(boost::asio::io_context& io_context): acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 1234))
+    StageSyncServer(boost::asio::io_context& io_context, int port): acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
     {
         std::cout << "USD: StageSyncServer Constructed\n";
         StartAccept();
@@ -147,34 +147,6 @@ std::vector<std::string> StrSplit(const std::string& str, const std::string& del
     return output;
 }
 
-void client(){
-    boost::asio::io_context io_context;
-    //socket creation
-    boost::asio::ip::tcp::socket socket(io_context);
-    //connection
-    socket.connect( boost::asio::ip::tcp::endpoint( boost::asio::ip::address::from_string("127.0.0.1"), 1234 ));
-    // request/message from client
-    const std::string msg = "Hello from Client!\n";
-    boost::system::error_code error;
-    boost::asio::write( socket, boost::asio::buffer(msg), error );
-    if( !error ) {
-        std::cout << "Client sent hello message!" << std::endl;
-    }
-    else {
-        std::cout << "send failed: " << error.message() << std::endl;
-    }
-    // getting response from server
-    boost::asio::streambuf receive_buffer;
-    boost::asio::read(socket, receive_buffer, boost::asio::transfer_all(), error);
-    if( error && error != boost::asio::error::eof ) {
-        std::cout << "receive failed: " << error.message() << std::endl;
-    }
-    else {
-        const char* data = boost::asio::buffer_cast<const char*>(receive_buffer.data());
-        std::cout << data << std::endl;
-    }
-}
-
 void UpdateTimer(std::function<void(void)> func, unsigned int interval)
 {
     std::thread([func, interval]() {
@@ -222,7 +194,7 @@ void ZenoStage::init(){
             std::cout << "USD: StageManager Server Running.\n";
             boost::asio::io_service io_service;
             //StageSyncServer server(io_service);
-            auto server = std::make_shared<StageSyncServer>(io_service);
+            auto server = std::make_shared<StageSyncServer>(io_service, stateInfo->cPort);
             server->cSyncCallback = stateInfo->cSyncCallback;
             io_service.run();
         }
@@ -458,8 +430,13 @@ int ZenoStage::Convert2UsdGeomMesh(const ZPrimInfo& primInfo){
         Points.emplace_back(vert[0], vert[1], vert[2]);
     // Face
     if(zenoPrim->loops.size() && zenoPrim->polys.size()){
-        // TODO Generate UsdGeomMesh based on these attributes
-    }else{
+        for(int i=0; i<zenoPrim->polys.size(); i++){
+            FaceVertexCounts.emplace_back(zenoPrim->polys[i][1]);  // vec2i (start, count), we just need the count
+        }
+        for(int i=0; i<zenoPrim->loops.size(); i++){
+            FaceVertexIndices.emplace_back(zenoPrim->loops[i]);
+        }
+    }else if(zenoPrim->tris.size()){
         for(auto const& ind:zenoPrim->tris){
             FaceVertexIndices.emplace_back(ind[0]);
             FaceVertexIndices.emplace_back(ind[1]);
@@ -550,7 +527,7 @@ int ZenoStage::Convert2ZenoPrimitive(const UPrimInfo &primInfo) {
         //for(int j=index_start;j<index_start+count;j++){
         //    loops.emplace_back(vt_faceVertexIndices[j]);
         //}
-        //polys.push_back({i * count, count});
+        //polys.push_back({index_start, count});
 
         // TODO Support any number of face vertex counts
         if(count==3){

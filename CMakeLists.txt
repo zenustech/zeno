@@ -170,18 +170,12 @@ endif()
 
 ## --- USD ---
 
-if(DEFINED ZENO_WITH_USD)
-    if(DEFINED PXR_USD_LOCATION)
-        set(TBB_ROOT_DIR ${PXR_USD_LOCATION})
-        find_package(USD REQUIRED HINTS ${PXR_USD_LOCATION} NAMES pxr)
-        find_package(MaterialX REQUIRED HINTS ${PXR_USD_LOCATION})
-        find_package(TBB REQUIRED COMPONENTS tbb)
-        set(ZENO_ENABLE_USD ON)
-    else()
-        message(FATAL_ERROR "PXR_USD_LOCATION not set.")
-    endif()
-else()
-    message(STATUS "USD support is not enabled")
+if(DEFINED PXR_USD_LOCATION)
+    set(TBB_ROOT_DIR ${PXR_USD_LOCATION})
+    find_package(USD REQUIRED HINTS ${PXR_USD_LOCATION} NAMES pxr)
+    find_package(MaterialX REQUIRED HINTS ${PXR_USD_LOCATION})
+    find_package(TBB REQUIRED COMPONENTS tbb)
+    set(ZENO_ENABLE_USD ON)
 endif()
 
 ## --- end USD ---

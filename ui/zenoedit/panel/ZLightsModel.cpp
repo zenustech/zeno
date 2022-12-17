@@ -31,7 +31,7 @@ void ZLightsModel::updateByObjectsMan() {
     // USD
     //for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
     for (auto const &[key, ptr]: scene->stageMan->zenoLightObjects) {
-        if (ptr->userData().get2<int>("isRealTimeObject", 0)) {
+        if (ptr->userData().get2<int>("isLight", 0)) {
             light_names.push_back(key);
         }
     }

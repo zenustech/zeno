@@ -56,12 +56,15 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
         objectConsistent.clear();
         zenoObjects.clear();
         zenoLightObjects.clear();
+        unProcessedObjects.clear();
     }
 
     // #########################################################
     bool inserted = false;
     for (auto const &[key, obj] : objs) {
         if (zins.may_emplace(key)) {
+            bool processed = false;
+
             // Legacy Light
             // TODO Legacy light to usdLux
             auto isRealTimeObject = obj->userData().get2<int>("isRealTimeObject", 0);
@@ -76,16 +79,13 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
             obj->userData().has("P_Path") ? p_path = obj->userData().get2<std::string>("P_Path") : p_path = "";
             obj->userData().has("P_Type") ? p_type = obj->userData().get2<std::string>("P_Type") : p_type = "";
             primInfo.pPath = p_path; primInfo.iObject = obj;
-            //std::cout << "USD: StageManager Emplace " << key << " Type " << p_type << " Path " << p_path << std::endl;
+            std::cout << "USD: StageManager Insert " << key << " Type " << p_type << " Path " << p_path << std::endl;
 
             if(p_type == _primTokens->UsdGeomMesh.GetString()){
-                zenoStage->Convert2UsdGeomMesh(primInfo);
+                zenoStage->Convert2UsdGeomMesh(primInfo); processed = true;
             }
             else if(p_type == _primTokens->UsdGeomCube.GetString()){
-                zenoStage->Convert2UsdGeomMesh(primInfo);
-            }
-            else if(p_type == _primTokens->UsdLuxDiskLight.GetString()){
-
+                zenoStage->Convert2UsdGeomMesh(primInfo); processed = true;
             }else{
                 zeno::log_warn("USD: Unsupported type {}, name {}", p_type, key);
             }
@@ -93,6 +93,10 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
             if(! p_path.empty()){
                 ZOriginalInfo oriInfo; oriInfo.oName = key; oriInfo.oUserData = obj->userData();
                 nameComparison[p_path] = oriInfo;
+            }
+
+            if(! processed){
+                unProcessedObjects[key] = obj;
             }
 
             zins.try_emplace(key, std::move(obj));
@@ -239,6 +243,15 @@ bool zenovis::StageManager::load_objects(const std::map<std::string, std::shared
             converted = true;
         }
     }
+
+    for(auto const&[k, o]: unProcessedObjects){
+        if(cins.may_emplace(k)){
+            std::cout << "Process UnProcessed Object " << k << "\n";
+            cins.try_emplace(k, std::move(o));
+            converted = true;
+        }
+    }
+
     if(converted){
         std::cout << "USD: Consistent Size " << objectConsistent.size() << std::endl;
     }

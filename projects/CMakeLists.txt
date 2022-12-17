@@ -18,7 +18,6 @@ set(ZENO_EXTENSIONS
     FEM
     DemBones
     FBX
-    USD
     Alembic
     LSystem
     Skinning
