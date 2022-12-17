@@ -950,10 +950,32 @@ struct mat3{
         m2 = vec3(m20, m21, m22);
     }
 };
+
+struct mat4{
+    vec4 m0, m1, m2, m3;
+    __forceinline__ __device__ mat4(
+        float m00, float m01, float m02, float m03,
+        float m10, float m11, float m12, float m13,
+        float m20, float m21, float m22, float m23,
+        float m30, float m31, float m32, float m33)
+    {
+        m0 = vec4(m00, m01, m02, m03);
+        m1 = vec4(m10, m11, m12, m13);
+        m2 = vec4(m20, m21, m22, m23);
+        m3 = vec4(m30, m31, m32, m33);
+    }
+};
+
 __forceinline__ __device__ vec3 operator*(mat3 a, vec3 b)
 {
-    return vec3(dot(a.m0, b), dot(a.m1, b), dot(a.m2,b));
+    return vec3(dot(a.m0, b), dot(a.m1, b), dot(a.m2, b));
 }
+
+__forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
+{
+    return vec4(dot(a.m0, b), dot(a.m1, b), dot(a.m2, b), dot(a.m3, b));
+}
+
 //__forceinline__ __device__ float cudatoglsl(float a) {
     //return a;
 //}
