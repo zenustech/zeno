@@ -276,11 +276,29 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_dir         = optixGetWorldRayDirection();
-    const int    inst_idx        = optixGetInstanceIndex();
-    const int    vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
-    const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
-    const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
-    const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+
+    int inst_idx2 = optixGetInstanceIndex();
+    int inst_idx = rt_data->meshIdxs[inst_idx2];
+    int vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
+
+    float* meshMats = rt_data->meshMats;
+    mat4 meshMat = mat4(
+        meshMats[16 * inst_idx2 + 0], meshMats[16 * inst_idx2 + 1], meshMats[16 * inst_idx2 + 2], meshMats[16 * inst_idx2 + 3],
+        meshMats[16 * inst_idx2 + 4], meshMats[16 * inst_idx2 + 5], meshMats[16 * inst_idx2 + 6], meshMats[16 * inst_idx2 + 7],
+        meshMats[16 * inst_idx2 + 8], meshMats[16 * inst_idx2 + 9], meshMats[16 * inst_idx2 + 10], meshMats[16 * inst_idx2 + 11],
+        meshMats[16 * inst_idx2 + 12], meshMats[16 * inst_idx2 + 13], meshMats[16 * inst_idx2 + 14], meshMats[16 * inst_idx2 + 15]);
+    float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
+    vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
+    vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
+    bv0 = meshMat * bv0;
+    bv1 = meshMat * bv1;
+    bv2 = meshMat * bv2;
+    float3 v0 = make_float3(bv0.x, bv0.y, bv0.z);
+    float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
+    float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     
@@ -509,11 +527,30 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     int    prim_idx        = optixGetPrimitiveIndex();
     float3 ray_dir         = optixGetWorldRayDirection();
-    int    inst_idx        = optixGetInstanceIndex();
-    int    vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
-    float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
-    float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
-    float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+
+    int inst_idx2 = optixGetInstanceIndex();
+    int inst_idx = rt_data->meshIdxs[inst_idx2];
+    int vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
+
+    float* meshMats = rt_data->meshMats;
+    mat4 meshMat = mat4(
+        meshMats[16 * inst_idx2 + 0], meshMats[16 * inst_idx2 + 1], meshMats[16 * inst_idx2 + 2], meshMats[16 * inst_idx2 + 3],
+        meshMats[16 * inst_idx2 + 4], meshMats[16 * inst_idx2 + 5], meshMats[16 * inst_idx2 + 6], meshMats[16 * inst_idx2 + 7],
+        meshMats[16 * inst_idx2 + 8], meshMats[16 * inst_idx2 + 9], meshMats[16 * inst_idx2 + 10], meshMats[16 * inst_idx2 + 11],
+        meshMats[16 * inst_idx2 + 12], meshMats[16 * inst_idx2 + 13], meshMats[16 * inst_idx2 + 14], meshMats[16 * inst_idx2 + 15]);
+    float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
+    vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
+    vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
+    bv0 = meshMat * bv0;
+    bv1 = meshMat * bv1;
+    bv2 = meshMat * bv2;
+    float3 v0 = make_float3(bv0.x, bv0.y, bv0.z);
+    float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
+    float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
+
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
