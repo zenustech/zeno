@@ -47,15 +47,30 @@ ZSocketLayout::ZSocketLayout(
     }
     else if (sockProp & SOCKPROP_DICTPANEL)
     {
-        setDebugName("dict socket");
-
         setHorizontal(false);
-        m_text = new ZSocketGroupItem(viewSockIdx, sockName, m_bInput, cbSock);
-        addItem(m_text/*, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter*/);
 
-        ZDictPanel* panel = new ZDictPanel;
+        ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
+
+        m_text = new ZSocketGroupItem(viewSockIdx, sockName, m_bInput, cbSock);
+        pHLayout->addItem(m_text);
+        pHLayout->setDebugName("dict socket");
+
+        QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(28, 28));
+        ZenoImageItem* collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
+        collaspeBtn->setCheckable(true);
+        pHLayout->addItem(collaspeBtn);
+
+        addLayout(pHLayout);
+
+        ZDictPanel* panel = new ZDictPanel(viewSockIdx);
         addItem(panel);
         setSpacing(ZenoStyle::dpiScaled(0));
+        panel->hide();
+
+        QObject::connect(collaspeBtn, &ZenoImageItem::toggled, [=](bool bChecked) {
+            panel->setVisible(bChecked);
+            ZGraphicsLayout::updateHierarchy(pHLayout);
+        });
     }
     else
     {

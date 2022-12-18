@@ -206,6 +206,7 @@ class ZenoParamPushButton : public ZenoParamWidget
     Q_OBJECT
 public:
     ZenoParamPushButton(QGraphicsItem* parent = nullptr);
+    ZenoParamPushButton(const QString& name, const QString& qssName, QGraphicsItem* parent = nullptr);
     ZenoParamPushButton(const QString& name, int width, QSizePolicy::Policy hor, QGraphicsItem* parent = nullptr);
     void setText(const QString& text);
 

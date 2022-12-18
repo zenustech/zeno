@@ -107,6 +107,7 @@ void ZLayoutBackground::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
         m_color = m_clrHovered;
         update();
     }
+    emit hoverEntered();
 }
 
 void ZLayoutBackground::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
@@ -122,6 +123,7 @@ void ZLayoutBackground::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
         m_color = isSelected() ? m_clrSelected : m_clrNormal;
         update();
     }
+    emit hoverLeaved();
 }
 
 void ZLayoutBackground::mousePressEvent(QGraphicsSceneMouseEvent* event)

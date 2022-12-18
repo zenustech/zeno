@@ -4,6 +4,7 @@
     <file>icons/add-on.svg</file>
     <file>icons/addpanel.svg</file>
     <file>icons/addpanel-on.svg</file>
+    <file>icons/addkeybtn.svg</file>
 	<file>icons/body_bg.svg</file>
 	<file>icons/collaspe.svg</file>
 	<file>icons/collaspe-hovered.svg</file>
@@ -274,5 +275,7 @@
     <file>icons/parameter_key-frame_hover.svg</file>
     <file>icons/parameter_key-frame_idle.svg</file>
     <file>icons/parameter_key-frame_not-confirm.svg</file>
+    <file>icons/moveUp.svg</file>
+    <file>icons/moveUp-on.svg</file>
 </qresource>
 </RCC>

@@ -99,7 +99,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QModelIndex& outSockIdx = pGraphsModel->paramIndex(outIdx, PARAM_OUTPUT, link.outputSock);
                 const QString& outSockType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
 
-                if ((input.info.sockProp & SOCKPROP_MULTILINK == 0) ||
+                if (((input.info.sockProp & SOCKPROP_MULTILINK) == 0) ||
                     ((outSockType == "dict" || outSockType == "list") && input.info.links.size() == 1))
                 {
                     //normal case, including list/dictNode to other input list socket.

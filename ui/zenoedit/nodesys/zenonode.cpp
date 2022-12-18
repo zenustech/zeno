@@ -69,8 +69,8 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
     QColor baseColor = /*m_bError ? QColor(200, 84, 79) : */QColor(255, 100, 0);
 	QColor borderClr(baseColor);
 	borderClr.setAlphaF(0.2);
-	qreal innerBdrWidth = 6;
-	QPen pen(borderClr, 6);
+	qreal innerBdrWidth = ZenoStyle::dpiScaled(6);
+	QPen pen(borderClr, innerBdrWidth);
 	pen.setJoinStyle(Qt::MiterJoin);
 	painter->setPen(pen);
 
@@ -81,7 +81,7 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
 	painter->drawPath(path);
 
     //draw outter border
-    qreal outterBdrWidth = 2;
+    qreal outterBdrWidth = ZenoStyle::dpiScaled(2);
     pen.setWidthF(outterBdrWidth);
     pen.setColor(baseColor);
 	painter->setPen(pen);
@@ -161,7 +161,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
         clrHeaderBg = headerBg.clr_normal;
 
     headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
-    headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
+    headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
     const QString& name = m_index.data(ROLE_OBJNAME).toString();
     m_NameItem = new ZSimpleTextItem(name);
@@ -195,11 +195,11 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     const auto& bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
     bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal);
-    bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
+    bodyWidget->setBorder(ZenoStyle::dpiScaled(bodyBg.border_witdh), bodyBg.clr_border);
 
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
-    m_bodyLayout->setSpacing(5);
+    m_bodyLayout->setSpacing(ZenoStyle::dpiScaled(5));
     qreal margin = ZenoStyle::dpiScaled(16);
     m_bodyLayout->setContentsMargin(margin, margin, margin, margin);
 

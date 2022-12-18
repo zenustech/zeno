@@ -29,6 +29,7 @@ public:
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
     void setContentMargins(qreal left, qreal top, qreal right, qreal bottom);
+    void getContentMargins(qreal& left, qreal& top, qreal& right, qreal& bottom);
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
@@ -59,7 +60,9 @@ private:
 
     int sHorLargeMargin;
     int sTopMargin;
+    int sLeftMargin;
     int sHorSmallMargin;
+    int sRightMargin;
     int sBottomMargin;
 
     const bool m_bInput;

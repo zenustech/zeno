@@ -8,6 +8,9 @@
 #include "zdictpanel.h"
 
 
+#define CURRENT_DEBUG_LAYOUT "dict"
+
+
 ZGraphicsLayout::ZGraphicsLayout(bool bHor)
     : m_spacing(0)
     , m_parent(nullptr)
@@ -112,6 +115,11 @@ void ZGraphicsLayout::insertLayout(int i, ZGraphicsLayout* pLayout)
     pLayout->setParentItem(m_parentItem);
 
     m_items.insert(i, item);
+}
+
+int ZGraphicsLayout::count() const
+{
+    return m_items.size();
 }
 
 void ZGraphicsLayout::setDebugName(const QString& dbgName)
@@ -248,11 +256,31 @@ void ZGraphicsLayout::removeItem(QGraphicsItem* item)
 {
     for (int i = 0; i < m_items.size(); i++)
     {
-        if (m_items[i]->pItem == item) {
+        if (m_items[i]->type == Type_Item && m_items[i]->pItem == item) {
             delete item;
             m_items.remove(i);
             break;
         }
+    }
+}
+
+void ZGraphicsLayout::moveUp(int i)
+{
+    if (i < 1 || i > m_items.size()) {
+        return;
+    }
+
+    auto tmp = m_items[i - 1];
+    m_items[i - 1] = m_items[i];
+    m_items[i] = tmp;
+}
+
+void ZGraphicsLayout::removeElement(int i)
+{
+    if (m_items[i]->type == Type_Layout) {
+        removeLayout(m_items[i]->pLayout);
+    } else {
+        removeItem(m_items[i]->pItem);
     }
 }
 
@@ -292,7 +320,7 @@ QSizeF ZGraphicsLayout::calculateSize()
     QSizeF szMargin(m_margins.left() + m_margins.right(), m_margins.top() + m_margins.bottom());
     size += szMargin;
 
-    if (m_dbgName == "dict")
+    if (m_dbgName == CURRENT_DEBUG_LAYOUT)
     {
         int j;
         j = 0;
@@ -504,7 +532,7 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
         }
 
         //use to debug.
-        if (pLayout && pLayout->m_dbgName == "dict")
+        if (pLayout && pLayout->m_dbgName == CURRENT_DEBUG_LAYOUT)
         {
             int j;
             j = 0;
@@ -608,7 +636,7 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
 
 void ZGraphicsLayout::setup(QRectF rc)
 {
-    if (m_dbgName == "debugdict")
+    if (m_dbgName == CURRENT_DEBUG_LAYOUT)
     {
         int j;
         j = 0;
@@ -646,6 +674,10 @@ void ZGraphicsLayout::setup(QRectF rc)
                     if (item->alignment & Qt::AlignRight)
                     {
                         info.pos.setX(rc.right() - sz.width());
+                    }
+                    else if (item->alignment & Qt::AlignHCenter)
+                    {
+                        info.pos.setX(rc.center().x() - sz.width() / 2);
                     }
 
                     if (item->alignment & Qt::AlignVCenter)

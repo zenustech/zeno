@@ -91,6 +91,20 @@ private:
     bool m_bHovered;
 };
 
+class ZEditableTextItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
+{
+    Q_OBJECT
+    typedef ZGraphicsLayoutItem<ZGraphicsTextItem> _base;
+public:
+    ZEditableTextItem(const QString& text, QGraphicsItem* parent = nullptr);
+    ZEditableTextItem(QGraphicsItem* parent = nullptr);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+private:
+    void initUI();
+};
+
+
 
 class ZenoSocketItem;
 

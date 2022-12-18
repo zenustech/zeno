@@ -4,6 +4,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenosocketitem.h>
+#include <zenoui/style/zenostyle.h>
 #include "../util/log.h"
 
 
@@ -56,7 +57,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
     painter->save();
     QPen pen;
     pen.setColor(QColor(isSelected() ? 0xFA6400 : 0x808080));
-    pen.setWidthF(WIDTH);
+    pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
@@ -107,7 +108,7 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     painter->save();
     QPen pen;
     pen.setColor(QColor(255,255,255));
-    pen.setWidthF(WIDTH);
+    pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);

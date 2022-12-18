@@ -7,7 +7,10 @@ class ZDictPanel : public ZLayoutBackground
 {
     Q_OBJECT
 public:
-    ZDictPanel();
+    ZDictPanel(const QPersistentModelIndex& viewSockIdx);
+
+private:
+    const QPersistentModelIndex m_viewSockIdx;
 };
 
 #endif

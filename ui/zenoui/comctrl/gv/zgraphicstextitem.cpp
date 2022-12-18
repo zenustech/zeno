@@ -58,7 +58,7 @@ void ZGraphicsTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         painter->setBrush(m_bg);
         painter->drawRect(boundingRect());
     }
-    QGraphicsTextItem::paint(painter, option, widget);
+    QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
 QPainterPath ZGraphicsTextItem::shape() const
@@ -342,12 +342,13 @@ ZSocketGroupItem::ZSocketGroupItem(
     elem.imageOnHovered = ":/icons/socket-on-hover.svg";
 
     m_socket = new ZenoSocketItem(viewSockIdx, bInput, elem, ZenoStyle::dpiScaledSize(QSizeF(cSocketWidth, cSocketHeight)), this);
+    m_socket->setContentMargins(30, 10, 10, 10);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
         cbSockOnClick(m_socket);
     });
 
     setBrush(QColor(188, 188, 188));
-    QFont font("HarmonyOS Sans Bold", 11);
+    QFont font("HarmonyOS Sans Bold", ZenoStyle::dpiScaled(11));
     font.setBold(true);
     setFont(font);
     updateBoundingRect();
@@ -373,22 +374,67 @@ QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant&
         //adjust the pos of socket.
         //the parent of this item pos.
         QGraphicsItem* parent = this->parentItem();
-        if (parent) {
+        if (parent)
+        {
             QRectF br = parent->sceneBoundingRect();
+
+            qreal left, right, top, bottom;
+            m_socket->getContentMargins(left, top, right, bottom);
+
             qreal x = 0, y = 0;
-            y = boundingRect().height() / 2 - ZenoStyle::dpiScaled(cSocketHeight) / 2;
-            static int sBorder = 2;
+            y = boundingRect().height() / 2 - ZenoStyle::dpiScaled(cSocketHeight) / 2 - top;
+            static int sBorder = ZenoStyle::dpiScaled(4);
             if (m_bInput) {
-                x = mapFromScene(br.topLeft()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 + sBorder;
+                x = mapFromScene(br.topLeft()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - left + sBorder / 2;
             }
             else {
-                x = mapFromScene(br.bottomRight()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - sBorder;
+                x = mapFromScene(br.bottomRight()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - left - sBorder / 2;
             }
             m_socket->setPos(QPointF(x, y));
         }
     }
     return value;
 }
+
+
+ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
+    : _base(parent)
+{
+    _base::setText(text);
+    initUI();
+}
+
+ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent) 
+    : _base(parent)
+{
+    initUI();
+}
+
+void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    _base::paint(painter, option, widget);
+}
+
+void ZEditableTextItem::initUI()
+{
+    setDefaultTextColor(QColor(188, 188, 188));
+    QFont font("HarmonyOS Sans Bold", 11);
+    //font.setBold(true);
+    setFont(font);
+
+    setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(128, 32)));
+    setTextInteractionFlags(Qt::TextEditorInteraction);
+
+    QTextFrame *frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setBackground(QColor(37, 37, 37));
+    frame->setFrameFormat(format);
+
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+    setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+}
+
 
 
 ZSocketEditableItem::ZSocketEditableItem(
@@ -467,14 +513,17 @@ QVariant ZSocketEditableItem::itemChange(GraphicsItemChange change, const QVaria
         QGraphicsItem* parent = parentItem();
         if (parent) {
             QRectF br = parent->sceneBoundingRect();
+
+            qreal left, right, top, bottom;
+            m_socket->getContentMargins(left, top, right, bottom);
+
             qreal x = 0, y = 0;
-            y = boundingRect().height() / 2 - ZenoStyle::dpiScaled(cSocketHeight) / 2;
-            static int sBorder = 2;
+            y = boundingRect().height() / 2 - ZenoStyle::dpiScaled(cSocketHeight) / 2 - top;
+            static int sBorder = ZenoStyle::dpiScaled(4);
             if (m_bInput) {
-                x = mapFromScene(br.topLeft()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 + sBorder;
-            }
-            else {
-                x = mapFromScene(br.bottomRight()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - sBorder;
+                x = mapFromScene(br.topLeft()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - left + sBorder / 2;
+            } else {
+                x = mapFromScene(br.bottomRight()).x() - ZenoStyle::dpiScaled(cSocketWidth) / 2 - left - sBorder / 2;
             }
             m_socket->setPos(QPointF(x, y));
         }

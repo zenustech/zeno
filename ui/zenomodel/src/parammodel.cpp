@@ -4,6 +4,7 @@
 #include "linkmodel.h"
 #include "variantptr.h"
 #include "globalcontrolmgr.h"
+#include "dictkeymodel.h"
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/scope_exit.h>
 
@@ -369,7 +370,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             const bool bInputAdding = linkIdx.data(ROLE_INNODE) == nodeId;
             if (item.prop & SOCKPROP_MULTILINK && bInputAdding)
             {
-                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
                 int rowCnt = pModel->rowCount();
                 QStringList keyNames;
@@ -416,7 +417,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             item.links.removeAll(linkIdx);
             if (!m_bRetryLinkOp && item.prop & SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
             {
-                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
                 for (int r = 0; r < pModel->rowCount(); r++)
                 {
@@ -677,9 +678,9 @@ bool IParamModel::_insertRow(
 
     if (item.prop & SOCKPROP_MULTILINK)
     {
-        QStandardItemModel* pTblModel = new QStandardItemModel(0, 2, this);
-        item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<QStandardItemModel>::asVariant(pTblModel);
-        connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
+        DictKeyModel* pTblModel = new DictKeyModel(this);
+        item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);
+        connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
     }
 
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
@@ -718,7 +719,7 @@ bool IParamModel::_insertRow(
 
 void IParamModel::onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    QStandardItemModel* pTblModel = qobject_cast<QStandardItemModel*>(sender());
+    DictKeyModel* pTblModel = qobject_cast<DictKeyModel*>(sender());
     ZASSERT_EXIT(pTblModel);
 
     const QString& keyName = pTblModel->index(first, 0).data().toString();
