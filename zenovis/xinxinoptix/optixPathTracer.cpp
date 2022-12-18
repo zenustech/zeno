@@ -765,14 +765,16 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         }
     }
 
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshIdxs.reset() ), sizeof(meshIdxs[0]) * meshIdxs.size()) );
+    state.d_meshIdxs.resize(sizeof(meshIdxs[0]) * meshIdxs.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshIdxs.reset() ), sizeof(meshIdxs[0]) * meshIdxs.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_meshIdxs ),
                 meshIdxs.data(),
                 sizeof(meshIdxs[0]) * meshIdxs.size(),
                 cudaMemcpyHostToDevice
                 ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshMats.reset() ), sizeof(meshMats[0]) * meshMats.size()) );
+    state.d_meshMats.resize(sizeof(meshMats[0]) * meshMats.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshMats.reset() ), sizeof(meshMats[0]) * meshMats.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_meshMats ),
                 meshMats.data(),
