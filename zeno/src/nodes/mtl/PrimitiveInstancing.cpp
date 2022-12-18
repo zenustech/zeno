@@ -154,7 +154,7 @@ namespace zeno
             obj->userData().setLiterial("instID", std::move(instID));
             obj->userData().setLiterial("onbType", std::move(onbType));
 
-            // test
+            /* test
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
             prim->verts.resize(3);
             auto &tranlate = prim->add_attr<zeno::vec3f>("pos");
@@ -163,6 +163,7 @@ namespace zeno
             tranlate = {{5, 0, 0}, {0, 5, 0}, {0, 0, 5}};
             direct = {{1, 0, 0}, {0, 1, 0}, {1, 1, 0}};
             scale = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+            */
 
             set_output("object", std::move(obj));
         }
