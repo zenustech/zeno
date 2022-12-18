@@ -159,7 +159,7 @@ namespace zeno
             prim->verts.resize(3);
             auto &tranlate = prim->add_attr<zeno::vec3f>("pos");
             auto &direct = prim->add_attr<zeno::vec3f>("nrm");
-            auto &scale = prim->add_attr<zeno::vec3f>("cls");
+            auto &scale = prim->add_attr<zeno::vec3f>("clr");
             tranlate = {{5, 0, 0}, {0, 5, 0}, {0, 0, 5}};
             direct = {{1, 0, 0}, {0, 1, 0}, {1, 1, 0}};
             scale = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};

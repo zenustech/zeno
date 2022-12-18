@@ -200,7 +200,7 @@ struct GraphicsManager {
                     const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
                     const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
                     auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
-                    const float *scale = (const float *)prim_in->attr<zeno::vec3f>("cls").data();
+                    const float *scale = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
                     xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
                 }
                 else if (isRealTimeObject == 0 && isUniformCarrier == 0)
