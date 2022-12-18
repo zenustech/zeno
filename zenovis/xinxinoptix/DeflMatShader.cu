@@ -341,13 +341,23 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
-    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    mat3 meshMat3x3(meshMat);
+    float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    vec3 bn0(an0);
+    bn0 = meshMat3x3 * bn0;
+    float3 n0 = make_float3(bn0.x, bn0.y, bn0.z);
     n0 = dot(n0, N_0)>0.8?n0:N_0;
 
-    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    float3 an1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    vec3 bn1(an1);
+    bn1 = meshMat3x3 * bn1;
+    float3 n1 = make_float3(bn1.x, bn1.y, bn1.z);
     n1 = dot(n1, N_0)>0.8?n1:N_0;
 
-    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    float3 an2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    vec3 bn2(an2);
+    bn2 = meshMat3x3 * bn2;
+    float3 n2 = make_float3(bn2.x, bn2.y, bn2.z);
     n2 = dot(n2, N_0)>0.8?n2:N_0;
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
@@ -355,9 +365,18 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 clr0 = make_float3(rt_data->clr[ vert_idx_offset+0 ] );
     float3 clr1 = make_float3(rt_data->clr[ vert_idx_offset+1 ] );
     float3 clr2 = make_float3(rt_data->clr[ vert_idx_offset+2 ] );
-    float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
-    float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
-    float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    float3 atan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
+    float3 atan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
+    float3 atan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    vec3 btan0(atan0);
+    vec3 btan1(atan1);
+    vec3 btan2(atan2);
+    btan0 = meshMat3x3 * btan0;
+    btan1 = meshMat3x3 * btan1;
+    btan2 = meshMat3x3 * btan2;
+    float3 tan0 = make_float3(btan0.x, btan0.y, btan0.z);
+    float3 tan1 = make_float3(btan1.x, btan1.y, btan1.z);
+    float3 tan2 = make_float3(btan2.x, btan2.y, btan2.z);
     
     N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = faceforward( N_0, -ray_dir, N_0 );
@@ -603,9 +622,19 @@ extern "C" __global__ void __closesthit__radiance()
     float3 clr0 = make_float3(rt_data->clr[ vert_idx_offset+0 ] );
     float3 clr1 = make_float3(rt_data->clr[ vert_idx_offset+1 ] );
     float3 clr2 = make_float3(rt_data->clr[ vert_idx_offset+2 ] );
-    float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
-    float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
-    float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    float3 atan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
+    float3 atan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
+    float3 atan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    mat3 meshMat3x3(meshMat);
+    vec3 btan0(atan0);
+    vec3 btan1(atan1);
+    vec3 btan2(atan2);
+    btan0 = meshMat3x3 * btan0;
+    btan1 = meshMat3x3 * btan1;
+    btan2 = meshMat3x3 * btan2;
+    float3 tan0 = make_float3(btan0.x, btan0.y, btan0.z);
+    float3 tan1 = make_float3(btan1.x, btan1.y, btan1.z);
+    float3 tan2 = make_float3(btan2.x, btan2.y, btan2.z);
     
     //N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
@@ -651,13 +680,22 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex31,
                                 rt_data->uniforms,
                                 attrs);
-    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    vec3 bn0(an0);
+    bn0 = meshMat3x3 * bn0;
+    float3 n0 = make_float3(bn0.x, bn0.y, bn0.z);
     n0 = dot(n0, N_0)>(1-mats.smoothness)?n0:N_0;
 
-    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    float3 an1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    vec3 bn1(an1);
+    bn1 = meshMat3x3 * bn1;
+    float3 n1 = make_float3(bn1.x, bn1.y, bn1.z);
     n1 = dot(n1, N_0)>(1-mats.smoothness)?n1:N_0;
 
-    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    float3 an2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    vec3 bn2(an2);
+    bn2 = meshMat3x3 * bn2;
+    float3 n2 = make_float3(bn2.x, bn2.y, bn2.z);
     n2 = dot(n2, N_0)>(1-mats.smoothness)?n2:N_0;
     N_0 = normalize(interp(barys, n0, n1, n2));
     N = N_0;

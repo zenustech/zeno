@@ -941,16 +941,6 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
-struct mat3{
-    vec3 m0, m1, m2;
-    __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
-    {
-        m0 = vec3(m00, m01, m02);
-        m1 = vec3(m10, m11, m12);
-        m2 = vec3(m20, m21, m22);
-    }
-};
-
 struct mat4{
     vec4 m0, m1, m2, m3;
     __forceinline__ __device__ mat4(
@@ -963,6 +953,23 @@ struct mat4{
         m1 = vec4(m10, m11, m12, m13);
         m2 = vec4(m20, m21, m22, m23);
         m3 = vec4(m30, m31, m32, m33);
+    }
+};
+
+struct mat3{
+    vec3 m0, m1, m2;
+    __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
+    {
+        m0 = vec3(m00, m01, m02);
+        m1 = vec3(m10, m11, m12);
+        m2 = vec3(m20, m21, m22);
+    }
+
+    explicit __forceinline__ __device__ mat3(const mat4& _v)
+    {
+        m0 = vec3(_v.m0);
+        m1 = vec3(_v.m1);
+        m2 = vec3(_v.m2);
     }
 };
 

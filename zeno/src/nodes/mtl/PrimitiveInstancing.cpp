@@ -148,20 +148,21 @@ namespace zeno
             auto obj = get_input<zeno::IObject>("object");
             auto isInst = get_input2<int>("isInst");
             auto instID = get_input2<std::string>("instID");
+            auto onbType = get_input2<std::string>("onbType");
 
             obj->userData().set2("isInst", std::move(isInst));
             obj->userData().setLiterial("instID", std::move(instID));
+            obj->userData().setLiterial("onbType", std::move(onbType));
 
-            /* test
+            // test
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
             prim->verts.resize(3);
             auto &tranlate = prim->add_attr<zeno::vec3f>("pos");
-            auto &rotate = prim->add_attr<zeno::vec3f>("nrm");
+            auto &direct = prim->add_attr<zeno::vec3f>("nrm");
             auto &scale = prim->add_attr<zeno::vec3f>("cls");
-            tranlate = {{10, 0, 0}, {0, 10, 0}, {0, 0, 10}};
-            rotate = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+            tranlate = {{5, 0, 0}, {0, 5, 0}, {0, 0, 5}};
+            direct = {{1, 0, 0}, {0, 1, 0}, {1, 1, 0}};
             scale = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-            */
 
             set_output("object", std::move(obj));
         }
@@ -174,6 +175,7 @@ namespace zeno
                 {"object"},
                 {"bool", "isInst", "1"},
                 {"string", "instID", "Inst1"},
+                {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
             },
             {
                 {"object"},

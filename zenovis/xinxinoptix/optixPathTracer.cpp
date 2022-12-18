@@ -47,6 +47,7 @@
 #include "OptiXStuff.h"
 #include <zeno/utils/vec.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/utils/orthonormal.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -2410,18 +2411,20 @@ struct InstTrs
 {
     std::string instID;
     std::vector<float> translate;
-    std::vector<float> rotate;
+    std::vector<float> direct;
+    std::string onbType;
     std::vector<float> scale;
 };
 
 static std::unordered_map<std::string, InstTrs> instTrsLUT;
 
-void load_inst(const std::string &key, const std::string &instID, std::size_t numInsts, const float *translate, const float *rotate, const float *scale)
+void load_inst(const std::string &key, const std::string &instID, std::size_t numInsts, const float *translate, const float *direct, const std::string &onbType, const float *scale)
 {
     InstTrs &instTrs = instTrsLUT[key];
     instTrs.instID = instID;
     instTrs.translate.assign(translate, translate + numInsts * 3);
-    instTrs.rotate.assign(rotate, rotate + numInsts * 3);
+    instTrs.direct.assign(direct, direct + numInsts * 3);
+    instTrs.onbType = onbType;
     instTrs.scale.assign(scale, scale + numInsts * 3);
 }
 
@@ -2443,11 +2446,87 @@ void UpdateInst()
         for (int i = 0; i < numInstMats; ++i)
         {
             auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
-            auto rotateXMat = glm::rotate(instTrs.rotate[3 * i + 0], glm::vec3(1, 0, 0));
-            auto rotateYMat = glm::rotate(instTrs.rotate[3 * i + 1], glm::vec3(0, 1, 0));
-            auto rotateZMat = glm::rotate(instTrs.rotate[3 * i + 2], glm::vec3(0, 0, 1));
+
+            zeno::vec3f t0 = {instTrs.direct[3 * i + 0], instTrs.direct[3 * i + 1], instTrs.direct[3 * i + 2]};
+            t0 = normalizeSafe(t0);
+            zeno::vec3f t1, t2;
+            zeno::pixarONB(t0, t1, t2);
+            glm::mat4x4 rotateMat(1);
+            if (instTrs.onbType == "XYZ")
+            {
+                rotateMat[0][0] = t2[0];
+                rotateMat[0][1] = t2[1];
+                rotateMat[0][2] = t2[2];
+                rotateMat[1][0] = t1[0];
+                rotateMat[1][1] = t1[1];
+                rotateMat[1][2] = t1[2];
+                rotateMat[2][0] = t0[0];
+                rotateMat[2][1] = t0[1];
+                rotateMat[2][2] = t0[2];
+            }
+            else if (instTrs.onbType == "YXZ")
+            {
+                rotateMat[0][0] = t1[0];
+                rotateMat[0][1] = t1[1];
+                rotateMat[0][2] = t1[2];
+                rotateMat[1][0] = t2[0];
+                rotateMat[1][1] = t2[1];
+                rotateMat[1][2] = t2[2];
+                rotateMat[2][0] = t0[0];
+                rotateMat[2][1] = t0[1];
+                rotateMat[2][2] = t0[2];
+            }
+            else if (instTrs.onbType == "YZX")
+            {
+                rotateMat[0][0] = t1[0];
+                rotateMat[0][1] = t1[1];
+                rotateMat[0][2] = t1[2];
+                rotateMat[1][0] = t0[0];
+                rotateMat[1][1] = t0[1];
+                rotateMat[1][2] = t0[2];
+                rotateMat[2][0] = t2[0];
+                rotateMat[2][1] = t2[1];
+                rotateMat[2][2] = t2[2];
+            }
+            else if (instTrs.onbType == "ZYX")
+            {
+                rotateMat[0][0] = t0[0];
+                rotateMat[0][1] = t0[1];
+                rotateMat[0][2] = t0[2];
+                rotateMat[1][0] = t1[0];
+                rotateMat[1][1] = t1[1];
+                rotateMat[1][2] = t1[2];
+                rotateMat[2][0] = t2[0];
+                rotateMat[2][1] = t2[1];
+                rotateMat[2][2] = t2[2];
+            }
+            else if (instTrs.onbType == "ZXY")
+            {
+                rotateMat[0][0] = t0[0];
+                rotateMat[0][1] = t0[1];
+                rotateMat[0][2] = t0[2];
+                rotateMat[1][0] = t2[0];
+                rotateMat[1][1] = t2[1];
+                rotateMat[1][2] = t2[2];
+                rotateMat[2][0] = t1[0];
+                rotateMat[2][1] = t1[1];
+                rotateMat[2][2] = t1[2];
+            }
+            else
+            {
+                rotateMat[0][0] = t2[0];
+                rotateMat[0][1] = t2[1];
+                rotateMat[0][2] = t2[2];
+                rotateMat[1][0] = t0[0];
+                rotateMat[1][1] = t0[1];
+                rotateMat[1][2] = t0[2];
+                rotateMat[2][0] = t1[0];
+                rotateMat[2][1] = t1[1];
+                rotateMat[2][2] = t1[2];
+            }
+
             auto scaleMat = glm::scale(glm::vec3(instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]));
-            instMat[i] = translateMat * rotateZMat * rotateYMat * rotateXMat * scaleMat;
+            instMat[i] = translateMat * rotateMat * scaleMat;
         }
     }
 }
