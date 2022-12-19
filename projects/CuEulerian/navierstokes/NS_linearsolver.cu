@@ -868,7 +868,7 @@ struct ZSNSPressureProject : INode {
         return;
     }
 
-    float rightHandSide(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float dt) {
+    float rightHandSide(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float dt, bool hasDiv) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
@@ -891,7 +891,7 @@ struct ZSNSPressureProject : INode {
         // velocity divergence (source term)
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), rhs = zs::proxy<space>(rhs), ts_c = zs::wrapv<bucket_size>{},
-             tpb_c = zs::wrapv<tpb>{}, overDxDt = 1.f / dx / dt, blockCnt = block_cnt,
+             tpb_c = zs::wrapv<tpb>{}, overDxDt = 1.f / dx / dt, dt, hasDiv, blockCnt = block_cnt,
              vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
                                                                                int tid) mutable {
                 // load halo
@@ -1026,6 +1026,10 @@ struct ZSNSPressureProject : INode {
 
                     float div_term = outputShmem[idx];
                     div_term += (u_z[1] - u_z[0]) * overDxDt;
+
+                    if (hasDiv) {
+                        div_term -= spgv.value("div", blockno, cellno) / dt;
+                    }
 
                     spgv("tmp", blockno, cellno) = div_term;
 
@@ -1170,6 +1174,7 @@ struct ZSNSPressureProject : INode {
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
         auto maxIter = get_input2<int>("MaxIterations");
+        auto hasDiv = get_input2<bool>("hasDivergence");
 
         auto pol = zs::cuda_exec();
 #if 0
@@ -1181,7 +1186,7 @@ struct ZSNSPressureProject : INode {
 
         // create right hand side of Poisson equation
 #if 1
-        float rhs_max = rightHandSide(pol, NSGrid.get(), dt);
+        float rhs_max = rightHandSide(pol, NSGrid.get(), dt, hasDiv);
 #else
         size_t cell_cnt = block_cnt * spg.block_size;
         zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
@@ -1276,13 +1281,15 @@ struct ZSNSPressureProject : INode {
     }
 };
 
-ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
-                                 {"NSGrid", "dt", {"float", "Density", "1.0"}, {"int", "MaxIterations", "10"}},
-                                 /* outputs: */
-                                 {"NSGrid"},
-                                 /* params: */
-                                 {},
-                                 /* category: */
-                                 {"Eulerian"}});
+ZENDEFNODE(
+    ZSNSPressureProject,
+    {/* inputs: */
+     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
+     /* outputs: */
+     {"NSGrid"},
+     /* params: */
+     {},
+     /* category: */
+     {"Eulerian"}});
 
 } // namespace zeno

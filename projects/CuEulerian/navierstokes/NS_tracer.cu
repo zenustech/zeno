@@ -187,18 +187,40 @@ struct ZSTracerAdvectDiffuse : INode {
         }
     }
 
+    void clampDensity(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, float clampBelow) {
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), rhoOffset = spg.getPropertyOffset(src_tag(NSGrid, tag)),
+             clampBelow] __device__(int blockno, int cellno) mutable {
+                float rho = spgv.value(rhoOffset, blockno, cellno);
+                rho = rho < clampBelow ? 0.f : rho;
+
+                spgv(rhoOffset, blockno, cellno) = rho;
+            });
+    }
+
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto diffuse = get_input2<float>("Diffusion");
         auto dt = get_input2<float>("dt");
         auto scheme = get_input2<std::string>("Scheme");
+        auto clampBelow = get_input2<float>("ClampDensityBelow");
 
         auto pol = zs::cuda_exec();
         ///
-        if (get_input2<bool>("Density"))
+        if (get_input2<bool>("Density")) {
             compute(pol, "rho", diffuse, dt, scheme, NSGrid.get());
+            clampDensity(pol, "rho", NSGrid.get(), clampBelow);
+        }
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", diffuse, dt, scheme, NSGrid.get());
+        if (get_input2<bool>("Fuel"))
+            compute(pol, "fuel", diffuse, dt, scheme, NSGrid.get());
 
         set_output("NSGrid", NSGrid);
     }
@@ -210,7 +232,9 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                     {"float", "Diffusion", "0.0"},
                                     {"bool", "Density", "1"},
                                     {"bool", "Temperature", "1"},
-                                    {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"}},
+                                    {"bool", "Fuel", "0"},
+                                    {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"},
+                                    {"float", "ClampDensityBelow", "0.01"}},
                                    /* outputs: */
                                    {"NSGrid"},
                                    /* params: */
@@ -264,21 +288,26 @@ struct ZSTracerEmission : INode {
             compute(pol, "rho", NSGrid.get(), EmitSDF.get(), fromObj);
         if (get_input2<bool>("Temperature"))
             compute(pol, "T", NSGrid.get(), EmitSDF.get(), fromObj);
+        if (get_input2<bool>("Fuel"))
+            compute(pol, "fuel", NSGrid.get(), EmitSDF.get(), fromObj);
 
         set_output("NSGrid", NSGrid);
     }
 };
 
-ZENDEFNODE(
-    ZSTracerEmission,
-    {/* inputs: */
-     {"NSGrid", "EmitterSDF", {"bool", "Density", "1"}, {"bool", "Temperature", "1"}, {"bool", "fromObjBoundary", "0"}},
-     /* outputs: */
-     {"NSGrid"},
-     /* params: */
-     {},
-     /* category: */
-     {"Eulerian"}});
+ZENDEFNODE(ZSTracerEmission, {/* inputs: */
+                              {"NSGrid",
+                               "EmitterSDF",
+                               {"bool", "Density", "1"},
+                               {"bool", "Temperature", "1"},
+                               {"bool", "Fuel", "0"},
+                               {"bool", "fromObjBoundary", "0"}},
+                              /* outputs: */
+                              {"NSGrid"},
+                              /* params: */
+                              {},
+                              /* category: */
+                              {"Eulerian"}});
 
 struct ZSSmokeBuoyancy : INode {
     void apply() override {
@@ -340,5 +369,69 @@ ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
                              {},
                              /* category: */
                              {"Eulerian"}});
+
+struct ZSVolumeCombustion : INode {
+    void apply() override {
+        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto dt = get_input2<float>("dt");
+        auto ignitionT = get_input2<float>("ignitionTemperature");
+        auto burnSpeed = get_input2<float>("BurnSpeed");
+        auto rhoEmitAmount = get_input2<float>("DensityEmitAmount");
+        auto TEmitAmount = get_input2<float>("TemperatureEmitAmount");
+        auto volumeExpansion = get_input2<float>("VolumeExpansion");
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        // add force (accelaration)
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), dt, ignitionT, burnSpeed, rhoEmitAmount, TEmitAmount, volumeExpansion,
+             fuelOffset = spg.getPropertyOffset(src_tag(NSGrid, "fuel")),
+             rhoOffset = spg.getPropertyOffset(src_tag(NSGrid, "rho")),
+             TOffset = spg.getPropertyOffset(src_tag(NSGrid, "T")),
+             divOffset = spg.getPropertyOffset(src_tag(NSGrid, "div"))] __device__(int blockno, int cellno) mutable {
+                float T = spgv.value(TOffset, blockno, cellno);
+                float div = 0.f;
+
+                if (T >= ignitionT) {
+                    float fuel = spgv.value(fuelOffset, blockno, cellno);
+                    float rho = spgv.value(rhoOffset, blockno, cellno);
+
+                    float dF = zs::min(burnSpeed * dt, fuel);
+                    fuel -= dF;
+                    rho += rhoEmitAmount * dF;
+                    T += TEmitAmount * dF;
+
+                    div = volumeExpansion * dF / dt;
+
+                    spgv(fuelOffset, blockno, cellno) = fuel;
+                    spgv(rhoOffset, blockno, cellno) = rho;
+                    spgv(TOffset, blockno, cellno) = T;
+                }
+
+                spgv(divOffset, blockno, cellno) = div;
+            });
+
+        set_output("NSGrid", NSGrid);
+    }
+};
+
+ZENDEFNODE(ZSVolumeCombustion, {/* inputs: */
+                                {"NSGrid",
+                                 "dt",
+                                 {"float", "ignitionTemperature", "0.8"},
+                                 {"float", "BurnSpeed", "0.5"},
+                                 {"float", "DensityEmitAmount", "0.5"},
+                                 {"float", "TemperatureEmitAmount", "0.5"},
+                                 {"float", "VolumeExpansion", "1.2"}},
+                                /* outputs: */
+                                {"NSGrid"},
+                                /* params: */
+                                {},
+                                /* category: */
+                                {"Eulerian"}});
 
 } // namespace zeno
