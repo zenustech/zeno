@@ -704,7 +704,7 @@ parse_inputs(rapidxml::xml_node<>* child) {
     return ms;
 }
 void ZenoGraphsEditor::importMaterialX() {
-    QString filename = "E:/mtlx/Dimgrey_Decorative_Granite.mtlx";
+    QString filename = "E:/mtlx/standard_surface_chess_set.mtlx";
     auto dir_path = QFileInfo(filename).absoluteDir().absolutePath().toStdString();
     QFile file(filename);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -724,6 +724,7 @@ void ZenoGraphsEditor::importMaterialX() {
     std::unordered_map<std::string, ZENO_HANDLE> node_id_mapping;
     std::unordered_map<std::string, ZENO_HANDLE> extract_out_socket;
     std::unordered_map<std::string, std::unordered_map<std::string, uint32_t>> image_index;
+    std::unordered_map<std::string, std::unordered_map<std::string, uint32_t>> image_type;
     std::unordered_map<std::string, ZENO_HANDLE> image_node;
     std::unordered_map<std::string, ZVARIANT> constants;
     std::unordered_map<std::string, std::string> ss_link_node_graph;
@@ -843,6 +844,7 @@ void ZenoGraphsEditor::importMaterialX() {
     while (nodegraph) {
         auto mNodeGraph = parse_input(nodegraph);
         auto nameNodeGraph = mNodeGraph["name"] + ":";
+        bool need_gen_input_attr = false;
         for (auto child = nodegraph->first_node(); child != nullptr; child = child->next_sibling()) {
             std::string start_name = child->name();
             auto m = parse_input(child);
@@ -925,13 +927,26 @@ void ZenoGraphsEditor::importMaterialX() {
                 auto hNode = Zeno_AddNode(hGraph, "MakeTexture2D");
                 node_id_mapping[name] = hNode;
                 image_index[nameNodeGraph][name] = image_index[nameNodeGraph].size();
+                image_type[nameNodeGraph][name] = type == "float" ? 1 : 3;
                 std::string file_path = zeno::format("{}/{}", dir_path, ms["file"]["value"]);
                 Zeno_SetInputDefl(hNode, "path", file_path);
-                edges.emplace_back(name, "coord", nameNodeGraph + ms["texcoord"]["nodename"]);
+                if (ms.count("texcoord")) {
+                    edges.emplace_back(name, "coord", nameNodeGraph + ms["texcoord"]["nodename"]);
+                }
+                else {
+                    edges.emplace_back(name, "coord", nameNodeGraph + "DefaultInputAttrUV");
+                    need_gen_input_attr = true;
+                }
             }
             else {
                 zeno::log_info("unsupported node: {}", start_name);
             }
+        }
+        if (need_gen_input_attr) {
+            auto name = nameNodeGraph + "DefaultInputAttrUV";
+            auto hNode = Zeno_AddNode(hGraph, "ShaderInputAttr");
+            Zeno_SetInputDefl(hNode, "attr", std::string("uv"));
+            node_id_mapping[name] = hNode;
         }
         nodegraph = nodegraph->next_sibling("nodegraph");
     }
@@ -949,6 +964,9 @@ void ZenoGraphsEditor::importMaterialX() {
 
             auto nShaderTexture2D = Zeno_AddNode(hGraph, "ShaderTexture2D");
             Zeno_SetInputDefl(nShaderTexture2D, "texId", (int)index);
+            if (image_type[ss_link_node_graph[ss_node]][name] == 1) {
+                Zeno_SetInputDefl(nShaderTexture2D, "type", std::string("float"));
+            }
 
             image_node[name] = nShaderTexture2D;
         }
