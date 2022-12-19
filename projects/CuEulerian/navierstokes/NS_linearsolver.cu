@@ -37,19 +37,7 @@ struct ZSNSPressureProject : INode {
     inline static int s_times = 4;
 #endif
 
-    template <int level> void clearInit(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
-        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
-
-        auto &spg = NSGrid->getLevel<level>();
-        auto block_cnt = spg.numBlocks();
-
-        // take zero as initial guess
-        pol(zs::range(block_cnt * spg.block_size),
-            [spgv = zs::proxy<space>(spg), pOffset = spg.getPropertyOffset("p0")] __device__(int cellno) mutable {
-                spgv(pOffset, cellno) = 0.f;
-            });
-    }
-
+#if 0
     template <int level, typename Ti>
     void PostJacobi(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, Ti block_cnt, int cur) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
@@ -106,6 +94,20 @@ struct ZSNSPressureProject : INode {
             PostJacobi<level>(pol, NSGrid, block_cnt, cur);
         }
     }
+#endif
+
+    template <int level> void clearInit(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->getLevel<level>();
+        auto block_cnt = spg.numBlocks();
+
+        // take zero as initial guess
+        pol(zs::range(block_cnt * spg.block_size),
+            [spgv = zs::proxy<space>(spg), pOffset = spg.getPropertyOffset("p")] __device__(int cellno) mutable {
+                spgv(pOffset, cellno) = 0.f;
+            });
+    }
 
     template <int level>
     void redblackSOR(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, float sor, int nIter) {
@@ -132,16 +134,16 @@ struct ZSNSPressureProject : INode {
                         float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
 
                         for (int i = -stcl; i <= stcl; ++i) {
-                            p_x[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(i, 0, 0));
-                            p_y[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, i, 0));
-                            p_z[i + stcl] = spgv.value("p0", icoord + zs::vec<int, 3>(0, 0, i));
+                            p_x[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(i, 0, 0));
+                            p_y[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(0, i, 0));
+                            p_z[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(0, 0, i));
                         }
 
                         float p_this =
                             (1.f - sor) * p_x[stcl] +
                             sor * ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dx * dx * rho) / 6.f;
 
-                        spgv("p0", icoord) = p_this;
+                        spgv("p", icoord) = p_this;
                     }
                 });
 #elif 1
@@ -154,7 +156,7 @@ struct ZSNSPressureProject : INode {
                 constexpr std::size_t cuda_block_size = bucket_size * tpb;
                 pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
                     [spgv = zs::proxy<space>(spg), sor, clr, cst = sor * dx * dx * rho, ts_c = zs::wrapv<bucket_size>{},
-                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"),
                      blockCnt = block_cnt] __device__(int bid, int tid) mutable {
                         // load halo
                         using vec3i = zs::vec<int, 3>;
@@ -216,7 +218,7 @@ struct ZSNSPressureProject : INode {
                 pol.shmem(arena_size * sizeof(value_type) * tpb);
                 pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
                     [spgv = zs::proxy<space>(spg), dx, rho, sor, clr, ts_c = zs::wrapv<bucket_size>{},
-                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"),
                      blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                         // load halo
                         using vec3i = zs::vec<int, 3>;
@@ -297,7 +299,7 @@ struct ZSNSPressureProject : INode {
                 pol.shmem(arena_size * sizeof(value_type) * tpb);
                 pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
                     [spgv = zs::proxy<space>(spg), dx, rho, clr, sor, ts_c = zs::wrapv<bucket_size>{},
-                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"),
+                     tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"),
                      blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                         // load halo
                         using vec3i = zs::vec<int, 3>;
@@ -555,7 +557,7 @@ struct ZSNSPressureProject : INode {
 
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), dx, rho, ts_c = zs::wrapv<bucket_size>{},
-             tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p0"), computeMax_c = zs::wrapv<(level == 0)>{},
+             tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"), computeMax_c = zs::wrapv<(level == 0)>{},
              blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
@@ -772,14 +774,14 @@ struct ZSNSPressureProject : INode {
             [spgv_f = zs::proxy<space>(spg_f),
              spgv_c = zs::proxy<space>(spg_c)] __device__(value_type * shmem, int blockno, int cellno) mutable {
                 for (int i = cellno; i < spgv_c.block_size; i += spgv_f.block_size)
-                    shmem[i] = spgv_c.value("p0", blockno, i);
+                    shmem[i] = spgv_c.value("p", blockno, i);
 
                 __syncthreads();
 
                 auto ccoord_f = spgv_f.local_offset_to_coord(cellno);
                 auto cellno_c = spgv_c.local_coord_to_offset(ccoord_f / 2);
 
-                spgv_f("p0", blockno, cellno) += shmem[cellno_c];
+                spgv_f("p", blockno, cellno) += shmem[cellno_c];
             });
         pol.shmem(0);
     }
@@ -787,7 +789,6 @@ struct ZSNSPressureProject : INode {
     template <int level> void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
         if constexpr (level == 3) {
             clearInit<level>(pol, NSGrid);
-            //Jacobi<level>(pol, NSGrid, rho, 100);
 
 #if ENABLE_PROFILE
             s_timer.tick();
@@ -1057,8 +1058,7 @@ struct ZSNSPressureProject : INode {
             [spgv = zs::proxy<space>(spg), ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{},
              dtOverRhoDx = dt / rho / dx, blockCnt = block_cnt, vSrcTag = src_tag(NSGrid, "v"),
              vDstTag = dst_tag(NSGrid, "v"),
-             pOffset = spg.getPropertyOffset(src_tag(NSGrid, "p"))] __device__(value_type * shmem, int bid,
-                                                                               int tid) mutable {
+             pOffset = spg.getPropertyOffset("p")] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
                 using spg_t = RM_CVREF_T(spgv);
@@ -1252,7 +1252,7 @@ struct ZSNSPressureProject : INode {
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
             [spgv = zs::proxy<space>(spg), dx, dt, rho, vSrcTag = src_tag(NSGrid, "v"), vDstTag = dst_tag(NSGrid, "v"),
-             pOffset = spg.getPropertyOffset(src_tag(NSGrid, "p"))] __device__(int cellno) mutable {
+             pOffset = spg.getPropertyOffset("p")] __device__(int cellno) mutable {
                 auto icoord = spgv.iCoord(cellno);
                 float p_this = spgv.value(pOffset, cellno);
 

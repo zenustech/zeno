@@ -29,8 +29,7 @@ struct ZSVDBToNavierStokesGrid : INode {
         spg.append_channels(zs::cuda_exec(), {
                                                  {"v0", 3}, // velocity
                                                  {"v1", 3},
-                                                 {"p0", 1}, // pressure
-                                                 {"p1", 1},
+                                                 {"p", 1},    // pressure
                                                  {"rho0", 1}, // smoke density
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
@@ -44,7 +43,7 @@ struct ZSVDBToNavierStokesGrid : INode {
         {
             // initialize multigrid
             auto nbs = spg.numBlocks();
-            std::vector<zs::PropertyTag> tags{{"p0", 1}, {"p1", 1}, {"tmp", 3}};
+            std::vector<zs::PropertyTag> tags{{"p", 1}, {"tmp", 3}};
             auto transform = spg._transform;
 
             NSGrid->spg1 = grid_t<1>{spg.get_allocator(), tags, nbs};
