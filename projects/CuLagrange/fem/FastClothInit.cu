@@ -100,7 +100,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::maximumSurfEdgeLen
     pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
                                  edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
         auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
-        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
+        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("xt", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
     return tmp;
@@ -204,8 +204,8 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #endif 
     dHat = proximityRadius();
     // soft phase coeff
-    auto [mu_, lam_] = largestLameParams();
-    mu = mu_;
+    // auto [mu_, lam_] = largestLameParams();
+    mu = 0.1f;
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
@@ -362,6 +362,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             vtemp("ws", voffset + i) = verts("m", i);
             vtemp.tuple<3>("yn", voffset + i) = x;
+            vtemp.tuple<3>("xt", voffset + i) = x;
             vtemp.tuple<3>("vn", voffset + i) = v;
         });
     }
@@ -375,7 +376,8 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     auto newX = x + v * dt;
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple<3>("yn", coOffset + i) = x;
+                    vtemp.tuple<3>("yn", coOffset + i) = x;  
+                    vtemp.tuple<3>("xt", coOffset + i) = x;
                     vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
@@ -466,6 +468,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"temp", 3},
                         // collision dynamics
                         {"xn", 3},
+                        {"xt", 3}, // for boundary objects 
                         {"xn0", 3},  // for backtracking during hardphase
                         {"xk", 3},   // backup before collision step
                         {"xinit", 3} // initial trial collision-free step
