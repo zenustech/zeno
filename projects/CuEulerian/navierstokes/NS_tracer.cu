@@ -21,7 +21,7 @@ namespace zeno {
 
 struct ZSTracerAdvectDiffuse : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, std::string scheme,
-                 ZenoSparseGrid *NSGrid) {
+                 float speedScale, ZenoSparseGrid *NSGrid) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -33,12 +33,13 @@ struct ZSTracerAdvectDiffuse : INode {
         if (scheme == "Semi-Lagrangian") {
             // Semi-Lagrangian advection (1st order)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcSrcTag = src_tag(NSGrid, tag),
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;
@@ -48,37 +49,38 @@ struct ZSTracerAdvectDiffuse : INode {
         } else if (scheme == "BFECC") {
             // Back and Forth Error Compensation and Correction (BFECC)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcSrcTag = src_tag(NSGrid, tag),
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag),
-                 trcSrcTag = dst_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcTag = src_tag(NSGrid, tag), trcSrcTag = dst_tag(NSGrid, tag),
                  trcDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord + u_adv * dt);
                     float trc_n = spgv.value(trcTag, blockno, cellno);
 
                     spgv(trcDstTag, blockno, cellno) = trc_n + (trc_n - trc_sl) / 2.f;
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag),
-                 trcSrcTag = zs::SmallString{"tmp"},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcTag = src_tag(NSGrid, tag), trcSrcTag = zs::SmallString{"tmp"},
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord);
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
                     auto wcoord_src = wcoord - u_adv * dt;
 
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord_src);
@@ -99,7 +101,7 @@ struct ZSTracerAdvectDiffuse : INode {
             // Finite Volume Method (FVM)
             // numrtical flux of tracer
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, tag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, speedScale, tag = src_tag(NSGrid, tag),
                  vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
 
@@ -115,7 +117,7 @@ struct ZSTracerAdvectDiffuse : INode {
 
                     float u_adv[3];
                     for (int ch = 0; ch < 3; ++ch)
-                        u_adv[ch] = spgv.value(vSrcTag, ch, icoord);
+                        u_adv[ch] = spgv.value(vSrcTag, ch, icoord) * speedScale;
 
                     // approximate value at i - 1/2
                     float flux[3];
@@ -187,7 +189,7 @@ struct ZSTracerAdvectDiffuse : INode {
         }
     }
 
-    void clampDensity(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, float clampBelow) {
+    void clampDensity(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float clampBelow, ZenoSparseGrid *NSGrid) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -204,23 +206,48 @@ struct ZSTracerAdvectDiffuse : INode {
             });
     }
 
+    void coolingTemp(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float coolingRate, float dt,
+                     ZenoSparseGrid *NSGrid) {
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), TOffset = spg.getPropertyOffset(src_tag(NSGrid, tag)), coolingRate,
+             dt] __device__(int blockno, int cellno) mutable {
+                float T = spgv.value(TOffset, blockno, cellno);
+                T = zs::max(T - coolingRate * dt, 0.f);
+
+                spgv(TOffset, blockno, cellno) = T;
+            });
+    }
+
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto diffuse = get_input2<float>("Diffusion");
         auto dt = get_input2<float>("dt");
         auto scheme = get_input2<std::string>("Scheme");
-        auto clampBelow = get_input2<float>("ClampDensityBelow");
 
         auto pol = zs::cuda_exec();
         ///
         if (get_input2<bool>("Density")) {
-            compute(pol, "rho", diffuse, dt, scheme, NSGrid.get());
-            clampDensity(pol, "rho", NSGrid.get(), clampBelow);
+            compute(pol, "rho", diffuse, dt, scheme, 1.f, NSGrid.get());
+
+            auto clampBelow = get_input2<float>("ClampDensityBelow");
+            clampDensity(pol, "rho", clampBelow, NSGrid.get());
         }
-        if (get_input2<bool>("Temperature"))
-            compute(pol, "T", diffuse, dt, scheme, NSGrid.get());
-        if (get_input2<bool>("Fuel"))
-            compute(pol, "fuel", diffuse, dt, scheme, NSGrid.get());
+        if (get_input2<bool>("Temperature")) {
+            compute(pol, "T", diffuse, dt, scheme, 1.f, NSGrid.get());
+
+            auto coolingRate = get_input2<float>("CoolingRate");
+            coolingTemp(pol, "T", coolingRate, dt, NSGrid.get());
+        }
+        if (get_input2<bool>("Fuel")) {
+            auto speedScale = get_input2<float>("FuelSpeedScale");
+            compute(pol, "fuel", diffuse, dt, scheme, speedScale, NSGrid.get());
+        }
 
         set_output("NSGrid", NSGrid);
     }
@@ -229,12 +256,14 @@ struct ZSTracerAdvectDiffuse : INode {
 ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                    {"NSGrid",
                                     "dt",
-                                    {"float", "Diffusion", "0.0"},
                                     {"bool", "Density", "1"},
                                     {"bool", "Temperature", "1"},
                                     {"bool", "Fuel", "0"},
                                     {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"},
-                                    {"float", "ClampDensityBelow", "0.01"}},
+                                    {"float", "ClampDensityBelow", "0.01"},
+                                    {"float", "CoolingRate", "0.0"},
+                                    {"float", "FuelSpeedScale", "0.05"},
+                                    {"float", "Diffusion", "0.0"}},
                                    /* outputs: */
                                    {"NSGrid"},
                                    /* params: */
