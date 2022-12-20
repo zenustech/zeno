@@ -34,4 +34,9 @@ template <typename T> constexpr T TVD_MUSCL3(const T fdw, const T fup, const T f
     return fup - (T)0.25 * ((T)4.0 / (T)3.0 * minmod(dfm, dfp * b) + (T)2.0 / (T)3.0 * minmod(dfp, dfm * b));
 }
 
+template <typename T> constexpr T face_fraction(T ls_bl, T ls_br, T ls_tl, T ls_tr) {
+
+    return (T)0;
+}
+
 } // namespace scheme

@@ -38,7 +38,8 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"fuel0", 1}, // combustion
                                                  {"fuel1", 1},
                                                  {"tmp", 3}, // FVM, BFECC, MultiGrid
-                                                 {"adv", 3}  // reflection
+                                                 {"adv", 3}, // reflection
+                                                 {"cut", 3}  // cut-cell face weight
                                              });
         spg._background = 0.f;
 
@@ -46,7 +47,7 @@ struct ZSVDBToNavierStokesGrid : INode {
         {
             // initialize multigrid
             auto nbs = spg.numBlocks();
-            std::vector<zs::PropertyTag> tags{{"p", 1}, {"tmp", 3}};
+            std::vector<zs::PropertyTag> tags{{"p", 1}, {"tmp", 3}, {"cut", 3}};
             auto transform = spg._transform;
 
             NSGrid->spg1 = grid_t<1>{spg.get_allocator(), tags, nbs};
@@ -457,47 +458,5 @@ ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
                                {},
                                /* category: */
                                {"Eulerian"}});
-
-struct ZSNSNaiveSolidWall : INode {
-    void apply() override {
-        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
-        auto SolidSDF = get_input<ZenoSparseGrid>("SolidSDF");
-        auto SolidVel = get_input<ZenoSparseGrid>("SolidVel");
-
-        auto &sdf = SolidSDF->spg;
-        auto &vel = SolidVel->spg;
-        auto &spg = NSGrid->spg;
-        auto block_cnt = spg.numBlocks();
-
-        auto pol = zs::cuda_exec();
-        constexpr auto space = zs::execspace_e::cuda;
-
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
-             vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                auto wcoord = spgv.wCoord(blockno, cellno);
-                auto solid_sdf = sdfv.wSample("sdf", wcoord);
-
-                if (solid_sdf < 0) {
-                    auto vel_s = velv.wStaggeredPack("v", wcoord);
-                    auto block = spgv.block(blockno);
-                    block.template tuple<3>(vSrcTag, cellno) = vel_s;
-                }
-
-                spgv("sdf", blockno, cellno) = solid_sdf;
-            });
-
-        set_output("NSGrid", NSGrid);
-    }
-};
-
-ZENDEFNODE(ZSNSNaiveSolidWall, {/* inputs: */
-                                {"NSGrid", "SolidSDF", "SolidVel"},
-                                /* outputs: */
-                                {"NSGrid"},
-                                /* params: */
-                                {},
-                                /* category: */
-                                {"Eulerian"}});
 
 } // namespace zeno
