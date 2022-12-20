@@ -210,16 +210,17 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
     const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
     const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
-    ZenoNode* pNode = m_nodes[inId];
-    const QPointF& inSockPos = pNode->getPortPos(true, inSock);
-    const QPointF& outSockPos = m_nodes[outId]->getPortPos(false, outSock);
+    ZASSERT_EXIT(m_nodes.find(inId) != m_nodes.end() && m_nodes.find(outId) != m_nodes.end());
+    ZenoNode* pInNode = m_nodes[inId];
+    ZenoNode* pOutNode = m_nodes[outId];
+    ZASSERT_EXIT(pInNode && pOutNode);
 
-    ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), m_nodes[outId], m_nodes[inId]);
+    ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), pOutNode, pInNode);
     addItem(pEdge);
     m_links[linkId] = pEdge;
 
-    pNode->onSocketLinkChanged(inSock, true, true);
-    m_nodes[outId]->onSocketLinkChanged(outSock, false, true);
+    pInNode->onSocketLinkChanged(inSock, true, true);
+    pOutNode->onSocketLinkChanged(outSock, false, true);
 }
 
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last)

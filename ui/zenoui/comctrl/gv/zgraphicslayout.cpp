@@ -117,6 +117,13 @@ void ZGraphicsLayout::insertLayout(int i, ZGraphicsLayout* pLayout)
     m_items.insert(i, item);
 }
 
+ZGvLayoutItem* ZGraphicsLayout::itemAt(int idx) const
+{
+    if (idx < 0 || idx > m_items.size())
+        return nullptr;
+    return m_items[idx];
+}
+
 int ZGraphicsLayout::count() const
 {
     return m_items.size();

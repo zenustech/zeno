@@ -59,12 +59,12 @@ TestGraphicsView::TestGraphicsView(QWidget* parent)
     spButton->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
     spButton->setText("CLICK ME !!!");
 
-    socket1 = new ZSocketLayout(nullptr, QModelIndex(), true, cbSockOnClick);
+    socket1 = new ZSocketLayout(nullptr, QModelIndex(), true);
     socket1->setControl(spButton);
 
-    ZSocketLayout *socket2 = new ZSocketLayout(nullptr, QModelIndex(), true, cbSockOnClick);
-    socket4 = new ZSocketLayout(nullptr, QModelIndex(), true, cbSockOnClick);
-    ZSocketLayout *socket3 = new ZSocketLayout(nullptr, QModelIndex(), false, cbSockOnClick);
+    ZSocketLayout *socket2 = new ZSocketLayout(nullptr, QModelIndex(), true);
+    socket4 = new ZSocketLayout(nullptr, QModelIndex(), true);
+    ZSocketLayout *socket3 = new ZSocketLayout(nullptr, QModelIndex(), false);
 
     pBodyLayout->addLayout(socket1);
     pBodyLayout->addLayout(socket2);

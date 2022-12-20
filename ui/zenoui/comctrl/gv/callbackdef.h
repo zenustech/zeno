@@ -13,6 +13,15 @@ typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 
 typedef std::function<void(const QModelIndex& idx)> Callback_NodeSelected;
 
+typedef std::function<QPointF()> Callback_UpdateSockItemPos;
+typedef std::function<void()> Callback_OnSockLayoutChanged;
+
+struct CallbackForSocket
+{
+    Callback_OnSockClicked cbOnSockClicked;
+    Callback_OnSockLayoutChanged cbOnSockLayoutChanged;
+};
+
 struct CallbackCollection
 {
     Callback_EditFinished cbEditFinished;

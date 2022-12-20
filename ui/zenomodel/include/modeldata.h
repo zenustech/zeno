@@ -54,6 +54,8 @@ enum PARAM_CLASS
     PARAM_INPUT,
     PARAM_PARAM,
     PARAM_OUTPUT,
+    PARAM_INNER_INPUT,      //socket in socket, like key in dict param.
+    PARAM_INNER_OUTPUT,
 };
 
 enum NODE_OPTION {

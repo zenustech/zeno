@@ -384,7 +384,7 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
 
                 QStandardItem* pObjItem = new QStandardItem(outNode);
                 pObjItem->setData(linkIdx, ROLE_LINK_IDX);
-                pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
+                //pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
             }
             if (!m_model->IsIOProcessing() &&
                 (nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
@@ -558,6 +558,8 @@ QModelIndexList IParamModel::match(
 
 bool IParamModel::removeRows(int row, int count, const QModelIndex& parent)
 {
+    //todo: clear link here, because link model need param index.
+
     beginRemoveRows(parent, row, row);
     _removeRow(index(row, 0));
     endRemoveRows();
@@ -676,13 +678,6 @@ bool IParamModel::_insertRow(
         item.type = "list";
     }
 
-    if (item.prop & SOCKPROP_MULTILINK)
-    {
-        DictKeyModel* pTblModel = new DictKeyModel(this);
-        item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);
-        connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
-    }
-
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
     //and we will import the links by method GraphsModel::addLink.
 
@@ -711,6 +706,14 @@ bool IParamModel::_insertRow(
     else
     {
         ZASSERT_EXIT(false, false);
+    }
+
+    // init dict key model.
+    if ((item.prop & SOCKPROP_MULTILINK) && m_items.find(sockName) != m_items.end())
+    {
+        DictKeyModel* pTblModel = new DictKeyModel(index(sockName), this);
+        m_items[sockName].customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);
+        connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
     }
 
     m_model->markDirty();

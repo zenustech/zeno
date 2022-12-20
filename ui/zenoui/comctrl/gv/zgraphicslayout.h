@@ -64,6 +64,7 @@ public:
     void addItem(QGraphicsItem* item);
     void addItem(QGraphicsItem* item, Qt::Alignment flag);
     int count() const;
+    ZGvLayoutItem* itemAt(int idx) const;
     void addLayout(ZGraphicsLayout* pLayout);
     void insertLayout(int i, ZGraphicsLayout* pLayout);
     void insertItem(int i, QGraphicsItem* pItem);

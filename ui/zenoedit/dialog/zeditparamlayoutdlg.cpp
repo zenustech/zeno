@@ -245,8 +245,6 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         const QString& coreName = pCurrentItem->data(ROLE_PARAM_NAME).toString();
 
-        PARAM_CLASS coreCls = (PARAM_CLASS)pCurrentItem->data(ROLE_PARAM_SOCKETTYPE).toInt();
-
         m_ui->editCoreParamName->setText(coreName);
         m_ui->editCoreParamType->setText(dataType);
         m_ui->itemsTable->setRowCount(0);

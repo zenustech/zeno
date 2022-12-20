@@ -1254,12 +1254,14 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, bool enableTr
 
         const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
         const QModelIndex& inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
-
-        QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(inSockIdx.model());
-        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(outSockIdx.model());
-        ZASSERT_EXIT(pInputs && pOutputs);
-        pOutputs->setData(outSockIdx, linkIdx, ROLE_REMOVELINK);
-        pInputs->setData(inSockIdx, linkIdx, ROLE_REMOVELINK);
+        if (outSockIdx.isValid() && inSockIdx.isValid())
+        {
+            QAbstractItemModel *pInputs = const_cast<QAbstractItemModel *>(inSockIdx.model());
+            QAbstractItemModel *pOutputs = const_cast<QAbstractItemModel *>(outSockIdx.model());
+            ZASSERT_EXIT(pInputs && pOutputs);
+            pOutputs->setData(outSockIdx, linkIdx, ROLE_REMOVELINK);
+            pInputs->setData(inSockIdx, linkIdx, ROLE_REMOVELINK);
+        }
         m_linkModel->removeRow(linkIdx.row());
     }
 }
