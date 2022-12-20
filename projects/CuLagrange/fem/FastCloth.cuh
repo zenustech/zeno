@@ -36,7 +36,7 @@ struct FastClothSystem : IObject {
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
     using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>; 
-    static constexpr T s_constraint_residual = 1e-2;
+    static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
     inline static const char s_meanMassTag[] = "MeanMass";
@@ -166,7 +166,7 @@ struct FastClothSystem : IObject {
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
     void hardPhase(zs::CudaExecutionPolicy &pol);
-    bool constraintSatisfied(zs::CudaExecutionPolicy &pol);
+    bool constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps = true);
     T constraintEnergy(zs::CudaExecutionPolicy &pol);
     // void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
 
@@ -191,7 +191,7 @@ struct FastClothSystem : IObject {
 
     // contacts
     auto getConstraintCnt() const {
-        return zs::make_tuple(nPP.getVal(), nE.getVal());
+        return std::make_tuple(nPP.getVal(), nE.getVal());
     }
 
     // sim params
@@ -301,7 +301,6 @@ struct FastClothSystem : IObject {
     bvh_t svBvh;    // for simulated objects
     bvh_t bouSvBvh; // for collision objects
     bvfront_t selfSvFront, boundarySvFront;
-    bool frontManageRequired;
     T dt, framedt, curRatio;
 };
 

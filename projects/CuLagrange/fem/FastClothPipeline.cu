@@ -375,11 +375,13 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     constexpr auto space = execspace_e::cuda;
     /// y0, x0
     // y0, x0
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int i) mutable {
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), dt = dt, coOffset = coOffset] ZS_LAMBDA(int i) mutable {
         auto yt = vtemp.pack(dim_c<3>, "yn", i);
         auto vt = vtemp.pack(dim_c<3>, "vn", i);
-        vtemp.tuple(dim_c<3>, "yn", i) = yt + dt * vt;
+        vtemp.tuple(dim_c<3>, "yn", i) = i < coOffset ? (yt + dt * vt) : (vtemp.pack(dim_c<3>, "xt", i) + dt * vt);
         vtemp.tuple(dim_c<3>, "xn", i) = yt;
+        if (i >= coOffset)
+            vtemp.tuple(dim_c<3>, "xt", i) = vtemp.pack(dim_c<3>, "yn", i); 
     });
     // xinit
     {
@@ -456,7 +458,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             initialStepping(pol);
 
             fmt::print(fg(fmt::color::alice_blue), "init iter [{}]\n", i);
-
             findConstraints(pol, dHat);
 
             /// @brief backup xn for potential hard phase
@@ -491,6 +492,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
                 });
+                findConstraints(pol, dHat, "xn"); 
                 success = collisionStep(pol, true);
             }
             if (!success)
@@ -513,7 +515,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
     /// @brief collect pairs only once depending on x^init
     /// @note ref: Sec 4.3.2
-    // findConstraints(pol, dHat); disabled for now 
 
     /// optimizer
     for (int k = 0; k != K; ++k) {
@@ -595,7 +596,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         /// start collision solver
         ///
         initialStepping(pol); 
-
         // x^{k+1}
         findConstraints(pol, dHat); // DWX: paper 4.3.2; do only once in the future
 
@@ -614,6 +614,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                 vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
             });
+            findConstraints(pol, dHat, "xn");
             success = collisionStep(pol, true);
         }
         if (!success) {

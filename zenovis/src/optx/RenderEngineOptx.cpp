@@ -192,7 +192,19 @@ struct GraphicsManager {
 
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
-                if(isRealTimeObject == 0 && isUniformCarrier == 0){
+                auto isInst = prim_in->userData().get2<int>("isInst", 0);
+                if (isInst == 1)
+                {
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    std::size_t numInsts = prim_in->verts.size();
+                    const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
+                    auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
+                    const float *scale = (const float *)prim_in->attr<zeno::vec3f>("cls").data();
+                    xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
+                }
+                else if (isRealTimeObject == 0 && isUniformCarrier == 0)
+                {
         det = DetPrimitive{prim_in_lslislSp};
         if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
             // todo: zhxx, should comp normal after subd or before????
@@ -304,7 +316,8 @@ struct GraphicsManager {
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
-                    xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
@@ -315,6 +328,7 @@ struct GraphicsManager {
 
         ~ZxxGraphic() {
             xinxinoptix::unload_object(key);
+            xinxinoptix::unload_inst(key);
         }
     };
 
@@ -720,8 +734,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
             // timer.tock("done static mesh update");
             // timer.tick();
-            xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
+            xinxinoptix::UpdateDynamicMesh(mtlidlut);
             // timer.tock("done dynamic mesh update");
+
+            xinxinoptix::UpdateInst();
+            xinxinoptix::UpdateStaticInstMesh(mtlidlut);
+            xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
+            xinxinoptix::CopyInstMeshToGlobalMesh();
+            xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
             
             xinxinoptix::optixupdateend();
             
