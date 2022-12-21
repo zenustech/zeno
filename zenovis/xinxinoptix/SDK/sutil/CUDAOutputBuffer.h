@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "sutil.h"
+#include <cudaMemTracer.hpp>
 
 namespace sutil
 {

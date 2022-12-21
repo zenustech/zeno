@@ -36,6 +36,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cudaMemTracer.hpp>
 
 
 //-----------------------------------------------------------------------------
@@ -242,7 +243,7 @@ sutil::Texture PPMLoader::loadTexture( const float3& default_color, cudaTextureD
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<uchar4>();
 
     cudaArray_t cuda_array = nullptr;
-    CUDA_CHECK( cudaMallocArray( &cuda_array, &channel_desc, nx, ny ) );
+    CUDA_CHECK( cudaMallocArray( &cuda_array, &channel_desc, nx, ny, 0 ) );
     CUDA_CHECK( cudaMemcpy2DToArray( cuda_array, 0, 0, buffer.data(), pitch, pitch, ny, cudaMemcpyHostToDevice ) );
 
     // Create texture object
