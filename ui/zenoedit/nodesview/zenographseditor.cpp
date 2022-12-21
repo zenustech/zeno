@@ -704,7 +704,7 @@ parse_inputs(rapidxml::xml_node<>* child) {
     return ms;
 }
 void ZenoGraphsEditor::importMaterialX() {
-    QString filename = "E:/mtlx/standard_surface_chess_set.mtlx";
+    QString filename = "E:/mtlx/standard_surface_brick_procedural.mtlx";
     auto dir_path = QFileInfo(filename).absoluteDir().absolutePath().toStdString();
     QFile file(filename);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -825,6 +825,8 @@ void ZenoGraphsEditor::importMaterialX() {
             {"exp", "exp"},
             {"normalize", "normalize"},
             {"magnitude", "length"},
+            {"hsvtorgb", "hsvToRgb"},
+            {"rgbtohsv", "rgbToHsv"},
     };
     std::map<std::string, std::string> binary {
             {"add", "add"},
@@ -838,6 +840,10 @@ void ZenoGraphsEditor::importMaterialX() {
             {"max", "max"},
             {"dotproduct", "dot"},
             {"crossproduct", "cross"},
+            {"combine2", "combine2"},
+    };
+    std::map<std::string, std::string> ternary {
+            {"combine3", "combine3"},
     };
 
     auto nodegraph = root->first_node("nodegraph");
@@ -873,6 +879,14 @@ void ZenoGraphsEditor::importMaterialX() {
                 Zeno_SetInputDefl(hNode, "op", binary[start_name]);
                 edges.emplace_back(name, "in1", nameNodeGraph + ms["in1"]["nodename"]);
                 edges.emplace_back(name, "in2", nameNodeGraph + ms["in2"]["nodename"]);
+            }
+            else if (ternary.count(start_name)) {
+                auto hNode = Zeno_AddNode(hGraph, "ShaderTernaryMath");
+                node_id_mapping[name] = hNode;
+                Zeno_SetInputDefl(hNode, "op", ternary[start_name]);
+                edges.emplace_back(name, "in1", nameNodeGraph + ms["in1"]["nodename"]);
+                edges.emplace_back(name, "in2", nameNodeGraph + ms["in2"]["nodename"]);
+                edges.emplace_back(name, "in3", nameNodeGraph + ms["in3"]["nodename"]);
             }
             else if (start_name == "output") {
                 auto hNode = Zeno_AddNode(hGraph, "ShaderUnaryMath");
@@ -923,7 +937,7 @@ void ZenoGraphsEditor::importMaterialX() {
                 Zeno_SetInputDefl(hNode, "attr", std::string("uv"));
                 node_id_mapping[name] = hNode;
             }
-            else if (start_name == "image") {
+            else if (start_name == "image" || start_name == "tiledimage") {
                 auto hNode = Zeno_AddNode(hGraph, "MakeTexture2D");
                 node_id_mapping[name] = hNode;
                 image_index[nameNodeGraph][name] = image_index[nameNodeGraph].size();
