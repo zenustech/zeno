@@ -2,6 +2,7 @@
 #include "modelrole.h"
 #include "modeldata.h"
 #include "zassert.h"
+#include "uihelper.h"
 
 
 DictKeyModel::DictKeyModel(const QModelIndex& dictParam, QObject* parent)
@@ -77,6 +78,17 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         }
         else if (index.column() == 1) {
             //todo: check input or output, then return by linkIdx.
+            PARAM_CLASS cls = (PARAM_CLASS)this->data(index, ROLE_PARAM_SOCKETTYPE).toInt();
+            if (cls == PARAM_INNER_INPUT) {
+                QModelIndex outNodeIdx = item.link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                QString displayInfo = outNodeIdx.data(ROLE_OBJNAME).toString();
+                return displayInfo;
+            }
+            else if (cls == PARAM_INNER_OUTPUT) {
+                QModelIndex inNodeIdx = item.link.data(ROLE_INNODE_IDX).toModelIndex();
+                QString displayInfo = inNodeIdx.data(ROLE_OBJNAME).toString();
+                return displayInfo;
+            }
             return "";
         }
         break;
@@ -134,6 +146,14 @@ bool DictKeyModel::insertRows(int row, int count, const QModelIndex& parent)
         return false;
     beginInsertRows(parent, row, row + count - 1);
     _DictItem item;
+    //we can init will a new key name.
+    QStringList keys;
+    for (int r = 0; r < rowCount(); r++) {
+        const QModelIndex &idxKey = index(r, 0);
+        keys.append(idxKey.data().toString());
+    }
+    const QString& newKeyName = UiHelper::getUniqueName(keys, "obj", false);
+    item.key = newKeyName;
     m_items.insert(row, item);
     endInsertRows();
 }

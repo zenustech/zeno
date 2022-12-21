@@ -102,9 +102,10 @@ private:
 };
 
 
-ZDictPanel::ZDictPanel(const QPersistentModelIndex& viewSockIdx, const CallbackForSocket& cbSock)
+ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& viewSockIdx, const CallbackForSocket& cbSock)
     : ZLayoutBackground()
     , m_viewSockIdx(viewSockIdx)
+    , m_pDictLayout(pLayout)
 {
     int radius = ZenoStyle::dpiScaled(0);
     setRadius(radius, radius, radius, radius);
@@ -130,21 +131,14 @@ ZDictPanel::ZDictPanel(const QPersistentModelIndex& viewSockIdx, const CallbackF
     pVLayout->addItem(pEditBtn, Qt::AlignHCenter);
 
     QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-        QStringList keys;
         int n = pKeyObjModel->rowCount();
-        for (int r = 0; r < pKeyObjModel->rowCount(); r++)
-        {
-            const QModelIndex& idxKey = pKeyObjModel->index(r, 0);
-            keys.append(idxKey.data().toString());
-        }
-        const QString &newKeyName = UiHelper::getUniqueName(keys, "obj", false);
-
         pKeyObjModel->insertRow(n);
-        QModelIndex newIdx = pKeyObjModel->index(n, 0);
-        pKeyObjModel->setData(newIdx, newKeyName, Qt::DisplayRole);
     });
 
     QObject::connect(pKeyObjModel, &QAbstractItemModel::rowsInserted, [=](const QModelIndex& parent, int start, int end) {
+        //expand the dict panel anyway.
+        m_pDictLayout->setCollasped(false);
+
         const QModelIndex& idxKey = pKeyObjModel->index(start, 0);
         QString key = idxKey.data().toString();
         ZDictItemLayout* pkey = new ZDictItemLayout(idxKey, cbSock);

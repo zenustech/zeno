@@ -183,7 +183,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 
     addLayout(pHLayout);
 
-    m_panel = new ZDictPanel(m_viewSockIdx, cbSock);
+    m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock);
     addItem(m_panel);
     setSpacing(ZenoStyle::dpiScaled(0));
     m_panel->hide();
@@ -194,6 +194,11 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
         if (cbSock.cbOnSockLayoutChanged)
             cbSock.cbOnSockLayoutChanged();
     });
+}
+
+void ZDictSocketLayout::setCollasped(bool bCollasped)
+{
+    m_collaspeBtn->toggle(!bCollasped);
 }
 
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const

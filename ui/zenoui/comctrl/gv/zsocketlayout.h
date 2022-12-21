@@ -50,6 +50,7 @@ public:
     void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock) override;
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
     QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
+    void setCollasped(bool bCollasped);
 
 private:
     ZDictPanel* m_panel;

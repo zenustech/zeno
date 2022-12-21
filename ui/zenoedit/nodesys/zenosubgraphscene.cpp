@@ -18,6 +18,7 @@
 #include "util/log.h"
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
+#include "variantptr.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/iparammodel.h>
 
@@ -682,9 +683,36 @@ void ZenoSubGraphScene::onTempLinkClosed()
             if (oldLink.isValid())
                 pGraphsModel->removeLink(oldLink, true);
 
+            //dict panel.
+            SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+            if (bTargetInput && (inProp & SOCKPROP_DICTPANEL))
+            {
+                SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)fromSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+                QAbstractItemModel *pKeyObjModel =
+                    QVariantPtr<QAbstractItemModel>::asPtr(toSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+
+                //check if outSock is a dict
+                if (outProp & SOCKPROP_DICTPANEL)
+                {
+                    //legacy dict connection, and then we have to remove all inner dict key connection.
+                    ZASSERT_EXIT(pKeyObjModel);
+                    for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
+                        pKeyObjModel->setData(keyIdx, QVariant(), ROLE_REMOVELINK);
+                    }
+                }
+                else
+                {
+                    // link to inner dict key automatically.
+                    int n = pKeyObjModel->rowCount();
+                    pKeyObjModel->insertRow(n);
+                    toSockIdx = pKeyObjModel->index(n, 0);
+                }
+            }
+
             //remove the edge in inNode:inSock, if exists.
-            SOCKET_PROPERTY prop = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-            if (bTargetInput && prop != SOCKPROP_MULTILINK)
+            if (bTargetInput && inProp != SOCKPROP_MULTILINK)
             {
                 QPersistentModelIndex linkIdx;
                 const QModelIndex& paramIdx = targetSock->paramIndex();

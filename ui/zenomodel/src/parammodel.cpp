@@ -664,7 +664,7 @@ bool IParamModel::_insertRow(
 
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
-        item.type = "dict";
+        item.type = "dict";     //pay attention not to export to outside, only as a ui keyword.
         item.prop = SOCKPROP_MULTILINK | SOCKPROP_DICTPANEL;
     }
     else if (type == "list")
