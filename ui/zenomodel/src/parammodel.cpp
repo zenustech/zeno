@@ -665,7 +665,7 @@ bool IParamModel::_insertRow(
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
         item.type = "dict";     //pay attention not to export to outside, only as a ui keyword.
-        item.prop = SOCKPROP_MULTILINK | SOCKPROP_DICTPANEL;
+        item.prop = SOCKPROP_DICTPANEL;
     }
     else if (type == "list")
     {
@@ -709,11 +709,11 @@ bool IParamModel::_insertRow(
     }
 
     // init dict key model.
-    if ((item.prop & SOCKPROP_MULTILINK) && m_items.find(sockName) != m_items.end())
+    if ((item.prop & SOCKPROP_DICTPANEL) && m_items.find(sockName) != m_items.end())
     {
-        DictKeyModel* pTblModel = new DictKeyModel(index(sockName), this);
+        DictKeyModel* pTblModel = new DictKeyModel(m_model, index(sockName), this);
         m_items[sockName].customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);
-        connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
+        //connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
     }
 
     m_model->markDirty();

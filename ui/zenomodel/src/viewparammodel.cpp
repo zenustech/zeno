@@ -254,6 +254,8 @@ void VParamItem::setData(const QVariant& value, int role)
                 QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
                 bool ret = pModel->setData(m_index, value, role);
             }
+            QModelIndex idx = index();
+            emit this->model()->dataChanged(idx, idx, {role});
             break;
         }
         case ROLE_VAPRAM_EDITTABLE:
@@ -778,7 +780,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_MULTILINK;
+                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_DICTPANEL;
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
                 //todo: dictpanel should be choosed by custom param manager globally.

@@ -209,6 +209,13 @@ ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) c
 
 QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 {
+    if (m_viewSockIdx == sockIdx)
+    {
+        ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem *>(m_text);
+        exist = true;
+        return pEdit->socketItem()->center();
+    }
+
     if (m_panel->isVisible())
     {
         if (ZenoSocketItem* pSocketItem = m_panel->socketItemByIdx(sockIdx))

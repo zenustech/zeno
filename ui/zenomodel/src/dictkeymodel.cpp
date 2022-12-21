@@ -5,9 +5,10 @@
 #include "uihelper.h"
 
 
-DictKeyModel::DictKeyModel(const QModelIndex& dictParam, QObject* parent)
+DictKeyModel::DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, QObject* parent)
     : QAbstractItemModel(parent)
     , m_dictParam(dictParam)
+    , m_pGraphs(pGraphs)
 {
 }
 
@@ -58,7 +59,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
         case ROLE_REMOVELINK:
         {
-            item.link = QModelIndex(); 
+            item.link = QModelIndex();
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
@@ -166,6 +167,9 @@ bool DictKeyModel::insertColumns(int column, int count, const QModelIndex& paren
 bool DictKeyModel::removeRows(int row, int count, const QModelIndex& parent)
 {
     beginRemoveRows(parent, row, row + count - 1);
+    //remove link first.
+    QPersistentModelIndex linkIdx = m_items[row].link;
+    m_pGraphs->removeLink(linkIdx);
     m_items.removeAt(row);
     endRemoveRows();
     return true;

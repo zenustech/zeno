@@ -574,7 +574,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
         }
         else if (ZenoSocketItem* sock = qgraphicsitem_cast<ZenoSocketItem*>(item))
         {
-            catchSocks.append(sock);
+            if (sock->isEnabled())
+                catchSocks.append(sock);
         }
     }
     //adsorption
@@ -700,7 +701,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
-                        pKeyObjModel->setData(keyIdx, QVariant(), ROLE_REMOVELINK);
+                        QPersistentModelIndex _linkIdx  = keyIdx.data(ROLE_LINK_IDX).toPersistentModelIndex();
+                        pGraphsModel->removeLink(_linkIdx);
                     }
                 }
                 else

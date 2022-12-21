@@ -3,6 +3,8 @@
 
 #include <QtWidgets>
 
+class IGraphsModel;
+
 struct _DictItem
 {
     QString key;
@@ -13,7 +15,7 @@ class DictKeyModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
-    DictKeyModel(const QModelIndex& dictParam, QObject* parent = nullptr);
+    DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, QObject* parent = nullptr);
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex& child) const override;
@@ -35,6 +37,7 @@ public:
 private:
     QPersistentModelIndex m_dictParam;   //core param of dict param.
     QVector<_DictItem> m_items;
+    IGraphsModel* m_pGraphs;
 };
 
 #endif

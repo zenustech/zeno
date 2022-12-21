@@ -18,6 +18,8 @@ public:
         : ZGraphicsLayout(true)
         , m_idx(keyIdx)
         , m_editText(nullptr)
+        , m_pRemoveBtn(nullptr)
+        , m_pMoveUpBtn(nullptr)
     {
         ImageElement elem;
         elem.image = ":/icons/socket-off.svg";
@@ -45,8 +47,8 @@ public:
         elem.imageHovered = ":/icons/moveUp-on.svg";
         elem.imageOn = ":/icons/moveUp.svg";
         elem.imageOnHovered = ":/icons/moveUp-on.svg";
-        ZenoImageItem* pMoveUpBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
-        QObject::connect(pMoveUpBtn, &ZenoImageItem::clicked, [=]() {
+        m_pMoveUpBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
+        QObject::connect(m_pMoveUpBtn, &ZenoImageItem::clicked, [=]() {
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_idx.model());
             int r = m_idx.row();
             if (r > 0) {
@@ -60,8 +62,8 @@ public:
         elem.imageHovered = ":/icons/closebtn_on.svg";
         elem.imageOn = ":/icons/closebtn.svg";
         elem.imageOnHovered = ":/icons/closebtn_on.svg";
-        ZenoImageItem* pRemoveBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20,20)));
-        QObject::connect(pRemoveBtn, &ZenoImageItem::clicked, [=]() {
+        m_pRemoveBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
+        QObject::connect(m_pRemoveBtn, &ZenoImageItem::clicked, [=]() {
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_idx.model());
             pModel->removeRow(m_idx.row());
         });
@@ -78,8 +80,8 @@ public:
 
         addItem(m_socket, Qt::AlignVCenter);
         addItem(m_editText, Qt::AlignVCenter);
-        addItem(pMoveUpBtn, Qt::AlignVCenter);
-        addItem(pRemoveBtn, Qt::AlignVCenter);
+        addItem(m_pMoveUpBtn, Qt::AlignVCenter);
+        addItem(m_pRemoveBtn, Qt::AlignVCenter);
         setSpacing(ZenoStyle::dpiScaled(5));
     }
     ZenoSocketItem* socketItem() const
@@ -94,11 +96,20 @@ public:
     {
         ZenoGvHelper::setValue(m_editText, CONTROL_STRING, newKeyName);
     }
+    void setEnable(bool bEnable)
+    {
+        m_socket->setEnabled(bEnable);
+        m_editText->setEnabled(bEnable);
+        m_pRemoveBtn->setEnabled(bEnable);
+        m_pMoveUpBtn->setEnabled(bEnable);
+    }
 
 private:
     QPersistentModelIndex m_idx;
     ZenoSocketItem* m_socket;
-    QGraphicsItem *m_editText;
+    QGraphicsItem* m_editText;
+    ZenoImageItem* m_pRemoveBtn;
+    ZenoImageItem* m_pMoveUpBtn;
 };
 
 
@@ -106,6 +117,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     : ZLayoutBackground()
     , m_viewSockIdx(viewSockIdx)
     , m_pDictLayout(pLayout)
+    , m_pEditBtn(nullptr)
 {
     int radius = ZenoStyle::dpiScaled(0);
     setRadius(radius, radius, radius, radius);
@@ -127,10 +139,10 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
         pVLayout->addLayout(pkey);
     }
 
-    ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("+ Add Dict Key", "blueStyle");
-    pVLayout->addItem(pEditBtn, Qt::AlignHCenter);
+    m_pEditBtn = new ZenoParamPushButton("+ Add Dict Key", "blueStyle");
+    pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
 
-    QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
+    QObject::connect(m_pEditBtn, &ZenoParamPushButton::clicked, [=]() {
         int n = pKeyObjModel->rowCount();
         pKeyObjModel->insertRow(n);
     });
@@ -175,7 +187,38 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
             }
     });
 
+    QAbstractItemModel* paramsModel = const_cast<QAbstractItemModel*>(m_viewSockIdx.model());
+    QObject::connect(paramsModel, &QAbstractItemModel::dataChanged,
+        [=](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+            if (topLeft == m_viewSockIdx)
+            {
+                if (roles.contains(ROLE_ADDLINK))
+                {
+                    setEnable(false);
+                }
+                else if (roles.contains(ROLE_REMOVELINK))
+                {
+                    setEnable(true);
+                }
+            }
+            
+    });
+
     setLayout(pVLayout);
+}
+
+void ZDictPanel::setEnable(bool bEnable)
+{
+    m_pEditBtn->setEnabled(bEnable);
+    for (int i = 0; i < m_layout->count(); i++)
+    {
+        auto layoutItem = m_layout->itemAt(i);
+        if (layoutItem->type == Type_Layout)
+        {
+            ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
+            pDictItem->setEnable(bEnable);
+        }
+    }
 }
 
 ZenoSocketItem* ZDictPanel::socketItemByIdx(const QModelIndex& sockIdx) const

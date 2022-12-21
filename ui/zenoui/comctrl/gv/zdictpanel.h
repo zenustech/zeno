@@ -5,6 +5,7 @@
 #include "callbackdef.h"
 
 class ZDictSocketLayout;
+class ZenoParamPushButton;
 
 class ZDictPanel : public ZLayoutBackground
 {
@@ -14,8 +15,11 @@ public:
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;
 
 private:
+    void setEnable(bool bEnable);
+
     const QPersistentModelIndex m_viewSockIdx;
     ZDictSocketLayout* m_pDictLayout;
+    ZenoParamPushButton* m_pEditBtn;
 };
 
 #endif

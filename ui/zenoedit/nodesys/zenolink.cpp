@@ -182,11 +182,8 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
     m_inNode = idx.data(ROLE_INNODE).toString();
     m_outNode = idx.data(ROLE_OUTNODE).toString();
 
-    ZenoSocketItem *inSocketItem = inNode->getSocketItem(inSockIdx);
-    ZenoSocketItem *outSocketItem = outNode->getSocketItem(outSockIdx);
-    ZASSERT_EXIT(inSocketItem && outSocketItem);
-    m_dstPos = inSocketItem->center();
-    m_srcPos = outSocketItem->center();
+    m_dstPos = inNode->getSocketPos(inSockIdx);
+    m_srcPos = outNode->getSocketPos(outSockIdx);
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
