@@ -90,7 +90,7 @@ ZenoSocketItem* ZSocketLayout::socketItem() const
 QPointF ZSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 {
     exist = false;
-    if (m_viewSockIdx == sockIdx)
+    if (m_viewSockIdx == sockIdx || m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx)
     {
         int sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         if (sockProp & SOCKPROP_EDITABLE)
@@ -111,7 +111,7 @@ QPointF ZSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 
 ZenoSocketItem* ZSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
 {
-    if (m_viewSockIdx == sockIdx)
+    if (m_viewSockIdx == sockIdx || m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx)
     {
         int sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         if (sockProp & SOCKPROP_EDITABLE)
@@ -169,22 +169,42 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 {
     setHorizontal(false);
 
-    ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
-
+    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_SOCKETTYPE).toInt();
+    bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
     const QString& sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
     m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-    pHLayout->addItem(m_text);
-    pHLayout->setDebugName("dict socket");
 
     QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(28, 28));
     m_collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
     m_collaspeBtn->setCheckable(true);
-    pHLayout->addItem(m_collaspeBtn);
-
-    addLayout(pHLayout);
 
     m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock);
-    addItem(m_panel);
+
+    ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
+    ZGraphicsLayout *pHPanelLayout = new ZGraphicsLayout(true);
+    pHLayout->setDebugName("dict socket");
+
+    if (bInput)
+    {
+        pHLayout->addItem(m_text);
+        pHLayout->addItem(m_collaspeBtn);
+
+        pHPanelLayout->addItem(m_panel);
+        pHPanelLayout->addSpacing(ZenoStyle::dpiScaled(64), QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred));
+    }
+    else
+    {
+        pHLayout->addSpacing(-1, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+        pHLayout->addItem(m_collaspeBtn);
+        pHLayout->addItem(m_text);
+
+        pHPanelLayout->addSpacing(ZenoStyle::dpiScaled(64), QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred));
+        pHPanelLayout->addItem(m_panel);
+    }
+
+    addLayout(pHLayout);
+    addLayout(pHPanelLayout);
+
     setSpacing(ZenoStyle::dpiScaled(0));
     m_panel->hide();
 

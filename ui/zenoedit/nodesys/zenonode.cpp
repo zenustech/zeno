@@ -800,17 +800,6 @@ void ZenoNode::markError(bool isError)
     update();
 }
 
-ZenoSocketItem* ZenoNode::getSocketItem(bool bInput, const QString& sockName)
-{
-    if (bInput) {
-        ZASSERT_EXIT(m_inSockets.find(sockName) != m_inSockets.end(), nullptr);
-        return m_inSockets[sockName]->socketItem();
-    } else {
-        ZASSERT_EXIT(m_outSockets.find(sockName) != m_outSockets.end(), nullptr);
-        return m_outSockets[sockName]->socketItem();
-    }
-}
-
 ZenoSocketItem* ZenoNode::getSocketItem(const QModelIndex& sockIdx)
 {
     for (ZSocketLayout* socklayout : m_inSockets)
@@ -882,36 +871,6 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
                 return pos;
         }
         return QPointF(0, 0);
-    }
-}
-
-QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
-{
-    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    if (bCollasped) {
-        QRectF rc = m_headerWidget->sceneBoundingRect();
-        if (bInput) {
-            return QPointF(rc.left(), rc.center().y());
-        } else {
-            return QPointF(rc.right(), rc.center().y());
-        }
-    } else {
-        QString id = nodeId();
-        if (bInput) {
-            if (m_inSockets.find(portName) == m_inSockets.end())
-            {
-                return QPointF();
-            }
-            QPointF pos = m_inSockets[portName]->socketItem()->center();
-            return pos;
-        } else {
-            if (m_outSockets.find(portName) == m_outSockets.end())
-            {
-                return QPointF();
-            }
-            QPointF pos = m_outSockets[portName]->socketItem()->center();
-            return pos;
-        }
     }
 }
 

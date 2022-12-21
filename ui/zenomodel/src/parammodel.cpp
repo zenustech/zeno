@@ -669,7 +669,7 @@ bool IParamModel::_insertRow(
     }
     else if (type == "list")
     {
-        item.prop = SOCKPROP_MULTILINK;
+        //item.prop = SOCKPROP_MULTILINK;
     }
 
     //not type desc on list output socket, add it here.

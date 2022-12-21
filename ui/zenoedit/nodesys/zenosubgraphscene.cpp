@@ -88,18 +88,18 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
                 const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
                 const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                const QModelIndex& inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
                 ZenoNode* outNode = m_nodes[outId];
                 ZASSERT_EXIT(outNode);
-
-                const QPointF& outSockPos = outNode->getPortPos(false, outSock);
 
                 ZenoFullLink* pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
                 outNode->toggleSocket(false, outSock, true);
-                outNode->getSocketItem(false, outSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+                outNode->getSocketItem(outSockIdx)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
                 inNode->toggleSocket(true, inSock, true);
-                inNode->getSocketItem(true, inSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+                inNode->getSocketItem(inSockIdx)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
             }
         }
     }
@@ -484,14 +484,6 @@ void ZenoSubGraphScene::paste(QPointF pos)
     }
 }
 
-QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)
-{
-    auto it = m_nodes.find(nodeid);
-    ZASSERT_EXIT(it != m_nodes.end(), QPointF());
-    QPointF pos = it->second->getPortPos(bInput, portName);
-    return pos;
-}
-
 void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
 {
     if (subGpIdx != m_subgIdx)
@@ -535,12 +527,13 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
         //disconnect the old link.
         const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
         const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
 
         //remove current link at view.
         viewRemoveLink(linkIdx);
 
-        socketPos = m_nodes[outNode]->getPortPos(false, outSock);
-        pSocketItem = m_nodes[outNode]->getSocketItem(false, outSock);
+        socketPos = m_nodes[outNode]->getSocketPos(outSockIdx);
+        pSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx);
         m_tempLink = new ZenoTempLink(pSocketItem, outNode, socketPos, false);
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);

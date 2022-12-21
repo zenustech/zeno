@@ -141,6 +141,10 @@ QVariant VParamItem::data(int role) const
             return SOCKPROP_UNKNOWN;
         return m_index.data(ROLE_PARAM_SOCKPROP);
     }
+    case ROLE_PARAM_COREIDX:
+    {
+        return m_index;
+    }
     case ROLE_VPARAM_LINK_MODEL:
     {
         if (!m_index.isValid())

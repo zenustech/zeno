@@ -16,7 +16,7 @@ class ZDictItemLayout : public ZGraphicsLayout
 public:
     ZDictItemLayout(const QModelIndex& keyIdx, const CallbackForSocket& cbSock)
         : ZGraphicsLayout(true)
-        , m_idx(keyIdx)
+        , m_sockKeyIdx(keyIdx)
         , m_editText(nullptr)
         , m_pRemoveBtn(nullptr)
         , m_pMoveUpBtn(nullptr)
@@ -30,7 +30,10 @@ public:
         const int cSocketWidth = ZenoStyle::dpiScaled(12);
         const int cSocketHeight = ZenoStyle::dpiScaled(12);
 
-        m_socket = new ZenoSocketItem(m_idx, true, elem, QSizeF(cSocketWidth, cSocketHeight));
+        PARAM_CLASS sockCls = (PARAM_CLASS)m_sockKeyIdx.data(ROLE_PARAM_SOCKETTYPE).toInt();
+        const bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
+
+        m_socket = new ZenoSocketItem(m_sockKeyIdx, bInput, elem, QSizeF(cSocketWidth, cSocketHeight));
         qreal leftMargin = ZenoStyle::dpiScaled(10);
         qreal rightMargin = ZenoStyle::dpiScaled(10);
         qreal topMargin = ZenoStyle::dpiScaled(10);
@@ -49,10 +52,10 @@ public:
         elem.imageOnHovered = ":/icons/moveUp-on.svg";
         m_pMoveUpBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
         QObject::connect(m_pMoveUpBtn, &ZenoImageItem::clicked, [=]() {
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_idx.model());
-            int r = m_idx.row();
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
+            int r = m_sockKeyIdx.row();
             if (r > 0) {
-                const QModelIndex& parent = m_idx.parent();
+                const QModelIndex& parent = m_sockKeyIdx.parent();
                 pModel->moveRow(parent, r, parent, r - 1);
             }
         });
@@ -64,24 +67,35 @@ public:
         elem.imageOnHovered = ":/icons/closebtn_on.svg";
         m_pRemoveBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
         QObject::connect(m_pRemoveBtn, &ZenoImageItem::clicked, [=]() {
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_idx.model());
-            pModel->removeRow(m_idx.row());
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
+            pModel->removeRow(m_sockKeyIdx.row());
         });
 
         Callback_EditFinished cbEditFinished = [=](QVariant newValue) {
-            if (newValue == m_idx.data().toString())
+            if (newValue == m_sockKeyIdx.data().toString())
                 return;
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_idx.model());
-            pModel->setData(m_idx, newValue, Qt::DisplayRole);
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
+            pModel->setData(m_sockKeyIdx, newValue, Qt::DisplayRole);
         };
 
-        const QString& key = m_idx.data().toString();
+        const QString& key = m_sockKeyIdx.data().toString();
         m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbEditFinished, nullptr, CALLBACK_SWITCH(), QVariant());
 
-        addItem(m_socket, Qt::AlignVCenter);
-        addItem(m_editText, Qt::AlignVCenter);
-        addItem(m_pMoveUpBtn, Qt::AlignVCenter);
-        addItem(m_pRemoveBtn, Qt::AlignVCenter);
+        if (bInput)
+        {
+            addItem(m_socket, Qt::AlignVCenter);
+            addItem(m_editText, Qt::AlignVCenter);
+            addItem(m_pMoveUpBtn, Qt::AlignVCenter);
+            addItem(m_pRemoveBtn, Qt::AlignVCenter);
+        }
+        else
+        {
+            addItem(m_pRemoveBtn, Qt::AlignVCenter);
+            addItem(m_pMoveUpBtn, Qt::AlignVCenter);
+            addItem(m_editText, Qt::AlignVCenter);
+            addItem(m_socket, Qt::AlignVCenter);
+        }
+
         setSpacing(ZenoStyle::dpiScaled(5));
     }
     ZenoSocketItem* socketItem() const
@@ -90,7 +104,7 @@ public:
     }
     QPersistentModelIndex socketIdx() const
     {
-        return m_idx;
+        return m_sockKeyIdx;
     }
     void updateName(const QString& newKeyName)
     {
@@ -105,7 +119,7 @@ public:
     }
 
 private:
-    QPersistentModelIndex m_idx;
+    QPersistentModelIndex m_sockKeyIdx;
     ZenoSocketItem* m_socket;
     QGraphicsItem* m_editText;
     ZenoImageItem* m_pRemoveBtn;

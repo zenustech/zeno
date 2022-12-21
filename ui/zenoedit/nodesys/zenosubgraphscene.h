@@ -20,7 +20,6 @@ public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
     void initModel(const QModelIndex& index);
-    QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
     void undo();
     void redo();
     void copy();
