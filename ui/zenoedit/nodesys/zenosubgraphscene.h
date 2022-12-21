@@ -54,7 +54,7 @@ public slots:
     void onViewTransformChanged(qreal factor);
 
     void onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
-    void onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
+    void onLinkAboutToBeRemoved(const QModelIndex&, int first, int last);
 
 private slots:
     void reload(const QModelIndex& subGpIdx);

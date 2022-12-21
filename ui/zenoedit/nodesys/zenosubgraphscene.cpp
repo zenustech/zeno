@@ -19,6 +19,7 @@
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
 #include "variantptr.h"
+#include <zenomodel/include/linkmodel.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/iparammodel.h>
 
@@ -111,8 +112,9 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     connect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
     //link sync:
+    QAbstractItemModel* pLinkModel = pGraphsModel->linkModel();
     connect(pGraphsModel, &IGraphsModel::linkInserted, this, &ZenoSubGraphScene::onLinkInserted);
-    connect(pGraphsModel, &IGraphsModel::linkAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
+    connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
 }
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
@@ -194,9 +196,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
 {
-	if (subGpIdx != m_subgIdx)
-		return;
-
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex linkIdx = pGraphsModel->linkIndex(first);
     viewAddLink(linkIdx);
@@ -211,7 +210,12 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
     const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
     const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
-    ZASSERT_EXIT(m_nodes.find(inId) != m_nodes.end() && m_nodes.find(outId) != m_nodes.end());
+    if (m_nodes.find(inId) == m_nodes.end() || m_nodes.find(outId) == m_nodes.end())
+    {
+        //todo: half link across from two different subgraph.
+        return;
+    }
+
     ZenoNode* pInNode = m_nodes[inId];
     ZenoNode* pOutNode = m_nodes[outId];
     ZASSERT_EXIT(pInNode && pOutNode);
@@ -224,11 +228,8 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
     pOutNode->onSocketLinkChanged(outSock, false, true);
 }
 
-void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last)
+void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex&, int first, int last)
 {
-	if (subGpIdx != m_subgIdx)
-		return;
-
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
 	ZASSERT_EXIT(linkIdx.isValid());
@@ -238,22 +239,22 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, cons
 void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
 {
     const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
-    if (m_links.find(linkId) != m_links.end())
-    {
-        ZenoFullLink* pLink = m_links[linkId];
-        m_links.remove(linkId);
-        delete pLink;
-    }
+    if (m_links.find(linkId) == m_links.end())
+        return;
 
-	const QString& inId = linkIdx.data(ROLE_INNODE).toString();
-	const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
-	const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
-	const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+    ZenoFullLink* pLink = m_links[linkId];
+    m_links.remove(linkId);
+    delete pLink;
+
+    const QString& inId = linkIdx.data(ROLE_INNODE).toString();
+    const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
+    const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+    const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
     if (m_nodes.find(inId) != m_nodes.end())
-	    m_nodes[inId]->onSocketLinkChanged(inSock, true, false);
+        m_nodes[inId]->onSocketLinkChanged(inSock, true, false);
     if (m_nodes.find(outId) != m_nodes.end())
-	    m_nodes[outId]->onSocketLinkChanged(outSock, false, false);
+        m_nodes[outId]->onSocketLinkChanged(outSock, false, false);
 }
 
 QRectF ZenoSubGraphScene::nodesBoundingRect() const
