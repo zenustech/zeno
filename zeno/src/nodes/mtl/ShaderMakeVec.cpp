@@ -122,7 +122,7 @@ ZENDEFNODE(ShaderPackVec, {
         {"vec4f", "out"},
     },
     {},
-    {"shader"},
+    {"deprecated"},
 });
 
 
@@ -140,7 +140,7 @@ ZENDEFNODE(ShaderMakeVec, {
         {"vec4f", "out"},
     },
     {},
-    {"shader"},
+    {"deprecated"},
 });
 
 

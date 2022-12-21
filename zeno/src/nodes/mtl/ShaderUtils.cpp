@@ -1,7 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
-#include <zeno/utils/string.h>
 
 namespace zeno {
 
@@ -59,4 +58,38 @@ ZENDEFNODE(ShaderLinearFit, {
 });
 
 
+struct ShaderConvert : ShaderNodeClone<ShaderConvert> {
+    int ty{};
+
+    virtual int determineType(EmissionPass *em) override {
+        auto _type = get_param<std::string>("type");
+        em->determineType(get_input("in").get());
+        if (_type == "vec2") {
+            ty = 2;
+        }
+        else if (_type == "vec3") {
+            ty = 3;
+        }
+        else if (_type == "vec4") {
+            ty = 4;
+        }
+        return ty;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string exp = em->determineExpr(get_input("in").get());
+        em->emitCode(em->funcName("convertTo" + std::to_string(ty)) + "(" + exp + ")");
+    }
+};
+
+ZENDEFNODE(ShaderConvert, {
+    {
+        { "in"},
+    },
+    {"out"},
+    {
+        {"enum vec2 vec3 vec4", "type", "vec3"},
+    },
+    {"shader"},
+});
 }

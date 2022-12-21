@@ -1056,3 +1056,41 @@ __forceinline__ __device__ vec3 rgbToHsv(vec3 c) {
     return vec3(h, s, v);
 }
 
+__forceinline__ __device__ vec2 convertTo2(float v) {
+    return vec2(v, v);
+}
+__forceinline__ __device__ vec2 convertTo2(vec2 v) {
+    return v;
+}
+__forceinline__ __device__ vec2 convertTo2(vec3 v) {
+    return vec2(v.x, v.y);
+}
+__forceinline__ __device__ vec2 convertTo2(vec4 v) {
+    return vec2(v.x, v.y);
+}
+
+__forceinline__ __device__ vec3 convertTo3(float v) {
+    return vec3(v, v, v);
+}
+__forceinline__ __device__ vec3 convertTo3(vec2 v) {
+    return vec3(v.x, v.y, 1);
+}
+__forceinline__ __device__ vec3 convertTo3(vec3 v) {
+    return v;
+}
+__forceinline__ __device__ vec3 convertTo3(vec4 v) {
+    return vec3(v.x, v.y, v.z);
+}
+
+__forceinline__ __device__ vec4 convertTo4(float v) {
+    return vec4(v, v, v, v);
+}
+__forceinline__ __device__ vec4 convertTo4(vec2 v) {
+    return vec4(v.x, v.y, 1, 1);
+}
+__forceinline__ __device__ vec4 convertTo4(vec3 v) {
+    return vec4(v.x, v.y, v.z, 1);
+}
+__forceinline__ __device__ vec4 convertTo4(vec4 v) {
+    return v;
+}
