@@ -205,7 +205,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     dHat = proximityRadius();
     // soft phase coeff
     // auto [mu_, lam_] = largestLameParams();
-    mu = 0.1f;
+    mu = 0.2f;
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
@@ -256,7 +256,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
-    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 2}; 
+    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 25}; 
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -454,6 +454,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         // cloth dynamics
                         {"yn", 3},
                         {"yk", 3}, 
+                        {"yn-1", 3}, 
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
