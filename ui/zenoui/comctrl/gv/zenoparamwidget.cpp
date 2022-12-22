@@ -90,7 +90,9 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
-    m_pLineEdit->setProperty("cssClass", "proppanel");
+    if (param.propertyParam.isEmpty())
+        param.propertyParam = "proppanel";
+    m_pLineEdit->setProperty("cssClass", param.propertyParam);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -646,7 +648,12 @@ ZenoParamBlackboard::ZenoParamBlackboard(const QString& value, LineEditParam par
     format.setFont(font);
     m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setText(value);
-    m_pTextEdit->setStyleSheet("QTextEdit { background-color: rgb(0, 0, 0); color: rgb(111, 111, 111); }");
+    QTextBlockFormat blockFormat;
+    blockFormat.setLineHeight(-3, QTextBlockFormat::LineDistanceHeight);
+    auto textCursor = m_pTextEdit->textCursor();
+    textCursor.setBlockFormat(blockFormat);
+    m_pTextEdit->setTextCursor(textCursor);
+    m_pTextEdit->setStyleSheet(ZenoStyle::dpiScaleSheet("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); padding:5px;padding-top:13px}"));
 }
 
 QString ZenoParamBlackboard::text() const
@@ -657,6 +664,10 @@ QString ZenoParamBlackboard::text() const
 void ZenoParamBlackboard::setText(const QString& text)
 {
     m_pTextEdit->setText(text);
+}
+void ZenoParamBlackboard::foucusInEdit() 
+{
+    m_pTextEdit->setFocus();
 }
 
 bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)

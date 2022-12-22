@@ -58,6 +58,9 @@ public:
     OUTPUT_SOCKETS outputParams() const;
     virtual void onUpdateParamsNotDesc();
 
+    void setMoving(bool isMoving);
+    bool isMoving();
+
 signals:
     void socketClicked(ZenoSocketItem*);
     void doubleClicked(const QString &nodename);
@@ -66,6 +69,7 @@ signals:
     void statusBtnHovered(STATUS_BTN);
     void inSocketPosChanged();
     void outSocketPosChanged();
+    void nodePosChangedSignal();
 
 public slots:
     void onCollaspeBtnClicked();

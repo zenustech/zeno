@@ -60,6 +60,7 @@ private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
     void onSocketClicked(ZenoSocketItem* pSocketItem);
+    void onNodePosChanged();
 
 private:
     void onSocketAbsorted(const QPointF mousePos);

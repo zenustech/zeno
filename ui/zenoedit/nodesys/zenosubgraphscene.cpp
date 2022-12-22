@@ -20,6 +20,7 @@
 #include "acceptor/transferacceptor.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/iparammodel.h>
+#include "nodesys/blackboardnode2.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -61,6 +62,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
         ZenoNode* pNode = createNode(idx, m_nodeParams);
         connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+        connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
         pNode->initUI(this, m_subgIdx, idx);
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
@@ -131,7 +133,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
     else if (descName == "Blackboard")
     {
-        return new BlackboardNode(params);
+        return new BlackboardNode2(params);
     }
     else if (descName == "CameraNode")
     {
@@ -550,8 +552,32 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     }
 }
 
-void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
+void ZenoSubGraphScene::onNodePosChanged() 
 {
+    ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
+    for (auto item : items()) {
+        if (item == senderNode) {
+            continue;
+        }
+        ZenoNode *zenoNode = dynamic_cast<ZenoNode *>(item);
+        if (zenoNode == nullptr)
+        {
+            continue;
+        }
+        BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
+        BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(item);
+        if (blackboardNode) {
+            if (currBlackboardNode) {
+                currBlackboardNode->nodePosChanged(senderNode);
+            }
+            blackboardNode->nodePosChanged(zenoNode);
+        } else if (currBlackboardNode) {
+            currBlackboardNode->nodePosChanged(senderNode);
+        }
+    }
+}
+
+void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos) {
     bool bFixedInput = false;
     QString nodeId, sockName;
     QPointF fixedPos;
@@ -803,6 +829,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
     ZenoNode *pNode = createNode(idx, m_nodeParams);
     connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+    connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
     pNode->initUI(this, m_subgIdx, idx);
     addItem(pNode);
     QString id = pNode->nodeId();

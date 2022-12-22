@@ -257,6 +257,7 @@ public:
     ZenoParamBlackboard(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);
+    void foucusInEdit();
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
