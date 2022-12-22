@@ -680,14 +680,14 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             //dict panel.
             SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-            if (bTargetInput && (inProp & SOCKPROP_DICTPANEL))
+            if (bTargetInput && (inProp & SOCKPROP_DICTLIST_PANEL))
             {
                 SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)fromSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
                 QAbstractItemModel *pKeyObjModel =
                     QVariantPtr<QAbstractItemModel>::asPtr(toSockIdx.data(ROLE_VPARAM_LINK_MODEL));
 
                 //check if outSock is a dict
-                if (outProp & SOCKPROP_DICTPANEL)
+                if (outProp & SOCKPROP_DICTLIST_PANEL)
                 {
                     //legacy dict connection, and then we have to remove all inner dict key connection.
                     ZASSERT_EXIT(pKeyObjModel);

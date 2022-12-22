@@ -784,7 +784,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_DICTPANEL;
+                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_DICTLIST_PANEL;
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
                 //todo: dictpanel should be choosed by custom param manager globally.

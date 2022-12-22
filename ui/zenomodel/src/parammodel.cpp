@@ -665,11 +665,11 @@ bool IParamModel::_insertRow(
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
         item.type = "dict";     //pay attention not to export to outside, only as a ui keyword.
-        item.prop = SOCKPROP_DICTPANEL;
+        item.prop = SOCKPROP_DICTLIST_PANEL;
     }
     else if (type == "list")
     {
-        //item.prop = SOCKPROP_MULTILINK;
+        item.prop = SOCKPROP_DICTLIST_PANEL;
     }
 
     //not type desc on list output socket, add it here.
@@ -709,7 +709,7 @@ bool IParamModel::_insertRow(
     }
 
     // init dict key model.
-    if ((item.prop & SOCKPROP_DICTPANEL) && m_items.find(sockName) != m_items.end())
+    if ((item.prop & SOCKPROP_DICTLIST_PANEL) && m_items.find(sockName) != m_items.end())
     {
         DictKeyModel* pTblModel = new DictKeyModel(m_model, index(sockName), this);
         m_items[sockName].customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);

@@ -628,7 +628,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     int sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
     ZSocketLayout* pMiniLayout = nullptr;
-    if (sockProp & SOCKPROP_DICTPANEL)
+    if (sockProp & SOCKPROP_DICTLIST_PANEL)
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
     else
         pMiniLayout = new ZSocketLayout(pModel, viewSockIdx, bInput);

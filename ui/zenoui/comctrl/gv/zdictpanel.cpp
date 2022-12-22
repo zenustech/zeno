@@ -14,12 +14,13 @@
 class ZDictItemLayout : public ZGraphicsLayout
 {
 public:
-    ZDictItemLayout(const QModelIndex& keyIdx, const CallbackForSocket& cbSock)
+    ZDictItemLayout(bool bDict, const QModelIndex& keyIdx, const CallbackForSocket& cbSock)
         : ZGraphicsLayout(true)
         , m_sockKeyIdx(keyIdx)
         , m_editText(nullptr)
         , m_pRemoveBtn(nullptr)
         , m_pMoveUpBtn(nullptr)
+        , m_bDict(bDict)
     {
         ImageElement elem;
         elem.image = ":/icons/socket-off.svg";
@@ -80,6 +81,7 @@ public:
 
         const QString& key = m_sockKeyIdx.data().toString();
         m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbEditFinished, nullptr, CALLBACK_SWITCH(), QVariant());
+        m_editText->setEnabled(bDict);
 
         if (bInput)
         {
@@ -113,7 +115,7 @@ public:
     void setEnable(bool bEnable)
     {
         m_socket->setEnabled(bEnable);
-        m_editText->setEnabled(bEnable);
+        m_editText->setEnabled(m_bDict ? bEnable : false);
         m_pRemoveBtn->setEnabled(bEnable);
         m_pMoveUpBtn->setEnabled(bEnable);
     }
@@ -124,6 +126,7 @@ private:
     QGraphicsItem* m_editText;
     ZenoImageItem* m_pRemoveBtn;
     ZenoImageItem* m_pMoveUpBtn;
+    bool m_bDict;
 };
 
 
@@ -143,17 +146,21 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     pVLayout->setContentsMargin(8, 0, 8, 8);
     pVLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
+    const QString& coreType = m_viewSockIdx.data(ROLE_PARAM_TYPE).toString();
+    bool bDict = coreType == "dict";
+
     QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
     {
         const QModelIndex& idxKey = pKeyObjModel->index(r, 0);
         QString key = idxKey.data().toString();
 
-        ZDictItemLayout* pkey = new ZDictItemLayout(idxKey, cbSock);
+        ZDictItemLayout* pkey = new ZDictItemLayout(bDict, idxKey, cbSock);
         pVLayout->addLayout(pkey);
     }
 
-    m_pEditBtn = new ZenoParamPushButton("+ Add Dict Key", "blueStyle");
+    QString btnName = bDict ? "+ Add Dict Key" : "+ Add List Item";
+    m_pEditBtn = new ZenoParamPushButton(btnName, "blueStyle");
     pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
 
     QObject::connect(m_pEditBtn, &ZenoParamPushButton::clicked, [=]() {
@@ -167,7 +174,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
 
         const QModelIndex& idxKey = pKeyObjModel->index(start, 0);
         QString key = idxKey.data().toString();
-        ZDictItemLayout* pkey = new ZDictItemLayout(idxKey, cbSock);
+        ZDictItemLayout *pkey = new ZDictItemLayout(bDict, idxKey, cbSock);
         pVLayout->insertLayout(start, pkey);
 
         ZGraphicsLayout::updateHierarchy(pVLayout);
