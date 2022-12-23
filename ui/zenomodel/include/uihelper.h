@@ -70,6 +70,11 @@ public:
     static int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
     static QModelIndex findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
                                           const QModelIndex &subgIdx);
+    static void getAllParamsIndex(const QModelIndex &nodeIdx,
+                                  QModelIndexList& inputs,
+                                  QModelIndexList& params,
+                                  QModelIndexList& outputs,
+                                  bool bEnsureSRCDST_lastKey = true);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

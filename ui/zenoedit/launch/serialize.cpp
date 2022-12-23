@@ -22,9 +22,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
     //scan all the nodes in the subgraph.
-    for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
+    for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
 	{
-        const QModelIndex& idx = pGraphsModel->index(r, subgIdx);
+        const QModelIndex& idx = pGraphsModel->index(i, subgIdx);
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
         const QString& name = idx.data(ROLE_OBJNAME).toString();
@@ -71,9 +71,14 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         //sort for inputs and outputs, ensure that the SRC/DST key is the last key to serialize.
         AppHelper::ensureSRCDSTlastKey(inputs, outputs);
 
-        for (INPUT_SOCKET input : inputs)
+        QModelIndexList inputsIndice, paramsIndice, outputsIndice;
+        UiHelper::getAllParamsIndex(idx, inputsIndice, paramsIndice, outputsIndice, true);
+
+        for (QModelIndex inSockIdx : inputsIndice)
         {
-            auto inputName = input.info.name;
+            bool bCoreParam = inSockIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool();
+            QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
+            const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
 
             if (opts & OPT_MUTE) {
                 if (outputIt != outputs.end()) {
@@ -84,73 +89,74 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
 
-            if (input.info.links.isEmpty())
+            const PARAM_LINKS& links = inSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            if (links.isEmpty())
             {
-                QVariant defl = input.info.defaultValue;
-                const QString& sockType = input.info.type;
+                // check whether 
+                const int inSockProp = inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+
+                if (inSockProp & SOCKPROP_DICTLIST_PANEL)
+                {
+                    //check existing links inside the panel.
+                    bool bDict = inSockType == "dict";
+                    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(inSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+                    QString mockDictList;
+                    for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
+                        const QString& keyName = keyIdx.data(ROLE_PARAM_NAME).toString();
+                        const QModelIndex& link = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
+                        if (link.isValid())
+                        {
+                            const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                            const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                            // todo: may be outSock is a inner key idx.
+                            const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
+                            const QString& newOutId = nameMangling(graphIdPrefix, outNodeId);
+                            const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
+
+                            if (mockDictList.isEmpty())
+                            {
+                                //create dict or list as a middle node to connect each other.
+                                QString _tmpNode = bDict ? "MakeDict" : "MakeList";
+                                mockDictList = UiHelper::generateUuid(_tmpNode);
+                                mockDictList = nameMangling(graphIdPrefix, mockDictList);
+                                AddStringList({"addNode", _tmpNode, mockDictList}, writer);
+                            }
+                            // add link from outside node to the mock dict/list.
+                            AddStringList({"bindNodeInput", mockDictList, keyName, newOutId, outSock}, writer);
+                        }
+                    }
+                    if (!mockDictList.isEmpty())
+                    {
+                        //add link from mock dict/list to this input socket.
+                        AddStringList({"bindNodeInput", ident, inputName, mockDictList, bDict ? "dict" : "list"}, writer);
+                    }
+                }
+
+                QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
+                const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
                 defl = UiHelper::parseVarByType(sockType, defl, nullptr);
                 if (!defl.isNull())
                     AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
             }
             else
             {
-                const EdgeInfo& link = input.info.links[0];
-                const QModelIndex& outIdx = pGraphsModel->index(link.outputNode, subgIdx);
-                const QModelIndex& outSockIdx = pGraphsModel->paramIndex(outIdx, PARAM_OUTPUT, link.outputSock);
+                const QModelIndex& link = links[0];
+
+                const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
                 const QString& outSockType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
+                const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
+                const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
+                const int inSockProp = inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+                const int outSockProp = outSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
-                if (((input.info.sockProp & SOCKPROP_MULTILINK) == 0) ||
-                    ((outSockType == "dict" || outSockType == "list") && input.info.links.size() == 1))
-                {
-                    //normal case, including list/dictNode to other input list socket.
-                    const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
-                    AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
-                }
-                else
-                {
-                    const QModelIndex& inSockIdx = pGraphsModel->paramIndex(idx, PARAM_INPUT, inputName);
-                    const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                    //only few information about the output socket, we can only recognize by name.
-                    if ((outSockType == "list" || outSockType == "dict") && input.info.links.size() == 1)
-                    {
-                        //legacy way.
-                        //this case is for MakeList, MakeSmallList, etc. they output a socket named "list".
-                        const QString& newOutId = nameMangling(graphIdPrefix, link.outputNode);
-                        AddStringList({ "bindNodeInput", ident, inputName, newOutId, link.outputSock }, writer);
-                    }
-                    else
-                    {
-                        ZASSERT_EXIT(inSockType == "list" || inSockType == "dict");
+                // todo: may be outSock is a inner key idx.
 
-                        bool bList = inSockType == "list";
-                        QString _tmpNode = bList ? "MakeList" : "MakeDict";
-                        QString _ident = UiHelper::generateUuid(_tmpNode);
-                        _ident = nameMangling(graphIdPrefix, _ident);
-                        AddStringList({ "addNode", _tmpNode, _ident }, writer);
-
-                        QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(inSockIdx.data(ROLE_VPARAM_LINK_MODEL));
-                        for (int i = 0; i < input.info.links.size(); i++)
-                        {
-                            const EdgeInfo& _link = input.info.links[i];
-                            const QString& newOutId = nameMangling(graphIdPrefix, _link.outputNode);
-                            //find corresponding obj key.
-                            QString objKey;
-                            for (int r = 0; r < pKeyObjModel->rowCount(); r++)
-                            {
-                                if (pKeyObjModel->index(r, 1).data() == newOutId)
-                                {
-                                    objKey = pKeyObjModel->index(r, 0).data().toString();
-                                    break;
-                                }
-                            }
-                            if (!objKey.isEmpty())
-                            {
-                                AddStringList({ "bindNodeInput", _ident, objKey, newOutId, _link.outputSock }, writer);
-                            }
-                        }
-                        AddStringList({ "bindNodeInput", ident, inputName, _ident, bList ? "list" : "dict" }, writer);
-                    }
-                }
+                // normal case:
+                const QString &newOutId = nameMangling(graphIdPrefix, outNodeId);
+                AddStringList({"bindNodeInput", ident, inputName, newOutId, outSock}, writer);
             }
         }
 

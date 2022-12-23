@@ -107,6 +107,14 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
                 links.append(linkIdx);
             return QVariant::fromValue(links);
         }
+    case ROLE_PARAM_NAME:
+    case ROLE_VPARAM_NAME:
+    {
+        if (index.column() == 0) {
+            return item.key;
+        }
+        return "";
+    }
     case ROLE_OUTNODE:
     case ROLE_OUTSOCK:
     case ROLE_OUTNODE_IDX:
@@ -132,8 +140,6 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         else
             return PARAM_INNER_OUTPUT;
     }
-    case ROLE_PARAM_NAME:
-        return index.data(Qt::DisplayRole);
     case ROLE_PARAM_TYPE:
         return "string";
     default:

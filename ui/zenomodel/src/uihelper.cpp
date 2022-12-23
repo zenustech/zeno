@@ -1466,3 +1466,73 @@ QModelIndex UiHelper::findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, c
     return QModelIndex();
 }
 
+void UiHelper::getAllParamsIndex(
+        const QModelIndex& nodeIdx,
+        QModelIndexList& inputs,
+        QModelIndexList& params,
+        QModelIndexList& outputs,
+        bool bEnsureSRCDST_lastKey)
+{
+    ViewParamModel *nodeViewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_NODE));
+    ZASSERT_EXIT(nodeViewParams);
+    QModelIndexList viewInputs, viewParams, viewOutputs;
+    nodeViewParams->getNodeParams(viewInputs, viewParams, viewOutputs);
+
+    QModelIndex srcIdx, dstIdx;
+    IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
+    ZASSERT_EXIT(inputsModel);
+    for (int r = 0; r < inputsModel->rowCount(); r++)
+    {
+        QModelIndex idx = inputsModel->index(r, 0);
+        const QString& name = idx.data(ROLE_PARAM_NAME).toString();
+        if (name == "SRC" && bEnsureSRCDST_lastKey) {
+            srcIdx = idx;
+        }
+        else {
+            inputs.append(idx);
+        }
+    }
+
+    IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
+    for (int r = 0; r < paramsModel->rowCount(); r++)
+    {
+        QModelIndex idx = paramsModel->index(r, 0);
+        params.append(idx);
+    }
+
+    IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
+    for (int r = 0; r < outputsModel->rowCount(); r++)
+    {
+        QModelIndex idx = outputsModel->index(r, 0);
+        const QString& name = idx.data(ROLE_PARAM_NAME).toString();
+        if (name == "DST" && bEnsureSRCDST_lastKey) {
+            dstIdx = idx;
+        }
+        else {
+            outputs.append(idx);
+        }
+    }
+
+    for (QModelIndex idx : viewInputs)
+    {
+        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
+            inputs.append(idx);
+    }
+    for (QModelIndex idx : viewParams)
+    {
+        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
+            params.append(idx);
+    }
+    for (QModelIndex idx : viewOutputs)
+    {
+        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
+            outputs.append(idx);
+    }
+
+    if (bEnsureSRCDST_lastKey)
+    {
+        inputs.append(srcIdx);
+        outputs.append(dstIdx);
+    }
+}
+

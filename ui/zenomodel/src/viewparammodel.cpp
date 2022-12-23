@@ -120,7 +120,7 @@ QVariant VParamItem::data(int role) const
     case ROLE_PARAM_NAME:
     {
         if (!m_index.isValid())
-            return "";
+            return m_info.typeDesc;
         return m_index.data(ROLE_PARAM_NAME);
     }
     case ROLE_PARAM_VALUE:
@@ -640,6 +640,54 @@ QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &corePa
         }
     }
     return QModelIndex();
+}
+
+void ViewParamModel::getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs)
+{
+    if (!m_bNodeUI)
+        return;
+
+    QStandardItem *rootItem = invisibleRootItem()->child(0);
+    if (!rootItem)
+        return;
+
+    if (rootItem->rowCount() == 0)
+        return;
+
+    QStandardItem* pDefaultTab = rootItem->child(0);
+    for (int i = 0; i < pDefaultTab->rowCount(); i++)
+    {
+        QStandardItem* pGroup = pDefaultTab->child(i);
+        const QString& groupName = pGroup->data(ROLE_VPARAM_NAME).toString();
+        for (int j = 0; j < pGroup->rowCount(); j++)
+        {
+            QStandardItem* paramItem = pGroup->child(j);
+            const QModelIndex& idx = paramItem->index();
+            if (groupName == "In Sockets") {
+                inputs.append(idx);
+            } else if (groupName == "Parameters") {
+                params.append(idx);
+            } else if (groupName == "Out Sockets") {
+                outputs.append(idx);
+            }
+        }
+    }
+}
+
+QModelIndexList ViewParamModel::paramsIndice()
+{
+    if (!m_bNodeUI)
+        return QModelIndexList();
+
+
+}
+
+QModelIndexList ViewParamModel::outputsIndice()
+{
+    if (!m_bNodeUI)
+        return QModelIndexList();
+
+
 }
 
 VPARAM_INFO ViewParamModel::exportParams() const
