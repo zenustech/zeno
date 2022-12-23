@@ -43,6 +43,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include "xinxinoptixapi.h"
 #include "OptiXStuff.h"
 #include <zeno/utils/vec.h>
