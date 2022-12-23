@@ -10,9 +10,11 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 {
     virtual int determineType(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto coord = em->determineType(get_input("coord").get());
-        if (coord < 2)
-            throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
+        if (has_input("coord")) {
+            auto coord = em->determineType(get_input("coord").get());
+            if (coord < 2)
+                throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
+        }
 
         auto type = get_input2<std::string>("type");
         if (type == "float")
@@ -29,16 +31,21 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 
     virtual void emitCode(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
-        em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
+        if (has_input("coord")) {
+            auto coord = em->determineExpr(get_input("coord").get());
+            em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
+        }
+        else {
+            em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(att_uv)))");
+        }
     }
 };
 
 ZENDEFNODE(ShaderTexture2D, {
     {
         {"int", "texId", "0"},
-        {"vec2f", "coord", "0,0"},
+        {"coord"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
