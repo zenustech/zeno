@@ -707,6 +707,7 @@ parse_inputs(rapidxml::xml_node<>* child) {
     return ms;
 }
 struct MXHelper {
+    ZENO_HANDLE hGraph;
     std::unordered_map<std::string, ZENO_HANDLE> node_id_mapping;
     std::unordered_map<std::string, ZENO_HANDLE> extract_out_socket;
     std::unordered_map<std::string, std::unordered_map<std::string, uint32_t>> image_index;
@@ -722,7 +723,7 @@ struct MXHelper {
     std::map<std::string, std::string> binary;
     std::map<std::string, std::string> ternary;
     std::map<std::string, std::string> typeMapping;
-    MXHelper() {
+    MXHelper(ZENO_HANDLE hGraph): hGraph(hGraph) {
         name_map = {
             {"metalness", "metallic"},
             {"specular", "specular"},
@@ -789,7 +790,7 @@ struct MXHelper {
     }
 };
 void ZenoGraphsEditor::importMaterialX() {
-    QString filename = "E:/mtlx/standard_surface_chess_set.mtlx";
+    QString filename = "E:/mtlx/standard_surface_brick_procedural.mtlx";
     auto dir_path = QFileInfo(filename).absoluteDir().absolutePath().toStdString();
     QFile file(filename);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -805,9 +806,9 @@ void ZenoGraphsEditor::importMaterialX() {
         zeno::log_error("not found root node in mtlx");
         return;
     }
-    auto mx = MXHelper();
 
     auto hGraph = Zeno_GetGraph("main");
+    auto mx = MXHelper(hGraph);
     /////////////////////////////////////////////////////////////////////////////////////////
     auto standard_surface = root->first_node("standard_surface");
     if (standard_surface == nullptr) {
@@ -927,13 +928,18 @@ void ZenoGraphsEditor::importMaterialX() {
             else if (start_name == "input") {
                 auto hNode = Zeno_AddNode(hGraph, "ShaderPackVector");
                 mx.node_id_mapping[name] = hNode;
-                auto _type = mx.typeMapping[type];
-                Zeno_SetParam(hNode, "type", _type);
-                auto items = QString::fromStdString(m["value"]).split(',');
-                for (int i = 0; i < items.size(); i++) {
-                    std::string socket;
-                    socket.push_back("xyzw"[i]);
-                    Zeno_SetInputDefl(hNode, socket, items[i].toFloat());
+                if (type == "float") {
+                    mx.constants[name] = std::stof(m["value"]);
+                }
+                else {
+                    auto _type = mx.typeMapping[type];
+                    Zeno_SetParam(hNode, "type", _type);
+                    auto items = QString::fromStdString(m["value"]).split(',');
+                    for (int i = 0; i < items.size(); i++) {
+                        std::string socket;
+                        socket.push_back("xyzw"[i]);
+                        Zeno_SetInputDefl(hNode, socket, items[i].toFloat());
+                    }
                 }
             }
             else if (start_name == "convert") {
