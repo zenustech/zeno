@@ -1,3 +1,5 @@
+#include <string>
+#include <string_view>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
@@ -185,6 +187,12 @@ struct GraphicsManager {
             {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
+
+                if (prim_in->userData().has("vbd_path")) {
+                    auto vdb_path = prim_in->userData().get2<std::string>("vbd_path");
+                    std::cout << "##################" << vdb_path << std::endl;
+                }
+                
                 if(isRealTimeObject == 0 && isUniformCarrier == 0){
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
@@ -528,23 +536,36 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
-    bool ensuredshadtmpl = false;
-    std::string shadtmpl;
-    std::string_view commontpl;
-    std::pair<std::string_view, std::string_view> shadtpl2;
+    struct ShaderTemplateInfo {
+        const std::string name;
 
-    void ensure_shadtmpl() {
-        if (ensuredshadtmpl) return;
-        ensuredshadtmpl = true;
-        shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
-        std::string_view tplsv = shadtmpl;
+        bool ensured = false;
+        std::string shadtmpl {};
+        std::string_view commontpl {};
+        std::pair<std::string_view, std::string_view> shadtpl2;
+    };
+
+    ShaderTemplateInfo _material_template {
+        "DeflMatShader.cu", false, {}, {}, {}
+    };
+
+    ShaderTemplateInfo _volume_template {
+        "volume.cu", false, {}, {}, {}
+    };
+
+    void ensure_shadtmpl(ShaderTemplateInfo &_template) 
+    {
+        if (_template.ensured) return;
+
+        _template.shadtmpl = sutil::lookupIncFile(_template.name.c_str());
+        std::string_view tplsv = _template.shadtmpl;
         std::string_view tmpcommon = "//COMMON_CODE";
         auto pcommon = tplsv.find(tmpcommon);
         auto pcomend = pcommon;
         if(pcommon != std::string::npos)
         {
             pcomend = pcommon + tmpcommon.size();
-            commontpl = tplsv.substr(0, pcommon);
+            _template.commontpl = tplsv.substr(0, pcommon);
         }
         else{
             throw std::runtime_error("cannot find stub COMMON_CODE in shader template");
@@ -555,7 +576,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             auto q0 = p0 + tmplstub0.size();
             if (auto p1 = tplsv.find(tmplstub1, q0); p1 != std::string::npos) {
                 auto q1 = p1 + tmplstub1.size();
-                shadtpl2 = {tplsv.substr(pcomend, p0-pcomend), tplsv.substr(q1)};
+                _template.shadtpl2 = {tplsv.substr(pcomend, p0-pcomend), tplsv.substr(q1)};
             } else {
                 throw std::runtime_error("cannot find stub GENERATED_END_MARK in shader template");
             }
@@ -563,6 +584,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             throw std::runtime_error("cannot find stub GENERATED_BEGIN_MARK in shader template");
         }
         
+        _template.ensured = true;
     }
 
     std::map<std::string, int> mtlidlut;
@@ -623,23 +645,27 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
-        //zeno::log_debug("[zeno-optix] updating scene");
-            
-            
-            
+            //zeno::log_debug("[zeno-optix] updating scene");
             //zeno::log_debug("[zeno-optix] updating material");
             std::vector<std::string> shaders;
             std::vector<std::vector<std::string>> shader_tex_names;
             mtlidlut.clear();
 
-            ensure_shadtmpl();
-            shaders.push_back(shadtmpl);
+            ensure_shadtmpl(_material_template);
+            ensure_shadtmpl(_volume_template);
+
+            shaders.push_back(_material_template.shadtmpl);
             mtlidlut.insert({"Default", 0});
+
             shader_tex_names.clear();
             shader_tex_names.push_back(std::vector<std::string>());
+
             for (auto const &[key, obj]: graphicsMan->graphics) {
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
+
+                    auto selected_template = _material_template; // _volume_template
+
                     std::string shader;
                     auto common_code = mtldet->common;
                     std::string tar = "uniform sampler2D";
@@ -655,6 +681,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         /* Advance index forward so the next iteration doesn't pick it up as well. */
                         index += tar.length();
                     }
+
+                    auto& commontpl = selected_template.commontpl;
+                    auto& shadtpl2 =  selected_template.shadtpl2;
 
                     shader.reserve(commontpl.size()
                                     + common_code.size()

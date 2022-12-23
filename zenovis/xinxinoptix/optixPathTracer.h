@@ -7,8 +7,6 @@
     #include "volume.h"
 #endif
 
-// #include "volume.h"
-
 enum RayType
 {
     RAY_TYPE_RADIANCE  = 0,
@@ -97,9 +95,13 @@ struct HitGroupData
 
     // cihou nanovdb
     float opacityHDDA;
-    void* densityGrid;
-    void* tempGrid;
+
+    void* density_grid; 
+    void* temperature_grid; 
     
+    float density_max;
+    float temperature_max;
+
     float3 colorVDB;
 
     float sigma_a, sigma_s;

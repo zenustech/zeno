@@ -10,42 +10,10 @@
 #include "IOMat.h"
 
 //COMMON_CODE
+
 template<bool isDisplacement>
-static __inline__ __device__ MatOutput evalMat(
-cudaTextureObject_t zenotex0 , 
-cudaTextureObject_t zenotex1 , 
-cudaTextureObject_t zenotex2 , 
-cudaTextureObject_t zenotex3 , 
-cudaTextureObject_t zenotex4 , 
-cudaTextureObject_t zenotex5 , 
-cudaTextureObject_t zenotex6 , 
-cudaTextureObject_t zenotex7 , 
-cudaTextureObject_t zenotex8 , 
-cudaTextureObject_t zenotex9 , 
-cudaTextureObject_t zenotex10, 
-cudaTextureObject_t zenotex11, 
-cudaTextureObject_t zenotex12, 
-cudaTextureObject_t zenotex13, 
-cudaTextureObject_t zenotex14, 
-cudaTextureObject_t zenotex15, 
-cudaTextureObject_t zenotex16, 
-cudaTextureObject_t zenotex17, 
-cudaTextureObject_t zenotex18, 
-cudaTextureObject_t zenotex19, 
-cudaTextureObject_t zenotex20, 
-cudaTextureObject_t zenotex21, 
-cudaTextureObject_t zenotex22, 
-cudaTextureObject_t zenotex23, 
-cudaTextureObject_t zenotex24, 
-cudaTextureObject_t zenotex25, 
-cudaTextureObject_t zenotex26, 
-cudaTextureObject_t zenotex27, 
-cudaTextureObject_t zenotex28, 
-cudaTextureObject_t zenotex29, 
-cudaTextureObject_t zenotex30, 
-cudaTextureObject_t zenotex31,
-float4* uniforms,
-MatInput const &attrs) {
+static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs) {
+
     /* MODMA */
     auto att_pos = attrs.pos;
     auto att_clr = attrs.clr;
@@ -119,146 +87,14 @@ MatInput const &attrs) {
     }
 }
 
-static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0 ,
-                                                    cudaTextureObject_t zenotex1 ,
-                                                    cudaTextureObject_t zenotex2 ,
-                                                    cudaTextureObject_t zenotex3 ,
-                                                    cudaTextureObject_t zenotex4 ,
-                                                    cudaTextureObject_t zenotex5 ,
-                                                    cudaTextureObject_t zenotex6 ,
-                                                    cudaTextureObject_t zenotex7 ,
-                                                    cudaTextureObject_t zenotex8 ,
-                                                    cudaTextureObject_t zenotex9 ,
-                                                    cudaTextureObject_t zenotex10,
-                                                    cudaTextureObject_t zenotex11,
-                                                    cudaTextureObject_t zenotex12,
-                                                    cudaTextureObject_t zenotex13,
-                                                    cudaTextureObject_t zenotex14,
-                                                    cudaTextureObject_t zenotex15,
-                                                    cudaTextureObject_t zenotex16,
-                                                    cudaTextureObject_t zenotex17,
-                                                    cudaTextureObject_t zenotex18,
-                                                    cudaTextureObject_t zenotex19,
-                                                    cudaTextureObject_t zenotex20,
-                                                    cudaTextureObject_t zenotex21,
-                                                    cudaTextureObject_t zenotex22,
-                                                    cudaTextureObject_t zenotex23,
-                                                    cudaTextureObject_t zenotex24,
-                                                    cudaTextureObject_t zenotex25,
-                                                    cudaTextureObject_t zenotex26,
-                                                    cudaTextureObject_t zenotex27,
-                                                    cudaTextureObject_t zenotex28,
-                                                    cudaTextureObject_t zenotex29,
-                                                    cudaTextureObject_t zenotex30,
-                                                    cudaTextureObject_t zenotex31,
-                                                    float4* uniforms,
-                                                    MatInput const &attrs)
+static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
 {
-    return evalMat<false>(zenotex0 ,
-                          zenotex1 ,
-                          zenotex2 ,
-                          zenotex3 ,
-                          zenotex4 ,
-                          zenotex5 ,
-                          zenotex6 ,
-                          zenotex7 ,
-                          zenotex8 ,
-                          zenotex9 ,
-                          zenotex10,
-                          zenotex11,
-                          zenotex12,
-                          zenotex13,
-                          zenotex14,
-                          zenotex15,
-                          zenotex16,
-                          zenotex17,
-                          zenotex18,
-                          zenotex19,
-                          zenotex20,
-                          zenotex21,
-                          zenotex22,
-                          zenotex23,
-                          zenotex24,
-                          zenotex25,
-                          zenotex26,
-                          zenotex27,
-                          zenotex28,
-                          zenotex29,
-                          zenotex30,
-                          zenotex31,
-                          uniforms,
-                          attrs);
+    return evalMat<false>(zenotex, uniforms, attrs);
 }
 
-static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0 ,
-                                                    cudaTextureObject_t zenotex1 ,
-                                                    cudaTextureObject_t zenotex2 ,
-                                                    cudaTextureObject_t zenotex3 ,
-                                                    cudaTextureObject_t zenotex4 ,
-                                                    cudaTextureObject_t zenotex5 ,
-                                                    cudaTextureObject_t zenotex6 ,
-                                                    cudaTextureObject_t zenotex7 ,
-                                                    cudaTextureObject_t zenotex8 ,
-                                                    cudaTextureObject_t zenotex9 ,
-                                                    cudaTextureObject_t zenotex10,
-                                                    cudaTextureObject_t zenotex11,
-                                                    cudaTextureObject_t zenotex12,
-                                                    cudaTextureObject_t zenotex13,
-                                                    cudaTextureObject_t zenotex14,
-                                                    cudaTextureObject_t zenotex15,
-                                                    cudaTextureObject_t zenotex16,
-                                                    cudaTextureObject_t zenotex17,
-                                                    cudaTextureObject_t zenotex18,
-                                                    cudaTextureObject_t zenotex19,
-                                                    cudaTextureObject_t zenotex20,
-                                                    cudaTextureObject_t zenotex21,
-                                                    cudaTextureObject_t zenotex22,
-                                                    cudaTextureObject_t zenotex23,
-                                                    cudaTextureObject_t zenotex24,
-                                                    cudaTextureObject_t zenotex25,
-                                                    cudaTextureObject_t zenotex26,
-                                                    cudaTextureObject_t zenotex27,
-                                                    cudaTextureObject_t zenotex28,
-                                                    cudaTextureObject_t zenotex29,
-                                                    cudaTextureObject_t zenotex30,
-                                                    cudaTextureObject_t zenotex31,
-                                                    float4* uniforms,
-                                                    MatInput const &attrs)
+static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
 {
-    return evalMat<true>(zenotex0 ,
-                          zenotex1 ,
-                          zenotex2 ,
-                          zenotex3 ,
-                          zenotex4 ,
-                          zenotex5 ,
-                          zenotex6 ,
-                          zenotex7 ,
-                          zenotex8 ,
-                          zenotex9 ,
-                          zenotex10,
-                          zenotex11,
-                          zenotex12,
-                          zenotex13,
-                          zenotex14,
-                          zenotex15,
-                          zenotex16,
-                          zenotex17,
-                          zenotex18,
-                          zenotex19,
-                          zenotex20,
-                          zenotex21,
-                          zenotex22,
-                          zenotex23,
-                          zenotex24,
-                          zenotex25,
-                          zenotex26,
-                          zenotex27,
-                          zenotex28,
-                          zenotex29,
-                          zenotex30,
-                          zenotex31,
-                          uniforms,
-                          attrs);
+    return evalMat<true>(zenotex, uniforms, attrs);
 }
 
 
@@ -287,38 +123,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
 
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
-    cudaTextureObject_t zenotex0  = rt_data->textures[0 ];
-    cudaTextureObject_t zenotex1  = rt_data->textures[1 ];
-    cudaTextureObject_t zenotex2  = rt_data->textures[2 ];
-    cudaTextureObject_t zenotex3  = rt_data->textures[3 ];
-    cudaTextureObject_t zenotex4  = rt_data->textures[4 ];
-    cudaTextureObject_t zenotex5  = rt_data->textures[5 ];
-    cudaTextureObject_t zenotex6  = rt_data->textures[6 ];
-    cudaTextureObject_t zenotex7  = rt_data->textures[7 ];
-    cudaTextureObject_t zenotex8  = rt_data->textures[8 ];
-    cudaTextureObject_t zenotex9  = rt_data->textures[9 ];
-    cudaTextureObject_t zenotex10 = rt_data->textures[10];
-    cudaTextureObject_t zenotex11 = rt_data->textures[11];
-    cudaTextureObject_t zenotex12 = rt_data->textures[12];
-    cudaTextureObject_t zenotex13 = rt_data->textures[13];
-    cudaTextureObject_t zenotex14 = rt_data->textures[14];
-    cudaTextureObject_t zenotex15 = rt_data->textures[15];
-    cudaTextureObject_t zenotex16 = rt_data->textures[16];
-    cudaTextureObject_t zenotex17 = rt_data->textures[17];
-    cudaTextureObject_t zenotex18 = rt_data->textures[18];
-    cudaTextureObject_t zenotex19 = rt_data->textures[19];
-    cudaTextureObject_t zenotex20 = rt_data->textures[20];
-    cudaTextureObject_t zenotex21 = rt_data->textures[21];
-    cudaTextureObject_t zenotex22 = rt_data->textures[22];
-    cudaTextureObject_t zenotex23 = rt_data->textures[23];
-    cudaTextureObject_t zenotex24 = rt_data->textures[24];
-    cudaTextureObject_t zenotex25 = rt_data->textures[25];
-    cudaTextureObject_t zenotex26 = rt_data->textures[26];
-    cudaTextureObject_t zenotex27 = rt_data->textures[27];
-    cudaTextureObject_t zenotex28 = rt_data->textures[28];
-    cudaTextureObject_t zenotex29 = rt_data->textures[29];
-    cudaTextureObject_t zenotex30 = rt_data->textures[30];
-    cudaTextureObject_t zenotex31 = rt_data->textures[31];
+    
+    auto zenotex = rt_data->textures;
+
     MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
@@ -350,41 +157,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
-    MatOutput mats = evalMaterial(
-                                zenotex0 , 
-                                zenotex1 , 
-                                zenotex2 , 
-                                zenotex3 , 
-                                zenotex4 , 
-                                zenotex5 , 
-                                zenotex6 , 
-                                zenotex7 , 
-                                zenotex8 , 
-                                zenotex9 , 
-                                zenotex10, 
-                                zenotex11, 
-                                zenotex12, 
-                                zenotex13, 
-                                zenotex14, 
-                                zenotex15, 
-                                zenotex16, 
-                                zenotex17, 
-                                zenotex18, 
-                                zenotex19, 
-                                zenotex20, 
-                                zenotex21, 
-                                zenotex22, 
-                                zenotex23, 
-                                zenotex24, 
-                                zenotex25, 
-                                zenotex26, 
-                                zenotex27, 
-                                zenotex28, 
-                                zenotex29, 
-                                zenotex30, 
-                                zenotex31,
-                                rt_data->uniforms,
-                                attrs);
+    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -417,8 +191,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sssParam = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
-
-    prd->transmittanceVDB = 0.0f; 
 
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
@@ -466,8 +238,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 optixIgnoreIntersection();
             }
         }
-
-        prd->transmittanceVDB = 0.0f; 
 
         prd->shadowAttanuation = vec3(1e-6f);
         optixTerminateRay();
@@ -521,38 +291,9 @@ extern "C" __global__ void __closesthit__radiance()
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
-    cudaTextureObject_t zenotex0  = rt_data->textures[0 ];
-    cudaTextureObject_t zenotex1  = rt_data->textures[1 ];
-    cudaTextureObject_t zenotex2  = rt_data->textures[2 ];
-    cudaTextureObject_t zenotex3  = rt_data->textures[3 ];
-    cudaTextureObject_t zenotex4  = rt_data->textures[4 ];
-    cudaTextureObject_t zenotex5  = rt_data->textures[5 ];
-    cudaTextureObject_t zenotex6  = rt_data->textures[6 ];
-    cudaTextureObject_t zenotex7  = rt_data->textures[7 ];
-    cudaTextureObject_t zenotex8  = rt_data->textures[8 ];
-    cudaTextureObject_t zenotex9  = rt_data->textures[9 ];
-    cudaTextureObject_t zenotex10 = rt_data->textures[10];
-    cudaTextureObject_t zenotex11 = rt_data->textures[11];
-    cudaTextureObject_t zenotex12 = rt_data->textures[12];
-    cudaTextureObject_t zenotex13 = rt_data->textures[13];
-    cudaTextureObject_t zenotex14 = rt_data->textures[14];
-    cudaTextureObject_t zenotex15 = rt_data->textures[15];
-    cudaTextureObject_t zenotex16 = rt_data->textures[16];
-    cudaTextureObject_t zenotex17 = rt_data->textures[17];
-    cudaTextureObject_t zenotex18 = rt_data->textures[18];
-    cudaTextureObject_t zenotex19 = rt_data->textures[19];
-    cudaTextureObject_t zenotex20 = rt_data->textures[20];
-    cudaTextureObject_t zenotex21 = rt_data->textures[21];
-    cudaTextureObject_t zenotex22 = rt_data->textures[22];
-    cudaTextureObject_t zenotex23 = rt_data->textures[23];
-    cudaTextureObject_t zenotex24 = rt_data->textures[24];
-    cudaTextureObject_t zenotex25 = rt_data->textures[25];
-    cudaTextureObject_t zenotex26 = rt_data->textures[26];
-    cudaTextureObject_t zenotex27 = rt_data->textures[27];
-    cudaTextureObject_t zenotex28 = rt_data->textures[28];
-    cudaTextureObject_t zenotex29 = rt_data->textures[29];
-    cudaTextureObject_t zenotex30 = rt_data->textures[30];
-    cudaTextureObject_t zenotex31 = rt_data->textures[31];
+
+    auto zenotex = rt_data->textures;
+
     MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
@@ -582,41 +323,8 @@ extern "C" __global__ void __closesthit__radiance()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
-    MatOutput mats = evalMaterial(
-                                zenotex0 , 
-                                zenotex1 , 
-                                zenotex2 , 
-                                zenotex3 , 
-                                zenotex4 , 
-                                zenotex5 , 
-                                zenotex6 , 
-                                zenotex7 , 
-                                zenotex8 , 
-                                zenotex9 , 
-                                zenotex10, 
-                                zenotex11, 
-                                zenotex12, 
-                                zenotex13, 
-                                zenotex14, 
-                                zenotex15, 
-                                zenotex16, 
-                                zenotex17, 
-                                zenotex18, 
-                                zenotex19, 
-                                zenotex20, 
-                                zenotex21, 
-                                zenotex22, 
-                                zenotex23, 
-                                zenotex24, 
-                                zenotex25, 
-                                zenotex26, 
-                                zenotex27, 
-                                zenotex28, 
-                                zenotex29, 
-                                zenotex30, 
-                                zenotex31,
-                                rt_data->uniforms,
-                                attrs);
+    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+
     float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     n0 = dot(n0, N_0)>(1-mats.smoothness)?n0:N_0;
 
@@ -998,4 +706,3 @@ extern "C" __global__ void __closesthit__radiance()
     prd->emission =  float3(mats.emission);
     prd->CH = 1.0;
 }
-

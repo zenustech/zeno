@@ -31,7 +31,8 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
         auto texId = get_input2<int>("texId");
         auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
-        em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
+        //em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
+        em->emitCode(type + "(texture2D(zenotex[" + std::to_string(texId) + "], vec2(" + coord + ")))");
     }
 };
 

@@ -1,4 +1,7 @@
 #include "optixVolume.h"
+
+
+
 #include "vec_math.h"
 // #include "OptiXStuff.h"
 
@@ -94,7 +97,9 @@ void loadVolume( Volume& grid, const std::string& filename )
             }
         }
 
-        grid.inverse_max = 1.0f/max_value;
+        grid.max_value = max_value;
+
+        std::cout << "max value for file: " << filename << " girdname " << gridname << " " << max_value << std::endl;
 
     grid.handle = std::move( gridHdl );
 }

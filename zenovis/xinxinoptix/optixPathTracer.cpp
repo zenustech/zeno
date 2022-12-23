@@ -33,7 +33,6 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/UserData.h>
 #include "optixVolume.h"
-#include "volume.h"
 #include "zeno/core/Session.h"
 #include <array>
 #include <optional>
@@ -729,12 +728,16 @@ static void createSBT( PathTracerState& state )
 
         std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
 
-        rec.data.densityGrid = reinterpret_cast<void*>( g_volume.grid_density.deviceptr );
-        rec.data.tempGrid = reinterpret_cast<void*>( g_volume.grid_temp.deviceptr );
+        rec.data.density_grid = reinterpret_cast<void*>( g_volume.grid_density.deviceptr );
+        rec.data.temperature_grid = reinterpret_cast<void*>( g_volume.grid_temp.deviceptr );
+
+        rec.data.density_max = g_volume.grid_density.max_value;
+        rec.data.temperature_max = g_volume.grid_temp.max_value;
+
         rec.data.opacityHDDA = 0.25f;
         rec.data.colorVDB  = make_float3(1, 1, 1);
 
-        rec.data.sigma_a = 1;
+        rec.data.sigma_a = 0;
         rec.data.sigma_s = 1;
         rec.data.greenstein = 0;
 
@@ -1464,8 +1467,9 @@ void optixupdatelight() {
                 ) );
 }
 
-void optixupdatematerial(std::vector<std::string> const &shaders, 
-std::vector<std::vector<std::string>> &texs) {
+void optixupdatematerial(std::vector<std::string> const     &shaders, 
+                         std::vector<std::vector<std::string>> &texs) 
+{
     camera_changed = true;
 
         static bool hadOnce = false;
@@ -1477,13 +1481,13 @@ std::vector<std::vector<std::string>> &texs) {
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
 
-            // auto succ = OptixUtil::createModule(
-            //     OptixUtil::volume_module,
-            //     state.context,
-            //     sutil::lookupIncFile("volume.cu"),
-            //     "volume/volume.cu");
+            auto succ = OptixUtil::createModule(
+                OptixUtil::volume_module,
+                state.context,
+                sutil::lookupIncFile("volume.cu"),
+                "volume.cu");
 
-            // if (!succ) throw std::runtime_error("base ray module failed to compile");
+            if (!succ) throw std::runtime_error("volume module failed to compile");
             
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
@@ -1518,6 +1522,8 @@ std::vector<std::vector<std::string>> &texs) {
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
     }
+
+    OptixUtil::createVolProgramGroup(state.context, OptixUtil::volume_module);
 }
 
 void optixupdateend() {

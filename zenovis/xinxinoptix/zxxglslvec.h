@@ -938,6 +938,12 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
     float4 res = tex2D<float4>(texObj, uv.x, uv.y);
     return vec4(res.x, res.y, res.z, res.w);
 }
+
+// __forceinline__ __device__ float textureSparse3D(nanovdb *aaa, vec3 pos)
+// {
+
+// }
+
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////

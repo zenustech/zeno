@@ -11,8 +11,6 @@ target_sources(zenovis PRIVATE
 
 #   volume/*.cpp
 #   volume/*.h
-
-#   SDK/cuda/*.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
@@ -64,11 +62,14 @@ set(FILE_LIST
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl.h
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_exception.h
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
+
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
+    ${CUDA_PATH}/include/@math_constants.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
@@ -80,9 +81,9 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
 
     # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume_cuda.h
-    # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.cu
-    # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/NanoVDB.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Ray.h
     ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/HDDA.h

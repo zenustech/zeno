@@ -127,10 +127,14 @@ struct ShaderFinalize : INode {
             for (const auto &tex: tex2dList)
             {
                 auto texId = mtl->tex2Ds.size();
-                auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
 			    mtl->tex2Ds.push_back(tex);
-                mtl->common.insert(0, texCode);
+
+                //auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
+                //mtl->common.insert(0, texCode);
             }
+
+            auto texCode = "uniform sampler2D zenotex[32]; \n";
+            mtl->common.insert(0, texCode);
         }
 
         //if (has_input("mtlid"))

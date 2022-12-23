@@ -67,7 +67,6 @@ struct RadiancePRD
 
     // cihou nanovdb
     float t0, t1;
-    float transmittanceVDB;
     
     void         pushMat(vec3 extinction)
     {
@@ -147,6 +146,60 @@ static __forceinline__ __device__ bool traceOcclusion(
             RAY_TYPE_OCCLUSION,       // missSBTIndex
             u0, u1);
         return false;//???
+}
+
+static __forceinline__ __device__ void traceRadianceMasked(
+	OptixTraversableHandle handle,
+	float3                 ray_origin,
+	float3                 ray_direction,
+	float                  tmin,
+	float                  tmax,
+	char                mask,
+	RadiancePRD           *prd)
+{
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
+
+    optixTrace(
+            handle,
+            ray_origin, ray_direction,
+            tmin,
+            tmax,
+            0.0f,                     // rayTime
+            (mask),
+            OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+            RAY_TYPE_RADIANCE,        // SBT offset
+            RAY_TYPE_COUNT,           // SBT stride
+            RAY_TYPE_RADIANCE,        // missSBTIndex
+            u0, u1);
+}
+
+
+static __forceinline__ __device__ void traceOcclusionMasked(
+        OptixTraversableHandle handle,
+        float3                 ray_origin,
+        float3                 ray_direction,
+        float                  tmin,
+        float                  tmax,
+        char                mask,
+        RadiancePRD           *prd)
+{
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
+
+    optixTrace(
+        handle,
+        ray_origin,
+        ray_direction,
+        tmin,
+        tmax,
+        0.0f,  // rayTime
+        (mask),
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,  //OPTIX_RAY_FLAG_NONE,
+        RAY_TYPE_OCCLUSION,      // SBT offset
+        RAY_TYPE_COUNT,          // SBT stride
+        RAY_TYPE_OCCLUSION,      // missSBTIndex
+        u0, u1);
 }
 
 static __forceinline__ __device__ RadiancePRD* getPRD()

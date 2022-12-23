@@ -158,10 +158,16 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
     }
 
+    
+}
+
+inline void createVolProgramGroup(OptixDeviceContext &context, OptixModule &_module) {
+
+    OptixProgramGroupOptions  program_group_options = {};
+    char   log[2048]; size_t sizeof_log = sizeof( log );
     //
     // Volume hit group
     //
-
     {
         OptixProgramGroupDesc hit_prog_group_desc = {};
         hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
@@ -200,6 +206,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         ) );
     }     
 }
+
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};

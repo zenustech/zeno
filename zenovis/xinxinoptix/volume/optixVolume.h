@@ -12,6 +12,7 @@
 #include <nanovdb/util/GridHandle.h>
 
 #include <string>
+#include <cmath>
 
 // The Volume struct ties together the NanoVDB host representation
 // (NanoVDB Grid) and the device-buffer containing the sparse volume
@@ -23,7 +24,7 @@
 struct GridWrapper {
 	nanovdb::GridHandle<> handle;
 	CUdeviceptr deviceptr = 0;
-	float inverse_max = 1.0;
+	float max_value = 1.0;
 };
 
 struct Volume

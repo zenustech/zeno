@@ -735,7 +735,8 @@ struct GraphicPrimitive : IGraphic {
             const int &texsSize = textures.size();
             for (int texId=0; texId < texsSize; ++ texId)
             {
-                std::string texName = "zenotex" + std::to_string(texId);
+                //std::string texName = "zenotex" + std::to_string(texId);
+                std::string texName = "zenotex[" + std::to_string(texId) +"]";
                 triObj.shadowprog->set_uniformi(texName.c_str(), texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
                 CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
@@ -892,7 +893,8 @@ struct GraphicPrimitive : IGraphic {
             int texOcp=0;
             for (int texId=0; texId < texsSize; ++ texId)
             {
-                std::string texName = "zenotex" + std::to_string(texId);
+                //std::string texName = "zenotex" + std::to_string(texId);
+                std::string texName = "zenotex[" + std::to_string(texId) +"]";
                 triObj.voxelprog->set_uniformi(texName.c_str(), texId);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
                 CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
@@ -1173,7 +1175,8 @@ struct GraphicPrimitive : IGraphic {
             const int &texsSize = textures.size();
             for (int texId=0; texId < texsSize; ++ texId)
             {
-                std::string texName = "zenotex" + std::to_string(texId);
+                //std::string texName = "zenotex" + std::to_string(texId);
+                std::string texName = "zenotex[" + std::to_string(texId) +"]";
                 triObj.prog->set_uniformi(texName.c_str(), texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
                 CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));

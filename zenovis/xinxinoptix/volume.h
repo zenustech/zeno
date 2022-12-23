@@ -5,17 +5,18 @@
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
 
-// #include <float.h>
+#include "zxxglslvec.h"
+#include <math_constants.h>
 
 #ifdef __CUDACC_RTC__ 
-
     #define _CPU_GPU_ __device__
 #else
-
     #define _CPU_GPU_ /* Nothing */
 #endif
 
 #define _DELTA_TRACKING_ true
+
+namespace pbrt {
 
 __device__
 inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
@@ -88,90 +89,8 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     return PhaseHG(cosTheta, g);
 }
 
-#ifndef M_PI
-    #define M_PI 3.14159265358979323846
-#endif
-
-const static float3 lambdaRGB = {645.0f, 510.0f, 440.0f}; // RGB
-
-struct RayleighPhaseFunction {
- 
-    inline float cuberoot(float x) const {
-        return (x < 0.0f) ?
-            -pow(-x, (float) (1.0f/3.0f)) 
-            : pow(x, (float) (1.0f/3.0f));
-    }
-
-    float3 lambda3_transmitance(float height) {
-
-        float div = 1e-3;
-
-        return float3 {
-            lambda_transmitance(lambdaRGB.x * div, height),
-            lambda_transmitance(lambdaRGB.y * div, height),
-            lambda_transmitance(lambdaRGB.z * div, height),
-        };
-    }
-
-    float lambda_transmitance(float lambda, float height) {
-        float eta = 1.000277f;
-
-        float tmp = eta * eta - 1;
-        float rho = exp(-height/7794.0f);
-
-        float N_s = 1; // <molecular number density of the standard atmosphere>;
-        float K = 2 * M_PI * M_PI * tmp * tmp / (3 * N_s);
-
-        float pre = K * rho;
-        // K * 4 * M_PI * rho;
-
-        float lambda2 = lambda * lambda;
-        return pre / (lambda2 * lambda2);
-    }
-
-    inline float sample(const float3& wo, float3& wi, float2& uu) const {
-        float2 sample = uu;
-
-        float z = 2 * (2*sample.x - 1),
-              tmp = sqrt(z*z+1),
-              A = cuberoot(z+tmp),
-              B = cuberoot(z-tmp),
-              cosTheta = A + B,
-              sinTheta = sqrtf(fmaxf(1.0f-cosTheta*cosTheta, 1e-16)),
-              phi = 2*M_PI*sample.y,
-              cosPhi = cos(phi),
-              sinPhi = sin(phi);
-
-        float3 dir{
-            sinTheta * cosPhi,
-            sinTheta * sinPhi,
-            cosTheta
-        };
-
-        float3 v1, v2;
-        CoordinateSystem(wo, v1, v2);
-        wi = SphericalDirection(sinTheta, cosTheta, phi, v1, v2, wo);
-
-        return 1.0f;
-    }
-
-    float sample_p(const float3& wo, float3& wi, float2& uu) const {
-        RayleighPhaseFunction::sample(wo, wi, uu);
-        //pdf = RayleighPhaseFunction::p(wo, wi);
-        return 1.0f;
-    }
-
-    inline float p(const float3 &wo, const float3 &wi) const {
-        float mu = dot(wo, wi);
-        return (3.0f/(16.0f*M_PI)) * (1+mu*mu);
-    }
-};
-
-// #endif
-
 // Spectrum Function Declarations
-__device__
-inline float Blackbody(float lambda, float T) {
+__device__ inline float Blackbody(float lambda, float T) {
     if (T <= 0)
         return 0;
     const float c = 299792458.f;
@@ -187,7 +106,7 @@ inline float Blackbody(float lambda, float T) {
 class BlackbodySpectrum {
   public:
     // BlackbodySpectrum Public Methods
-    __device__
+    __device__ 
     BlackbodySpectrum(float T) : T(T) {
         // Compute blackbody normalization constant for given temperature
         float lambdaMax = 2.8977721e-3f / T;
@@ -218,3 +137,48 @@ class BlackbodySpectrum {
     float T;
     float normalizationFactor;
 };
+
+} // namespace pbrt
+
+__device__ float3 kelvinRGB(float kelvin) //https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+{
+    float3 result;
+
+    kelvin = clamp(kelvin, 1000.f, 40000.f) / 100.f;
+
+    if (kelvin <= 66) {
+        result.x = 1.0;
+        result.y = 0.39008157876901960784 * log(kelvin) - 0.63184144378862745098;
+    } else {
+        float t = kelvin - 60.0;
+		result.x = 1.29293618606274509804 * powf(t, -0.1332047592);
+		result.y = 1.12989086089529411765 * powf(t, -0.0755148492);
+    }
+
+    if (kelvin >= 66)
+        result.z = 1.0;
+    else if (kelvin <= 19)
+        result.z = 0.0;
+    else
+        result.z = 0.54320678911019607843 * log(kelvin - 10.0) - 1.19625408914;
+
+    return clamp(result, 0.0, 1.0);;
+}
+
+__device__ vec3 fakeBlackBody(float temp) //https://www.shadertoy.com/view/MlcGD7
+{
+    const static float white_temp = 6500;
+
+    const static float min_temp = 1000;
+    const static float max_temp = 15000;
+
+    temp = clamp(temp, min_temp, max_temp);
+
+    if (temp < white_temp) {
+        float ratio = temp / white_temp;
+        return vec3(1,1./4.,1./16.) * exp(4.* ratio - 1.);
+    } else {
+        float ratio = (temp - white_temp) / (max_temp - white_temp);
+        return pow(vec3(.1, .7, .8), vec3(4 * ratio));
+    }
+}
