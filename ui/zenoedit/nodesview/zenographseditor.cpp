@@ -872,7 +872,6 @@ void ZenoGraphsEditor::importMaterialX() {
     while (nodegraph) {
         auto mNodeGraph = parse_input(nodegraph);
         auto nameNodeGraph = mNodeGraph["name"] + ":";
-        bool need_gen_input_attr = false;
         for (auto child = nodegraph->first_node(); child != nullptr; child = child->next_sibling()) {
             std::string start_name = child->name();
             auto m = parse_input(child);
@@ -1011,20 +1010,10 @@ void ZenoGraphsEditor::importMaterialX() {
                 if (ms.count("texcoord")) {
                     mx.edges.emplace_back(name, "coord", nameNodeGraph + ms["texcoord"]["nodename"]);
                 }
-                else {
-                    mx.edges.emplace_back(name, "coord", nameNodeGraph + "DefaultInputAttrUV");
-                    need_gen_input_attr = true;
-                }
             }
             else {
                 zeno::log_info("unsupported node: {}", start_name);
             }
-        }
-        if (need_gen_input_attr) {
-            auto name = nameNodeGraph + "DefaultInputAttrUV";
-            auto hNode = Zeno_AddNode(hGraph, "ShaderInputAttr");
-            Zeno_SetInputDefl(hNode, "attr", std::string("uv"));
-            mx.node_id_mapping[name] = hNode;
         }
         nodegraph = nodegraph->next_sibling("nodegraph");
     }
