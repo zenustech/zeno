@@ -104,9 +104,10 @@ Q_DECLARE_METATYPE(PARAMS_INFO)
 struct EdgeInfo
 {
     QString outputNode;
-    QString inputNode;
     QString outputSock;
+    QString inputNode;
     QString inputSock;
+
     EdgeInfo() = default;
     EdgeInfo(const QString &outNode, const QString &inNode, const QString &outSock, const QString &inSock)
         : outputNode(outNode), inputNode(inNode), outputSock(outSock), inputSock(inSock) {}

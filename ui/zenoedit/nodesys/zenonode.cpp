@@ -892,18 +892,6 @@ QPointF ZenoNode::nodePos() const
     return m_index.data(ROLE_OBJPOS).toPointF();
 }
 
-INPUT_SOCKETS ZenoNode::inputParams() const
-{
-    ZASSERT_EXIT(m_index.isValid(), INPUT_SOCKETS());
-    return m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-}
-
-OUTPUT_SOCKETS ZenoNode::outputParams() const
-{
-    ZASSERT_EXIT(m_index.isValid(), OUTPUT_SOCKETS());
-    return m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-}
-
 void ZenoNode::onUpdateParamsNotDesc()
 {
 }

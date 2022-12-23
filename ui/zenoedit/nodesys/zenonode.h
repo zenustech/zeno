@@ -52,9 +52,7 @@ public:
 
     QString nodeId() const;
     QString nodeName() const;
-    QPointF nodePos() const; 
-    INPUT_SOCKETS inputParams() const;
-    OUTPUT_SOCKETS outputParams() const;
+    QPointF nodePos() const;
     virtual void onUpdateParamsNotDesc();
 
 signals:

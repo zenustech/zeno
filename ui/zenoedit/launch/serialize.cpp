@@ -17,6 +17,46 @@ static QString nameMangling(const QString& prefix, const QString& ident) {
         return prefix + "/" + ident;
 }
 
+void resolveOutputSocket(
+            const QModelIndex& outNodeIdx,
+            const QModelIndex& outSockIdx,
+            const QString& graphIdPrefix,
+            QString& realOutputId,
+            QString& realOutputSock,
+            RAPIDJSON_WRITER& writer)
+{
+    const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
+    const QString& outNodeId = outNodeIdx.data(ROLE_OBJID).toString();
+    if (outSockIdx.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
+    {
+        QModelIndex dictlistIdx = outSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex();
+        bool bDict = dictlistIdx.data(ROLE_PARAM_TYPE) == "dict";
+        QString _tmpNode = bDict ? "ExtractDict" : "list-what?";
+        QString mockNode = UiHelper::generateUuid(_tmpNode);
+        mockNode = nameMangling(graphIdPrefix, mockNode);
+        AddStringList({"addNode", _tmpNode, mockNode}, writer);
+
+        QString mockSocket = bDict ? "dict" : "list";
+
+        QString dictlistName = dictlistIdx.data(ROLE_PARAM_NAME).toString();
+        AddStringList({"addNodeOutput", mockNode, outSock}, writer);
+
+        //add link from source output node    to    mockNode(ExtractDict).
+        AddStringList({"bindNodeInput", mockNode, mockSocket, outNodeId, dictlistName}, writer);
+
+        realOutputId = mockNode;
+        realOutputSock = outSock;
+    }
+    else
+    {
+        // normal case:
+        const QString &newOutId = nameMangling(graphIdPrefix, outNodeId);
+        realOutputId = newOutId;
+        realOutputSock = outSock;
+    }
+}
+
+
 static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
@@ -45,19 +85,19 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 
-        if (opts & OPT_MUTE) {
+        if (opts & OPT_MUTE)
+        {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
-        } else {
-            if (!bSubgNode || !bNestedSubg) {
+        }
+        else
+        {
+            if (!bSubgNode || !bNestedSubg)
+            {
                 AddStringList({"addNode", name, ident}, writer);
-            } else {
+            }
+            else
+            {
                 AddStringList({"addSubnetNode", name, ident}, writer);
-                //for (INPUT_SOCKET input : inputs) {
-                    //AddStringList({"addSubnetInput", ident, input.info.name}, writer);
-                //}
-                //for (OUTPUT_SOCKET output : outputs) {
-                    //AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
-                //}
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
@@ -112,8 +152,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                             const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
                             // todo: may be outSock is a inner key idx.
                             const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
-                            const QString& newOutId = nameMangling(graphIdPrefix, outNodeId);
-                            const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
+
+                            QString newOutId, outSock;
+                            // may the output socket is a key socket from a dict param.
+                            resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
 
                             if (mockDictList.isEmpty())
                             {
@@ -146,16 +188,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
                 const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                const QString& outSockType = outSockIdx.data(ROLE_PARAM_TYPE).toString();
-                const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
-                const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
-                const int inSockProp = inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-                const int outSockProp = outSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
-                // todo: may be outSock is a inner key idx.
-
-                // normal case:
-                const QString &newOutId = nameMangling(graphIdPrefix, outNodeId);
+                QString newOutId, outSock;
+                // may the output socket is a key socket from a dict param.
+                resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
                 AddStringList({"bindNodeInput", ident, inputName, newOutId, outSock}, writer);
             }
         }

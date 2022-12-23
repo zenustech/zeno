@@ -132,6 +132,8 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_OBJID:
     case ROLE_NODE_IDX:
         return m_dictParam.data(role);
+    case ROLE_PARAM_COREIDX:
+        return m_dictParam;
     case ROLE_PARAM_SOCKETTYPE:
     {
         PARAM_CLASS cls = (PARAM_CLASS)m_dictParam.data(role).toInt();
