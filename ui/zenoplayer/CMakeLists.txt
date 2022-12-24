@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
+find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
@@ -19,7 +19,7 @@ set_property(TARGET zenoplayer PROPERTY WIN32_EXECUTABLE OFF)
 
 find_package(Threads REQUIRED)
 target_link_libraries(zenoplayer PRIVATE Threads::Threads)
-target_link_libraries(zenoplayer PRIVATE Qt5::Widgets Qt5::OpenGL)
+target_link_libraries(zenoplayer PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 target_link_libraries(zenoplayer PRIVATE zenoui zenoio zenovis zenomodel)
 target_link_libraries(zenoplayer PRIVATE zeno)
 target_include_directories(zenoplayer PRIVATE . .. ../zenoui ../zenoedit ../include ../zenomodel/include)
