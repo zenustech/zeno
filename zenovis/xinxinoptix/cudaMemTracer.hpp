@@ -1,143 +1,130 @@
 #ifndef __CUDA_MEM_TRACER_HPP__
 #define __CUDA_MEM_TRACER_HPP__
 
-#define ENABLE_CUDA_MEM_TRACER 0
-#if ENABLE_CUDA_MEM_TRACER
+#include <string>
+#include <array>
+#include <unordered_map>
+#include <mutex>
+#include <thread>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
 
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <link.h>
-
-constexpr char recordDir[] = "./cudaMemRecord";
-
-static void convToCallerInfoAndPush(void *addr, const char recordFile[])
+struct CudaMemInfo
 {
-    Dl_info info;
-    link_map *link;
-    dladdr1((void *)addr, &info, (void **)&link, RTLD_DL_LINKMAP);
-    void *caller = (void *)((std::size_t)addr - link->l_addr);
+    std::array<void *, 4> callStack;
+    std::string callee;
+    std::string caller;
+    std::string file;
+    void *pointer{nullptr};
+    std::size_t size{0};
+    unsigned int line;
+};
 
-    char command[256];
-    snprintf(command, sizeof(command), "addr2line -f -e %s -a %p >> %s", info.dli_fname, caller, recordFile);
-    system(command);
-}
-
-template <class T>
-static cudaError_t _cudaMalloc(
-    T **devPtr,
-    std::size_t size,
-    const char devPtrStr[],
-    const char sizeStr[],
-    const char file[],
-    const unsigned int line,
-    const char caller[])
+class CudaMemTracer
 {
-    auto cudaError = cudaMalloc(devPtr, size);
+private:
+    static constexpr char recordDir[] = "./cudaMemRecord";
+    std::unordered_map<void *, CudaMemInfo> memTable_;
+    bool isUpdateMemTable_ = false;
+    std::mutex mutex_;
 
-    char recordFile[128] = {0};
-    sprintf(recordFile, "%s/%p.mem", recordDir, *devPtr);
-    FILE *fp = fopen(recordFile, "w");
-    fprintf(fp,
-            "devPtr=%p,\nsize=%ld,\ndevPtrStr=\"%s\",\nsizeStr=\"%s\",\nfile=\"%s\",\nline=%d,\ncaller=\"%s\",\n",
-            *devPtr, size, devPtrStr, sizeStr, file, line, caller);
-    fprintf(fp, "callStackAddr=\n"),
-    fflush(fp);
-    fclose(fp);
-    convToCallerInfoAndPush(__builtin_return_address(0), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(1), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(2), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(3), recordFile);
-
-    return cudaError;
-}
-
-static cudaError_t _cudaMallocArray(
-    cudaArray_t *array,
-    const struct cudaChannelFormatDesc *desc,
-    std::size_t width,
-    std::size_t height,
-    unsigned int flags,
-    const char arrayStr[],                                                                 
-    const char descStr[],                                                                  
-    const char widthStr[],                                                                
-    const char heightStr[],                                                                
-    const char flagsStr[],                                                                
-    const char file[],
-    const unsigned int line,
-    const char caller[])
-{
-    auto cudaError = cudaMallocArray(array, desc, width, height, flags);
-
-    char recordFile[128] = {0};
-    sprintf(recordFile, "%s/%p.mem", recordDir, *array);
-    FILE *fp = fopen(recordFile, "w");
-    fprintf(fp,
-            "array=%p,\nwidth=%ld,\nheight=%ld,\nflags=%d,\narrayStr=\"%s\",\ndescStr=\"%s\",\nwidthStr=\"%s\",\nheightStr=\"%s\",\nflagsStr=\"%s\",\nfile=\"%s\",\nline=%d,\ncaller=\"%s\",\n",
-            *array, width, height, flags, arrayStr, descStr, widthStr, heightStr, flagsStr, file, line, caller);
-    fprintf(fp, "callStackAddr=\n"),
-    fflush(fp);
-    fclose(fp);
-    convToCallerInfoAndPush(__builtin_return_address(0), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(1), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(2), recordFile);
-    convToCallerInfoAndPush(__builtin_return_address(3), recordFile);
-
-    return cudaError;
-}
-
-static cudaError_t _cudaFree(
-    void *devPtr,
-    const char devPtrStr[],
-    const char file[],
-    const unsigned int line,
-    const char caller[])
-{
-    auto cudaError = cudaFree(devPtr);
-
-    char recordFile[128] = {0};
-    sprintf(recordFile, "%s/%p.mem", recordDir, devPtr);
-    if (unlink(recordFile) < 0)
+    CudaMemTracer()
     {
-        printf("double free: %p\n", devPtr);
+        std::thread recordThread([&]()
+        {
+            while (true)
+            {
+                std::vector<CudaMemInfo> infoArray(0);
+                {
+                    std::lock_guard<std::mutex> lockGuard(mutex_);
+                    if (isUpdateMemTable_)
+                    {
+                        isUpdateMemTable_ = false;
+                        infoArray.resize(memTable_.size());
+                        int i = 0;
+                        for (const auto &[_, memInfo] : memTable_)
+                        {
+                            infoArray[i] = memInfo;
+                            ++i;
+                        }
+                    }
+                }
+
+                if (infoArray.size() != 0)
+                {
+                    std::sort(
+                        infoArray.begin(),
+                        infoArray.end(),
+                        [](const auto &lhs, const auto &rhs)
+                        {
+                            return lhs.size >= rhs.size;
+                        });
+                    
+                    std::cout << "===================\n";
+                    std::cout << "memCount: " << infoArray.size() << "\n";
+                    std::size_t sum = 0;
+                    for (const auto &memInfo : infoArray)
+                    {
+                        std::cout << "ptr: " << memInfo.pointer << ", size: " << memInfo.size << "\n";
+                        sum += memInfo.size;
+                    }
+                    std::cout << "memSum: " << sum << "\n";
+                }
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        });
+        recordThread.detach();
     }
 
-    return cudaError;
-}
+    ~CudaMemTracer() = default;
 
-#define cudaMalloc(devPtr, size) _cudaMalloc( \
-    devPtr,                                   \
-    size,                                     \
-    #devPtr,                                  \
-    #size,                                    \
-    __FILE__,                                 \
-    __LINE__,                                 \
-    __FUNCTION__)
+public:
+    static CudaMemTracer &getInstance()
+    {
+        static CudaMemTracer instance_;
+        return instance_;
+    }
 
-#define cudaMallocArray(array, desc, width, height, flags) _cudaMallocArray( \
-    array,                                                                   \
-    desc,                                                                    \
-    width,                                                                   \
-    height,                                                                  \
-    flags,                                                                   \
-    #array,                                                                  \
-    #desc,                                                                   \
-    #width,                                                                  \
-    #height,                                                                 \
-    #flags,                                                                  \
-    __FILE__,                                                                \
-    __LINE__,                                                                \
-    __FUNCTION__)
+    void pushMemInfo(
+        void *ptr,
+        std::size_t size,
+        const std::string &callee,
+        const std::string &caller,
+        const std::string &file,
+        const unsigned int line,
+        void *callLevel0, 
+        void *callLevel1, 
+        void *callLevel2, 
+        void *callLevel3)
+    {
+        std::lock_guard<std::mutex> lockGuard(mutex_);
+        isUpdateMemTable_ = true;
+        auto &memInfo = memTable_[ptr];
+        memInfo.pointer = ptr;
+        memInfo.size = size;
+        memInfo.callee = callee;
+        memInfo.caller = caller;
+        memInfo.file = file;
+        memInfo.line = line;
+        memInfo.callStack[0] = callLevel0;
+        memInfo.callStack[1] = callLevel1;
+        memInfo.callStack[2] = callLevel2;
+        memInfo.callStack[3] = callLevel3;
+    }
 
-#define cudaFree(devPtr) _cudaFree( \
-    devPtr,                         \
-    #devPtr,                        \
-    __FILE__,                       \
-    __LINE__,                       \
-    __FUNCTION__)
+    void popMemInfo(void *ptr)
+    {
+        std::lock_guard<std::mutex> lockGuard(mutex_);
+        isUpdateMemTable_ = true;
+        memTable_.erase(ptr);
+    }
 
-#endif
+    CudaMemTracer(const CudaMemTracer &) = delete;
+    CudaMemTracer(CudaMemTracer &&) = delete;
+    CudaMemTracer &operator=(const CudaMemInfo &) = delete;
+    CudaMemTracer &operator=(CudaMemInfo &&) = delete;
+};
 
 #endif

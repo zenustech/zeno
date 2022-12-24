@@ -56,7 +56,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
-#include <cudaMemTracer.hpp>
+#include <cudaMemMarco.hpp>
 
 namespace sutil
 {

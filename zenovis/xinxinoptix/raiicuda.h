@@ -21,7 +21,7 @@
 
 #include <type_traits>
 #include <utility>
-#include <cudaMemTracer.hpp>
+#include <cudaMemMarco.hpp>
 
 namespace xinxinoptix {
 

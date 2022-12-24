@@ -32,7 +32,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cudaMemTracer.hpp>
+#include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
