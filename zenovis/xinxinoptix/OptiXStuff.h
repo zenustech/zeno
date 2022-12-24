@@ -34,6 +34,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cudaMemTracer.hpp>
+
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
     std::cerr << "[" << std::setw( 2 ) << level << "][" << std::setw( 12 ) << tag << "]: " << message << "\n";
@@ -231,7 +233,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     }
     
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
@@ -288,7 +290,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
             };
         }
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
