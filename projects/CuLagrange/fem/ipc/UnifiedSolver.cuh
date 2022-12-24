@@ -13,11 +13,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
-#include "SolverUtils.cuh"
+#include "../SolverUtils.cuh"
 
 namespace zeno {
 
-struct IPCSystem : IObject {
+struct UnifiedIPCSystem : IObject {
     using T = double;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
     using dtiles_t = zs::TileVector<T, 32>;
@@ -144,10 +144,10 @@ struct IPCSystem : IObject {
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
-              const tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, bool withContact,
-              bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
-              T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity);
+    UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
+                     const tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t ncps, bool withGround,
+                     bool withContact, bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap,
+                     int CCDCap, T kappa0, T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void suggestKappa(zs::CudaExecutionPolicy &pol);
