@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/zeno.h>
 #include <zeno/types/UserData.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 
@@ -131,7 +131,7 @@ ZENDEFNODE(PrimitiveProject, {
                                      {"PrimitiveObject", "prim"},
                                  },
                                  {},
-                                 {"primitive"},
+                                 {"zs_query"},
                              });
 
 #if 1
@@ -302,7 +302,7 @@ ZENDEFNODE(QueryClosestPrimitive, {
                                        {"PrimitiveObject", "bvh_prim"},
                                        {"PrimitiveObject", "segment"}},
                                       {},
-                                      {"zenofx"},
+                                      {"zs_query"},
                                   });
 #endif
 
@@ -359,7 +359,65 @@ ZENDEFNODE(EmbedPrimitiveBvh, {
                                    {"string", "bvh_tag", "bvh"}},
                                   {{"PrimitiveObject", "prim"}},
                                   {},
-                                  {"zenofx"},
+                                  {"zs_accel"},
                               });
+
+struct EmbedPrimitiveSpatialHash : zeno::INode {
+    virtual void apply() override {
+        using zssh_t = ZenoSpatialHash;
+        using sh_t = zssh_t::sh_t;
+        using bv_t = sh_t::bv_t;
+
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &userData = prim->userData();
+        auto sideLength = get_input2<float>("side_length");
+        float thickness = has_input("thickness") ? get_input<zeno::NumericObject>("thickness")->get<float>() : 0.f;
+        auto primType = get_input2<std::string>("prim_type");
+        auto shTag = get_input2<std::string>("spatial_hash_tag");
+
+        auto pol = zs::omp_exec();
+
+        zs::Vector<bv_t> bvs;
+        std::shared_ptr<zssh_t> zssh;
+        ZenoSpatialHash::element_e et = ZenoSpatialHash::point;
+        if (primType == "point") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), thickness);
+            et = ZenoSpatialHash::point;
+        } else if (primType == "line") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->lines.values, thickness);
+            et = ZenoSpatialHash::curve;
+        } else if (primType == "tri") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->tris.values, thickness);
+            et = ZenoSpatialHash::surface;
+        } else if (primType == "quad") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->quads.values, thickness);
+            et = ZenoSpatialHash::tet;
+        }
+        if (!userData.has(shTag)) { // build
+            zssh = std::make_shared<zssh_t>();
+            zssh->et = et;
+            sh_t &sh = zssh->get();
+            sh.build(pol, sideLength, bvs);
+            userData.set(shTag, zssh);
+        } else { // refit
+            zssh = std::dynamic_pointer_cast<zssh_t>(userData.get(shTag));
+            zssh->et = et;
+            sh_t &sh = zssh->get();
+            sh.build(pol, sideLength, bvs);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(EmbedPrimitiveSpatialHash, {
+                                          {{"PrimitiveObject", "prim"},
+                                           {"float", "side_length", "1"},
+                                           {"float", "thickness", "0"},
+                                           {"enum point line tri quad", "prim_type", "auto"},
+                                           {"string", "spatial_hash_tag", "sh"}},
+                                          {{"PrimitiveObject", "prim"}},
+                                          {},
+                                          {"zs_accel"},
+                                      });
 
 } // namespace zeno
