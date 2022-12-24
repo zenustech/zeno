@@ -56,6 +56,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <cudaMemTracer.hpp>
 
 namespace sutil
 {
@@ -503,7 +504,8 @@ void Scene::addImage(
                 &cuda_array,
                 &channel_desc,
                 width,
-                height
+                height,
+                0
                 ) );
     CUDA_CHECK( cudaMemcpy2DToArray(
                 cuda_array,

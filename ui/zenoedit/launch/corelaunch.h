@@ -6,7 +6,7 @@
 class IGraphsModel;
 
 void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame);
-bool initZenCache();
+bool initZenCache(char* cachedir);
 void killProgram();
 
 #endif

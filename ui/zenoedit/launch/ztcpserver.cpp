@@ -62,8 +62,45 @@ void ZTcpServer::startProc(const std::string& progJson)
     m_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
     m_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
     int sessionid = zeno::getSession().globalState->sessionid;
-    m_proc->start(QCoreApplication::applicationFilePath(),
-                  QStringList({"-runner", QString::number(sessionid), "-port", QString::number(m_port)}));
+
+    QSettings settings(zsCompanyName, zsEditor);
+    bool bEnableCache = settings.value("zencache-enable").toBool();
+    QString finalPath;
+    if (bEnableCache)
+    {
+        const QString& cacheRootdir = settings.value("zencachedir").toString();
+        QDir dirCacheRoot(cacheRootdir);
+        if (!QFileInfo(cacheRootdir).isDir())
+        {
+            //dirCacheRoot = QDir::temp();
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("To avoid disk space cost, please specifiy a valid path for zencache."));
+            return;
+        }
+
+        QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
+        bool ret = dirCacheRoot.mkdir(tempDirPath);
+        ZASSERT_EXIT(ret);
+
+        QDir dirTarget = dirCacheRoot;
+        dirTarget.cd(tempDirPath);
+        finalPath = dirTarget.path();
+
+        int cnum = settings.value("zencachenum").toInt();
+        viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
+    }
+    else
+    {
+        viewDecodeSetFrameCache("", 0);
+    }
+
+    QStringList args = {
+        "-runner", QString::number(sessionid),
+        "-port", QString::number(m_port),
+        "-cachedir", finalPath
+    };
+
+    m_proc->start(QCoreApplication::applicationFilePath(), args);
+
     if (!m_proc->waitForStarted(-1)) {
         zeno::log_warn("process failed to get started, giving up");
         return;
@@ -100,18 +137,6 @@ void ZTcpServer::onNewConnection()
     connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
 
-    QSettings settings(zsCompanyName, zsEditor);
-    auto cachedir = settings.value("zencachedir").toString();
-    auto cachenum = settings.value("zencachenum").toString();
-    int cnum = 0;
-    if (!cachenum.isEmpty()) {  // set from zhouhang-style panel, by QSettings
-        bool ok = false;
-        int t = cachenum.toInt(&ok);
-        if (ok) cnum = t;
-        else zeno::log_warn("failed to parse ZENCACHENUM: {}", cachenum.toStdString());
-    }
-    auto cdir = cachedir.toStdString();
-    viewDecodeSetFrameCache(cdir.c_str(), cnum);
     viewDecodeClear();
 }
 
