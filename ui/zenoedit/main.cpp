@@ -46,6 +46,24 @@ int main(int argc, char *argv[])
         return offline_main(argv[2], begin, end);
     }
 
+    //entrance for the zenoedit-player. todo: cmdParser
+    if (0)
+    {
+        ZenoMainWindow tempWindow;
+        tempWindow.showMaximized();
+
+        ZENO_RECORD_RUN_INITPARAM initParam;
+        initParam.sZsgPath = "E:\\zeno-fixbug\\once-bug.zsg";
+        initParam.sPath = "E:\\zeno-fixbug\\recordpath";
+        initParam.iFps = 24;
+        initParam.iBitrate = 200000;
+        initParam.iSFrame = 0;
+        initParam.iFrame = 10;
+        initParam.sPixel = "1200x800";
+
+        tempWindow.directlyRunRecord(initParam);
+        return a.exec();
+    }
 
     QTranslator t;
     QSettings settings(zsCompanyName, zsEditor);
