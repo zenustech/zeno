@@ -292,12 +292,12 @@ struct FrameBufferPicker : IPicker {
                     }
                 }
             }
-            prims.emplace_back(std::make_pair(prim_name, prim));
+            if (prim) prims.emplace_back(std::make_pair(prim_name, prim));
         }
         if (prims.empty()) {
             for (const auto& [prim_name, prim] : prims_shared) {
                 auto p = dynamic_cast<PrimitiveObject*>(prim.get());
-                prims.emplace_back(std::make_pair(prim_name, p));
+                if (p) prims.emplace_back(std::make_pair(prim_name, p));
             }
         }
 
