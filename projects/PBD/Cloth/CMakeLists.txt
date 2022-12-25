@@ -1,4 +1,4 @@
-target_sources(legacyPBD PRIVATE
+target_sources(legacyPBD INTERFACE
     PBDCloth.cpp
     testCloth.cpp
     PBDClothInit.cpp

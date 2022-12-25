@@ -23,3 +23,8 @@ endif()
 
 target_include_directories(legacyPBD INTERFACE .)
 target_link_libraries(zeno PRIVATE legacyPBD)
+
+option(USE_zenoPBD "Build the new zenoPBD" ON)
+if(USE_zenoPBD)
+    add_subdirectory(zenoPBD)
+endif()

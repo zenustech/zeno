@@ -1,4 +1,4 @@
-target_sources(legacyPBD PRIVATE 
+target_sources(legacyPBD INTERFACE 
 # PBF.cpp 
 testPBFCube.cpp
 # NeighborSearch_BVH.cpp
