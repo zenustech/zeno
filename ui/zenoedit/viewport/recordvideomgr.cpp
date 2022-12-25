@@ -58,12 +58,23 @@ void RecordVideoMgr::finishRecord()
     //Zenovis::GetInstance().blockSignals(false);
     QString path = m_recordInfo.record_path + "/P/%06d.png";
     QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
-    QStringList cmd = { "ffmpeg", "-y", "-r", QString::number(m_recordInfo.fps), "-i", path, "-c:v", "mpeg4", "-b:v", QString::number(m_recordInfo.bitrate) + "k", outPath };
 
-    //zeno::log_info("record cmd {}", cmd.join(" ").toStdString());
-    int ret = QProcess::execute(cmd.join(" "));
+    QString cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3k -c:v mpeg4 output.mp4")
+              .arg(m_recordInfo.fps)
+              .arg(m_recordInfo.record_path + "/%07d.jpg")
+              .arg(m_recordInfo.bitrate);
+    int ret = QProcess::execute(cmd);
     if (ret == 0)
     {
+        if (m_recordInfo.audioPath.isEmpty()) {
+            cmd = QString("ffmpeg -y -i output.mp4 -i %1 -c:v copy -c:a aac output_av.mp4")
+                      .arg(m_recordInfo.audioPath);
+            ret = QProcess::execute(cmd);
+            if (ret == 0)
+                emit recordFinished();
+            else
+                emit recordFailed(QString());
+        }
         emit recordFinished();
     }
     else
@@ -125,7 +136,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             auto scene = Zenovis::GetInstance().getSession()->get_scene();
             auto old_num_samples = scene->drawOptions->num_samples;
-            scene->drawOptions->num_samples = m_recordInfo.numOptix;
+            scene->drawOptions->num_samples = m_recordInfo.numSamples;
             scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
             auto [x, y] = Zenovis::GetInstance().getSession()->get_window_size();

@@ -737,18 +737,13 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     if (m_mainWin && m_mainWin->inDlgEventLoop())
         return;
 
-    if (m_bRecordRun)
-    {
-        m_view->update();       //always catch the newest finished frame.
-        return;
-    }
-
     if (action == "newFrame") {
         m_pTimer->stop();
         //zeno::log_warn("stop");
         return;
     } else if (action == "finishFrame") {
-        if (isOptxRendering()) {
+        bool bPlaying = Zenovis::GetInstance().isPlaying();
+        if (isOptxRendering() || bPlaying) {
             m_pTimer->start(m_updateFeq);
         }
     } else if (!action.isEmpty()) {

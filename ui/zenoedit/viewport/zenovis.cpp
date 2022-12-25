@@ -79,6 +79,11 @@ void Zenovis::startPlay(bool bPlaying)
     m_playing = bPlaying;
 }
 
+bool Zenovis::isPlaying() const
+{
+    return m_playing;
+}
+
 zenovis::Session *Zenovis::getSession() const
 {
     return session.get();

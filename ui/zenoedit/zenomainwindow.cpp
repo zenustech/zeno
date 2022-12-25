@@ -17,6 +17,8 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/core/Session.h>
+#include <zenovis/DrawOptions.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
@@ -356,6 +358,8 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
     recInfo.numMSAA = 0;
     recInfo.numOptix = 1;
+    recInfo.numSamples = param.iSample;
+    recInfo.audioPath = param.audioPath;
     recInfo.record_path = param.sPath;
     recInfo.bRecordRun = true;
 
@@ -372,6 +376,14 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     } else {
         recInfo.res = {(float)1000, (float)680};
         pViewport->setMinimumSize(1000, 680);
+    }
+
+    auto sess = Zenovis::GetInstance().getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->drawOptions->num_samples = param.bRecord ? param.iSample : 16;
+        }
     }
 
     bool ret = openFile(param.sZsgPath);
