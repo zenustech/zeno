@@ -144,6 +144,12 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_PARAM_TYPE:
         return "string";
+    case ROLE_OBJPATH:
+    {
+        QString path;
+        path = m_dictParam.data(ROLE_OBJPATH).toString() + ":" + item.key;
+        return path;
+    }
     default:
         return QVariant();
     }

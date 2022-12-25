@@ -304,7 +304,7 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
         const QModelIndex& subgIdx = index(subgName);
         return index(nodeIdent, subgIdx);
     }
-    else if (lst.size() == 4)
+    else if (lst.size() >= 4)
     {
         const QString& subgName = lst[0];
         const QString& nodeIdent = lst[1];

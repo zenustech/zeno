@@ -36,6 +36,37 @@ IParamModel::~IParamModel()
 {
 }
 
+void IParamModel::exportDictkeys(DictKeyModel *pModel, QList<DICTKEY_INFO> &keys)
+{
+    int rowCnt = pModel->rowCount();
+    QStringList keyNames;
+    for (int i = 0; i < rowCnt; i++)
+    {
+        const QModelIndex &keyIdx = pModel->index(i, 0);
+        QString key = keyIdx.data().toString();
+
+        DICTKEY_INFO keyInfo;
+        keyInfo.key = key;
+
+        QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
+        if (linkIdx.isValid()) {
+            QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+            QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+            ZASSERT_EXIT(insock.isValid() && outsock.isValid());
+
+            EdgeInfo link;
+            link.inputNode = insock.data(ROLE_OBJID).toString();
+            link.inputSock = insock.data(ROLE_OBJPATH).toString();
+            link.outputNode = outsock.data(ROLE_OBJID).toString();
+            link.outputSock = outsock.data(ROLE_OBJPATH).toString();
+
+            keyInfo.link = link;
+        }
+        keys.append(keyInfo);
+        keyNames.push_back(key);
+    }
+}
+
 bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
 {
     if (m_class == PARAM_INPUT)
@@ -66,6 +97,12 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
                 inSocket.info.links.append(link);
             }
 
+            if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end())
+            {
+                DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                exportDictkeys(pModel, inSocket.info.keys);
+            }
             inputs.insert(name, inSocket);
         }
         return true;
@@ -103,6 +140,13 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
                 link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
                 outSocket.info.links.append(link);
             }
+
+            if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end()) {
+                DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                exportDictkeys(pModel, outSocket.info.keys);
+            }
+
             outputs.insert(name, outSocket);
         }
     }
@@ -196,6 +240,9 @@ QModelIndex IParamModel::index(int row, int column, const QModelIndex& parent) c
 
 QModelIndex IParamModel::index(const QString& name) const
 {
+    //may be a dict-key name
+
+
     if (m_key2Row.find(name) == m_key2Row.end())
         return QModelIndex();
 
