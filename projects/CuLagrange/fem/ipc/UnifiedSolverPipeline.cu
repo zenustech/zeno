@@ -2676,7 +2676,7 @@ void UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     }
 }
 
-struct StepIPCSystem : INode {
+struct StepUnifiedIPCSystem : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -2711,7 +2711,7 @@ struct StepIPCSystem : INode {
     }
 };
 
-ZENDEFNODE(StepIPCSystem, {{
+ZENDEFNODE(StepUnifiedIPCSystem, {{
                                "ZSIPCSystem",
                                {"int", "num_substeps", "1"},
                                {"float", "dt", "0.01"},
@@ -2720,7 +2720,7 @@ ZENDEFNODE(StepIPCSystem, {{
                            {},
                            {"FEM"}});
 
-struct IPCSystemClothBinding : INode { // usually called once before stepping
+struct UnifiedIPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
 #if 1
     // unordered version
@@ -2889,7 +2889,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
     }
 };
 
-ZENDEFNODE(IPCSystemClothBinding, {{
+ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
                                        "ZSIPCSystem",
                                        "ZSLevelSet",
                                        {"bool", "hard_constraint", "1"},
@@ -2901,7 +2901,7 @@ ZENDEFNODE(IPCSystemClothBinding, {{
                                    {},
                                    {"FEM"}});
 
-struct IPCSystemForceField : INode {
+struct UnifiedIPCSystemForceField : INode {
     template <typename VelSplsViewT>
     void computeForce(zs::CudaExecutionPolicy &cudaPol, float windDragCoeff, float windDensity, int vOffset,
                       VelSplsViewT velLs, typename UnifiedIPCSystem::dtiles_t &vtemp,
@@ -2989,7 +2989,7 @@ struct IPCSystemForceField : INode {
     }
 };
 
-ZENDEFNODE(IPCSystemForceField,
+ZENDEFNODE(UnifiedIPCSystemForceField,
            {
                {"ZSIPCSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
                {"ZSIPCSystem"},
