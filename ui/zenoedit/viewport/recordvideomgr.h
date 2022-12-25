@@ -6,6 +6,7 @@
 struct VideoRecInfo
 {
     QString record_path;
+    QString audioPath;
     QString videoname;
     QVector2D res;
     QPair<int, int> frameRange;
@@ -14,6 +15,7 @@ struct VideoRecInfo
     int bitrate;
     int numMSAA = 0;
     int numOptix = 1;
+    int numSamples = 16;
     bool bRecordRun;
     VideoRecInfo()
         : bRecordRun(false)
