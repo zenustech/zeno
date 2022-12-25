@@ -49,6 +49,7 @@ inline raii<OptixModule>                    ray_module               ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+inline bool isPipelineCreated = false;
 ////end material independent stuffs
 inline void createContext()
 {
@@ -462,6 +463,12 @@ inline void createPipeline()
     }
     char   log[2048];
     size_t sizeof_log = sizeof( log );
+
+    if (isPipelineCreated)
+    {
+        OPTIX_CHECK(optixPipelineDestroy(pipeline));
+        isPipelineCreated = false;
+    }
     OPTIX_CHECK_LOG( optixPipelineCreate(
                 context,
                 &pipeline_compile_options,
@@ -472,6 +479,8 @@ inline void createPipeline()
                 &sizeof_log,
                 &pipeline
                 ) );
+    isPipelineCreated = true;
+
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes ) );
     OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes ) );

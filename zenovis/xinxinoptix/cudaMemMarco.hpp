@@ -1,7 +1,7 @@
 #ifndef __CUDA_MEM_MARCO_HPP__
 #define __CUDA_MEM_MARCO_HPP__
 
-#define ENABLE_TRACE_CUDA_MEM 0
+#define ENABLE_TRACE_CUDA_MEM 1
 #if ENABLE_TRACE_CUDA_MEM
 
 #include <cuda_runtime.h>
@@ -9,6 +9,15 @@
 #include <link.h>
 #include <cudaMemTracer.hpp>
 #include <string>
+
+static void systemCall0(const std::string &str)
+{
+    char command0[256] = {0};
+    snprintf(command0, sizeof(command0), "echo \"%s\" >> wjj", str.c_str()); 
+    system(command0);
+    char command[256] = "nvidia-smi >> wjj";
+    system(command);
+}
 
 // addr2line -f -e ./build/bin/zenoedit -a <elf>
 static void* convToElf(void *addr)
