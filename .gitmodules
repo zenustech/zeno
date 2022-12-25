@@ -22,3 +22,6 @@
 [submodule "projects/python/CPython"]
 	path = projects/Python/CPython
 	url = https://github.com/zenustech/python-cmake-buildsystem.git
+[submodule "projects/PBD/zenoPBD"]
+	path = projects/PBD/zenoPBD
+	url = https://github.com/chunleili/zenoPBD
