@@ -302,6 +302,14 @@ struct FastClothSystem : IObject {
     bvh_t bouSvBvh; // for collision objects
     bvfront_t selfSvFront, boundarySvFront;
     T dt, framedt, curRatio;
+
+    zs::CppTimer timer;
+    float auxTime[10];
+    float dynamicsTime[10];
+    float collisionTime[10];
+    int dynamicsCnt[10];
+    int collisionCnt[10];
+    static constexpr bool s_enableProfile = true;
 };
 
 } // namespace zeno

@@ -348,6 +348,16 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     substep = -1;
     projectDBC = false;
 
+    /// @note profile
+    if constexpr (s_enableProfile)
+        for (int i = 0; i != 10; ++i) {
+            auxTime[i] = 0;
+            dynamicsTime[i] = 0;
+            collisionTime[i] = 0;
+            dynamicsCnt[i] = 0;
+            collisionCnt[i] = 0;
+        }
+
     /// cloth dynamics status
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -376,13 +386,13 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     auto newX = x + v * dt;
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple<3>("yn", coOffset + i) = x;  
+                    vtemp.tuple<3>("yn", coOffset + i) = x;
                     vtemp.tuple<3>("xt", coOffset + i) = x;
                     vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
 
-    /// spatial accel initialization
+        /// spatial accel initialization
 #define init_front(sInds, front)                                                                           \
     {                                                                                                      \
         auto numNodes = front.numNodes();                                                                  \
