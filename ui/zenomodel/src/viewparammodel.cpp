@@ -120,7 +120,7 @@ QVariant VParamItem::data(int role) const
     case ROLE_PARAM_NAME:
     {
         if (!m_index.isValid())
-            return m_info.typeDesc;
+            return m_info.name;
         return m_index.data(ROLE_PARAM_NAME);
     }
     case ROLE_PARAM_VALUE:

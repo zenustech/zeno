@@ -569,7 +569,9 @@ void ZEditParamLayoutDlg::applySubgraphNode()
             {
                 VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
                 const QString& vName = pItem->m_info.name;
-                QString coreName = pItem->data(ROLE_PARAM_NAME).toString();
+                QString coreName;
+                if (pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
+                    coreName = pItem->data(ROLE_PARAM_NAME).toString();
                 const QString& typeDesc = pItem->m_info.typeDesc;
                 const QVariant& deflVal = pItem->m_info.value;
                 const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
