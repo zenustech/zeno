@@ -1,4 +1,4 @@
-target_sources(zeno PRIVATE 
+target_sources(legacyPBD PRIVATE 
 # PBF.cpp 
 testPBFCube.cpp
 # NeighborSearch_BVH.cpp

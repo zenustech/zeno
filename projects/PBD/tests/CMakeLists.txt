@@ -15,4 +15,4 @@
 # )
 
 add_executable(test_PBDCloth test_PBDCloth.cpp)
-target_link_libraries(test_PBDCloth PRIVATE zeno)
+target_link_libraries(test_PBDCloth PRIVATE legacyPBD)

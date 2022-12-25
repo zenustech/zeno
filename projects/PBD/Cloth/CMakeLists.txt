@@ -1,4 +1,4 @@
-target_sources(zeno PRIVATE
+target_sources(legacyPBD PRIVATE
     PBDCloth.cpp
     testCloth.cpp
     PBDClothInit.cpp
@@ -11,4 +11,4 @@ target_sources(zeno PRIVATE
     lines2tris.cpp
     TestClothMesh/TestClothMeshData.h
     TestClothMesh/TestClothMesh.cpp
-    )
+)

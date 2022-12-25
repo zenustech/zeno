@@ -4,7 +4,7 @@
 #include <map>
 #include <zeno/types/PrimitiveObject.h>
 #include "SPHKernelFuncs.h"
-#include "../ZenoFX/LinearBvh.h"
+#include "../../ZenoFX/LinearBvh.h"
 
 namespace zeno{
 struct PBF_BVH : INode{

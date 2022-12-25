@@ -1,1 +1,0 @@
-target_sources(zeno PRIVATE BunnyMesh.cpp)

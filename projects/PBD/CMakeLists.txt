@@ -1,20 +1,25 @@
-target_sources(zeno PRIVATE 
-PBDSoftBody.cpp 
-PBDSolveDistanceConstraint.cpp 
-PBDSolveVolumeConstraint.cpp
-PBDSoftBodyInit.cpp
-PBDPostSolve.cpp
-PBDPreSolve.cpp
-PBDCollision.cpp
-PBDRestPos.cpp
-# easyCube.cpp
+add_library(legacyPBD INTERFACE "")
+
+add_subdirectory(Cloth)
+add_subdirectory(Fluid)
+
+target_sources(legacyPBD INTERFACE
+${CMAKE_CURRENT_LIST_DIR}/Soft/PBDSoftBody.cpp
+${CMAKE_CURRENT_LIST_DIR}/Soft/PBDSoftBodyInit.cpp
+${CMAKE_CURRENT_LIST_DIR}/Soft/BunnyMesh/BunnyMesh.cpp
+${CMAKE_CURRENT_LIST_DIR}/Soft/ReadVtkTet/ReadVtkTet.cpp
 )
-add_subdirectory(PBDCloth)
-# add_subdirectory(PBF)
-add_subdirectory(BunnyMesh)
-add_subdirectory(ReadVtkTet)
+
+target_sources(legacyPBD INTERFACE
+${CMAKE_CURRENT_LIST_DIR}/Constraints/PBDSolveDistanceConstraint.cpp
+${CMAKE_CURRENT_LIST_DIR}/Constraints/PBDSolveVolumeConstraint.cpp
+)
+
 
 option(PBD_TEST "Build the PBD test" OFF)
 if(PBD_TEST)
-    add_subdirectory(test)
+    add_subdirectory(tests)
 endif()
+
+target_include_directories(legacyPBD INTERFACE .)
+target_link_libraries(zeno PRIVATE legacyPBD)
