@@ -26,6 +26,8 @@
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
+#include "viewport/recordvideomgr.h"
+
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
@@ -332,6 +334,49 @@ void ZenoMainWindow::onMaximumTriggered()
             pDock->close();
         }
     }
+}
+
+
+void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    ZASSERT_EXIT(m_viewDock);
+    DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
+    ZASSERT_EXIT(viewWidget);
+    ViewportWidget* pViewport = viewWidget->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    //hide other component
+    if (m_editor) m_editor->hide();
+    if (m_logger) m_logger->hide();
+    if (m_parameter) m_parameter->hide();
+
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = 1;
+    recInfo.record_path = param.sPath;
+    recInfo.bRecordRun = true;
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = {(float)pixw, (float)pixh};
+
+        pViewport->setFixedSize(pixw, pixh);
+        pViewport->setCameraRes(QVector2D(pixw, pixh));
+        pViewport->updatePerspective();
+    } else {
+        recInfo.res = {(float)1000, (float)680};
+        pViewport->setMinimumSize(1000, 680);
+    }
+
+    bool ret = openFile(param.sZsgPath);
+    ZASSERT_EXIT(ret);
+    viewWidget->runAndRecord(recInfo);
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)

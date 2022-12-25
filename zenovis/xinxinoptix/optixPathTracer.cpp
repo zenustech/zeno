@@ -49,6 +49,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/orthonormal.h>
+#include <unordered_map>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
