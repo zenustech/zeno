@@ -662,20 +662,28 @@ bool IParamModel::_insertRow(
     item.type = type;
     item.prop = prop;
 
+    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    m_model->getDescriptor(nodeCls, desc);
+
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
         item.type = "dict";     //pay attention not to export to outside, only as a ui keyword.
-        item.prop = SOCKPROP_DICTLIST_PANEL;
+        if (!desc.categories.contains("dict"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
     else if (type == "list")
     {
-        item.prop = SOCKPROP_DICTLIST_PANEL;
+        if (!desc.categories.contains("list"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
 
     //not type desc on list output socket, add it here.
-    if (m_class == PARAM_OUTPUT && sockName == "list" && type.isEmpty())
+    if (sockName == "list" && type.isEmpty())
     {
         item.type = "list";
+        if (m_class == PARAM_INPUT && !desc.categories.contains("list"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
 
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.

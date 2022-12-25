@@ -223,7 +223,12 @@ void ZDictSocketLayout::setCollasped(bool bCollasped)
 
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
 {
+    // dict/list socket match?
+    if (ZenoSocketItem *pItem = ZSocketLayout::socketItemByIdx(sockIdx))
+        return pItem;
+
     ZASSERT_EXIT(m_panel, nullptr);
+    //and then search items on panel.
     return m_panel->socketItemByIdx(sockIdx);
 }
 

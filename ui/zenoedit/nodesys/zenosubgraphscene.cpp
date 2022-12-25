@@ -96,10 +96,14 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 ZenoFullLink* pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
+
                 outNode->toggleSocket(false, outSock, true);
-                outNode->getSocketItem(outSockIdx)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+                ZenoSocketItem* socketItem = outNode->getSocketItem(outSockIdx);
+                socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+
                 inNode->toggleSocket(true, inSock, true);
-                inNode->getSocketItem(inSockIdx)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+                socketItem = inNode->getSocketItem(inSockIdx);
+                socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
             }
         }
     }
@@ -680,16 +684,18 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             //dict panel.
             SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+            QString inSockType = toSockIdx.data(ROLE_PARAM_TYPE).toString();
             if (bTargetInput && (inProp & SOCKPROP_DICTLIST_PANEL))
             {
                 SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)fromSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+                QString outSockType = fromSockIdx.data(ROLE_PARAM_TYPE).toString();
                 QAbstractItemModel *pKeyObjModel =
                     QVariantPtr<QAbstractItemModel>::asPtr(toSockIdx.data(ROLE_VPARAM_LINK_MODEL));
 
                 //check if outSock is a dict
-                if (outProp & SOCKPROP_DICTLIST_PANEL)
+                if (inSockType == outSockType)
                 {
-                    //legacy dict connection, and then we have to remove all inner dict key connection.
+                    //legacy dict/list connection, and then we have to remove all inner dict key connection.
                     ZASSERT_EXIT(pKeyObjModel);
                     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
                     {
