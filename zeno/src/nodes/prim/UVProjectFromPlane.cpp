@@ -1,8 +1,12 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/HeatmapObject.h>
+#include <zeno/types/UserData.h>
+#include <zeno/utils/scope_exit.h>
 #include <stdexcept>
-#include "zeno/utils/log.h"
+#include <cstring>
+#include <zeno/utils/log.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
@@ -97,19 +101,25 @@ static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) 
     float b = float(data[start+2]) / 255.0f;
     return {r, g, b};
 }
+static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n) {
+    int iu = uv[0];
+    int iv = uv[1];
+    int start = (iu + iv * w) * n;
+    float r = (data[start]);
+    float g = (data[start+1]);
+    float b = (data[start+2]);
+    return {r, g, b};
+}
 void primSampleTexture(
     std::shared_ptr<PrimitiveObject> prim,
     const std::string &srcChannel,
     const std::string &dstChannel,
-    const std::string &imagePath,
+    std::shared_ptr<PrimitiveObject> img,
     const std::string &wrap,
     vec3f borderColor,
     float remapMin,
     float remapMax
 ) {
-    int w, h, n;
-    stbi_set_flip_vertically_on_load(true);
-    uint8_t* data = stbi_load(imagePath.c_str(), &w, &h, &n, 0);
     auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
     auto &uv = prim->attr<zeno::vec3f>(srcChannel);
     std::function<zeno::vec3f(vec3f, const uint8_t*, int, int, int, vec3f)> queryColor;
@@ -146,7 +156,6 @@ void primSampleTexture(
     for (auto i = 0; i < uv.size(); i++) {
         clr[i] = queryColor(uv[i], data, w, h, n, borderColor);
     }
-    stbi_image_free(data);
 }
 
 struct PrimSample2D : zeno::INode {
@@ -177,6 +186,55 @@ ZENDEFNODE(PrimSample2D, {
     },
     {
         {"PrimitiveObject", "outPrim"}
+    },
+    {},
+    {"primitive"},
+});
+std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
+    int w, h, n;
+    stbi_set_flip_vertically_on_load(true);
+    float* data = stbi_loadf(path.c_str(), &w, &h, &n, 0);
+    if (!data) {
+        throw zeno::Exception("cannot open image file at path: " + path);
+    }
+    scope_exit delData = [=] { stbi_image_free(data); };
+    auto img = std::make_shared<PrimitiveObject>();
+    img->verts.resize(w * h * n);
+    if (n == 3) {
+        std::memcpy(img->verts.data(), data, w * h * n * sizeof(float));
+    } else if (n == 4) {
+        auto &alpha = img->verts.add_attr<float>("alpha");
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*4+0], data[i*4+1], data[i*4+2]};
+            alpha[i] = data[i*4+3];
+        }
+    } else if (n == 2) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*2+0], data[i*2+1], 0};
+        }
+    } else if (n == 1) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = vec3f(data[i*2+0]);
+        }
+    } else {
+        throw zeno::Exception("too much number of channels");
+    }
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", w);
+    img->userData().set2("h", h);
+    return img;
+}
+struct ReadImageFile : INode {
+    virtual void apply() override {
+        set_output("image", readImageFile(get_input2<std::string>("path")));
+    }
+};
+ZENDEFNODE(ReadImageFile, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"PrimitiveObject", "image"},
     },
     {},
     {"primitive"},
