@@ -1,4 +1,4 @@
-set(SPH_LIBS_ONLY ON)
+# set(SPH_LIBS_ONLY ON)
 add_subdirectory(SPlisHSPlasH)
 
 target_link_libraries(zeno PRIVATE SPlisHSPlasH)
