@@ -2,9 +2,9 @@
 #include <zeno/zeno.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "./PBFWorld.h"
-#include "../Utils/myPrint.h"//debug
-#include "../Utils/readFile.h"//debug
+#include ".PBFWorld.h"
+#include "Utils/myPrint.h"//debug
+#include "Utils/readFile.h"//debug
 using namespace zeno;
 
 struct PBFWorld_Debug : zeno::INode {

@@ -59,3 +59,6 @@ foreach (name IN ITEMS ${ZENO_EXTENSION_TOOLS})
         add_subdirectory(tools/${name})
     endif()
 endforeach()
+
+set(ZENO_PROJECTS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(zeno PRIVATE .)

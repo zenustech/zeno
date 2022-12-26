@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "../ZenoFX/LinearBvh.h" //BVH的构建和使用API
-#include "./PBFWorld.h"
-#include "../Utils/myPrint.h"
+#include "ZenoFX/LinearBvh.h" //BVH的构建和使用API
+#include "PBFWorld.h"
+#include "Utils/myPrint.h"
 using namespace zeno;
 
 namespace zeno{

@@ -3,7 +3,7 @@
 #include <zeno/zeno.h>
 #include "./PBFWorld.h"
 #include "./SPHKernels.h"
-#include "../Utils/myPrint.h"//debug
+#include "Utils/myPrint.h"//debug
 #include <cstdio>//debug
 using namespace zeno;
 

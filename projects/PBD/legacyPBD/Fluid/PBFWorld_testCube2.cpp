@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "../Utils/readFile.h"
+#include "Utils/readFile.h"
 using namespace zeno;
 
 /**

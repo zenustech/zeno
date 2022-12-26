@@ -4,7 +4,7 @@
 #include "./PBFWorld.h"
 // #include "./SPHKernelFuncs.h"
 #include "./SPHKernels.h"
-#include "../Utils/myPrint.h"//debug
+#include "Utils/myPrint.h"//debug
 #include <cstdio>//debug
 using namespace zeno;
 

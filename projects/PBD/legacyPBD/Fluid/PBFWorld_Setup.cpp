@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "./PBFWorld.h"
-#include "../Utils/myPrint.h"//debug
-#include "../Utils/readFile.h"//debug
+#include "Utils/myPrint.h"//debug
+#include "Utils/readFile.h"//debug
 #include "./SPHKernels.h"//debug
 
 using namespace zeno;

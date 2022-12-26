@@ -4,6 +4,7 @@ cmake-build-*/
 Debug/
 Release/
 .xmake/
+bin
 
 # ide files
 /.vs
