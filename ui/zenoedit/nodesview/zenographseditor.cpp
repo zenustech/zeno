@@ -773,10 +773,8 @@ struct MXHelper {
             {"max", "max"},
             {"dotproduct", "dot"},
             {"crossproduct", "cross"},
-            {"combine2", "combine2"},
         };
         ternary = {
-            {"combine3", "combine3"},
         };
         typeMapping = {
             {"float", "float"},
@@ -796,6 +794,9 @@ struct MXHelper {
             const std::string& nameNodeGraph,
             std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& ms
     ) {
+        if (ms.count(onode_socket) == 0) {
+            return;
+        }
         if (ms[onode_socket].count("nodename")) {
             edges.emplace_back(onode_name, zeno_socket, nameNodeGraph + ms[onode_socket]["nodename"]);
         }
@@ -981,6 +982,21 @@ void ZenoGraphsEditor::importMaterialX() {
                         Zeno_SetInputDefl(hNode, socket, items[i].toFloat());
                     }
                 }
+            }
+            else if (start_name == "combine2") {
+                auto hNode = Zeno_AddNode(hGraph, "ShaderPackVector");
+                mx.node_id_mapping[name] = hNode;
+                Zeno_SetParam(hNode, "type", std::string("vec2"));
+                mx.set_socket(name, "x", "in1", hNode, nameNodeGraph, ms);
+                mx.set_socket(name, "y", "in2", hNode, nameNodeGraph, ms);
+            }
+            else if (start_name == "combine3") {
+                auto hNode = Zeno_AddNode(hGraph, "ShaderPackVector");
+                mx.node_id_mapping[name] = hNode;
+                Zeno_SetParam(hNode, "type", std::string("vec3"));
+                mx.set_socket(name, "x", "in1", hNode, nameNodeGraph, ms);
+                mx.set_socket(name, "y", "in2", hNode, nameNodeGraph, ms);
+                mx.set_socket(name, "z", "in3", hNode, nameNodeGraph, ms);
             }
             else if (start_name == "convert") {
                 auto hNode = Zeno_AddNode(hGraph, "ShaderConvert");

@@ -998,14 +998,6 @@ __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale)
     return norm;
 }
 
-__forceinline__ __device__ vec2 combine2(float x, float y) {
-    return vec2(x, y);
-}
-
-__forceinline__ __device__ vec3 combine3(float x, float y, float z) {
-    return vec3(x, y, z);
-}
-
 __forceinline__ __device__ vec3 hsvToRgb(vec3 hsv) {
     // Reference for this technique: Foley & van Dam
     float h = hsv.x; float s = hsv.y; float v = hsv.z;
