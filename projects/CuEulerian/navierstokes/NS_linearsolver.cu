@@ -505,13 +505,27 @@ struct ZSNSPressureProject : INode {
                             p_z[0] = shmem[idx - 1];
                             p_z[1] = shmem[idx + 1];
 
-                            float p_this =
-                                (1.f - sor) * p_self +
-                                sor * ((p_x[0] + p_x[1] + p_y[0] + p_y[1] + p_z[0] + p_z[1]) - div * dx * dx * rho) /
-                                    6.f;
+                            float cut_x[2], cut_y[2], cut_z[2];
+                            auto icoord = spgv.iCoord(blockno, cellno);
+                            cut_x[0] = spgv.value("cut", 0, blockno, cellno);
+                            cut_y[0] = spgv.value("cut", 1, blockno, cellno);
+                            cut_z[0] = spgv.value("cut", 2, blockno, cellno);
+                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
+                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
+                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
 
-                            // spgv(pOffset, blockno, cellno) = p_this;
-                            shmem[idx] = p_this;
+                            float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
+
+                            p_self = (1.f - sor) * p_self +
+                                     sor *
+                                         ((p_x[0] * cut_x[0] + p_x[1] * cut_x[1] + p_y[0] * cut_y[0] +
+                                           p_y[1] * cut_y[1] + p_z[0] * cut_z[0] + p_z[1] * cut_z[1]) *
+                                              dx -
+                                          div * rho) /
+                                         (cut_sum * dx);
+
+                            // spgv(pOffset, blockno, cellno) = p_self;
+                            shmem[idx] = p_self;
                         }
 
                         tile.sync();
@@ -696,18 +710,29 @@ struct ZSNSPressureProject : INode {
                     ccoord += 1;
 
                     const int stcl = 1; // stencil point in each side
-                    float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+                    float p_x[2], p_y[2], p_z[2], p_self;
 
-                    for (int i = -stcl; i <= stcl; ++i) {
-                        p_x[i + stcl] = shmem[halo_index(ccoord[0] + i, ccoord[1], ccoord[2])];
-                        p_y[i + stcl] = shmem[halo_index(ccoord[0], ccoord[1] + i, ccoord[2])];
-                        p_z[i + stcl] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] + i)];
-                    }
+                    p_self = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
+                    p_x[0] = shmem[halo_index(ccoord[0] - 1, ccoord[1], ccoord[2])];
+                    p_x[1] = shmem[halo_index(ccoord[0] + 1, ccoord[1], ccoord[2])];
+                    p_y[0] = shmem[halo_index(ccoord[0], ccoord[1] - 1, ccoord[2])];
+                    p_y[1] = shmem[halo_index(ccoord[0], ccoord[1] + 1, ccoord[2])];
+                    p_z[0] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] - 1)];
+                    p_z[1] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] + 1)];
 
-                    float m_residual = div - (scheme::central_diff_2nd(p_x[0], p_x[1], p_x[2], dx) +
-                                              scheme::central_diff_2nd(p_y[0], p_y[1], p_y[2], dx) +
-                                              scheme::central_diff_2nd(p_z[0], p_z[1], p_z[2], dx)) /
-                                                 rho;
+                    float cut_x[2], cut_y[2], cut_z[2];
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    cut_x[0] = spgv.value("cut", 0, blockno, cellno);
+                    cut_y[0] = spgv.value("cut", 1, blockno, cellno);
+                    cut_z[0] = spgv.value("cut", 2, blockno, cellno);
+                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
+                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
+                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+
+                    float m_residual = div - ((p_x[1] - p_self) * cut_x[1] - (p_self - p_x[0]) * cut_x[0] +
+                                              (p_y[1] - p_self) * cut_y[1] - (p_self - p_y[0]) * cut_y[0] +
+                                              (p_z[1] - p_self) * cut_z[1] - (p_self - p_z[0]) * cut_z[0]) *
+                                                 dx / rho;
 
                     spgv("tmp", 1, blockno, cellno) = m_residual;
 
@@ -753,7 +778,7 @@ struct ZSNSPressureProject : INode {
                             auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
                             res_sum += shmem[cellno_f];
                         }
-                res_sum /= 8.f;
+                // res_sum /= 8.f;
 
                 spgv_c("tmp", blockno, cellno) = res_sum;
             });
@@ -891,7 +916,7 @@ struct ZSNSPressureProject : INode {
         // velocity divergence (source term)
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), rhs = zs::proxy<space>(rhs), ts_c = zs::wrapv<bucket_size>{},
-             tpb_c = zs::wrapv<tpb>{}, overDxDt = 1.f / dx / dt, dt, hasDiv, blockCnt = block_cnt,
+             tpb_c = zs::wrapv<tpb>{}, dxSqOverDt = dx * dx / dt, dt, hasDiv, blockCnt = block_cnt,
              vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
                                                                                int tid) mutable {
                 // load halo
@@ -952,7 +977,12 @@ struct ZSNSPressureProject : INode {
                     u_x[0] = shmem[idx];
                     u_x[1] = shmem[idx + 1];
 
-                    outputShmem[idx] = (u_x[1] - u_x[0]) * overDxDt;
+                    float cut_x[2];
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    cut_x[0] = spgv.value("cut", 0, blockno, cellno);
+                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
+
+                    outputShmem[idx] = (u_x[1] * cut_x[1] - u_x[0] * cut_x[0]) * dxSqOverDt;
                 }
 
                 //-------------------v-------------------
@@ -988,7 +1018,12 @@ struct ZSNSPressureProject : INode {
                     u_y[0] = shmem[idx];
                     u_y[1] = shmem[idx + halo_side_length];
 
-                    outputShmem[idx] += (u_y[1] - u_y[0]) * overDxDt;
+                    float cut_y[2];
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    cut_y[0] = spgv.value("cut", 1, blockno, cellno);
+                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
+
+                    outputShmem[idx] += (u_y[1] * cut_y[1] - u_y[0] * cut_y[0]) * dxSqOverDt;
                 }
 
                 //-------------------w-------------------
@@ -1024,12 +1059,20 @@ struct ZSNSPressureProject : INode {
                     u_z[0] = shmem[idx];
                     u_z[1] = shmem[idx + halo_side_length * halo_side_length];
 
-                    float div_term = outputShmem[idx];
-                    div_term += (u_z[1] - u_z[0]) * overDxDt;
+                    float cut_z[2];
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    cut_z[0] = spgv.value("cut", 2, blockno, cellno);
+                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
 
+                    float div_term = outputShmem[idx];
+                    div_term += (u_z[1] * cut_z[1] - u_z[0] * cut_z[0]) * dxSqOverDt;
+
+#if 0
                     if (hasDiv) {
+                        // fix me
                         div_term -= spgv.value("div", blockno, cellno) / dt;
                     }
+#endif
 
                     spgv("tmp", blockno, cellno) = div_term;
 
@@ -1169,6 +1212,77 @@ struct ZSNSPressureProject : INode {
         update_cur(NSGrid, "v");
     }
 
+    template <int level> void coarseFaceFrac(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg_f = NSGrid->getLevel<level>();
+        auto &spg_c = NSGrid->getLevel<level + 1>();
+
+        using value_type = typename RM_CVREF_T(spg_f)::value_type;
+        constexpr int arena_size = spg_f.block_size;
+        pol.shmem(arena_size * sizeof(value_type));
+
+        pol(zs::Collapse{spg_c.numBlocks(), spg_c.block_size},
+            [spgv_c = zs::proxy<space>(spg_c),
+             spgv_f = zs::proxy<space>(spg_f)] __device__(value_type * shmem, int blockno, int cellno) mutable {
+                using vec3i = zs::vec<int, 3>;
+                auto ccoord = spgv_c.local_offset_to_coord(cellno) * 2;
+
+                // x-face
+                for (int i = cellno; i < spgv_f.block_size; i += spgv_c.block_size)
+                    shmem[i] = spgv_f.value("cut", 0, blockno, i);
+
+                __syncthreads();
+
+                float cut_sum = 0;
+                for (int j = 0; j < 2; ++j)
+                    for (int k = 0; k < 2; ++k) {
+                        auto ccoord_f = ccoord + vec3i{0, j, k};
+                        auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
+                        cut_sum += shmem[cellno_f];
+                    }
+
+                spgv_c("cut", 0, blockno, cellno) = cut_sum;
+
+                __syncthreads();
+
+                // y-face
+                for (int i = cellno; i < spgv_f.block_size; i += spgv_c.block_size)
+                    shmem[i] = spgv_f.value("cut", 1, blockno, i);
+
+                __syncthreads();
+
+                cut_sum = 0;
+                for (int i = 0; i < 2; ++i)
+                    for (int k = 0; k < 2; ++k) {
+                        auto ccoord_f = ccoord + vec3i{i, 0, k};
+                        auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
+                        cut_sum += shmem[cellno_f];
+                    }
+
+                spgv_c("cut", 1, blockno, cellno) = cut_sum;
+
+                __syncthreads();
+
+                // z-face
+                for (int i = cellno; i < spgv_f.block_size; i += spgv_c.block_size)
+                    shmem[i] = spgv_f.value("cut", 2, blockno, i);
+
+                __syncthreads();
+
+                cut_sum = 0;
+                for (int i = 0; i < 2; ++i)
+                    for (int j = 0; j < 2; ++j) {
+                        auto ccoord_f = ccoord + vec3i{i, j, 0};
+                        auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
+                        cut_sum += shmem[cellno_f];
+                    }
+
+                spgv_c("cut", 2, blockno, cellno) = cut_sum;
+            });
+        pol.shmem(0);
+    }
+
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
@@ -1216,6 +1330,10 @@ struct ZSNSPressureProject : INode {
         // Multi-grid solver with V-Cycle
         const float tolerence = 1e-5;
         printf("========MultiGrid V-cycle Begin========\n");
+
+        coarseFaceFrac<0>(pol, NSGrid.get());
+        coarseFaceFrac<1>(pol, NSGrid.get());
+        coarseFaceFrac<2>(pol, NSGrid.get());
 
 #if ENABLE_PROFILE
         s_smoothTime[0] = s_smoothTime[1] = s_smoothTime[2] = s_smoothTime[3] = 0;
