@@ -1,4 +1,4 @@
-target_sources(legacyPBD INTERFACE 
+target_sources(zeno PRIVATE 
 # PBF.cpp 
 # NeighborSearch_BVH.cpp
 # NeighborSearch.cpp
@@ -16,3 +16,10 @@ testPBFCube.cpp
 PBF_BVH.cpp
 PBF_BVH.h
 )
+
+target_include_directories(zeno PRIVATE ${PROJECT_SOURCE_DIR})
+
+if(NOT ZENO_WITH_ZenoFX)
+  message(FATAL_ERROR "ZenoFX must be ON when PBD is ON! "
+    "Please specify: -DZENO_WITH_ZenoFX:BOOL=ON")
+endif()

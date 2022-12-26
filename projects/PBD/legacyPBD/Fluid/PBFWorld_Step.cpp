@@ -1,4 +1,4 @@
-#include "../ZenoFX/LinearBvh.h"
+#include "../../../ZenoFX/LinearBvh.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include "./PBFWorld.h"
