@@ -116,6 +116,7 @@ void primSampleTexture(
     const std::string &dstChannel,
     std::shared_ptr<PrimitiveObject> img,
     const std::string &wrap,
+    // ZHOUHANG: please add arg filter, which is enum NEAREST LINEAR, impl bilerp version for smooth sample
     vec3f borderColor,
     float remapMin,
     float remapMax
@@ -128,6 +129,7 @@ void primSampleTexture(
     auto w = img->userData().get2<int>("w");
     auto h = img->userData().get2<int>("h");
     std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
+    // if (filter == "NEAREST") {
     if (wrap == "REPEAT") {
         queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
             uv = (uv - remapMin) / (remapMax - remapMin);
@@ -156,6 +158,9 @@ void primSampleTexture(
         zeno::log_error("wrap type error");
         throw std::runtime_error("wrap type error");
     }
+    // else if (filter == "NEAREST") {
+    // copy-paste all above wrap ifelses
+    // }
 
     #pragma omp parallel for
     for (auto i = 0; i < uv.size(); i++) {
