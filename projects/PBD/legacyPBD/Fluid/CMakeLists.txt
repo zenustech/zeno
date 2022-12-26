@@ -14,4 +14,5 @@ target_sources(legacyPBD INTERFACE
 # PBFWorld_Debug.cpp
 testPBFCube.cpp
 PBF_BVH.cpp
+PBF_BVH.h
 )

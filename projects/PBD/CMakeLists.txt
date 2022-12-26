@@ -4,7 +4,7 @@ if(USE_legacyPBD)
     add_subdirectory(legacyPBD)
 endif()
 
-option(USE_zenoPBD "Build the new zenoPBD" OFF)
+option(USE_zenoPBD "Build the new zenoPBD" ON)
 if(USE_zenoPBD)
     message("Building new zenoPBD")
     add_subdirectory(zenoPBD)
