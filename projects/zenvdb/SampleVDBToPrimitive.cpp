@@ -109,7 +109,7 @@ struct SampleVDBToPrimitive : INode {
     else if (dynamic_cast<VDBFloat3Grid *>(grid.get()))
         prim->add_attr<vec3f>(attr);
     else
-        printf("unknown vdb grid type\n");
+        throw zeno::Exception("unknown vdb grid type\n");
 
     if(type == "Periodic")
     {
@@ -120,7 +120,7 @@ struct SampleVDBToPrimitive : INode {
 
     //std::visit([&](auto &vel) { 
     prim->attr_visit(attr, [&] (auto &vel) {
-      if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
+      if constexpr (is_vdb_to_prim_convertible<std::decay_t<decltype(vel)>>::value)
         sampleVDBAttribute(pos, vel, grid.get()); 
     });
                //prim->attr(attr));
@@ -162,7 +162,7 @@ static void primSampleVDB(
         throw std::runtime_error("unknown vdb grid type");
     }
     prim->attr_visit(dstChannel, [&] (auto &vel) {
-        if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
+        if constexpr (is_vdb_to_prim_convertible<std::decay_t<decltype(vel)>>::value)
             sampleVDBAttribute2(pos, vel, grid.get(), remapMin, remapMax);
     });
 }
@@ -205,7 +205,7 @@ struct PrimSample : zeno::INode {
         auto wrap = get_input2<std::string>("wrap");
         auto borderColor = get_input2<vec3f>("borderColor");
         if (has_input<PrimitiveObject>("sampledObject") && get_input<PrimitiveObject>("sampledObject")->userData().has("isImage")) {
-            auto image = get_input2<PrimitiveObject>("sampledObject");
+            auto image = get_input<PrimitiveObject>("sampledObject");
             primSampleTexture(prim, srcChannel, dstChannel, image, wrap, borderColor, remapMin, remapMax);
         }
         else if (has_input<HeatmapObject>("sampledObject")) {
@@ -215,6 +215,8 @@ struct PrimSample : zeno::INode {
         else if (has_input<VDBGrid>("sampledObject")) {
             auto grid = get_input<VDBGrid>("vdbGrid");
             primSampleVDB(prim, srcChannel, dstChannel, grid, remapMin, remapMax);
+        } else {
+            throw zeno::Exception("unknown input type of sampledObject");
         }
 
         set_output("outPrim", std::move(prim));

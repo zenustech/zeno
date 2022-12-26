@@ -92,15 +92,15 @@ static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h) {
     return {iu, iv};
 }
 
-static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) {
-    int iu = uv[0];
-    int iv = uv[1];
-    int start = (iu + iv * w) * n;
-    float r = float(data[start]) / 255.0f;
-    float g = float(data[start+1]) / 255.0f;
-    float b = float(data[start+2]) / 255.0f;
-    return {r, g, b};
-}
+//static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) {
+    //int iu = uv[0];
+    //int iv = uv[1];
+    //int start = (iu + iv * w) * n;
+    //float r = float(data[start]) / 255.0f;
+    //float g = float(data[start+1]) / 255.0f;
+    //float b = float(data[start+2]) / 255.0f;
+    //return {r, g, b};
+//}
 static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n) {
     int iu = uv[0];
     int iv = uv[1];
