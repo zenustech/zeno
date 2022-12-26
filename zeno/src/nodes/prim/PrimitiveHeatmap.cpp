@@ -120,4 +120,20 @@ ZENDEFNODE(PrimSample1D, {
     {},
     {"primitive"},
 });
+void primSampleHeatmap(
+        std::shared_ptr<PrimitiveObject> prim,
+        const std::string &srcChannel,
+        const std::string &dstChannel,
+        std::shared_ptr<HeatmapObject> heatmap,
+        float remapMin,
+        float remapMax
+) {
+    auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
+    auto &src = prim->attr<float>(srcChannel);
+#pragma omp parallel for //ideally this could be done in opengl
+    for (int i = 0; i < src.size(); i++) {
+        auto x = (src[i]-remapMin)/(remapMax-remapMin);
+        clr[i] = heatmap->interp(x);
+    }
+}
 }
