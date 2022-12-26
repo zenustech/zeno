@@ -120,10 +120,13 @@ void primSampleTexture(
     float remapMin,
     float remapMax
 ) {
+    if (!img->userData().has("isImage")) throw zeno::Exception("not an image");
     using ColorT = float;
     const ColorT *data = (float *)img->verts.data();
     auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
     auto &uv = prim->attr<zeno::vec3f>(srcChannel);
+    auto w = img->userData().get2<int>("w");
+    auto h = img->userData().get2<int>("h");
     std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
     if (wrap == "REPEAT") {
         queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
@@ -156,7 +159,7 @@ void primSampleTexture(
 
     #pragma omp parallel for
     for (auto i = 0; i < uv.size(); i++) {
-        clr[i] = queryColor(uv[i], data, w, h, n, borderColor);
+        clr[i] = queryColor(uv[i], data, w, h, 3, borderColor);
     }
 }
 
@@ -165,12 +168,12 @@ struct PrimSample2D : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
         auto dstChannel = get_input2<std::string>("targetChannel");
-        auto imagePath = get_input2<std::string>("imagePath");
+        auto image = get_input2<PrimitiveObject>("image");
         auto wrap = get_input2<std::string>("wrap");
         auto borderColor = get_input2<vec3f>("borderColor");
         auto remapMin = get_input2<float>("remapMin");
         auto remapMax = get_input2<float>("remapMax");
-        primSampleTexture(prim, srcChannel, dstChannel, imagePath, wrap, borderColor, remapMin, remapMax);
+        primSampleTexture(prim, srcChannel, dstChannel, image, wrap, borderColor, remapMin, remapMax);
 
         set_output("outPrim", std::move(prim));
     }
@@ -178,7 +181,7 @@ struct PrimSample2D : zeno::INode {
 ZENDEFNODE(PrimSample2D, {
     {
         {"PrimitiveObject", "prim"},
-        {"readpath", "imagePath"},
+        {"PrimitiveObject", "image"},
         {"string", "uvChannel", "uv"},
         {"string", "targetChannel", "clr"},
         {"float", "remapMin", "0"},
