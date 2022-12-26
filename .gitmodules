@@ -25,3 +25,6 @@
 [submodule "projects/PBD/zenoPBD"]
 	path = projects/PBD/zenoPBD
 	url = https://github.com/chunleili/zenoPBD
+[submodule "projects/SPH/SPlisHSPlasH"]
+	path = projects/SPH/SPlisHSPlasH
+	url = https://github.com/chunleili/SPlisHSPlasH
