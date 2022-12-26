@@ -97,8 +97,59 @@ static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) 
     float b = float(data[start+2]) / 255.0f;
     return {r, g, b};
 }
+void primSampleTexture(
+    std::shared_ptr<PrimitiveObject> prim,
+    const std::string &srcChannel,
+    const std::string &dstChannel,
+    const std::string &imagePath,
+    const std::string &wrap,
+    vec3f borderColor,
+    float remapMin,
+    float remapMax
+) {
+    int w, h, n;
+    stbi_set_flip_vertically_on_load(true);
+    uint8_t* data = stbi_load(imagePath.c_str(), &w, &h, &n, 0);
+    auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
+    auto &uv = prim->attr<zeno::vec3f>(srcChannel);
+    std::function<zeno::vec3f(vec3f, const uint8_t*, int, int, int, vec3f)> queryColor;
+    if (wrap == "REPEAT") {
+        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+            uv = (uv - remapMin) / (remapMax - remapMin);
+            auto iuv = uvRepeat(uv, w, h);
+            return queryColorInner(iuv, data, w, n);
+        };
+    }
+    else if (wrap == "CLAMP_TO_EDGE") {
+        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+            uv = (uv - remapMin) / (remapMax - remapMin);
+            auto iuv = uvClampToEdge(uv, w, h);
+            return queryColorInner(iuv, data, w, n);
+        };
+    }
+    else if (wrap == "CLAMP_TO_BORDER") {
+        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f clr)-> vec3f {
+            uv = (uv - remapMin) / (remapMax - remapMin);
+            if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
+                return clr;
+            }
+            auto iuv = uvClampToEdge(uv, w, h);
+            return queryColorInner(iuv, data, w, n);
+        };
+    }
+    else {
+        zeno::log_error("wrap type error");
+        throw std::runtime_error("wrap type error");
+    }
 
-struct PrimSampleTextureToAttr : zeno::INode {
+    #pragma omp parallel for
+    for (auto i = 0; i < uv.size(); i++) {
+        clr[i] = queryColor(uv[i], data, w, h, n, borderColor);
+    }
+    stbi_image_free(data);
+}
+
+struct PrimSample2D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
@@ -106,50 +157,21 @@ struct PrimSampleTextureToAttr : zeno::INode {
         auto imagePath = get_input2<std::string>("imagePath");
         auto wrap = get_input2<std::string>("wrap");
         auto borderColor = get_input2<vec3f>("borderColor");
-        int w, h, n;
-        stbi_set_flip_vertically_on_load(true);
-        uint8_t* data = stbi_load(imagePath.c_str(), &w, &h, &n, 0);
-        auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
-        auto &uv = prim->attr<zeno::vec3f>(srcChannel);
-        std::function<zeno::vec3f(vec3f, const uint8_t*, int, int, int, vec3f)> queryColor;
-        if (wrap == "REPEAT") {
-            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
-                auto iuv = uvRepeat(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        }
-        else if (wrap == "CLAMP_TO_EDGE") {
-            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
-                auto iuv = uvClampToEdge(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        }
-        else if (wrap == "CLAMP_TO_BORDER") {
-            queryColor = [] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f clr)-> vec3f {
-                if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
-                    return clr;
-                }
-                auto iuv = uvClampToEdge(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        }
-        else {
-            throw std::runtime_error("wrap type error");
-        }
+        auto remapMin = get_input2<float>("remapMin");
+        auto remapMax = get_input2<float>("remapMax");
+        primSampleTexture(prim, srcChannel, dstChannel, imagePath, wrap, borderColor, remapMin, remapMax);
 
-        for (auto i = 0; i < uv.size(); i++) {
-            clr[i] = queryColor(uv[i], data, w, h, n, borderColor);
-        }
-        stbi_image_free(data);
         set_output("outPrim", std::move(prim));
     }
 };
-ZENDEFNODE(PrimSampleTextureToAttr, {
+ZENDEFNODE(PrimSample2D, {
     {
         {"PrimitiveObject", "prim"},
+        {"readpath", "imagePath"},
         {"string", "uvChannel", "uv"},
         {"string", "targetChannel", "clr"},
-        {"readpath", "imagePath"},
+        {"float", "remapMin", "0"},
+        {"float", "remapMax", "1"},
         {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"vec3f", "borderColor", "0,0,0"},
     },
