@@ -164,10 +164,12 @@ struct QueryNearestPrimitive : zeno::INode {
       auto idTag = get_input2<std::string>("idTag");
       auto distTag = get_input2<std::string>("distTag");
       auto weightTag = get_input2<std::string>("weightTag");
+      auto closestPointTag = get_input2<std::string>("closestPointTag");
 
       auto &bvhids = prim->add_attr<float>(idTag);
       auto &dists = prim->add_attr<float>(distTag);
       auto &ws = prim->add_attr<zeno::vec3f>(weightTag);
+      auto &closestPoints = prim->add_attr<zeno::vec3f>(closestPointTag);
 
       std::vector<KVPair> kvs(prim->size());
       std::vector<Ti> ids(prim->size(), -1);
@@ -182,6 +184,7 @@ struct QueryNearestPrimitive : zeno::INode {
         bvhids[i] = ids[i];
         dists[i] = kvs[i].dist;
         ws[i] = kvs[i].w;
+        closestPoints[i] = lbvh->retrievePrimitiveCenter(ids[i], kvs[i].w);
       }
 
       KVPair mi{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits<float>::max(), -1};
@@ -232,6 +235,7 @@ ZENDEFNODE(QueryNearestPrimitive, {
                                       {{"prim"}, {"LBvh", "lbvh"},
                                       {"string", "idTag", "bvh_id"},
                                       {"string", "distTag", "bvh_dist"},
+                                      {"string", "closestPointTag", "cp"},
                                       {"string", "weightTag", "bvh_ws"}
                                       },
                                       {{"NumericObject", "primid"},

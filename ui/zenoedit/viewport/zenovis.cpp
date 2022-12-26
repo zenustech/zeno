@@ -36,9 +36,9 @@ void Zenovis::initializeGL()
 
 void Zenovis::paintGL()
 {
+    int frameid = session->get_curr_frameid();
     doFrameUpdate();
     session->new_frame();
-    int frameid = session->get_curr_frameid();
     emit frameDrawn(frameid);
 }
 
@@ -79,6 +79,11 @@ void Zenovis::startPlay(bool bPlaying)
     m_playing = bPlaying;
 }
 
+bool Zenovis::isPlaying() const
+{
+    return m_playing;
+}
+
 zenovis::Session *Zenovis::getSession() const
 {
     return session.get();
@@ -115,15 +120,15 @@ void Zenovis::doFrameUpdate()
     int frameid = getCurrentFrameId();
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);
-        frameid += 1;
     }
-    frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
 
     bool inserted = session->load_objects();
     if (inserted) {
         emit objectsUpdated(frameid);
     }
+    if (m_playing)
+        setCurrentFrameId(frameid + 1);
 }
 
 /*

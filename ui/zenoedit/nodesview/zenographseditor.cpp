@@ -661,20 +661,58 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     else if (text == tr("Set ZENCACHE"))
     {
         QSettings settings(zsCompanyName, zsEditor);
-        QString v = settings.value("zencachedir").toString();
-        QString v2 = settings.value("zencachenum").toString();
+        bool bEnableCache = settings.value("zencache-enable").toBool();
+        QString cacheRootDir = settings.value("zencachedir").toString();
+        int cacheNum = settings.value("zencachenum").toInt();
 
-        bool ok;
-        QString text = QInputDialog::getText(this, tr("Set ZENCACHE directory"),
-                                             tr("ZENCACHEDIR"), QLineEdit::Normal,
-                                             v, &ok);
-        QString text2 = QInputDialog::getText(this, tr("Set ZENCACHE count"),
-                                             tr("ZENCACHENUM"), QLineEdit::Normal,
-                                             v2, &ok);
-        if (ok) {
-            text.replace('\\', '/');
-            settings.setValue("zencachedir", text);
-            settings.setValue("zencachenum", text2);
+        ZLineEdit* pathLineEdit = new ZLineEdit(cacheRootDir);
+        pathLineEdit->setFocusPolicy(Qt::ClickFocus);
+        pathLineEdit->setProperty("cssClass", "proppanel");
+        pathLineEdit->setFixedWidth(256);
+        QAction* pAction = new QAction;
+        QIcon icon;
+        icon.addPixmap(QPixmap(":/icons/file-loader.svg"), QIcon::Normal, QIcon::Off);
+        icon.addPixmap(QPixmap(":/icons/file-loader-on.svg"), QIcon::Active, QIcon::Off);
+        pAction->setIcon(icon);
+        pathLineEdit->addAction(pAction, QLineEdit::TrailingPosition);
+
+        connect(pAction, &QAction::triggered, this, [=]() {
+            QString dir = QFileDialog::getExistingDirectory(nullptr, "File to Open", "");
+            if (dir.isEmpty())
+            {
+                return;
+            }
+            pathLineEdit->setText(dir);
+        });
+
+        QCheckBox* pCheckbox = new QCheckBox;
+        pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
+
+        QSpinBox* pSpinBox = new QSpinBox;
+        pSpinBox->setRange(0, 10000);
+        pSpinBox->setValue(cacheNum);
+
+        QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+        QDialog dlg(this);
+        QGridLayout* pLayout = new QGridLayout;
+        pLayout->addWidget(new QLabel("enable cache"), 0, 0);
+        pLayout->addWidget(pCheckbox, 0, 1);
+        pLayout->addWidget(new QLabel("cache num"), 1, 0);
+        pLayout->addWidget(pSpinBox, 1, 1);
+        pLayout->addWidget(new QLabel("cache root"), 2, 0);
+        pLayout->addWidget(pathLineEdit, 2, 1);
+        pLayout->addWidget(pButtonBox, 3, 1);
+
+        connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+        connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+
+        dlg.setLayout(pLayout);
+        if (QDialog::Accepted == dlg.exec())
+        {
+            settings.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
+            settings.setValue("zencachedir", pathLineEdit->text());
+            settings.setValue("zencachenum", pSpinBox->value());
         }
     }
 }

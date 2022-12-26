@@ -2,6 +2,7 @@
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
+#include "zensim/container/SpatialHash.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
@@ -371,6 +372,16 @@ struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
   auto &get() noexcept { return bvh; }
   const auto &get() const noexcept { return bvh; }
   lbvh_t bvh;
+  zs::f32 thickness;
+  element_e et{point};
+};
+
+struct ZenoSpatialHash : IObjectClone<ZenoSpatialHash> {
+  enum element_e { point, curve, surface, tet };
+  using sh_t = zs::SpatialHash<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return sh; }
+  const auto &get() const noexcept { return sh; }
+  sh_t sh;
   zs::f32 thickness;
   element_e et{point};
 };
