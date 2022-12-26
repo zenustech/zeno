@@ -120,25 +120,27 @@ void primSampleTexture(
     float remapMin,
     float remapMax
 ) {
+    using ColorT = float;
+    const ColorT *data = (float *)img->verts.data();
     auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
     auto &uv = prim->attr<zeno::vec3f>(srcChannel);
-    std::function<zeno::vec3f(vec3f, const uint8_t*, int, int, int, vec3f)> queryColor;
+    std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
     if (wrap == "REPEAT") {
-        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
             uv = (uv - remapMin) / (remapMax - remapMin);
             auto iuv = uvRepeat(uv, w, h);
             return queryColorInner(iuv, data, w, n);
         };
     }
     else if (wrap == "CLAMP_TO_EDGE") {
-        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f _clr)-> vec3f {
+        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
             uv = (uv - remapMin) / (remapMax - remapMin);
             auto iuv = uvClampToEdge(uv, w, h);
             return queryColorInner(iuv, data, w, n);
         };
     }
     else if (wrap == "CLAMP_TO_BORDER") {
-        queryColor = [=] (vec3f uv, const uint8_t* data, int w, int h, int n, vec3f clr)-> vec3f {
+        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f clr)-> vec3f {
             uv = (uv - remapMin) / (remapMax - remapMin);
             if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
                 return clr;
