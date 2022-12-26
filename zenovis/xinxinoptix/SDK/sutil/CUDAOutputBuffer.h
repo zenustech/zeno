@@ -38,7 +38,7 @@
 #include <vector>
 
 #include "sutil.h"
-#include <cudaMemTracer.hpp>
+#include <cudaMemMarco.hpp>
 
 namespace sutil
 {
