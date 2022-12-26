@@ -56,18 +56,20 @@ void RecordVideoMgr::finishRecord()
     if (m_timer)
         m_timer->stop();
     //Zenovis::GetInstance().blockSignals(false);
-    QString path = m_recordInfo.record_path + "/P/%06d.png";
+    QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
     QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
 
-    QString cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3k -c:v mpeg4 output.mp4")
+    QString cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3k -c:v mpeg4 %4")
               .arg(m_recordInfo.fps)
-              .arg(m_recordInfo.record_path + "/%07d.jpg")
-              .arg(m_recordInfo.bitrate);
+              .arg(imgPath)
+              .arg(m_recordInfo.bitrate)
+              .arg(outPath);
     int ret = QProcess::execute(cmd);
     if (ret == 0)
     {
-        if (m_recordInfo.audioPath.isEmpty()) {
-            cmd = QString("ffmpeg -y -i output.mp4 -i %1 -c:v copy -c:a aac output_av.mp4")
+        if (!m_recordInfo.audioPath.isEmpty()) {
+            cmd = QString("ffmpeg -y -i %1 -i %2 -c:v copy -c:a aac output_av.mp4")
+                      .arg(outPath)
                       .arg(m_recordInfo.audioPath);
             ret = QProcess::execute(cmd);
             if (ret == 0)
@@ -97,7 +99,7 @@ void RecordVideoMgr::recordFrame()
     inst.setCurrentFrameId(m_currFrame);
     inst.paintGL();
 
-    auto record_file = zeno::format("{}/P/{:06d}.png", m_recordInfo.record_path.toStdString(), m_currFrame);
+    auto record_file = zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), m_currFrame);
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     auto old_num_samples = scene->drawOptions->num_samples;
@@ -131,7 +133,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
     {
         if (currFrame >= m_recordInfo.frameRange.first && currFrame <= m_recordInfo.frameRange.second)
         {
-            auto record_file = zeno::format("{}/P/{:06d}.png", m_recordInfo.record_path.toStdString(), currFrame);
+            auto record_file = zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), currFrame);
             QFileInfo fileInfo(QString::fromStdString(record_file));
 
             auto scene = Zenovis::GetInstance().getSession()->get_scene();

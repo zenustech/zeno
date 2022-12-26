@@ -5,7 +5,7 @@
 
 struct VideoRecInfo
 {
-    QString record_path;
+    QString record_path;    //store screenshot img and mp4.
     QString audioPath;
     QString videoname;
     QVector2D res;
@@ -17,6 +17,7 @@ struct VideoRecInfo
     int numOptix = 1;
     int numSamples = 16;
     bool bRecordRun;
+    bool exitWhenRecordFinish = false;
     VideoRecInfo()
         : bRecordRun(false)
         , fps(0)
