@@ -1,7 +1,7 @@
 #include <iostream>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include "SPlisHSPlasH/SPlisHSPlasH/DFSPH/TimeStepDFSPH.h"
+#include "SPlisHSPlasH/DFSPH/TimeStepDFSPH.h"
 namespace zeno
 {
 struct DFSPH : INode

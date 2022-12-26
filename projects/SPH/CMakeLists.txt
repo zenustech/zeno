@@ -9,5 +9,5 @@ target_sources(zeno PRIVATE
 
 target_include_directories(zeno
 PRIVATE
-    .
+    SPlisHSPlasH
 )
