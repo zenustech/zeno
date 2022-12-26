@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "zeno/utils/log.h"
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
 
 namespace zeno {
