@@ -9,7 +9,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 
-typedef rapidjson::Writer<rapidjson::StringBuffer> RAPIDJSON_WRITER;
+typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> PRETTY_WRITER;
 
 class JsonObjBatch

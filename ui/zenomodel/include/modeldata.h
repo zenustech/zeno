@@ -104,9 +104,11 @@ Q_DECLARE_METATYPE(PARAMS_INFO)
 struct EdgeInfo
 {
     QString outputNode;
-    QString outputSock;
+    QString outputSock;     //may be the full path of socket, which is convient to process
+    QString outSockPath;    //option: path for socket.
     QString inputNode;
-    QString inputSock;
+    QString inputSock;      //may be the full path of socket
+    QString inSockPath;
 
     EdgeInfo() = default;
     EdgeInfo(const QString &outNode, const QString &inNode, const QString &outSock, const QString &inSock)

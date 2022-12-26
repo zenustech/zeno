@@ -322,39 +322,19 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                     outId = arr[0].GetString();
                 if (arr[1].IsString())
                     outSock = arr[1].GetString();
-                pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
-            }
-            else
-            {
-                //multilinks:
-                /*
-                 [xxx-node1, xxx-socket],
-                 [xxx-node2, xxx-socket],
-                 ...
-                 deflVal,
-                 */
-                const rapidjson::Value& defaultValue = arr[n - 1];
-                for (int i = 0; i < n - 1; i++)
-                {
-                    const auto& conn = arr[i];
-                    if (conn.IsArray() && conn.Size() == 2 && conn[0].IsString() && conn[1].IsString())
-                    {
-                        outId = conn[0].GetString();
-                        outSock = conn[1].GetString();
-                        pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, defaultValue, legacyDescs);
-                    }
-                }
+
+                EdgeInfo link(outId, id, outSock, inSock);
+                pAcceptor->setInputSocket(nodeName, link, arr[2]);
             }
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
+            EdgeInfo link("", id, "", inSock);
+            pAcceptor->setInputSocket(nodeName, link, rapidjson::Value());
         }
         else if (inputObj.IsObject())
         {
-            //todo: new socket io format.
-            int j;
-            j = 0;
+            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
         }
         else
         {
@@ -362,6 +342,59 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         }
     }
     pAcceptor->endInputs(id, nodeName);
+}
+
+void ZsgReader::_parseSocket(
+        const QString& id,
+        const QString& nodeName,
+        const QString& inSock,
+        bool bInput,
+        const rapidjson::Value& sockObj,
+        IAcceptor* pAcceptor)
+{
+    ZASSERT_EXIT(sockObj.HasMember("property") && sockObj["property"].IsString());
+    QString sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
+    int sockprop = 0;
+    if (sockProp == "dict-panel")
+        sockprop = SOCKPROP_DICTLIST_PANEL;
+    else if (sockProp == "editable")
+        sockprop = SOCKPROP_EDITABLE;
+    else
+        sockprop = SOCKPROP_NORMAL;
+
+    if (sockObj.HasMember("link") && sockObj["link"].IsString())
+    {
+        QString link = QString::fromLocal8Bit(sockObj["link"].GetString());
+        EdgeInfo linkInfo("", id, "", inSock);
+        linkInfo.outSockPath = link;
+        if (sockObj.HasMember("default value"))
+        {
+            pAcceptor->setInputSocket(nodeName, linkInfo, sockObj["default value"]);
+        }
+        else
+        {
+            pAcceptor->setInputSocket(nodeName, linkInfo, rapidjson::Value());
+        }
+    }
+
+    if (sockObj.HasMember("__dictKeys"))
+    {
+        const rapidjson::Value& dictKeys = sockObj["__dictKeys"];
+        for (const auto& kv : dictKeys.GetObject())
+        {
+            const QString& keyName = kv.name.GetString();
+            const rapidjson::Value& inputObj = kv.value;
+
+            QString link;
+            if (inputObj.HasMember("link") && inputObj["link"].IsString()) {
+                link = QString::fromLocal8Bit(inputObj["link"].GetString());
+                QString sockGrp = inSock + ":" + keyName;
+                EdgeInfo linkInfo("", id, "", sockGrp);
+                linkInfo.outSockPath = link;
+                pAcceptor->setInputSocket(nodeName, linkInfo, rapidjson::Value());
+            }
+        }
+    }
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)

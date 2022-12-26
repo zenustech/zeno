@@ -21,14 +21,7 @@ public:
     virtual void setSocketKeys(const QString& id, const QStringList& keys) = 0;
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
     virtual void addDictKey(const QString& id, const QString& keyName, bool bInput) = 0;
-    virtual void setInputSocket(
-        const QString& nodeCls,
-        const QString& id,
-        const QString& inSock,
-        const QString& outId,
-        const QString& outSock,
-        const rapidjson::Value& defaultValue,
-        const NODE_DESCS& legacyDescs) = 0;
+    virtual void setInputSocket(const QString& nodeCls, EdgeInfo linkInfo, const rapidjson::Value& defaultValue) = 0;
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
     virtual void endParams(const QString& id, const QString& nodeCls) = 0;

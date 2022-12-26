@@ -91,30 +91,50 @@ void ModelAcceptor::EndSubgraph()
     //add links on this subgraph.
     for (EdgeInfo link : m_subgLinks)
     {
-        const QModelIndex& inIdx = m_currentGraph->index(link.inputNode);
-        const QModelIndex& outIdx = m_currentGraph->index(link.outputNode);
-        if (inIdx.isValid() && outIdx.isValid())
-        {
-            //check whether the socket exists.
-            IParamModel* pInputs = m_currentGraph->paramModel(inIdx, PARAM_INPUT);
-            IParamModel* pOutputs = m_currentGraph->paramModel(outIdx, PARAM_OUTPUT);
-            if (!pInputs || !pInputs->index(link.inputSock).isValid())
-            {
-                const QString& nodeName = inIdx.data(ROLE_OBJNAME).toString();
-                zeno::log_warn("no such input socket {} in {}", link.outputSock.toStdString(), nodeName.toStdString());
-                continue;
-            }
-            if (!pOutputs || !pOutputs->index(link.outputSock).isValid())
-            {
-                const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
-                zeno::log_warn("no such input socket {} in {}", link.outputSock.toStdString(), nodeName.toStdString());
-                continue;
-            }
+        QModelIndex inSock, outSock, inNode, outNode;
 
-            GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
-            const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
-            pGraphsModel->addLink(link, false);
+        QString inNodeCls, outNodeCls, inSockName, outSockName;
+
+        if (!link.outputNode.isEmpty() && !link.outputSock.isEmpty())
+        {
+            //to process legacy format case like: [out-Node, out-sock, val]
+            const QModelIndex& outIdx = m_currentGraph->index(link.outputNode);
+            IParamModel* pOutputs = m_currentGraph->paramModel(outIdx, PARAM_OUTPUT);
+            outSock = pOutputs->index(link.outputSock);
+            outNodeCls = outIdx.data(ROLE_OBJNAME).toString();
+            outSockName = link.outputSock;
         }
+        else if (!link.outSockPath.isEmpty())
+        {
+            outSock = m_pModel->indexFromPath(link.outSockPath);
+            outSockName = link.outSockPath;
+        }
+
+        if (!link.inputNode.isEmpty() && !link.inputSock.isEmpty())
+        {
+            //legacy way.
+            const QModelIndex& inIdx = m_currentGraph->index(link.inputNode);
+            IParamModel* pInputs = m_currentGraph->paramModel(inIdx, PARAM_INPUT);
+            inSock = pInputs->index(link.inputSock);
+            inSockName = link.inputSock;
+        }
+        else if (!link.inSockPath.isEmpty())
+        {
+            inSock = m_pModel->indexFromPath(link.inSockPath);
+            inSockName = link.inSockPath;
+        }
+
+        if (!inSock.isValid())
+        {
+            zeno::log_warn("no such input socket {} in {}", inSockName.toStdString(), inNodeCls.toStdString());
+            continue;
+        }
+        if (!outSock.isValid())
+        {
+            zeno::log_warn("no such output socket {} in {}", outSockName.toStdString(), outNodeCls.toStdString());
+            continue;
+        }
+        m_pModel->addLink(outSock, inSock);
     }
 
     m_currentGraph->onModelInited();
@@ -253,17 +273,15 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
     m_currentGraph->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 }
 
-void ModelAcceptor::setInputSocket(
-                const QString& nodeCls,
-                const QString& id,
-                const QString& inSock,
-                const QString& outId,
-                const QString& outSock,
-                const rapidjson::Value& defaultVal,
-                const NODE_DESCS& legacyDescs)
+void ModelAcceptor::setInputSocket(const QString &nodeCls, EdgeInfo linkInfo, const rapidjson::Value &defaultVal)
 {
     if (!m_currentGraph)
         return;
+
+    QString inSock = linkInfo.inputSock;
+    QString id = linkInfo.inputNode;
+    QString outSock = linkInfo.outputSock;
+    QString outId = linkInfo.outputNode;
 
     NODE_DESC desc;
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
@@ -294,11 +312,11 @@ void ModelAcceptor::setInputSocket(
         {
             m_currentGraph->setParamValue(PARAM_INPUT, idx, inSock, defaultValue);
         }
-        if (!outId.isEmpty() && !outSock.isEmpty())
+        if ((!outId.isEmpty() && !outSock.isEmpty()) ||
+            !linkInfo.outSockPath.isEmpty())
         {
             //collect edge.
-            EdgeInfo edge(outId, id, outSock, inSock);
-            m_subgLinks.append(edge);
+            m_subgLinks.append(linkInfo);
         }
     }
     else
@@ -313,9 +331,10 @@ void ModelAcceptor::setInputSocket(
             {
                 prop = SOCKPROP_EDITABLE;
             }
-            if (!outId.isEmpty() && !outSock.isEmpty())
+            if ((!outId.isEmpty() && !outSock.isEmpty()) ||
+                !linkInfo.outSockPath.isEmpty())
             {
-                m_subgLinks.append(EdgeInfo(outId, id, outSock, inSock));
+                m_subgLinks.append(linkInfo);
             }
             pInputsModel->appendRow(sockName, "", "", prop);
         }

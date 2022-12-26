@@ -36,6 +36,46 @@ IParamModel::~IParamModel()
 {
 }
 
+EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
+{
+    EdgeInfo link;
+    link.inputNode = linkIdx.data(ROLE_INNODE).toString();
+    link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
+
+    QModelIndex outSock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    ZASSERT_EXIT(outSock.isValid() && inSock.isValid(), link);
+
+    QModelIndex outCoreParam = outSock.data(ROLE_PARAM_COREIDX).toModelIndex();
+    QModelIndex inCoreParam = inSock.data(ROLE_PARAM_COREIDX).toModelIndex();
+    ZASSERT_EXIT(outCoreParam.isValid() && inCoreParam.isValid(), link);
+
+    link.outputSock = outCoreParam.data(ROLE_PARAM_NAME).toString();
+    link.inputSock = inCoreParam.data(ROLE_PARAM_NAME).toString();
+
+    //for dict panel socket, write the full path of output socket.
+    if (outSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
+    {
+        link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
+        link.outputSock += ":" + outSock.data(ROLE_PARAM_NAME).toString();
+    }
+    else
+    {
+        link.outSockPath = outCoreParam.data(ROLE_OBJPATH).toString();
+    }
+
+    if (inSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_INPUT)
+    {
+        link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
+        link.inputSock += ":" + inSock.data(ROLE_PARAM_NAME).toString();
+    }
+    else
+    {
+        link.inSockPath = inCoreParam.data(ROLE_OBJPATH).toString();
+    }
+    return link;
+}
+
 void IParamModel::exportDictkeys(DictKeyModel *pModel, QList<DICTKEY_INFO> &keys)
 {
     int rowCnt = pModel->rowCount();
@@ -49,22 +89,29 @@ void IParamModel::exportDictkeys(DictKeyModel *pModel, QList<DICTKEY_INFO> &keys
         keyInfo.key = key;
 
         QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-        if (linkIdx.isValid()) {
+        if (linkIdx.isValid())
+        {
             QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
             QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
             ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
-            EdgeInfo link;
-            link.inputNode = insock.data(ROLE_OBJID).toString();
-            link.inputSock = insock.data(ROLE_OBJPATH).toString();
-            link.outputNode = outsock.data(ROLE_OBJID).toString();
-            link.outputSock = outsock.data(ROLE_OBJPATH).toString();
-
+            EdgeInfo link = exportLink(linkIdx);
             keyInfo.link = link;
         }
         keys.append(keyInfo);
         keyNames.push_back(key);
     }
+}
+
+QList<EdgeInfo> IParamModel::exportLinks(const PARAM_LINKS& links)
+{
+    QList<EdgeInfo> linkInfos;
+    for (auto linkIdx : links)
+    {
+        EdgeInfo link = exportLink(linkIdx);
+        linkInfos.append(link);
+    }
+    return linkInfos;
 }
 
 bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
@@ -86,16 +133,7 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             inSocket.info.name = name;
             inSocket.info.type = item.type;
             inSocket.info.sockProp = item.prop;
-
-            for (auto linkIdx : item.links)
-            {
-                EdgeInfo link;
-                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
-                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
-                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
-                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                inSocket.info.links.append(link);
-            }
+            inSocket.info.links = exportLinks(item.links);
 
             if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end())
             {
@@ -131,15 +169,7 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
             outSocket.info.name = name;
             outSocket.info.type = item.type;
             outSocket.info.sockProp = item.prop;
-            for (auto linkIdx : item.links)
-            {
-                EdgeInfo link;
-                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
-                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
-                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
-                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                outSocket.info.links.append(link);
-            }
+            outSocket.info.links = exportLinks(item.links);
 
             if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end()) {
                 DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
@@ -309,6 +339,8 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
             return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
         case ROLE_NODE_IDX:
             return m_nodeIdx;
+        case ROLE_PARAM_COREIDX:
+            return index;
         case ROLE_OBJPATH:
         {
             QString path;

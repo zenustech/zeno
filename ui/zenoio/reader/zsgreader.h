@@ -23,6 +23,7 @@ private:
     ZsgReader();
     bool _parseSubGraph(const QString& name, const rapidjson::Value &subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor);
     bool _parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& descriptors, IAcceptor* pAcceptor);
+    void _parseSocket(const QString& id, const QString& nodeName, const QString& inSock, bool bInput, const rapidjson::Value& sockObj, IAcceptor* pAcceptor);
     void _parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor);
     void _parseParams(const QString& id, const QString& nodeName, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
     void _parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonNodeObj, IAcceptor* pAcceptor);

@@ -128,6 +128,18 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     //new io format for socket.
     writer.StartObject();
 
+    //property
+    writer.Key("property");
+    {
+        if (socket.sockProp & SOCKPROP_DICTLIST_PANEL) {
+            writer.String("dict-panel");
+        } else if (socket.sockProp & SOCKPROP_EDITABLE) {
+            writer.String("editable");
+        } else {
+            writer.String("normal");
+        }
+    }
+
     if (!socket.keys.isEmpty())
     {
         //dict param keys
@@ -138,19 +150,23 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
             DICTKEY_INFO info = socket.keys[i];
             writer.Key(info.key.toUtf8());
             writer.StartObject();
-            writer.Key("link");
-            QString otherLinkSock = bInput ? info.link.outputSock : info.link.inputSock;
-            if (otherLinkSock.isEmpty())
-                writer.Null();
-            else
-                writer.String(otherLinkSock.toUtf8());
+            if (bInput)     //no need to export link on output key sockets.
+            {
+                writer.Key("link");
+                QString otherLinkSock = bInput ? info.link.outSockPath : info.link.inSockPath;
+                if (otherLinkSock.isEmpty())
+                    writer.Null();
+                else
+                    writer.String(otherLinkSock.toUtf8());
+            }
             writer.EndObject();
         }
         writer.EndObject();
     }
-    //todo: other properties
-    writer.Key("link");
+
+    if (bInput)
     {
+        writer.Key("link");
         if (socket.links.isEmpty())
         {
             writer.Null();
@@ -158,14 +174,14 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         else
         {
             //writer obj path directly.
-            QString otherLinkSock = bInput ? socket.links[0].outputSock : socket.links[0].inputSock;
+            QString otherLinkSock = bInput ? socket.links[0].outSockPath : socket.links[0].inSockPath;
             writer.String(otherLinkSock.toUtf8());
         }
     }
 
-    writer.Key("default value");
     if (bInput)
     {
+        writer.Key("default value");
         QVariant deflVal = socket.defaultValue;
         const QString &sockType = socket.type;
         bool bValid = UiHelper::validateVariant(deflVal, sockType);
@@ -196,9 +212,9 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         {
             writer.Key(inSock.info.name.toUtf8());
 
-            if (!inSock.info.keys.isEmpty())
+            if (true || inSock.info.sockProp & SOCKPROP_DICTLIST_PANEL)
             {
-                //new io format 
+                //adapt new io format, bacause the legacy link array is very restricted!
                 dumpSocket(inSock.info, true, writer);
                 continue;
             }
@@ -227,6 +243,15 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         {
             writer.Key(info.name.toUtf8());
             AddVariant(info.value, info.typeDesc, writer, true);
+        }
+    }
+    writer.Key("outputs");
+    {
+        JsonObjBatch _scope(writer);
+        for (const OUTPUT_SOCKET &outSock : outputs)
+        {
+            writer.Key(outSock.info.name.toUtf8());
+            dumpSocket(outSock.info, false, writer);
         }
     }
     writer.Key("uipos");

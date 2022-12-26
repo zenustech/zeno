@@ -104,6 +104,31 @@ ZENDEFNODE(MakeDict, {
     {"dict"},
 });
 
+struct MocDictAsInput : zeno::INode {
+    virtual void apply() override {
+    
+    }
+};
+
+ZENDEFNODE(MocDictAsInput, {
+    {{"DictObject", "dict"}},
+    {},
+    {},
+    {"dict2"},
+});
+
+struct MocDictAsOutput : zeno::INode {
+    virtual void apply() override {
+    
+    }
+};
+
+ZENDEFNODE(MocDictAsOutput, {
+    {},
+    {{"DictObject", "dict"}},
+    {},
+    {"dict2"},
+});
 
 struct MakeSmallDict : zeno::INode {
     virtual void apply() override {

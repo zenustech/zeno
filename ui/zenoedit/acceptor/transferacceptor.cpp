@@ -170,15 +170,13 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
     }
 }
 
-void TransferAcceptor::setInputSocket(
-                const QString &nodeCls,
-                const QString &id,
-                const QString &inSock,
-                const QString &outId,
-                const QString &outSock,
-                const rapidjson::Value &defaultVal,
-                const NODE_DESCS &legacyDescs)
+void TransferAcceptor::setInputSocket(const QString& nodeCls, EdgeInfo linkInfo, const rapidjson::Value& defaultVal)
 {
+    QString inSock = linkInfo.inputSock;
+    QString id = linkInfo.inputNode;
+    QString outSock = linkInfo.outputSock;
+    QString outId = linkInfo.outputNode;
+
     NODE_DESC desc;
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
