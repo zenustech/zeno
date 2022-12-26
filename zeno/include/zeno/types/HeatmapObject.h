@@ -36,7 +36,7 @@ namespace zeno {
             clr[i] = heatmap->interp(x);
         }
     }
-    inline void primSampleTexture(
+    void primSampleTexture(
         std::shared_ptr<PrimitiveObject> prim,
         const std::string &srcChannel,
         const std::string &dstChannel,
