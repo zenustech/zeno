@@ -292,12 +292,12 @@ struct FrameBufferPicker : IPicker {
                     }
                 }
             }
-            prims.emplace_back(std::make_pair(prim_name, prim));
+            if (prim) prims.emplace_back(std::make_pair(prim_name, prim));
         }
         if (prims.empty()) {
             for (const auto& [prim_name, prim] : prims_shared) {
                 auto p = dynamic_cast<PrimitiveObject*>(prim.get());
-                prims.emplace_back(std::make_pair(prim_name, p));
+                if (p) prims.emplace_back(std::make_pair(prim_name, p));
             }
         }
 
@@ -318,7 +318,7 @@ struct FrameBufferPicker : IPicker {
 
                 bool pick_particle = false;
                 if (scene->select_mode == zenovis::PICK_OBJECT) {
-                    pick_particle = prim->tris->empty();
+                    pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     // shader uniform
                     obj_shader->use();
