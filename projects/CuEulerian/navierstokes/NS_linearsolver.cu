@@ -123,29 +123,44 @@ struct ZSNSPressureProject : INode {
             // a simple implementation of red-black SOR
             for (int clr = 0; clr != 2; ++clr) {
 #if 0
-                pol(zs::range(block_cnt * spg.block_size), [spgv = zs::proxy<space>(spg), dx, rho, sor,
-                                                            clr] __device__(int cellno) mutable {
-                    auto icoord = spgv.iCoord(cellno);
+                pol(zs::range(block_cnt * spg.block_size),
+                    [spgv = zs::proxy<space>(spg), dx, rho, sor, clr] __device__(int cellno) mutable {
+                        auto icoord = spgv.iCoord(cellno);
 
-                    if (((icoord[0] + icoord[1] + icoord[2]) & 1) == clr) {
-                        float div = spgv.value("tmp", icoord);
+                        if (((icoord[0] + icoord[1] + icoord[2]) & 1) == clr) {
+                            float div = spgv.value("tmp", icoord);
 
-                        const int stcl = 1; // stencil point in each side
-                        float p_x[2 * stcl + 1], p_y[2 * stcl + 1], p_z[2 * stcl + 1];
+                            float p_self, p_x[2], p_y[2], p_z[2];
 
-                        for (int i = -stcl; i <= stcl; ++i) {
-                            p_x[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(i, 0, 0));
-                            p_y[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(0, i, 0));
-                            p_z[i + stcl] = spgv.value("p", icoord + zs::vec<int, 3>(0, 0, i));
+                            p_self = spgv.value("p", icoord);
+                            p_x[0] = spgv.value("p", icoord + zs::vec<int, 3>(-1, 0, 0));
+                            p_x[1] = spgv.value("p", icoord + zs::vec<int, 3>(1, 0, 0));
+                            p_y[0] = spgv.value("p", icoord + zs::vec<int, 3>(0, -1, 0));
+                            p_y[1] = spgv.value("p", icoord + zs::vec<int, 3>(0, 1, 0));
+                            p_z[0] = spgv.value("p", icoord + zs::vec<int, 3>(0, 0, -1));
+                            p_z[1] = spgv.value("p", icoord + zs::vec<int, 3>(0, 0, 1));
+
+                            float cut_x[2], cut_y[2], cut_z[2];
+                            cut_x[0] = spgv.value("cut", 0, icoord);
+                            cut_y[0] = spgv.value("cut", 1, icoord);
+                            cut_z[0] = spgv.value("cut", 2, icoord);
+                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
+                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
+                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+
+                            float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
+
+                            p_self = (1.f - sor) * p_self +
+                                     sor *
+                                         ((p_x[0] * cut_x[0] + p_x[1] * cut_x[1] + p_y[0] * cut_y[0] +
+                                           p_y[1] * cut_y[1] + p_z[0] * cut_z[0] + p_z[1] * cut_z[1]) *
+                                              dx -
+                                          div * rho) /
+                                         (cut_sum * dx);
+
+                            spgv("p", icoord) = p_self;
                         }
-
-                        float p_this =
-                            (1.f - sor) * p_x[stcl] +
-                            sor * ((p_x[0] + p_x[2] + p_y[0] + p_y[2] + p_z[0] + p_z[2]) - div * dx * dx * rho) / 6.f;
-
-                        spgv("p", icoord) = p_this;
-                    }
-                });
+                    });
 #elif 1
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
