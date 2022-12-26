@@ -350,6 +350,12 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         {
             pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
         }
+        else if (inputObj.IsObject())
+        {
+            //todo: new socket io format.
+            int j;
+            j = 0;
+        }
         else
         {
             Q_ASSERT(false);

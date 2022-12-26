@@ -18,6 +18,7 @@ public:
 private:
     ZsgWriter();
     void dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer);
+    void dumpSocket(SOCKET_INFO info, bool bInput, RAPIDJSON_WRITER& writer);
     void _dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer);
     void _dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer);
     void dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer);
