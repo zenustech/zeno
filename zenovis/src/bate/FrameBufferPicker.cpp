@@ -318,7 +318,7 @@ struct FrameBufferPicker : IPicker {
 
                 bool pick_particle = false;
                 if (scene->select_mode == zenovis::PICK_OBJECT) {
-                    pick_particle = prim->tris->empty() && prim->polys->empty() && prim->loops->empty();
+                    pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     // shader uniform
                     obj_shader->use();
