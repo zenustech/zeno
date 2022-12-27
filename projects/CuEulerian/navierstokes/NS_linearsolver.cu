@@ -170,8 +170,9 @@ struct ZSNSPressureProject : INode {
                 constexpr std::size_t tpb = 6;
                 constexpr std::size_t cuda_block_size = bucket_size * tpb;
                 pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
-                    [spgv = zs::proxy<space>(spg), sor, clr, cst = sor * dx * dx * rho, ts_c = zs::wrapv<bucket_size>{},
+                    [spgv = zs::proxy<space>(spg), sor, clr, rho, dx, ts_c = zs::wrapv<bucket_size>{},
                      tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"),
+                     cutOffset = spg.getPropertyOffset("cut"),
                      blockCnt = block_cnt] __device__(int bid, int tid) mutable {
                         // load halo
                         using vec3i = zs::vec<int, 3>;
@@ -192,34 +193,48 @@ struct ZSNSPressureProject : INode {
                         /// (0, 0, 1), (0, 0, -1),
                         /// (0, 1, 0), (0, -1, 0),
                         /// (1, 0, 0), (-1, 0, 0)
-                        auto loadVal = [&spgv, &tile, &bcoord, pOffset](int k) {
+                        auto loadVal = [&spgv, &tile, &bcoord, blockno, pOffset,
+                                        cutOffset](int k) -> zs::tuple<value_type, value_type> {
                             auto coord = bcoord;
                             coord[k / 2] += k & 1 ? 1 : -1;
                             int bno = spgv._table.tile_query(tile, coord);
-                            if (bno >= 0)
-                                return spgv(pOffset, bno, 0);
-                            else
-                                return (value_type)0;
+                            value_type cutVal = 0;
+                            if (bno >= 0) {
+                                if (k & 1)
+                                    cutVal = spgv(cutOffset, bno, 0);
+                                else
+                                    cutVal = spgv(cutOffset, blockno, 0);
+                                return zs::make_tuple(spgv(pOffset, bno, 0), cutVal);
+                            } else
+                                return zs::make_tuple((value_type)0, (value_type)0);
                         };
                         auto div = spgv.value("tmp", blockno, 0);
-                        value_type stclVal = 0;
+                        value_type stclVal = 0, cutVal = 0;
                         const auto lane_id = tile.thread_rank();
                         if (lane_id == 0)
-                            // stclVal = (1 - sor) * spgv(pOffset, blockno, 0) - sor * div * dx * dx * rho / 6;
-                            stclVal = (1 - sor) * spgv(pOffset, blockno, 0) - div * cst / 6;
+                            stclVal = (1 - sor) * spgv(pOffset, blockno, 0);
+
                         for (int j = 0; j < 6; ++j) {
-                            auto tmp = sor * loadVal(j) / 6;
-                            if (lane_id == j + 1)
-                                stclVal = tmp;
+                            auto [stcl, cut] = loadVal(j);
+                            if (lane_id == j + 1) {
+                                stclVal = stcl * cut;
+                                cutVal = cut;
+                            }
                         }
                         for (int stride = 1; stride <= 4; stride <<= 1) {
-                            auto tmp = tile.shfl(stclVal, lane_id + stride);
-                            if (lane_id + stride < 7)
-                                stclVal += tmp;
+                            auto stclTmp = tile.shfl(stclVal, lane_id + stride);
+                            auto cutTmp = tile.shfl(cutVal, lane_id + stride);
+                            if (lane_id + stride < 7 && lane_id != 0) {
+                                stclVal += stclTmp;
+                                cutVal += cutTmp;
+                            }
                         }
 
-                        if (lane_id == 0)
-                            spgv(pOffset, blockno, 0) = stclVal;
+                        auto stclSum = tile.shfl(stclVal, 1);
+                        auto cutSum = tile.shfl(cutVal, 1);
+                        if (lane_id == 0) {
+                            spgv(pOffset, blockno, 0) = stclVal + sor * (stclSum * dx - div * rho) / (cutSum * dx);
+                        }
                     });
 #else
                 using value_type = typename RM_CVREF_T(spg)::value_type;
