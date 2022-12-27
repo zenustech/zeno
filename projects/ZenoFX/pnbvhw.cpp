@@ -174,7 +174,7 @@ struct QueryNearestPrimitive : zeno::INode {
       std::vector<KVPair> kvs(prim->size());
       std::vector<Ti> ids(prim->size(), -1);
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided, 4)
 #endif
       for (Ti i = 0; i < prim->size(); ++i) {
         kvs[i].dist = std::numeric_limits<float>::max();
