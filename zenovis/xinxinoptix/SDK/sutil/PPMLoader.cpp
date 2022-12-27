@@ -36,7 +36,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <cudaMemTracer.hpp>
+#include <cudaMemMarco.hpp>
 
 
 //-----------------------------------------------------------------------------

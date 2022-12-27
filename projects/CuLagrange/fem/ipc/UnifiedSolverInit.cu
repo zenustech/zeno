@@ -719,7 +719,7 @@ void UnifiedIPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &
                 });
 }
 
-struct MakeIPCSystem : INode {
+struct MakeUnifiedIPCSystem : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -811,7 +811,7 @@ struct MakeIPCSystem : INode {
     }
 };
 
-ZENDEFNODE(MakeIPCSystem, {{
+ZENDEFNODE(MakeUnifiedIPCSystem, {{
                                "ZSParticles",
                                "ZSBoundaryPrimitives",
                                {"int", "est_num_cps", "1000000"},

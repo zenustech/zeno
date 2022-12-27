@@ -15,6 +15,7 @@ AlignTrailingComments: true
 AlignEscapedNewlines: true
 AlignConsecutiveDeclarations: false
 AlignOperands: true
+AlwaysBreakTemplateDeclarations: Yes
 #LambdaBodyIndentation: Signature
 NamespaceIndentation: None
 #PackConstructorInitializers: CurrentLine

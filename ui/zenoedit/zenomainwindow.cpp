@@ -362,6 +362,8 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.audioPath = param.audioPath;
     recInfo.record_path = param.sPath;
     recInfo.bRecordRun = true;
+    recInfo.videoname = "output.mp4";
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     if (!param.sPixel.isEmpty())
     {

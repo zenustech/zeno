@@ -1390,7 +1390,7 @@ void CopyInstMeshToGlobalMesh()
             }
 
             vertsOffset += vertices.size();
-            meshPiecesOffset = meshPieces.size();
+            meshPiecesOffset += meshPieces.size();
         }
     }
 }

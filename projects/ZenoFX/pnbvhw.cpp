@@ -235,7 +235,7 @@ ZENDEFNODE(QueryNearestPrimitive, {
                                       {{"prim"}, {"LBvh", "lbvh"},
                                       {"string", "idTag", "bvh_id"},
                                       {"string", "distTag", "bvh_dist"},
-                                       {"string", "closestPointTag", "closest_point"},
+                                      {"string", "closestPointTag", "cp"},
                                       {"string", "weightTag", "bvh_ws"}
                                       },
                                       {{"NumericObject", "primid"},

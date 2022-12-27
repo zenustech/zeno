@@ -853,6 +853,13 @@ void DisplayWidget::runAndRecord(const VideoRecInfo& recInfo)
 
     //run first.
     onRun();
+
+    if (recInfo.exitWhenRecordFinish)
+    {
+        connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
+            zenoApp->quit();
+        });
+    }
 }
 
 void ViewportWidget::keyPressEvent(QKeyEvent* event) {
