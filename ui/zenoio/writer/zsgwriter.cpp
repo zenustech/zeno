@@ -129,14 +129,17 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     writer.StartObject();
 
     //property
-    writer.Key("property");
+    if (socket.sockProp != SOCKPROP_NORMAL)
     {
-        if (socket.sockProp & SOCKPROP_DICTLIST_PANEL) {
-            writer.String("dict-panel");
-        } else if (socket.sockProp & SOCKPROP_EDITABLE) {
-            writer.String("editable");
-        } else {
-            writer.String("normal");
+        writer.Key("property");
+        {
+            if (socket.sockProp & SOCKPROP_DICTLIST_PANEL) {
+                writer.String("dict-panel");
+            } else if (socket.sockProp & SOCKPROP_EDITABLE) {
+                writer.String("editable");
+            } else {
+                writer.String("normal");
+            }
         }
     }
 
@@ -181,7 +184,7 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
 
     if (bInput)
     {
-        writer.Key("default value");
+        writer.Key("default-value");
         QVariant deflVal = socket.defaultValue;
         const QString &sockType = socket.type;
         bool bValid = UiHelper::validateVariant(deflVal, sockType);
@@ -226,7 +229,9 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
             {
                 //legacy link.
                 const EdgeInfo& link = inSock.info.links[0];
-                AddVariantList({ link.outputNode, link.outputSock, deflVal }, sockType, writer, true);
+                QString outputNode, outputSock;
+                link.getSockInfo(false, outputNode, outputSock);
+                AddVariantList({ outputNode, outputSock, deflVal }, sockType, writer, true);
             }
             else
             {

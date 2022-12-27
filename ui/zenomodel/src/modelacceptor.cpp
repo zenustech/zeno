@@ -9,6 +9,8 @@
 #include "magic_enum.hpp"
 #include "zassert.h"
 #include "uihelper.h"
+#include "variantptr.h"
+#include "dictkeymodel.h"
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -93,32 +95,15 @@ void ModelAcceptor::EndSubgraph()
     {
         QModelIndex inSock, outSock, inNode, outNode;
 
-        QString inNodeCls, outNodeCls, inSockName, outSockName;
+        QString subgName, inNodeCls, outNodeCls, inSockName, outSockName, paramCls;
 
-        if (!link.outputNode.isEmpty() && !link.outputSock.isEmpty())
-        {
-            //to process legacy format case like: [out-Node, out-sock, val]
-            const QModelIndex& outIdx = m_currentGraph->index(link.outputNode);
-            IParamModel* pOutputs = m_currentGraph->paramModel(outIdx, PARAM_OUTPUT);
-            outSock = pOutputs->index(link.outputSock);
-            outNodeCls = outIdx.data(ROLE_OBJNAME).toString();
-            outSockName = link.outputSock;
-        }
-        else if (!link.outSockPath.isEmpty())
+        if (!link.outSockPath.isEmpty())
         {
             outSock = m_pModel->indexFromPath(link.outSockPath);
             outSockName = link.outSockPath;
         }
 
-        if (!link.inputNode.isEmpty() && !link.inputSock.isEmpty())
-        {
-            //legacy way.
-            const QModelIndex& inIdx = m_currentGraph->index(link.inputNode);
-            IParamModel* pInputs = m_currentGraph->paramModel(inIdx, PARAM_INPUT);
-            inSock = pInputs->index(link.inputSock);
-            inSockName = link.inputSock;
-        }
-        else if (!link.inSockPath.isEmpty())
+        if (!link.inSockPath.isEmpty())
         {
             inSock = m_pModel->indexFromPath(link.inSockPath);
             inSockName = link.inSockPath;
@@ -273,15 +258,35 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
     m_currentGraph->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 }
 
-void ModelAcceptor::setInputSocket(const QString &nodeCls, EdgeInfo linkInfo, const rapidjson::Value &defaultVal)
+void ModelAcceptor::setInputSocket(
+        const QString& nodeCls,
+        const QString& inNode,
+        const QString& inSock,
+        const QString& outNode,
+        const QString& outSock,
+        const rapidjson::Value& defaultValue
+)
+{
+    QModelIndex outIdx = m_currentGraph->index(outNode);
+    IParamModel* pOutputs = m_currentGraph->paramModel(outIdx, PARAM_OUTPUT);
+    ZASSERT_EXIT(pOutputs);
+
+    QModelIndex outSockIdx = pOutputs->index(outSock);
+    ZASSERT_EXIT(outSockIdx.isValid());
+    const QString &objPath = outSockIdx.data(ROLE_OBJPATH).toString();
+    setInputSocket2(nodeCls, inNode, inSock, objPath, "", defaultValue);
+}
+
+void ModelAcceptor::setInputSocket2(
+                const QString& nodeCls,
+                const QString& inNode,
+                const QString& inSock,
+                const QString& outLinkPath,
+                const QString& sockProperty,
+                const rapidjson::Value& defaultVal)
 {
     if (!m_currentGraph)
         return;
-
-    QString inSock = linkInfo.inputSock;
-    QString id = linkInfo.inputNode;
-    QString outSock = linkInfo.outputSock;
-    QString outId = linkInfo.outputNode;
 
     NODE_DESC desc;
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
@@ -298,25 +303,25 @@ void ModelAcceptor::setInputSocket(const QString &nodeCls, EdgeInfo linkInfo, co
         defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, m_currentGraph);
     }
 
-    QModelIndex idx = m_currentGraph->index(id);
-    ZASSERT_EXIT(idx.isValid());
+    QString subgName, paramCls;
 
-    //the layout should be standard inputs desc by latest descriptors. 
-    IParamModel* pInputsModel = m_currentGraph->paramModel(idx, PARAM_INPUT);
-    ZASSERT_EXIT(pInputsModel);
+    subgName = m_currentGraph->name();
+    EdgeInfo fullLink(subgName, inNode, inSock, "", "", "");
+    fullLink.outSockPath = outLinkPath;
 
-    QModelIndex paramIdx = pInputsModel->index(inSock);
-    if (paramIdx.isValid())
+    QModelIndex sockIdx = m_pModel->indexFromPath(fullLink.inSockPath);
+    if (sockIdx.isValid())
     {
         if (!defaultValue.isNull())
         {
-            m_currentGraph->setParamValue(PARAM_INPUT, idx, inSock, defaultValue);
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
+            ZASSERT_EXIT(pModel);
+            pModel->setData(sockIdx, defaultValue, ROLE_PARAM_VALUE);
         }
-        if ((!outId.isEmpty() && !outSock.isEmpty()) ||
-            !linkInfo.outSockPath.isEmpty())
+        if (!outLinkPath.isEmpty())
         {
-            //collect edge.
-            m_subgLinks.append(linkInfo);
+            //collect edge, because output socket may be not initialized.
+            m_subgLinks.append(fullLink);
         }
     }
     else
@@ -331,11 +336,18 @@ void ModelAcceptor::setInputSocket(const QString &nodeCls, EdgeInfo linkInfo, co
             {
                 prop = SOCKPROP_EDITABLE;
             }
-            if ((!outId.isEmpty() && !outSock.isEmpty()) ||
-                !linkInfo.outSockPath.isEmpty())
+            if (!outLinkPath.isEmpty())
             {
-                m_subgLinks.append(linkInfo);
+                m_subgLinks.append(fullLink);
             }
+
+            QModelIndex inNodeIdx = m_currentGraph->index(inNode);
+            ZASSERT_EXIT(inNodeIdx.isValid());
+
+            //the layout should be standard inputs desc by latest descriptors.
+            IParamModel* pInputsModel = m_currentGraph->paramModel(inNodeIdx, PARAM_INPUT);
+            ZASSERT_EXIT(pInputsModel);
+
             pInputsModel->appendRow(sockName, "", "", prop);
         }
         else
@@ -343,6 +355,30 @@ void ModelAcceptor::setInputSocket(const QString &nodeCls, EdgeInfo linkInfo, co
             zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
         }
     }
+}
+
+void ModelAcceptor::addInnerDictKey(
+            bool bInput,
+            const QString& ident,
+            const QString& sockName,
+            const QString& keyName,
+            const QString& link
+            )
+{
+    QModelIndex inNodeIdx = m_currentGraph->index(ident);
+    ZASSERT_EXIT(inNodeIdx.isValid());
+
+    IParamModel* pModel = m_currentGraph->paramModel(inNodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+    ZASSERT_EXIT(pModel);
+
+    QModelIndex sockIdx = pModel->index(sockName);
+    ZASSERT_EXIT(sockIdx.isValid());
+
+    DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    int n = keyModel->rowCount();
+    keyModel->insertRow(n);
+    const QModelIndex& newKeyIdx = pModel->index(n, 0);
+    keyModel->setData(newKeyIdx, keyName, ROLE_PARAM_NAME);
 }
 
 void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)

@@ -89,7 +89,7 @@ public:
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction = false) override;
+    QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) override;
     QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

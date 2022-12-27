@@ -79,7 +79,7 @@ AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel)
 
 void AddLinkCommand::redo()
 {
-    QModelIndex idx = m_model->addLink(m_info, true);
+    QModelIndex idx = m_model->addLink(m_info);
     ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
@@ -95,10 +95,12 @@ RemoveLinkCommand::RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel*
     , m_linkIdx(linkIdx)
     , m_model(pModel)
 {
-    m_info.inputNode = linkIdx.data(ROLE_INNODE).toString();
-    m_info.inputSock = linkIdx.data(ROLE_INSOCK).toString();
-    m_info.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
-    m_info.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
+    QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    ZASSERT_EXIT(inSockIdx.isValid() && outSockIdx.isValid());
+
+    m_info.inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+    m_info.outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
 }
 
 void RemoveLinkCommand::redo()
@@ -108,7 +110,7 @@ void RemoveLinkCommand::redo()
 
 void RemoveLinkCommand::undo()
 {
-    QModelIndex idx = m_model->addLink(m_info, true);
+    QModelIndex idx = m_model->addLink(m_info);
     ZASSERT_EXIT(idx.isValid());
     m_linkIdx = QPersistentModelIndex(idx);
 }

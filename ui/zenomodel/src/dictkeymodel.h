@@ -18,6 +18,7 @@ public:
     DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, QObject* parent = nullptr);
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex index(const QString &keyName);
     QModelIndex parent(const QModelIndex& child) const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;

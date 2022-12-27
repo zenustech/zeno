@@ -38,6 +38,7 @@ public:
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL getControlByType(const QString& type);
     static QString getTypeByControl(PARAM_CONTROL ctrl);
+    static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramCls, QString& paramPath);
     static QStringList getControlLists(const QString& type);
     static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);

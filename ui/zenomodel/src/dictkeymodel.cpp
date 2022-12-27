@@ -20,6 +20,16 @@ QModelIndex DictKeyModel::index(int row, int column, const QModelIndex& parent) 
     return createIndex(row, column, (quintptr)0);
 }
 
+QModelIndex DictKeyModel::index(const QString& keyName)
+{
+    for (int r = 0; r < rowCount(); r++)
+    {
+        if (m_items[r].key == keyName)
+            return index(r, 0);
+    }
+    return QModelIndex();
+}
+
 QModelIndex DictKeyModel::parent(const QModelIndex& child) const
 {
     return QModelIndex();
@@ -41,6 +51,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
     switch (role)
     {
         case Qt::DisplayRole:
+        case ROLE_PARAM_NAME:
         {
             if (index.column() == 0) {
                 item.key = value.toString();

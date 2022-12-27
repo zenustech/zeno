@@ -39,8 +39,6 @@ IParamModel::~IParamModel()
 EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
 {
     EdgeInfo link;
-    link.inputNode = linkIdx.data(ROLE_INNODE).toString();
-    link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
 
     QModelIndex outSock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
     QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
@@ -50,14 +48,10 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
     QModelIndex inCoreParam = inSock.data(ROLE_PARAM_COREIDX).toModelIndex();
     ZASSERT_EXIT(outCoreParam.isValid() && inCoreParam.isValid(), link);
 
-    link.outputSock = outCoreParam.data(ROLE_PARAM_NAME).toString();
-    link.inputSock = inCoreParam.data(ROLE_PARAM_NAME).toString();
-
     //for dict panel socket, write the full path of output socket.
     if (outSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
     {
         link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
-        link.outputSock += ":" + outSock.data(ROLE_PARAM_NAME).toString();
     }
     else
     {
@@ -67,7 +61,6 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
     if (inSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_INPUT)
     {
         link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
-        link.inputSock += ":" + inSock.data(ROLE_PARAM_NAME).toString();
     }
     else
     {

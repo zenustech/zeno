@@ -601,6 +601,26 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     }
 }
 
+void UiHelper::getSocketInfo(const QString& objPath,
+                             QString& subgName,
+                             QString& nodeIdent,
+                             QString& paramCls,
+                             QString& sockName)
+{
+    //see GraphsModel::indexFromPath
+    QStringList lst = objPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
+    if (lst.size() >= 4)
+    {
+        subgName = lst[0];
+        nodeIdent = lst[1];
+        paramCls = lst[2];
+        QString paramPath = lst[3];
+        lst = paramPath.split("/", Qt::SkipEmptyParts);
+        sockName = lst.last();
+    }
+}
+
 QString UiHelper::variantToString(const QVariant& var)
 {
 	QString value;
@@ -999,11 +1019,20 @@ void UiHelper::reAllocIdents(
     }
 
     for (EdgeInfo& link : links) {
-        ZASSERT_EXIT(old2new.find(link.inputNode) != old2new.end() && old2new.find(link.outputNode) != old2new.end());
-        link.inputNode = old2new[link.inputNode];
-        link.outputNode = old2new[link.outputNode];
-        ZASSERT_EXIT(newNodes.find(link.inputNode) != newNodes.end() &&
-            newNodes.find(link.outputNode) != newNodes.end());
+        QString inputNode, inputSock, outputNode, outputSock;
+        link.getSockInfo(true, inputNode, inputSock);
+        link.getSockInfo(false, outputNode, outputSock);
+
+        QString newInputNode = old2new[inputNode];
+        QString newOutputNode = old2new[outputNode];
+
+        //todo: how to set this new node ident into link?
+        QString inSubg = link.subgraphName(true);
+        QString outSubg = link.subgraphName(false);
+
+        EdgeInfo newLink(inSubg, newInputNode, inputSock, outSubg, newOutputNode, outputSock);
+        link.inSockPath = newLink.inSockPath;
+        link.outSockPath = newLink.outSockPath;
     }
 
     nodes = newNodes;

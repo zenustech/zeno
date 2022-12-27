@@ -66,6 +66,7 @@ private:
     void viewRemoveLink(const QModelIndex& linkIdx);
     void onTempLinkClosed();
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
+    void initLink(const QModelIndex& linkIdx);
 
     QRectF m_viewRect;
     NodeUtilParam m_nodeParams;

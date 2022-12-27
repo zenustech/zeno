@@ -776,19 +776,6 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
 	}
 }
 
-void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected)
-{
-    if (bInput) {
-        ZASSERT_EXIT(m_inSockets.find(sockName) != m_inSockets.end());
-        ZenoSocketItem* pSocket = m_inSockets[sockName]->socketItem();
-        pSocket->toggle(bSelected);
-    } else {
-        ZASSERT_EXIT(m_outSockets.find(sockName) != m_outSockets.end());
-        ZenoSocketItem* pSocket = m_outSockets[sockName]->socketItem();
-        pSocket->toggle(bSelected);
-    }
-}
-
 void ZenoNode::markError(bool isError)
 {
     m_bError = isError;

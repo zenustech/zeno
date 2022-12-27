@@ -26,6 +26,7 @@ private:
     void _parseSocket(const QString& id, const QString& nodeName, const QString& inSock, bool bInput, const rapidjson::Value& sockObj, IAcceptor* pAcceptor);
     void _parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor);
     void _parseParams(const QString& id, const QString& nodeName, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
+    void _parseOutputs(const QString& id, const QString& nodeName,const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
     void _parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonNodeObj, IAcceptor* pAcceptor);
     void _parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor);
     void _parseCurvePoints(const QString& id, const rapidjson::Value& jsonPoints, IAcceptor* pAcceptor);

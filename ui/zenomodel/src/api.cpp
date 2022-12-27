@@ -3,6 +3,8 @@
 #include "modelrole.h"
 #include "nodesmgr.h"
 #include "apiutil.h"
+#include "variantptr.h"
+#include "iparammodel.h"
 
 
 ZENO_ERROR Zeno_NewFile()
@@ -175,14 +177,13 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    EdgeInfo info;
-    info.inputNode = inIdx.data(ROLE_OBJID).toString();
-    info.inputSock = QString::fromStdString(inSock);
-    info.outputNode = outIdx.data(ROLE_OBJID).toString();
-    info.outputSock = QString::fromStdString(outSock);
+    IParamModel* pInputs = QVariantPtr<IParamModel>::asPtr(inIdx.data(ROLE_INPUT_MODEL));
+    QModelIndex inSockIdx = pInputs->index(QString::fromStdString(inSock));
 
-    bool bAddDynamicSock = false;
-    pModel->addLink(info, bAddDynamicSock);
+    IParamModel* pOutputs = QVariantPtr<IParamModel>::asPtr(outIdx.data(ROLE_OUTPUT_MODEL));
+    QModelIndex outSockIdx = pOutputs->index(QString::fromStdString(inSock));
+
+    pModel->addLink(outSockIdx, inSockIdx);
     return Err_NoError;
 }
 
@@ -238,12 +239,13 @@ ZENO_ERROR Zeno_GetOutNodes(
     OUTPUT_SOCKET output = outputs[qsOutSock];
     for (auto link : output.info.links)
     {
-        const QString& inNode = link.inputNode;
-        const QString& inSock = link.inputSock;
-        QModelIndex inIdx = pModel->index(inSock, subgIdx);
+        QString inNode, inSock;
+        link.getSockInfo(true, inNode, inSock);
+
+        QModelIndex inIdx = pModel->index(inNode, subgIdx);
 
         ZENO_HANDLE hdl = inIdx.internalId();
-        res.push_back(std::make_pair(hdl, inSock.toStdString()));
+        res.push_back(std::make_pair(hdl, inNode.toStdString()));
     }
 
     return Err_NoError;
@@ -276,9 +278,10 @@ ZENO_ERROR Zeno_GetInput(
     if (1 == input.info.links.size())
     {
         EdgeInfo link = input.info.links[0];
-        const QString& outNode = link.outputNode;
-        const QString& outSock = link.outputSock;
-        
+
+        QString outNode, outSock;
+        link.getSockInfo(false, outNode, outSock);
+
         QModelIndex outIdx = pModel->index(outNode, subgIdx);
         ret.first = outIdx.internalId();
         ret.second = outSock.toStdString();

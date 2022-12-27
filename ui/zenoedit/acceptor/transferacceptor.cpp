@@ -23,13 +23,14 @@ bool TransferAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NO
 void TransferAcceptor::BeginSubgraph(const QString &name)
 {
     //no cache, for data consistency.
+    m_currSubgraph = name;
     m_links.clear();
     m_nodes.clear();
 }
 
 void TransferAcceptor::EndSubgraph()
 {
-
+    m_currSubgraph = "";
 }
 
 bool TransferAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx)
@@ -170,13 +171,38 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
     }
 }
 
-void TransferAcceptor::setInputSocket(const QString& nodeCls, EdgeInfo linkInfo, const rapidjson::Value& defaultVal)
+void TransferAcceptor::setInputSocket(
+        const QString& nodeCls,
+        const QString& inNode,
+        const QString& inSock,
+        const QString& outNode,
+        const QString& outSock,
+        const rapidjson::Value& defaultValue
+)
 {
-    QString inSock = linkInfo.inputSock;
-    QString id = linkInfo.inputNode;
-    QString outSock = linkInfo.outputSock;
-    QString outId = linkInfo.outputNode;
 
+}
+
+void TransferAcceptor::addInnerDictKey(
+        bool bInput,
+        const QString& inNode,
+        const QString& inSock,
+        const QString& keyName,
+        const QString& link
+    )
+{
+
+}
+
+
+void TransferAcceptor::setInputSocket2(
+                const QString& nodeCls,
+                const QString& inNode,
+                const QString& inSock,
+                const QString& outLinkPath,
+                const QString& sockProperty,
+                const rapidjson::Value& defaultVal)
+{
     NODE_DESC desc;
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
@@ -193,8 +219,8 @@ void TransferAcceptor::setInputSocket(const QString& nodeCls, EdgeInfo linkInfo,
         defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
     }
 
-    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    NODE_DATA& data = m_nodes[id];
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
 
     //standard inputs desc by latest descriptors. 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
@@ -202,9 +228,10 @@ void TransferAcceptor::setInputSocket(const QString& nodeCls, EdgeInfo linkInfo,
     {
         if (!defaultValue.isNull())
             inputs[inSock].info.defaultValue = defaultValue;
-        if (!outId.isEmpty() && !outSock.isEmpty())
+        if (!outLinkPath.isEmpty())
         {
-            EdgeInfo info(outId, id, outSock, inSock);
+            EdgeInfo info(m_currSubgraph, inNode, inSock, m_currSubgraph, "", "");
+            info.outSockPath = outLinkPath;
             inputs[inSock].info.links.append(info);
             m_links.append(info);
         }
@@ -224,9 +251,10 @@ void TransferAcceptor::setInputSocket(const QString& nodeCls, EdgeInfo linkInfo,
             }
             inputs[inSock] = inSocket;
 
-            if (!outId.isEmpty() && !outSock.isEmpty())
+            if (!outLinkPath.isEmpty())
             {
-                EdgeInfo info(outId, id, outSock, inSock);
+                EdgeInfo info(m_currSubgraph, inNode, inSock, m_currSubgraph, "", "");
+                info.outSockPath = outLinkPath;
                 inputs[inSock].info.links.append(info);
                 m_links.append(info);
             }
@@ -452,10 +480,23 @@ void TransferAcceptor::reAllocIdents()
 
     for (EdgeInfo& link : m_links)
     {
-        ZASSERT_EXIT(old2new.find(link.inputNode) != old2new.end() &&
-                    old2new.find(link.outputNode) != old2new.end());
-        link.inputNode = old2new[link.inputNode];
-        link.outputNode = old2new[link.outputNode];
+        QString inputNode, outputNode, inputSock, outputSock;
+        link.getSockInfo(true, inputNode, inputSock);
+        link.getSockInfo(false, outputNode, outputSock);
+
+        ZASSERT_EXIT(old2new.find(inputNode) != old2new.end() &&
+                    old2new.find(outputNode) != old2new.end());
+
+        QString newInputNode = old2new[inputNode];
+        QString newOutputNode = old2new[outputNode];
+
+        //todo: how to set this new node ident into link?
+        QString inSubg = link.subgraphName(true);
+        QString outSubg = link.subgraphName(false);
+
+        EdgeInfo newLink(inSubg, newInputNode, inputSock, outSubg, newOutputNode, outputSock);
+        link.inSockPath = newLink.inSockPath;
+        link.outSockPath = newLink.outSockPath;
     }
 
     m_nodes.clear();

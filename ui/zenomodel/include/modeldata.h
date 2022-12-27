@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "fuckqmap.h"
+#include "zassert.h"
 
 enum PARAM_CONTROL {
     CONTROL_NONE,
@@ -103,42 +104,74 @@ Q_DECLARE_METATYPE(PARAMS_INFO)
 
 struct EdgeInfo
 {
-    QString outputNode;
-    QString outputSock;     //may be the full path of socket, which is convient to process
     QString outSockPath;    //option: path for socket.
-    QString inputNode;
-    QString inputSock;      //may be the full path of socket
     QString inSockPath;
 
     EdgeInfo() = default;
-    EdgeInfo(const QString &outNode, const QString &inNode, const QString &outSock, const QString &inSock)
-        : outputNode(outNode), inputNode(inNode), outputSock(outSock), inputSock(inSock) {}
+    EdgeInfo(const QString &outpath, const QString &inpath)
+        : outSockPath(outpath), inSockPath(inpath) {}
+
+    EdgeInfo(
+            const QString& inSubgraph,
+            const QString& inNodeIdent,
+            const QString& inSockName,
+            const QString& outSubgraph,
+            const QString& outNodeIdent,
+            const QString& outSockName
+    )
+    {
+        QStringList inseq = {inSubgraph, inNodeIdent, "core-param", "/inputs/" + inSockName};
+        QStringList outseq = {outSubgraph, outNodeIdent, "core-param", "/outputs/" + outSockName};
+        inSockPath = inseq.join(cPathSeperator);
+        outSockPath = inseq.join(cPathSeperator);
+    }
+
+    void getSockInfo(bool bInput, QString& ident, QString& sockName) const
+    {
+        QStringList lst;
+
+        if (bInput)
+            lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+        else
+            lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+
+        //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
+        if (lst.size() >= 4) {
+            ident = lst[1];
+            sockName = lst[3];
+#if 0
+            lst = lst[3].split("/", Qt::SkipEmptyParts);
+            outSock = lst.last();
+#endif
+        }
+    }
+
+    QString subgraphName(bool bInput) const {
+        if (bInput) {
+            QStringList lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+            ZASSERT_EXIT(!lst.isEmpty(), "");
+            return lst[0];
+        } else {
+            QStringList lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+            ZASSERT_EXIT(!lst.isEmpty(), "");
+            return lst[0];
+        }
+    }
+    
     bool operator==(const EdgeInfo &rhs) const {
-        return outputNode == rhs.outputNode && inputNode == rhs.inputNode &&
-               outputSock == rhs.outputSock && inputSock == rhs.inputSock;
+        return outSockPath == rhs.outSockPath && inSockPath == rhs.inSockPath;
     }
     bool operator<(const EdgeInfo &rhs) const {
-        if (outputNode != rhs.outputNode) {
-            return outputNode < rhs.outputNode;
-        } else if (inputNode != rhs.inputNode) {
-            return inputNode < rhs.inputNode;
-        } else if (outputSock != rhs.outputSock) {
-            return outputSock < rhs.outputSock;
-        } else if (inputSock != rhs.inputSock) {
-            return inputSock < rhs.inputSock;
+        if (outSockPath != rhs.outSockPath) {
+            return outSockPath < rhs.outSockPath;
+        } else if (inSockPath != rhs.inSockPath) {
+            return inSockPath < rhs.inSockPath;
         } else {
             return 0;
         }
     }
 };
 Q_DECLARE_METATYPE(EdgeInfo)
-
-struct cmpEdge {
-    bool operator()(const EdgeInfo &lhs, const EdgeInfo &rhs) const {
-        return lhs.outputNode < rhs.outputNode && lhs.inputNode < rhs.inputNode &&
-               lhs.outputSock < rhs.outputSock && lhs.inputSock < rhs.inputSock;
-    }
-};
 
 struct DICTKEY_INFO
 {

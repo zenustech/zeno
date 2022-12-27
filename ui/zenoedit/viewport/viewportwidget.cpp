@@ -1074,7 +1074,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
             picking_context.saveContext();
 
             // get object id
-            auto target_node_id = input_edges[0].outputNode;
+            QString outputNode, outputSock;
+            input_edges[0].getSockInfo(false, outputNode, outputSock);
+
+            auto target_node_id = outputNode;
             string obj_name;
             for (const auto& [name, obj] : scene->objectsMan->pairsShared()) {
                 if (name.find(target_node_id.toStdString()) != string::npos) {
