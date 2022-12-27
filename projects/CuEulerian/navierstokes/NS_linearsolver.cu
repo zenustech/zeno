@@ -232,6 +232,7 @@ struct ZSNSPressureProject : INode {
 
                         auto stclSum = tile.shfl(stclVal, 1);
                         auto cutSum = tile.shfl(cutVal, 1);
+                        cutSum = zs::max(cutSum, 1e-10f);
                         if (lane_id == 0) {
                             spgv(pOffset, blockno, 0) = stclVal + sor * (stclSum * dx - div * rho) / (cutSum * dx);
                         }
@@ -545,6 +546,7 @@ struct ZSNSPressureProject : INode {
                             cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
+                            cut_sum = zs::max(cut_sum, 1e-10f);
 
                             p_self = (1.f - sor) * p_self +
                                      sor *
@@ -739,7 +741,6 @@ struct ZSNSPressureProject : INode {
                     auto ccoord = spgv.local_offset_to_coord(cellno);
                     ccoord += 1;
 
-                    const int stcl = 1; // stencil point in each side
                     float p_x[2], p_y[2], p_z[2], p_self;
 
                     p_self = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
@@ -1271,6 +1272,7 @@ struct ZSNSPressureProject : INode {
                         auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
                         cut_sum += shmem[cellno_f];
                     }
+                cut_sum *= 0.25f;
 
                 spgv_c("cut", 0, blockno, cellno) = cut_sum;
 
@@ -1289,6 +1291,7 @@ struct ZSNSPressureProject : INode {
                         auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
                         cut_sum += shmem[cellno_f];
                     }
+                cut_sum *= 0.25f;
 
                 spgv_c("cut", 1, blockno, cellno) = cut_sum;
 
@@ -1307,6 +1310,7 @@ struct ZSNSPressureProject : INode {
                         auto cellno_f = spgv_f.local_coord_to_offset(ccoord_f);
                         cut_sum += shmem[cellno_f];
                     }
+                cut_sum *= 0.25f;
 
                 spgv_c("cut", 2, blockno, cellno) = cut_sum;
             });
