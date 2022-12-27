@@ -1,7 +1,7 @@
 #ifndef __CUDA_MEM_MARCO_HPP__
 #define __CUDA_MEM_MARCO_HPP__
 
-#define ENABLE_TRACE_CUDA_MEM 1
+#define ENABLE_TRACE_CUDA_MEM 0
 #if ENABLE_TRACE_CUDA_MEM
 
 #include <cuda_runtime.h>
