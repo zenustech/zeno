@@ -201,9 +201,9 @@ struct ZSNSPressureProject : INode {
                             value_type cutVal = 0;
                             if (bno >= 0) {
                                 if (k & 1)
-                                    cutVal = spgv(cutOffset, bno, 0);
+                                    cutVal = spgv(cutOffset + (k / 2), bno, 0);
                                 else
-                                    cutVal = spgv(cutOffset, blockno, 0);
+                                    cutVal = spgv(cutOffset + (k / 2), blockno, 0);
                                 return zs::make_tuple(spgv(pOffset, bno, 0), cutVal);
                             } else
                                 return zs::make_tuple((value_type)0, (value_type)0);
