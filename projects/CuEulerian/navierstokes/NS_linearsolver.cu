@@ -503,7 +503,7 @@ struct ZSNSPressureProject : INode {
                                 int i = id / side_length;
                                 int j = id % side_length;
                                 shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
-                                cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0;
+                                cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 1;
                             }
 
                         tile.sync();
