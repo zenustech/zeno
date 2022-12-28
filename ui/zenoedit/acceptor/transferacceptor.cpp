@@ -188,6 +188,16 @@ void TransferAcceptor::setInputSocket(
 
 }
 
+void TransferAcceptor::setDictPanelProperty(
+        bool bInput,
+        const QString& ident,
+        const QString& sockName,
+        bool bCollasped
+    )
+{
+
+}
+
 void TransferAcceptor::addInnerDictKey(
         bool bInput,
         const QString& inNode,

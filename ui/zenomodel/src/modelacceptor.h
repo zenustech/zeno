@@ -53,6 +53,13 @@ public:
         const QString& link
     ) override;
 
+    void setDictPanelProperty(
+        bool bInput,
+        const QString& ident,
+        const QString& sockName,
+        bool bCollasped
+    ) override;
+
 	void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) override;
 	void setPos(const QString& id, const QPointF& pos) override;
 	void setOptions(const QString& id, const QStringList& options) override;

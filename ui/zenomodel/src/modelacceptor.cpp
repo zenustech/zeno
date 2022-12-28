@@ -382,6 +382,22 @@ void ModelAcceptor::setInputSocket2(
     }
 }
 
+void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, const QString& sockName, bool bCollasped)
+{
+    QModelIndex inNodeIdx = m_currentGraph->index(ident);
+    ZASSERT_EXIT(inNodeIdx.isValid());
+
+    IParamModel *pModel = m_currentGraph->paramModel(inNodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+    ZASSERT_EXIT(pModel);
+
+    QModelIndex sockIdx = pModel->index(sockName);
+    ZASSERT_EXIT(sockIdx.isValid());
+
+    DictKeyModel *keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(keyModel);
+    keyModel->setCollasped(bCollasped);
+}
+
 void ModelAcceptor::addInnerDictKey(
             bool bInput,
             const QString& ident,

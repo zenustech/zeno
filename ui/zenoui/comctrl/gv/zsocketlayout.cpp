@@ -207,9 +207,19 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     addLayout(pHPanelLayout);
 
     setSpacing(ZenoStyle::dpiScaled(0));
-    m_panel->hide();
+
+    QAbstractItemModel *dictkeyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(dictkeyModel);
+    bool bCollasped = dictkeyModel->data(QModelIndex(), ROLE_COLLASPED).toBool();
+    m_collaspeBtn->toggle(!bCollasped);
+    m_panel->setVisible(!bCollasped);
 
     QObject::connect(m_collaspeBtn, &ZenoImageItem::toggled, [=](bool bChecked) {
+
+        QAbstractItemModel *keyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+        if (keyModel)
+            keyModel->setData(QModelIndex(), !bChecked, ROLE_COLLASPED);
+
         m_panel->setVisible(bChecked);
         ZGraphicsLayout::updateHierarchy(pHLayout);
         if (cbSock.cbOnSockLayoutChanged)
@@ -220,10 +230,6 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 void ZDictSocketLayout::setCollasped(bool bCollasped)
 {
     m_collaspeBtn->toggle(!bCollasped);
-
-    QAbstractItemModel* keyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    if (keyModel)
-        keyModel->setData(QModelIndex(), bCollasped, ROLE_COLLASPED);
 }
 
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const

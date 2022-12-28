@@ -374,9 +374,28 @@ void ZsgReader::_parseSocket(
         }
     }
 
-    if (sockObj.HasMember("__dictKeys"))
+    if (sockObj.HasMember("dictlist-panel"))
     {
-        const rapidjson::Value& dictKeys = sockObj["__dictKeys"];
+        _parseDictPanel(bInput, sockObj["dictlist-panel"], id, inSock, nodeName, pAcceptor);
+    }
+}
+
+void ZsgReader::_parseDictPanel(
+            bool bInput,
+            const rapidjson::Value& dictPanelObj, 
+            const QString& id,
+            const QString& inSock,
+            const QString& nodeName,
+            IAcceptor* pAcceptor)
+{
+    if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
+    {
+        bool val = dictPanelObj["collasped"].GetBool();
+        pAcceptor->setDictPanelProperty(bInput, id, inSock, val);
+    }
+    if (dictPanelObj.HasMember("keys"))
+    {
+        const rapidjson::Value& dictKeys = dictPanelObj["keys"];
         for (const auto& kv : dictKeys.GetObject())
         {
             const QString& keyName = kv.name.GetString();
@@ -388,8 +407,11 @@ void ZsgReader::_parseSocket(
                 link = QString::fromLocal8Bit(inputObj["link"].GetString());
             }
             pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
-            QString sockGrp = inSock + ":" + keyName;
-            pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, sockProp, rapidjson::Value());
+            if (bInput)
+            {
+                QString sockGrp = inSock + ":" + keyName;
+                pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, "editable", rapidjson::Value());
+            }
         }
     }
 }
@@ -423,23 +445,8 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
         const auto& sockObj = outObj.value;
         if (sockObj.IsObject())
         {
-            //only parse key socket.
-            QString sockProp;
-            if (sockObj.HasMember("property"))
-            {
-                ZASSERT_EXIT(sockObj["property"].IsString());
-                sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
-            }
-            pAcceptor->addSocket(false, id, outSock, sockProp);
-
-            if (sockObj.HasMember("__dictKeys"))
-            {
-                const rapidjson::Value& dictKeys = sockObj["__dictKeys"];
-                for (const auto& kv : dictKeys.GetObject())
-                {
-                    const QString& keyName = kv.name.GetString();
-                    pAcceptor->addInnerDictKey(false, id, outSock, keyName, "");
-                }
+            if (sockObj.HasMember("dictlist-panel")) {
+                _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
             }
         }
     }

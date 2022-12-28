@@ -79,7 +79,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
         case ROLE_COLLASPED:
         {
-            m_bCollasped = true;
+            m_bCollasped = value.toBool();
             break;
         }
     }
@@ -88,11 +88,11 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
 
 QVariant DictKeyModel::data(const QModelIndex& index, int role) const
 {
-    const _DictItem& item = m_items[index.row()];
     switch (role)
     {
     case Qt::DisplayRole:
     {
+        const _DictItem &item = m_items[index.row()];
         if (index.column() == 0) {
             return item.key;
         }
@@ -120,6 +120,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_SOCKPROP:   return SOCKPROP_EDITABLE;
     case ROLE_PARAM_LINKS:
         {
+            const _DictItem &item = m_items[index.row()];
             PARAM_LINKS links;
             QModelIndex linkIdx = item.link;
             if (linkIdx.isValid())
@@ -129,6 +130,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_NAME:
     case ROLE_VPARAM_NAME:
     {
+        const _DictItem &item = m_items[index.row()];
         if (index.column() == 0) {
             return item.key;
         }
@@ -145,6 +147,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_LINK_IDX:
     {
+        const _DictItem& item = m_items[index.row()];
         QModelIndex linkIdx = item.link;
         return linkIdx;
     }
@@ -165,6 +168,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         return "string";
     case ROLE_OBJPATH:
     {
+        const _DictItem &item = m_items[index.row()];
         QString path;
         path = m_dictParam.data(ROLE_OBJPATH).toString() + ":" + item.key;
         return path;

@@ -50,6 +50,12 @@ public:
             const QString& keyName,
             const QString& link
     ) = 0;
+    virtual void setDictPanelProperty(
+            bool bInput,
+            const QString& ident,
+            const QString& sockName,
+            bool bCollasped
+    ) = 0;
 
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
