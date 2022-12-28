@@ -34,13 +34,15 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
     if (enableContact) {
         nPP.setVal(0);
         if (enableContactSelf) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
+            bvs.resize(svInds.size());
+            retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0, bvs);
+            // auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
 
             /// bvh
             if constexpr (s_enableProfile)
                 timer.tick();
 
-            svBvh.refit(pol, pBvs);
+            svBvh.refit(pol, bvs);
 
             if constexpr (s_enableProfile) {
                 timer.tock();
@@ -52,7 +54,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
                 if constexpr (s_enableProfile)
                     timer.tick();
 
-                svSh.build(pol, LRef, pBvs);
+                svSh.build(pol, L, bvs);
 
                 if constexpr (s_enableProfile) {
                     timer.tock();
@@ -64,13 +66,15 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
             findCollisionConstraints(pol, dHat, false);
         }
         if (hasBoundary()) {
-            auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
+            bvs.resize(coPoints->size());
+            retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset, bvs);
+            // auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
 
             /// bvh
             if constexpr (s_enableProfile)
                 timer.tick();
 
-            bouSvBvh.refit(pol, pBvs);
+            bouSvBvh.refit(pol, bvs);
 
             if constexpr (s_enableProfile) {
                 timer.tock();
@@ -82,7 +86,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
                 if constexpr (s_enableProfile)
                     timer.tick();
 
-                bouSvSh.build(pol, LRef, pBvs);
+                bouSvSh.build(pol, L, bvs);
 
                 if constexpr (s_enableProfile) {
                     timer.tock();
