@@ -21,6 +21,8 @@
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
 #include "raiicuda.h"
+#include "zeno/utils/string.h"
+#include "tinyexr.h"
 
 //#include <GLFW/glfw3.h>
 
@@ -32,6 +34,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cudaMemMarco.hpp>
+
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
     std::cerr << "[" << std::setw( 2 ) << level << "][" << std::setw( 12 ) << tag << "]: " << message << "\n";
@@ -47,6 +51,7 @@ inline raii<OptixModule>                    ray_module               ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+inline bool isPipelineCreated = false;
 ////end material independent stuffs
 inline void createContext()
 {
@@ -229,7 +234,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     }
     
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
@@ -286,7 +291,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
             };
         }
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
@@ -336,8 +341,30 @@ inline void addTexture(std::string path)
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
-    zeno::log_info("is hdr: {}", stbi_is_hdr(path.c_str()));
-    if (stbi_is_hdr(path.c_str())) {
+
+    if (zeno::ends_with(path, ".exr", false)) {
+        float* rgba;
+        const char* err;
+        int ret = LoadEXR(&rgba, &nx, &ny, path.c_str(), &err);
+        if (ret != 0) {
+            zeno::log_error("load exr: {}", err);
+            return;
+        }
+        nc = 4;
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        for (auto i = 0; i < ny / 2; i++) {
+            for (auto x = 0; x < nx * 4; x++) {
+                auto index1 = i * (nx * 4) + x;
+                auto index2 = (ny - 1 - i) * (nx * 4) + x;
+                std::swap(rgba[index1], rgba[index2]);
+            }
+        }
+        assert(rgba);
+        g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
+        free(rgba);
+    }
+    else if (stbi_is_hdr(path.c_str())) {
         float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading texture failed:{}", path);
@@ -460,6 +487,12 @@ inline void createPipeline()
     }
     char   log[2048];
     size_t sizeof_log = sizeof( log );
+
+    if (isPipelineCreated)
+    {
+        OPTIX_CHECK(optixPipelineDestroy(pipeline));
+        isPipelineCreated = false;
+    }
     OPTIX_CHECK_LOG( optixPipelineCreate(
                 context,
                 &pipeline_compile_options,
@@ -470,6 +503,8 @@ inline void createPipeline()
                 &sizeof_log,
                 &pipeline
                 ) );
+    isPipelineCreated = true;
+
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes ) );
     OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes ) );

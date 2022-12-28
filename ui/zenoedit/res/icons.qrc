@@ -138,5 +138,7 @@
     <file>icons/ic_parameter_checkbox_check.svg</file>
     <file>icons/ic_parameter_checkbox_uncheck.svg</file>
     <file>icons/ic_parameter_checkbox_check_on.svg</file>
+    <file>icons/file-loader.svg</file>
+    <file>icons/file-loader-on.svg</file>
 </qresource>
 </RCC>

@@ -91,7 +91,7 @@ struct ProgramRunData {
         session->globalState->clearState();
         session->globalStatus->clearState();
 
-        bool bZenCache = initZenCache();
+        bool bZenCache = initZenCache(nullptr);
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
@@ -264,19 +264,20 @@ void killProgram() {
     killProgramJSON();
 }
 
-bool initZenCache() {
+bool initZenCache(char* pCachePath)
+{
     QSettings settings(zsCompanyName, zsEditor);
-    const QString& cachedir = settings.value("zencachedir").toString();
     const QString& cachenum = settings.value("zencachenum").toString();
-    bool bDiskCache = false;
-    int cnum = cachenum.toInt(&bDiskCache);
-    bDiskCache = bDiskCache && QFileInfo(cachedir).isDir() && cnum > 0;
-    if (bDiskCache) {
-        auto cdir = cachedir.toStdString();
-        zeno::getSession().globalComm->frameCache(cdir.c_str(), cnum);
+    bool bEnableCache = settings.value("zencache-enable").toBool();
+    int cnum = cachenum.toInt();
+
+    QString qsPath = QString::fromLocal8Bit(pCachePath);
+    bEnableCache = bEnableCache && QFileInfo(qsPath).isDir() && cnum > 0;
+    if (bEnableCache) {
+        zeno::getSession().globalComm->frameCache(qsPath.toStdString(), cnum);
     }
     else {
         zeno::getSession().globalComm->frameCache("", 0);
     }
-    return bDiskCache;
+    return bEnableCache;
 }

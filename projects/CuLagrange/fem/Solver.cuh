@@ -13,66 +13,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#include "SolverUtils.cuh"
 
 namespace zeno {
-
-/// credits: du wenxin
-template <typename T = float, typename Ti = int> struct CsrMatrix {
-    using value_type = T;
-    using index_type = std::make_signed_t<Ti>;
-    using size_type = std::make_unsigned_t<Ti>;
-    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
-    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
-    zs::Vector<size_type> ap{};
-    zs::Vector<int> aj{};
-    zs::Vector<value_type> ax{};
-    // for build
-    table_type tab{};
-    zs::Vector<size_type> nnz{}; // non-zero entries per row
-};
-
-template <int n = 1> struct HessianPiece {
-    using HessT = zs::vec<float, n * 3, n * 3>;
-    using IndsT = zs::vec<int, n>;
-    zs::Vector<HessT> hess;
-    zs::Vector<IndsT> inds;
-    zs::Vector<int> cnt;
-    using allocator_t = typename zs::Vector<int>::allocator_type;
-    void init(const allocator_t &allocator, std::size_t size = 0) {
-        hess = zs::Vector<HessT>{allocator, size};
-        inds = zs::Vector<IndsT>{allocator, size};
-        cnt = zs::Vector<int>{allocator, 1};
-    }
-    int count() const {
-        return cnt.getVal();
-    }
-    int increaseCount(int inc) {
-        int v = cnt.getVal();
-        cnt.setVal(v + inc);
-        hess.resize((std::size_t)(v + inc));
-        inds.resize((std::size_t)(v + inc));
-        return v;
-    }
-    void reset(bool setZero = true, std::size_t count = 0) {
-        if (setZero)
-            hess.reset(0);
-        cnt.setVal(count);
-    }
-};
-template <typename HessianPieceT> struct HessianView {
-    static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
-    using HT = typename HessianPieceT::HessT;
-    using IT = typename HessianPieceT::IndsT;
-    zs::conditional_t<is_const_structure, const HT *, HT *> hess;
-    zs::conditional_t<is_const_structure, const IT *, IT *> inds;
-    zs::conditional_t<is_const_structure, const int *, int *> cnt;
-};
-template <zs::execspace_e space, int n> HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
-    return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
-}
-template <zs::execspace_e space, int n> HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
-    return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
-}
 
 struct IPCSystem : IObject {
     using T = double;
@@ -381,5 +324,3 @@ struct IPCSystem : IObject {
 };
 
 } // namespace zeno
-
-#include "SolverUtils.cuh"

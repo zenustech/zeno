@@ -47,6 +47,7 @@ public:
     void paintGL();
     //void recordGL(const std::string& record_path);
     int getCurrentFrameId();
+    bool isPlaying() const;
     zenovis::Session *getSession() const;
     void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
