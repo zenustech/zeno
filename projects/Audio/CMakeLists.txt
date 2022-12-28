@@ -1,4 +1,4 @@
-target_sources(zeno PRIVATE Audio.cpp)
+target_sources(zeno PRIVATE Audio.cpp PybAudio.cpp)
 
 zeno_disable_warning(Audio.cpp)
 
