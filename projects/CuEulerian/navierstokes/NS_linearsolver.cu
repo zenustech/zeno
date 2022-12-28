@@ -237,7 +237,7 @@ struct ZSNSPressureProject : INode {
 
                         auto stclSum = tile.shfl(stclVal, 1);
                         auto cutSum = tile.shfl(cutVal, 1);
-                        cutSum = zs::max(cutSum, 1e-10f);
+                        cutSum = zs::max(cutSum, zs::limits<float>::epsilon() * 10);
                         if (lane_id == 0) {
                             spgv(pOffset, blockno, 0) = stclVal + sor * (stclSum * dx - div * rho) / (cutSum * dx);
                         }
@@ -330,12 +330,13 @@ struct ZSNSPressureProject : INode {
         for (int iter = 0; iter < nIter; ++iter) {
             for (int clr = 0; clr != 2; ++clr) {
                 constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
-                constexpr std::size_t tpb = 4;
+                constexpr std::size_t tpb = 2;
                 constexpr std::size_t cuda_block_size = bucket_size * tpb;
-                pol.shmem(arena_size * sizeof(value_type) * tpb);
+                pol.shmem(arena_size * sizeof(value_type) * tpb * 4);
                 pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
                     [spgv = zs::proxy<space>(spg), dx, rho, clr, sor, ts_c = zs::wrapv<bucket_size>{},
                      tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"),
+                     cutOffset = spg.getPropertyOffset("cut"),
                      blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                         // load halo
                         using vec3i = zs::vec<int, 3>;
@@ -357,7 +358,10 @@ struct ZSNSPressureProject : INode {
                         if (blockno >= blockCnt)
                             return;
 
-                        shmem += (tid / tile_size) * arena_size;
+                        shmem += (tid / tile_size) * arena_size * 4;
+                        auto cut0shmem = shmem + arena_size;
+                        auto cut1shmem = cut0shmem + arena_size;
+                        auto cut2shmem = cut1shmem + arena_size;
                         auto bcoord = spgv._table._activeKeys[blockno];
 
 #if 0
@@ -387,8 +391,11 @@ struct ZSNSPressureProject : INode {
                         auto block = spgv.block(blockno);
                         for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
                             auto localCoord = spg_t::local_offset_to_coord(cid);
-                            shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)] =
-                                block(pOffset, cid);
+                            auto idx = halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1);
+                            shmem[idx] = block(pOffset, cid);
+                            cut0shmem[idx] = block(cutOffset + 0, cid);
+                            cut1shmem[idx] = block(cutOffset + 1, cid);
+                            cut2shmem[idx] = block(cutOffset + 2, cid);
                         }
 
                         // back
@@ -416,12 +423,15 @@ struct ZSNSPressureProject : INode {
                                 int j = id % side_length;
                                 shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
                                     block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                                cut2shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
+                                    block(cutOffset + 2, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
                             }
                         } else
                             for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                                 int i = id / side_length;
                                 int j = id % side_length;
                                 shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 0; // no pressure
+                                cut2shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 1;
                             }
 
                         // bottom
@@ -449,12 +459,15 @@ struct ZSNSPressureProject : INode {
                                 int j = id % side_length;
                                 shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
                                     block(pOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                                cut1shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
+                                    block(cutOffset + 1, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
                             }
                         } else
                             for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                                 int i = id / side_length;
                                 int j = id % side_length;
                                 shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 0; // no pressure
+                                cut1shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 1;
                             }
 
                         // left
@@ -482,12 +495,15 @@ struct ZSNSPressureProject : INode {
                                 int j = id % side_length;
                                 shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
                                     block(pOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                                cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
+                                    block(cutOffset + 0, spg_t::local_coord_to_offset(vec3i{0, i, j}));
                             }
                         } else
                             for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                                 int i = id / side_length;
                                 int j = id % side_length;
                                 shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
+                                cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0;
                             }
 
                         tile.sync();
@@ -543,15 +559,15 @@ struct ZSNSPressureProject : INode {
 
                             float cut_x[2], cut_y[2], cut_z[2];
                             auto icoord = spgv.iCoord(blockno, cellno);
-                            cut_x[0] = spgv.value("cut", 0, blockno, cellno);
-                            cut_y[0] = spgv.value("cut", 1, blockno, cellno);
-                            cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
-                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
-                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
+                            cut_x[0] = cut0shmem[idx];
+                            cut_y[0] = cut1shmem[idx];
+                            cut_z[0] = cut2shmem[idx];
+                            cut_x[1] = cut0shmem[idx + halo_side_length * halo_side_length];
+                            cut_y[1] = cut1shmem[idx + halo_side_length];
+                            cut_z[1] = cut2shmem[idx + 1];
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
-                            cut_sum = zs::max(cut_sum, 1e-10f);
+                            cut_sum = zs::max(cut_sum, zs::limits<float>::epsilon() * 10);
 
                             p_self = (1.f - sor) * p_self +
                                      sor *
@@ -595,9 +611,9 @@ struct ZSNSPressureProject : INode {
         constexpr int side_length = RM_CVREF_T(spg)::side_length;
         constexpr int arena_size = (side_length + 2) * (side_length + 2) * (side_length + 2);
         constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
-        constexpr std::size_t tpb = 4;
+        constexpr std::size_t tpb = 2;
         constexpr std::size_t cuda_block_size = bucket_size * tpb;
-        pol.shmem(arena_size * sizeof(value_type) * tpb);
+        pol.shmem(arena_size * sizeof(value_type) * tpb * 4);
 
         // residual
         zs::Vector<float> res{spg.get_allocator(), 0};
@@ -608,7 +624,8 @@ struct ZSNSPressureProject : INode {
 
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), dx, rho, ts_c = zs::wrapv<bucket_size>{},
-             tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"), computeMax_c = zs::wrapv<(level == 0)>{},
+             tpb_c = zs::wrapv<tpb>{}, pOffset = spg.getPropertyOffset("p"), cutOffset = spg.getPropertyOffset("cut"),
+             computeMax_c = zs::wrapv<(level == 0)>{},
              blockCnt = block_cnt] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
@@ -630,13 +647,20 @@ struct ZSNSPressureProject : INode {
                 if (blockno >= blockCnt)
                     return;
 
-                shmem += (tid / tile_size) * arena_size;
+                shmem += (tid / tile_size) * arena_size * 4;
+                auto cut0shmem = shmem + arena_size;
+                auto cut1shmem = cut0shmem + arena_size;
+                auto cut2shmem = cut1shmem + arena_size;
                 auto bcoord = spgv._table._activeKeys[blockno];
 
                 auto block = spgv.block(blockno);
                 for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
                     auto localCoord = spg_t::local_offset_to_coord(cid);
-                    shmem[halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1)] = block(pOffset, cid);
+                    auto idx = halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1);
+                    shmem[idx] = block(pOffset, cid);
+                    cut0shmem[idx] = block(cutOffset + 0, cid);
+                    cut1shmem[idx] = block(cutOffset + 1, cid);
+                    cut2shmem[idx] = block(cutOffset + 2, cid);
                 }
 
                 // back
@@ -664,12 +688,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
                             block(pOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                        cut2shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
+                            block(cutOffset + 2, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 0; // no pressure
+                        cut2shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 1;
                     }
 
                 // bottom
@@ -697,12 +724,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
                             block(pOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                        cut1shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
+                            block(cutOffset + 1, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 0; // no pressure
+                        cut1shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 1;
                     }
 
                 // left
@@ -730,12 +760,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
                             block(pOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                        cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
+                            block(cutOffset + 0, spg_t::local_coord_to_offset(vec3i{0, i, j}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0; // no pressure
+                        cut0shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 1;
                     }
 
                 tile.sync();
@@ -758,12 +791,12 @@ struct ZSNSPressureProject : INode {
 
                     float cut_x[2], cut_y[2], cut_z[2];
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    cut_x[0] = spgv.value("cut", 0, blockno, cellno);
-                    cut_y[0] = spgv.value("cut", 1, blockno, cellno);
-                    cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
-                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
-                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
+                    cut_x[0] = cut0shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
+                    cut_y[0] = cut1shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
+                    cut_z[0] = cut2shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
+                    cut_x[1] = cut0shmem[halo_index(ccoord[0] + 1, ccoord[1], ccoord[2])];
+                    cut_y[1] = cut1shmem[halo_index(ccoord[0], ccoord[1] + 1, ccoord[2])];
+                    cut_z[1] = cut2shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] + 1)];
 
                     float m_residual = div - ((p_x[1] - p_self) * cut_x[1] - (p_self - p_x[0]) * cut_x[0] +
                                               (p_y[1] - p_self) * cut_y[1] - (p_self - p_y[0]) * cut_y[0] +
@@ -943,7 +976,7 @@ struct ZSNSPressureProject : INode {
         constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
         constexpr std::size_t tpb = 4;
         constexpr std::size_t cuda_block_size = bucket_size * tpb;
-        pol.shmem(arena_size * sizeof(value_type) * tpb * 2);
+        pol.shmem(arena_size * sizeof(value_type) * tpb * 3);
 
         // maximum rhs
         zs::Vector<float> rhs{spg.get_allocator(), block_cnt};
@@ -953,8 +986,8 @@ struct ZSNSPressureProject : INode {
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), rhs = zs::proxy<space>(rhs), ts_c = zs::wrapv<bucket_size>{},
              tpb_c = zs::wrapv<tpb>{}, dxSqOverDt = dx * dx / dt, dt, hasDiv, blockCnt = block_cnt,
-             vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
-                                                                               int tid) mutable {
+             vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v")),
+             cutOffset = spg.getPropertyOffset("cut")] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
                 using spg_t = RM_CVREF_T(spgv);
@@ -975,8 +1008,9 @@ struct ZSNSPressureProject : INode {
                 if (blockno >= blockCnt)
                     return;
 
-                shmem += (tid / tile_size) * arena_size * 2;
+                shmem += (tid / tile_size) * arena_size * 3;
                 auto outputShmem = shmem + arena_size;
+                auto cutShmem = outputShmem + arena_size;
                 auto bcoord = spgv._table._activeKeys[blockno];
 
                 //-------------------u-------------------
@@ -984,6 +1018,7 @@ struct ZSNSPressureProject : INode {
                 for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
                     auto localCoord = spg_t::local_offset_to_coord(cid);
                     shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 0, cid);
+                    cutShmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(cutOffset + 0, cid);
                 }
 
                 // right
@@ -995,12 +1030,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(halo_side_length - 1, i, j)] =
                             block(vOffset + 0, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                        cutShmem[halo_index(halo_side_length - 1, i, j)] =
+                            block(cutOffset + 0, spg_t::local_coord_to_offset(vec3i{0, i, j}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(halo_side_length - 1, i, j)] = 0; // zero velocity
+                        cutShmem[halo_index(halo_side_length - 1, i, j)] = 1;
                     }
 
                 tile.sync();
@@ -1014,9 +1052,8 @@ struct ZSNSPressureProject : INode {
                     u_x[1] = shmem[idx + 1];
 
                     float cut_x[2];
-                    auto icoord = spgv.iCoord(blockno, cellno);
-                    cut_x[0] = spgv.value("cut", 0, blockno, cellno);
-                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
+                    cut_x[0] = cutShmem[idx];
+                    cut_x[1] = cutShmem[idx + 1];
 
                     outputShmem[idx] = (u_x[1] * cut_x[1] - u_x[0] * cut_x[0]) * dxSqOverDt;
                 }
@@ -1025,6 +1062,7 @@ struct ZSNSPressureProject : INode {
                 for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
                     auto localCoord = spg_t::local_offset_to_coord(cid);
                     shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 1, cid);
+                    cutShmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(cutOffset + 1, cid);
                 }
 
                 // top
@@ -1036,12 +1074,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(i, halo_side_length - 1, j)] =
                             block(vOffset + 1, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                        cutShmem[halo_index(i, halo_side_length - 1, j)] =
+                            block(cutOffset + 1, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(i, halo_side_length - 1, j)] = 0; // zero velocity
+                        cutShmem[halo_index(i, halo_side_length - 1, j)] = 1;
                     }
 
                 tile.sync();
@@ -1055,9 +1096,8 @@ struct ZSNSPressureProject : INode {
                     u_y[1] = shmem[idx + halo_side_length];
 
                     float cut_y[2];
-                    auto icoord = spgv.iCoord(blockno, cellno);
-                    cut_y[0] = spgv.value("cut", 1, blockno, cellno);
-                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
+                    cut_y[0] = cutShmem[idx];
+                    cut_y[1] = cutShmem[idx + halo_side_length];
 
                     outputShmem[idx] += (u_y[1] * cut_y[1] - u_y[0] * cut_y[0]) * dxSqOverDt;
                 }
@@ -1066,6 +1106,7 @@ struct ZSNSPressureProject : INode {
                 for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
                     auto localCoord = spg_t::local_offset_to_coord(cid);
                     shmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(vOffset + 2, cid);
+                    cutShmem[halo_index(localCoord[0], localCoord[1], localCoord[2])] = block(cutOffset + 2, cid);
                 }
 
                 // back
@@ -1077,12 +1118,15 @@ struct ZSNSPressureProject : INode {
                         int j = id % side_length;
                         shmem[halo_index(i, j, halo_side_length - 1)] =
                             block(vOffset + 2, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                        cutShmem[halo_index(i, j, halo_side_length - 1)] =
+                            block(cutOffset + 2, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
                     }
                 } else
                     for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
                         int i = id / side_length;
                         int j = id % side_length;
                         shmem[halo_index(i, j, halo_side_length - 1)] = 0; // zero velocity
+                        cutShmem[halo_index(i, j, halo_side_length - 1)] = 1;
                     }
 
                 tile.sync();
@@ -1096,9 +1140,8 @@ struct ZSNSPressureProject : INode {
                     u_z[1] = shmem[idx + halo_side_length * halo_side_length];
 
                     float cut_z[2];
-                    auto icoord = spgv.iCoord(blockno, cellno);
-                    cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
+                    cut_z[0] = cutShmem[idx];
+                    cut_z[1] = cutShmem[idx + halo_side_length * halo_side_length];
 
                     float div_term = outputShmem[idx];
                     div_term += (u_z[1] * cut_z[1] - u_z[0] * cut_z[0]) * dxSqOverDt;
