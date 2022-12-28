@@ -423,15 +423,18 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tock();
             auxTime[0] += timer.elapsed();
         }
-        /// sh
-        if constexpr (s_enableProfile)
-            timer.tick();
+        if constexpr (s_testSh) {
+            /// sh
+            puts("begin self sh ctor");
+            if constexpr (s_enableProfile)
+                timer.tick();
 
-        // svSh.build(pol, LRef, ptBvs);
+            svSh.build(pol, LRef, ptBvs);
 
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            auxTime[2] += timer.elapsed();
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
         }
     }
     if (hasBoundary()) {
@@ -447,15 +450,18 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auxTime[0] += timer.elapsed();
         }
 
-        /// sh
-        if constexpr (s_enableProfile)
-            timer.tick();
+        if constexpr (s_testSh) {
+            /// sh
+            puts("begin boundary sh ctor");
+            if constexpr (s_enableProfile)
+                timer.tick();
 
-        // bouSvSh.build(pol, LRef, ptBvs);
+            bouSvSh.build(pol, LRef, ptBvs);
 
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            auxTime[2] += timer.elapsed();
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
         }
     }
     updateWholeBoundingBoxSize(pol);

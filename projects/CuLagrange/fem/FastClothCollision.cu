@@ -48,14 +48,16 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
             }
 
             /// sh
-            if constexpr (s_enableProfile)
-                timer.tick();
+            if constexpr (s_testSh) {
+                if constexpr (s_enableProfile)
+                    timer.tick();
 
-            // svSh.build(pol, LRef, pBvs);
+                svSh.build(pol, LRef, pBvs);
 
-            if constexpr (s_enableProfile) {
-                timer.tock();
-                auxTime[2] += timer.elapsed();
+                if constexpr (s_enableProfile) {
+                    timer.tock();
+                    auxTime[2] += timer.elapsed();
+                }
             }
 
             /// @note all cloth edge lower-bound constraints inheritly included
@@ -76,14 +78,16 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
             }
 
             /// sh
-            if constexpr (s_enableProfile)
-                timer.tick();
+            if constexpr (s_testSh) {
+                if constexpr (s_enableProfile)
+                    timer.tick();
 
-            // bouSvSh.build(pol, LRef, pBvs);
+                bouSvSh.build(pol, LRef, pBvs);
 
-            if constexpr (s_enableProfile) {
-                timer.tock();
-                auxTime[2] += timer.elapsed();
+                if constexpr (s_enableProfile) {
+                    timer.tock();
+                    auxTime[2] += timer.elapsed();
+                }
             }
             findCollisionConstraints(pol, dHat, true);
         }
@@ -118,6 +122,8 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     constexpr auto space = execspace_e::cuda;
 
     pol.profile(PROFILE_CD);
+
+#if !s_testSh
     /// pt
     if constexpr (s_enableProfile)
         timer.tick();
@@ -189,11 +195,12 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
         timer.tock();
         auxTime[1] += timer.elapsed();
     }
+#endif
 
+#if s_testSh
     /// sh
     if constexpr (s_enableProfile)
         timer.tick();
-
     const auto &sh = withBoundary ? bouSvSh : svSh;
     pol(Collapse{svInds.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
@@ -209,20 +216,20 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
                 // skip edges for point-point lower-bound constraints
-                if (!withBoundary && (eTab.single_query(ivec2{vi, vj}) >= 0 || eTab.single_query(ivec2{vj, vi}) >= 0))
+                if (!withBoundary && (eTab.query(ivec2{vi, vj}) >= 0 || eTab.query(ivec2{vj, vi}) >= 0))
                     return;
                 if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
-                    // auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                    // PP[no] = pair_t{vi, vj};
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                    PP[no] = pair_t{vi, vj};
                 }
             };
             sh.iter_neighbors(bv, f);
         });
-
     if constexpr (s_enableProfile) {
         timer.tock();
         auxTime[3] += timer.elapsed();
     }
+#endif
     pol.profile(false);
 }
 

@@ -272,8 +272,9 @@ struct FastClothSystem : IObject {
     /// @note allow (bisector) normal update on-the-fly, thus made modifiable
     tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
-    tiles_t vtemp;      // solver data
-    zs::Vector<T> temp; // as temporary buffer
+    tiles_t vtemp;        // solver data
+    zs::Vector<T> temp;   // as temporary buffer
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     // collision constraints (edge / non-edge)
     zs::Vector<pair_t> PP, E;
@@ -313,6 +314,7 @@ struct FastClothSystem : IObject {
     int dynamicsCnt[10];
     int collisionCnt[10];
     static constexpr bool s_enableProfile = true;
+#define s_testSh false
 };
 
 } // namespace zeno
