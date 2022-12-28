@@ -413,11 +413,50 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
     {
         auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
+        /// bvh
+        if constexpr (s_enableProfile)
+            timer.tick();
+
         svBvh.build(pol, ptBvs);
+
+        if constexpr (s_enableProfile) {
+            timer.tock();
+            auxTime[0] += timer.elapsed();
+        }
+        /// sh
+        if constexpr (s_enableProfile)
+            timer.tick();
+
+        // svSh.build(pol, LRef, ptBvs);
+
+        if constexpr (s_enableProfile) {
+            timer.tock();
+            auxTime[2] += timer.elapsed();
+        }
     }
     if (hasBoundary()) {
         auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
+        /// bvh
+        if constexpr (s_enableProfile)
+            timer.tick();
+
         bouSvBvh.build(pol, ptBvs);
+
+        if constexpr (s_enableProfile) {
+            timer.tock();
+            auxTime[0] += timer.elapsed();
+        }
+
+        /// sh
+        if constexpr (s_enableProfile)
+            timer.tick();
+
+        // bouSvSh.build(pol, LRef, ptBvs);
+
+        if constexpr (s_enableProfile) {
+            timer.tock();
+            auxTime[2] += timer.elapsed();
+        }
     }
     updateWholeBoundingBoxSize(pol);
     /// update grad pn residual tolerance

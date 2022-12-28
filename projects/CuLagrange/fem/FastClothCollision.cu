@@ -35,13 +35,56 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
         nPP.setVal(0);
         if (enableContactSelf) {
             auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
+
+            /// bvh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
             svBvh.refit(pol, pBvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[0] += timer.elapsed();
+            }
+
+            /// sh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
+            // svSh.build(pol, LRef, pBvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
+
             /// @note all cloth edge lower-bound constraints inheritly included
             findCollisionConstraints(pol, dHat, false);
         }
         if (hasBoundary()) {
             auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
+
+            /// bvh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
             bouSvBvh.refit(pol, pBvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[0] += timer.elapsed();
+            }
+
+            /// sh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
+            // bouSvSh.build(pol, LRef, pBvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
             findCollisionConstraints(pol, dHat, true);
         }
     }
@@ -49,7 +92,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
     nE.setVal(0);
     for (auto &primHandle : prims) {
         if (primHandle.isBoundary())
-            continue; 
+            continue;
         auto &ses = primHandle.getSurfEdges();
         pol(Collapse{ses.size()},
             [ses = proxy<space>({}, ses), vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), nE = proxy<space>(nE),
@@ -65,7 +108,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
                 }
             });
     }
-    std::tie(npp, ne) = getConstraintCnt(); 
+    std::tie(npp, ne) = getConstraintCnt();
 }
 
 #define PROFILE_CD 0
@@ -76,16 +119,19 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
 
     pol.profile(PROFILE_CD);
     /// pt
+    if constexpr (s_enableProfile)
+        timer.tick();
+
     const auto &svbvh = withBoundary ? bouSvBvh : svBvh;
     pol(Collapse{svInds.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
-         eTab = proxy<space>(eTab), 
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), 
-         PP = proxy<space>(PP), nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat,
-         voffset = withBoundary ? coOffset : 0, withBoundary] __device__(int i) mutable {
+         eTab = proxy<space>(eTab), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), PP = proxy<space>(PP),
+         nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
+         withBoundary] __device__(int i) mutable {
             auto vi = reinterpret_bits<int>(svInds("inds", i));
             auto pi = vtemp.pack(dim_c<3>, "xn", vi);
             auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
+#if 0
             auto f = [&](int svI) {
                 auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
                 if ((!withBoundary) && (vi >= vj))
@@ -100,7 +146,83 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                 }
             };
             bvh.iter_neighbors(bv, f);
+#else
+            {
+                const auto &lbvh = bvh;
+                using bvh_t = RM_CVREF_T(lbvh);
+                using index_t = typename bvh_t::index_t;
+                index_t node = 0;
+                while (node != -1 && node != lbvh._numNodes) {
+                    index_t level = lbvh._levels[node];
+                    // level and node are always in sync
+                    for (; level; --level, ++node)
+                        if (!overlaps(lbvh.getNodeBV(node), bv))
+                            break;
+                    // leaf node check
+                    if (level == 0) {
+                        if (overlaps(lbvh.getNodeBV(node), bv)) {
+                            int svI = lbvh._auxIndices[node];
+                            {
+                                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                                if ((!withBoundary) && (vi >= vj))
+                                    goto NEXT;
+                                auto pj = vtemp.pack(dim_c<3>, "xn", vj);
+                                // skip edges for point-point lower-bound constraints
+                                if (!withBoundary && (eTab.query(ivec2{vi, vj}) >= 0 || eTab.query(ivec2{vj, vi}) >= 0))
+                                    goto NEXT;
+                                if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
+                                    auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                                    PP[no] = pair_t{vi, vj};
+                                }
+                            }
+                        }
+                        NEXT:
+                        node++;
+                    } else // separate at internal nodes
+                        node = lbvh._auxIndices[node];
+                }
+            }
+#endif
         });
+
+    if constexpr (s_enableProfile) {
+        timer.tock();
+        auxTime[1] += timer.elapsed();
+    }
+
+    /// sh
+    if constexpr (s_enableProfile)
+        timer.tick();
+
+    const auto &sh = withBoundary ? bouSvSh : svSh;
+    pol(Collapse{svInds.size()},
+        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+         eTab = proxy<space>(eTab), vtemp = proxy<space>({}, vtemp), sh = proxy<space>(sh), PP = proxy<space>(PP),
+         nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
+         withBoundary] __device__(int i) mutable {
+            auto vi = reinterpret_bits<int>(svInds("inds", i));
+            auto pi = vtemp.pack(dim_c<3>, "xn", vi);
+            auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
+            auto f = [&](int svI) {
+                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                if ((!withBoundary) && (vi >= vj))
+                    return;
+                auto pj = vtemp.pack(dim_c<3>, "xn", vj);
+                // skip edges for point-point lower-bound constraints
+                if (!withBoundary && (eTab.single_query(ivec2{vi, vj}) >= 0 || eTab.single_query(ivec2{vj, vi}) >= 0))
+                    return;
+                if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
+                    // auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                    // PP[no] = pair_t{vi, vj};
+                }
+            };
+            sh.iter_neighbors(bv, f);
+        });
+
+    if constexpr (s_enableProfile) {
+        timer.tock();
+        auxTime[3] += timer.elapsed();
+    }
     pol.profile(false);
 }
 

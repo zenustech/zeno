@@ -727,10 +727,10 @@ struct StepClothSystem : INode {
         if constexpr (FastClothSystem::s_enableProfile) {
             auto str =
                 fmt::format("dynamics time [{}]: ({}: [grad_hess] {}, [cgsolve] {}); collision time [{}, {}, {}]: ({}: "
-                            "{}, {}, {}). aux time: {}\n",
+                            "{}, {}, {}). aux time: (bvh build/cd) [{}, {}], (sh build/cd) [{}, {}]\n",
                             A->dynamicsCnt[0], A->dynamicsTime[0], A->dynamicsTime[1], A->dynamicsTime[2],
                             A->collisionCnt[0], A->collisionCnt[1], A->collisionCnt[2], A->collisionTime[0],
-                            A->collisionTime[1], A->collisionTime[2], A->collisionTime[3], A->auxTime[0]);
+                            A->collisionTime[1], A->collisionTime[2], A->collisionTime[3], A->auxTime[0], A->auxTime[1], A->auxTime[2], A->auxTime[3]);
             zeno::log_warn(str);
             ZS_WARN(str);
         }
