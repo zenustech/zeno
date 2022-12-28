@@ -125,6 +125,7 @@ struct ZSNSPressureProject : INode {
 #if 0
                 pol(zs::range(block_cnt * spg.block_size),
                     [spgv = zs::proxy<space>(spg), dx, rho, sor, clr] __device__(int cellno) mutable {
+                        using vec3i = zs::vec<int, 3>;
                         auto icoord = spgv.iCoord(cellno);
 
                         if (((icoord[0] + icoord[1] + icoord[2]) & 1) == clr) {
@@ -144,9 +145,9 @@ struct ZSNSPressureProject : INode {
                             cut_x[0] = spgv.value("cut", 0, icoord);
                             cut_y[0] = spgv.value("cut", 1, icoord);
                             cut_z[0] = spgv.value("cut", 2, icoord);
-                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
-                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
-                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
+                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
+                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
 
@@ -198,15 +199,19 @@ struct ZSNSPressureProject : INode {
                             auto coord = bcoord;
                             coord[k / 2] += k & 1 ? 1 : -1;
                             int bno = spgv._table.tile_query(tile, coord);
-                            value_type cutVal = 0;
+                            /// @note default cut value is 1
+                            value_type cutVal = 1;
                             if (bno >= 0) {
                                 if (k & 1)
                                     cutVal = spgv(cutOffset + (k / 2), bno, 0);
                                 else
                                     cutVal = spgv(cutOffset + (k / 2), blockno, 0);
                                 return zs::make_tuple(spgv(pOffset, bno, 0), cutVal);
-                            } else
-                                return zs::make_tuple((value_type)0, (value_type)0);
+                            } else {
+                                if ((k & 1) == 0)
+                                    cutVal = spgv(cutOffset + (k / 2), blockno, 0);
+                                return zs::make_tuple((value_type)0, cutVal);
+                            }
                         };
                         auto div = spgv.value("tmp", blockno, 0);
                         value_type stclVal = 0, cutVal = 0;
@@ -541,9 +546,9 @@ struct ZSNSPressureProject : INode {
                             cut_x[0] = spgv.value("cut", 0, blockno, cellno);
                             cut_y[0] = spgv.value("cut", 1, blockno, cellno);
                             cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
-                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
-                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+                            cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
+                            cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
+                            cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
                             cut_sum = zs::max(cut_sum, 1e-10f);
@@ -756,9 +761,9 @@ struct ZSNSPressureProject : INode {
                     cut_x[0] = spgv.value("cut", 0, blockno, cellno);
                     cut_y[0] = spgv.value("cut", 1, blockno, cellno);
                     cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
-                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
-                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
+                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
+                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
 
                     float m_residual = div - ((p_x[1] - p_self) * cut_x[1] - (p_self - p_x[0]) * cut_x[0] +
                                               (p_y[1] - p_self) * cut_y[1] - (p_self - p_y[0]) * cut_y[0] +
@@ -1011,7 +1016,7 @@ struct ZSNSPressureProject : INode {
                     float cut_x[2];
                     auto icoord = spgv.iCoord(blockno, cellno);
                     cut_x[0] = spgv.value("cut", 0, blockno, cellno);
-                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0});
+                    cut_x[1] = spgv.value("cut", 0, icoord + vec3i{1, 0, 0}, 1.f);
 
                     outputShmem[idx] = (u_x[1] * cut_x[1] - u_x[0] * cut_x[0]) * dxSqOverDt;
                 }
@@ -1052,7 +1057,7 @@ struct ZSNSPressureProject : INode {
                     float cut_y[2];
                     auto icoord = spgv.iCoord(blockno, cellno);
                     cut_y[0] = spgv.value("cut", 1, blockno, cellno);
-                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0});
+                    cut_y[1] = spgv.value("cut", 1, icoord + vec3i{0, 1, 0}, 1.f);
 
                     outputShmem[idx] += (u_y[1] * cut_y[1] - u_y[0] * cut_y[0]) * dxSqOverDt;
                 }
@@ -1093,7 +1098,7 @@ struct ZSNSPressureProject : INode {
                     float cut_z[2];
                     auto icoord = spgv.iCoord(blockno, cellno);
                     cut_z[0] = spgv.value("cut", 2, blockno, cellno);
-                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1});
+                    cut_z[1] = spgv.value("cut", 2, icoord + vec3i{0, 0, 1}, 1.f);
 
                     float div_term = outputShmem[idx];
                     div_term += (u_z[1] * cut_z[1] - u_z[0] * cut_z[0]) * dxSqOverDt;
