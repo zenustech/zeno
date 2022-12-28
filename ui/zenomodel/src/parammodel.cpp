@@ -49,7 +49,7 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
     ZASSERT_EXIT(outCoreParam.isValid() && inCoreParam.isValid(), link);
 
     //for dict panel socket, write the full path of output socket.
-    if (outSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
+    if (outSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
     {
         link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
     }
@@ -58,7 +58,7 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
         link.outSockPath = outCoreParam.data(ROLE_OBJPATH).toString();
     }
 
-    if (inSock.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_INPUT)
+    if (inSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT)
     {
         link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
     }
@@ -69,8 +69,13 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
     return link;
 }
 
-void IParamModel::exportDictkeys(DictKeyModel *pModel, QList<DICTKEY_INFO> &keys)
+void IParamModel::exportDictkeys(DictKeyModel *pModel, DICTPANEL_INFO& panel)
 {
+    if (!pModel)
+        return;
+
+    panel.bCollasped = pModel->isCollasped();
+
     int rowCnt = pModel->rowCount();
     QStringList keyNames;
     for (int i = 0; i < rowCnt; i++)
@@ -91,7 +96,7 @@ void IParamModel::exportDictkeys(DictKeyModel *pModel, QList<DICTKEY_INFO> &keys
             EdgeInfo link = exportLink(linkIdx);
             keyInfo.link = link;
         }
-        keys.append(keyInfo);
+        panel.keys.append(keyInfo);
         keyNames.push_back(key);
     }
 }
@@ -132,7 +137,7 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             {
                 DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
-                exportDictkeys(pModel, inSocket.info.keys);
+                exportDictkeys(pModel, inSocket.info.dictpanel);
             }
             inputs.insert(name, inSocket);
         }
@@ -167,7 +172,7 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
             if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end()) {
                 DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
                 ZASSERT_EXIT(pModel, false);
-                exportDictkeys(pModel, outSocket.info.keys);
+                exportDictkeys(pModel, outSocket.info.dictpanel);
             }
 
             outputs.insert(name, outSocket);
@@ -327,7 +332,7 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
         case ROLE_PARAM_VALUE:  return item.pConst;
         case ROLE_PARAM_SOCKPROP: return item.prop;
         case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
-        case ROLE_PARAM_SOCKETTYPE:     return m_class;
+        case ROLE_PARAM_CLASS:     return m_class;
         case ROLE_OBJID:
             return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
         case ROLE_NODE_IDX:
@@ -679,6 +684,8 @@ void IParamModel::insertRow(int row, const QString& sockName, const QString& typ
 void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, int prop)
 {
     int n = rowCount();
+    if (m_items.find(sockName) != m_items.end())
+        return;
     insertRow(n, sockName, type, deflValue, prop);
 }
 

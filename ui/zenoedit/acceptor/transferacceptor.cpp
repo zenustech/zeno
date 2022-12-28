@@ -134,6 +134,11 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
 }
 
+void TransferAcceptor::addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty)
+{
+
+}
+
 void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, bool bInput)
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());

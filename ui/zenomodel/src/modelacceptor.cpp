@@ -196,6 +196,31 @@ void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
     }
 }
 
+void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty)
+{
+    if (!m_currentGraph)
+        return;
+
+    QModelIndex idx = m_currentGraph->index(ident);
+    const QString& nodeCls = idx.data(ROLE_OBJNAME).toString();
+
+    PARAM_CONTROL ctrl = CONTROL_NONE;
+    SOCKET_PROPERTY prop = SOCKPROP_NORMAL;
+    if (sockProperty == "dict-panel")
+        prop = SOCKPROP_DICTLIST_PANEL;
+    else if (sockProperty == "editable")
+        prop = SOCKPROP_EDITABLE;
+
+    //the layout should be standard inputs desc by latest descriptors.
+    //so, we can only add dynamic key. for example, list and dict node.
+    if (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict")
+    {
+        IParamModel *params = m_currentGraph->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+        ZASSERT_EXIT(params);
+        params->appendRow(sockName, "", "", prop);
+    }
+}
+
 void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool bInput)
 {
     if (!m_currentGraph)
@@ -377,7 +402,7 @@ void ModelAcceptor::addInnerDictKey(
     DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
     int n = keyModel->rowCount();
     keyModel->insertRow(n);
-    const QModelIndex& newKeyIdx = pModel->index(n, 0);
+    const QModelIndex& newKeyIdx = keyModel->index(n, 0);
     keyModel->setData(newKeyIdx, keyName, ROLE_PARAM_NAME);
 }
 

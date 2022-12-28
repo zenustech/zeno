@@ -143,24 +143,32 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         }
     }
 
-    if (!socket.keys.isEmpty())
+    if (socket.sockProp == SOCKPROP_DICTLIST_PANEL)
     {
         //dict param keys
-        writer.Key("__dictKeys");
+        writer.Key("dictlist-panel");
         writer.StartObject();
-        for (int i = 0; i < socket.keys.size(); i++)
         {
-            DICTKEY_INFO info = socket.keys[i];
-            writer.Key(info.key.toUtf8());
+            writer.Key("collasped");
+            writer.Bool(socket.dictpanel.bCollasped);
+
+            writer.Key("keys");
             writer.StartObject();
-            if (bInput)     //no need to export link on output key sockets.
+            for (int i = 0; i < socket.dictpanel.keys.size(); i++)
             {
-                writer.Key("link");
-                QString otherLinkSock = bInput ? info.link.outSockPath : info.link.inSockPath;
-                if (otherLinkSock.isEmpty())
-                    writer.Null();
-                else
-                    writer.String(otherLinkSock.toUtf8());
+                const DICTKEY_INFO &info = socket.dictpanel.keys[i];
+                writer.Key(info.key.toUtf8());
+                writer.StartObject();
+                if (bInput) //no need to export link on output key sockets.
+                {
+                    writer.Key("link");
+                    QString otherLinkSock = bInput ? info.link.outSockPath : info.link.inSockPath;
+                    if (otherLinkSock.isEmpty())
+                        writer.Null();
+                    else
+                        writer.String(otherLinkSock.toUtf8());
+                }
+                writer.EndObject();
             }
             writer.EndObject();
         }

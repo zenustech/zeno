@@ -161,11 +161,11 @@ QVariant VParamItem::data(int role) const
     {
         return m_index.isValid();
     }
-    case ROLE_PARAM_SOCKETTYPE:
+    case ROLE_PARAM_CLASS:
     {
         if (!m_index.isValid())
             return PARAM_UNKNOWN;
-        return m_index.data(ROLE_PARAM_SOCKETTYPE);
+        return m_index.data(ROLE_PARAM_CLASS);
     }
     case ROLE_OBJID:
     {

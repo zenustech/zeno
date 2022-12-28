@@ -52,7 +52,7 @@ namespace zenomodel
                 writer.String(corename.toUtf8());
 
                 writer.Key("class");
-                PARAM_CLASS cls = (PARAM_CLASS)pItem->data(ROLE_PARAM_SOCKETTYPE).toInt();
+                PARAM_CLASS cls = (PARAM_CLASS)pItem->data(ROLE_PARAM_CLASS).toInt();
                 switch (cls)
                 {
                 case PARAM_INPUT:

@@ -20,6 +20,7 @@ public:
     void setSocketKeys(const QString &id, const QStringList &keys) override;
     void initSockets(const QString &id, const QString &name, const NODE_DESCS &legacyDescs) override;
     void addDictKey(const QString &id, const QString &keyName, bool bInput) override;
+    void addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty) override;
 
     void setInputSocket(
         const QString& nodeCls,

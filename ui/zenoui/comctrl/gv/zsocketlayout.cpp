@@ -7,6 +7,7 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include "zdictpanel.h"
+#include "variantptr.h"
 
 
 ZSocketLayout::ZSocketLayout(
@@ -169,7 +170,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 {
     setHorizontal(false);
 
-    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_SOCKETTYPE).toInt();
+    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
     const QString& sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
     m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
@@ -219,6 +220,10 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 void ZDictSocketLayout::setCollasped(bool bCollasped)
 {
     m_collaspeBtn->toggle(!bCollasped);
+
+    QAbstractItemModel* keyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    if (keyModel)
+        keyModel->setData(QModelIndex(), bCollasped, ROLE_COLLASPED);
 }
 
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const

@@ -34,11 +34,14 @@ public:
                   int destinationChild) override;
     bool moveColumns(const QModelIndex &sourceParent, int sourceColumn, int count,
                    const QModelIndex &destinationParent, int destinationChild) override;
+    bool isCollasped() const;
+    void setCollasped(bool bCollasped);
 
 private:
     QPersistentModelIndex m_dictParam;   //core param of dict param.
     QVector<_DictItem> m_items;
     IGraphsModel* m_pGraphs;
+    bool m_bCollasped;
 };
 
 #endif

@@ -31,7 +31,7 @@ public:
         const int cSocketWidth = ZenoStyle::dpiScaled(12);
         const int cSocketHeight = ZenoStyle::dpiScaled(12);
 
-        PARAM_CLASS sockCls = (PARAM_CLASS)m_sockKeyIdx.data(ROLE_PARAM_SOCKETTYPE).toInt();
+        PARAM_CLASS sockCls = (PARAM_CLASS)m_sockKeyIdx.data(ROLE_PARAM_CLASS).toInt();
         const bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
 
         m_socket = new ZenoSocketItem(m_sockKeyIdx, bInput, elem, QSizeF(cSocketWidth, cSocketHeight));
@@ -171,6 +171,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     QObject::connect(pKeyObjModel, &QAbstractItemModel::rowsInserted, [=](const QModelIndex& parent, int start, int end) {
         //expand the dict panel anyway.
         m_pDictLayout->setCollasped(false);
+        pKeyObjModel->setData(QModelIndex(), false, ROLE_COLLASPED);
 
         const QModelIndex& idxKey = pKeyObjModel->index(start, 0);
         QString key = idxKey.data().toString();

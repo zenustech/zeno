@@ -831,7 +831,7 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     if (bCollasped)
     {
-        PARAM_CLASS coreCls = (PARAM_CLASS)sockIdx.data(ROLE_PARAM_SOCKETTYPE).toInt();
+        PARAM_CLASS coreCls = (PARAM_CLASS)sockIdx.data(ROLE_PARAM_CLASS).toInt();
         QRectF rc = m_headerWidget->sceneBoundingRect();
         if (coreCls == PARAM_INPUT || coreCls == PARAM_INNER_INPUT) {
             return QPointF(rc.left(), rc.center().y());
@@ -843,20 +843,28 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
     }
     else
     {
-        for (ZSocketLayout* socklayout : m_inSockets)
+        PARAM_CLASS cls = (PARAM_CLASS)sockIdx.data(ROLE_PARAM_CLASS).toInt();
+        if (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT)
         {
-            bool exist = false;
-            QPointF pos = socklayout->getSocketPos(sockIdx, exist);
-            if (exist)
-                return pos;
+            for (ZSocketLayout* socklayout : m_inSockets)
+            {
+                bool exist = false;
+                QPointF pos = socklayout->getSocketPos(sockIdx, exist);
+                if (exist)
+                    return pos;
+            }
         }
-        for (ZSocketLayout* socklayout : m_outSockets)
+        else if (cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT)
         {
-            bool exist = false;
-            QPointF pos = socklayout->getSocketPos(sockIdx, exist);
-            if (exist)
-                return pos;
+            for (ZSocketLayout* socklayout : m_outSockets)
+            {
+                bool exist = false;
+                QPointF pos = socklayout->getSocketPos(sockIdx, exist);
+                if (exist)
+                    return pos;
+            }
         }
+        zeno::log_warn("socket pos error");
         return QPointF(0, 0);
     }
 }

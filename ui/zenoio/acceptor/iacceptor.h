@@ -22,6 +22,8 @@ public:
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
     virtual void addDictKey(const QString& id, const QString& keyName, bool bInput) = 0;
 
+    virtual void addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty) = 0;
+
     //legacy:
     virtual void setInputSocket(
         const QString& nodeCls,

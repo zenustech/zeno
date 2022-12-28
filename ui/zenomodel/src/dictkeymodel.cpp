@@ -9,6 +9,7 @@ DictKeyModel::DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, 
     : QAbstractItemModel(parent)
     , m_dictParam(dictParam)
     , m_pGraphs(pGraphs)
+    , m_bCollasped(false)
 {
 }
 
@@ -47,12 +48,12 @@ int DictKeyModel::columnCount(const QModelIndex& parent) const
 
 bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    _DictItem& item = m_items[index.row()];
     switch (role)
     {
         case Qt::DisplayRole:
         case ROLE_PARAM_NAME:
         {
+            _DictItem &item = m_items[index.row()];
             if (index.column() == 0) {
                 item.key = value.toString();
                 emit dataChanged(index, index, QVector<int>{role});
@@ -62,6 +63,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
         case ROLE_ADDLINK:
         {
+            _DictItem &item = m_items[index.row()];
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.link = linkIdx;
@@ -70,9 +72,15 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
         case ROLE_REMOVELINK:
         {
+            _DictItem &item = m_items[index.row()];
             item.link = QModelIndex();
             emit dataChanged(index, index, QVector<int>{role});
             return true;
+        }
+        case ROLE_COLLASPED:
+        {
+            m_bCollasped = true;
+            break;
         }
     }
     return QAbstractItemModel::setData(index, value, role);
@@ -90,7 +98,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         }
         else if (index.column() == 1) {
             //todo: check input or output, then return by linkIdx.
-            PARAM_CLASS cls = (PARAM_CLASS)this->data(index, ROLE_PARAM_SOCKETTYPE).toInt();
+            PARAM_CLASS cls = (PARAM_CLASS)this->data(index, ROLE_PARAM_CLASS).toInt();
             if (cls == PARAM_INNER_INPUT) {
                 QModelIndex outNodeIdx = item.link.data(ROLE_OUTNODE_IDX).toModelIndex();
                 QString displayInfo = outNodeIdx.data(ROLE_OBJNAME).toString();
@@ -145,7 +153,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         return m_dictParam.data(role);
     case ROLE_PARAM_COREIDX:
         return m_dictParam;
-    case ROLE_PARAM_SOCKETTYPE:
+    case ROLE_PARAM_CLASS:
     {
         PARAM_CLASS cls = (PARAM_CLASS)m_dictParam.data(role).toInt();
         if (cls == PARAM_INPUT)
@@ -160,6 +168,10 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         QString path;
         path = m_dictParam.data(ROLE_OBJPATH).toString() + ":" + item.key;
         return path;
+    }
+    case ROLE_COLLASPED:
+    {
+        return m_bCollasped;
     }
     default:
         return QVariant();
@@ -220,4 +232,14 @@ bool DictKeyModel::moveColumns(const QModelIndex &sourceParent, int sourceColumn
                                const QModelIndex &destinationParent, int destinationChild)
 {
     return false;
+}
+
+bool DictKeyModel::isCollasped() const
+{
+    return m_bCollasped;
+}
+
+void DictKeyModel::setCollasped(bool bCollasped)
+{
+    m_bCollasped = bCollasped;
 }

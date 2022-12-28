@@ -53,13 +53,6 @@ public:
         Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
-    //ParamModel
-    void insertRow(int row,
-        const QString& sockName,
-        const QString& type = "",
-        const QVariant& deflValue = QVariant(),
-        int prop = SOCKPROP_NORMAL);
-
     void appendRow(
         const QString& sockName,
         const QString& type = "",
@@ -87,6 +80,13 @@ private slots:
 
 private:
     QString nameFromRow(int row) const;
+
+    void insertRow(int row,
+        const QString& sockName,
+        const QString& type = "",
+        const QVariant& deflValue = QVariant(),
+        int prop = SOCKPROP_NORMAL);
+
     bool _insertRow(int row,
         const QString& name,
         const QString& type = "",
@@ -94,7 +94,7 @@ private:
         int prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
-    void exportDictkeys(DictKeyModel* pModel, QList<DICTKEY_INFO>& keys);
+    void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
     QList<EdgeInfo> exportLinks(const PARAM_LINKS& links);
     EdgeInfo exportLink(const QModelIndex& linkIdx);
 

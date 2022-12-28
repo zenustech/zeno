@@ -27,7 +27,7 @@ void resolveOutputSocket(
 {
     const QString& outSock = outSockIdx.data(ROLE_PARAM_NAME).toString();
     const QString& outNodeId = outNodeIdx.data(ROLE_OBJID).toString();
-    if (outSockIdx.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
+    if (outSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
     {
         QModelIndex dictlistIdx = outSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex();
         bool bDict = dictlistIdx.data(ROLE_PARAM_TYPE) == "dict";

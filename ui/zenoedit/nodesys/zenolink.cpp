@@ -168,8 +168,8 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
     const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    if (inSockIdx.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_INPUT ||
-        outSockIdx.data(ROLE_PARAM_SOCKETTYPE) == PARAM_INNER_OUTPUT)
+    if (inSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT ||
+        outSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
     {
         setZValue(ZVALUE_LINK_ABOVE);
     }

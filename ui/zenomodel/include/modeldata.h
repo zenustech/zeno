@@ -179,6 +179,12 @@ struct DICTKEY_INFO
     EdgeInfo link;
 };
 
+struct DICTPANEL_INFO
+{
+    QList<DICTKEY_INFO> keys;
+    bool bCollasped;
+};
+
 struct SOCKET_INFO {
     QString nodeid;
     QString name;
@@ -188,8 +194,8 @@ struct SOCKET_INFO {
     QVariant defaultValue;  // a native value or a curvemodel.
     QList<EdgeInfo> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
 
-    QList<DICTKEY_INFO> keys;
-
+    //QList<DICTKEY_INFO> keys;
+    DICTPANEL_INFO dictpanel;
     int sockProp;
 
     SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}

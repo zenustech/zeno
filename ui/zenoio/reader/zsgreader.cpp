@@ -358,11 +358,8 @@ void ZsgReader::_parseSocket(
     {
         ZASSERT_EXIT(sockObj["property"].IsString());
         sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
-        if (sockProp == "dict-panel")
-            sockprop = SOCKPROP_DICTLIST_PANEL;
-        else if (sockProp == "editable")
-            sockprop = SOCKPROP_EDITABLE;
     }
+    pAcceptor->addSocket(bInput, id, inSock, sockProp);
 
     if (sockObj.HasMember("link") && sockObj["link"].IsString())
     {
@@ -389,10 +386,10 @@ void ZsgReader::_parseSocket(
             if (inputObj.HasMember("link") && inputObj["link"].IsString())
             {
                 link = QString::fromLocal8Bit(inputObj["link"].GetString());
-                pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
-                QString sockGrp = inSock + ":" + keyName;
-                pAcceptor->setInputSocket(nodeName, id, sockGrp, link, sockProp, rapidjson::Value());
             }
+            pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
+            QString sockGrp = inSock + ":" + keyName;
+            pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, sockProp, rapidjson::Value());
         }
     }
 }
@@ -427,17 +424,13 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
         if (sockObj.IsObject())
         {
             //only parse key socket.
-            int sockprop = SOCKPROP_NORMAL;
             QString sockProp;
             if (sockObj.HasMember("property"))
             {
                 ZASSERT_EXIT(sockObj["property"].IsString());
                 sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
-                if (sockProp == "dict-panel")
-                    sockprop = SOCKPROP_DICTLIST_PANEL;
-                else if (sockProp == "editable")
-                    sockprop = SOCKPROP_EDITABLE;
             }
+            pAcceptor->addSocket(false, id, outSock, sockProp);
 
             if (sockObj.HasMember("__dictKeys"))
             {
