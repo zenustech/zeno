@@ -487,7 +487,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                 state.params.width,   // launch width
                 state.params.height,  // launch height
                 1                     // launch depth
-                ) );   
+                ) );
     output_buffer.unmap();
     //CUDA_SYNC_CHECK();
 }

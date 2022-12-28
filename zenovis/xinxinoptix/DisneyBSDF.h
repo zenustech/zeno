@@ -459,11 +459,12 @@ namespace DisneyBSDF{
         wi = normalize(reflect(-wo, wm)); 
         if(wi.z<=0.0f)
         {
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            wi = vec3(0,0,0);
-            reflectance = vec3(0,0,0);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            wi = vec3(0,0,0);
+//            reflectance = vec3(0,0,0);
+//            return false;
+            wi.z = 1e-4;
         }
 
         vec3 F = DisneyFresnel(baseColor, metallic, ior, specularTint, dot(wm, wo), dot(wm, wi), is_inside);
@@ -517,9 +518,9 @@ namespace DisneyBSDF{
 
         wi = normalize(reflect(-wo,wm));
 
-        if(dot(wi,wo) < 0.0f){ //removable?
-            return false;
-        }
+//        if(dot(wi,wo) < 0.0f){ //removable?
+//            return false;
+//        }
 
         float NoH = wm.z;
         float LoH = dot(wm,wi);
@@ -588,11 +589,12 @@ namespace DisneyBSDF{
             )
     {
         if(wo.z == 0.0f){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            wo.z = 1e-5;
         }
         float rscaled = thin ? BRDFBasics::ThinTransmissionRoughness(ior,  roughness) : roughness;
 
@@ -658,13 +660,20 @@ namespace DisneyBSDF{
 
         }
 
-        if(wi.z == 0.0f){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
-        }
+//        if(wi.z == 0.0f){
+////            fPdf = 0.0f;
+////            rPdf = 0.0f;
+////            reflectance = vec3(0.0f);
+////            wi = vec3(0.0f);
+////            return false;
+//            if(rnd(seed)>0.5)
+//            {
+//                wi.z = 1e-5;
+//            } else
+//            {
+//                wi.z = - (1e-5);
+//            }
+//        }
 
         //if(roughness < 0.01f){
         //    * (int*) (&flag) |= 0x04; // flag |= SurfaceEventFlags::diracEvent ? 
@@ -719,11 +728,12 @@ namespace DisneyBSDF{
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
         if(NoL==0.0f ){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            wi.z = 1e-5;
         }
 
         float NoV = wo.z;

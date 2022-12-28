@@ -198,8 +198,21 @@ struct GraphicsManager {
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
                     std::size_t numInsts = prim_in->verts.size();
                     const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    if (!prim_in->has_attr("nrm"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("nrm");
+                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(),
+                                                                 zeno::vec3f(0,1,0));
+                    }
+                    
                     const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
                     auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
+                    
+                    if (!prim_in->has_attr("clr")) {
+                        prim_in->add_attr<zeno::vec3f>("clr");
+                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(),
+                                                                 zeno::vec3f(1, 1, 1));
+                    }
                     const float *scale = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
                     xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
                 }
