@@ -640,20 +640,16 @@ ZenoParamBlackboard::ZenoParamBlackboard(const QString& value, LineEditParam par
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
-    m_pTextEdit->setFont(param.font);
-    m_pTextEdit->setProperty("cssClass", "blackboard");
-
-    QTextCharFormat format;
-    QFont font("HarmonyOS Sans", 12);
-    format.setFont(font);
-    m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setText(value);
+
+    //set line height
     QTextBlockFormat blockFormat;
-    blockFormat.setLineHeight(-3, QTextBlockFormat::LineDistanceHeight);
+    blockFormat.setLineHeight(5, QTextBlockFormat::LineDistanceHeight);
     auto textCursor = m_pTextEdit->textCursor();
     textCursor.setBlockFormat(blockFormat);
     m_pTextEdit->setTextCursor(textCursor);
-    m_pTextEdit->setStyleSheet(ZenoStyle::dpiScaleSheet("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); padding:5px;padding-top:13px}"));
+    //set style
+    m_pTextEdit->setStyleSheet(ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); padding:16px 5px 5px 5px; font:%1pt \" HarmonyOS Sans \";}").arg(param.font.pointSize())));
 }
 
 QString ZenoParamBlackboard::text() const

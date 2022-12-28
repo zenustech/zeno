@@ -8,7 +8,7 @@ class BlackboardNode2 : public ZenoNode {
   public:
     BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
     ~BlackboardNode2();
-    void nodePosChanged(ZenoNode *);
+    bool nodePosChanged(ZenoNode *);
     QRectF boundingRect() const override;
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;

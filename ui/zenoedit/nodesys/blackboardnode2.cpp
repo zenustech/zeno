@@ -106,24 +106,34 @@ void BlackboardNode2::updateView(bool isEditing) {
     }
 }
 
-void BlackboardNode2::nodePosChanged(ZenoNode *item) {
+bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && item->parentItem() != this) {
         if (item->parentItem() && item->parentItem()->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!item->parentItem()->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
-            return;
+            return false;
         }
         item->setPos(mapFromItem(item, 0, 0));
         item->setParentItem(this);
         item->setMoving(false);
         item->setZValue(1);
         update();
+        return true;
     } else if ((!this->sceneBoundingRect().contains(item->sceneBoundingRect())) && item->parentItem() == this) {
         QGraphicsItem *newParent = this->parentItem();
+        while (dynamic_cast<BlackboardNode2*>(newParent)) {
+            BlackboardNode2 *pBlackboardNode = dynamic_cast<BlackboardNode2 *>(newParent);
+            bool isUpdate = pBlackboardNode->nodePosChanged(item);
+            if (!isUpdate)
+                newParent = pBlackboardNode->parentItem();
+            else
+                return true;
+        }
         QPointF oldPos = item->mapToItem(newParent, 0, 0);
         item->setParentItem(newParent);
         item->setPos(oldPos);
         update();
     }
+    return false;
 }
 
 QRectF BlackboardNode2::boundingRect() const {
@@ -223,7 +233,6 @@ void BlackboardNode2::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
     if (!m_pTextEdit->text().isEmpty() && !m_pTextEdit->isVisible()) {
         QRectF textRect(rect.x() + margin, rect.y() + margin, rect.width() - 2 * margin, rect.height() - 2 * margin);
         QFont font("HarmonyOS Sans", 12);
-        painter->setOpacity(0.6);
         painter->setFont(font);
         painter->setPen(palette().windowText().color());        
         painter->drawText(textRect, Qt::AlignLeft | Qt::TextFlag::TextWordWrap, m_pTextEdit->text());

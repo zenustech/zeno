@@ -555,8 +555,11 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 void ZenoSubGraphScene::onNodePosChanged() 
 {
     ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
-    for (auto item : items()) {
-        if (item == senderNode) {
+    BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
+    for (auto item : items()) 
+    {
+        if (item == senderNode) 
+        {
             continue;
         }
         ZenoNode *zenoNode = dynamic_cast<ZenoNode *>(item);
@@ -564,14 +567,25 @@ void ZenoSubGraphScene::onNodePosChanged()
         {
             continue;
         }
-        BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
         BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(item);
-        if (blackboardNode) {
-            if (currBlackboardNode) {
+        if (blackboardNode) 
+        {
+            if (blackboardNode->childItems().contains(item)) 
+            {
+                if (currBlackboardNode) 
+                {
+                    emit currBlackboardNode->nodePosChangedSignal();
+                }
+                continue;
+            }
+            if (currBlackboardNode) 
+            {
                 currBlackboardNode->nodePosChanged(senderNode);
             }
             blackboardNode->nodePosChanged(zenoNode);
-        } else if (currBlackboardNode) {
+        } 
+        else if (currBlackboardNode) 
+        {
             currBlackboardNode->nodePosChanged(senderNode);
         }
     }
