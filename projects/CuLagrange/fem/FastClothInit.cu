@@ -412,50 +412,60 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     }
 
     {
-        auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
+        bvs.resize(svInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0, bvs);
+        // auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
         /// bvh
         if constexpr (s_enableProfile)
             timer.tick();
 
-        svBvh.build(pol, ptBvs);
+        svBvh.build(pol, bvs);
 
         if constexpr (s_enableProfile) {
             timer.tock();
             auxTime[0] += timer.elapsed();
         }
-        /// sh
-        if constexpr (s_enableProfile)
-            timer.tick();
+        if constexpr (s_testSh) {
+            /// sh
+            puts("begin self sh ctor");
+            if constexpr (s_enableProfile)
+                timer.tick();
 
-        // svSh.build(pol, LRef, ptBvs);
+            svSh.build(pol, L, bvs);
 
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            auxTime[2] += timer.elapsed();
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
         }
     }
     if (hasBoundary()) {
-        auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
+        bvs.resize(coPoints->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset, bvs);
+        // auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
         /// bvh
         if constexpr (s_enableProfile)
             timer.tick();
 
-        bouSvBvh.build(pol, ptBvs);
+        bouSvBvh.build(pol, bvs);
 
         if constexpr (s_enableProfile) {
             timer.tock();
             auxTime[0] += timer.elapsed();
         }
 
-        /// sh
-        if constexpr (s_enableProfile)
-            timer.tick();
+        if constexpr (s_testSh) {
+            /// sh
+            puts("begin boundary sh ctor");
+            if constexpr (s_enableProfile)
+                timer.tick();
 
-        // bouSvSh.build(pol, LRef, ptBvs);
+            bouSvSh.build(pol, L, bvs);
 
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            auxTime[2] += timer.elapsed();
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxTime[2] += timer.elapsed();
+            }
         }
     }
     updateWholeBoundingBoxSize(pol);
@@ -524,6 +534,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"xinit", 3} // initial trial collision-free step
                     },
                     (std::size_t)numDofs};
+    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()};    // this size is the upper bound
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)

@@ -95,6 +95,40 @@ template <typename T> inline T computeHb(const T d2, const T dHat2) {
     return ((std::log(d2 / dHat2) * -2 - t2 * 4 / d2) + (t2 / d2) * (t2 / d2));
 }
 
+template <typename TileVecT, typename VecT>
+inline void
+retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                          const typename ZenoParticles::particles_t &eles, int voffset, zs::Vector<VecT> &ret) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    ret.resize(eles.size());
+    pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp), xTag, voffset] ZS_LAMBDA(int ei) mutable {
+        auto ind = reinterpret_bits<int>(eles("inds", ei)) + voffset;
+        auto x0 = vtemp.pack(dim_c<3>, xTag, ind);
+        pts[ei] = x0;
+    });
+}
+template <typename TileVecT, int codim = 3>
+inline void
+retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                          const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset, zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
+    using namespace zs;
+    using T = typename TileVecT::value_type;
+    using bv_t = AABBBox<3, T>;
+    static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+    constexpr auto space = execspace_e::cuda;
+    ret.resize(eles.size());
+    pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
+                             codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
+        constexpr int dim = RM_CVREF_T(codim_v)::value;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
+        bv_t bv{x0, x0};
+        for (int d = 1; d != dim; ++d)
+            merge(bv, vtemp.pack(dim_c<3>, xTag, inds[d]));
+        bvs[ei] = bv;
+    });
+}
 template <typename TileVecT, int codim = 3>
 inline zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
 retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,

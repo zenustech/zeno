@@ -12,6 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <random>
 #include <numeric>
+#include <atomic>
 
 #include <zeno/para/parallel_for.h> // enable by -DZENO_PARALLEL_STL:BOOL=ON
 #include <zeno/utils/arrayindex.h>
@@ -42,7 +43,7 @@ struct WBPrimBend : INode {
                                 axis1.x, axis1.y, axis1.z };
         glm::mat3 rotMat = glm::make_mat3x3(rotMatEle);
         glm::mat3 inverse = glm::transpose(rotMat);
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
         auto& pos = prim->verts;
 
 #pragma omp parallel for
@@ -128,11 +129,11 @@ ZENDEFNODE(WBPrimBend,
 struct PrintPrimInfo : INode {
     void apply() override
     {
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
 
         if (get_param<bool>("printInfo"))
         {
-            std::vector<std::string>& myKeys = prim->attr_keys();
+            const std::vector<std::string>& myKeys = prim->attr_keys();
             printf("--------------------------------\n");
             printf("wb-Debug ==> vert has attr :\n");
             for (const std::string& i : myKeys)
@@ -167,7 +168,7 @@ struct CreateCircle : INode {
     {
         auto seg = get_input<NumericObject>("segments")->get<int>();
         auto r = get_input<NumericObject>("r")->get<float>();
-        auto& prim = std::make_shared<PrimitiveObject>();
+        auto prim = std::make_shared<PrimitiveObject>();
 
         for (int i = 0; i < seg; i++)
         {
@@ -250,7 +251,7 @@ ZENDEFNODE(MatTranspose,
 struct LineResample : INode {
     void apply() override
     {
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
 
         auto segments = get_input<NumericObject>("segments")->get<int>();
         if (segments < 1) { segments = 1; }
@@ -268,7 +269,7 @@ struct LineResample : INode {
         auto inv_total = 1 / total;
         for (auto& _linesLen : linesLen) { _linesLen *= inv_total; }
 
-        auto& retprim = std::make_shared<PrimitiveObject>();
+        auto retprim = std::make_shared<PrimitiveObject>();
         retprim->resize(segments + size_t(1));
 
         auto& cu = retprim->add_attr<float>("curveU");
@@ -318,7 +319,7 @@ ZENDEFNODE(LineResample,
 struct LineCarve : INode {
     void apply() override
     {
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
         auto insertU = get_input<NumericObject>("insertU")->get<float>();
 
         float total = 0;
@@ -416,11 +417,11 @@ struct VisVec3Attribute : INode {
         auto lengthScale = get_input<NumericObject>("lengthScale")->get<float>();
         auto name = get_input2<std::string>("name");
 
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
         auto& attr = prim->verts.attr<vec3f>(name);
         auto& pos = prim->verts;
 
-        auto& primVis = std::make_shared<PrimitiveObject>();
+        auto primVis = std::make_shared<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
         primVis->lines.resize(prim->size());
         auto& visColor = primVis->verts.add_attr<vec3f>("clr");
@@ -461,9 +462,9 @@ ZENDEFNODE(VisVec3Attribute,
 struct TracePositionOneStep : INode {
     void apply() override
     {
-        auto& primData = get_input<PrimitiveObject>("primData");
+        auto primData = get_input<PrimitiveObject>("primData");
 
-        auto& primVis = get_input<PrimitiveObject>("primStart");
+        auto primVis = get_input<PrimitiveObject>("primStart");
 
         auto idName = get_input2<std::string>("lineTag");
         if (!primVis->verts.has_attr(idName))
@@ -522,7 +523,7 @@ ZENDEFNODE(TracePositionOneStep,
 
 struct PrimCopyFloatAttr : INode {
     void apply() override {
-        auto& prim = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
 
         auto sourceName = get_input<StringObject>("sourceName")->get();
         if (!prim->verts.has_attr(sourceName))
@@ -565,8 +566,8 @@ ZENDEFNODE(PrimCopyFloatAttr,
 ///////////////////////////////////////////////////////////////////////////////
 struct BVHNearestPos : INode {
     void apply() override {
-        auto &prim = get_input<PrimitiveObject>("prim");
-        auto &primNei = get_input<PrimitiveObject>("primNei");
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto primNei = get_input<PrimitiveObject>("primNei");
 
         auto bvh_id = prim->attr<float>(get_input2<std::string>("bvhIdTag"));
         auto bvh_ws = prim->attr<vec3f>(get_input2<std::string>("bvhWeightTag"));
@@ -601,8 +602,8 @@ ZENDEFNODE(BVHNearestPos,
 
 struct BVHNearestAttr : INode {
     void apply() override {
-        auto& prim = get_input<PrimitiveObject>("prim");
-        auto& primNei = get_input<PrimitiveObject>("primNei");
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto primNei = get_input<PrimitiveObject>("primNei");
 
         auto bvhIdTag = get_input<StringObject>("bvhIdTag")->get();
         auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
@@ -667,7 +668,6 @@ ZENDEFNODE(BVHNearestAttr,
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-#include <atomic>
 #endif
 
 template <class Cond>
@@ -1185,7 +1185,7 @@ struct erode_project : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;

@@ -45,7 +45,7 @@ struct erode_precipitation : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -201,7 +201,7 @@ struct erode_value2cond : INode {
     void apply() override {
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -274,7 +274,7 @@ struct erode_compute_erosion : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -741,10 +741,10 @@ struct erode_rand_color : INode {
             perm[idx2] = temp;
         }
 
-        auto& list = std::make_shared<zeno::ListObject>();
+        auto list = std::make_shared<zeno::ListObject>();
         for (int i = 0; i < 8; i++)
         {
-            auto& num = std::make_shared<zeno::NumericObject>();
+            auto num = std::make_shared<zeno::NumericObject>();
             num->set<int>(perm[i]);
             list->arr.push_back(num);
         }
@@ -784,10 +784,10 @@ struct erode_rand_dir : INode {
             }
         }
 
-        auto& list = std::make_shared<zeno::ListObject>();
+        auto list = std::make_shared<zeno::ListObject>();
         for (int i = 0; i < 2; i++)
         {
-            auto& num = std::make_shared<zeno::NumericObject>();
+            auto num = std::make_shared<zeno::NumericObject>();
             num->set<int>(dirs[i]);
             list->arr.push_back(num);
         }
@@ -814,7 +814,7 @@ struct erode_tumble_material_v0 : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -873,9 +873,9 @@ struct erode_tumble_material_v0 : INode {
         auto i = get_input<NumericObject>("i")->get<int>();                     // 内部迭代当前次数    0~7
         auto openborder = get_input<NumericObject>("openborder")->get<int>();   // 获取边界标记
 
-        auto& perm = get_input<ListObject>("perm")->get2<int>();
-        auto& p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto& x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = get_input<ListObject>("perm")->get2<int>();
+        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -1161,7 +1161,7 @@ struct erode_slump_b2 : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -1702,7 +1702,7 @@ struct erode_tumble_material_v2 : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -1755,9 +1755,9 @@ struct erode_tumble_material_v2 : INode {
         auto i = get_input<NumericObject>("i")->get<int>();
         auto openborder = get_input<NumericObject>("openborder")->get<int>();
 
-        auto& perm = get_input<ListObject>("perm")->get2<int>();
-        auto& p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto& x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = get_input<ListObject>("perm")->get2<int>();
+        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -2126,7 +2126,7 @@ struct erode_slump_b4 : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -2925,7 +2925,7 @@ struct erode_tumble_material_v4 : INode {
         //////////////////////////////////////////////////////////////////////////////////////// 
 
         // 获取地形
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         // 获取用户数据，里面存有网格精度
         int nx, nz;
@@ -3000,9 +3000,9 @@ struct erode_tumble_material_v4 : INode {
         auto i = get_input<NumericObject>("i")->get<int>();
         auto openborder = get_input<NumericObject>("openborder")->get<int>();
 
-        auto& perm = get_input<ListObject>("perm")->get2<int>();
-        auto& p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto& x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = get_input<ListObject>("perm")->get2<int>();
+        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -3560,7 +3560,7 @@ ZENDEFNODE(erode_tumble_material_v4,
 
 struct erode_terrainHiMeLo : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto& ud = terrain->userData();
         if ((!ud.has<float>("hi")) ||
