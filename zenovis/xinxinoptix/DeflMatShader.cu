@@ -454,7 +454,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sssParam = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
-
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -746,6 +746,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto sssColor = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     prd->opacity = opacity;
     if(prd->isSS == true) {
         basecolor = vec3(1.0f);
@@ -761,7 +762,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->passed = true;
         prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
         prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -781,7 +782,7 @@ extern "C" __global__ void __closesthit__radiance()
 //        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
 //        float weight = LnDl * A / (M_PIf * dist * dist);
 //        prd->radiance = attrs.clr * weight;
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -791,7 +792,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
         prd->passed = true;
         prd->radiance = make_float3(0.0f);
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -882,7 +883,7 @@ extern "C" __global__ void __closesthit__radiance()
             prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
-            prd->origin = P;
+            prd->origin = P + 1e-5 * ray_dir;
             prd->direction = ray_dir;
             prd->prob *= 1;
             prd->countEmitted = false;
@@ -892,6 +893,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
+    prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
     if(flag == DisneyBSDF::transmissionEvent) {

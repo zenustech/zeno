@@ -660,20 +660,20 @@ namespace DisneyBSDF{
 
         }
 
-//        if(wi.z == 0.0f){
-////            fPdf = 0.0f;
-////            rPdf = 0.0f;
-////            reflectance = vec3(0.0f);
-////            wi = vec3(0.0f);
-////            return false;
-//            if(rnd(seed)>0.5)
-//            {
-//                wi.z = 1e-5;
-//            } else
-//            {
-//                wi.z = - (1e-5);
-//            }
-//        }
+        if(wi.z == 0.0f){
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            if(rnd(seed)>0.5)
+            {
+                wi.z = 1e-5;
+            } else
+            {
+                wi.z = - (1e-5);
+            }
+        }
 
         //if(roughness < 0.01f){
         //    * (int*) (&flag) |= 0x04; // flag |= SurfaceEventFlags::diracEvent ? 
@@ -821,8 +821,7 @@ namespace DisneyBSDF{
             c = extinction.z;
             p = pb;
         }
-
-        float s = -log(rnd(seed)) / c;
+        float s = -log(max(rnd(seed),0.00001f)) / max(c, 1e-10);
         //*pdf = Math::Expf(-c * s) / p;
 
         return s;
@@ -836,7 +835,7 @@ namespace DisneyBSDF{
         float r1 = r01.y;//rnd(seed);
 
         float theta = 2.0 * M_PIf * r0;
-        float phi = acos(1 - 2 * r1);
+        float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
         float x = sin(phi) * cos(theta);
         float y = sin(phi) * sin(theta);
         float z = cos(phi);
@@ -941,7 +940,7 @@ namespace DisneyBSDF{
             rPdf *= pLobe;
             fPdf *= pLobe;
         }
-        return success;
+        return true;
 
     }
 }

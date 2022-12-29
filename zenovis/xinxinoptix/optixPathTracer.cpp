@@ -180,6 +180,7 @@ struct PathTracerState
     raii<CUdeviceptr> lightsbuf_p;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
+    CUdeviceptr                              d_params2=0;
 
     raii<CUdeviceptr>  d_raygen_record;
     raii<CUdeviceptr>d_miss_records;
@@ -472,16 +473,16 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
-
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
+    CUDA_SYNC_CHECK();
+    CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
                 &state.params, sizeof( Params ),
                 cudaMemcpyHostToDevice
                 ) );
+    CUDA_SYNC_CHECK();
     OPTIX_CHECK( optixLaunch(
                 state.pipeline,
                 0,
-                (CUdeviceptr)state.d_params,
+                (CUdeviceptr)state.d_params2,
                 sizeof( Params ),
                 &state.sbt,
                 state.params.width,   // launch width
@@ -489,7 +490,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                 1                     // launch depth
                 ) );
     output_buffer.unmap();
-    //CUDA_SYNC_CHECK();
+    CUDA_SYNC_CHECK();
 }
 
 
@@ -1192,7 +1193,8 @@ void optixinit( int argc, char* argv[] )
         state.context = OptixUtil::context;
 
     //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
-    CUDA_CHECK(cudaMalloc((void**)&state.d_params.reset(), sizeof( Params )));
+    if(state.d_params2==0)
+        CUDA_CHECK(cudaMalloc((void**)&state.d_params2, sizeof( Params )));
 
         if (!output_buffer_o) {
             output_buffer_o.emplace(
@@ -2581,6 +2583,7 @@ void optixrender(int fbo, int samples) {
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
     const int max_samples_once = 16;
+
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state );
