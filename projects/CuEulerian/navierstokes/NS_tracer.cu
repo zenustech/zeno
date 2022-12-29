@@ -403,7 +403,7 @@ struct ZSVolumeCombustion : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto dt = get_input2<float>("dt");
-        auto ignitionT = get_input2<float>("ignitionTemperature");
+        auto ignitionT = get_input2<float>("IgnitionTemperature");
         auto burnSpeed = get_input2<float>("BurnSpeed");
         auto rhoEmitAmount = get_input2<float>("DensityEmitAmount");
         auto TEmitAmount = get_input2<float>("TemperatureEmitAmount");
@@ -451,7 +451,7 @@ struct ZSVolumeCombustion : INode {
 ZENDEFNODE(ZSVolumeCombustion, {/* inputs: */
                                 {"NSGrid",
                                  "dt",
-                                 {"float", "ignitionTemperature", "0.8"},
+                                 {"float", "IgnitionTemperature", "0.8"},
                                  {"float", "BurnSpeed", "0.5"},
                                  {"float", "DensityEmitAmount", "0.5"},
                                  {"float", "TemperatureEmitAmount", "0.5"},

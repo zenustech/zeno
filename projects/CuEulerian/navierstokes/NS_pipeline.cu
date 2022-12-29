@@ -87,9 +87,9 @@ struct ZSVDBToNavierStokesGrid : INode {
         }
         NSGrid->spg = std::move(spg);
         NSGrid->setMeta("v_cur", 0);
-        NSGrid->setMeta("p_cur", 0);
         NSGrid->setMeta("rho_cur", 0);
         NSGrid->setMeta("T_cur", 0);
+        NSGrid->setMeta("fuel_cur", 0);
 
         set_output("NSGrid", NSGrid);
     }
