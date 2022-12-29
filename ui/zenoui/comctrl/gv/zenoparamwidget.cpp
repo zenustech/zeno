@@ -129,6 +129,11 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
     pScene->addItem(m_pSlider);
 }
 
+void ZenoParamLineEdit::setFont(const QFont &font) 
+{
+    m_pLineEdit->setFont(font);
+}
+
 QString ZenoParamLineEdit::text() const
 {
     return m_pLineEdit->text();
@@ -649,7 +654,7 @@ ZenoParamBlackboard::ZenoParamBlackboard(const QString& value, LineEditParam par
     textCursor.setBlockFormat(blockFormat);
     m_pTextEdit->setTextCursor(textCursor);
     //set style
-    m_pTextEdit->setStyleSheet(ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); padding:16px 5px 5px 5px; font:%1pt \" HarmonyOS Sans \";}").arg(param.font.pointSize())));
+    updateStyleSheet(param.font.pointSize());
 }
 
 QString ZenoParamBlackboard::text() const
@@ -664,6 +669,14 @@ void ZenoParamBlackboard::setText(const QString& text)
 void ZenoParamBlackboard::foucusInEdit() 
 {
     m_pTextEdit->setFocus();
+}
+
+void ZenoParamBlackboard::updateStyleSheet(int fontSize) 
+{
+    m_pTextEdit->setStyleSheet(
+        ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); "
+                                         "padding:16px 5px 5px 5px; font:%1pt \" HarmonyOS Sans \";}")
+                                     .arg(fontSize)));
 }
 
 bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)

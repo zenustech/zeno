@@ -9,6 +9,7 @@ class BlackboardNode2 : public ZenoNode {
     BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
     ~BlackboardNode2();
     bool nodePosChanged(ZenoNode *);
+    void updateFontSize(qreal factor);
     QRectF boundingRect() const override;
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;

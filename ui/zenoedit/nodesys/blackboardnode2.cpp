@@ -23,6 +23,8 @@ BlackboardNode2::BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *par
     palette.setColor(QPalette::Window, QColor(60,70,69));
     palette.setColor(QPalette::WindowText, QColor("#FFFFFF"));
     setPalette(palette);
+    QFont font("HarmonyOS Sans", 12);
+    this->setFont(font);
     initUI();
 }
 
@@ -40,7 +42,7 @@ void BlackboardNode2::initUI() {
     LineEditParam param;
     param.palette = this->palette();
     param.propertyParam = "blackboard_title";
-    param.font = QFont("HarmonyOS Sans", 12);
+    param.font = this->font();
     m_pTitle = new ZenoParamLineEdit(blackboard.title, CONTROL_STRING, param);
 
     connect(m_pTitle, &ZenoParamLineEdit::editingFinished, this, [=]() {
@@ -134,6 +136,15 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
         update();
     }
     return false;
+}
+
+void BlackboardNode2::updateFontSize(qreal factor) 
+{
+    int fontSize = 12 / factor > 12 ? 12 / factor : 12;
+    QFont font("HarmonyOS Sans", fontSize);
+    this->setFont(font);
+    m_pTitle->setFont(font);
+    m_pTextEdit->updateStyleSheet(fontSize);
 }
 
 QRectF BlackboardNode2::boundingRect() const {
@@ -231,9 +242,8 @@ void BlackboardNode2::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
     painter->setPen(pen);    
     painter->drawRect(rect);
     if (!m_pTextEdit->text().isEmpty() && !m_pTextEdit->isVisible()) {
-        QRectF textRect(rect.x() + margin, rect.y() + margin, rect.width() - 2 * margin, rect.height() - 2 * margin);
-        QFont font("HarmonyOS Sans", 12);
-        painter->setFont(font);
+        QRectF textRect(rect.x() + margin, rect.y() + margin, rect.width() - 2 * margin, rect.height() - 2 * margin);        
+        painter->setFont(this->font());
         painter->setPen(palette().windowText().color());        
         painter->drawText(textRect, Qt::AlignLeft | Qt::TextFlag::TextWordWrap, m_pTextEdit->text());
     }

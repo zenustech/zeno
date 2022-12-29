@@ -153,6 +153,10 @@ void ZenoSubGraphScene::onZoomed(qreal factor)
 {
     for (auto pair : m_nodes) {
         //pair.second->switchView(factor < 0.3);
+        BlackboardNode2 * pNode = dynamic_cast<BlackboardNode2 *>(pair.second);
+        if (pNode) {
+            pNode->updateFontSize(factor);
+        }
     }
 }
 
@@ -556,21 +560,17 @@ void ZenoSubGraphScene::onNodePosChanged()
 {
     ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
     BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
-    for (auto item : items()) 
+    for (auto pair : m_nodes) 
     {
-        if (item == senderNode) 
+        ZenoNode *zenoNode = pair.second;
+        if (zenoNode == senderNode) 
         {
             continue;
         }
-        ZenoNode *zenoNode = dynamic_cast<ZenoNode *>(item);
-        if (zenoNode == nullptr)
-        {
-            continue;
-        }
-        BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(item);
+        BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(zenoNode);
         if (blackboardNode) 
         {
-            if (blackboardNode->childItems().contains(item)) 
+            if (blackboardNode->childItems().contains(zenoNode)) 
             {
                 if (currBlackboardNode) 
                 {
