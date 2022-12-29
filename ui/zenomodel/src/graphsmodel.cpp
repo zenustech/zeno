@@ -10,6 +10,7 @@
 #include "variantptr.h"
 #include "apilevelscope.h"
 #include "globalcontrolmgr.h"
+#include "dictkeymodel.h"
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -304,12 +305,13 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
         const QModelIndex& subgIdx = index(subgName);
         return index(nodeIdent, subgIdx);
     }
-    else if (lst.size() == 4)
+    else if (lst.size() >= 4)
     {
         const QString& subgName = lst[0];
         const QString& nodeIdent = lst[1];
         const QString& paramCls = lst[2];
         const QString& paramPath = lst[3];
+        const QString& keyName = lst.size() >= 5 ? lst[4] : "";
         const QModelIndex& subgIdx = index(subgName);
         const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
         if (!nodeIdx.isValid())
@@ -350,7 +352,14 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
                 }
                 if (coreModel)
                 {
-                    return coreModel->index(_name);
+                    QModelIndex paramIdx = coreModel->index(_name);
+                    if (!keyName.isEmpty() && paramIdx.isValid())
+                    {
+                        DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(paramIdx.data(ROLE_VPARAM_LINK_MODEL));
+                        ZASSERT_EXIT(keyModel, QModelIndex());
+                        return keyModel->index(keyName);
+                    }
+                    return paramIdx;
                 }
             }
         }
@@ -747,7 +756,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             SubGraphModel* psSubModel = subGraph(ssubnetName);
             ZASSERT_EXIT(psSubModel, NODE_DATA());
             data = _fork(ssubnetName);
-            const QString &subgNewNodeId = data[ROLE_OBJID].toString();
+            const QString& subgNewNodeId = data[ROLE_OBJID].toString();
 
             nodes.insert(snodeId, pModel->nodeData(idx));
             oldGraphsToNew.insert(snodeId, data);
@@ -766,9 +775,11 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         const QString& inNode = idx.data(ROLE_INNODE).toString();
         if (nodes.find(inNode) != nodes.end() && nodes.find(outNode) != nodes.end())
         {
-            const QString& outSock = idx.data(ROLE_OUTSOCK).toString();
-            const QString& inSock = idx.data(ROLE_INSOCK).toString();
-            links.append(EdgeInfo(outNode, inNode, outSock, inSock));
+            QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+            QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
+            const QString& outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
+            const QString& inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            links.append(EdgeInfo(outSockPath, inSockPath));
         }
     }
 
@@ -1069,7 +1080,7 @@ void GraphsModel::importNodes(
 	    }
         for (EdgeInfo link : links)
         {
-            addLink(link, false, false);
+            addLink(link, false);
         }
     }
 }
@@ -1155,17 +1166,26 @@ void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &
         {
             for (EdgeInfo link : inSock.info.links)
             {
-                QString inNode = link.inputNode;
-                QString inSock = link.inputSock;
-                QString outNode = link.outputNode;
-                QString outSock = link.outputSock;
+                QString inNode, inSock, outNode, outSock, paramCls, _subgName;
+                UiHelper::getSocketInfo(link.inSockPath, _subgName, inNode, paramCls, inSock);
+                UiHelper::getSocketInfo(link.outSockPath, _subgName, outNode, paramCls, outSock);
 
                 if (oldNodes.find(inNode) != oldNodes.end() && oldNodes.find(outNode) != oldNodes.end())
                 {
                     QString newOutNode, newInNode;
                     newOutNode = old2New[outNode];
                     newInNode = old2New[inNode];
-                    addLink(EdgeInfo(newOutNode, newInNode, outSock, inSock), false, enableTrans);
+
+                    QModelIndex newOutNodeIdx = dstGraph->index(newOutNode);
+                    QModelIndex newInNodeIdx = dstGraph->index(newInNode);
+
+                    IParamModel* pNewOutputs = QVariantPtr<IParamModel>::asPtr(newOutNodeIdx.data(ROLE_INPUT_MODEL));
+                    IParamModel* pNewInputs = QVariantPtr<IParamModel>::asPtr(newInNodeIdx.data(ROLE_INPUT_MODEL));
+
+                    const QModelIndex& newOutSockIdx = pNewOutputs->index(outSock);
+                    const QModelIndex& newInSockIdx = pNewInputs->index(inSock);
+
+                    addLink(newOutSockIdx, newInSockIdx, enableTrans);
                 }
             }
         }
@@ -1229,93 +1249,80 @@ void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 	}
 }
 
-
-void GraphsModel::removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction)
-{
-    for (const QPersistentModelIndex& linkIdx : info)
-    {
-        removeLink(linkIdx, enableTransaction);
-    }
-}
-
-void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, bool enableTransaction)
+void GraphsModel::removeLink(const QModelIndex& linkIdx, bool enableTransaction)
 {
     if (!linkIdx.isValid())
         return;
 
+    QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+
+    ZASSERT_EXIT(inSockIdx.isValid() && outSockIdx.isValid());
+    EdgeInfo link(outSockIdx.data(ROLE_OBJPATH).toString(), inSockIdx.data(ROLE_OBJPATH).toString());
+    removeLink(link, enableTransaction);
+}
+
+void GraphsModel::removeLink(const EdgeInfo& link, bool enableTransaction)
+{
     if (enableTransaction)
     {
-        RemoveLinkCommand* pCmd = new RemoveLinkCommand(linkIdx, this);
+        LinkCommand* pCmd = new LinkCommand(false, link, this);
         m_stack->push(pCmd);
     }
     else
     {
         ApiLevelScope batch(this);
 
-        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-        const QModelIndex& inSockIdx = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
+        //sometimes when removing socket, the link attached on it will also be removed,
+        //but if the socket index is invalid, then cause the associated link cannot be restored by these sockets.
+        //so, we must ensure the removal of link, is ahead of the removal of sockets.
+
+        //find the socket idx
+        const QModelIndex& outSockIdx = indexFromPath(link.outSockPath);
+        const QModelIndex& inSockIdx = indexFromPath(link.inSockPath);
+        ZASSERT_EXIT(outSockIdx.isValid() && inSockIdx.isValid());
+
+        //restore the link
+        QModelIndex linkIdx = m_linkModel->index(outSockIdx, inSockIdx);
+
+        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(outSockIdx.model());
+        ZASSERT_EXIT(pOutputs);
+        pOutputs->setData(outSockIdx, linkIdx, ROLE_REMOVELINK);
 
         QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(inSockIdx.model());
-        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(outSockIdx.model());
-        ZASSERT_EXIT(pInputs && pOutputs);
-        pOutputs->setData(outSockIdx, linkIdx, ROLE_REMOVELINK);
+        ZASSERT_EXIT(pInputs);
         pInputs->setData(inSockIdx, linkIdx, ROLE_REMOVELINK);
+
+        ZASSERT_EXIT(linkIdx.isValid());
         m_linkModel->removeRow(linkIdx.row());
     }
 }
 
 QModelIndex GraphsModel::addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction)
 {
-    if (enableTransaction)
-    {
-        LinkCommand* pCmd = new LinkCommand(true, fromSock, toSock, this);
-        m_stack->push(pCmd);
-    }
-    else
-    {
-        ApiLevelScope scope(this);
-
-        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(fromSock.model());
-        QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(toSock.model());
-
-        int row = m_linkModel->addLink(fromSock, toSock);
-        const QModelIndex &linkIdx = m_linkModel->index(row, 0);
-
-        pInputs->setData(toSock, linkIdx, ROLE_ADDLINK);
-        pOutputs->setData(fromSock, linkIdx, ROLE_ADDLINK);
-    }
-    return QModelIndex();
+    ZASSERT_EXIT(fromSock.isValid() && toSock.isValid(), QModelIndex());
+    EdgeInfo link(fromSock.data(ROLE_OBJPATH).toString(), toSock.data(ROLE_OBJPATH).toString());
+    return addLink(link, enableTransaction);
 }
 
-QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction)
+QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool enableTransaction)
 {
     if (enableTransaction)
     {
         beginTransaction("addLink issues");
         zeno::scope_exit sp([=]() { endTransaction(); });
 
-        AddLinkCommand* pCmd = new AddLinkCommand(info, this);
+        LinkCommand* pCmd = new LinkCommand(true, info, this);
         m_stack->push(pCmd);
+        //todo: return val on this level.
         return QModelIndex();
     }
     else
     {
         ApiLevelScope batch(this);
 
-        const QModelIndex& inIdx = nodeIndex(info.inputNode);
-        const QModelIndex& outIdx = nodeIndex(info.outputNode);
-        ZASSERT_EXIT(inIdx.isValid() && outIdx.isValid(), QModelIndex());
-
-        IParamModel* pInputs = QVariantPtr<IParamModel>::asPtr(inIdx.data(ROLE_INPUT_MODEL));
-        IParamModel* pOutputs = QVariantPtr<IParamModel>::asPtr(outIdx.data(ROLE_OUTPUT_MODEL));
-        if (!pInputs || !pOutputs)
-        {
-            zeno::log_warn("there is not valid input or output sockets.");
-            return QModelIndex();
-        }
-
-        QModelIndex inParamIdx = pInputs->index(info.inputSock);
-        QModelIndex outParamIdx = pOutputs->index(info.outputSock);
+        QModelIndex inParamIdx = indexFromPath(info.inSockPath);
+        QModelIndex outParamIdx = indexFromPath(info.outSockPath);
         if (!inParamIdx.isValid() || !outParamIdx.isValid())
         {
             zeno::log_warn("there is not valid input or output sockets.");
@@ -1324,6 +1331,9 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool bAddDynamicSock, boo
 
         int row = m_linkModel->addLink(outParamIdx, inParamIdx);
         const QModelIndex& linkIdx = m_linkModel->index(row, 0);
+
+        QAbstractItemModel* pInputs = const_cast<QAbstractItemModel*>(inParamIdx.model());
+        QAbstractItemModel* pOutputs = const_cast<QAbstractItemModel*>(outParamIdx.model());
 
         ZASSERT_EXIT(pInputs && pOutputs, QModelIndex());
         pInputs->setData(inParamIdx, linkIdx, ROLE_ADDLINK);

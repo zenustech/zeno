@@ -44,7 +44,11 @@ public:
 			const QModelIndex& subGpIdx,
 			bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-	virtual void removeLink(const QPersistentModelIndex& linkIdx, bool enableTransaction = false) = 0;
+
+	virtual QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) = 0;
+	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
+	virtual void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
@@ -54,8 +58,7 @@ public:
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
-	virtual QModelIndex addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction = false) = 0;
-	virtual QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
+
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;

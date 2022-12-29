@@ -5,6 +5,7 @@
 #include "modelrole.h"
 
 class IGraphsModel;
+class DictKeyModel;
 
 class IParamModel : public QAbstractItemModel
 {
@@ -20,7 +21,7 @@ public:
         //CurveModel* pVar;   //variable on time frame.
         PARAM_LINKS links;
         QMap<int, QVariant> customData;
-        SOCKET_PROPERTY prop;
+        int prop;
     };
 
     explicit IParamModel(
@@ -52,18 +53,11 @@ public:
         Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
-    //ParamModel
-    void insertRow(int row,
-        const QString& sockName,
-        const QString& type = "",
-        const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
-
     void appendRow(
         const QString& sockName,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+        int prop = SOCKPROP_NORMAL);
 
     void setItem(
         const QModelIndex& idx,
@@ -86,13 +80,23 @@ private slots:
 
 private:
     QString nameFromRow(int row) const;
+
+    void insertRow(int row,
+        const QString& sockName,
+        const QString& type = "",
+        const QVariant& deflValue = QVariant(),
+        int prop = SOCKPROP_NORMAL);
+
     bool _insertRow(int row,
         const QString& name,
         const QString& type = "",
         const QVariant& deflValue = QVariant(),
-        SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+        int prop = SOCKPROP_NORMAL);
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
+    void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
+    QList<EdgeInfo> exportLinks(const PARAM_LINKS& links);
+    EdgeInfo exportLink(const QModelIndex& linkIdx);
 
     const QPersistentModelIndex m_nodeIdx;
     const QPersistentModelIndex m_subgIdx;

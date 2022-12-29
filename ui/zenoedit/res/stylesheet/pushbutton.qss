@@ -12,6 +12,25 @@ QPushButton[cssClass="grayButton"]:hover
 	color: rgb(255, 255, 255);
 }
 
+QPushButton[cssClass="blueStyle"]
+{
+	padding-top: 2.5px;
+	padding-left: 12px;
+	padding-right: 12px;
+	padding-bottom: 2.5px;
+
+    border-width: 0px;
+    border-radius: 0px;
+	background-color: #4284F4;
+	font: 14px 'Segoe UI Semibold';
+	color: rgb(208, 208, 208);
+}
+
+QPushButton[cssClass="blueStyle"]:hover
+{
+	color: rgb(255, 255, 255);
+}
+
 QPushButton[cssClass="welcomepage"]
 {
 	border-style: solid;

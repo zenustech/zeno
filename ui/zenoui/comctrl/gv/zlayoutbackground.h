@@ -20,6 +20,8 @@ public:
 
 signals:
     void doubleClicked();
+    void hoverEntered();
+    void hoverLeaved();
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;

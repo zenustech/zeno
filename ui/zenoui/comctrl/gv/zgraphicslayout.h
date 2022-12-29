@@ -63,6 +63,8 @@ public:
     ~ZGraphicsLayout();
     void addItem(QGraphicsItem* item);
     void addItem(QGraphicsItem* item, Qt::Alignment flag);
+    int count() const;
+    ZGvLayoutItem* itemAt(int idx) const;
     void addLayout(ZGraphicsLayout* pLayout);
     void insertLayout(int i, ZGraphicsLayout* pLayout);
     void insertItem(int i, QGraphicsItem* pItem);
@@ -74,10 +76,13 @@ public:
     void setStretch(QList<int> stretchs);
     void setAlignment(QGraphicsItem* item, Qt::Alignment flag);
     void setSpacing(qreal spacing);
+    void setHorizontal(bool bHor);
     qreal spacing() const;
     void setContentsMargin(qreal top, qreal left, qreal bottom, qreal right);
     QMargins getContentsMargin() const;
     QRectF geometry() const;
+    void moveUp(int i);
+    void removeElement(int i);
     void removeItem(QGraphicsItem* item);
     void removeLayout(ZGraphicsLayout* layout);
     void clear();

@@ -53,7 +53,8 @@ enum MODEL_ROLE
 	ROLE_PARAM_VALUE,
 	ROLE_PARAM_LINKS,
 	ROLE_PARAM_SOCKPROP,	//socket property, see SOCKET_PROPERTY.
-	ROLE_PARAM_SOCKETTYPE,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
+	ROLE_PARAM_CLASS,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
+	ROLE_PARAM_COREIDX,		//return the core param idx under view param.
 
 	//view param
 	ROLE_VPARAM_TYPE,		//vtype, such as group tab param, not ROLE_PARAM_TYPE

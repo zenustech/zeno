@@ -53,20 +53,47 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
     const QModelIndex& fromSock = m_items[r].fromSock;
     const QModelIndex& toSock = m_items[r].toSock;
 
-    if (!fromSock.isValid() || !toSock.isValid())
-    {
-        return QVariant();
-    }
-
     switch (role)
     {
     case ROLE_OBJID:   return m_items[r].ident;
-    case ROLE_OUTNODE: return fromSock.data(ROLE_OBJID).toString();  //IParamModel::data(ROLE_OBJID)
-    case ROLE_OUTSOCK: return fromSock.data(ROLE_PARAM_NAME).toString();
-    case ROLE_INNODE:  return toSock.data(ROLE_OBJID).toString();
-    case ROLE_INSOCK:  return toSock.data(ROLE_PARAM_NAME).toString();
-    case ROLE_INNODE_IDX:  return toSock;
-    case ROLE_OUTNODE_IDX: return fromSock;
+    case ROLE_OUTNODE:
+    {
+        if (!fromSock.isValid())
+            return QVariant();
+        return fromSock.data(ROLE_OBJID).toString();
+    }
+    case ROLE_OUTSOCK:
+    {
+        if (!toSock.isValid())
+            return QVariant();
+        return fromSock.data(ROLE_PARAM_NAME).toString();
+    }
+    case ROLE_INNODE:
+    {
+        if (!toSock.isValid())
+            return QVariant();
+        return toSock.data(ROLE_OBJID).toString();
+    }
+    case ROLE_INSOCK:
+    {
+        if (!toSock.isValid())
+            return QVariant();
+        return toSock.data(ROLE_PARAM_NAME).toString();
+    }
+    case ROLE_INSOCK_IDX:   return toSock;
+    case ROLE_OUTSOCK_IDX:  return fromSock;
+    case ROLE_INNODE_IDX:
+    {
+        if (!toSock.isValid())
+            return QVariant();
+        return toSock.data(ROLE_NODE_IDX);
+    }
+    case ROLE_OUTNODE_IDX:
+    {
+        if (!fromSock.isValid())
+            return QVariant();
+        return fromSock.data(ROLE_NODE_IDX);
+    }
     default:
         return QVariant();
     }

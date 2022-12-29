@@ -120,7 +120,7 @@ QVariant VParamItem::data(int role) const
     case ROLE_PARAM_NAME:
     {
         if (!m_index.isValid())
-            return "";
+            return m_info.name;
         return m_index.data(ROLE_PARAM_NAME);
     }
     case ROLE_PARAM_VALUE:
@@ -141,6 +141,10 @@ QVariant VParamItem::data(int role) const
             return SOCKPROP_UNKNOWN;
         return m_index.data(ROLE_PARAM_SOCKPROP);
     }
+    case ROLE_PARAM_COREIDX:
+    {
+        return m_index;
+    }
     case ROLE_VPARAM_LINK_MODEL:
     {
         if (!m_index.isValid())
@@ -157,11 +161,11 @@ QVariant VParamItem::data(int role) const
     {
         return m_index.isValid();
     }
-    case ROLE_PARAM_SOCKETTYPE:
+    case ROLE_PARAM_CLASS:
     {
         if (!m_index.isValid())
             return PARAM_UNKNOWN;
-        return m_index.data(ROLE_PARAM_SOCKETTYPE);
+        return m_index.data(ROLE_PARAM_CLASS);
     }
     case ROLE_OBJID:
     {
@@ -254,6 +258,8 @@ void VParamItem::setData(const QVariant& value, int role)
                 QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
                 bool ret = pModel->setData(m_index, value, role);
             }
+            QModelIndex idx = index();
+            emit this->model()->dataChanged(idx, idx, {role});
             break;
         }
         case ROLE_VAPRAM_EDITTABLE:
@@ -636,6 +642,54 @@ QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &corePa
     return QModelIndex();
 }
 
+void ViewParamModel::getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs)
+{
+    if (!m_bNodeUI)
+        return;
+
+    QStandardItem *rootItem = invisibleRootItem()->child(0);
+    if (!rootItem)
+        return;
+
+    if (rootItem->rowCount() == 0)
+        return;
+
+    QStandardItem* pDefaultTab = rootItem->child(0);
+    for (int i = 0; i < pDefaultTab->rowCount(); i++)
+    {
+        QStandardItem* pGroup = pDefaultTab->child(i);
+        const QString& groupName = pGroup->data(ROLE_VPARAM_NAME).toString();
+        for (int j = 0; j < pGroup->rowCount(); j++)
+        {
+            QStandardItem* paramItem = pGroup->child(j);
+            const QModelIndex& idx = paramItem->index();
+            if (groupName == "In Sockets") {
+                inputs.append(idx);
+            } else if (groupName == "Parameters") {
+                params.append(idx);
+            } else if (groupName == "Out Sockets") {
+                outputs.append(idx);
+            }
+        }
+    }
+}
+
+QModelIndexList ViewParamModel::paramsIndice()
+{
+    if (!m_bNodeUI)
+        return QModelIndexList();
+
+
+}
+
+QModelIndexList ViewParamModel::outputsIndice()
+{
+    if (!m_bNodeUI)
+        return QModelIndexList();
+
+
+}
+
 VPARAM_INFO ViewParamModel::exportParams() const
 {
     VPARAM_INFO root;
@@ -778,7 +832,7 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
                 const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
                 const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_MULTILINK;
+                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_DICTLIST_PANEL;
                 //until now we can init the control, because control is a "view" property, should be dependent with core data.
                 //todo: global control settings, like zfxCode, dict/list panel control, etc.
                 //todo: dictpanel should be choosed by custom param manager globally.

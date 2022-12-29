@@ -4,6 +4,7 @@
 #include "linkmodel.h"
 #include "variantptr.h"
 #include "globalcontrolmgr.h"
+#include "dictkeymodel.h"
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/scope_exit.h>
 
@@ -35,6 +36,82 @@ IParamModel::~IParamModel()
 {
 }
 
+EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
+{
+    EdgeInfo link;
+
+    QModelIndex outSock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    ZASSERT_EXIT(outSock.isValid() && inSock.isValid(), link);
+
+    QModelIndex outCoreParam = outSock.data(ROLE_PARAM_COREIDX).toModelIndex();
+    QModelIndex inCoreParam = inSock.data(ROLE_PARAM_COREIDX).toModelIndex();
+    ZASSERT_EXIT(outCoreParam.isValid() && inCoreParam.isValid(), link);
+
+    //for dict panel socket, write the full path of output socket.
+    if (outSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
+    {
+        link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
+    }
+    else
+    {
+        link.outSockPath = outCoreParam.data(ROLE_OBJPATH).toString();
+    }
+
+    if (inSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT)
+    {
+        link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
+    }
+    else
+    {
+        link.inSockPath = inCoreParam.data(ROLE_OBJPATH).toString();
+    }
+    return link;
+}
+
+void IParamModel::exportDictkeys(DictKeyModel *pModel, DICTPANEL_INFO& panel)
+{
+    if (!pModel)
+        return;
+
+    panel.bCollasped = pModel->isCollasped();
+
+    int rowCnt = pModel->rowCount();
+    QStringList keyNames;
+    for (int i = 0; i < rowCnt; i++)
+    {
+        const QModelIndex &keyIdx = pModel->index(i, 0);
+        QString key = keyIdx.data().toString();
+
+        DICTKEY_INFO keyInfo;
+        keyInfo.key = key;
+
+        QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
+        if (linkIdx.isValid())
+        {
+            QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+            QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+            ZASSERT_EXIT(insock.isValid() && outsock.isValid());
+
+            EdgeInfo link = exportLink(linkIdx);
+            keyInfo.link = link;
+        }
+        panel.keys.append(keyInfo);
+        keyNames.push_back(key);
+    }
+}
+
+QList<EdgeInfo> IParamModel::exportLinks(const PARAM_LINKS& links)
+{
+    QList<EdgeInfo> linkInfos;
+    for (auto linkIdx : links)
+    {
+        EdgeInfo link = exportLink(linkIdx);
+        linkInfos.append(link);
+    }
+    return linkInfos;
+}
+
 bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
 {
     if (m_class == PARAM_INPUT)
@@ -54,17 +131,14 @@ bool IParamModel::getInputSockets(INPUT_SOCKETS& inputs)
             inSocket.info.name = name;
             inSocket.info.type = item.type;
             inSocket.info.sockProp = item.prop;
+            inSocket.info.links = exportLinks(item.links);
 
-            for (auto linkIdx : item.links)
+            if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end())
             {
-                EdgeInfo link;
-                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
-                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
-                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
-                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                inSocket.info.links.append(link);
+                DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                exportDictkeys(pModel, inSocket.info.dictpanel);
             }
-
             inputs.insert(name, inSocket);
         }
         return true;
@@ -93,15 +167,14 @@ bool IParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
             outSocket.info.name = name;
             outSocket.info.type = item.type;
             outSocket.info.sockProp = item.prop;
-            for (auto linkIdx : item.links)
-            {
-                EdgeInfo link;
-                link.inputNode = linkIdx.data(ROLE_INNODE).toString();
-                link.outputNode = linkIdx.data(ROLE_OUTNODE).toString();
-                link.inputSock = linkIdx.data(ROLE_INSOCK).toString();
-                link.outputSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                outSocket.info.links.append(link);
+            outSocket.info.links = exportLinks(item.links);
+
+            if (item.customData.find(ROLE_VPARAM_LINK_MODEL) != item.customData.end()) {
+                DictKeyModel *pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
+                ZASSERT_EXIT(pModel, false);
+                exportDictkeys(pModel, outSocket.info.dictpanel);
             }
+
             outputs.insert(name, outSocket);
         }
     }
@@ -195,6 +268,9 @@ QModelIndex IParamModel::index(int row, int column, const QModelIndex& parent) c
 
 QModelIndex IParamModel::index(const QString& name) const
 {
+    //may be a dict-key name
+
+
     if (m_key2Row.find(name) == m_key2Row.end())
         return QModelIndex();
 
@@ -256,11 +332,13 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
         case ROLE_PARAM_VALUE:  return item.pConst;
         case ROLE_PARAM_SOCKPROP: return item.prop;
         case ROLE_PARAM_LINKS:  return QVariant::fromValue(item.links);
-        case ROLE_PARAM_SOCKETTYPE:     return m_class;
+        case ROLE_PARAM_CLASS:     return m_class;
         case ROLE_OBJID:
             return m_nodeIdx.isValid() ? m_nodeIdx.data(ROLE_OBJID).toString() : "";
         case ROLE_NODE_IDX:
             return m_nodeIdx;
+        case ROLE_PARAM_COREIDX:
+            return index;
         case ROLE_OBJPATH:
         {
             QString path;
@@ -359,34 +437,11 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
 
-            QModelIndex fromSock = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
-            QModelIndex toSock = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-
             QString nodeId, nodeCls;
             if (m_nodeIdx.isValid())
             {
                 nodeId = m_nodeIdx.data(ROLE_OBJID).toString();
                 nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-            }
-
-            const bool bInputAdding = linkIdx.data(ROLE_INNODE) == nodeId;
-            if (item.prop == SOCKPROP_MULTILINK && bInputAdding)
-            {
-                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
-                ZASSERT_EXIT(pModel, false);
-                int rowCnt = pModel->rowCount();
-                QStringList keyNames;
-                for (int i = 0; i < rowCnt; i++)
-                {
-                    QString key = pModel->index(i, 0).data().toString();
-                    keyNames.push_back(key);
-                }
-                const QString& newKeyName = UiHelper::getUniqueName(keyNames, "obj", false);
-                const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-
-                QStandardItem* pObjItem = new QStandardItem(outNode);
-                pObjItem->setData(linkIdx, ROLE_LINK_IDX);
-                pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
             }
             if (!m_model->IsIOProcessing() &&
                 (nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
@@ -417,19 +472,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.removeAll(linkIdx);
-            if (!m_bRetryLinkOp && item.prop == SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
-            {
-                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
-                ZASSERT_EXIT(pModel, false);
-                for (int r = 0; r < pModel->rowCount(); r++)
-                {
-                    if (pModel->index(r, 1).data() == linkIdx.data(ROLE_OUTNODE))
-                    {
-                        pModel->removeRow(r);
-                        break;
-                    }
-                }
-            }
             break;
         }
         default:
@@ -560,6 +602,20 @@ QModelIndexList IParamModel::match(
 
 bool IParamModel::removeRows(int row, int count, const QModelIndex& parent)
 {
+    //todo: clear link here, because link model need valid param index.
+    auto itRow = m_row2Key.find(row);
+    if (itRow == m_row2Key.end())
+        return false;
+
+    QString name = itRow.value();
+    auto itItem = m_items.find(name);
+    ZASSERT_EXIT(itItem != m_items.end(), false);
+    PARAM_LINKS socketLinks = m_items[name].links;
+    for (const QPersistentModelIndex& linkIdx : socketLinks)
+    {
+        m_model->removeLink(linkIdx, true);
+    }
+
     beginRemoveRows(parent, row, row);
     _removeRow(index(row, 0));
     endRemoveRows();
@@ -570,17 +626,9 @@ bool IParamModel::_removeRow(const QModelIndex& index)
 {
     //remove link from this param.
     QString name = nameFromRow(index.row());
+
     auto itItem = m_items.find(name);
     ZASSERT_EXIT(itItem != m_items.end(), false);
-    _ItemInfo& item = m_items[name];
-
-    if (m_class == PARAM_INPUT || m_class == PARAM_OUTPUT)
-    {
-        for (const QPersistentModelIndex& linkIdx : item.links)
-        {
-            m_model->removeLink(linkIdx, true);
-        }
-    }
 
     int row = index.row();
     for (int r = row + 1; r < rowCount(); r++)
@@ -597,16 +645,18 @@ bool IParamModel::_removeRow(const QModelIndex& index)
     return true;
 }
 
-void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
+void IParamModel::insertRow(int row, const QString& sockName, const QString& type, const QVariant& deflValue, int prop)
 {
     beginInsertRows(QModelIndex(), row, row);
     bool ret = _insertRow(row, sockName, type, deflValue, prop);
     endInsertRows();
 }
 
-void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, SOCKET_PROPERTY prop)
+void IParamModel::appendRow(const QString& sockName, const QString& type, const QVariant& deflValue, int prop)
 {
     int n = rowCount();
+    if (m_items.find(sockName) != m_items.end())
+        return;
     insertRow(n, sockName, type, deflValue, prop);
 }
 
@@ -651,7 +701,7 @@ bool IParamModel::_insertRow(
     const QString& sockName,
     const QString& type,
     const QVariant& deflValue,
-    SOCKET_PROPERTY prop)
+    int prop)
 {
     ZASSERT_EXIT(m_items.find(sockName) == m_items.end(), false);
     int nRows = m_items.size();
@@ -662,27 +712,28 @@ bool IParamModel::_insertRow(
     item.type = type;
     item.prop = prop;
 
+    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    m_model->getDescriptor(nodeCls, desc);
+
     if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject")
     {
-        item.type = "dict";
-        item.prop = SOCKPROP_MULTILINK;
+        item.type = "dict";     //pay attention not to export to outside, only as a ui keyword.
+        if (!desc.categories.contains("dict"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
     else if (type == "list")
     {
-        item.prop = SOCKPROP_MULTILINK;
+        if (!desc.categories.contains("list"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
 
     //not type desc on list output socket, add it here.
-    if (m_class == PARAM_OUTPUT && sockName == "list" && type.isEmpty())
+    if (sockName == "list" && type.isEmpty())
     {
         item.type = "list";
-    }
-
-    if (item.prop == SOCKPROP_MULTILINK)
-    {
-        QStandardItemModel* pTblModel = new QStandardItemModel(0, 2, this);
-        item.customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<QStandardItemModel>::asVariant(pTblModel);
-        connect(pTblModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
+        if (m_class == PARAM_INPUT && !desc.categories.contains("list"))
+            item.prop = SOCKPROP_DICTLIST_PANEL;
     }
 
     //item.links = links;   //there will be not link info in INPUT_SOCKETS/OUTPUT_SOCKETS for safety.
@@ -715,13 +766,21 @@ bool IParamModel::_insertRow(
         ZASSERT_EXIT(false, false);
     }
 
+    // init dict key model.
+    if ((item.prop & SOCKPROP_DICTLIST_PANEL) && m_items.find(sockName) != m_items.end())
+    {
+        DictKeyModel* pTblModel = new DictKeyModel(m_model, index(sockName), this);
+        m_items[sockName].customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pTblModel);
+        //connect(pTblModel, &DictKeyModel::rowsAboutToBeRemoved, this, &IParamModel::onKeyItemAboutToBeRemoved);
+    }
+
     m_model->markDirty();
     return true;
 }
 
 void IParamModel::onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    QStandardItemModel* pTblModel = qobject_cast<QStandardItemModel*>(sender());
+    DictKeyModel* pTblModel = qobject_cast<DictKeyModel*>(sender());
     ZASSERT_EXIT(pTblModel);
 
     const QString& keyName = pTblModel->index(first, 0).data().toString();

@@ -4,6 +4,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenosocketitem.h>
+#include <zenoui/style/zenostyle.h>
 #include "../util/log.h"
 
 
@@ -56,7 +57,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
     painter->save();
     QPen pen;
     pen.setColor(QColor(isSelected() ? 0xFA6400 : 0x808080));
-    pen.setWidthF(WIDTH);
+    pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
@@ -65,14 +66,13 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QString sockName, QPointF fixedPos, bool fixInput)
+ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput)
     : ZenoLink(nullptr)
     , m_fixedSocket(socketItem)
     , m_fixedPos(fixedPos)
     , m_floatingPos(fixedPos)
     , m_bfixInput(fixInput)
     , m_nodeId(nodeId)
-    , m_sockName(sockName)
     , m_adsortedSocket(nullptr)
 {
     m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
@@ -108,7 +108,7 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     painter->save();
     QPen pen;
     pen.setColor(QColor(255,255,255));
-    pen.setWidthF(WIDTH);
+    pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
@@ -122,12 +122,11 @@ void ZenoTempLink::setFloatingPos(QPointF pos)
     update();
 }
 
-void ZenoTempLink::getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput)
+void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput)
 {
     nodeId = m_nodeId;
     fixedPos = m_fixedPos;
     bFixedInput = m_bfixInput;
-    sockName = m_sockName;
 }
 
 ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const
@@ -167,16 +166,24 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 {
     ZASSERT_EXIT(inNode && outNode && idx.isValid());
 
-    setZValue(ZVALUE_LINK);
+    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    if (inSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT ||
+        outSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
+    {
+        setZValue(ZVALUE_LINK_ABOVE);
+    }
+    else
+    {
+        setZValue(ZVALUE_LINK);
+    }
     setFlag(QGraphicsItem::ItemIsSelectable);
 
     m_inNode = idx.data(ROLE_INNODE).toString();
     m_outNode = idx.data(ROLE_OUTNODE).toString();
-    QString inSock = idx.data(ROLE_INSOCK).toString();
-    QString outSock = idx.data(ROLE_OUTSOCK).toString();
 
-    m_srcPos = outNode->getPortPos(false, outSock);
-    m_dstPos = inNode->getPortPos(true, inSock);
+    m_dstPos = inNode->getSocketPos(inSockIdx);
+    m_srcPos = outNode->getSocketPos(outSockIdx);
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -188,18 +195,18 @@ void ZenoFullLink::onInSocketPosChanged()
         return;
     ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
     ZASSERT_EXIT(pNode);
-    const QString& inSock = m_index.data(ROLE_INSOCK).toString();
-    m_dstPos = pNode->getPortPos(true, inSock);
+    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    m_dstPos = pNode->getSocketPos(inSockIdx);
 }
 
 void ZenoFullLink::onOutSocketPosChanged()
 {
     if (!m_index.isValid())
         return;
-    ZenoNode* pNode = qobject_cast<ZenoNode *>(sender());
+    ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
     ZASSERT_EXIT(pNode);
-    const QString& outSock = m_index.data(ROLE_OUTSOCK).toString();
-    m_srcPos = pNode->getPortPos(false, outSock);
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    m_srcPos = pNode->getSocketPos(outSockIdx);
 }
 
 QPersistentModelIndex ZenoFullLink::linkInfo() const

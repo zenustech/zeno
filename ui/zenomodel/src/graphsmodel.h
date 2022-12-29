@@ -87,10 +87,11 @@ public:
             bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
-    void removeLink(const QPersistentModelIndex& linkIdx, bool enableTransaction = false) override;
+    void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) override;
+    void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const EdgeInfo& info, bool bAddDynamicSock, bool enableTransaction = false) override;
     QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
+    QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -121,7 +122,6 @@ public:
 	void endTransaction() override;
     void beginApiLevel() override;
     void endApiLevel() override;
-    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
     IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;

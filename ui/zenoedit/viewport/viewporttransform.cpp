@@ -529,15 +529,12 @@ void FakeTransformer::createNewTransformNode(QString& node_id, const std::string
     auto pos = node_index.data(ROLE_OBJPOS).toPointF();
     pos.setX(pos.x() + 10);
     auto new_node_id = NodesMgr::createNewNode(pModel, subgraph_index, "TransformPrimitive", pos);
+    QString subgraphName = subgraph_index.data(ROLE_OBJNAME).toString();
     QString node_name = node_id.section('-', 1);
     QString out_sock = getNodePrimSockName(node_name.toStdString());
-    EdgeInfo edge = {
-        node_id,
-        new_node_id,
-        out_sock,
-        "prim"
-    };
-    pModel->addLink(edge, false);
+
+    EdgeInfo edge(subgraphName, node_id, new_node_id, subgraphName, out_sock, "prim");
+    pModel->addLink(edge);
 
     auto user_data = m_objects[obj_name]->userData();
 
@@ -603,7 +600,9 @@ QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelI
     std::string out_sock = getNodePrimSockName(node_name.toStdString());
     auto linked_edges = output_sockets[out_sock.c_str()].info.links;
     for (const auto& linked_edge : linked_edges) {
-        const QString& next_node_id = linked_edge.inputNode;
+        QString inputNode, inputSock;
+        linked_edge.getSockInfo(true, inputNode, inputSock);
+        const QString &next_node_id = inputNode;
         if (next_node_id.contains("TransformPrimitive")) {
             auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
             if (search_result.empty()) return {};

@@ -44,19 +44,14 @@ public:
 
     QPersistentModelIndex index() { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
-    QPointF getPortPos(bool bInput, const QString& portName);
+    QPointF getSocketPos(const QModelIndex& sockIdx);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
-    ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
-    void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
+    ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx);
     void markError(bool isError);
-    void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
 
     QString nodeId() const;
     QString nodeName() const;
-    QPointF nodePos() const; 
     void updateNodePos(const QPointF &pos);
-    INPUT_SOCKETS inputParams() const;
-    OUTPUT_SOCKETS outputParams() const;
     virtual void onUpdateParamsNotDesc();
 
     void setMoving(bool isMoving);

@@ -176,6 +176,10 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     {
         _parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
+    if (objValue.HasMember("outputs"))
+    {
+        _parseOutputs(nodeid, name, objValue["outputs"], pAcceptor);
+    }
     if (objValue.HasMember("customui-panel"))
     {
         _parseCustomUI(nodeid, name, false, objValue["customui-panel"], pAcceptor);
@@ -313,45 +317,27 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         const auto& inputObj = inObj.value;
         if (inputObj.IsArray())
         {
+            //legacy case, like [xxx-node, xxx-socket, defl]
             const auto& arr = inputObj.GetArray();
             //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
             int n = arr.Size();
-            if (n == 3 && !arr[0].IsArray() && !arr[1].IsArray())
-            {
-                //legacy case, like [xxx-node, xxx-socket, defl]
-                if (arr[0].IsString())
-                    outId = arr[0].GetString();
-                if (arr[1].IsString())
-                    outSock = arr[1].GetString();
-                pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
-            }
-            else
-            {
-                //multilinks:
-                /*
-                 [xxx-node1, xxx-socket],
-                 [xxx-node2, xxx-socket],
-                 ...
-                 deflVal,
-                 */
-                const rapidjson::Value& defaultValue = arr[n - 1];
-                for (int i = 0; i < n - 1; i++)
-                {
-                    const auto& conn = arr[i];
-                    if (conn.IsArray() && conn.Size() == 2 && conn[0].IsString() && conn[1].IsString())
-                    {
-                        outId = conn[0].GetString();
-                        outSock = conn[1].GetString();
-                        pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, defaultValue, legacyDescs);
-                    }
-                }
-            }
+            ZASSERT_EXIT(n == 3);
+
+            if (arr[0].IsString())
+                outId = arr[0].GetString();
+            if (arr[1].IsString())
+                outSock = arr[1].GetString();
+            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2]);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value());
+        }
+        else if (inputObj.IsObject())
+        {
+            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
         }
         else
         {
@@ -359,6 +345,78 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         }
     }
     pAcceptor->endInputs(id, nodeName);
+}
+
+void ZsgReader::_parseSocket(
+        const QString& id,
+        const QString& nodeName,
+        const QString& inSock,
+        bool bInput,
+        const rapidjson::Value& sockObj,
+        IAcceptor* pAcceptor)
+{
+    int sockprop = SOCKPROP_NORMAL;
+    QString sockProp;
+    if (sockObj.HasMember("property"))
+    {
+        ZASSERT_EXIT(sockObj["property"].IsString());
+        sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
+    }
+    pAcceptor->addSocket(bInput, id, inSock, sockProp);
+
+    if (sockObj.HasMember("link") && sockObj["link"].IsString())
+    {
+        QString link = QString::fromLocal8Bit(sockObj["link"].GetString());
+        if (sockObj.HasMember("default-value"))
+        {
+            pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+        }
+        else
+        {
+            pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
+        }
+    }
+
+    if (sockObj.HasMember("dictlist-panel"))
+    {
+        _parseDictPanel(bInput, sockObj["dictlist-panel"], id, inSock, nodeName, pAcceptor);
+    }
+}
+
+void ZsgReader::_parseDictPanel(
+            bool bInput,
+            const rapidjson::Value& dictPanelObj, 
+            const QString& id,
+            const QString& inSock,
+            const QString& nodeName,
+            IAcceptor* pAcceptor)
+{
+    if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
+    {
+        bool val = dictPanelObj["collasped"].GetBool();
+        pAcceptor->setDictPanelProperty(bInput, id, inSock, val);
+    }
+    if (dictPanelObj.HasMember("keys"))
+    {
+        const rapidjson::Value& dictKeys = dictPanelObj["keys"];
+        for (const auto& kv : dictKeys.GetObject())
+        {
+            const QString& keyName = kv.name.GetString();
+            const rapidjson::Value& inputObj = kv.value;
+
+            QString link;
+            if (inputObj.HasMember("link") && inputObj["link"].IsString())
+            {
+                link = QString::fromLocal8Bit(inputObj["link"].GetString());
+            }
+            pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
+            if (bInput)
+            {
+                QString sockGrp = inSock + ":" + keyName;
+                pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, "editable", rapidjson::Value());
+            }
+        }
+    }
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
@@ -379,6 +437,21 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
             return;
         }
         zeno::log_warn("not object json param");
+    }
+}
+
+void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const rapidjson::Value& outputs, IAcceptor *pAcceptor)
+{
+    for (const auto& outObj : outputs.GetObject())
+    {
+        const QString& outSock = outObj.name.GetString();
+        const auto& sockObj = outObj.value;
+        if (sockObj.IsObject())
+        {
+            if (sockObj.HasMember("dictlist-panel")) {
+                _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
+            }
+        }
     }
 }
 

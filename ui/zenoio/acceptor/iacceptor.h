@@ -21,14 +21,42 @@ public:
     virtual void setSocketKeys(const QString& id, const QStringList& keys) = 0;
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
     virtual void addDictKey(const QString& id, const QString& keyName, bool bInput) = 0;
+
+    virtual void addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty) = 0;
+
+    //legacy:
     virtual void setInputSocket(
         const QString& nodeCls,
-        const QString& id,
+        const QString& inNode,
         const QString& inSock,
-        const QString& outId,
+        const QString& outNode,
         const QString& outSock,
-        const rapidjson::Value& defaultValue,
-        const NODE_DESCS& legacyDescs) = 0;
+        const rapidjson::Value& defaultValue
+    ) = 0;
+    //new socket io format process:
+    virtual void setInputSocket2(
+        const QString& nodeCls,
+        const QString& inNode,
+        const QString& inSock,
+        const QString& outLinkPath,
+        const QString& sockProperty,
+        const rapidjson::Value& defaultValue
+    ) = 0;
+
+    virtual void addInnerDictKey(
+            bool bInput,
+            const QString& ident,
+            const QString& sockName,
+            const QString& keyName,
+            const QString& link
+    ) = 0;
+    virtual void setDictPanelProperty(
+            bool bInput,
+            const QString& ident,
+            const QString& sockName,
+            bool bCollasped
+    ) = 0;
+
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
     virtual void endParams(const QString& id, const QString& nodeCls) = 0;

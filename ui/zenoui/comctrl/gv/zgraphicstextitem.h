@@ -91,6 +91,20 @@ private:
     bool m_bHovered;
 };
 
+class ZEditableTextItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
+{
+    Q_OBJECT
+    typedef ZGraphicsLayoutItem<ZGraphicsTextItem> _base;
+public:
+    ZEditableTextItem(const QString& text, QGraphicsItem* parent = nullptr);
+    ZEditableTextItem(QGraphicsItem* parent = nullptr);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+private:
+    void initUI();
+};
+
+
 
 class ZenoSocketItem;
 
@@ -107,7 +121,6 @@ public:
 
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
@@ -136,7 +149,6 @@ public:
     void updateSockName(const QString& name);
     ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
 protected:

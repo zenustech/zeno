@@ -154,8 +154,8 @@ void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void ZenoImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    emit clicked();
     toggle(!m_bToggled);
+    emit clicked();
 }
 
 void ZenoImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)

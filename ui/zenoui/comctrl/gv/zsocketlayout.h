@@ -3,36 +3,60 @@
 
 #include "zgraphicslayout.h"
 #include "zgraphicstextitem.h"
+#include "callbackdef.h"
 
 class ZenoSocketItem;
 class ZSimpleTextItem;
 class ZSocketGroupItem;
+class ZDictPanel;
+class ZenoImageItem;
+class IGraphsModel;
 
 class ZSocketLayout : public ZGraphicsLayout
 {
 public:
     ZSocketLayout(
+            IGraphsModel* pModel,
             const QPersistentModelIndex& viewSockIdx,
-            const QString& sockName,
-            bool bInput,
-            bool editable,
-            Callback_OnSockClicked cbSock,
-            Callback_EditContentsChange cb
+            bool bInput
             );
     ~ZSocketLayout();
+    virtual void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock);
     void setControl(QGraphicsItem* pControl);
-    void setValue(const QVariant& value);
     void updateSockName(const QString& name);
     QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;
+    virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;
+    virtual QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist);
     QPersistentModelIndex viewSocketIdx() const;
 
-private:
+protected:
     QGraphicsItem* m_text;
     QGraphicsItem* m_control;
     bool m_bInput;
     bool m_bEditable;
     const QPersistentModelIndex m_viewSockIdx;
 };
+
+class ZDictSocketLayout : public ZSocketLayout
+{
+public:
+    ZDictSocketLayout(
+        IGraphsModel* pModel,
+        const QPersistentModelIndex& viewSockIdx,
+        bool bInput
+    );
+    ~ZDictSocketLayout();
+    void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock) override;
+    ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
+    QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
+    void setCollasped(bool bCollasped);
+
+private:
+    ZDictPanel* m_panel;
+    ZenoImageItem* m_collaspeBtn;
+};
+
+
 
 #endif

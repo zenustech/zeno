@@ -71,6 +71,12 @@ public:
     QPersistentModelIndex nodeIdx() const;
     QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
+
+    //for node ui params:
+    void getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs);
+    QModelIndexList paramsIndice();
+    QModelIndexList outputsIndice();
+
     void resetParams(const VPARAM_INFO& invisibleRoot);
     VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;

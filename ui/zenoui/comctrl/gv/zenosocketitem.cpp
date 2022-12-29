@@ -7,7 +7,6 @@
 
 ZenoSocketItem::ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        const QString& sockName,
         bool bInput,
         const ImageElement& elem,
         const QSizeF& sz,
@@ -23,14 +22,42 @@ ZenoSocketItem::ZenoSocketItem(
     , sTopMargin(ZenoStyle::dpiScaled(10))
     , sHorSmallMargin(ZenoStyle::dpiScaled(5))
     , sBottomMargin(ZenoStyle::dpiScaled(10))
+    , sLeftMargin(0)
+    , sRightMargin(0)
 {
     setCheckable(true);
     setSockStatus(STATUS_NOCONN);
+    if (m_svg)
+        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
 }
 
 int ZenoSocketItem::type() const
 {
     return Type;
+}
+
+void ZenoSocketItem::setContentMargins(qreal left, qreal top, qreal right, qreal bottom)
+{
+    sTopMargin = top;
+    sBottomMargin = bottom;
+    sLeftMargin = left;
+    sRightMargin = right;
+    if (m_bInput) {
+        sHorLargeMargin = left;
+        sHorSmallMargin = right;
+    } else {
+        sHorLargeMargin = right;
+        sHorSmallMargin = left;
+    }
+    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
+}
+
+void ZenoSocketItem::getContentMargins(qreal& left, qreal& top, qreal& right, qreal& bottom)
+{
+    left = sLeftMargin;
+    top = sTopMargin;
+    right = sRightMargin;
+    bottom = sBottomMargin;
 }
 
 void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
@@ -57,11 +84,6 @@ QPointF ZenoSocketItem::center() const
     }
 }
 
-QString ZenoSocketItem::name() const
-{
-    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_VPARAM_NAME).toString() : "";
-}
-
 QModelIndex ZenoSocketItem::paramIndex() const
 {
     return m_viewSockIdx;
@@ -76,19 +98,18 @@ QRectF ZenoSocketItem::boundingRect() const
     else {
         rc = rc.adjusted(-sHorSmallMargin, -sTopMargin, sHorLargeMargin, sBottomMargin);
     }
-    return rc;
+    return QRectF(0, 0, rc.width(), rc.height());
+    //return rc;
 }
 
-bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
+bool ZenoSocketItem::isInputSocket() const
 {
-    Q_ASSERT(m_viewSockIdx.isValid(), false);
-    if (!m_viewSockIdx.isValid())
-        return false;
+    return m_bInput;
+}
 
-    bInput = m_bInput;
-    nodeid = m_viewSockIdx.data(ROLE_OBJID).toString();
-    sockName = name();
-    return true;
+QString ZenoSocketItem::nodeIdent() const
+{
+    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_OBJID).toString() : "";
 }
 
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
@@ -98,7 +119,6 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
 
     if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
     {
-        QString sockName = name();
         if (m_viewSockIdx.isValid())
         {
             PARAM_LINKS links = m_viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
@@ -116,6 +136,7 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
         delete m_svg;
         m_svg = new ZenoSvgItem(m_noHoverSvg, this);
         m_svg->setSize(m_size);
+        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
         break;
     case STATUS_TRY_CONN:
         m_noHoverSvg = ":/icons/socket-on-hover.svg";
@@ -123,6 +144,7 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
         delete m_svg;
         m_svg = new ZenoSvgItem(m_noHoverSvg, this);
         m_svg->setSize(m_size);
+        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
         break;
     case STATUS_TRY_DISCONN:
     case STATUS_NOCONN:
@@ -131,6 +153,7 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
         delete m_svg;
         m_svg = new ZenoSvgItem(m_noHoverSvg, this);
         m_svg->setSize(m_size);
+        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
         break;
     }
     update();
@@ -141,6 +164,7 @@ void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
     delete m_svg;
     m_svg = new ZenoSvgItem(m_hoverSvg, this);
     m_svg->setSize(m_size);
+    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
     QGraphicsObject::hoverEnterEvent(event);
 }
 
@@ -154,6 +178,7 @@ void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     delete m_svg;
     m_svg = new ZenoSvgItem(m_noHoverSvg, this);
     m_svg->setSize(m_size);
+    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
     QGraphicsObject::hoverLeaveEvent(event);
 }
 
@@ -165,6 +190,7 @@ void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     ZenoImageItem::mouseReleaseEvent(event);
+    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
     emit clicked(m_bInput);
 }
 

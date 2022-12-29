@@ -22,19 +22,20 @@ public:
 
     ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        const QString& sockName,
         bool bInput,
         const ImageElement &elem,
         const QSizeF &sz,
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
+    void setContentMargins(qreal left, qreal top, qreal right, qreal bottom);
+    void getContentMargins(qreal& left, qreal& top, qreal& right, qreal& bottom);
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
-    QString name() const;
     QModelIndex paramIndex() const;
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
+    bool isInputSocket() const;
+    QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
@@ -57,10 +58,12 @@ private:
 
     const QPersistentModelIndex m_viewSockIdx;
 
-    const int sHorLargeMargin;
-    const int sTopMargin;
-    const int sHorSmallMargin;
-    const int sBottomMargin;
+    int sHorLargeMargin;
+    int sTopMargin;
+    int sLeftMargin;
+    int sHorSmallMargin;
+    int sRightMargin;
+    int sBottomMargin;
 
     const bool m_bInput;
 };

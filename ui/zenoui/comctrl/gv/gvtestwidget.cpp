@@ -11,11 +11,6 @@ ZSocketLayout* socket4 = nullptr;
 ZSocketLayout* socket1 = nullptr;
 ZGraphicsLayout* pBodyLayout = nullptr;
 
-auto cbFuncRenameSock = [=](QString oldText, QString newText) {
-    int j;
-    j = 0;
-};
-
 auto cbSockOnClick = [=](ZenoSocketItem*) {
     pBodyLayout->removeLayout(socket1);
     pBodyLayout->removeLayout(socket4);
@@ -64,12 +59,12 @@ TestGraphicsView::TestGraphicsView(QWidget* parent)
     spButton->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
     spButton->setText("CLICK ME !!!");
 
-    socket1 = new ZSocketLayout(QModelIndex(), "dict", true, false, cbSockOnClick, cbFuncRenameSock);
+    socket1 = new ZSocketLayout(nullptr, QModelIndex(), true);
     socket1->setControl(spButton);
 
-    ZSocketLayout* socket2 = new ZSocketLayout(QModelIndex(), "SRC", true, false, cbSockOnClick, cbFuncRenameSock);
-    socket4 = new ZSocketLayout(QModelIndex(), "prim", true, true, cbSockOnClick, cbFuncRenameSock);
-    ZSocketLayout* socket3 = new ZSocketLayout(QModelIndex(), "DST", false, false, cbSockOnClick, cbFuncRenameSock);
+    ZSocketLayout *socket2 = new ZSocketLayout(nullptr, QModelIndex(), true);
+    socket4 = new ZSocketLayout(nullptr, QModelIndex(), true);
+    ZSocketLayout *socket3 = new ZSocketLayout(nullptr, QModelIndex(), false);
 
     pBodyLayout->addLayout(socket1);
     pBodyLayout->addLayout(socket2);

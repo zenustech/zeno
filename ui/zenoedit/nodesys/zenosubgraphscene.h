@@ -20,7 +20,6 @@ public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
     void initModel(const QModelIndex& index);
-    QPointF getSocketPos(bool bInput, const QString &nodeid, const QString &portName);
     void undo();
     void redo();
     void copy();
@@ -54,7 +53,7 @@ public slots:
     void onViewTransformChanged(qreal factor);
 
     void onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
-    void onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
+    void onLinkAboutToBeRemoved(const QModelIndex&, int first, int last);
 
 private slots:
     void reload(const QModelIndex& subGpIdx);
@@ -68,6 +67,7 @@ private:
     void viewRemoveLink(const QModelIndex& linkIdx);
     void onTempLinkClosed();
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
+    void initLink(const QModelIndex& linkIdx);
 
     QRectF m_viewRect;
     NodeUtilParam m_nodeParams;

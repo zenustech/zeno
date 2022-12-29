@@ -272,7 +272,7 @@ namespace zenoui
             }
             case CONTROL_DICTPANEL:
             {
-                QStandardItemModel* pModel = QVariantPtr<QStandardItemModel>::asPtr(value);
+                QAbstractItemModel* pModel = QVariantPtr<QAbstractItemModel>::asPtr(value);
                 if (pModel)
                 {
                     ZDictTableView* tableView = new ZDictTableView;

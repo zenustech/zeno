@@ -527,6 +527,17 @@ ZenoParamPushButton::ZenoParamPushButton(QGraphicsItem* parent)
     connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
 }
 
+ZenoParamPushButton::ZenoParamPushButton(const QString& name, const QString& qssName, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pBtn(nullptr)
+{
+    m_pBtn = new QPushButton(name);
+    m_pBtn->setProperty("cssClass", qssName);
+    m_pBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
 ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePolicy::Policy hor, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_width(width)
