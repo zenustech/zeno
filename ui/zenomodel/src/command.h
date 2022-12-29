@@ -38,46 +38,16 @@ private:
     int m_row;
 };
 
-class AddLinkCommand : public QUndoCommand
-{
-public:
-    AddLinkCommand(EdgeInfo info, GraphsModel* pModel);
-	void redo() override;
-	void undo() override;
-
-private:
-	EdgeInfo m_info;
-	GraphsModel* m_model;
-	QPersistentModelIndex m_linkIdx;
-};
-
-class RemoveLinkCommand : public QUndoCommand
-{
-public:
-    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel);
-    void redo() override;
-    void undo() override;
-
-private:
-    EdgeInfo m_info;
-    GraphsModel* m_model;
-    QPersistentModelIndex m_linkIdx;
-    bool m_bAdded;
-};
-
 class LinkCommand : public QUndoCommand
 {
 public:
-    LinkCommand(bool bAddLink, const QPersistentModelIndex& fromSock, const QPersistentModelIndex& toSock, GraphsModel* pModel);
+    LinkCommand(bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
     void redo() override;
     void undo() override;
 
 private:
     const bool m_bAdd;
-    QPersistentModelIndex m_fromSock;
-    QPersistentModelIndex m_toSock;
-    QString m_fromSockObj;
-    QString m_toSockObj;
+    const EdgeInfo m_link;
     GraphsModel* m_model;
 };
 

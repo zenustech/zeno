@@ -102,7 +102,6 @@ void ModelAcceptor::EndSubgraph()
             outSock = m_pModel->indexFromPath(link.outSockPath);
             outSockName = link.outSockPath;
         }
-
         if (!link.inSockPath.isEmpty())
         {
             inSock = m_pModel->indexFromPath(link.inSockPath);

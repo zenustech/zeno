@@ -558,7 +558,6 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     bool bDisconnetLink = prop != SOCKPROP_MULTILINK && bInput && !linkIndice.isEmpty();
     if (bDisconnetLink)
     {
-        //todo: multiple link
         QPersistentModelIndex linkIdx = linkIndice[0];
 
         //disconnect the old link.
@@ -734,7 +733,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
                         QPersistentModelIndex _linkIdx  = keyIdx.data(ROLE_LINK_IDX).toPersistentModelIndex();
-                        pGraphsModel->removeLink(_linkIdx);
+                        pGraphsModel->removeLink(_linkIdx, true);
                     }
                 }
                 else
@@ -878,11 +877,11 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 ZASSERT_EXIT(pGraphsModel);
 
                 pGraphsModel->beginTransaction("remove nodes and links");
-                for (const QModelIndex &linkIdx : links)
+                for (QPersistentModelIndex linkIdx : links)
                 {
                     pGraphsModel->removeLink(linkIdx, true);
                 }
-                for (const QModelIndex &nodeIdx : nodes)
+                for (QPersistentModelIndex nodeIdx : nodes)
                 {
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
                     pGraphsModel->removeNode(id, m_subgIdx, true);

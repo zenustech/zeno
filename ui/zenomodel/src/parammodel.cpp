@@ -443,26 +443,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
                 nodeId = m_nodeIdx.data(ROLE_OBJID).toString();
                 nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
             }
-
-            const bool bInputAdding = linkIdx.data(ROLE_INNODE) == nodeId;
-            if (item.prop & SOCKPROP_MULTILINK && bInputAdding)
-            {
-                DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
-                ZASSERT_EXIT(pModel, false);
-                int rowCnt = pModel->rowCount();
-                QStringList keyNames;
-                for (int i = 0; i < rowCnt; i++)
-                {
-                    QString key = pModel->index(i, 0).data().toString();
-                    keyNames.push_back(key);
-                }
-                const QString& newKeyName = UiHelper::getUniqueName(keyNames, "obj", false);
-                const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-
-                QStandardItem* pObjItem = new QStandardItem(outNode);
-                pObjItem->setData(linkIdx, ROLE_LINK_IDX);
-                //pModel->appendRow({ new QStandardItem(newKeyName), pObjItem });
-            }
             if (!m_model->IsIOProcessing() &&
                 (nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
             {
@@ -492,19 +472,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.removeAll(linkIdx);
-            if (!m_bRetryLinkOp && item.prop & SOCKPROP_MULTILINK && linkIdx.data(ROLE_INNODE) == data(index, ROLE_OBJID))
-            {
-                DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(item.customData[ROLE_VPARAM_LINK_MODEL]);
-                ZASSERT_EXIT(pModel, false);
-                for (int r = 0; r < pModel->rowCount(); r++)
-                {
-                    if (pModel->index(r, 1).data() == linkIdx.data(ROLE_OUTNODE))
-                    {
-                        pModel->removeRow(r);
-                        break;
-                    }
-                }
-            }
             break;
         }
         default:
@@ -635,7 +602,19 @@ QModelIndexList IParamModel::match(
 
 bool IParamModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    //todo: clear link here, because link model need param index.
+    //todo: clear link here, because link model need valid param index.
+    auto itRow = m_row2Key.find(row);
+    if (itRow == m_row2Key.end())
+        return false;
+
+    QString name = itRow.value();
+    auto itItem = m_items.find(name);
+    ZASSERT_EXIT(itItem != m_items.end(), false);
+    PARAM_LINKS socketLinks = m_items[name].links;
+    for (const QPersistentModelIndex& linkIdx : socketLinks)
+    {
+        m_model->removeLink(linkIdx, true);
+    }
 
     beginRemoveRows(parent, row, row);
     _removeRow(index(row, 0));
@@ -647,17 +626,9 @@ bool IParamModel::_removeRow(const QModelIndex& index)
 {
     //remove link from this param.
     QString name = nameFromRow(index.row());
+
     auto itItem = m_items.find(name);
     ZASSERT_EXIT(itItem != m_items.end(), false);
-    _ItemInfo& item = m_items[name];
-
-    if (m_class == PARAM_INPUT || m_class == PARAM_OUTPUT)
-    {
-        for (const QPersistentModelIndex& linkIdx : item.links)
-        {
-            m_model->removeLink(linkIdx, true);
-        }
-    }
 
     int row = index.row();
     for (int r = row + 1; r < rowCount(); r++)
