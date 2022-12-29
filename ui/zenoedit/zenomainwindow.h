@@ -41,7 +41,7 @@ public slots:
     void onNewFile();
     bool openFile(QString filePath);
     bool saveFile(QString filePath);
-    void saveQuit();
+    bool saveQuit();
     void save();
     void saveAs();
     void onMaximumTriggered();
