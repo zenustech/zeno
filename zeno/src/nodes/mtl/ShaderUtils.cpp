@@ -84,7 +84,7 @@ struct ShaderConvert : ShaderNodeClone<ShaderConvert> {
 
 ZENDEFNODE(ShaderConvert, {
     {
-        { "in"},
+        { "float", "in", "0"},
     },
     {"out"},
     {

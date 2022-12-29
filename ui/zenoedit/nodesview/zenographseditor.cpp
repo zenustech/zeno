@@ -1067,6 +1067,9 @@ void ZenoGraphsEditor::importMaterialX() {
                 if (ms.count("texcoord")) {
                     mx.edges.emplace_back(name, "coord", nameNodeGraph + ms["texcoord"]["nodename"]);
                 }
+                if (ms.count("uvtiling")) {
+                    mx.set_socket(name, "uvtiling", "uvtiling", hNode, nameNodeGraph, ms);
+                }
             }
             else {
                 zeno::log_info("unsupported node: {}", start_name);
