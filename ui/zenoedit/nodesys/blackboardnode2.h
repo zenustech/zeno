@@ -26,6 +26,7 @@ class BlackboardNode2 : public ZenoNode {
     void updateBlackboard();
     void initUI();
     void updateView(bool isEditing);
+    void updateClidItem(bool isAdd, const QString nodeId);
   private:
     bool m_bDragging;
     ZenoParamLineEdit *m_pTitle;

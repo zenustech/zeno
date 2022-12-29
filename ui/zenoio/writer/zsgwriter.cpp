@@ -268,6 +268,8 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.String(info.title.toUtf8());
 			writer.Key("content");
 			writer.String(info.content.toUtf8());
+            writer.Key("childs");
+            writer.String(info.childs.join(",").toUtf8());
 		}
 	}
 

@@ -54,6 +54,7 @@ public:
     QString nodeId() const;
     QString nodeName() const;
     QPointF nodePos() const; 
+    void updateNodePos(const QPointF &pos);
     INPUT_SOCKETS inputParams() const;
     OUTPUT_SOCKETS outputParams() const;
     virtual void onUpdateParamsNotDesc();

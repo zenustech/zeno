@@ -57,6 +57,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     disconnect(pGraphsModel, SIGNAL(_rowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)));
 	disconnect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
+    QVector<ZenoNode *> blackboardVect;
     for (int r = 0; r < pGraphsModel->itemCount(m_subgIdx); r++)
     {//loaded nodes goes here
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
@@ -67,6 +68,10 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
+        if (pNode->nodeName() == "Blackboard") 
+        {
+            blackboardVect << pNode;
+        }
     }
 
     for (auto it : m_nodes)
@@ -100,6 +105,17 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 outNode->getSocketItem(false, outSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
                 inNode->toggleSocket(true, inSock, true);
                 inNode->getSocketItem(true, inSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+            }
+        }
+
+        for (auto node : blackboardVect)
+        {
+            PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+            if (info.childs.contains(id))
+            {
+                inNode->setPos(inNode->index().data(ROLE_OBJPOS).toPointF());
+                inNode->setParentItem(node);
             }
         }
     }

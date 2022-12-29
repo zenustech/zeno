@@ -33,17 +33,11 @@ BlackboardNode2::~BlackboardNode2() {
 
 void BlackboardNode2::initUI() {
     //init title
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
-
-    if (blackboard.title.isEmpty())
-        blackboard.title = "input title";
-
     LineEditParam param;
     param.palette = this->palette();
     param.propertyParam = "blackboard_title";
     param.font = this->font();
-    m_pTitle = new ZenoParamLineEdit(blackboard.title, CONTROL_STRING, param);
+    m_pTitle = new ZenoParamLineEdit("", CONTROL_STRING, param);
 
     connect(m_pTitle, &ZenoParamLineEdit::editingFinished, this, [=]() {
         PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
@@ -63,7 +57,7 @@ void BlackboardNode2::initUI() {
     pTitlelayout->setContentsMargins(0, 0, 0, 0);
 
     //init content
-    m_pTextEdit = new ZenoParamBlackboard(blackboard.content, param);
+    m_pTextEdit = new ZenoParamBlackboard("", param);
     m_pTextEdit->hide();
     if (m_pTextEdit == nullptr)
         return;
@@ -84,12 +78,8 @@ void BlackboardNode2::initUI() {
     m_mainLayout->setSpacing(0);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->addItem(pTitlelayout);
-    m_mainLayout->addItem(m_pMainSpaceItem);
-    if (blackboard.sz.isValid()) {
-        resize(blackboard.sz);
-    } else {
-        resize(QSizeF(500, 500));
-    }
+    m_mainLayout->addItem(m_pMainSpaceItem);    
+    resize(500, 500);
 }
 
 void BlackboardNode2::updateView(bool isEditing) {
@@ -108,17 +98,37 @@ void BlackboardNode2::updateView(bool isEditing) {
     }
 }
 
+void BlackboardNode2::updateClidItem(bool isAdd, const QString nodeId)
+{
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+    if (isAdd && !info.childs.contains(nodeId)) {
+        info.childs << nodeId;
+    } else if (!isAdd && info.childs.contains(nodeId)) {
+        info.childs.removeOne(nodeId);
+    }
+    else {
+        return;
+    }
+    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
+}
+
 bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && item->parentItem() != this) {
         if (item->parentItem() && item->parentItem()->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!item->parentItem()->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
             return false;
         }
-        item->setPos(mapFromItem(item, 0, 0));
+        QPointF pos = mapFromItem(item, 0, 0);
+        item->setPos(pos);
         item->setParentItem(this);
         item->setMoving(false);
         item->setZValue(1);
         update();
+        updateClidItem(true, item->nodeId());
+        item->updateNodePos(pos);
         return true;
     } else if ((!this->sceneBoundingRect().contains(item->sceneBoundingRect())) && item->parentItem() == this) {
         QGraphicsItem *newParent = this->parentItem();
@@ -130,10 +140,12 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
             else
                 return true;
         }
-        QPointF oldPos = item->mapToItem(newParent, 0, 0);
+        QPointF pos = item->mapToItem(newParent, 0, 0);
         item->setParentItem(newParent);
-        item->setPos(oldPos);
+        item->setPos(pos);
         update();
+        updateClidItem(false, item->nodeId());
+        item->updateNodePos(pos);
     }
     return false;
 }
@@ -152,6 +164,13 @@ QRectF BlackboardNode2::boundingRect() const {
 }
 
 ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
+    m_pTitle->setText(blackboard.title);
+    m_pTextEdit->setText(blackboard.content);
+    if (blackboard.sz.isValid()) {
+        resize(blackboard.sz);
+    }
     return new ZLayoutBackground(this);
 }
 

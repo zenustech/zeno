@@ -240,6 +240,9 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         if (blackBoardValue.HasMember("params")) {
             //todo
         }
+        if (blackBoardValue.HasMember("childs")) {
+            blackboard.childs = QString::fromUtf8(blackBoardValue["childs"].GetString()).split(",");
+        }
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }

@@ -227,6 +227,7 @@ struct BLACKBOARD_INFO
     QString content;
     //params
     bool special;
+    QStringList childs;
     BLACKBOARD_INFO() : special(false) {}
 };
 Q_DECLARE_METATYPE(BLACKBOARD_INFO)

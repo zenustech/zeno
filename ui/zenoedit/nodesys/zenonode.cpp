@@ -908,6 +908,20 @@ QPointF ZenoNode::nodePos() const
     return m_index.data(ROLE_OBJPOS).toPointF();
 }
 
+void ZenoNode::updateNodePos(const QPointF &pos)
+{
+    QPointF oldPos = index().data(ROLE_OBJPOS).toPointF();
+    if (oldPos == pos)
+        return;
+    STATUS_UPDATE_INFO info;
+    info.role = ROLE_OBJPOS;
+    info.newValue = pos;
+    info.oldValue = oldPos;
+    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
+    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
+}
+
 INPUT_SOCKETS ZenoNode::inputParams() const
 {
     ZASSERT_EXIT(m_index.isValid(), INPUT_SOCKETS());
