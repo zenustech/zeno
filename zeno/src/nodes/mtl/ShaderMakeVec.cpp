@@ -6,6 +6,72 @@
 
 namespace zeno {
 
+struct ShaderPackVector : ShaderNodeClone<ShaderPackVector> {
+    int ty{};
+
+    virtual int determineType(EmissionPass *em) override {
+        auto _type = get_param<std::string>("type");
+        if (_type == "float") {
+            em->determineType(get_input("x").get());
+            ty = 1;
+        }
+        else if (_type == "vec2") {
+            em->determineType(get_input("x").get());
+            em->determineType(get_input("y").get());
+            ty = 2;
+        }
+        else if (_type == "vec3") {
+            em->determineType(get_input("x").get());
+            em->determineType(get_input("y").get());
+            em->determineType(get_input("z").get());
+            ty = 3;
+        }
+        else if (_type == "vec4") {
+            em->determineType(get_input("x").get());
+            em->determineType(get_input("y").get());
+            em->determineType(get_input("z").get());
+            em->determineType(get_input("w").get());
+            ty = 4;
+        }
+        return ty;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string exp;
+        if (ty >= 1) {
+            if (!exp.empty()) exp += ", ";
+            exp += em->determineExpr(get_input("x").get());
+        }
+        if (ty >= 2) {
+            if (!exp.empty()) exp += ", ";
+            exp += em->determineExpr(get_input("y").get());
+        }
+        if (ty >= 3) {
+            if (!exp.empty()) exp += ", ";
+            exp += em->determineExpr(get_input("z").get());
+        }
+        if (ty >= 4) {
+            if (!exp.empty()) exp += ", ";
+            exp += em->determineExpr(get_input("w").get());
+        }
+
+        em->emitCode(em->typeNameOf(ty) + "(" + exp + ")");
+    }
+};
+
+ZENDEFNODE(ShaderPackVector, {
+    {
+        {"float", "x", "0"},
+        {"float", "y", "0"},
+        {"float", "z", "0"},
+        {"float", "w", "0"},
+    },
+    {"out"},
+    {
+        {"enum float vec2 vec3 vec4", "type", "vec3"},
+    },
+    {"shader"},
+});
 
 struct ShaderPackVec : ShaderNodeClone<ShaderPackVec> {
     int ty{};
@@ -56,7 +122,7 @@ ZENDEFNODE(ShaderPackVec, {
         {"vec4f", "out"},
     },
     {},
-    {"shader"},
+    {"deprecated"},
 });
 
 
@@ -74,7 +140,7 @@ ZENDEFNODE(ShaderMakeVec, {
         {"vec4f", "out"},
     },
     {},
-    {"shader"},
+    {"deprecated"},
 });
 
 

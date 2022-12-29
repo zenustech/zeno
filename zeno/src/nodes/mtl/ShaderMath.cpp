@@ -9,7 +9,7 @@ namespace zeno {
 static const char /* see https://docs.gl/sl4/trunc */
     unops[] = "copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees"
               " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
-              " ceil trunc sign step length normalize",
+              " ceil trunc sign step length normalize hsvToRgb rgbToHsv",
     binops[] = "add sub mul div mod pow atan2 min max dot cross distance",
     ternops[] = "mix clamp smoothstep add3";
 
