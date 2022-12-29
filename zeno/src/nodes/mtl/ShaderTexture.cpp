@@ -3,6 +3,7 @@
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
+#include "zeno/utils/format.h"
 
 namespace zeno
 {
@@ -10,6 +11,7 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 {
     virtual int determineType(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
+        auto scale = em->determineType(get_input("scale").get());
         if (has_input("coord")) {
             auto coord = em->determineType(get_input("coord").get());
             if (coord < 2)
@@ -32,13 +34,12 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
     virtual void emitCode(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
         auto type = get_input2<std::string>("type");
+        auto scale = em->determineExpr(get_input("scale").get());
+        std::string coord = "att_uv";
         if (has_input("coord")) {
-            auto coord = em->determineExpr(get_input("coord").get());
-            em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
+            coord = em->determineExpr(get_input("coord").get());
         }
-        else {
-            em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(att_uv)))");
-        }
+        em->emitCode(zeno::format("{}(texture2D(zenotex{}, vec2({}) * {}))", type, texId, coord, scale));
     }
 };
 
@@ -46,6 +47,7 @@ ZENDEFNODE(ShaderTexture2D, {
     {
         {"int", "texId", "0"},
         {"coord"},
+        {"vec2f", "scale", "1,1"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
