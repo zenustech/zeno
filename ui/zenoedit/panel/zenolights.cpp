@@ -523,6 +523,7 @@ void ZenoLights::modifyLightData() {
         }
 
         scene->objectsMan->needUpdateLight = true;
+        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->setSimpleRenderOption();
         zenoApp->getMainWindow()->updateViewport();
     }else{
         zeno::log_info("modifyLightData not found {}", name);
@@ -586,6 +587,7 @@ void ZenoLights::modifySunLightDir() {
         ud.set2("colorTemperature", std::move(colorTemperatureValue));
     }
     scene->objectsMan->needUpdateLight = true;
+    zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->setSimpleRenderOption();
     zenoApp->getMainWindow()->updateViewport();
 }
 
