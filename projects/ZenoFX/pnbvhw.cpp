@@ -255,11 +255,11 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         // BEGIN张心欣快乐自动加@IND
-        if (auto pos = code.find("@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalpha(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalpha(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+        if (auto pos = code.find("@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalnum(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalnum(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
             auto &indatt = prim->verts.add_attr<float>("IND");
             for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
         }
-        if (auto pos = code.find("@@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalpha(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalpha(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+        if (auto pos = code.find("@@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalnum(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalnum(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
             auto &indatt = primNei->verts.add_attr<float>("IND");
             for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
         }
