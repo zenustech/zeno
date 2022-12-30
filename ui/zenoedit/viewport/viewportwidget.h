@@ -85,6 +85,7 @@ public:
     void setPickTarget(const string& prim_name);
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNodeFromPicker();
+    void setSimpleRenderOption();
 
 signals:
     void frameRecorded(int);
@@ -102,6 +103,7 @@ private:
     std::shared_ptr<CameraControl> m_camera;
     QVector2D record_res;
     QPointF m_lastPos;
+    QTimer* m_pauseRenderDally;
 
 public:
     bool updateLightOnce;
