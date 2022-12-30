@@ -130,7 +130,7 @@ float noise_perlin(float x, float y, float z)
 
 struct erode_noise_perlin : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
@@ -522,7 +522,7 @@ float noise_simplexNoise4(float x, float y, float z, float w) {
 }
 
 //
-// ×¢Òâ£ºÒªÔÊÐí noise µÄ×Ô±äÁ¿Îª pos ÒÔÍâµÄÊôÐÔ£¬ÀýÈç£º
+// ×¢ï¿½â£ºÒªï¿½ï¿½ï¿½ï¿½ noise ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½Îª pos ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô£ï¿½ï¿½ï¿½ï¿½ç£º
 //#define snoise(P) (2*noise(P) - 1) // noise() function in RenderMan shading language has range [0,1]
 //float DistNoise(point Pt, float distortion)
 //{
@@ -532,7 +532,7 @@ float noise_simplexNoise4(float x, float y, float z, float w) {
 //
 struct erode_noise_simplex : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         if (!terrain->has_attr(attrName)) {
@@ -736,7 +736,7 @@ glm::vec3 sdnoise(glm::vec2 pos) {
 
 struct erode_noise_analytic_simplex_2d : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto attrName = get_param<std::string>("attrName");
         if (!terrain->has_attr(attrName)) {
@@ -885,7 +885,7 @@ float scnoise(float x, float y, float z, int seed) {
 
 struct erode_noise_sparse_convolution : INode {
     void apply() override {
-        auto &terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
         auto seed = get_input<NumericObject>("seed")->get<int>();
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
@@ -1006,7 +1006,7 @@ float noise_WorleyNoise3(float px, float py, float pz, int fType, int distType, 
 
 struct erode_noise_worley : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         vec3f offset;
         if (!has_input("seed")) {
@@ -1112,7 +1112,7 @@ double noise_hybridMultifractal_v1(vec3f point, double H, double lacunarity, dou
 
 struct erode_hybridMultifractal_v1 : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto H = get_input<NumericObject>("H")->get<float>();
         auto lacunarity = get_input<NumericObject>("lacunarity")->get<float>();
@@ -1197,7 +1197,7 @@ double noise_hybridMultifractal_v2(vec3f point, double H, double lacunarity, dou
 
 struct erode_hybridMultifractal_v2 : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto H = get_input<NumericObject>("H")->get<float>();
         auto lacunarity = get_input<NumericObject>("lacunarity")->get<float>();
@@ -1280,7 +1280,7 @@ double noise_hybridMultifractal_v3(vec3f point, double H, double lacunarity, dou
 
 struct erode_hybridMultifractal_v3 : INode {
     void apply() override {
-        auto& terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
         auto H = get_input<NumericObject>("H")->get<float>();
         auto lacunarity = get_input<NumericObject>("lacunarity")->get<float>();
@@ -1361,7 +1361,7 @@ float noise_domainWarpingV1(vec3f pos, float H, float frequence, float amplitude
 
 struct erode_domainWarping_v1 : INode {
     void apply() override {
-        auto& prim = has_input("prim") ? get_input<PrimitiveObject>("prim") : std::make_shared<PrimitiveObject>();
+        auto prim = has_input("prim") ? get_input<PrimitiveObject>("prim") : std::make_shared<PrimitiveObject>();
 
         auto H = get_input<NumericObject>("fbmH")->get<float>();
         auto frequence = get_input<NumericObject>("fbmFrequence")->get<float>();
@@ -1425,7 +1425,7 @@ float noise_domainWarpingV2(vec3f pos, float H, float frequence, float amplitude
 
 struct erode_domainWarping_v2 : INode {
     void apply() override {
-        auto& prim = has_input("prim") ?
+        auto prim = has_input("prim") ?
             get_input<PrimitiveObject>("prim") :
             std::make_shared<PrimitiveObject>();
 
@@ -1495,8 +1495,8 @@ void noise_Voronoi3(const vec3f pos, const std::vector<vec3f>& points, float& vo
 
 struct erode_voronoi : INode {
     void apply() override {
-        auto& prim = has_input("prim") ? get_input<PrimitiveObject>("prim") : std::make_shared<PrimitiveObject>();
-        auto& featurePrim = has_input("featurePrim") ? get_input<PrimitiveObject>("featurePrim") : std::make_shared<PrimitiveObject>();
+        auto prim = has_input("prim") ? get_input<PrimitiveObject>("prim") : std::make_shared<PrimitiveObject>();
+        auto featurePrim = has_input("featurePrim") ? get_input<PrimitiveObject>("featurePrim") : std::make_shared<PrimitiveObject>();
 
         auto attrName = get_param<std::string>("attrName");
         if (!prim->has_attr(attrName)) { prim->add_attr<float>(attrName); }
