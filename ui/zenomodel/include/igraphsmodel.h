@@ -63,6 +63,7 @@ public:
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
 	virtual void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction) = 0;
+    virtual void updateBlackboardByParam(const QString &id, const QString &paramName, const QVariant &newVale, const QModelIndex &subgIdx, bool enableTransaction) = 0;
 
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;

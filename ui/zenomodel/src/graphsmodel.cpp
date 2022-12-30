@@ -1468,6 +1468,23 @@ void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& new
     }
 }
 
+void GraphsModel::updateBlackboardByParam(const QString &id, const QString &paramName, const QVariant &newValue,
+                                   const QModelIndex &subgIdx, bool enableTransaction)
+{
+    SubGraphModel *pSubg = subGraph(subgIdx.row());
+    const QModelIndex &idx = pSubg->index(id);
+    ZASSERT_EXIT(pSubg);
+    PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+    if (paramName == "title") {
+        info.title = newValue.value<QString>();
+    } else if (paramName == "content") {
+        info.content = newValue.value<QString>();
+    } else if (paramName == "background") {
+        info.background = newValue.value<QColor>();
+    }
+    updateBlackboard(id, info, subgIdx, enableTransaction);
+}
 NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());

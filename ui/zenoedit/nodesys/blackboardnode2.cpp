@@ -102,10 +102,10 @@ void BlackboardNode2::updateClidItem(bool isAdd, const QString nodeId)
 {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    if (isAdd && !info.childs.contains(nodeId)) {
-        info.childs << nodeId;
-    } else if (!isAdd && info.childs.contains(nodeId)) {
-        info.childs.removeOne(nodeId);
+    if (isAdd && !info.items.contains(nodeId)) {
+        info.items << nodeId;
+    } else if (!isAdd && info.items.contains(nodeId)) {
+        info.items.removeOne(nodeId);
     }
     else {
         return;
@@ -161,6 +161,17 @@ void BlackboardNode2::updateFontSize(qreal factor)
 
 QRectF BlackboardNode2::boundingRect() const {
     return ZenoNode::boundingRect();
+}
+
+void BlackboardNode2::onUpdateParamsNotDesc() 
+{
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+    m_pTextEdit->setText(info.content);
+    m_pTitle->setText(info.title);
+    if (info.sz.isValid()) {
+        resize(info.sz);
+    }
 }
 
 ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {

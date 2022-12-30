@@ -119,7 +119,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         {
             PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
             BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            if (info.childs.contains(id))
+            if (info.items.contains(id))
             {
                 inNode->setPos(inNode->index().data(ROLE_OBJPOS).toPointF());
                 inNode->setParentItem(node);

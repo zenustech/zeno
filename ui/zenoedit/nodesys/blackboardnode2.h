@@ -11,6 +11,7 @@ class BlackboardNode2 : public ZenoNode {
     bool nodePosChanged(ZenoNode *);
     void updateFontSize(qreal factor);
     QRectF boundingRect() const override;
+    void onUpdateParamsNotDesc() override;
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
     ZLayoutBackground *initHeaderWidget() override;
