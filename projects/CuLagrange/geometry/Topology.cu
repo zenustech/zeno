@@ -15,37 +15,35 @@ struct FilterTopology : INode {
         auto filTopo = get_param<std::string>("topo");
 
         auto primOut = std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
-        if(filTopo == "lines"){
+        if (filTopo == "lines") {
             primOut->tris.resize(0);
             primOut->quads.resize(0);
         }
-        if(filTopo == "tris"){
+        if (filTopo == "tris") {
             primOut->lines.resize(0);
             primOut->quads.resize(0);
         }
-        if(filTopo == "quads"){
+        if (filTopo == "quads") {
             primOut->lines.resize(0);
             primOut->tris.resize(0);
         }
 
-        set_output("primOut",std::move(primOut));
+        set_output("primOut", std::move(primOut));
     }
 };
 
 ZENDEFNODE(FilterTopology, {/* inputs: */ {
-                            {"prim"},
-                        },
-                        /* outputs: */
-                        {
-                            {"primOut"},
-                        },
-                        /* params: */
-                        {
-                            {"enum lines tris quads","topo","tris"}
-                        },
-                        /* category: */
-                        {
-                            "ZSGEOMETRY",
-                        }});
+                                {"prim"},
+                            },
+                            /* outputs: */
+                            {
+                                {"primOut"},
+                            },
+                            /* params: */
+                            {{"enum lines tris quads", "topo", "tris"}},
+                            /* category: */
+                            {
+                                "ZSGEOMETRY",
+                            }});
 
-};
+}; // namespace zeno

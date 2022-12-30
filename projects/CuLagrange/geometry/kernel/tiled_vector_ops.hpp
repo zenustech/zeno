@@ -81,7 +81,7 @@ namespace zeno { namespace TILEVEC_OPS {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
-            if(!src.hasProperty(srcTopoTag) || src.getChannelSize(srcTopoTag) != simplex_size)
+            if(!src.hasProperty(srcTopoTag) || src.getPropertySize(srcTopoTag) != simplex_size)
                 throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel");
             if(!src.hasProperty(srcTag))
                 throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
@@ -111,7 +111,7 @@ namespace zeno { namespace TILEVEC_OPS {
 
             // TILEVEC_OPS::fill<space_dim>(pol,dst,"dir",zs::vec<T,space_dim>::uniform((T)0.0));
 
-            // if(!src.hasProperty("inds") || src.getChannelSize("inds") != simplex_size)
+            // if(!src.hasProperty("inds") || src.getPropertySize("inds") != simplex_size)
             //     throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel inds");
 
             // pol(range(src.size()),
@@ -138,7 +138,7 @@ namespace zeno { namespace TILEVEC_OPS {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
-            if(!dst.hasProperty(dstTopoTag) || dst.getChannelSize(dstTopoTag) != simplex_size)
+            if(!dst.hasProperty(dstTopoTag) || dst.getPropertySize(dstTopoTag) != simplex_size)
                 throw std::runtime_error("tiledvec_ops::assemble_from::invalid dst's topo channel");
             if(!src.hasProperty(srcTag))
                 throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");

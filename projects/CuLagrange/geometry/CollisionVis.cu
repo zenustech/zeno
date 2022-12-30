@@ -57,14 +57,14 @@ namespace zeno {
             auto& lines = (*surf)[ZenoParticles::s_surfEdgeTag];
             auto& points = (*surf)[ZenoParticles::s_surfVertTag];
 
-            if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3){
+            if(!tris.hasProperty("inds") || tris.getPropertySize("inds") != 3){
                 throw std::runtime_error("the tris has no inds channel");
             }
 
-            if(!lines.hasProperty("inds") || lines.getChannelSize("inds") != 2) {
+            if(!lines.hasProperty("inds") || lines.getPropertySize("inds") != 2) {
                 throw std::runtime_error("the line has no inds channel");
             }
-            if(!points.hasProperty("inds") || points.getChannelSize("inds") != 1) {
+            if(!points.hasProperty("inds") || points.getPropertySize("inds") != 1) {
                 throw std::runtime_error("the point has no inds channel");
             }
 
@@ -83,8 +83,8 @@ namespace zeno {
 
             // std::cout << "bvh_thickness : " << bvh_thickness << std::endl;
 
-            compute_surface_neighbors(cudaExec, tris, lines, points);
-#if 0
+            // compute_surface_neighbors(cudaExec, tris, lines, points);
+#if 1
             tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3},{"fp_inds",3}});
             lines.append_channels(cudaExec,{{"fe_inds",2}});
             if(!compute_ff_neigh_topo(cudaExec,verts,tris,"ff_inds",bvh_thickness))
@@ -309,7 +309,7 @@ namespace zeno {
             const auto& points  = (*zsparticles)[ZenoParticles::s_surfVertTag];
             const auto& verts = zsparticles->getParticles();
 
-            if(!tris.hasProperty("fp_inds") || tris.getChannelSize("fp_inds") != 3) {
+            if(!tris.hasProperty("fp_inds") || tris.getPropertySize("fp_inds") != 3) {
                 throw std::runtime_error("call ZSInitSurfaceTopology first before VisualizeSurfaceMesh");
             }
 
@@ -579,7 +579,7 @@ namespace zeno {
 
             //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
             // });
-#if 0
+#if 1
             update_surface_cell_normals(cudaExec, const_cast<ZenoParticles::particles_t&>(verts), "x", 0, const_cast<ZenoParticles::particles_t&>(tris), "nrm", lines, ceNrmTag);
 #else
             COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
