@@ -1,6 +1,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
-#include <zeno/types/userData.h>
+#include <zeno/types/UserData.h>
 #include <iostream>
 
 namespace zeno {

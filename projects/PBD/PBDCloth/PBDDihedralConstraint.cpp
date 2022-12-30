@@ -89,10 +89,10 @@ public:
 
         dihedralConstraint(pos4p, invMass4p, restAng4p, dihedralCompliance, dt,  dpos4p);
 
-        auto & dpos1 = std::make_shared<NumericObject> (dpos4p[0]);
-        auto & dpos2 = std::make_shared<NumericObject> (dpos4p[1]);
-        auto & dpos3 = std::make_shared<NumericObject> (dpos4p[2]);
-        auto & dpos4 = std::make_shared<NumericObject> (dpos4p[3]);
+        auto  dpos1 = std::make_shared<NumericObject> (dpos4p[0]);
+        auto  dpos2 = std::make_shared<NumericObject> (dpos4p[1]);
+        auto  dpos3 = std::make_shared<NumericObject> (dpos4p[2]);
+        auto  dpos4 = std::make_shared<NumericObject> (dpos4p[3]);
 
         set_output("dpos1", std::move(dpos1));
         set_output("dpos2", std::move(dpos2));
