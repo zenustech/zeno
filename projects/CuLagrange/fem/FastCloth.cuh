@@ -33,9 +33,10 @@ struct FastClothSystem : IObject {
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
+    using sh_t = zs::SpatialHash<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
-    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>; 
+    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>;
     static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
@@ -159,7 +160,7 @@ struct FastClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag = "xinit");
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag = "xinit");
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
     /// @note given "xinit", computes x^{k+1}
     void initialStepping(zs::CudaExecutionPolicy &pol);
@@ -271,15 +272,16 @@ struct FastClothSystem : IObject {
     /// @note allow (bisector) normal update on-the-fly, thus made modifiable
     tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
-    tiles_t vtemp;      // solver data
-    zs::Vector<T> temp; // as temporary buffer
+    tiles_t vtemp;        // solver data
+    zs::Vector<T> temp;   // as temporary buffer
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     // collision constraints (edge / non-edge)
     zs::Vector<pair_t> PP, E;
     zs::Vector<int> nPP, nE;
     int npp, ne;
     tiles_t tempPP, tempE;
-    etab_t eTab;        // global surface edge hash table
+    etab_t eTab; // global surface edge hash table
 
 #if 0
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -300,16 +302,19 @@ struct FastClothSystem : IObject {
     tiles_t svInds, seInds, stInds;
     bvh_t svBvh;    // for simulated objects
     bvh_t bouSvBvh; // for collision objects
+    sh_t svSh;
+    sh_t bouSvSh;
     bvfront_t selfSvFront, boundarySvFront;
     T dt, framedt, curRatio;
 
     zs::CppTimer timer;
-    float auxTime[10];
+    float auxTime[10]; // bvh build, bvh iter, sh build, sh iter
     float dynamicsTime[10];
     float collisionTime[10];
     int dynamicsCnt[10];
     int collisionCnt[10];
     static constexpr bool s_enableProfile = true;
+#define s_testSh false
 };
 
 } // namespace zeno

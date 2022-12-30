@@ -23,6 +23,7 @@
 #include <sutil/vec_math.h>
 #include <sutil/Scene.h>
 #include <optix_stack_size.h>
+#include <stb_image_write.h>
 
 //#include <GLFW/glfw3.h>
 
@@ -1390,7 +1391,7 @@ void CopyInstMeshToGlobalMesh()
             }
 
             vertsOffset += vertices.size();
-            meshPiecesOffset = meshPieces.size();
+            meshPiecesOffset += meshPieces.size();
         }
     }
 }
@@ -2586,7 +2587,17 @@ void optixrender(int fbo, int samples) {
         state.params.subframe_index++;
     }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
-                    
+    auto &ud = zeno::getSession().userData();
+    if (ud.has("optix_image_path")) {
+        auto path = ud.get2<std::string>("optix_image_path");
+        auto p = (*output_buffer_o).getHostPointer();
+        auto w = (*output_buffer_o).width();
+        auto h = (*output_buffer_o).height();
+        stbi_flip_vertically_on_write(true);
+        stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+        zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
+        ud.erase("optix_image_path");
+    }
 }
 
 void *optixgetimg(int &w, int &h) {
