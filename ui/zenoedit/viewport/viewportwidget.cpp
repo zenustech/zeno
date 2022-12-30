@@ -480,6 +480,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     : QGLWidget(parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
+    , m_pauseRenderDally(new QTimer)
 {
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -494,6 +495,20 @@ ViewportWidget::ViewportWidget(QWidget* parent)
 
     m_camera = std::make_shared<CameraControl>();
     Zenovis::GetInstance().m_camera_control = m_camera.get();
+
+    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->drawOptions->simpleRender = false;
+        scene->drawOptions->needRefresh = true;
+        m_pauseRenderDally->stop();
+    });
+}
+
+void ViewportWidget::setSimpleRenderOption() {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->drawOptions->simpleRender = true;
+    m_pauseRenderDally->stop();
+    m_pauseRenderDally->start(1000);
 }
 
 ViewportWidget::~ViewportWidget()
@@ -556,8 +571,7 @@ void ViewportWidget::paintGL()
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
     if(event->button() == Qt::MidButton){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        scene->drawOptions->simpleRender = true;
+        setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
     m_camera->fakeMousePressEvent(event);
@@ -566,6 +580,8 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    setSimpleRenderOption();
+
     _base::mouseMoveEvent(event);
     m_camera->fakeMouseMoveEvent(event);
     update();
@@ -573,17 +589,14 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 
 void ViewportWidget::wheelEvent(QWheelEvent* event)
 {
+    setSimpleRenderOption();
+
     _base::wheelEvent(event);
     m_camera->fakeWheelEvent(event);
     update();
 }
 
 void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
-    if(event->button() == Qt::MidButton){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        scene->drawOptions->simpleRender = false;
-    }
-
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();

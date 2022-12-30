@@ -585,6 +585,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
     bool ensuredshadtmpl = false;
+    bool needUpdateCamera = false;
     std::string shadtmpl;
     std::string_view commontpl;
     std::pair<std::string_view, std::string_view> shadtpl2;
@@ -628,7 +629,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        //zeno::log_info("test Optx::draw() options simpleRender {}", scene->drawOptions->simpleRender);
 
         bool sizeNeedUpdate = false;
         {
@@ -645,6 +645,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 camNeedUpdate = true;
             oldcamid = newcamid;
         }
+        if(scene->drawOptions->needRefresh){
+            camNeedUpdate = true;
+            scene->drawOptions->needRefresh = false;
+        }
+
+        //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
+        //          << " NeedRefresh " << scene->drawOptions->needRefresh << "\n";
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");

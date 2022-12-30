@@ -16,6 +16,7 @@ struct DrawOptions {
     bool smooth_shading = false;
     bool normal_check = false;
     bool simpleRender = false;
+    bool needRefresh = false;
     int num_samples = 1;
     int msaa_samples = 0;
 
