@@ -46,6 +46,46 @@ struct ZSTracerAdvectDiffuse : INode {
                 });
 
             update_cur(NSGrid, tag);
+        } else if (scheme == "MacCormack") {
+            // MacCormack scheme
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcSrcTag = src_tag(NSGrid, tag),
+                 trcDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
+
+                    spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
+                 trcTag = src_tag(NSGrid, tag), trcSrcTag = zs::SmallString{"tmp"},
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord + u_adv * dt);
+
+                    float trc_mc =
+                        spgv.value(trcSrcTag, blockno, cellno) + (spgv.value(trcTag, blockno, cellno) - trc_sl) / 2.f;
+
+                    // clamp
+                    auto wcoord_src = wcoord - u_adv * dt;
+                    auto arena = spgv.wArena(wcoord_src);
+                    auto sl_mi = arena.minimum(trcTag);
+                    auto sl_ma = arena.maximum(trcTag);
+                    if (trc_mc > sl_ma || trc_mc < sl_mi) {
+                        trc_mc = spgv.wSample(trcTag, wcoord_src);
+                    }
+
+                    spgv(trcDstTag, blockno, cellno) = trc_mc;
+                });
+
+            update_cur(NSGrid, tag);
         } else if (scheme == "BFECC") {
             // Back and Forth Error Compensation and Correction (BFECC)
             pol(zs::Collapse{block_cnt, spg.block_size},
@@ -259,7 +299,7 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                     {"bool", "Density", "1"},
                                     {"bool", "Temperature", "1"},
                                     {"bool", "Fuel", "0"},
-                                    {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"},
+                                    {"enum Finite-Volume Semi-Lagrangian MacCormack BFECC", "Scheme", "Finite-Volume"},
                                     {"float", "ClampDensityBelow", "0.01"},
                                     {"float", "CoolingRate", "0.0"},
                                     {"float", "FuelSpeedScale", "0.05"},

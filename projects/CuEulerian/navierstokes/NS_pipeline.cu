@@ -20,7 +20,8 @@
 namespace zeno {
 
 struct ZSVDBToNavierStokesGrid : INode {
-    template <int level> using grid_t = typename ZenoSparseGrid::template grid_t<level>;
+    template <int level>
+    using grid_t = typename ZenoSparseGrid::template grid_t<level>;
 
     void apply() override {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
@@ -264,6 +265,51 @@ struct ZSNSAdvectDiffuse : INode {
                         spgv(vDstTag, ch, blockno, cellno) = u_sl;
                     }
                 });
+        } else if (scheme == "MacCormack") {
+            // MacCormack scheme
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vSrcTag = src_tag(NSGrid, "v"),
+                 vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_sl;
+                    }
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vTag = src_tag(NSGrid, "v"),
+                 vSrcTag = zs::SmallString{"tmp"},
+                 vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+
+                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face + u_adv * dt);
+
+                        float u_mc = spgv.value(vSrcTag, ch, blockno, cellno) +
+                                     (spgv.value(vTag, ch, blockno, cellno) - u_sl) / 2.f;
+
+                        // clamp
+                        auto wcoord_face_src = wcoord_face - u_adv * dt;
+                        auto arena = spgv.wArena(wcoord_face_src, ch);
+                        auto sl_mi = arena.minimum(vTag, ch);
+                        auto sl_ma = arena.maximum(vTag, ch);
+                        if (u_mc > sl_ma || u_mc < sl_mi) {
+                            u_mc = spgv.wStaggeredSample(vTag, ch, wcoord_face_src);
+                        }
+
+                        spgv(vDstTag, ch, blockno, cellno) = u_mc;
+                    }
+                });
         } else if (scheme == "BFECC") {
             // Back and Forth Error Compensation and Correction (BFECC)
             pol(zs::Collapse{block_cnt, spg.block_size},
@@ -409,19 +455,20 @@ struct ZSNSAdvectDiffuse : INode {
     }
 };
 
-ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
-                               {"NSGrid",
-                                "dt",
-                                {"float", "Density", "1.0"},
-                                {"float", "Viscosity", "0.0"},
-                                {"enum Finite-Difference Semi-Lagrangian BFECC", "Scheme", "Finite-Difference"},
-                                {"bool", "Reflection", "0"}},
-                               /* outputs: */
-                               {"NSGrid"},
-                               /* params: */
-                               {},
-                               /* category: */
-                               {"Eulerian"}});
+ZENDEFNODE(ZSNSAdvectDiffuse,
+           {/* inputs: */
+            {"NSGrid",
+             "dt",
+             {"float", "Density", "1.0"},
+             {"float", "Viscosity", "0.0"},
+             {"enum Finite-Difference Semi-Lagrangian MacCormack BFECC", "Scheme", "Finite-Difference"},
+             {"bool", "Reflection", "0"}},
+            /* outputs: */
+            {"NSGrid"},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
 
 struct ZSNSExternalForce : INode {
     void apply() override {
