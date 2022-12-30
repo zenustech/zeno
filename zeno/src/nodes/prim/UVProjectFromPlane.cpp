@@ -116,7 +116,7 @@ void primSampleTexture(
     const std::string &dstChannel,
     std::shared_ptr<PrimitiveObject> img,
     const std::string &wrap,
-    // ZHOUHANG: please add arg filter, which is enum NEAREST LINEAR, impl bilerp version for smooth sample
+    // ZHOUHANG: please add arg filter, which is enum NEAREST LINEAR, impl bilerp version for LINEAR
     vec3f borderColor,
     float remapMin,
     float remapMax
