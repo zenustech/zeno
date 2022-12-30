@@ -63,6 +63,7 @@ struct Params
 
     float sunSoftness;
     float elapsedTime;
+    bool simpleRender;
 };
 
 

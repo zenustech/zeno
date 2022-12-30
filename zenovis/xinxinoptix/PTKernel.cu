@@ -142,7 +142,7 @@ extern "C" __global__ void __raygen__rg()
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
-            if( prd.done ){
+            if( prd.done || params.simpleRender==true){
                 
                 break;
             }
