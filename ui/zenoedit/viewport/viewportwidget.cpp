@@ -10,6 +10,7 @@
 #include "dialog/zrecprogressdlg.h"
 #include <zeno/utils/log.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/DrawOptions.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
@@ -554,6 +555,10 @@ void ViewportWidget::paintGL()
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
+    if(event->button() == Qt::MidButton){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->drawOptions->simpleRender = true;
+    }
     _base::mousePressEvent(event);
     m_camera->fakeMousePressEvent(event);
     update();
@@ -573,7 +578,12 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     update();
 }
 
-void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+    if(event->button() == Qt::MidButton){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->drawOptions->simpleRender = false;
+    }
+
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();

@@ -473,6 +473,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
+
     CUDA_SYNC_CHECK();
     CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
                 &state.params, sizeof( Params ),
@@ -2575,10 +2576,11 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 }
 
 
-void optixrender(int fbo, int samples) {
+void optixrender(int fbo, int samples, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
+    state.params.simpleRender = simpleRender;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );

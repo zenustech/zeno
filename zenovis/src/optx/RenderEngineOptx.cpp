@@ -628,7 +628,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        //zeno::log_info("test Optx::draw()");
+        //zeno::log_info("test Optx::draw() options simpleRender {}", scene->drawOptions->simpleRender);
 
         bool sizeNeedUpdate = false;
         {
@@ -769,7 +769,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }
