@@ -150,11 +150,11 @@ void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& node
     //copy/paste/import case:
     if (data.find(ROLE_CUSTOMUI_NODE_IO) != data.end())
     {
-        ret.nodeParams->resetParams(data[ROLE_CUSTOMUI_NODE_IO].value<VPARAM_INFO>());
+        ret.nodeParams->importParamInfo(data[ROLE_CUSTOMUI_NODE_IO].value<VPARAM_INFO>());
     }
     if (data.find(ROLE_CUSTOMUI_PANEL_IO) != data.end())
     {
-        ret.panelParams->resetParams(data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>());
+        ret.panelParams->importParamInfo(data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>());
     }
 }
 
@@ -520,14 +520,14 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             {
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
                 ZASSERT_EXIT(item.panelParams, false);
-                item.panelParams->resetParams(invisibleRoot);
+                item.panelParams->importParamInfo(invisibleRoot);
                 break;
             }
             case ROLE_CUSTOMUI_NODE_IO:
             {
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
                 ZASSERT_EXIT(item.nodeParams, false);
-                item.nodeParams->resetParams(invisibleRoot);
+                item.nodeParams->importParamInfo(invisibleRoot);
                 break;
             }
             case ROLE_COLLASPED:

@@ -7,10 +7,16 @@
 class GraphsModel;
 class IGraphsModel;
 
+#define COMMAND_VIEWADD "ViewParamAdd"
+#define COMMAND_VIEWREMOVE "ViewParamRemove"
+#define COMMAND_VIEWMOVE "ViewParamMove"
+#define COMMAND_VIEWSETDATA "ViewParamSetData"
+#define COMMAND_MAPPING "MappingParamIndex"
+
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    AddNodeCommand(const QString& id, const NODE_DATA& data, IGraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
     void redo() override;
     void undo() override;
@@ -19,7 +25,7 @@ private:
     QString m_id;
     NODE_DATA m_data;
     QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
 };
 
 class RemoveNodeCommand : public QUndoCommand
@@ -113,6 +119,80 @@ private:
     NODE_DESC m_oldDesc;
     NODE_DESC m_newDesc;
 };
+
+class ViewParamAddCommand : public QUndoCommand
+{
+public:
+    ViewParamAddCommand(IGraphsModel* pModel, const QString& parentObjPath, const VPARAM_INFO& newItem);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_parentPath;
+    VPARAM_INFO m_itemData;
+    int m_rowInserted;
+};
+
+class ViewParamRemoveCommand : public QUndoCommand
+{
+public:
+    ViewParamRemoveCommand(IGraphsModel* pModel, const QString& parentObjPath, int row);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_parentPath;
+    VPARAM_INFO m_deleteItem;
+    int m_row;
+};
+
+class ViewParamSetDataCommand : public QUndoCommand
+{
+public:
+    ViewParamSetDataCommand(IGraphsModel* pModel, const QString& vitemPath, const QVariant& newValue, int role);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_vitemPath;
+    QVariant m_oldValue;
+    QVariant m_newValue;
+    int m_role;
+};
+
+class ViewParamMoveCommand : public QUndoCommand
+{
+public:
+    ViewParamMoveCommand(IGraphsModel* pModel, const QString& srcParentPath, int srcRow,
+        const QString& dstParentPath, int dstRow);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_srcParent;
+    QString m_dstParent;
+    int m_srcRow;
+    int m_dstRow;
+};
+
+class MapParamIndexCommand : public QUndoCommand
+{
+public:
+    MapParamIndexCommand(IGraphsModel* pModel, const QString& sourceObj, const QString& dstObj);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel *m_model;
+    QString m_sourceObj;
+    QString m_dstObj;
+    QString m_oldMappingObj;
+};
+
 
 
 #endif

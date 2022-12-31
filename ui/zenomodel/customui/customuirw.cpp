@@ -1,5 +1,6 @@
 #include "customuirw.h"
 #include <zenomodel/include/viewparammodel.h>
+#include <zenomodel/include/vparamitem.h>
 #include <zenomodel/include/modelrole.h>
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
