@@ -22,7 +22,7 @@ static void CreateNBezierCurve(const std::vector<zeno::vec3f> src, std::vector<z
     int size = src.size();
     std::vector<double> coff(size, 0);
 
-    std::vector<std::vector<int>> a(size, std::vector<int>(size)); // javabean
+    std::vector<std::vector<int>> a(size, std::vector<int>(size));
     {
         for(int i=0;i<size;++i)
         {
@@ -32,7 +32,6 @@ static void CreateNBezierCurve(const std::vector<zeno::vec3f> src, std::vector<z
         for(int i=1;i<size;++i)
             for(int j=1;j<i;++j)
                 a[i][j] = a[i-1][j-1] + a[i-1][j];
-
     }
 
     for (double t1 = 0; t1 < 1; t1 += precision) {
@@ -58,8 +57,6 @@ static void CreateNBezierCurve(const std::vector<zeno::vec3f> src, std::vector<z
 
 struct CreateBezierCurve : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("CustomPoints");
-        
         auto precision = get_input<zeno::NumericObject>("precision")->get<float>();
         auto tag = get_param<std::string>("SampleTag");
         auto attr = get_param<std::string>("SampleAttr");
@@ -67,17 +64,20 @@ struct CreateBezierCurve : zeno::INode {
         auto outCurve = std::make_shared<zeno::BCurveObject>();
         auto outprim = std::make_shared<zeno::PrimitiveObject>();
         std::vector<zeno::vec3f> inputPoint, cPoints;
-
-        int iSize = list->arr.size();
-        if (iSize > 0) {
-            for (int i = 0; i < iSize; i++) {
-                zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->arr[i].get());
-                for (auto p : obj->verts) {
-                    inputPoint.push_back(p);
+        std::vector<float> tagList;
+       
+        if (has_input<zeno::ListObject>("CustomPoints")) {        
+            auto list = get_input<zeno::ListObject>("CustomPoints");
+            int iSize = list->arr.size();
+            if (iSize > 0) {
+                for (int i = 0; i < iSize; i++) {
+                    zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->arr[i].get());
+                    for (auto p : obj->verts) {
+                        inputPoint.push_back(p);
+                    }
                 }
-            }
+            } 
         } else {
-
             auto inPrim = get_input<zeno::PrimitiveObject>("SamplePoints").get();
             if (attr.empty()) {
                 set_output("prim", std::move(std::shared_ptr<zeno::PrimitiveObject>(new zeno::PrimitiveObject)));
@@ -87,6 +87,11 @@ struct CreateBezierCurve : zeno::INode {
             auto tmpPs = inPrim->attr<zeno::vec3f>(attr);
             for (auto p : tmpPs) {
                 inputPoint.push_back(p);
+            }
+
+            auto tmpTags = inPrim->attr<float>(tag);
+            for (auto p : tmpTags) {
+                tagList.push_back(p);
             }
         }
 
@@ -101,11 +106,20 @@ struct CreateBezierCurve : zeno::INode {
         outCurve->bPoints = cPoints;
         outCurve->sampleTag = tag;
 
-        outprim->verts.resize(cPoints.size());
-        for (int i = 0; i < cPoints.size(); i++) {
-            outprim->verts[i] = cPoints[i];
-        }
-        
+        if (tagList.size() > 0)
+        {
+            auto tmpScal = 1 / precision;
+            outprim->verts.resize(tagList.size());
+            for (int i = 0; i < tagList.size(); i++) {
+                int idx = tagList.at(i) * tmpScal;
+                outprim->verts[i] = cPoints[idx];
+            }
+        } else {
+            outprim->verts.resize(cPoints.size());
+            for (int i = 0; i < cPoints.size(); i++) {
+                outprim->verts[i] = cPoints[i];
+            }
+        }       
         set_output("prim", std::move(outprim));
         set_output("curev", std::move(outCurve));
     }
