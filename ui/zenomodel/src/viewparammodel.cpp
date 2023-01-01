@@ -16,7 +16,7 @@ ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphs
     , m_model(pModel)
     , m_bDirty(false)
 {
-    setup("");
+    //initUI();
     setItemPrototype(new VParamItem(VPARAM_PARAM, ""));
 }
 
@@ -24,15 +24,7 @@ ViewParamModel::~ViewParamModel()
 {
 }
 
-void ViewParamModel::setup(const QString& customUI)
-{
-    if (customUI.isEmpty())
-    {
-        initCustomUI();
-    }
-}
-
-void ViewParamModel::initCustomUI()
+void ViewParamModel::initUI()
 {
     /*default structure:
                 root
@@ -328,8 +320,8 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
         //copy inner type and value.
         if (pItem->m_index.isValid())
         {
-            pItem->m_info.typeDesc = pItem->m_index.data(ROLE_PARAM_TYPE).toString();
-            pItem->m_info.value = pItem->m_index.data(ROLE_PARAM_VALUE);
+            pItem->m_type = pItem->m_index.data(ROLE_PARAM_TYPE).toString();
+            pItem->m_value = pItem->m_index.data(ROLE_PARAM_VALUE);
         }
     }
     else
@@ -390,108 +382,12 @@ QModelIndexList ViewParamModel::outputsIndice()
 
 }
 
-VPARAM_INFO VParamItem::exportParamInfo()
-{
-    VPARAM_INFO info;
-    if (vType == VPARAM_ROOT)
-    {
-        VPARAM_INFO root;
-        root.m_cls = PARAM_UNKNOWN;
-        root.vType = VPARAM_ROOT;
-        for (int i = 0; i < rowCount(); i++)
-        {
-            VParamItem* pTab = static_cast<VParamItem *>(child(i));
-            VPARAM_INFO tab = pTab->exportParamInfo();
-            root.children.append(tab);
-        }
-        return root;
-    }
-    else if (vType == VPARAM_TAB)
-    {
-        VPARAM_INFO tab;
-        tab.m_cls = PARAM_UNKNOWN;
-        tab.vType = VPARAM_TAB;
-        tab.m_info.name = data(ROLE_VPARAM_NAME).toString();
-        for (int j = 0; j < rowCount(); j++)
-        {
-            VParamItem* pGroup =static_cast<VParamItem*>(child(j));
-            VPARAM_INFO group = pGroup->exportParamInfo();
-            tab.children.append(group);
-        }
-        return tab;
-    }
-    else if (vType == VPARAM_GROUP)
-    {
-        VPARAM_INFO group;
-        group.m_cls = PARAM_UNKNOWN;
-        group.vType = VPARAM_GROUP;
-        group.m_info.name = data(ROLE_VPARAM_NAME).toString();
-
-        for (int k = 0; k < rowCount(); k++)
-        {
-            VParamItem* pParam = static_cast<VParamItem *>(child(k));
-            VPARAM_INFO param = pParam->exportParamInfo();
-            group.children.append(param);
-        }
-        return group;
-    }
-    else if (vType == VPARAM_PARAM)
-    {
-        VPARAM_INFO param;
-
-        VParamItem* parentItem = static_cast<VParamItem*>(this->parent());
-        ZASSERT_EXIT(parentItem, info);
-        const QString& groupName = parentItem->m_info.name;
-
-        if (groupName == "In Sockets")
-        {
-            param.m_cls = PARAM_INPUT;
-        }
-        else if (groupName == "Parameters")
-        {
-            param.m_cls = PARAM_PARAM;
-        }
-        else if (groupName == "Out Sockets")
-        {
-            param.m_cls = PARAM_OUTPUT;
-        }
-        else
-        {
-            param.m_cls = PARAM_UNKNOWN;
-        }
-        param.vType = VPARAM_PARAM;
-        param.controlInfos = data(ROLE_VPARAM_CTRL_PROPERTIES);
-        param.coreParam = data(ROLE_PARAM_NAME).toString();
-        param.m_info = m_info;
-        return param;
-    }
-    else
-    {
-        ZASSERT_EXIT(false, info);
-        return info;
-    }
-}
-
-
 VPARAM_INFO ViewParamModel::exportParams() const
 {
     VParamItem* rootItem = static_cast<VParamItem*>(invisibleRootItem()->child(0));
     if (!rootItem)
         return VPARAM_INFO();
     return rootItem->exportParamInfo();
-}
-
-void VParamItem::importParamInfo(const VPARAM_INFO& paramInfo)
-{
-    if (paramInfo.vType == VPARAM_ROOT)
-    {
-        this->vType = paramInfo.vType;
-        this->m_info = paramInfo.m_info;
-        for (VPARAM_INFO tab : paramInfo.children)
-        {
-
-        }
-    }
 }
 
 VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
@@ -508,7 +404,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_TAB)
     {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_info.name);
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_name);
         for (VPARAM_INFO group : info.children)
         {
             VParamItem* pGroupItem = importParam(group);
@@ -518,7 +414,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_GROUP)
     {
-        VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_info.name);
+        VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_name);
         for (VPARAM_INFO param : info.children)
         {
             VParamItem* paramItem = importParam(param);
@@ -528,7 +424,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_PARAM)
     {
-        const QString& paramName = info.m_info.name;
+        const QString& paramName = info.m_name;
         VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
         //mapping core.
@@ -563,7 +459,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
         {
             //register subnet param control.
             const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-            GlobalControlMgr::instance().onParamUpdated(objCls, info.m_cls, coreparam, paramItem->m_info.control);
+            GlobalControlMgr::instance().onParamUpdated(objCls, info.m_cls, coreparam, paramItem->m_ctrl);
         }
 #endif
         return paramItem;
@@ -583,13 +479,13 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
     VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
     for (VPARAM_INFO tab : invisibleRoot.children)
     {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_info.name);
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_name);
         for (VPARAM_INFO group : tab.children)
         {
-            VParamItem* pGroupItem = new VParamItem(VPARAM_GROUP, group.m_info.name);
+            VParamItem* pGroupItem = new VParamItem(VPARAM_GROUP, group.m_name);
             for (VPARAM_INFO param : group.children)
             {
-                const QString& paramName = param.m_info.name;
+                const QString& paramName = param.m_name;
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
                 //mapping core.
@@ -622,7 +518,7 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                     //register subnet param control.
                     const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
                     GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
-                                                                paramItem->m_info.control);
+                                                                paramItem->m_ctrl);
                 }
                 pGroupItem->appendRow(paramItem);
             }
@@ -675,9 +571,9 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
                 }
 
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-                paramItem->m_info.control = ctrl;
-                paramItem->m_info.typeDesc = typeDesc;
-                paramItem->m_info.value = value;
+                paramItem->m_ctrl = ctrl;
+                paramItem->m_type = typeDesc;
+                paramItem->m_value = value;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 paramItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
@@ -702,12 +598,12 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
 
                 CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
 
-                paramItem->m_info.control = infos.control;
+                paramItem->m_ctrl = infos.control;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
                 paramItem->setData(infos.controlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-                paramItem->m_info.typeDesc = typeDesc;
-                paramItem->m_info.value = value;
+                paramItem->m_type = typeDesc;
+                paramItem->m_value = value;
                 pItem->appendRow(paramItem);
                 break;
             }
@@ -727,11 +623,11 @@ void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, 
 
                 PARAM_CONTROL ctrl = CONTROL_NONE;
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-                paramItem->m_info.control = ctrl;
+                paramItem->m_ctrl = ctrl;
                 paramItem->mapCoreParam(idx);
                 paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-                paramItem->m_info.typeDesc = typeDesc;
-                paramItem->m_info.value = value;
+                paramItem->m_type = typeDesc;
+                paramItem->m_value = value;
                 pItem->appendRow(paramItem);
                 break;
             }

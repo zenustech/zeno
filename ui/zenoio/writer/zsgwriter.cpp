@@ -355,7 +355,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     }
 
     //custom ui for panel
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_PANEL]);
+    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_PANEL_PARAMS]);
     if (viewParams && viewParams->isDirty())
     {
         writer.Key("customui-panel");
@@ -363,7 +363,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     }
 
     //custom ui for node
-    ViewParamModel* viewNodeParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_NODE]);
+    ViewParamModel* viewNodeParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_NODE_PARAMS]);
     if (viewNodeParams && viewNodeParams->isDirty())
     {
         writer.Key("customui-node");

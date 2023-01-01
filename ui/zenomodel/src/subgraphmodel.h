@@ -8,6 +8,8 @@
 #include "command.h"
 #include "parammodel.h"
 #include "viewparammodel.h"
+#include "nodeparammodel.h"
+#include "panelparammodel.h"
 
 
 class GraphsModel;
@@ -26,12 +28,8 @@ class SubGraphModel : public QAbstractItemModel
         QPointF viewpos;
         int options;
 
-        IParamModel* inputsModel;
-        IParamModel* paramsModel;
-        IParamModel* outputsModel;
-
-        ViewParamModel* panelParams;
-        ViewParamModel* nodeParams;
+        PanelParamModel* panelParams;
+        NodeParamModel* nodeParams;
 
         bool bCollasped;
 
@@ -39,9 +37,6 @@ class SubGraphModel : public QAbstractItemModel
             : options(0)
             , bCollasped(false)
             , type(NORMAL_NODE)
-            , inputsModel(nullptr)
-            , paramsModel(nullptr)
-            , outputsModel(nullptr)
             , panelParams(nullptr)
             , nodeParams(nullptr)
         {
@@ -75,11 +70,8 @@ public:
     void removeNode(int row, bool enableTransaction = false);
     void removeNodeByDescName(const QString& descName);
 
-    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType = nullptr);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
 
-    void updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info);
-    //it's not good programming pratice to expose NODE_DATA as it break the encapsulation.
     NODE_DATA nodeData(const QModelIndex &index) const;
 
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
@@ -120,7 +112,7 @@ private:
     bool itemFromIndex(const QModelIndex& index, _NodeItem& retNode) const;
     bool _removeRow(const QModelIndex &index);
     NODE_DATA item2NodeData(const _NodeItem& item) const;
-    void nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
+    void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
 
     QString m_name;
     QMap<QString, int> m_key2Row;

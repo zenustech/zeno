@@ -35,20 +35,20 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
         {
             const QString &newType = topLeft.data(ROLE_PARAM_TYPE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
-            m_pItem->m_info.control = newCtrl;
-            m_pItem->m_info.typeDesc = newType;
+            m_pItem->m_ctrl = newCtrl;
+            m_pItem->m_type = newType;
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
         else if (ROLE_PARAM_NAME == role)
         {
-            m_pItem->m_info.name = topLeft.data(ROLE_PARAM_NAME).toString();
+            m_pItem->m_name = topLeft.data(ROLE_PARAM_NAME).toString();
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_VPARAM_NAME});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
         else if (ROLE_PARAM_VALUE == role)
         {
-            m_pItem->m_info.value = topLeft.data(ROLE_PARAM_VALUE);
+            m_pItem->m_value = topLeft.data(ROLE_PARAM_VALUE);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
     }
@@ -79,8 +79,8 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
     , vType(type)
     , m_proxySlot(this)
 {
-    m_info.control = CONTROL_NONE;
-    m_info.name = text;
+    m_ctrl = CONTROL_NONE;
+    m_name = text;
 }
 
 VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text, bool bMapCore)
@@ -88,14 +88,19 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text,
     , vType(type)
     , m_proxySlot(this)
 {
-    m_info.control = CONTROL_NONE;
-    m_info.name = text;
+    m_ctrl = CONTROL_NONE;
+    m_name = text;
 }
 
 VParamItem::VParamItem(const VParamItem& other)
     : QStandardItem(other)
     , vType(other.vType)
-    , m_info(other.m_info)
+    , m_name(other.m_name)
+    , m_type(other.m_type)
+    , m_value(other.m_value)
+    , m_ctrl(other.m_ctrl)
+    , m_sockProp(other.m_sockProp)
+    , m_links(other.m_links)
     , m_proxySlot(this)
 {
     mapCoreParam(other.m_index);
@@ -109,33 +114,33 @@ QVariant VParamItem::data(int role) const
 {
     switch (role)
     {
-    case Qt::EditRole:  return m_info.name;
-    case Qt::DisplayRole:
-    case ROLE_VPARAM_NAME:  return m_info.name;
+    case Qt::DisplayRole: return QStandardItem::data(role);
+    case Qt::EditRole:
+    case ROLE_VPARAM_NAME:  return m_name;
     case ROLE_VPARAM_TYPE:  return vType;
-    case ROLE_PARAM_CTRL:   return m_info.control;  //todo: remove control at core param.
+    case ROLE_PARAM_CTRL:   return m_ctrl;
     case ROLE_PARAM_NAME:
     {
         if (!m_index.isValid())
-            return m_info.name;
+            return m_name;
         return m_index.data(ROLE_PARAM_NAME);
     }
     case ROLE_PARAM_VALUE:
     {
         if (!m_index.isValid())
-            return m_info.value;
+            return m_value;
         return m_index.data(ROLE_PARAM_VALUE);
     }
     case ROLE_PARAM_TYPE:
     {
         if (!m_index.isValid())
-            return m_info.typeDesc;
+            return m_type;
         return m_index.data(ROLE_PARAM_TYPE);
     }
     case ROLE_PARAM_SOCKPROP:
     {
         if (!m_index.isValid())
-            return SOCKPROP_UNKNOWN;
+            return m_sockProp;
         return m_index.data(ROLE_PARAM_SOCKPROP);
     }
     case ROLE_PARAM_COREIDX:
@@ -151,7 +156,7 @@ QVariant VParamItem::data(int role) const
     case ROLE_PARAM_LINKS:
     {
         if (!m_index.isValid())
-            return QVariant();
+            return QVariant::fromValue(m_links);
         return m_index.data(ROLE_PARAM_LINKS);
     }
     case ROLE_VPARAM_IS_COREPARAM:
@@ -187,19 +192,19 @@ void VParamItem::setData(const QVariant& value, int role)
         case Qt::EditRole:
         case ROLE_VPARAM_NAME:
         {
-            if (value == m_info.name)
+            if (value == m_name)
                 return;
 
             const QModelIndex& idx = index();
             ViewParamModel* pModel = qobject_cast<ViewParamModel *>(model());
             QString oldPath = model()->data(idx, ROLE_OBJPATH).toString();
 
-            m_info.name = value.toString();
+            m_name = value.toString();
 
             QString newPath = model()->data(idx, ROLE_OBJPATH).toString();
             if (role == Qt::EditRole && oldPath != newPath)
             {
-                emit pModel->editNameChanged(idx, oldPath, m_info.name);
+                emit pModel->editNameChanged(idx, oldPath, m_name);
             }
             pModel->markDirty();
             break;
@@ -220,9 +225,9 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_PARAM_CTRL:
         {
-            if (value == m_info.control)
+            if (value == m_ctrl)
                 return;
-            m_info.control = (PARAM_CONTROL)value.toInt();
+            m_ctrl = (PARAM_CONTROL)value.toInt();
             qobject_cast<ViewParamModel*>(model())->markDirty();
             break;
         }
@@ -232,7 +237,7 @@ void VParamItem::setData(const QVariant& value, int role)
             {
                 //only update core type by editing SubInput/SubOutput.
             }
-            m_info.typeDesc = value.toString();
+            m_type = value.toString();
             break;
         }
         case ROLE_PARAM_VALUE:
@@ -245,9 +250,9 @@ void VParamItem::setData(const QVariant& value, int role)
             }
             else
             {
-                if (value == m_info.value)
+                if (value == m_value)
                     return;
-                m_info.value = value;
+                m_value = value;
                 qobject_cast<ViewParamModel*>(model())->markDirty();
             }
         }
@@ -308,7 +313,7 @@ VParamItem* VParamItem::getItem(const QString& uniqueName, int* targetIdx) const
     for (int r = 0; r < rowCount(); r++)
     {
         VParamItem* pChild = static_cast<VParamItem*>(child(r));
-        if (pChild->m_info.name == uniqueName)
+        if (pChild->m_name == uniqueName)
         {
             if (targetIdx)
                 *targetIdx = r;
@@ -406,9 +411,104 @@ bool VParamItem::operator==(VParamItem* rItem) const
 {
     //only itself.
     if (!rItem) return false;
-    return (rItem->m_info.name == m_info.name &&
-            rItem->m_info.control == m_info.control &&
+    return (rItem->m_name == m_name &&
+            rItem->m_ctrl == m_ctrl &&
             rItem->vType == vType &&
-            rItem->m_info.typeDesc == m_info.typeDesc &&
+            rItem->m_type == m_type &&
             rItem->m_index == m_index);
+}
+
+void VParamItem::importParamInfo(const VPARAM_INFO& paramInfo)
+{
+    if (paramInfo.vType == VPARAM_ROOT)
+    {
+        this->vType = paramInfo.vType;
+        this->m_info = paramInfo.m_info;
+        for (VPARAM_INFO tab : paramInfo.children)
+        {
+
+        }
+    }
+}
+
+VPARAM_INFO VParamItem::exportParamInfo()
+{
+    VPARAM_INFO info;
+    if (vType == VPARAM_ROOT)
+    {
+        VPARAM_INFO root;
+        root.m_cls = PARAM_UNKNOWN;
+        root.vType = VPARAM_ROOT;
+        for (int i = 0; i < rowCount(); i++)
+        {
+            VParamItem* pTab = static_cast<VParamItem *>(child(i));
+            VPARAM_INFO tab = pTab->exportParamInfo();
+            root.children.append(tab);
+        }
+        return root;
+    }
+    else if (vType == VPARAM_TAB)
+    {
+        VPARAM_INFO tab;
+        tab.m_cls = PARAM_UNKNOWN;
+        tab.vType = VPARAM_TAB;
+        tab.m_info.name = data(ROLE_VPARAM_NAME).toString();
+        for (int j = 0; j < rowCount(); j++)
+        {
+            VParamItem* pGroup =static_cast<VParamItem*>(child(j));
+            VPARAM_INFO group = pGroup->exportParamInfo();
+            tab.children.append(group);
+        }
+        return tab;
+    }
+    else if (vType == VPARAM_GROUP)
+    {
+        VPARAM_INFO group;
+        group.m_cls = PARAM_UNKNOWN;
+        group.vType = VPARAM_GROUP;
+        group.m_info.name = data(ROLE_VPARAM_NAME).toString();
+
+        for (int k = 0; k < rowCount(); k++)
+        {
+            VParamItem* pParam = static_cast<VParamItem *>(child(k));
+            VPARAM_INFO param = pParam->exportParamInfo();
+            group.children.append(param);
+        }
+        return group;
+    }
+    else if (vType == VPARAM_PARAM)
+    {
+        VPARAM_INFO param;
+
+        VParamItem* parentItem = static_cast<VParamItem*>(this->parent());
+        ZASSERT_EXIT(parentItem, info);
+        const QString& groupName = parentItem->m_name;
+
+        if (groupName == "In Sockets")
+        {
+            param.m_cls = PARAM_INPUT;
+        }
+        else if (groupName == "Parameters")
+        {
+            param.m_cls = PARAM_PARAM;
+        }
+        else if (groupName == "Out Sockets")
+        {
+            param.m_cls = PARAM_OUTPUT;
+        }
+        else
+        {
+            param.m_cls = PARAM_UNKNOWN;
+        }
+        param.vType = VPARAM_PARAM;
+        param.controlInfos = data(ROLE_VPARAM_CTRL_PROPERTIES);
+        param.coreParam = data(ROLE_PARAM_NAME).toString();
+        param.m_info = m_info;
+        return param;
+    }
+    else
+    {
+        ZASSERT_EXIT(false, info);
+        return info;
+    }
 }

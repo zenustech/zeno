@@ -318,13 +318,13 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
             return QModelIndex();
         if (paramCls == "node-param")
         {
-            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_NODE));
+            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
         }
         else if (paramCls == "panel-param")
         {
-            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_PANEL));
+            ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_PANEL_PARAMS));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
         }

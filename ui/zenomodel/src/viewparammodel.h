@@ -48,9 +48,8 @@ public slots:
     void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
     void onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
-private:
-    void setup(const QString& customUI);
-    void initCustomUI();
+protected:
+    virtual void initUI();
 
     const QPersistentModelIndex m_nodeIdx;
     const IGraphsModel* const m_model;

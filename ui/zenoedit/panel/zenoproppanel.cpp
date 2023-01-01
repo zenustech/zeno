@@ -93,7 +93,7 @@ void ZenoPropPanel::clearLayout()
 
     if (m_idx.isValid())
     {
-        QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+        QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
         if (paramsModel)
         {
             disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
@@ -126,7 +126,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     if (!m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
     if (!paramsModel)
         return;
 
@@ -184,7 +184,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (!m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
     ZASSERT_EXIT(paramsModel);
 
     if (!parent.isValid())
@@ -381,7 +381,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     if (m_controls.isEmpty() || !m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
@@ -466,7 +466,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
@@ -584,7 +584,7 @@ void ZenoPropPanel::onSettings()
         if (!m_idx.isValid())
             return;
 
-        QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_CUSTOMUI_PANEL));
+        QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
         ZASSERT_EXIT(viewParams);
 
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();

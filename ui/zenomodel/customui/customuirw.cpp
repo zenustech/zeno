@@ -171,13 +171,13 @@ namespace zenomodel
         const rapidjson::Value& controlObj = paramVal["control"];
 
         const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
-        param.m_info.control = UiHelper::getControlByDesc(ctrlName);
-        param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);
-        param.m_info.name = paramName;
+        param.m_ctrl = UiHelper::getControlByDesc(ctrlName);
+        param.m_type = UiHelper::getTypeByControl(param.m_ctrl);
+        param.m_name = paramName;
 
         if (controlObj.HasMember("value"))
         {
-            param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
+            param.m_value = UiHelper::parseJson(controlObj["value"], nullptr);
         }
         if (controlObj.HasMember("items"))
         {
@@ -209,14 +209,14 @@ namespace zenomodel
             const QString& tabName = tabObj.name.GetString();
             VPARAM_INFO tab;
             tab.vType = VPARAM_TAB;
-            tab.m_info.name = tabName;
+            tab.m_name = tabName;
 
             for (const auto& groupObj : tabObj.value.GetObject())
             {
                 const QString& groupName = groupObj.name.GetString();
                 VPARAM_INFO group;
                 group.vType = VPARAM_GROUP;
-                group.m_info.name = groupName;
+                group.m_name = groupName;
 
                 for (const auto& paramObj : groupObj.value.GetObject())
                 {

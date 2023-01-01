@@ -29,12 +29,18 @@ private:
 
 struct VParamItem : public QStandardItem
 {
-    QPersistentModelIndex m_index;      //index to core param, see IParamModel.
+    QPersistentModelIndex m_index;      //index to node param, see IParamModel.
 
     //for easy to debug, store here rather than QStandardItem internal data:
-    PARAM_INFO m_info;
+    QString m_name;
+    QVariant m_value;
+    QString m_type;
+    PARAM_CONTROL m_ctrl;
+
     VPARAM_TYPE vType;
     VPARAM_INFO m_tempInfo;
+    PARAM_LINKS m_links;
+    SOCKET_PROPERTY m_sockProp;
 
     ProxySlotObject m_proxySlot;
 

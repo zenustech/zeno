@@ -9,6 +9,7 @@
 #include "variantptr.h"
 
 
+
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
@@ -85,22 +86,21 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     INPUT_SOCKETS inputs;
     OUTPUT_SOCKETS outputs;
     PARAMS_INFO params;
-    if (item.inputsModel)
-        item.inputsModel->getInputSockets(inputs);
-    if (item.paramsModel)
-        item.paramsModel->getParams(params);
-    if (item.outputsModel)
-        item.outputsModel->getOutputSockets(outputs);
+
+    item.nodeParams->getInputSockets(inputs);
+    item.nodeParams->getParams(params);
+    item.nodeParams->getOutputSockets(outputs);
+
     data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_CUSTOMUI_PANEL] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
-    data[ROLE_CUSTOMUI_NODE] = QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
+    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
+    data[ROLE_NODE_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
 
     return data;
 }
 
-void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret)
+void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret)
 {
     ret.objid = data[ROLE_OBJID].toString();
     ret.objCls = data[ROLE_OBJNAME].toString();
@@ -110,52 +110,23 @@ void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& node
     ret.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
-    ret.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
-    ret.paramsModel = new IParamModel(PARAM_PARAM, m_pGraphsModel, subgIdx, nodeIdx, this);
-    ret.outputsModel = new IParamModel(PARAM_OUTPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
 
-    ret.panelParams = new ViewParamModel(false, nodeIdx, m_pGraphsModel, this);
-    ret.nodeParams = new ViewParamModel(true, nodeIdx, m_pGraphsModel, this);
-
-    for (ViewParamModel* viewParamModel : QList{ ret.panelParams, ret.nodeParams })
-    {
-        connect(ret.inputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(ret.inputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
-
-        connect(ret.paramsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(ret.paramsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
-
-        connect(ret.outputsModel, &IParamModel::rowsInserted, viewParamModel, &ViewParamModel::onCoreParamsInserted);
-        connect(ret.outputsModel, &IParamModel::rowsAboutToBeRemoved, viewParamModel, &ViewParamModel::onCoreParamsAboutToBeRemoved);
-    }
+    ret.nodeParams = new NodeParamModel(nodeIdx, m_pGraphsModel, this);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
     OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
 
-    if (!inputs.isEmpty())
-    {
-        //will emit signal rowsInserted, then view param will be created on ret.panelParams/ret.nodeParams
-        ret.inputsModel->setInputSockets(inputs);
-    }
-    if (!params.isEmpty())
-    {
-        ret.paramsModel->setParams(params);
-    }
-    if (!outputs.isEmpty())
-    {
-        ret.outputsModel->setOutputSockets(outputs);
-    }
+    ret.nodeParams->setInputSockets(inputs);
+    ret.nodeParams->setParams(params);
+    ret.nodeParams->setOutputSockets(outputs);
 
-    //copy/paste/import case:
-    if (data.find(ROLE_CUSTOMUI_NODE_IO) != data.end())
-    {
-        ret.nodeParams->importParamInfo(data[ROLE_CUSTOMUI_NODE_IO].value<VPARAM_INFO>());
-    }
+    VPARAM_INFO panelInfo;
     if (data.find(ROLE_CUSTOMUI_PANEL_IO) != data.end())
     {
-        ret.panelParams->importParamInfo(data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>());
+        panelInfo = data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>();
     }
+    ret.panelParams = new PanelParamModel(ret.nodeParams, panelInfo, nodeIdx, m_pGraphsModel, this);
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -230,24 +201,6 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     QString currNode = index.data(ROLE_OBJID).toString();
     const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    if (item.inputsModel)
-    {
-        item.inputsModel->clear();
-        delete item.inputsModel;
-        item.inputsModel = nullptr;
-    }
-    if (item.paramsModel)
-    {
-        item.paramsModel->clear();
-        delete item.paramsModel;
-        item.paramsModel = nullptr;
-    }
-    if (item.outputsModel)
-    {
-        item.outputsModel->clear();
-        delete item.outputsModel;
-        item.outputsModel = nullptr;
-    }
     if (item.panelParams)
     {
         item.panelParams->clear();
@@ -324,9 +277,9 @@ IParamModel* SubGraphModel::paramModel(const QModelIndex& index, PARAM_CLASS cls
 
     switch (cls)
     {
-    case PARAM_INPUT: return item.inputsModel;
-    case PARAM_PARAM: return item.paramsModel;
-    case PARAM_OUTPUT: return item.outputsModel;
+    case PARAM_INPUT: return nullptr;
+    case PARAM_PARAM: return nullptr;
+    case PARAM_OUTPUT: return nullptr;
     default:
         return nullptr;
     }
@@ -362,29 +315,29 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         case ROLE_INPUTS:
         {
             //legacy interface.
-            if (!item.inputsModel)
+            if (!item.nodeParams)
                 return QVariant();
 
             INPUT_SOCKETS inputs;
-            item.inputsModel->getInputSockets(inputs);
+            item.nodeParams->getInputSockets(inputs);
             return QVariant::fromValue(inputs);
         }
         case ROLE_OUTPUTS:
         {
-            if (!item.outputsModel)
+            if (!item.nodeParams)
                 return QVariant();
 
             OUTPUT_SOCKETS outputs;
-            item.outputsModel->getOutputSockets(outputs);
+            item.nodeParams->getOutputSockets(outputs);
             return QVariant::fromValue(outputs);
         }
         case ROLE_PARAMETERS:
         {
-            if (!item.paramsModel)
+            if (!item.nodeParams)
                 return QVariant();
 
             PARAMS_INFO params;
-            item.paramsModel->getParams(params);
+            item.nodeParams->getParams(params);
             return QVariant::fromValue(params);
         }
         case ROLE_COLLASPED:
@@ -401,21 +354,21 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_INPUT_MODEL:
         {
-            return QVariantPtr<IParamModel>::asVariant(item.inputsModel);
+            return QVariant();
         }
         case ROLE_PARAM_MODEL:
         {
-            return QVariantPtr<IParamModel>::asVariant(item.paramsModel);
+            return QVariant();
         }
         case ROLE_OUTPUT_MODEL:
         {
-            return QVariantPtr<IParamModel>::asVariant(item.outputsModel);
+            return QVariant();
         }
-        case ROLE_CUSTOMUI_PANEL:
+        case ROLE_PANEL_PARAMS:
         {
             return QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
         }
-        case ROLE_CUSTOMUI_NODE:
+        case ROLE_NODE_PARAMS:
         {
             return QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
         }
@@ -456,19 +409,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (inputs.empty())
                     return false;
 
-                ZASSERT_EXIT(item.inputsModel, false);
+                ZASSERT_EXIT(item.nodeParams, false);
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
-                    QModelIndex paramIdx = item.inputsModel->index(name);
-                    if (!paramIdx.isValid())
-                    {
-                        item.inputsModel->appendRow(name, inSocket.info.type, inSocket.info.defaultValue);
-                    }
-                    else
-                    {
-                        item.inputsModel->setItem(paramIdx, inSocket.info.type, inSocket.info.defaultValue);
-                    }
+                    item.nodeParams->setParam(PARAM_INPUT, name, inSocket.info.type, inSocket.info.defaultValue, (SOCKET_PROPERTY)inSocket.info.sockProp);
                 }
                 break;
             }
@@ -478,19 +423,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (outputs.empty())
                     return false;
 
-                ZASSERT_EXIT(item.outputsModel, false);
+                ZASSERT_EXIT(item.nodeParams, false);
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
-                    QModelIndex idx = item.outputsModel->index(name);
-                    if (!idx.isValid())
-                    {
-                        item.outputsModel->appendRow(name, outSocket.info.type, outSocket.info.defaultValue);
-                    }
-                    else
-                    {
-                        item.outputsModel->setItem(idx, outSocket.info.type, outSocket.info.defaultValue);
-                    }
+                    item.nodeParams->setParam(PARAM_INPUT, name, outSocket.info.type, outSocket.info.defaultValue, (SOCKET_PROPERTY)outSocket.info.sockProp);
                 }
                 break;
             }
@@ -500,19 +437,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (params.empty())
                     return false;
 
-                ZASSERT_EXIT(item.paramsModel, false);
+                ZASSERT_EXIT(item.nodeParams, false);
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
-                    QModelIndex idx = item.paramsModel->index(name);
-                    if (!idx.isValid())
-                    {
-                        item.paramsModel->appendRow(name, param.typeDesc, param.value);
-                    }
-                    else
-                    {
-                        item.paramsModel->setItem(idx, param.typeDesc, param.value);
-                    }
+                    item.nodeParams->setParam(PARAM_INPUT, name, param.typeDesc, param.value, SOCKPROP_UNKNOWN);
                 }
                 break;
             }
@@ -569,49 +498,7 @@ bool SubGraphModel::setParamValue(
     if (!itemFromIndex(idx, item))
         return false;
 
-    if (cls == PARAM_INPUT)
-    {
-        ZASSERT_EXIT(item.inputsModel, false);
-        const QModelIndex& paramIdx = item.inputsModel->index(sockName);
-        if (paramIdx.isValid())
-        {
-            item.inputsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
-        }
-        else
-        {
-            //add if not exist.
-            item.inputsModel->appendRow(sockName, type, value, sockProp);
-        }
-        return true;
-    }
-    else if (cls == PARAM_PARAM)
-    {
-        ZASSERT_EXIT(item.paramsModel, false);
-        const QModelIndex& paramIdx = item.paramsModel->index(sockName);
-        if (paramIdx.isValid())
-        {
-            item.paramsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
-        }
-        else
-        {
-            item.paramsModel->appendRow(sockName, type, value, sockProp);
-        }
-        return true;
-    }
-    else if (cls == PARAM_OUTPUT)
-    {
-        ZASSERT_EXIT(item.outputsModel, false);
-        const QModelIndex& paramIdx = item.outputsModel->index(sockName);
-        if (paramIdx.isValid())
-        {
-            item.outputsModel->setData(paramIdx, value, ROLE_PARAM_VALUE);
-        }
-        else
-        {
-            item.outputsModel->appendRow(sockName, type, value, sockProp);
-        }
-        return true;
-    }
+    item.nodeParams->setParam(cls, sockName, type, value, sockProp);
     return false;
 }
 
@@ -622,58 +509,11 @@ SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
     return pClone;
 }
 
-void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType)
-{
-    auto it = m_nodes.find(nodeid);
-    if (it == m_nodes.end())
-        return;
-
-    const QModelIndex& idx = index(nodeid);
-
-    IParamModel* pModel = m_nodes[nodeid].paramsModel;
-    ZASSERT_EXIT(pModel);
-
-    QModelIndex paramIdx = pModel->index(paramName);
-    if (!paramIdx.isValid())
-        return;
-
-    const QString& nodeCls = idx.data(ROLE_OBJNAME).toString();
-    //correct the control type and desc type according to the type of real value.
-    if (paramName == "defl" && (nodeCls == "SubInput" || nodeCls == "SubOutput") && newType)
-    {
-        pModel->setData(paramIdx, *newType, ROLE_PARAM_TYPE);
-        pModel->setData(paramIdx, UiHelper::getControlByType(*newType), ROLE_PARAM_CTRL);
-    }
-    pModel->setData(paramIdx, var, ROLE_PARAM_VALUE);
-}
-
-void SubGraphModel::updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info)
-{
-	QModelIndex idx = index(nodeid);
-    ZASSERT_EXIT(idx.isValid());
-
-    _NodeItem item;
-    if (!itemFromIndex(idx, item))
-        return;
-
-    if (IParamModel* pModel = item.inputsModel)
-    {
-        QModelIndex paramIdx = pModel->index(info.name);
-        bool ret = pModel->setData(paramIdx, info.newValue, ROLE_PARAM_VALUE);
-        if (ret) {}
-    }
-}
-
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
 {
-    QVariant var;
-    if (IParamModel* pModel = m_nodes[nodeid].paramsModel)
-    {
-        QModelIndex idx = pModel->index(paramName);
-        if (idx.isValid())
-            var = idx.data(ROLE_PARAM_VALUE);
-    }
-    return var;
+    if (m_nodes.find(nodeid) == m_nodes.end())
+        return QVariant();
+    return m_nodes[nodeid].nodeParams->getValue(PARAM_PARAM, paramName);
 }
 
 void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info)
@@ -778,7 +618,7 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    nodeData2Item(nodeData, nodeIdx, item);
+    importNodeItem(nodeData, nodeIdx, item);
 
     m_pGraphsModel->markDirty();
     return true;

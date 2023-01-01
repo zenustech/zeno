@@ -231,10 +231,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     else if (type == VPARAM_PARAM)
     {
         const QString& paramName = name;
-        PARAM_CONTROL ctrl = pCurrentItem->m_info.control;
+        PARAM_CONTROL ctrl = pCurrentItem->m_ctrl;
         const QString& ctrlName = getControl(ctrl).name;
-        const QString& dataType = pCurrentItem->m_info.typeDesc;
-        QVariant deflVal = pCurrentItem->m_info.value;
+        const QString& dataType = pCurrentItem->m_type;
+        QVariant deflVal = pCurrentItem->m_value;
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
         QVariant controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
@@ -380,9 +380,9 @@ void ZEditParamLayoutDlg::onBtnAdd()
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
         QString newItem = UiHelper::getUniqueName(existNames, ctrl.name);
         VParamItem* pNewItem = new VParamItem(VPARAM_PARAM, newItem);
-        pNewItem->m_info.control = ctrl.ctrl;
-        pNewItem->m_info.typeDesc = ctrl.defaultType;
-        pNewItem->m_info.value = UiHelper::initVariantByControl(ctrl.ctrl);
+        pNewItem->m_ctrl = ctrl.ctrl;
+        pNewItem->m_type = ctrl.defaultType;
+        pNewItem->m_value = UiHelper::initVariantByControl(ctrl.ctrl);
         
         //init properties.
         switch (ctrl.ctrl)
@@ -420,12 +420,12 @@ void ZEditParamLayoutDlg::recordSubInputCommands(bool bSubInput, VParamItem* pIt
     const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
     const QModelIndex& subgIdx = m_pGraphsModel->index(subgName);
 
-    const QString& vName = pItem->m_info.name;
+    const QString& vName = pItem->m_name;
     QString coreName;
     if (pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
         coreName = pItem->data(ROLE_PARAM_NAME).toString();
-    const QString& typeDesc = pItem->m_info.typeDesc;
-    const QVariant& deflVal = pItem->m_info.value;
+    const QString& typeDesc = pItem->m_type;
+    const QVariant& deflVal = pItem->m_value;
     const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
 
     //new added param.
@@ -537,9 +537,9 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         return;
 
     VParamItem* pItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(layerIdx));
-    pItem->m_info.typeDesc = dataType;
-    pItem->m_info.control = UiHelper::getControlByType(dataType);
-    pItem->m_info.value = UiHelper::initVariantByControl(pItem->m_info.control);
+    pItem->m_type = dataType;
+    pItem->m_ctrl = UiHelper::getControlByType(dataType);
+    pItem->m_value = UiHelper::initVariantByControl(pItem->m_ctrl);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
     if (pLayoutItem)
@@ -620,7 +620,7 @@ void ZEditParamLayoutDlg::updateSubgParamControl(
     QModelIndexList subgNodes = pGraphsModel->findSubgraphNode(subgName);
     for (auto idx : subgNodes)
     {
-        for (auto role : {ROLE_CUSTOMUI_NODE, ROLE_CUSTOMUI_PANEL})
+        for (auto role : {ROLE_NODE_PARAMS, ROLE_PANEL_PARAMS})
         {
             ViewParamModel *paramsModel = QVariantPtr<ViewParamModel>::asPtr(idx.data(role));
             QModelIndex viewIdx = paramsModel->indexFromName(cls, coreParam);
@@ -676,12 +676,12 @@ void ZEditParamLayoutDlg::applySubgraphNode()
             for (int r = 0; r < pGroup->rowCount(); r++)
             {
                 VParamItem* pItem = static_cast<VParamItem*>(pGroup->child(r));
-                const QString& vName = pItem->m_info.name;
+                const QString& vName = pItem->m_name;
                 QString coreName;
                 if (pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
                     coreName = pItem->data(ROLE_PARAM_NAME).toString();
-                const QString& typeDesc = pItem->m_info.typeDesc;
-                const QVariant& deflVal = pItem->m_info.value;
+                const QString& typeDesc = pItem->m_type;
+                const QVariant& deflVal = pItem->m_value;
                 const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
 
                 if (coreName.isEmpty())

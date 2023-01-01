@@ -1502,7 +1502,7 @@ void UiHelper::getAllParamsIndex(
         QModelIndexList& outputs,
         bool bEnsureSRCDST_lastKey)
 {
-    ViewParamModel *nodeViewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_CUSTOMUI_NODE));
+    ViewParamModel *nodeViewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(nodeViewParams);
     QModelIndexList viewInputs, viewParams, viewOutputs;
     nodeViewParams->getNodeParams(viewInputs, viewParams, viewOutputs);
