@@ -512,15 +512,23 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
+                        {"yn0", 3}, 
                         {"yk", 3}, 
+#if s_useChebyshevAcc
                         {"yn-1", 3}, 
+                        {"yn-2", 3}, 
+#endif 
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
                         // linear solver
                         {"dir", 3},
                         {"grad", 3},
+#if !s_useGDDiagHess
                         {"P", 9},
+#else 
+                        {"P", 3}, 
+#endif 
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
