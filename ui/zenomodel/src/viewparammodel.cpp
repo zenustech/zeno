@@ -297,7 +297,11 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(newVParamIdx));
     //mapping core.
     const QString& coreparam = pItem->m_tempInfo.coreParam;
-    pItem->m_info = pItem->m_tempInfo.m_info;
+    pItem->m_ctrl = pItem->m_tempInfo.m_info.control;
+    pItem->m_type = pItem->m_tempInfo.m_info.typeDesc;
+    pItem->m_name = pItem->m_tempInfo.m_info.name;
+    pItem->m_value = pItem->m_tempInfo.m_info.value;
+
     if (!coreparam.isEmpty())
     {
         if (pItem->m_tempInfo.m_cls == PARAM_INPUT)
@@ -404,7 +408,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_TAB)
     {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_name);
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_info.name);
         for (VPARAM_INFO group : info.children)
         {
             VParamItem* pGroupItem = importParam(group);
@@ -414,7 +418,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_GROUP)
     {
-        VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_name);
+        VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_info.name);
         for (VPARAM_INFO param : info.children)
         {
             VParamItem* paramItem = importParam(param);
@@ -424,7 +428,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
     }
     else if (info.vType == VPARAM_PARAM)
     {
-        const QString& paramName = info.m_name;
+        const QString& paramName = info.m_info.name;
         VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
         //mapping core.
@@ -452,7 +456,11 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
             }
         }
 #endif
-        paramItem->m_info = info.m_info;
+        paramItem->m_ctrl = info.m_info.control;
+        paramItem->m_type = info.m_info.typeDesc;
+        paramItem->m_name = info.m_info.name;
+        paramItem->m_value = info.m_info.value;
+
         paramItem->setData(info.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
 #if 0
         if (!coreparam.isEmpty() && (info.m_cls == PARAM_INPUT || info.m_cls == PARAM_OUTPUT))
@@ -479,13 +487,13 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
     VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
     for (VPARAM_INFO tab : invisibleRoot.children)
     {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_name);
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_info.name);
         for (VPARAM_INFO group : tab.children)
         {
-            VParamItem* pGroupItem = new VParamItem(VPARAM_GROUP, group.m_name);
+            VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, group.m_info.name);
             for (VPARAM_INFO param : group.children)
             {
-                const QString& paramName = param.m_name;
+                const QString& paramName = param.m_info.name;
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
                 //mapping core.
@@ -511,7 +519,12 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                         paramItem->mapCoreParam(coreIdx);
                     }
                 }
-                paramItem->m_info = param.m_info;
+
+                paramItem->m_ctrl = param.m_info.control;
+                paramItem->m_type = param.m_info.typeDesc;
+                paramItem->m_name = param.m_info.name;
+                paramItem->m_value = param.m_info.value;
+
                 paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
                 if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
                 {
@@ -671,6 +684,11 @@ QPersistentModelIndex ViewParamModel::nodeIdx() const
     return m_nodeIdx;
 }
 
+IGraphsModel* ViewParamModel::graphsModel() const
+{
+    return m_model;
+}
+
 QVariant ViewParamModel::data(const QModelIndex& index, int role) const
 {
     switch (role)
@@ -687,10 +705,10 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
                 pItem = pItem->parent();
             } while (pItem);
             if (m_bNodeUI) {
-                path = QString("node-param") + cPathSeperator + path;
+                path = "[node]" + path;
             }
             else {
-                path = QString("panel-param") + cPathSeperator + path;
+                path = "[panel]" + path;
             }
             path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
             return path;

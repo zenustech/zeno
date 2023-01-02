@@ -7,7 +7,7 @@
 #include "jsonhelper.h"
 #include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/viewparammodel.h>
-#include <zenomodel/include/iparammodel.h>
+#include <zenomodel/include/nodeparammodel.h>
 #include <QUuid>
 
 
@@ -621,6 +621,43 @@ void UiHelper::getSocketInfo(const QString& objPath,
     }
 }
 
+QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName)
+{
+    QStringList seq = {subgraph, node, group + sockName};
+    return seq.join(cPathSeperator);
+}
+
+QString UiHelper::getSockNode(const QString& sockPath)
+{
+    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    if (lst.size() > 1)
+        return lst[1];
+    return "";
+}
+
+QString UiHelper::getSockName(const QString& sockPath)
+{
+    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    if (lst.size() > 2)
+    {
+        lst = lst[2].split("/", Qt::SkipEmptyParts);
+        if (!lst.isEmpty())
+        {
+            //todo: dict-key case
+            return lst.last();
+        }
+    }
+    return "";
+}
+
+QString UiHelper::getSockSubgraph(const QString& sockPath)
+{
+    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    if (lst.size() > 0)
+        return lst[0];
+    return "";
+}
+
 QString UiHelper::variantToString(const QVariant& var)
 {
 	QString value;
@@ -1018,19 +1055,24 @@ void UiHelper::reAllocIdents(
         data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 
-    for (EdgeInfo& link : links) {
-        QString inputNode, inputSock, outputNode, outputSock;
-        link.getSockInfo(true, inputNode, inputSock);
-        link.getSockInfo(false, outputNode, outputSock);
+    for (EdgeInfo& link : links)
+    {
+        QString outputNode = UiHelper::getSockNode(link.outSockPath);
+        QString outputSock = UiHelper::getSockName(link.outSockPath);
+        QString inputNode = UiHelper::getSockNode(link.inSockPath);
+        QString inputSock = UiHelper::getSockName(link.inSockPath);
 
         QString newInputNode = old2new[inputNode];
         QString newOutputNode = old2new[outputNode];
 
         //todo: how to set this new node ident into link?
-        QString inSubg = link.subgraphName(true);
-        QString outSubg = link.subgraphName(false);
+        QString inSubg = UiHelper::getSockSubgraph(link.inSockPath);
+        QString outSubg = UiHelper::getSockSubgraph(link.outSockPath);
 
-        EdgeInfo newLink(inSubg, newInputNode, inputSock, outSubg, newOutputNode, outputSock);
+        const QString& outSockPath = UiHelper::constructObjPath(outSubg, newOutputNode, "[node]/outputs/", outputSock);
+        const QString& inSockPath = UiHelper::constructObjPath(inSubg, newInputNode, "[node]/inputs/", inputSock);
+
+        EdgeInfo newLink(outSockPath, inSockPath);
         link.inSockPath = newLink.inSockPath;
         link.outSockPath = newLink.outSockPath;
     }
@@ -1481,12 +1523,13 @@ int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
 }
 
 QModelIndex UiHelper::findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
-                                         const QModelIndex &subgIdx) {
+                                         const QModelIndex &subgIdx)
+{
     QModelIndexList nodes = pModel->searchInSubgraph(bSubInput ? "SubInput" : "SubOutput", subgIdx);
     for (QModelIndex subInOutput : nodes)
     {
-        IParamModel* paramModel = QVariantPtr<IParamModel>::asPtr(subInOutput.data(ROLE_PARAM_MODEL));
-        QModelIndex nameIdx = paramModel->index("name");
+        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+        QModelIndex nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
         if (nameIdx.data(ROLE_PARAM_VALUE) == paramName)
         {
             return subInOutput;
@@ -1502,66 +1545,35 @@ void UiHelper::getAllParamsIndex(
         QModelIndexList& outputs,
         bool bEnsureSRCDST_lastKey)
 {
-    ViewParamModel *nodeViewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-    ZASSERT_EXIT(nodeViewParams);
-    QModelIndexList viewInputs, viewParams, viewOutputs;
-    nodeViewParams->getNodeParams(viewInputs, viewParams, viewOutputs);
+    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+    ZASSERT_EXIT(nodeParams);
 
-    QModelIndex srcIdx, dstIdx;
-    IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
-    ZASSERT_EXIT(inputsModel);
-    for (int r = 0; r < inputsModel->rowCount(); r++)
-    {
-        QModelIndex idx = inputsModel->index(r, 0);
-        const QString& name = idx.data(ROLE_PARAM_NAME).toString();
-        if (name == "SRC" && bEnsureSRCDST_lastKey) {
-            srcIdx = idx;
-        }
-        else {
-            inputs.append(idx);
-        }
-    }
-
-    IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-    for (int r = 0; r < paramsModel->rowCount(); r++)
-    {
-        QModelIndex idx = paramsModel->index(r, 0);
-        params.append(idx);
-    }
-
-    IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
-    for (int r = 0; r < outputsModel->rowCount(); r++)
-    {
-        QModelIndex idx = outputsModel->index(r, 0);
-        const QString& name = idx.data(ROLE_PARAM_NAME).toString();
-        if (name == "DST" && bEnsureSRCDST_lastKey) {
-            dstIdx = idx;
-        }
-        else {
-            outputs.append(idx);
-        }
-    }
-
-    for (QModelIndex idx : viewInputs)
-    {
-        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
-            inputs.append(idx);
-    }
-    for (QModelIndex idx : viewParams)
-    {
-        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
-            params.append(idx);
-    }
-    for (QModelIndex idx : viewOutputs)
-    {
-        if (!idx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
-            outputs.append(idx);
-    }
+    inputs = nodeParams->getInputIndice();
+    params = nodeParams->getInputIndice();
+    outputs = nodeParams->getInputIndice();
 
     if (bEnsureSRCDST_lastKey)
     {
-        inputs.append(srcIdx);
-        outputs.append(dstIdx);
+        for (int i = 0; i < inputs.size(); i++)
+        {
+            if (inputs[i].data(ROLE_PARAM_NAME).toString() == "SRC")
+            {
+                QModelIndex tmp = inputs[i];
+                inputs.removeAt(i);
+                inputs.append(tmp);
+                break;
+            }
+        }
+        for (int i = 0; i < outputs.size(); i++)
+        {
+            if (outputs[i].data(ROLE_PARAM_NAME).toString() == "DST")
+            {
+                QModelIndex tmp = outputs[i];
+                outputs.removeAt(i);
+                outputs.append(tmp);
+                break;
+            }
+        }
     }
 }
 

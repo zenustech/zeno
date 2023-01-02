@@ -46,6 +46,10 @@ public:
     static QStringList getCoreTypeList();
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
+    static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
+    static QString getSockNode(const QString& sockPath);
+    static QString getSockName(const QString& sockPath);
+    static QString getSockSubgraph(const QString& sockPath);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QVariant initVariantByControl(PARAM_CONTROL ctrl);

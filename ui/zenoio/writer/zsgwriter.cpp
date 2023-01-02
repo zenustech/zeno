@@ -237,8 +237,8 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
             {
                 //legacy link.
                 const EdgeInfo& link = inSock.info.links[0];
-                QString outputNode, outputSock;
-                link.getSockInfo(false, outputNode, outputSock);
+                QString outputNode = UiHelper::getSockNode(link.outSockPath);
+                QString outputSock = UiHelper::getSockName(link.outSockPath);
                 AddVariantList({ outputNode, outputSock, deflVal }, sockType, writer, true);
             }
             else

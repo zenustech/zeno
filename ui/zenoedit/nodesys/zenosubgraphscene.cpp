@@ -21,7 +21,8 @@
 #include "variantptr.h"
 #include <zenomodel/include/linkmodel.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenomodel/include/iparammodel.h>
+#include <zenomodel/include/nodeparammodel.h>
+#include <zenomodel/include/vparamitem.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -75,12 +76,11 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         const QString& id = inNode->nodeId();
         const QModelIndex& idx = pGraphsModel->index(id, m_subgIdx);
 
-        IParamModel* inputsModel = pGraphsModel->paramModel(idx, PARAM_INPUT);
-        if (!inputsModel)
-            continue;
-        for (int r = 0; r < inputsModel->rowCount(); r++)
+        NodeParamModel* viewParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+        const QModelIndexList& lst = viewParams->getInputIndice();
+        for (int r = 0; r < lst.size(); r++)
         {
-            const QModelIndex& paramIdx = inputsModel->index(r, 0);
+            const QModelIndex& paramIdx = lst[r];
             const QString& inSock = paramIdx.data(ROLE_PARAM_NAME).toString();
             const int inSockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
@@ -478,13 +478,12 @@ void ZenoSubGraphScene::copy()
 
             QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
 
-            EdgeInfo newEdge(subgName, newOutNode, newInNode, subgName, outSock, inSock);
+            const QString& outSockPath = UiHelper::constructObjPath(subgName, newOutNode, "[node]/outputs/", outSock);
+            const QString& inSockPath = UiHelper::constructObjPath(subgName, newInNode, "[node]/inputs/", inSock);
+            EdgeInfo newEdge(outSockPath, inSockPath);
 
             inputSocket.info.links.append(newEdge);
             outputSocket.info.links.append(newEdge);
-
-            //inputSocket.linkIndice.append(persistIdx);
-            //outputSocket.linkIndice.append(persistIdx);
 
             inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
             outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
@@ -536,12 +535,6 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 
     QModelIndex paramIdx = pSocketItem->paramIndex();
     ZASSERT_EXIT(paramIdx.isValid());
-
-    if (!paramIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
-    {
-        QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
-        return;
-    }
 
     bool bInput = pSocketItem->isInputSocket();
     QString nodeid = pSocketItem->nodeIdent();
@@ -668,12 +661,6 @@ void ZenoSubGraphScene::onTempLinkClosed()
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (ZenoSocketItem* targetSock = m_tempLink->getAdsorbedSocket())
     {
-        if (!targetSock->paramIndex().data(ROLE_VPARAM_IS_COREPARAM).toBool())
-        {
-            QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
-            return;
-        }
-
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphsModel);
 

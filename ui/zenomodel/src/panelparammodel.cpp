@@ -16,6 +16,8 @@ PanelParamModel::PanelParamModel(
         importParamInfo(root);
     else
         initParams(nodeParams);
+    connect(nodeParams, &NodeParamModel::rowsInserted, this, &PanelParamModel::onNodeParamsInserted);
+    connect(nodeParams, &NodeParamModel::rowsAboutToBeRemoved, this, &PanelParamModel::onNodeParamsAboutToBeRemoved);
 }
 
 PanelParamModel::~PanelParamModel()
@@ -91,4 +93,44 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
 
     pRoot->appendRow(pTab);
     appendRow(pRoot);
+}
+
+void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first, int last)
+{
+    QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+    ZASSERT_EXIT(pModel);
+    const QModelIndex& idxNodeParam = pModel->index(first, 0, parent);
+    if (!idxNodeParam.isValid())
+        return;
+
+    VParamItem* pNodeParam = static_cast<VParamItem*>(pModel->itemFromIndex(idxNodeParam));
+    VParamItem* parentItem = static_cast<VParamItem*>(pNodeParam->parent());
+    const QString& parentName = parentItem->m_name;
+    if (parentName == "inputs")
+    {
+        QList<QStandardItem*> lst = findItems("In Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        ZASSERT_EXIT(lst.size() == 1);
+        VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
+        pNewItem->mapCoreParam(pNodeParam->index());
+        lst[0]->appendRow(pNewItem);
+    }
+    else if (parentName == "params")
+    {
+        QList<QStandardItem*> lst = findItems("Parameters", Qt::MatchRecursive | Qt::MatchExactly);
+        ZASSERT_EXIT(lst.size() == 1);
+        VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
+        lst[0]->appendRow(pNewItem);
+    }
+    else if (parentName == "outputs")
+    {
+        QList<QStandardItem*> lst = findItems("Out Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        ZASSERT_EXIT(lst.size() == 1);
+        VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
+        lst[0]->appendRow(pNewItem);
+    }
+}
+
+void PanelParamModel::onNodeParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
+{
+    
 }

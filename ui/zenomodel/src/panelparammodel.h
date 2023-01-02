@@ -18,7 +18,9 @@ public:
     ~PanelParamModel();
     void initParams(NodeParamModel* nodeParams);
 
-private:
+public slots:
+    void onNodeParamsInserted(const QModelIndex &parent, int first, int last);
+    void onNodeParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
 };
 
 

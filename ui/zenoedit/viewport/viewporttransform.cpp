@@ -4,6 +4,7 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/nodesmgr.h>
+#include <zenomodel/include/uihelper.h>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -533,7 +534,10 @@ void FakeTransformer::createNewTransformNode(QString& node_id, const std::string
     QString node_name = node_id.section('-', 1);
     QString out_sock = getNodePrimSockName(node_name.toStdString());
 
-    EdgeInfo edge(subgraphName, node_id, new_node_id, subgraphName, out_sock, "prim");
+    const QString &newInSock = UiHelper::constructObjPath(subgraphName, new_node_id, "[node]/inputs/", "prim");
+    const QString &newOutSock = UiHelper::constructObjPath(subgraphName, node_id, "[node]/outputs/", out_sock);
+
+    EdgeInfo edge(newOutSock, newInSock);
     pModel->addLink(edge);
 
     auto user_data = m_objects[obj_name]->userData();
@@ -599,9 +603,9 @@ QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelI
     QString node_name = node_id.section("-", 1);
     std::string out_sock = getNodePrimSockName(node_name.toStdString());
     auto linked_edges = output_sockets[out_sock.c_str()].info.links;
-    for (const auto& linked_edge : linked_edges) {
-        QString inputNode, inputSock;
-        linked_edge.getSockInfo(true, inputNode, inputSock);
+    for (const auto& linked_edge : linked_edges)
+    {
+        QString inputNode = UiHelper::getSockNode(linked_edge.inSockPath);
         const QString &next_node_id = inputNode;
         if (next_node_id.contains("TransformPrimitive")) {
             auto search_result = pModel->search(next_node_id, SEARCH_NODEID);

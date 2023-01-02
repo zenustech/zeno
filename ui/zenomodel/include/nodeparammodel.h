@@ -1,0 +1,1 @@
+#include "../src/nodeparammodel.h"

@@ -108,6 +108,12 @@ VParamItem::VParamItem(const VParamItem& other)
 
 VParamItem::~VParamItem()
 {
+    for (const QPersistentModelIndex& linkIdx : m_links)
+    {
+        ViewParamModel* pModel = qobject_cast<ViewParamModel*>(this->model());
+        //IGraphsModel* pGraphsModel = pModel->graphsModel(); 
+        //pGraphsModel->removeLink(linkIdx, true);
+    }
 }
 
 QVariant VParamItem::data(int role) const
@@ -221,6 +227,7 @@ void VParamItem::setData(const QVariant& value, int role)
                     setData(value, ROLE_VPARAM_NAME);
                 }
             }
+            m_name = value.toString();
             break;
         }
         case ROLE_PARAM_CTRL:
@@ -423,7 +430,7 @@ void VParamItem::importParamInfo(const VPARAM_INFO& paramInfo)
     if (paramInfo.vType == VPARAM_ROOT)
     {
         this->vType = paramInfo.vType;
-        this->m_info = paramInfo.m_info;
+        //this->m_info = paramInfo.m_info;
         for (VPARAM_INFO tab : paramInfo.children)
         {
 
@@ -503,7 +510,10 @@ VPARAM_INFO VParamItem::exportParamInfo()
         param.vType = VPARAM_PARAM;
         param.controlInfos = data(ROLE_VPARAM_CTRL_PROPERTIES);
         param.coreParam = data(ROLE_PARAM_NAME).toString();
-        param.m_info = m_info;
+        param.m_info.control = m_ctrl;
+        param.m_info.defaultValue = m_value;
+        param.m_info.name = m_name;
+        param.m_info.typeDesc = m_type;
         return param;
     }
     else

@@ -95,7 +95,6 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
     data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
-    data[ROLE_NODE_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
 
     return data;
 }
@@ -111,7 +110,7 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    ret.nodeParams = new NodeParamModel(nodeIdx, m_pGraphsModel, this);
+    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, this);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -209,7 +208,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     }
     if (item.nodeParams)
     {
-        item.nodeParams->clear();
+        item.nodeParams->clearParams();
         delete item.nodeParams;
         item.nodeParams = nullptr;
     }
@@ -267,6 +266,14 @@ int SubGraphModel::rowCount(const QModelIndex& parent) const
 int SubGraphModel::columnCount(const QModelIndex& parent) const
 {
 	return 1;
+}
+
+QModelIndex SubGraphModel::nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLASS cls, const QString &paramName) const
+{
+    _NodeItem item;
+    if (!itemFromIndex(nodeIdx, item))
+        return QModelIndex();
+    return item.nodeParams->getParam(cls, paramName);
 }
 
 IParamModel* SubGraphModel::paramModel(const QModelIndex& index, PARAM_CLASS cls) const
@@ -370,7 +377,7 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODE_PARAMS:
         {
-            return QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
+            return QVariantPtr<QStandardItemModel>::asVariant(item.nodeParams);
         }
         case ROLE_OBJPATH:
         {
@@ -413,7 +420,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
-                    item.nodeParams->setParam(PARAM_INPUT, name, inSocket.info.type, inSocket.info.defaultValue, (SOCKET_PROPERTY)inSocket.info.sockProp);
+                    item.nodeParams->setAddParam(PARAM_INPUT, name, inSocket.info.type, inSocket.info.defaultValue, (SOCKET_PROPERTY)inSocket.info.sockProp);
                 }
                 break;
             }
@@ -427,7 +434,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
-                    item.nodeParams->setParam(PARAM_INPUT, name, outSocket.info.type, outSocket.info.defaultValue, (SOCKET_PROPERTY)outSocket.info.sockProp);
+                    item.nodeParams->setAddParam(PARAM_OUTPUT, name, outSocket.info.type, outSocket.info.defaultValue, (SOCKET_PROPERTY)outSocket.info.sockProp);
                 }
                 break;
             }
@@ -441,7 +448,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
-                    item.nodeParams->setParam(PARAM_INPUT, name, param.typeDesc, param.value, SOCKPROP_UNKNOWN);
+                    item.nodeParams->setAddParam(PARAM_INPUT, name, param.typeDesc, param.value, SOCKPROP_UNKNOWN);
                 }
                 break;
             }
@@ -498,7 +505,7 @@ bool SubGraphModel::setParamValue(
     if (!itemFromIndex(idx, item))
         return false;
 
-    item.nodeParams->setParam(cls, sockName, type, value, sockProp);
+    item.nodeParams->setAddParam(cls, sockName, type, value, sockProp);
     return false;
 }
 

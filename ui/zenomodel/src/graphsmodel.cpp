@@ -262,28 +262,6 @@ QModelIndex GraphsModel::linkIndex(const QString& outNode,
     return QModelIndex();
 }
 
-QModelIndex GraphsModel::paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName)
-{
-    if (!nodeIdx.isValid())
-        return QModelIndex();
-
-    IParamModel* coreModel = nullptr;
-    if (cls == PARAM_INPUT)
-    {
-        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
-    }
-    else if (cls == PARAM_OUTPUT)
-    {
-        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
-    }
-    else if (cls == PARAM_PARAM)
-    {
-        coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-    }
-    ZASSERT_EXIT(coreModel, QModelIndex());
-    return coreModel->index(sockName);
-}
-
 QModelIndex GraphsModel::parent(const QModelIndex& child) const
 {
     return QModelIndex();
@@ -292,7 +270,7 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
 QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
     QStringList lst = path.split(cPathSeperator, Qt::SkipEmptyParts);
-    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
+    //format like: {subgraph-name}:{node-ident}:{[node|panel]param-layer-path}
     if (lst.size() == 1)
     {
         const QString& subgName = lst[0];
@@ -305,63 +283,28 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
         const QModelIndex& subgIdx = index(subgName);
         return index(nodeIdent, subgIdx);
     }
-    else if (lst.size() >= 4)
+    else if (lst.size() >= 3)
     {
         const QString& subgName = lst[0];
         const QString& nodeIdent = lst[1];
-        const QString& paramCls = lst[2];
-        const QString& paramPath = lst[3];
-        const QString& keyName = lst.size() >= 5 ? lst[4] : "";
+        const QString& paramPath = lst[2];
         const QModelIndex& subgIdx = index(subgName);
         const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
         if (!nodeIdx.isValid())
             return QModelIndex();
-        if (paramCls == "node-param")
+        if (paramPath.startsWith("[node]"))
         {
+            const QString& paramObj = paramPath.mid(QString("[node]").length());
             ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-            QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
+            QModelIndex paramIdx = viewParams->indexFromPath(paramObj);
             return paramIdx;
         }
-        else if (paramCls == "panel-param")
+        else if (paramPath.startsWith("[panel]"))
         {
+            const QString& paramObj = paramPath.mid(QString("[panel]").length());
             ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_PANEL_PARAMS));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
-        }
-        else if (paramCls == "core-param")
-        {
-            //decouples with IParamModel::data(ROLE_OBJPATH).
-            //format like /inputs/param-name   /params/param-name   /outputs/param-name
-            QStringList _lst = paramPath.split("/", Qt::SkipEmptyParts);
-            if (_lst.size() == 2)
-            {
-                const QString& _cls = _lst[0];
-                const QString& _name = _lst[1];
-                IParamModel* coreModel = nullptr;
-                if (_cls == "inputs")
-                {
-                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
-                }
-                else if (_cls == "params")
-                {
-                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-                }
-                else if (_cls == "outputs")
-                {
-                    coreModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_OUTPUT_MODEL));
-                }
-                if (coreModel)
-                {
-                    QModelIndex paramIdx = coreModel->index(_name);
-                    if (!keyName.isEmpty() && paramIdx.isValid())
-                    {
-                        DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(paramIdx.data(ROLE_VPARAM_LINK_MODEL));
-                        ZASSERT_EXIT(keyModel, QModelIndex());
-                        return keyModel->index(keyName);
-                    }
-                    return paramIdx;
-                }
-            }
         }
     }
     return QModelIndex();
@@ -1179,11 +1122,11 @@ void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &
                     QModelIndex newOutNodeIdx = dstGraph->index(newOutNode);
                     QModelIndex newInNodeIdx = dstGraph->index(newInNode);
 
-                    IParamModel* pNewOutputs = QVariantPtr<IParamModel>::asPtr(newOutNodeIdx.data(ROLE_INPUT_MODEL));
-                    IParamModel* pNewInputs = QVariantPtr<IParamModel>::asPtr(newInNodeIdx.data(ROLE_INPUT_MODEL));
+                    NodeParamModel* outParams = QVariantPtr<NodeParamModel>::asPtr(newOutNodeIdx.data(ROLE_NODE_PARAMS));
+                    NodeParamModel* inParams = QVariantPtr<NodeParamModel>::asPtr(newInNodeIdx.data(ROLE_NODE_PARAMS));
 
-                    const QModelIndex& newOutSockIdx = pNewOutputs->index(outSock);
-                    const QModelIndex& newInSockIdx = pNewInputs->index(inSock);
+                    const QModelIndex& newOutSockIdx = outParams->getParam(PARAM_OUTPUT, outSock);
+                    const QModelIndex& newInSockIdx = inParams->getParam(PARAM_INPUT, inSock);
 
                     addLink(newOutSockIdx, newInSockIdx, enableTrans);
                 }
@@ -1400,16 +1343,16 @@ QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     const QModelIndex& nodeIdx = index(id, subGpIdx);
-    IParamModel* pModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_PARAM_MODEL));
-    const QModelIndex& paramIdx = pModel->index(info.name);
+    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+    const QModelIndex& paramIdx = nodeParams->getParam(PARAM_PARAM, info.name);
     ModelSetData(paramIdx, info.newValue, ROLE_PARAM_VALUE);
 }
 
 void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     const QModelIndex& nodeIdx = index(id, subGpIdx);
-    IParamModel* pModel = QVariantPtr<IParamModel>::asPtr(nodeIdx.data(ROLE_INPUT_MODEL));
-    const QModelIndex& paramIdx = pModel->index(info.name);
+    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+    const QModelIndex& paramIdx = nodeParams->getParam(PARAM_INPUT, info.name);
     ModelSetData(paramIdx, info.newValue, ROLE_PARAM_VALUE);
 }
 
@@ -1739,12 +1682,11 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     const QString& objId = nodeIdx.data(ROLE_OBJID).toString();
     const QString& objName = nodeIdx.data(ROLE_OBJNAME).toString();
 
-    IParamModel* paramsModel = paramModel(nodeIdx, PARAM_PARAM);
-    ZASSERT_EXIT(paramsModel);
+    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
 
-    const QModelIndex& nameIdx = paramsModel->index("name");
-    const QModelIndex& typeIdx = paramsModel->index("type");
-    const QModelIndex& deflIdx = paramsModel->index("defl");
+    const QModelIndex& nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
+    const QModelIndex& typeIdx = nodeParams->getParam(PARAM_PARAM, "type");
+    const QModelIndex& deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
     ZASSERT_EXIT(nameIdx.isValid() && typeIdx.isValid() && deflIdx.isValid());
 
     const QString& nameValue = nameIdx.data(ROLE_PARAM_VALUE).toString();
@@ -1779,8 +1721,8 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
         for (QModelIndex subgNode : subgNodes)
         {
-            IParamModel* sockModel = paramModel(subgNode, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-            sockModel->appendRow(nameValue, typeValue, deflVal);
+            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, nameValue, typeValue, deflVal, SOCKPROP_NORMAL);
         }
     }
     else
@@ -1799,112 +1741,8 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
         for (QModelIndex subgNode : subgNodes)
         {
-            IParamModel* sockModel = paramModel(subgNode, bInput ? PARAM_INPUT : PARAM_OUTPUT);
-            QModelIndex paramIdx = sockModel->index(nameValue);
-            ZASSERT_EXIT(paramIdx.isValid());
-            sockModel->removeRow(paramIdx.row());
-        }
-    }
-}
-
-void GraphsModel::onSubIOUpdate(SubGraphModel* pGraph, const QModelIndex& nodeIdx, PARAM_UPDATE_INFO info)
-{
-    const QString& nodeName = nodeIdx.data(ROLE_OBJNAME).toString();
-    const QString& nodeid = nodeIdx.data(ROLE_OBJID).toString();
-
-    if (nodeName == "SubInput" || nodeName == "SubOutput")
-    {
-        const QString& subgName = pGraph->name();
-        if (m_subgsDesc.find(subgName) == m_subgsDesc.end())
-            return;
-
-        bool bSubInput = nodeName == "SubInput";
-        NODE_DESC& desc = m_subgsDesc[subgName];
-
-        if (info.name == "name")
-        {
-            //1.update desc info for the subgraph node.
-            const QString& oldName = info.oldValue.toString();
-            const QString& newName = info.newValue.toString();
-            if (bSubInput)
-            {
-                desc.inputs[newName].info.name = newName;
-                desc.inputs.remove(oldName);
-            }
-            else
-            {
-                desc.outputs[newName].info.name = newName;
-                desc.outputs.remove(oldName);
-            }
-
-            //2.update all sockets for all subgraph node.
-            QModelIndexList subgNodes = findSubgraphNode(subgName);
-            for (auto idx : subgNodes)
-            {
-                // update socket for current subgraph node.
-                IParamModel* sockModel = paramModel(idx, bSubInput ? PARAM_INPUT : PARAM_OUTPUT);
-                QModelIndex paramIdx = sockModel->index(oldName);
-                sockModel->setData(paramIdx, newName, ROLE_PARAM_NAME);
-            }
-        }
-        else if (info.name == "defl")
-        {
-            const QString& sockName = pGraph->getParamValue(nodeid, "name").toString();
-            const QVariant& deflVal = pGraph->getParamValue(nodeid, "defl");
-            if (bSubInput)
-            {
-                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
-                desc.inputs[sockName].info.defaultValue = deflVal;
-            }
-            else
-            {
-                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
-                desc.outputs[sockName].info.defaultValue = deflVal;
-            }
-            //no need to update all subgraph node because it causes disturbance.
-        }
-        else if (info.name == "type")
-        {
-            IParamModel* paramsModel = pGraph->paramModel(nodeIdx, PARAM_PARAM);
-            ZASSERT_EXIT(paramsModel);
-
-            const QModelIndex& deflIdx = paramsModel->index("defl");
-            const QModelIndex& nameIdx = paramsModel->index("name");
-            ZASSERT_EXIT(deflIdx.isValid() && nameIdx.isValid());
-
-            const QString& sockName = nameIdx.data(ROLE_PARAM_VALUE).toString();
-            const QVariant& deflVal = deflIdx.data(ROLE_PARAM_VALUE);
-            const QString& newType = info.newValue.toString();
-            PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
-
-            // type change, so the control of the defl will be changed.
-            paramsModel->setData(deflIdx, newType, ROLE_PARAM_TYPE);
-            paramsModel->setData(deflIdx, newCtrl, ROLE_PARAM_CTRL);
-
-            // sync to subgraph desc.
-            if (bSubInput)
-            {
-                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
-                desc.inputs[sockName].info.type = newType;
-                desc.inputs[sockName].info.control = newCtrl;
-            }
-            else
-            {
-                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
-                desc.outputs[sockName].info.defaultValue = deflVal;
-                desc.outputs[sockName].info.control = newCtrl;
-            }
-
-            // sync to all subgraph nodes.
-            QModelIndexList subgNodes = findSubgraphNode(subgName);
-            for (auto idx : subgNodes)
-            {
-                // update socket for current subgraph node.
-                IParamModel* sockModel = paramModel(idx, bSubInput ? PARAM_INPUT : PARAM_OUTPUT);
-                QModelIndex paramIdx = sockModel->index(sockName);
-                sockModel->setData(paramIdx, newType, ROLE_PARAM_TYPE);
-                sockModel->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
-            }
+            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
+            nodeParams->removeParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, nameValue);
         }
     }
 }

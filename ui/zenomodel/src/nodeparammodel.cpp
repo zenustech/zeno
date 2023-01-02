@@ -1,19 +1,47 @@
 #include "nodeparammodel.h"
 #include "vparamitem.h"
 #include "modelrole.h"
+#include "globalcontrolmgr.h"
+#include "uihelper.h"
+#include "variantptr.h"
 
 
-NodeParamModel::NodeParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
+NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
     : ViewParamModel(true, nodeIdx, pModel, parent)
     , m_inputs(nullptr)
     , m_params(nullptr)
     , m_outputs(nullptr)
+    , m_pGraphsModel(pModel)
+    , m_subgIdx(subgIdx)
 {
     initUI();
+    connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
+    connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
 }
 
 NodeParamModel::~NodeParamModel()
 {
+}
+
+void NodeParamModel::onModelAboutToBeReset()
+{
+    clearParams();
+}
+
+void NodeParamModel::clearParams()
+{
+    while (m_inputs->rowCount() > 0)
+    {
+        m_inputs->removeRows(0, 1);
+    }
+    while (m_params->rowCount() > 0)
+    {
+        m_params->removeRows(0, 1);
+    }
+    while (m_outputs->rowCount() > 0)
+    {
+        m_outputs->removeRows(0, 1);
+    }
 }
 
 void NodeParamModel::initUI()
@@ -114,6 +142,33 @@ VParamItem* NodeParamModel::getOutputs() const
     return m_outputs;
 }
 
+QModelIndexList NodeParamModel::getInputIndice() const
+{
+    QModelIndexList lst;
+    for (int i = 0; i < m_inputs->rowCount(); i++) {
+        lst.append(m_inputs->child(i)->index());
+    }
+    return lst;
+}
+
+QModelIndexList NodeParamModel::getParamIndice() const
+{
+    QModelIndexList lst;
+    for (int i = 0; i < m_params->rowCount(); i++) {
+        lst.append(m_params->child(i)->index());
+    }
+    return lst;
+}
+
+QModelIndexList NodeParamModel::getOutputIndice() const
+{
+    QModelIndexList lst;
+    for (int i = 0; i < m_outputs->rowCount(); i++) {
+        lst.append(m_outputs->child(i)->index());
+    }
+    return lst;
+}
+
 void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
 {
     for (INPUT_SOCKET inSocket : inputs)
@@ -123,7 +178,17 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         pItem->m_value = inSocket.info.defaultValue;
         pItem->m_type = inSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)inSocket.info.sockProp;
-        appendRow(pItem);
+
+        const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        CONTROL_INFO infos =
+            GlobalControlMgr::instance().controlInfo(nodeCls, PARAM_INPUT, pItem->m_name, pItem->m_type);
+        PARAM_CONTROL ctrl = infos.control;
+        QVariant props = infos.controlProps;
+
+        pItem->m_ctrl = ctrl;
+        pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
+
+        m_inputs->appendRow(pItem);
     }
 }
 
@@ -136,7 +201,17 @@ void NodeParamModel::setParams(const PARAMS_INFO& params)
         pItem->m_value = paramInfo.value;
         pItem->m_type = paramInfo.typeDesc;
         pItem->m_sockProp = SOCKPROP_UNKNOWN;
-        appendRow(pItem);
+
+        const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        CONTROL_INFO infos =
+            GlobalControlMgr::instance().controlInfo(nodeCls, PARAM_PARAM, pItem->m_name, pItem->m_type);
+        PARAM_CONTROL ctrl = infos.control;
+        QVariant props = infos.controlProps;
+
+        pItem->m_ctrl = ctrl;
+        pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
+
+        m_params->appendRow(pItem);
     }
 }
 
@@ -149,7 +224,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_value = outSocket.info.defaultValue;
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
-        appendRow(pItem);
+        m_outputs->appendRow(pItem);
     }
 }
 
@@ -172,26 +247,52 @@ EdgeInfo NodeParamModel::exportLink(const QModelIndex& linkIdx)
     QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(outSock.isValid() && inSock.isValid(), link);
 
-    QModelIndex outCoreParam = outSock.data(ROLE_PARAM_COREIDX).toModelIndex();
-    QModelIndex inCoreParam = inSock.data(ROLE_PARAM_COREIDX).toModelIndex();
-    ZASSERT_EXIT(outCoreParam.isValid() && inCoreParam.isValid(), link);
-
-    //for dict panel socket, write the full path of output socket.
-    if (outSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT) {
-        link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
-    } else {
-        link.outSockPath = outCoreParam.data(ROLE_OBJPATH).toString();
-    }
-
-    if (inSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT) {
-        link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
-    } else {
-        link.inSockPath = inCoreParam.data(ROLE_OBJPATH).toString();
-    }
+    link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
+    link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
     return link;
 }
 
-void NodeParamModel::setParam(
+void NodeParamModel::removeParam(PARAM_CLASS cls, const QString& name)
+{
+    if (PARAM_INPUT == cls)
+    {
+        for (int i = 0; i < m_inputs->rowCount(); i++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(m_inputs->child(i));
+            if (pChild->m_name == name)
+            {
+                m_inputs->removeRow(i);
+                return;
+            }
+        }
+    }
+    if (PARAM_PARAM == cls)
+    {
+        for (int i = 0; i < m_params->rowCount(); i++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(m_params->child(i));
+            if (pChild->m_name == name)
+            {
+                m_params->removeRow(i);
+                return;
+            }
+        }
+    }
+    if (PARAM_OUTPUT == cls)
+    {
+        for (int i = 0; i < m_outputs->rowCount(); i++)
+        {
+            VParamItem* pChild = static_cast<VParamItem*>(m_outputs->child(i));
+            if (pChild->m_name == name)
+            {
+                m_outputs->removeRow(i);
+                return;
+            }
+        }
+    }
+}
+
+void NodeParamModel::setAddParam(
                 PARAM_CLASS cls,
                 const QString& name,
                 const QString& type,
@@ -199,11 +300,24 @@ void NodeParamModel::setParam(
                 SOCKET_PROPERTY prop)
 {
     VParamItem *pItem = nullptr;
+    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+
+    CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, name, type);
+    PARAM_CONTROL ctrl = infos.control;
+    QVariant props = infos.controlProps;
+
     if (PARAM_INPUT == cls)
     {
         if (!(pItem = m_inputs->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
+            pItem->m_name = name;
+            pItem->m_value = deflValue;
+            pItem->m_type = type;
+            pItem->m_sockProp = prop;
+            pItem->m_ctrl = ctrl;
+            pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
+
             m_inputs->appendRow(pItem);
         }
     }
@@ -212,6 +326,13 @@ void NodeParamModel::setParam(
         if (!(pItem = m_params->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
+            pItem->m_name = name;
+            pItem->m_value = deflValue;
+            pItem->m_type = type;
+            pItem->m_sockProp = prop;
+            pItem->m_ctrl = ctrl;
+            pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
+
             m_params->appendRow(pItem);
         }
     }
@@ -220,13 +341,16 @@ void NodeParamModel::setParam(
         if (!(pItem = m_outputs->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
+            pItem->m_name = name;
+            pItem->m_value = deflValue;
+            pItem->m_sockProp = prop;
+            pItem->m_type = type;
+            pItem->m_ctrl = ctrl;
+            pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
+
             m_outputs->appendRow(pItem);
         }
     }
-
-    pItem->m_name = name;
-    pItem->m_value = deflValue;
-    pItem->m_sockProp = prop;
 }
 
 QVariant NodeParamModel::getValue(PARAM_CLASS cls, const QString& name) const
@@ -260,9 +384,38 @@ QVariant NodeParamModel::getValue(PARAM_CLASS cls, const QString& name) const
     return pItem->m_value;
 }
 
+QModelIndex NodeParamModel::getParam(PARAM_CLASS cls, const QString& name) const
+{
+    if (PARAM_INPUT == cls)
+    {
+        if (VParamItem* pItem = m_inputs->getItem(name))
+        {
+            return pItem->index();
+        }
+    }
+    else if (PARAM_PARAM == cls)
+    {
+        if (VParamItem* pItem = m_params->getItem(name))
+        {
+            return pItem->index();
+        }
+    }
+    else if (PARAM_OUTPUT == cls)
+    {
+        if (VParamItem* pItem = m_outputs->getItem(name))
+        {
+            return pItem->index();
+        }
+    }
+    return QModelIndex();
+}
 
 QVariant NodeParamModel::data(const QModelIndex& index, int role) const
 {
+    VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+    if (!pItem)
+        return QVariant();
+
     switch (role)
     {
     case ROLE_INPUT_MODEL:
@@ -270,15 +423,313 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
     case ROLE_OUTPUT_MODEL:
         //legacy interface.
         return QVariant();
+    case ROLE_PARAM_CLASS:
+    {
+        if (pItem->vType != VPARAM_PARAM)
+            return QVariant();
+        VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
+        if ("inputs" == parentItem->m_name)
+            return PARAM_INPUT;
+        else if ("outputs" == parentItem->m_name)
+            return PARAM_OUTPUT;
+        else if ("params" == parentItem->m_name)
+            return PARAM_PARAM;
+        return PARAM_UNKNOWN;
+    }
     default:
         return ViewParamModel::data(index, role);
     }
 
 }
 
-bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, int role)
+QModelIndex NodeParamModel::indexFromPath(const QString& path)
 {
-    return ViewParamModel::setData(index, value, role);
+    QStringList lst = path.split("/", Qt::SkipEmptyParts);
+    if (lst.size() != 2)
+        return QModelIndex();
+
+    const QString& group = lst[0];
+    const QString& name = lst[1];
+    if (group == "inputs")
+    {
+        return getParam(PARAM_INPUT, name);
+    }
+    else if (group == "params")
+    {
+        return getParam(PARAM_PARAM, name);
+    }
+    else if (group == "outputs")
+    {
+        return getParam(PARAM_OUTPUT, name);
+    }
+    return QModelIndex();
 }
 
+QStringList NodeParamModel::sockNames(PARAM_CLASS cls) const
+{
+    QStringList names;
+    if (cls == PARAM_INPUT)
+    {
+        for (int r = 0; r < m_inputs->rowCount(); r++)
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(m_inputs->child(r));
+            names.append(pItem->m_name);
+        }
+    }
+    else if (cls == PARAM_PARAM)
+    {
+        for (int r = 0; r < m_params->rowCount(); r++)
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(m_params->child(r));
+            names.append(pItem->m_name);
+        }
+    }
+    else if (cls == PARAM_OUTPUT)
+    {
+        for (int r = 0; r < m_outputs->rowCount(); r++)
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(m_outputs->child(r));
+            names.append(pItem->m_name);
+        }
+    }
+    return names;
+}
+
+bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    switch (role)
+    {
+        case ROLE_PARAM_NAME:
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            const QString& oldName = pItem->m_name;
+            const QString& newName = value.toString();
+            pItem->m_name = newName;
+            if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && pItem->vType == VPARAM_PARAM)
+            {
+                VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
+                PARAM_CLASS cls = PARAM_UNKNOWN;
+                if (parentItem->m_name == "inputs")
+                    cls = PARAM_INPUT;
+                else if (parentItem->m_name == "params")
+                    cls = PARAM_PARAM;
+                else if (parentItem->m_name == "outputs")
+                    cls = PARAM_OUTPUT;
+
+                const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                GlobalControlMgr::instance().onParamRename(nodeCls, cls, oldName, newName);
+            }
+            break;
+        }
+        case ROLE_PARAM_TYPE:
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            if (pItem->m_type == value.toString())
+                return false;
+            pItem->m_type = value.toString();
+            break;
+        }
+        case ROLE_PARAM_VALUE:
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            QVariant oldValue = pItem->m_value;
+            if (oldValue == value)
+                return false;
+            pItem->m_value = value;
+            onSubIOEdited(oldValue, pItem);
+            break;
+        }
+        case ROLE_ADDLINK:
+        case ROLE_REMOVELINK:
+        {
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            ZASSERT_EXIT(linkIdx.isValid(), false);
+            VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            if (pItem->vType != VPARAM_PARAM)
+                return false;
+
+            if (role == ROLE_ADDLINK)
+            {
+                pItem->m_links.append(linkIdx);
+                QStringList lst = sockNames(PARAM_INPUT);
+                int maxObjId = UiHelper::getMaxObjId(lst);
+                if (maxObjId == -1)
+                    maxObjId = 0;
+                QString maxObjSock = QString("obj%1").arg(maxObjId);
+                QString lastKey = lst.last();
+                QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                if ((nodeCls == "MakeList" || nodeCls == "MakeDict") && pItem->m_name == lastKey)
+                {
+                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
+                    SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
+                    setAddParam(PARAM_INPUT, newObjName, "", QVariant(), prop);
+                }
+                else if (nodeCls == "ExtractDict" && pItem->m_name == lastKey)
+                {
+                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
+                    setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), SOCKPROP_EDITABLE);
+                }
+            }
+            else
+            {
+                pItem->m_links.removeAll(linkIdx);
+            }
+            emit dataChanged(index, index, QVector<int>{role});
+            break;
+        }
+    default:
+        return ViewParamModel::setData(index, value, role);
+    }
+}
+
+void NodeParamModel::clearLinks(VParamItem* pItem)
+{
+    for (const QPersistentModelIndex& linkIdx : pItem->m_links)
+    {
+        m_pGraphsModel->removeLink(linkIdx, true);
+    }
+    pItem->m_links.clear();
+}
+
+void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    VParamItem* parentItem = static_cast<VParamItem*>(itemFromIndex(parent));
+    if (!parentItem || parentItem->vType != VPARAM_GROUP)
+        return;
+
+    if (first < 0 || first >= parentItem->rowCount())
+        return;
+
+    VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(first));
+    clearLinks(pItem);
+}
+
+bool NodeParamModel::removeRows(int row, int count, const QModelIndex& parent)
+{
+    VParamItem* parentItem = static_cast<VParamItem*>(itemFromIndex(parent));
+    if (!parentItem || parentItem->vType != VPARAM_GROUP)
+        return false;
+
+    if (row < 0 || row >= parentItem->rowCount())
+        return false;
+
+    VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(row));
+    clearLinks(pItem);
+
+    bool ret = ViewParamModel::removeRows(row, count, parent);
+    m_pGraphsModel->markDirty();
+    return ret;
+}
+
+void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* pItem)
+{
+    if (m_pGraphsModel->IsIOProcessing())
+        return;
+
+    const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    if (nodeName == "SubInput" || nodeName == "SubOutput")
+    {
+        bool bInput = nodeName == "SubInput";
+        const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        VParamItem* pGroup = bInput ? m_inputs : m_outputs;
+
+        VParamItem* deflItem = pGroup->getItem("defl");
+        VParamItem* nameItem = pGroup->getItem("name");
+        VParamItem* typeItem = pGroup->getItem("type");
+
+        ZASSERT_EXIT(deflItem && nameItem && typeItem);
+        const QString& sockName = nameItem->m_value.toString();
+
+        if (pItem->m_name == "type")
+        {
+            const QString& newType = pItem->m_value.toString();
+            PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
+            const QVariant& newValue = UiHelper::initDefaultValue(newType);
+
+            GlobalControlMgr::instance().onParamUpdated(subgName, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, newCtrl);
+
+            const QModelIndex& idx_defl = deflItem->index();
+            deflItem->m_type = newType;
+            deflItem->m_value = newValue;
+
+            emit dataChanged(idx_defl, idx_defl, QVector<int>{ROLE_PARAM_TYPE});
+
+            //update desc.
+            NODE_DESC desc;
+            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+                desc.inputs[sockName].info.type = newType;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
+                desc.outputs[sockName].info.type = newType;
+            }
+            m_pGraphsModel->updateSubgDesc(subgName, desc);
+
+            //update to every subgraph node.
+            QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+            for (auto idx : subgNodes)
+            {
+                // update socket for current subgraph node.
+                NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
+                nodeParams->setData(paramIdx, newType, ROLE_PARAM_TYPE);
+            }
+        }
+        else if (pItem->m_name == "name")
+        {
+            //1.update desc info for the subgraph node.
+            const QString& newName = sockName;
+            const QString& oldName = oldValue.toString();
+
+            NODE_DESC desc;
+            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                desc.inputs[newName].info.name = newName;
+                desc.inputs.remove(oldName);
+            }
+            else
+            {
+                desc.outputs[newName].info.name = newName;
+                desc.outputs.remove(oldName);
+            }
+            m_pGraphsModel->updateSubgDesc(subgName, desc);
+
+            //2.update all sockets for all subgraph node.
+            QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+            for (auto idx : subgNodes)
+            {
+                // update socket for current subgraph node.
+                NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, oldName);
+                nodeParams->setData(paramIdx, newName, ROLE_PARAM_NAME);
+            }
+        }
+        else if (pItem->m_name == "defl")
+        {
+            const QVariant& deflVal = pItem->m_value;
+            NODE_DESC desc;
+            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            ZASSERT_EXIT(ret);
+            if (bInput)
+            {
+                ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+                desc.inputs[sockName].info.defaultValue = deflVal;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
+                desc.outputs[sockName].info.defaultValue = deflVal;
+            }
+            m_pGraphsModel->updateSubgDesc(subgName, desc);
+            //no need to update all subgraph node because it causes disturbance.
+        }
+    }
+}
 

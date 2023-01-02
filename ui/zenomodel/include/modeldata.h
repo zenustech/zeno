@@ -110,53 +110,6 @@ struct EdgeInfo
     EdgeInfo() = default;
     EdgeInfo(const QString &outpath, const QString &inpath)
         : outSockPath(outpath), inSockPath(inpath) {}
-
-    EdgeInfo(
-            const QString& inSubgraph,
-            const QString& inNodeIdent,
-            const QString& inSockName,
-            const QString& outSubgraph,
-            const QString& outNodeIdent,
-            const QString& outSockName
-    )
-    {
-        QStringList inseq = {inSubgraph, inNodeIdent, "core-param", "/inputs/" + inSockName};
-        QStringList outseq = {outSubgraph, outNodeIdent, "core-param", "/outputs/" + outSockName};
-        inSockPath = inseq.join(cPathSeperator);
-        outSockPath = inseq.join(cPathSeperator);
-    }
-
-    void getSockInfo(bool bInput, QString& ident, QString& sockName) const
-    {
-        QStringList lst;
-
-        if (bInput)
-            lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-        else
-            lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-
-        //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
-        if (lst.size() >= 4) {
-            ident = lst[1];
-            sockName = lst[3];
-#if 0
-            lst = lst[3].split("/", Qt::SkipEmptyParts);
-            outSock = lst.last();
-#endif
-        }
-    }
-
-    QString subgraphName(bool bInput) const {
-        if (bInput) {
-            QStringList lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-            ZASSERT_EXIT(!lst.isEmpty(), "");
-            return lst[0];
-        } else {
-            QStringList lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-            ZASSERT_EXIT(!lst.isEmpty(), "");
-            return lst[0];
-        }
-    }
     
     bool operator==(const EdgeInfo &rhs) const {
         return outSockPath == rhs.outSockPath && inSockPath == rhs.inSockPath;

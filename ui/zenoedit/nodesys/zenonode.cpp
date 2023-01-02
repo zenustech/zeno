@@ -208,18 +208,12 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     ZASSERT_EXIT(viewParams, nullptr);
 
     QStandardItem* inv_root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(inv_root && inv_root->rowCount() == 1, nullptr);
-
-    QStandardItem* root = inv_root->child(0);
-    ZASSERT_EXIT(root && root->rowCount() == 1, nullptr);
-
-    QStandardItem* tab = root->child(0);
-    ZASSERT_EXIT(tab && tab->rowCount() == 3, nullptr);
+    ZASSERT_EXIT(inv_root, nullptr);
 
     //see ViewParamModel::initNode()
-    QStandardItem* inputsItem = tab->child(0);
-    QStandardItem* paramsItem = tab->child(1);
-    QStandardItem* outputsItem = tab->child(2);
+    QStandardItem* inputsItem = inv_root->child(0);
+    QStandardItem* paramsItem = inv_root->child(1);
+    QStandardItem* outputsItem = inv_root->child(2);
 
     connect(viewParams, &QStandardItemModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
     connect(viewParams, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);

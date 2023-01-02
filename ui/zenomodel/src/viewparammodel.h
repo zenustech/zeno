@@ -19,7 +19,8 @@ public:
     ~ViewParamModel();
     void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
-    QModelIndex indexFromPath(const QString& path);
+    IGraphsModel* graphsModel() const;
+    virtual QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
 
     //for node ui params:
@@ -52,7 +53,7 @@ protected:
     virtual void initUI();
 
     const QPersistentModelIndex m_nodeIdx;
-    const IGraphsModel* const m_model;
+    IGraphsModel* m_model;
     const bool m_bNodeUI;
     bool m_bDirty;
 };
