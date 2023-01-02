@@ -29,7 +29,7 @@ public:
     QModelIndexList outputsIndice();
     void arrangeOrder(const QStringList &inputKeys, const QStringList &outputKeys);
 
-    static VParamItem* importParam(const VPARAM_INFO& param);
+    static VParamItem* importParam(IGraphsModel* pGraphsModel, const VPARAM_INFO& param);
     void importParamInfo(const VPARAM_INFO& invisibleRoot);
     VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -44,10 +44,6 @@ public:
 
 signals:
     void editNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
-
-public slots:
-    void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
-    void onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 protected:
     virtual void initUI();

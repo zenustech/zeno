@@ -200,7 +200,7 @@ struct VPARAM_INFO
 {
     PARAM_INFO m_info;
     VPARAM_TYPE vType;
-    QString coreParam;
+    QString refParamPath;
     PARAM_CLASS m_cls;
     QVector<VPARAM_INFO> children;
     QVariant controlInfos;

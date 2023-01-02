@@ -123,7 +123,6 @@ public:
     void endApiLevel() override;
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
-    IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
     QModelIndexList findSubgraphNode(const QString& subgName) override;
     int ModelSetData(
         const QPersistentModelIndex& idx,

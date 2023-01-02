@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "uihelper.h"
 #include "../customui/customuirw.h"
+#include "nodeparammodel.h"
 
 
 static const char* qsToString(const QString& qs)
@@ -438,6 +439,28 @@ void VParamItem::importParamInfo(const VPARAM_INFO& paramInfo)
     }
 }
 
+PARAM_CLASS VParamItem::getParamClass()
+{
+    if (vType != VPARAM_PARAM)
+        return PARAM_UNKNOWN;
+
+    NodeParamModel* pModel = qobject_cast<NodeParamModel*>(this->model());
+    if (!pModel)
+        return PARAM_UNKNOWN;
+
+    VParamItem* parentItem = static_cast<VParamItem*>(this->parent());
+    ZASSERT_EXIT(parentItem, PARAM_UNKNOWN);
+
+    if (parentItem->m_name == "inputs")
+        return PARAM_INPUT;
+    else if (parentItem->m_name == "params")
+        return PARAM_PARAM;
+    else if (parentItem->m_name == "outputs")
+        return PARAM_OUTPUT;
+    else
+        return PARAM_UNKNOWN;
+}
+
 VPARAM_INFO VParamItem::exportParamInfo()
 {
     VPARAM_INFO info;
@@ -509,7 +532,10 @@ VPARAM_INFO VParamItem::exportParamInfo()
         }
         param.vType = VPARAM_PARAM;
         param.controlInfos = data(ROLE_VPARAM_CTRL_PROPERTIES);
-        param.coreParam = data(ROLE_PARAM_NAME).toString();
+        QString refPath;
+        if (m_index.isValid())
+            refPath = m_index.data(ROLE_OBJPATH).toString();
+        param.refParamPath = refPath;
         param.m_info.control = m_ctrl;
         param.m_info.defaultValue = m_value;
         param.m_info.name = m_name;

@@ -4,6 +4,7 @@
 #include "globalcontrolmgr.h"
 #include "uihelper.h"
 #include "variantptr.h"
+#include "globalcontrolmgr.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
@@ -17,6 +18,12 @@ NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QMode
     initUI();
     connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
     connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
+    if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
+    {
+        GlobalControlMgr &mgr = GlobalControlMgr::instance();
+        connect(this, &NodeParamModel::rowsInserted, &mgr, &GlobalControlMgr::onCoreParamsInserted);
+        connect(this, &NodeParamModel::rowsAboutToBeRemoved, &mgr, &GlobalControlMgr::onCoreParamsAboutToBeRemoved);
+    }
 }
 
 NodeParamModel::~NodeParamModel()

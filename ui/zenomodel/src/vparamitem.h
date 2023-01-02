@@ -57,6 +57,7 @@ struct VParamItem : public QStandardItem
     rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName, int* r = 0) const;
     VPARAM_INFO exportParamInfo();
+    PARAM_CLASS getParamClass();
     void importParamInfo(const VPARAM_INFO& paramInfo);
     bool operator==(VParamItem* rItem) const;
     void read(QDataStream& in) override;

@@ -1295,18 +1295,6 @@ bool GraphsModel::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
-IParamModel* GraphsModel::paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const
-{
-    for (int i = 0; i < m_subGraphs.size(); i++)
-    {
-        if (m_subGraphs[i] == nodeIdx.model())
-        {
-            return m_subGraphs[i]->paramModel(nodeIdx, cls);
-        }
-    }
-    return nullptr;
-}
-
 void GraphsModel::removeSubGraph(const QString& name)
 {
     if (name.compare("main", Qt::CaseInsensitive) == 0)

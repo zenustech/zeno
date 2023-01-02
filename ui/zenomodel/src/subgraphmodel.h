@@ -77,7 +77,6 @@ public:
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
-    IParamModel* paramModel(const QModelIndex& index, PARAM_CLASS cls) const;
     QModelIndex nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLASS cls, const QString &paramName) const;;
     ViewParamModel* viewParams(const QModelIndex& index);
     ViewParamModel* nodeParams(const QModelIndex& index);

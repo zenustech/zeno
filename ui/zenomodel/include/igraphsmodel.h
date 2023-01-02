@@ -6,7 +6,6 @@
 #include "modeldata.h"
 #include "modelrole.h"
 
-class IParamModel;
 class LinkModel;
 class ViewParamModel;
 
@@ -98,7 +97,6 @@ public:
     virtual void beginApiLevel() = 0;
 	virtual void endApiLevel() = 0;
 	virtual LinkModel* linkModel() const = 0;
-	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,

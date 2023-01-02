@@ -276,22 +276,6 @@ QModelIndex SubGraphModel::nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLAS
     return item.nodeParams->getParam(cls, paramName);
 }
 
-IParamModel* SubGraphModel::paramModel(const QModelIndex& index, PARAM_CLASS cls) const
-{
-    _NodeItem item;
-    if (!itemFromIndex(index, item))
-        return nullptr;
-
-    switch (cls)
-    {
-    case PARAM_INPUT: return nullptr;
-    case PARAM_PARAM: return nullptr;
-    case PARAM_OUTPUT: return nullptr;
-    default:
-        return nullptr;
-    }
-}
-
 ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
 {
     _NodeItem item;

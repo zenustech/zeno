@@ -250,7 +250,7 @@ void ViewParamAddCommand::redo()
 {
     QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
     ZASSERT_EXIT(parentItem);
-    VParamItem* newItem = ViewParamModel::importParam(m_itemData);
+    VParamItem* newItem = ViewParamModel::importParam(m_model, m_itemData);
     parentItem->appendRow(newItem);
 }
 
@@ -284,7 +284,7 @@ void ViewParamRemoveCommand::redo()
 void ViewParamRemoveCommand::undo()
 {
     QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
-    VParamItem *newItem = ViewParamModel::importParam(m_deleteItem);
+    VParamItem* newItem = ViewParamModel::importParam(m_model, m_deleteItem);
     parentItem->appendRow(newItem);
 }
 

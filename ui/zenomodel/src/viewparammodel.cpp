@@ -296,7 +296,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
 
     VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(newVParamIdx));
     //mapping core.
-    const QString& coreparam = pItem->m_tempInfo.coreParam;
+    const QString& coreparam = pItem->m_tempInfo.refParamPath;
     pItem->m_ctrl = pItem->m_tempInfo.m_info.control;
     pItem->m_type = pItem->m_tempInfo.m_info.typeDesc;
     pItem->m_name = pItem->m_tempInfo.m_info.name;
@@ -304,23 +304,9 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
 
     if (!coreparam.isEmpty())
     {
-        if (pItem->m_tempInfo.m_cls == PARAM_INPUT)
-        {
-            IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_INPUT_MODEL));
-            pItem->m_index = inputsModel->index(coreparam);
-        }
-        else if (pItem->m_tempInfo.m_cls == PARAM_PARAM)
-        {
-            IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_PARAM_MODEL));
-            pItem->m_index = paramsModel->index(coreparam);
-        }
-        else if (pItem->m_tempInfo.m_cls == PARAM_OUTPUT)
-        {
-            IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(this->data(QModelIndex(), ROLE_OUTPUT_MODEL));
-            pItem->m_index = outputsModel->index(coreparam);
-        }
+        QModelIndex refIdx = m_model->indexFromPath(coreparam);
+        pItem->mapCoreParam(refIdx);
         pItem->setData(true, ROLE_VPARAM_IS_COREPARAM);
-
         //copy inner type and value.
         if (pItem->m_index.isValid())
         {
@@ -394,14 +380,14 @@ VPARAM_INFO ViewParamModel::exportParams() const
     return rootItem->exportParamInfo();
 }
 
-VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
+VParamItem* ViewParamModel::importParam(IGraphsModel* pGraphsModel, const VPARAM_INFO& info)
 {
     if (info.vType == VPARAM_ROOT)
     {
         VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
         for (VPARAM_INFO tab : info.children)
         {
-            VParamItem *pTabItem = importParam(tab);
+            VParamItem *pTabItem = importParam(pGraphsModel, tab);
             pRoot->appendRow(pTabItem);
         }
         return pRoot;
@@ -411,7 +397,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
         VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_info.name);
         for (VPARAM_INFO group : info.children)
         {
-            VParamItem* pGroupItem = importParam(group);
+            VParamItem* pGroupItem = importParam(pGraphsModel, group);
             pTabItem->appendRow(pGroupItem);
         }
         return pTabItem;
@@ -421,7 +407,7 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
         VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_info.name);
         for (VPARAM_INFO param : info.children)
         {
-            VParamItem* paramItem = importParam(param);
+            VParamItem* paramItem = importParam(pGraphsModel, param);
             pGroupItem->appendRow(paramItem);
         }
         return pGroupItem;
@@ -432,30 +418,9 @@ VParamItem* ViewParamModel::importParam(const VPARAM_INFO& info)
         VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
         //mapping core.
-        const QString& coreparam = info.coreParam;
-#if 0
-        if (!coreparam.isEmpty())
-        {
-            if (info.m_cls == PARAM_INPUT)
-            {
-                IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_INPUT_MODEL));
-                QModelIndex coreIdx = inputsModel->index(coreparam);
-                paramItem->mapCoreParam(coreIdx);
-            }
-            else if (info.m_cls == PARAM_PARAM)
-            {
-                IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_PARAM_MODEL));
-                QModelIndex coreIdx = paramsModel->index(coreparam);
-                paramItem->mapCoreParam(coreIdx);
-            }
-            else if (info.m_cls == PARAM_OUTPUT)
-            {
-                IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_OUTPUT_MODEL));
-                QModelIndex coreIdx = outputsModel->index(coreparam);
-                paramItem->mapCoreParam(coreIdx);
-            }
-        }
-#endif
+        const QString& coreparam = info.refParamPath;
+        const QModelIndex& refIdx = pGraphsModel->indexFromPath(info.refParamPath);
+        paramItem->mapCoreParam(refIdx);
         paramItem->m_ctrl = info.m_info.control;
         paramItem->m_type = info.m_info.typeDesc;
         paramItem->m_name = info.m_info.name;
@@ -497,29 +462,9 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                 VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
 
                 //mapping core.
-                const QString& coreparam = param.coreParam;
-                if (!coreparam.isEmpty())
-                {
-                    if (param.m_cls == PARAM_INPUT)
-                    {
-                        IParamModel* inputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_INPUT_MODEL));
-                        QModelIndex coreIdx = inputsModel->index(coreparam);
-                        paramItem->mapCoreParam(coreIdx);
-                    }
-                    else if (param.m_cls == PARAM_PARAM)
-                    {
-                        IParamModel* paramsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_PARAM_MODEL));
-                        QModelIndex coreIdx = paramsModel->index(coreparam);
-                        paramItem->mapCoreParam(coreIdx);
-                    }
-                    else if (param.m_cls == PARAM_OUTPUT)
-                    {
-                        IParamModel* outputsModel = QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(ROLE_OUTPUT_MODEL));
-                        QModelIndex coreIdx = outputsModel->index(coreparam);
-                        paramItem->mapCoreParam(coreIdx);
-                    }
-                }
-
+                const QString& coreparam = param.refParamPath;
+                const QModelIndex& refIdx = m_model->indexFromPath(param.refParamPath);
+                paramItem->mapCoreParam(refIdx);
                 paramItem->m_ctrl = param.m_info.control;
                 paramItem->m_type = param.m_info.typeDesc;
                 paramItem->m_name = param.m_info.name;
@@ -541,142 +486,6 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
     }
     invisibleRootItem()->appendRow(pRoot);
     markDirty();
-}
-
-void ViewParamModel::onCoreParamsInserted(const QModelIndex& parent, int first, int last)
-{
-    IParamModel* pModel = qobject_cast<IParamModel*>(sender());
-    ZASSERT_EXIT(pModel);
-    const QModelIndex& idx = pModel->index(first, 0, parent);
-    if (!idx.isValid()) return;
-
-    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-
-    QStandardItem* pRoot = invisibleRootItem();
-    PARAM_CLASS cls = pModel->paramClass();
-    if (cls == PARAM_INPUT)
-    {
-        QList<QStandardItem*> lst = findItems("In Sockets", Qt::MatchRecursive | Qt::MatchExactly);
-        for (QStandardItem* pItem : lst)
-        {
-            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
-            {
-                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
-                const QString& displayName = realName;  //todo: mapping name.
-                //PARAM_CONTROL ctrl = (PARAM_CONTROL)idx.data(ROLE_PARAM_CTRL).toInt();
-                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
-                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-                bool bMultiLink = idx.data(ROLE_PARAM_SOCKPROP).toInt() & SOCKPROP_DICTLIST_PANEL;
-                //until now we can init the control, because control is a "view" property, should be dependent with core data.
-                //todo: global control settings, like zfxCode, dict/list panel control, etc.
-                //todo: dictpanel should be choosed by custom param manager globally.
-                QVariant props;
-                PARAM_CONTROL ctrl = CONTROL_NONE;
-                if (bMultiLink)
-                {
-                    ctrl = CONTROL_DICTPANEL;
-                }
-                else
-                {
-                    CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
-                    ctrl = infos.control;
-                    props = infos.controlProps;
-                }
-
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-                paramItem->m_ctrl = ctrl;
-                paramItem->m_type = typeDesc;
-                paramItem->m_value = value;
-                paramItem->mapCoreParam(idx);
-                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-                paramItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
-                pItem->appendRow(paramItem);
-                break;
-            }
-        }
-    }
-    else if (cls == PARAM_PARAM)
-    {
-        QList<QStandardItem*> lst = findItems("Parameters", Qt::MatchRecursive | Qt::MatchExactly);
-        for (QStandardItem* pItem : lst)
-        {
-            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
-            {
-                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
-                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
-                const QString& displayName = realName;  //todo: mapping name.
-                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-
-                CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, realName, typeDesc);
-
-                paramItem->m_ctrl = infos.control;
-                paramItem->mapCoreParam(idx);
-                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-                paramItem->setData(infos.controlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-                paramItem->m_type = typeDesc;
-                paramItem->m_value = value;
-                pItem->appendRow(paramItem);
-                break;
-            }
-        }
-    }
-    else if (cls == PARAM_OUTPUT)
-    {
-        QList<QStandardItem*> lst = findItems("Out Sockets", Qt::MatchRecursive | Qt::MatchExactly);
-        for (QStandardItem* pItem : lst)
-        {
-            if (pItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
-            {
-                const QString& realName = idx.data(ROLE_PARAM_NAME).toString();
-                const QString& typeDesc = idx.data(ROLE_PARAM_TYPE).toString();
-                const QString& displayName = realName;  //todo: mapping name.
-                const QVariant& value = idx.data(ROLE_PARAM_VALUE);
-
-                PARAM_CONTROL ctrl = CONTROL_NONE;
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, displayName, true);
-                paramItem->m_ctrl = ctrl;
-                paramItem->mapCoreParam(idx);
-                paramItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-                paramItem->m_type = typeDesc;
-                paramItem->m_value = value;
-                pItem->appendRow(paramItem);
-                break;
-            }
-        }
-    }
-}
-
-void ViewParamModel::onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
-{
-    IParamModel* pModel = qobject_cast<IParamModel*>(sender());
-    ZASSERT_EXIT(pModel);
-    const QModelIndex& idx = pModel->index(first, 0, parent);
-    if (!idx.isValid())
-        return;
-
-    QStandardItem* rootItem = invisibleRootItem()->child(0);
-    if (!rootItem)
-        return;
-
-    for (int i = 0; i < rootItem->rowCount(); i++)
-    {
-        QStandardItem* pTab = rootItem->child(i);
-        for (int j = 0; j < pTab->rowCount(); j++)
-        {
-            QStandardItem* pGroup = pTab->child(j);
-            for (int k = 0; k < pGroup->rowCount(); k++)
-            {
-                VParamItem* pParam = static_cast<VParamItem*>(pGroup->child(k));
-                if (pParam->m_index == idx)
-                {
-                    pGroup->removeRow(k);
-                    return;
-                }
-            }
-        }
-    }
 }
 
 QPersistentModelIndex ViewParamModel::nodeIdx() const

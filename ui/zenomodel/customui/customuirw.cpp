@@ -146,7 +146,7 @@ namespace zenomodel
             const rapidjson::Value& coreParam = paramVal["core-param"];
             ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), param);
 
-            param.coreParam = QString::fromLocal8Bit(coreParam["name"].GetString());
+            param.refParamPath = QString::fromLocal8Bit(coreParam["name"].GetString());
             const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
 
             if (cls == "input")
