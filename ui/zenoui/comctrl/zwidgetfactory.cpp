@@ -125,6 +125,19 @@ namespace zenoui
                 });
                 return pBtn;
             }
+            case CONTROL_COLOR_NORMAL: {
+                QPushButton *pBtn = new QPushButton;
+                QPalette palette = pBtn->palette();
+                pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
+                palette.setColor(QPalette::Window, value.value<QColor>());
+                pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
+                QObject::connect(pBtn, &QPushButton::clicked, [=]() {
+                    QColor color = QColorDialog::getColor(pBtn->palette().window().color());
+                    pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                    cbSet.cbEditFinished(QVariant::fromValue(color));
+                });
+                return pBtn;
+            }
             case CONTROL_VEC2_FLOAT:
             case CONTROL_VEC2_INT:
             case CONTROL_VEC3_FLOAT:
@@ -174,9 +187,9 @@ namespace zenoui
                     cbSet.cbEditFinished(text);
                 });
 #else
-                QObject::connect(pComboBox, &QComboBox::activated, [=](const QString& text) {
+                /*QObject::connect(pComboBox, &QComboBox::activated, [=](const QString& text) {
                     cbSet.cbEditFinished(text);
-                });
+                });*/
 #endif
                 return pComboBox;
             }

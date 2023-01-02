@@ -20,7 +20,7 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     pGroupLayout->setSpacing(10);
     PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    insertRow("background", PARAM_CONTROL::CONTROL_COLOR, info.background, 0, pGroupLayout);
+    insertRow("background", PARAM_CONTROL::CONTROL_COLOR_NORMAL, info.background, 0, pGroupLayout);
     insertRow("title", PARAM_CONTROL::CONTROL_STRING, info.title, 1, pGroupLayout);
     insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
@@ -61,7 +61,16 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
-        pModel->updateBlackboardByParam(m_idx.data(ROLE_OBJID).toString(), desc, newValue, m_subgIdx, true);
+        PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+        if (desc == "title") {
+            info.title = newValue.value<QString>();
+        } else if (desc == "content") {
+            info.content = newValue.value<QString>();
+        } else if (desc == "background") {
+            info.background = newValue.value<QColor>();
+        }
+        pModel->updateBlackboard(m_idx.data(ROLE_OBJID).toString(), info, m_subgIdx, true);
     };
 
     cbSet.cbSwitch = [=](bool bOn) {

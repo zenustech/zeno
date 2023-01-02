@@ -19,10 +19,6 @@ BlackboardNode2::BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *par
 {
     setAutoFillBackground(false);
     setAcceptHoverEvents(true);
-    QPalette palette;
-    palette.setColor(QPalette::Window, QColor(60,70,69));
-    palette.setColor(QPalette::WindowText, QColor("#FFFFFF"));
-    setPalette(palette);
     QFont font("HarmonyOS Sans", 12);
     this->setFont(font);
     initUI();
@@ -172,6 +168,9 @@ void BlackboardNode2::onUpdateParamsNotDesc()
     if (info.sz.isValid()) {
         resize(info.sz);
     }
+    QPalette palette = this->palette();
+    palette.setColor(QPalette::Window, info.background);
+    setPalette(palette);
 }
 
 ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
@@ -182,6 +181,10 @@ ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
     if (blackboard.sz.isValid()) {
         resize(blackboard.sz);
     }
+    QPalette palette;
+    palette.setColor(QPalette::Window, blackboard.background);
+    palette.setColor(QPalette::WindowText, QColor("#FFFFFF"));
+    setPalette(palette);
     return new ZLayoutBackground(this);
 }
 

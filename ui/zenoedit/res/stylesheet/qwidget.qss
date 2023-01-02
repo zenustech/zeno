@@ -12,3 +12,28 @@ QWidget[cssClass="ZTimeline"]
 {
     background: rgb(42,42,42);
 }
+
+QColorDialog
+{
+    background: rgb(43,43,43);
+}
+
+QColorDialog QPushButton
+{
+    background-color: rgb(43,43,43);
+    color:rgb(255,255,255);
+    border:0;
+}
+
+QColorDialog QLabel
+{
+    background-color: rgb(43,43,43);
+    color:rgb(255,255,255);
+}
+
+QColorDialog QLineEdit
+{
+    background-color: rgb(23,23,26);
+    color:rgb(255,255,255);
+    border:0;
+}

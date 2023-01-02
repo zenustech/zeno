@@ -98,8 +98,6 @@ public:
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
     void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx,
                           bool enableTransaction) override;
-    void updateBlackboardByParam(const QString &id, const QString &paramName, const QVariant &newVale,
-                                 const QModelIndex &subgIdx, bool enableTransaction) override;
 
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
