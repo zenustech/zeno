@@ -334,25 +334,31 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         }
     }
 
-    if (name == "Blackboard") {
-        // do not compatible with zeno1
-        PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
-        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        writer.Key("blackboard");
-        {
-            JsonObjBatch _batch(writer);
-            writer.Key("special");
-            writer.Bool(info.special);
-            writer.Key("width");
-            writer.Double(info.sz.width());
-            writer.Key("height");
-            writer.Double(info.sz.height());
-            writer.Key("title");
-            writer.String(info.title.toUtf8());
-            writer.Key("content");
-            writer.String(info.content.toUtf8());
-        }
-    }
+	if (name == "Blackboard") {
+		// do not compatible with zeno1
+		PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+		BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+		writer.Key("blackboard");
+		{
+			JsonObjBatch _batch(writer);
+			writer.Key("special");
+			writer.Bool(info.special);
+			writer.Key("width");
+			writer.Double(info.sz.width());
+			writer.Key("height");
+			writer.Double(info.sz.height());
+			writer.Key("title");
+			writer.String(info.title.toUtf8());
+			writer.Key("content");
+			writer.String(info.content.toUtf8());
+            writer.Key("items");
+            writer.StartArray();
+            for (auto item : info.items) {
+                writer.String(item.toUtf8());
+            }
+            writer.EndArray();
+		}
+	}
 
     //custom ui for panel
     ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_CUSTOMUI_PANEL]);

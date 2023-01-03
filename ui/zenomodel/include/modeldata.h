@@ -16,6 +16,7 @@ enum PARAM_CONTROL {
     CONTROL_READPATH,
     CONTROL_MULTILINE_STRING,
     CONTROL_COLOR,
+    CONTROL_COLOR_NORMAL,
     CONTROL_CURVE,
     CONTROL_HSLIDER,
     CONTROL_HSPINBOX,
@@ -280,6 +281,8 @@ struct BLACKBOARD_INFO
     QString content;
     //params
     bool special;
+    QStringList items;
+    QColor background;
     BLACKBOARD_INFO() : special(false) {}
 };
 Q_DECLARE_METATYPE(BLACKBOARD_INFO)

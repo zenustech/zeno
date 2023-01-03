@@ -100,3 +100,11 @@ QPlainTextEdit[cssClass="logpanel"]
     border: 1px solid rgb(18,20,22);
     font:12px 'HarmonyOS Sans';
 }
+
+QLineEdit[cssClass = "blackboard_title"]
+{
+	background-color:rgba(24,29,33,0);
+	color:rgba(255,255,255,1.0);
+	border:0;
+	padding-left:5px;
+}

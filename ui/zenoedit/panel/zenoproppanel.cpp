@@ -25,6 +25,7 @@
 #include <zenomodel/include/viewparammodel.h>
 #include "../dialog/zeditparamlayoutdlg.h"
 #include <zenoui/comctrl/zspinboxslider.h>
+#include "zenoblackboardpropwidget.h"
 
 
 class RetryScope
@@ -363,11 +364,17 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
     QVBoxLayout* pTabLayout = new QVBoxLayout;
     pTabLayout->setContentsMargins(QMargins(0, 0, 0, 0));
     pTabLayout->setSpacing(0);
-
-    for (int j = 0; j < pTabItem->rowCount(); j++)
+    if (m_idx.data(ROLE_NODETYPE) == BLACKBOARD_NODE) 
     {
-        QStandardItem* pGroupItem = pTabItem->child(j);
-        syncAddGroup(pTabLayout, pGroupItem, j);
+        ZenoBlackboardPropWidget *propWidget = new ZenoBlackboardPropWidget(m_idx, m_subgIdx, pTabWid);
+        pTabLayout->addWidget(propWidget);
+    } 
+    else 
+    {
+        for (int j = 0; j < pTabItem->rowCount(); j++) {
+            QStandardItem *pGroupItem = pTabItem->child(j);
+            syncAddGroup(pTabLayout, pGroupItem, j);
+        }
     }
 
     pTabLayout->addStretch();

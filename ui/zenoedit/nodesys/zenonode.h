@@ -52,7 +52,11 @@ public:
     QString nodeId() const;
     QString nodeName() const;
     QPointF nodePos() const;
+    void updateNodePos(const QPointF &pos);
     virtual void onUpdateParamsNotDesc();
+
+    void setMoving(bool isMoving);
+    bool isMoving();
 
 signals:
     void socketClicked(ZenoSocketItem*);
@@ -62,6 +66,7 @@ signals:
     void statusBtnHovered(STATUS_BTN);
     void inSocketPosChanged();
     void outSocketPosChanged();
+    void nodePosChangedSignal();
 
 public slots:
     void onCollaspeBtnClicked();

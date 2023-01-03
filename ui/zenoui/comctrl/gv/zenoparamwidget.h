@@ -69,6 +69,7 @@ public:
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
+    void setFont(const QFont &font);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -258,6 +259,8 @@ public:
     ZenoParamBlackboard(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);
+    void foucusInEdit();
+    void updateStyleSheet(int fontSize);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;

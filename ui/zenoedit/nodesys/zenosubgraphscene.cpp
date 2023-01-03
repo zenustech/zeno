@@ -22,6 +22,7 @@
 #include <zenomodel/include/linkmodel.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/iparammodel.h>
+#include "nodesys/blackboardnode2.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -58,15 +59,21 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     disconnect(pGraphsModel, SIGNAL(_rowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)));
 	disconnect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
+    QVector<ZenoNode *> blackboardVect;
     for (int r = 0; r < pGraphsModel->itemCount(m_subgIdx); r++)
     {
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
         ZenoNode* pNode = createNode(idx, m_nodeParams);
         connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+        connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
         pNode->initUI(this, m_subgIdx, idx);
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
+        if (pNode->nodeName() == "Blackboard") 
+        {
+            blackboardVect << pNode;
+        }
     }
 
     for (auto it : m_nodes)
@@ -105,6 +112,17 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                         initLink(linkIdx);
                     }
                 }
+            }
+        }
+
+        for (auto node : blackboardVect)
+        {
+            PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+            if (info.items.contains(id))
+            {
+                inNode->setPos(inNode->index().data(ROLE_OBJPOS).toPointF());
+                inNode->setParentItem(node);
             }
         }
     }
@@ -169,7 +187,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
     else if (descName == "Blackboard")
     {
-        return new BlackboardNode(params);
+        return new BlackboardNode2(params);
     }
     else if (descName == "CameraNode")
     {
@@ -189,6 +207,10 @@ void ZenoSubGraphScene::onZoomed(qreal factor)
 {
     for (auto pair : m_nodes) {
         //pair.second->switchView(factor < 0.3);
+        BlackboardNode2 * pNode = dynamic_cast<BlackboardNode2 *>(pair.second);
+        if (pNode) {
+            pNode->updateFontSize(factor);
+        }
     }
 }
 
@@ -581,8 +603,42 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     }
 }
 
-void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
+void ZenoSubGraphScene::onNodePosChanged() 
 {
+    ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
+    BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
+    for (auto pair : m_nodes) 
+    {
+        ZenoNode *zenoNode = pair.second;
+        if (zenoNode == senderNode) 
+        {
+            continue;
+        }
+        BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(zenoNode);
+        if (blackboardNode) 
+        {
+            if (blackboardNode->childItems().contains(zenoNode)) 
+            {
+                if (currBlackboardNode) 
+                {
+                    emit currBlackboardNode->nodePosChangedSignal();
+                }
+                continue;
+            }
+            if (currBlackboardNode) 
+            {
+                currBlackboardNode->nodePosChanged(senderNode);
+            }
+            blackboardNode->nodePosChanged(zenoNode);
+        } 
+        else if (currBlackboardNode) 
+        {
+            currBlackboardNode->nodePosChanged(senderNode);
+        }
+    }
+}
+
+void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos) {
     bool bFixedInput = false;
     QString nodeId;
     QPointF fixedPos;
@@ -838,6 +894,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
     ZenoNode *pNode = createNode(idx, m_nodeParams);
     connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+    connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
     pNode->initUI(this, m_subgIdx, idx);
     addItem(pNode);
     QString id = pNode->nodeId();

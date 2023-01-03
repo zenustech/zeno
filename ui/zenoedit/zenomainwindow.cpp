@@ -485,9 +485,16 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event)
 
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
-    this->saveQuit();
+    bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
-    QMainWindow::closeEvent(event);
+    if (isClose) 
+    {
+        QMainWindow::closeEvent(event);
+    } 
+    else 
+    {
+        event->ignore();
+    }
 }
 
 bool ZenoMainWindow::event(QEvent* event)
@@ -681,12 +688,12 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
     pDock->setObjectName(uniqueDockObjName(type));
 }
 
-void ZenoMainWindow::saveQuit() {
+bool ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    ZASSERT_EXIT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm, true);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (!zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
-        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No, this);
+        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
         msgBox.setPalette(pal);
@@ -694,10 +701,14 @@ void ZenoMainWindow::saveQuit() {
         if (ret & QMessageBox::Yes) {
             save();
         }
+        if (ret & QMessageBox::Cancel) {
+            return false;
+        }
     }
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());
+    return true;
 }
 
 void ZenoMainWindow::save()

@@ -96,6 +96,7 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
     data[ROLE_CUSTOMUI_PANEL] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
     data[ROLE_CUSTOMUI_NODE] = QVariantPtr<ViewParamModel>::asVariant(item.nodeParams);
+    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(item.paramInfo);
 
     return data;
 }
@@ -108,6 +109,7 @@ void SubGraphModel::nodeData2Item(const NODE_DATA& data, const QModelIndex& node
     ret.bCollasped = data[ROLE_COLLASPED].toBool();
     ret.options = data[ROLE_OPTIONS].toInt();
     ret.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
+    ret.paramInfo = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
     ret.inputsModel = new IParamModel(PARAM_INPUT, m_pGraphsModel, subgIdx, nodeIdx, this);
@@ -436,6 +438,10 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
             VPARAM_INFO root = item.panelParams->exportParams();
             return QVariant::fromValue(root);
         }
+        case ROLE_PARAMS_NO_DESC: 
+        {
+            return QVariant::fromValue(item.paramInfo);
+        }
         default:
             return QVariant();
     }
@@ -543,6 +549,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_OBJPOS:
             {
                 item.viewpos = value.toPointF();
+                qDebug() << id << item.viewpos;
+                break;
+            }
+            case ROLE_PARAMS_NO_DESC: {
+                item.paramInfo = value.value<PARAMS_INFO>();
                 break;
             }
         }
