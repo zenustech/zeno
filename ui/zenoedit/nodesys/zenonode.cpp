@@ -914,6 +914,11 @@ bool ZenoNode::isMoving() {
     return m_bMoving;
 }
 
+void ZenoNode::onZoomed()
+{
+    m_pStatusWidgets->onZoomed();
+}
+
 bool ZenoNode::sceneEventFilter(QGraphicsItem *watched, QEvent *event) {
     return _base::sceneEventFilter(watched, event);
 }
