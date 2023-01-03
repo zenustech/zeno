@@ -2,7 +2,7 @@
 #define __ZENO_BLACKBOARD_PROP_WIDGET_H__
 
 #include <QWidget>
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include "comctrl/ztextedit.h"
 #include "comctrl/zlineedit.h"
 
