@@ -248,14 +248,10 @@ ZENDEFNODE(MatTranspose,
             "math",
         } });
 
-struct LineResample : INode {
-    void apply() override
-    {
+struct ParameterizeLine : INode {
+    void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-
-        auto segments = get_input<NumericObject>("segments")->get<int>();
-        if (segments < 1) { segments = 1; }
-
+        prim->lines.add_attr<float>("parameterization");
         float total = 0;
         std::vector<float> linesLen(prim->lines.size());
         for (size_t i = 0; i < prim->lines.size(); i++) {
@@ -267,7 +263,53 @@ struct LineResample : INode {
             linesLen[i] = total;
         }
         auto inv_total = 1 / total;
-        for (auto& _linesLen : linesLen) { _linesLen *= inv_total; }
+        for (size_t i=0; i<prim->lines.size();i++) {
+            prim->lines.attr<float>("parameterization")[i] = linesLen[i] * inv_total;
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(ParameterizeLine,
+           {  /* inputs: */ {
+                "prim",
+            }, /* outputs: */ {
+                "prim",
+            }, /* params: */ {
+            }, /* category: */ {
+                "primitive",
+            } });
+struct LineResample : INode {
+    void apply() override
+    {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        auto segments = get_input<NumericObject>("segments")->get<int>();
+        if (segments < 1) { segments = 1; }
+        std::vector<float> linesLen(prim->lines.size());
+        if(! prim->lines.has_attr("parameterization")) {
+            prim->lines.add_attr<float>("parameterization");
+            float total = 0;
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                auto const &ind = prim->lines[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto area = length(b - a);
+                total += area;
+                linesLen[i] = total;
+            }
+            auto inv_total = 1 / total;
+            for (auto &_linesLen : linesLen) {
+                _linesLen *= inv_total;
+            }
+            for (size_t i=0; i<prim->lines.size();i++) {
+                prim->lines.attr<float>("parameterization")[i] = linesLen[i];
+            }
+        } else {
+#pragma omp parallel for
+            for (size_t i=0; i<prim->lines.size();i++) {
+                linesLen[i] = prim->lines.attr<float>("parameterization")[i];
+            }
+        }
 
         auto retprim = std::make_shared<PrimitiveObject>();
         if(has_input("PrimSampler")) {
