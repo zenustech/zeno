@@ -967,7 +967,6 @@ struct CreateSphere : zeno::INode {
         auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &verts = prim->verts;
         auto &tris = prim->tris;
-        auto &quads = prim->quads;
         auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
@@ -988,10 +987,10 @@ struct CreateSphere : zeno::INode {
                 vec3f n = vec3f(x, y, z);
                 verts[index] = n;
                 nors[index] = n;
-                uvs[index] = vec3f(u, v, 0);
+                uvs[index] = vec3f(u, 1-v, 0);
             }
         }
-        if (quad) {
+        {
             poly.resize(rows * columns);
             for (auto i = 0; i < rows * columns; i++) {
                 poly[i] = vec2i(i * 4, 4);
@@ -1019,29 +1018,6 @@ struct CreateSphere : zeno::INode {
                 loopuvs[i] = loops[i];
             }
         }
-        else {
-            tris.resize(rows * columns * 2);
-            for (auto row = 0; row < rows; row++) {
-                for (auto column = 0; column < columns; column++) {
-                    auto quad_index = row * columns + column;
-                    auto tri0 = quad_index * 2;
-                    auto tri1 = quad_index * 2 + 1;
-                    auto v0 = (columns + 1) * row + column;
-                    auto v1 = (columns + 1) * row + column + 1;
-                    auto v2 = (columns + 1) * (row + 1) + column;
-                    auto v3 = (columns + 1) * (row + 1) + column + 1;
-
-                    tris[tri0] = vec3i(v0, v2, v3);
-                    uv0[tri0] = uvs[v0];
-                    uv1[tri0] = uvs[v2];
-                    uv2[tri0] = uvs[v3];
-                    tris[tri1] = vec3i(v0, v3, v1);
-                    uv0[tri1] = uvs[v0];
-                    uv1[tri1] = uvs[v3];
-                    uv2[tri1] = uvs[v1];
-                }
-            }
-        }
 
         for (int i = 0; i < verts->size(); i++)
         {
@@ -1063,6 +1039,10 @@ struct CreateSphere : zeno::INode {
         }
 
         NORMUV_CIHOU
+
+        if (!quad) {
+            primTriangulate(prim.get());
+        }
         set_output("prim", std::move(prim));
     }
 };
