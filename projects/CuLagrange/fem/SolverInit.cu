@@ -336,7 +336,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                      {{"grad", 3},
                       {"P", 9},
                       // dirichlet boundary condition type; 0: NOT, 1: ZERO, 2: NONZERO
-                      {"BCorder", 1},
+                      {"BCorder", 1}, // 0: unbounded; 1: soft; 2: hard
                       {"BCbasis", 9},
                       {"BCtarget", 3},
                       {"BCfixed", 1},
@@ -510,22 +510,22 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
     // spatial accel structs
     frontManageRequired = true;
-#define init_front(sInds, front)                                                                                 \
-    {                                                                                                            \
-        auto numNodes = front.numNodes();                                                                        \
-        if (numNodes <= 2) {                                                                                     \
-            front.reserve(sInds.size() * numNodes);                                                              \
-            front.setCounter(sInds.size() * numNodes);                                                           \
+#define init_front(sInds, front)                                                                           \
+    {                                                                                                      \
+        auto numNodes = front.numNodes();                                                                  \
+        if (numNodes <= 2) {                                                                               \
+            front.reserve(sInds.size() * numNodes);                                                        \
+            front.setCounter(sInds.size() * numNodes);                                                     \
             pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
-                for (int j = 0; j != numNodes; ++j)                                                              \
-                    front.assign(i *numNodes + j, i, j);                                                         \
-            });                                                                                                  \
-        } else {                                                                                                 \
-            front.reserve(sInds.size());                                                                         \
-            front.setCounter(sInds.size());                                                                      \
-            pol(Collapse{sInds.size()},                                                                          \
-                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });              \
-        }                                                                                                        \
+                for (int j = 0; j != numNodes; ++j)                                                        \
+                    front.assign(i *numNodes + j, i, j);                                                   \
+            });                                                                                            \
+        } else {                                                                                           \
+            front.reserve(sInds.size());                                                                   \
+            front.setCounter(sInds.size());                                                                \
+            pol(Collapse{sInds.size()},                                                                    \
+                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });        \
+        }                                                                                                  \
     }
     {
         auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
