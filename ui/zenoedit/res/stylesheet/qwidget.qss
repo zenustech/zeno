@@ -20,9 +20,25 @@ QColorDialog
 
 QColorDialog QPushButton
 {
-    background-color: rgb(43,43,43);
+    background-color: rgb(79,89,99);
     color:rgb(255,255,255);
     border:0;
+	padding:6px 10px 6px 10px;
+}
+
+QColorDialog QPushButton:hover
+{
+    background-color: rgb(111,178,246);
+}
+
+QColorDialog QPushButton:checked
+{
+    background-color: rgb(111,178,246);
+}
+
+QColorDialog QPushButton:pressed
+{
+    background-color: rgba(111,178,246,0.8);
 }
 
 QColorDialog QLabel
@@ -36,4 +52,21 @@ QColorDialog QLineEdit
     background-color: rgb(23,23,26);
     color:rgb(255,255,255);
     border:0;
+	padding:4px 10px 4px 10px;
+}
+
+QColorDialog QSpinBox
+{
+	border: 0;
+	padding:3px 0px 3px 6px;
+	color: rgb(255,255,255);
+	background-color: rgb(23,23,26);
+}
+QColorDialog QSpinBox::up-button
+{
+	border: none;
+}
+QColorDialog QSpinBox::down-button
+{
+	border: none;
 }

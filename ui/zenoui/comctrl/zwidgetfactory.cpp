@@ -132,9 +132,12 @@ namespace zenoui
                 palette.setColor(QPalette::Window, value.value<QColor>());
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(pBtn->palette().window().color());
-                    pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                    cbSet.cbEditFinished(QVariant::fromValue(color));
+                    QColor color = QColorDialog::getColor(pBtn->palette().window().color(), nullptr, "", QColorDialog::ShowAlphaChannel);
+                    if (color.isValid()) 
+                    {
+                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                        cbSet.cbEditFinished(QVariant::fromValue(color));
+                    }
                 });
                 return pBtn;
             }
@@ -187,9 +190,9 @@ namespace zenoui
                     cbSet.cbEditFinished(text);
                 });
 #else
-                /*QObject::connect(pComboBox, &QComboBox::activated, [=](const QString& text) {
+                QObject::connect(pComboBox, static_cast<void (QComboBox::*)(const QString &)>(&QComboBox::activated), [=](const QString &text) {
                     cbSet.cbEditFinished(text);
-                });*/
+                });
 #endif
                 return pComboBox;
             }
