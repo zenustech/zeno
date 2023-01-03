@@ -140,7 +140,7 @@ border-top: 1px solid black;</string>
     <string>&amp;Undo</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Z</string>
+    <string notr="true">Ctrl+Z</string>
    </property>
   </action>
   <action name="actionRedo">
@@ -148,7 +148,7 @@ border-top: 1px solid black;</string>
     <string>&amp;Redo</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Y</string>
+    <string notr="true">Ctrl+Y</string>
    </property>
   </action>
   <action name="actionDefault_layout">
@@ -161,7 +161,7 @@ border-top: 1px solid black;</string>
     <string>&amp;New</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+N</string>
+    <string notr="true">Ctrl+N</string>
    </property>
   </action>
   <action name="action_Open">
@@ -169,7 +169,7 @@ border-top: 1px solid black;</string>
     <string>&amp;Open</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+O</string>
+    <string notr="true">Ctrl+O</string>
    </property>
   </action>
   <action name="action_Save">
@@ -177,7 +177,7 @@ border-top: 1px solid black;</string>
     <string>&amp;Save</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+S</string>
+    <string notr="true">Ctrl+S</string>
    </property>
   </action>
   <action name="action_Save_As">
@@ -352,7 +352,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="actionEasy_Graph">
    <property name="text">
-    <string>Easy Graph</string>
+    <string>Easy Subgraph</string>
    </property>
   </action>
   <action name="actionOpen_View">

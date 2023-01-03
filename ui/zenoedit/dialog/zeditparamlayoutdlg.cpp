@@ -319,7 +319,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
     {
         if (type != VPARAM_ROOT)
         {
-            QMessageBox::information(this, "Error", "create tab needs to place under the root");
+            QMessageBox::information(this, tr("Error"), tr("create tab needs to place under the root"));
             return;
         }
         QString newTabName = UiHelper::getUniqueName(existNames, "Tab");
@@ -330,7 +330,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
     {
         if (type != VPARAM_TAB)
         {
-            QMessageBox::information(this, "Error ", "create group needs to place under the tab");
+            QMessageBox::information(this, tr("Error "), tr("create group needs to place under the tab"));
             return;
         }
         QString newGroup = UiHelper::getUniqueName(existNames, "Group");
@@ -341,7 +341,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
     {
         if (type != VPARAM_GROUP)
         {
-            QMessageBox::information(this, "Error ", "create control needs to place under the group");
+            QMessageBox::information(this, tr("Error "), tr("create control needs to place under the group"));
             return;
         }
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);

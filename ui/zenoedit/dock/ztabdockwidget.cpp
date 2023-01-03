@@ -244,11 +244,11 @@ void ZTabDockWidget::onDockOptionsClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    QAction* pSplitHor = new QAction("Split Left/Right");
-    QAction* pSplitVer = new QAction("Split Top/Bottom");
-    QAction* pMaximize = new QAction("Maximize");
-    QAction* pFloatWin = new QAction("Float Window");
-    QAction* pCloseLayout = new QAction("Close Layout");
+    QAction* pSplitHor = new QAction(tr("Split Left/Right"));
+    QAction* pSplitVer = new QAction(tr("Split Top/Bottom"));
+    QAction* pMaximize = new QAction(tr("Maximize"));
+    QAction* pFloatWin = new QAction(tr("Float Window"));
+    QAction* pCloseLayout = new QAction(tr("Close Layout"));
 
     connect(pMaximize, SIGNAL(triggered()), this, SIGNAL(maximizeTriggered()));
     connect(pFloatWin, SIGNAL(triggered()), this, SLOT(onFloatTriggered()));

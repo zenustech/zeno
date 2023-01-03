@@ -101,7 +101,7 @@ void ZenoWelcomePage::initRecentFiles()
             connect(pLabel, &ZTextLabel::clicked, this, [=]() {
                 bool ret = zenoApp->getMainWindow()->openFile(path);
                 if (!ret) {
-                    int flag = QMessageBox::question(nullptr, "", "the file does not exies, do you want to remove it?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                    int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
                     if (flag & QMessageBox::Yes)
                     {
                         QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);

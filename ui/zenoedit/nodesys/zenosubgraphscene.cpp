@@ -558,7 +558,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 
     if (!paramIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool())
     {
-        QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
+        QMessageBox::information(nullptr, tr("Error"), tr("cannot generate link from custom socket now"));
         return;
     }
 
@@ -723,7 +723,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     {
         if (!targetSock->paramIndex().data(ROLE_VPARAM_IS_COREPARAM).toBool())
         {
-            QMessageBox::information(nullptr, "Error", "cannot generate link from custom socket now");
+            QMessageBox::information(nullptr, tr("Error"), tr("cannot generate link from custom socket now"));
             return;
         }
 
