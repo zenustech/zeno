@@ -2679,7 +2679,6 @@ void UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
 struct StepUnifiedIPCSystem : INode {
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto A = get_input<UnifiedIPCSystem>("ZSIPCSystem");
 
         auto cudaPol = zs::cuda_exec();
