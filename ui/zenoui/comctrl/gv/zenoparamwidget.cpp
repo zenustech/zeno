@@ -1148,7 +1148,7 @@ void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsIt
 
 void ZenoMinStatusBtnItem::onZoomed() 
 {
-    if (editor_factor - 1 < 0.00001) 
+    if (1 - editor_factor > 0.00001f) 
     {
         QSize size = ZenoStyle::dpiScaledSize(QSize(50 / editor_factor, 42 / editor_factor));
         m_once->resize(size);
