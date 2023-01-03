@@ -9,7 +9,7 @@ class BlackboardNode2 : public ZenoNode {
     BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
     ~BlackboardNode2();
     bool nodePosChanged(ZenoNode *);
-    void updateFontSize(qreal factor);
+    void onZoomed() override;
     QRectF boundingRect() const override;
     void onUpdateParamsNotDesc() override;
   protected:

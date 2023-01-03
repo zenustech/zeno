@@ -58,6 +58,8 @@ public:
     void setMoving(bool isMoving);
     bool isMoving();
 
+    virtual void onZoomed();
+
 signals:
     void socketClicked(ZenoSocketItem*);
     void doubleClicked(const QString &nodename);

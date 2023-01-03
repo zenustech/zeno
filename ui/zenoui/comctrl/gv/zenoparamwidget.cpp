@@ -1044,6 +1044,8 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_view->setPos(base);
 
+    onZoomed();
+
     m_minOnce->setZValue(ZVALUE_ELEMENT);
     m_minView->setZValue(ZVALUE_ELEMENT);
     m_minMute->setZValue(ZVALUE_ELEMENT);
@@ -1144,6 +1146,23 @@ void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsIt
 {
 }
 
+void ZenoMinStatusBtnItem::onZoomed() 
+{
+    if (1 - editor_factor > 0.00001f) 
+    {
+        QSize size = ZenoStyle::dpiScaledSize(QSize(50 / editor_factor, 42 / editor_factor));
+        m_once->resize(size);
+        m_mute->resize(size);
+        m_view->resize(size);
+        QSizeF sz2 = m_once->size();
+        QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+        m_once->setPos(base);
+        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        m_mute->setPos(base);
+        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        m_view->setPos(base);
+    }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnWidget::ZenoMinStatusBtnWidget(const StatusComponent& statusComp, QGraphicsItem* parent)

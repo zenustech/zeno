@@ -19,9 +19,8 @@ BlackboardNode2::BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *par
 {
     setAutoFillBackground(false);
     setAcceptHoverEvents(true);
-    QFont font("HarmonyOS Sans", 12);
-    this->setFont(font);
     initUI();
+    onZoomed();
 }
 
 BlackboardNode2::~BlackboardNode2() {
@@ -43,14 +42,7 @@ void BlackboardNode2::initUI() {
         }
     });
 
-    QGraphicsLinearLayout *pTitlelayout = new QGraphicsLinearLayout(Qt::Horizontal);
     m_pTitle->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-
-    pTitlelayout->addItem(m_pTitle);
-    ZenoSpacerItem *pSpaceItem = new ZenoSpacerItem(true, 100);
-    pSpaceItem->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    pTitlelayout->addItem(pSpaceItem);
-    pTitlelayout->setContentsMargins(0, 0, 0, 0);
 
     //init content
     m_pTextEdit = new ZenoParamBlackboard("", param);
@@ -73,7 +65,7 @@ void BlackboardNode2::initUI() {
     m_mainLayout = new QGraphicsLinearLayout(Qt::Vertical, this);
     m_mainLayout->setSpacing(0);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
-    m_mainLayout->addItem(pTitlelayout);
+    m_mainLayout->addItem(m_pTitle);
     m_mainLayout->addItem(m_pMainSpaceItem);    
     resize(500, 500);
 }
@@ -146,9 +138,9 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
     return false;
 }
 
-void BlackboardNode2::updateFontSize(qreal factor) 
+void BlackboardNode2::onZoomed() 
 {
-    int fontSize = 12 / factor > 12 ? 12 / factor : 12;
+    int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
     QFont font("HarmonyOS Sans", fontSize);
     this->setFont(font);
     m_pTitle->setFont(font);
@@ -182,7 +174,7 @@ ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
         resize(blackboard.sz);
     }
     QPalette palette;
-    palette.setColor(QPalette::Window, blackboard.background);
+    palette.setColor(QPalette::Window, blackboard.background.isValid() ? blackboard.background : QColor(60, 70, 69));
     palette.setColor(QPalette::WindowText, QColor("#FFFFFF"));
     setPalette(palette);
     return new ZLayoutBackground(this);

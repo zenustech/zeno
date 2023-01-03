@@ -207,10 +207,7 @@ void ZenoSubGraphScene::onZoomed(qreal factor)
 {
     for (auto pair : m_nodes) {
         //pair.second->switchView(factor < 0.3);
-        BlackboardNode2 * pNode = dynamic_cast<BlackboardNode2 *>(pair.second);
-        if (pNode) {
-            pNode->updateFontSize(factor);
-        }
+        pair.second->onZoomed();
     }
 }
 
