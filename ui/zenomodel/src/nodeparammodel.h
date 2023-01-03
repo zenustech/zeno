@@ -50,6 +50,7 @@ private:
     void clearLinks(VParamItem* pItem);
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onRowsInserted(const QModelIndex& parent, int first, int last);
 
     IGraphsModel* m_pGraphsModel;
     const QPersistentModelIndex m_subgIdx;

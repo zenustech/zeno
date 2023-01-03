@@ -5,6 +5,7 @@
 #include "uihelper.h"
 #include "variantptr.h"
 #include "globalcontrolmgr.h"
+#include "dictkeymodel.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
@@ -18,6 +19,7 @@ NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QMode
     initUI();
     connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
     connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
+    connect(this, &NodeParamModel::rowsInserted, this, &NodeParamModel::onRowsInserted);
     if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
     {
         GlobalControlMgr &mgr = GlobalControlMgr::instance();
@@ -443,6 +445,14 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
             return PARAM_PARAM;
         return PARAM_UNKNOWN;
     }
+    case ROLE_VPARAM_LINK_MODEL:
+    {
+        if (pItem->m_customData.find(role) != pItem->m_customData.end())
+        {
+            return pItem->m_customData[role];
+        }
+        break;
+    }
     default:
         return ViewParamModel::data(index, role);
     }
@@ -452,22 +462,51 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
 QModelIndex NodeParamModel::indexFromPath(const QString& path)
 {
     QStringList lst = path.split("/", Qt::SkipEmptyParts);
-    if (lst.size() != 2)
+    if (lst.size() < 2)
         return QModelIndex();
 
     const QString& group = lst[0];
     const QString& name = lst[1];
+    QString subkey = lst.size() > 2 ? lst[2] : "";
+
     if (group == "inputs")
     {
-        return getParam(PARAM_INPUT, name);
+        if (VParamItem* pItem = m_inputs->getItem(name))
+        {
+            if (!subkey.isEmpty())
+            {
+                if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+                {
+                    DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+                    ZASSERT_EXIT(keyModel, QModelIndex());
+                    return keyModel->index(subkey);
+                }
+            }
+            return pItem->index();
+        }
     }
     else if (group == "params")
     {
-        return getParam(PARAM_PARAM, name);
+        if (VParamItem* pItem = m_params->getItem(name))
+        {
+            return pItem->index();
+        }
     }
     else if (group == "outputs")
     {
-        return getParam(PARAM_OUTPUT, name);
+        if (VParamItem* pItem = m_outputs->getItem(name))
+        {
+            if (!subkey.isEmpty())
+            {
+                if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+                {
+                    DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+                    ZASSERT_EXIT(keyModel, QModelIndex());
+                    return keyModel->index(subkey);
+                }
+            }
+            return pItem->index();
+        }
     }
     return QModelIndex();
 }
@@ -598,7 +637,7 @@ void NodeParamModel::clearLinks(VParamItem* pItem)
     pItem->m_links.clear();
 }
 
-void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+void NodeParamModel::onRowsInserted(const QModelIndex& parent, int first, int last)
 {
     VParamItem* parentItem = static_cast<VParamItem*>(itemFromIndex(parent));
     if (!parentItem || parentItem->vType != VPARAM_GROUP)
@@ -608,7 +647,60 @@ void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first
         return;
 
     VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(first));
+    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    m_model->getDescriptor(nodeCls, desc);
+
+    if (pItem->m_type == "dict" || pItem->m_type == "DictObject" || pItem->m_type == "DictObject:NumericObject")
+    {
+        pItem->m_type = "dict"; //pay attention not to export to outside, only as a ui keyword.
+        if (!desc.categories.contains("dict"))
+            pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
+    }
+    else if (pItem->m_type == "list")
+    {
+        if (!desc.categories.contains("list"))
+            pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
+    }
+
+    //not type desc on list output socket, add it here.
+    if (pItem->m_name == "list" && pItem->m_type.isEmpty())
+    {
+        pItem->m_type = "list";
+        PARAM_CLASS cls = pItem->getParamClass();
+        if (cls == PARAM_INPUT && !desc.categories.contains("list"))
+            pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
+    }
+
+    if (pItem->m_sockProp == SOCKPROP_DICTLIST_PANEL)
+    {
+        DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
+        pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
+    }
+
+    m_model->markDirty();
+}
+
+void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    VParamItem* parentItem = static_cast<VParamItem*>(itemFromIndex(parent));
+    if (!parentItem || parentItem->vType != VPARAM_GROUP)
+        return;
+
+    if (first < 0 || first >= parentItem->rowCount())
+        return;
+
+    //todo: begin macro
+
+    VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(first));
     clearLinks(pItem);
+
+    //clear subkeys.
+    if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+    {
+        DictKeyModel* keyModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+        keyModel->clearAll();
+    }
 }
 
 bool NodeParamModel::removeRows(int row, int count, const QModelIndex& parent)

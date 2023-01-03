@@ -6,6 +6,7 @@
 #include "apilevelscope.h"
 #include "viewparammodel.h"
 #include "vparamitem.h"
+#include "variantptr.h"
 
 
 AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, IGraphsModel* pModel, QPersistentModelIndex subgIdx)
@@ -379,4 +380,38 @@ void MapParamIndexCommand::undo()
         QModelIndex oldIdx = m_model->indexFromPath(m_oldMappingObj);
         model->setData(paramIdx, oldIdx, ROLE_PARAM_COREIDX);
     }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+DictKeyAddRemCommand::DictKeyAddRemCommand(bool bAdd, IGraphsModel *pModel, const QString &dictlistSock, int row)
+    : m_model(pModel)
+    , m_distlistSock(dictlistSock)
+    , m_row(row)
+    , m_bAdd(bAdd)
+{
+}
+
+void DictKeyAddRemCommand::redo()
+{
+    ZASSERT_EXIT(m_model);
+    QModelIndex idx = m_model->indexFromPath(m_distlistSock);
+    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(idx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(pKeyObjModel);
+    if (m_bAdd)
+        pKeyObjModel->insertRow(m_row);
+    else
+        pKeyObjModel->removeRow(m_row);
+}
+
+void DictKeyAddRemCommand::undo()
+{
+    ZASSERT_EXIT(m_model);
+    QModelIndex idx = m_model->indexFromPath(m_distlistSock);
+    QAbstractItemModel *pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(idx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(pKeyObjModel);
+    if (m_bAdd)
+        pKeyObjModel->removeRow(m_row);
+    else
+        pKeyObjModel->insertRow(m_row);
 }

@@ -44,6 +44,8 @@ struct VParamItem : public QStandardItem
 
     ProxySlotObject m_proxySlot;
 
+    QMap<int, QVariant> m_customData;
+
     VParamItem(VPARAM_TYPE vType, const QString& text, bool bMapCore = false);
     VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text, bool bMapCore = false);
 

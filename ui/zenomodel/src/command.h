@@ -193,6 +193,20 @@ private:
     QString m_oldMappingObj;
 };
 
+class DictKeyAddRemCommand : public QUndoCommand
+{
+public:
+    DictKeyAddRemCommand(bool bAdd, IGraphsModel* pModel, const QString& dictlistSock, int row);
+    void redo() override;
+    void undo() override;
+
+private:
+    QString m_distlistSock;
+    int m_row;
+    IGraphsModel *m_model;
+    bool m_bAdd;
+};
+
 
 
 #endif

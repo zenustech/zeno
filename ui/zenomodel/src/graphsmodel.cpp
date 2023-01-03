@@ -287,7 +287,7 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
     {
         const QString& subgName = lst[0];
         const QString& nodeIdent = lst[1];
-        const QString& paramPath = lst[2];
+        QString paramPath = lst[2];
         const QModelIndex& subgIdx = index(subgName);
         const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
         if (!nodeIdx.isValid())
@@ -1368,6 +1368,15 @@ int GraphsModel::undoRedo_updateSubgDesc(const QString& descName, const NODE_DES
     UpdateSubgDescCommand *pCmd = new UpdateSubgDescCommand(this, descName, desc);
     m_stack->push(pCmd);
     return 0;
+}
+
+bool GraphsModel::addExecuteCommand(QUndoCommand* pCommand)
+{
+    //toask: need level?
+    if (!pCommand)
+        return false;
+    m_stack->push(pCommand);
+    return 1;
 }
 
 

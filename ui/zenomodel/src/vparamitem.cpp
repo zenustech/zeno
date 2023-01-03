@@ -157,7 +157,13 @@ QVariant VParamItem::data(int role) const
     case ROLE_VPARAM_LINK_MODEL:
     {
         if (!m_index.isValid())
-            return QVariant();
+        {
+            if (m_customData.find(role) != m_customData.end())
+            {
+                return m_customData[role];
+            }
+            break;
+        }
         return m_index.data(ROLE_VPARAM_LINK_MODEL);
     }
     case ROLE_PARAM_LINKS:

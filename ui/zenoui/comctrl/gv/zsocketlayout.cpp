@@ -179,7 +179,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     m_collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
     m_collaspeBtn->setCheckable(true);
 
-    m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock);
+    m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock, pModel);
 
     ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
     ZGraphicsLayout *pHPanelLayout = new ZGraphicsLayout(true);

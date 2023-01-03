@@ -16,6 +16,8 @@ class DictKeyModel : public QAbstractItemModel
     Q_OBJECT
 public:
     DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, QObject* parent = nullptr);
+    ~DictKeyModel();
+    void clearAll();
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex index(const QString &keyName);
