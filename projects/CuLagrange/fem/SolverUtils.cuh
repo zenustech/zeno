@@ -1,9 +1,13 @@
 #pragma once
+#if __CUDA_ARCH__ >= 800
+#include <cooperative_groups/reduce.h>
+#endif
 
 namespace zeno {
 
 /// credits: du wenxin
-template <typename T = float, typename Ti = int> struct CsrMatrix {
+template <typename T = float, typename Ti = int>
+struct CsrMatrix {
     using value_type = T;
     using index_type = std::make_signed_t<Ti>;
     using size_type = std::make_unsigned_t<Ti>;
@@ -17,7 +21,8 @@ template <typename T = float, typename Ti = int> struct CsrMatrix {
     zs::Vector<size_type> nnz{}; // non-zero entries per row
 };
 
-template <int n = 1> struct HessianPiece {
+template <int n = 1>
+struct HessianPiece {
     using HessT = zs::vec<float, n * 3, n * 3>;
     using IndsT = zs::vec<int, n>;
     zs::Vector<HessT> hess;
@@ -45,7 +50,8 @@ template <int n = 1> struct HessianPiece {
         cnt.setVal(count);
     }
 };
-template <typename HessianPieceT> struct HessianView {
+template <typename HessianPieceT>
+struct HessianView {
     static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
     using HT = typename HessianPieceT::HessT;
     using IT = typename HessianPieceT::IndsT;
@@ -53,10 +59,12 @@ template <typename HessianPieceT> struct HessianView {
     zs::conditional_t<is_const_structure, const IT *, IT *> inds;
     zs::conditional_t<is_const_structure, const int *, int *> cnt;
 };
-template <zs::execspace_e space, int n> inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
+template <zs::execspace_e space, int n>
+inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
     return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
-template <zs::execspace_e space, int n> inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
+template <zs::execspace_e space, int n>
+inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
     return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
 
@@ -75,7 +83,14 @@ constexpr auto warp_mask(int i, int n) noexcept {
     return zs::make_tuple(((unsigned)(1ull << k) - 1), k);
 }
 
-template <typename T> __forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst) {
+template <typename T>
+__forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst) {
+#if __CUDA_ARCH__ >= 800
+    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+    auto ret = zs::cg::reduce(tile, val, zs::cg::plus<T>());
+    if (tile.thread_rank() == 0)
+        zs::atomic_add(zs::exec_cuda, &dst, ret);
+#else
     auto [mask, numValid] = warp_mask(i, n);
     __syncwarp(mask);
     auto locid = threadIdx.x & 31;
@@ -86,9 +101,11 @@ template <typename T> __forceinline__ __device__ void reduce_to(int i, int n, T 
     }
     if (locid == 0)
         zs::atomic_add(zs::exec_cuda, &dst, val);
+#endif
 }
 
-template <typename T> inline T computeHb(const T d2, const T dHat2) {
+template <typename T>
+inline T computeHb(const T d2, const T dHat2) {
     if (d2 >= dHat2)
         return 0;
     T t2 = d2 - dHat2;
@@ -96,22 +113,22 @@ template <typename T> inline T computeHb(const T d2, const T dHat2) {
 }
 
 template <typename TileVecT, typename VecT>
-inline void
-retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
-                          const typename ZenoParticles::particles_t &eles, int voffset, zs::Vector<VecT> &ret) {
+inline void retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                            const typename ZenoParticles::particles_t &eles, int voffset, zs::Vector<VecT> &ret) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     ret.resize(eles.size());
-    pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp), xTag, voffset] ZS_LAMBDA(int ei) mutable {
+    pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
+                             xTag, voffset] ZS_LAMBDA(int ei) mutable {
         auto ind = reinterpret_bits<int>(eles("inds", ei)) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, ind);
         pts[ei] = x0;
     });
 }
 template <typename TileVecT, int codim = 3>
-inline void
-retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
-                          const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset, zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
+inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                                      const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset,
+                                      zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
     using namespace zs;
     using T = typename TileVecT::value_type;
     using bv_t = AABBBox<3, T>;
