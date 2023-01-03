@@ -58,8 +58,9 @@ public:
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
             int r = m_sockKeyIdx.row();
             if (r > 0) {
-                const QModelIndex& parent = m_sockKeyIdx.parent();
-                pModel->moveRow(parent, r, parent, r - 1);
+                IGraphsModel* pGraphsModel = panel->graphsModel();
+                const QString& objPath = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
+                pGraphsModel->addExecuteCommand(new ModelMoveCommand(pGraphsModel, objPath, r - 1));
             }
         });
 
@@ -79,8 +80,9 @@ public:
         Callback_EditFinished cbEditFinished = [=](QVariant newValue) {
             if (newValue == m_sockKeyIdx.data().toString())
                 return;
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
-            pModel->setData(m_sockKeyIdx, newValue, Qt::DisplayRole);
+            const QString& keyObj = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
+            IGraphsModel* pGraphsModel = panel->graphsModel();
+            pGraphsModel->addExecuteCommand(new RenameObjCommand(pGraphsModel, keyObj, newValue.toString()));
         };
 
         const QString& key = m_sockKeyIdx.data().toString();
@@ -231,7 +233,7 @@ void ZDictPanel::onKeysAboutToBeRemoved(const QModelIndex& parent, int first, in
 void ZDictPanel::onKeysMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 {
     //only support move up for now.
-    m_layout->moveUp(start);
+    m_layout->moveItem(start, row);
     ZGraphicsLayout::updateHierarchy(m_layout);
     if (m_cbSock.cbOnSockLayoutChanged)
         m_cbSock.cbOnSockLayoutChanged();
@@ -257,7 +259,7 @@ void ZDictPanel::onKeysInserted(const QModelIndex& parent, int first, int last)
 
 void ZDictPanel::onKeysModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (roles.contains(Qt::DisplayRole) && topLeft.column() == 0)
+    if ((roles.contains(Qt::DisplayRole) || roles.contains(ROLE_PARAM_NAME)) && topLeft.column() == 0)
     {
         ZDictItemLayout* pItemLayout = static_cast<ZDictItemLayout*>(m_layout->itemAt(topLeft.row())->pLayout);
         const QString &newKeyName = topLeft.data(Qt::DisplayRole).toString();

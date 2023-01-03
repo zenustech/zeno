@@ -23,6 +23,7 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/vparamitem.h>
+#include <zenomodel/include/command.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -727,7 +728,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 {
                     // link to inner dict key automatically.
                     int n = pKeyObjModel->rowCount();
-                    pKeyObjModel->insertRow(n);
+                    pGraphsModel->addExecuteCommand(
+                        new DictKeyAddRemCommand(true, pGraphsModel, toSockIdx.data(ROLE_OBJPATH).toString(), n));
                     toSockIdx = pKeyObjModel->index(n, 0);
                 }
             }

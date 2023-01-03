@@ -193,6 +193,21 @@ private:
     QString m_oldMappingObj;
 };
 
+class RenameObjCommand : public QUndoCommand
+{
+public:
+    RenameObjCommand(IGraphsModel* pModel, const QString& objPath, const QString& newName);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_oldPath;
+    QString m_newPath;
+    QString m_oldName;
+    QString m_newName;
+};
+
 class DictKeyAddRemCommand : public QUndoCommand
 {
 public:
@@ -202,9 +217,24 @@ public:
 
 private:
     QString m_distlistSock;
+    QString m_keyName;      //cached the key name.
     int m_row;
     IGraphsModel *m_model;
     bool m_bAdd;
+};
+
+class ModelMoveCommand : public QUndoCommand
+{
+public:
+    ModelMoveCommand(IGraphsModel* pModel, const QString& movingItemPath, int destRow);
+    void redo() override;
+    void undo() override;
+
+private:
+    QString m_movingObj;
+    IGraphsModel* m_model;
+    int m_srcRow;
+    int m_destRow;
 };
 
 
