@@ -6,9 +6,10 @@
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
 #include "common.h"
-#include "viewporttransform.h"
-#include "viewportpicker.h"
 #include "recordvideomgr.h"
+
+#include <viewportinteraction/transform.h>
+#include <viewportinteraction/picker.h>
 
 class ZTimeline;
 class ZenoMainWindow;
