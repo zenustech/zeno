@@ -199,7 +199,7 @@ void ZenoMainWindow::onLangChanged(bool bChecked)
 {
     QSettings settings(zsCompanyName, zsEditor);
     settings.setValue("use_chinese", bChecked);
-    QMessageBox msg(QMessageBox::Information, "Language",
+    QMessageBox msg(QMessageBox::Information, tr("Language"),
         tr("Please restart Zeno to apply changes."),
         QMessageBox::Ok, this);
     msg.exec();
