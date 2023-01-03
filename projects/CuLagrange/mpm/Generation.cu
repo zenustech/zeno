@@ -1263,7 +1263,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
             const auto &quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host})
                                              : parobjPtr->getQuadraturePoints();
 
-            int simplex_size = quads.getChannelSize("inds");
+            int simplex_size = quads.getPropertySize("inds");
 
             if (!quads.hasProperty(attrName))
                 throw std::runtime_error("the particles has no specified channel");

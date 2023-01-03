@@ -63,10 +63,12 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = 4;
+    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
     pipeline_compile_options = {};
+    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
     pipeline_compile_options.usesMotionBlur        = false;
-    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+//    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.numPayloadValues      = 2;
     pipeline_compile_options.numAttributeValues    = 2;
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
@@ -530,7 +532,7 @@ inline void createPipeline()
                 &continuation_stack_size
                 ) );
 
-    const uint32_t max_traversal_depth = 1;
+    const uint32_t max_traversal_depth = 2;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
                 direct_callable_stack_size_from_traversal,

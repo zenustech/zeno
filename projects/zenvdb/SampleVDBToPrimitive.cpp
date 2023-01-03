@@ -4,6 +4,7 @@
 #include <zeno/types/HeatmapObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
 
@@ -108,7 +109,7 @@ struct SampleVDBToPrimitive : INode {
     else if (dynamic_cast<VDBFloat3Grid *>(grid.get()))
         prim->add_attr<vec3f>(attr);
     else
-        printf("unknown vdb grid type\n");
+        throw zeno::Exception("unknown vdb grid type\n");
 
     if(type == "Periodic")
     {
@@ -119,7 +120,7 @@ struct SampleVDBToPrimitive : INode {
 
     //std::visit([&](auto &vel) { 
     prim->attr_visit(attr, [&] (auto &vel) {
-      if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
+      if constexpr (is_vdb_to_prim_convertible<std::decay_t<decltype(vel)>>::value)
         sampleVDBAttribute(pos, vel, grid.get()); 
     });
                //prim->attr(attr));
@@ -161,7 +162,7 @@ static void primSampleVDB(
         throw std::runtime_error("unknown vdb grid type");
     }
     prim->attr_visit(dstChannel, [&] (auto &vel) {
-        if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
+        if constexpr (is_vdb_to_prim_convertible<std::decay_t<decltype(vel)>>::value)
             sampleVDBAttribute2(pos, vel, grid.get(), remapMin, remapMax);
     });
 }
@@ -203,17 +204,19 @@ struct PrimSample : zeno::INode {
         auto remapMax = get_input2<float>("remapMax");
         auto wrap = get_input2<std::string>("wrap");
         auto borderColor = get_input2<vec3f>("borderColor");
-        if (has_input2<std::string>("sampledObject")) {
-            auto imagePath = get_input2<std::string>("sampledObject");
-            primSampleTexture(prim, srcChannel, dstChannel, imagePath, wrap, borderColor, remapMin, remapMax);
+        if (has_input<PrimitiveObject>("sampledObject") && get_input<PrimitiveObject>("sampledObject")->userData().has("isImage")) {
+            auto image = get_input<PrimitiveObject>("sampledObject");
+            primSampleTexture(prim, srcChannel, dstChannel, image, wrap, borderColor, remapMin, remapMax);
         }
-        else if (has_input2<HeatmapObject>("sampledObject")) {
+        else if (has_input<HeatmapObject>("sampledObject")) {
             auto heatmap = get_input<HeatmapObject>("sampledObject");
             primSampleHeatmap(prim, srcChannel, dstChannel, heatmap, remapMin, remapMax);
         }
-        else if (has_input2<VDBGrid>("sampledObject")) {
+        else if (has_input<VDBGrid>("sampledObject")) {
             auto grid = get_input<VDBGrid>("vdbGrid");
             primSampleVDB(prim, srcChannel, dstChannel, grid, remapMin, remapMax);
+        } else {
+            throw zeno::Exception("unknown input type of sampledObject");
         }
 
         set_output("outPrim", std::move(prim));

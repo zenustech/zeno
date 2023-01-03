@@ -31,7 +31,7 @@ target_compile_features(zshelper INTERFACE cuda_std_17)
 target_link_options(zshelper
   INTERFACE $<$<LINK_LANGUAGE:CUDA>:-dlto>
 )
-target_link_libraries(zeno PRIVATE zshelper)
+target_link_libraries(zeno PUBLIC zshelper)
 
 #[=[
 target_sources(zeno PRIVATE

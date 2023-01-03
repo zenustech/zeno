@@ -476,6 +476,20 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
       return true;
     return false;
   }
+  /// @note -1 implies not a double buffer; 0/1 indicates the current double buffer index.
+  int checkDoubleBuffer(const std::string &attr) const {
+    auto metaTag = attr + "_cur";
+    if (hasMeta(metaTag)) 
+      return readMeta<int>(metaTag);
+    return -1;
+  }
+  bool isDoubleBufferAttrib(const std::string &attr) const {
+    if (attr.back() == '0' || attr.back() == '1')
+      return true;
+    else if (hasMeta(attr + "_cur"))
+      return true;
+    return false;
+  }
 
   template <int level = 0>
   auto &getLevel() {

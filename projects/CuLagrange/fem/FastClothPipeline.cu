@@ -102,7 +102,7 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// @brief inertial and coupling
-    cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt, sigma = sigma] ZS_LAMBDA(int i) mutable {
+    cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt, sigma = sigma * dt * dt] ZS_LAMBDA(int i) mutable {
         auto m = vtemp("ws", i);
         auto yn = vtemp.pack<3>("yn", i);
         vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) - m * (yn - vtemp.pack<3>("ytilde", i)) -
@@ -110,7 +110,11 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
 
         // prepare preconditioner
         for (int d = 0; d != 3; ++d)
+#if !s_useGDDiagHess
             vtemp("P", d * 3 + d, i) += (m * (sigma + 1.0f));
+#else 
+            vtemp("P", d, i) += (m * (sigma + 1.0f)); 
+#endif 
     });
     /// @brief extforce (only grad modified)
     for (auto &primHandle : prims) {
@@ -182,7 +186,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                         }
                     H *= dt * dt * vole;
 
-                    // rotate and project
+#if !s_useGDDiagHess
                     etemp.tuple<6 * 6>("He", ei) = H;
 #pragma unroll
                     for (int vi = 0; vi != 2; ++vi) {
@@ -191,6 +195,13 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                                 atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), H(vi * 3 + i, vi * 3 + j));
                             }
                     }
+#else 
+#pragma unroll
+                    for (int vi = 0; vi != 2; ++vi) {
+                        for (int i = 0; i != 3; ++i)
+                            atomic_add(exec_cuda, &vtemp("P", i, inds[vi]), H(vi * 3 + i, vi * 3 + i));
+                    }
+#endif
                 });
     } else if (primHandle.category == ZenoParticles::surface) {
         if (primHandle.isBoundary())
@@ -235,6 +246,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
 
                     /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
                     // suggested by huang kemeng
+#if !s_useGDDiagHess                  
                     auto stretchHessian = [&F, &model]() {
                         auto H = zs::vec<T, 6, 6>::zeros();
                         const zs::vec<T, 2> u{1, 0};
@@ -298,7 +310,6 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     auto He = stretchHessian() + shearHessian();
                     auto H = dFdX.transpose() * He * dFdX * (dt * dt * vole);
 
-                    // rotate and project
                     etemp.tuple(dim_c<9, 9>, "He", ei) = H;
 #pragma unroll
                     for (int vi = 0; vi != 3; ++vi) {
@@ -307,6 +318,40 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                                 atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), H(vi * 3 + i, vi * 3 + j));
                             }
                     }
+#else 
+                    // vole * model.mu, 0.3 for shear energy 
+                    mat3 H0, H1, H01, H10; 
+                    zs::vec<T, 6, 6> He;  
+                    auto f0f0T = dyadic_prod(f0, f0); 
+                    auto f1f1T = dyadic_prod(f1, f1); 
+                    auto f0f1T = dyadic_prod(f0, f1); 
+                    auto f1f0T = f0f1T.transpose(); 
+                    auto id3 = mat3::identity(); 
+                    H0 = 2.0f / (f0Norm * f0Norm * f0Norm) * f0f0T
+                         + 2.0f * (1 - 1.0f / (f0Norm)) * id3 + 2.0f * f1f1T * 0.3f;
+                    H1 = 2.0f / (f1Norm * f1Norm * f1Norm) * f1f1T
+                         + 2.0f * (1 - 1.0f / (f1Norm)) * id3 + 2.0f * f0f0T * 0.3f;
+                    H01 = 2.0f * 0.3f * (f1f0T + f0Tf1 * id3); 
+                    H10 = H01.transpose(); 
+                    for (int di = 0; di < 3; di++)
+                        for (int dj = 0; dj < 3; dj++)
+                        {
+                            He(di, dj) = H0(di, dj); 
+                            He(di + 3, dj) = H10(di, dj); 
+                            He(di, dj + 3) = H01(di, dj); 
+                            He(di + 3, dj + 3) = H1(di, dj); 
+                        }
+                    auto H = model.mu * dFdXT * He * dFdX * (dt * dt * vole);
+#pragma unroll
+                    for (int vi = 0; vi != 3; ++vi) {
+                        for (int i = 0; i != 3; ++i)
+                        {
+                            auto v = H(vi * 3 + i, vi * 3 + i); 
+                            if (v > 0)
+                                atomic_add(exec_cuda, &vtemp("P", i, inds[vi]), v);
+                        }
+                    }
+#endif 
                 });
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
@@ -342,7 +387,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     auto Hq = model.first_piola_derivative(F, true_c);
                     auto H = dFdXT * Hq * dFdX * vole * dt * dt;
 
-                    // rotate and project
+#if !s_useGDDiagHess
                     etemp.tuple(dim_c<12, 12>, "He", ei) = H;
 #pragma unroll
                     for (int vi = 0; vi != 4; ++vi) {
@@ -351,6 +396,13 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                                 atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), H(vi * 3 + i, vi * 3 + j));
                             }
                     }
+#else 
+#pragma unroll
+                    for (int vi = 0; vi != 4; ++vi) {
+                        for (int i = 0; i != 3; ++i)
+                            atomic_add(exec_cuda, &vtemp("P", i, inds[vi]), H(vi * 3 + i, vi * 3 + i));
+                    }
+#endif 
                 });
 }
 
@@ -515,9 +567,17 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
     /// @brief collect pairs only once depending on x^init
     /// @note ref: Sec 4.3.2
-
+#if s_useChebyshevAcc
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA (int i) mutable {
+        vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); // restore yn from yk 
+    }); 
+#endif 
     /// optimizer
     for (int k = 0; k != K; ++k) {
+        if (k == K - 1)
+        {
+            fmt::print("\t\t\tdynamics iter reaches {}\n", k); 
+        }
 
         if constexpr (s_enableProfile)
             timer.tick();
@@ -531,90 +591,73 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             }
             fmt::print(fg(fmt::color::alice_blue), "iteration {} cons residual: {}\n", k, cr);
         }
-        // GRAD, HESS, P
-        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
-            vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
-        });
-        computeInertialAndCouplingAndForceGradient(pol);
-        computeElasticGradientAndHessian(pol);
-
-        // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
-        if (!projectDBC) {
-            // grad
-            pol(zs::range(numBouDofs), [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa,
-                                        coOffset = coOffset] ZS_LAMBDA(int i) mutable {
-                i += coOffset;
-                // computed during the previous constraint residual check
-                auto cons = vtemp.pack(dim_c<3>, "cons", i);
-                auto w = vtemp("ws", i);
-                vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) - boundaryKappa * w * cons;
-                {
-                    for (int d = 0; d != 3; ++d)
-                        vtemp("P", 4 * d, i) += boundaryKappa * w;
-                }
-            });
-            // hess (embedded in multiply)
-        }
-        project(pol, "grad");
-
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            dynamicsTime[0] += timer.elapsed();
-            dynamicsTime[1] += timer.elapsed();
-        }
-
-        // PREPARE P
-        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            auto mat = vtemp.pack<3, 3>("P", i);
-#if 0
-            if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                vtemp.tuple<9>("P", i) = inverse(mat);
-            else
-                vtemp.tuple<9>("P", i) = mat3::identity();
+#if s_useNewtonSolver 
+        newtonDynamicsStep(pol); 
 #else 
-            // diag preconditioner for tiny node mass 
-            mat3 tempP; 
-            for (int d = 0; d < 3; d++)
-            {
-                auto elem = vtemp("P", d * 3 + d, i);
-                if (elem > limits<T>::epsilon() * 10)
-                    tempP(d, d) = 1.0f / elem;
-                else 
-                    tempP(d, d) = 1.0f; 
-            }
-            vtemp.tuple(dim_c<9>, "P", i) = tempP;
-#endif
-        });
-        // prepare float edition
-        // convertHessian(pol);
-
-        if constexpr (s_enableProfile)
-            timer.tick();
-
-        // CG SOLVE
-        cgsolve(pol);
-
-        if constexpr (s_enableProfile) {
-            timer.tock();
-            dynamicsCnt[0]++;
-            dynamicsTime[0] += timer.elapsed();
-            dynamicsTime[2] += timer.elapsed();
-        }
+        gdDynamicsStep(pol); 
+#endif 
         // CHECK PN CONDITION
         T res = infNorm(pol) / dt;
         T cons_res = boundaryConstraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
+            fmt::print("\t\t\tdynamics ended: substep {} iteration {}: direction residual(/dt) {}, "
+                                "grad residual {}\n",
+                                substep, k, res, res * dt); 
             break;
         }
         ZS_INFO(fmt::format("substep {} iteration {}: direction residual(/dt) {}, "
                             "grad residual {}\n",
                             substep, k, res, res * dt));
         // OMIT LINESEARCH
-        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + vtemp.pack(dim_c<3>, "dir", i);
+#if s_useNewtonSolver 
+        T alpha = 1.0f;
+#else 
+        T alpha = 0.1f; 
+#endif 
+#if !s_useNewtonSolver && s_useLineSearch
+        T E0 = dynamicsEnergy(pol);
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+            vtemp.tuple(dim_c<3>, "yn0", i) = vtemp.pack(dim_c<3>, "yn", i); 
         });
-
+        T E;  
+        do {
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
+            });
+            E = dynamicsEnergy(pol);     
+            fmt::print("\tlinesearch alpha: {}, E: {}, E0: {}\n", alpha, E, E0);         
+            if (E < E0)
+                break; 
+            alpha /= 2; 
+        } while (true); 
+#else 
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+            vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
+        });
+#endif 
+#if s_useChebyshevAcc
+        int iters = k;  // TODO: k * IDyn + kd, after using IDyn  
+        if (iters == 0)
+        {
+            chebyOmega = 1.0f; // omega_{k}
+        } else if (iters == 1){
+            chebyOmega = 2.0f / (2.0f - chebyRho * chebyRho); 
+        } else {
+            chebyOmega = 4.0f / (4.0f - chebyRho * chebyRho * chebyOmega); 
+        }
+        if (iters > 0)
+        {
+            // fmt::print("\t\tChebyshev acceleration: chebyOmega: {}\n", (float)chebyOmega); 
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), omega = chebyOmega] __device__ (int vi) mutable {
+                vtemp.tuple(dim_c<3>, "yn", vi) = omega * vtemp.pack(dim_c<3>, "yn", vi) + 
+                    (1.0f - omega) * vtemp.pack(dim_c<3>, "yn-2", vi); 
+            });  
+        }
+        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+            vtemp.tuple(dim_c<3>, "yn-2", i) = vtemp.pack(dim_c<3>, "yn-1", i); 
+            vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i);
+        });      
+#endif   
         /// start collision solver
         ///
         initialStepping(pol);

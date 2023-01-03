@@ -170,6 +170,9 @@
         cudaError_t error = call;                                              \
         if( error != cudaSuccess )                                             \
         {                                                                      \
+            std::cerr << "CUDA call (" << #call << " ) failed with error: '"   \
+               << cudaGetErrorString( error )                                  \
+               << "' (" __FILE__ << ":" << __LINE__ << ")\n";                  \
             std::stringstream ss;                                              \
             ss << "CUDA call (" << #call << " ) failed with error: '"          \
                << cudaGetErrorString( error )                                  \

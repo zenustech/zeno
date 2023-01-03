@@ -198,8 +198,21 @@ struct GraphicsManager {
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
                     std::size_t numInsts = prim_in->verts.size();
                     const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    if (!prim_in->has_attr("nrm"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("nrm");
+                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(),
+                                                                 zeno::vec3f(0,1,0));
+                    }
+                    
                     const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
                     auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
+                    
+                    if (!prim_in->has_attr("clr")) {
+                        prim_in->add_attr<zeno::vec3f>("clr");
+                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(),
+                                                                 zeno::vec3f(1, 1, 1));
+                    }
                     const float *scale = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
                     xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
                 }
@@ -572,6 +585,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
     bool ensuredshadtmpl = false;
+    bool needUpdateCamera = false;
     std::string shadtmpl;
     std::string_view commontpl;
     std::pair<std::string_view, std::string_view> shadtpl2;
@@ -615,7 +629,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        //zeno::log_info("test Optx::draw()");
 
         bool sizeNeedUpdate = false;
         {
@@ -632,6 +645,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 camNeedUpdate = true;
             oldcamid = newcamid;
         }
+        if(scene->drawOptions->needRefresh){
+            camNeedUpdate = true;
+            scene->drawOptions->needRefresh = false;
+        }
+
+        //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
+        //          << " NeedRefresh " << scene->drawOptions->needRefresh << "\n";
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
@@ -756,7 +776,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }

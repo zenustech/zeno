@@ -15,11 +15,11 @@ namespace zeno {
         const SurfTriNrmTileVec& ttemp,const zs::SmallString& srcTag,
         SurfLineNrmTileVec& etemp,const zs::SmallString& dstTag) {
             using namespace zs;
-            if(!ttemp.hasProperty(srcTag) || ttemp.getChannelSize(srcTag) != 3){
+            if(!ttemp.hasProperty(srcTag) || ttemp.getPropertySize(srcTag) != 3){
                 fmt::print(fg(fmt::color::red),"the input triNrmTileVec has no valid {} normal channel\n",srcTag);
                 return false;
             }
-            if(!etemp.hasProperty(dstTag) || etemp.getChannelSize(dstTag) != 3) {
+            if(!etemp.hasProperty(dstTag) || etemp.getPropertySize(dstTag) != 3) {
                 fmt::print(fg(fmt::color::red),"the input lineNrmTileVec has no valid {} normal channel\n",dstTag);
                 return false;
             }
