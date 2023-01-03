@@ -351,6 +351,8 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.String(info.title.toUtf8());
 			writer.Key("content");
 			writer.String(info.content.toUtf8());
+            writer.Key("background");
+            writer.String(info.background.name().toUtf8());
             writer.Key("items");
             writer.StartArray();
             for (auto item : info.items) {

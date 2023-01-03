@@ -235,6 +235,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
         blackboard.content = blackBoardValue.HasMember("content") ? blackBoardValue["content"].GetString() : "";
+        blackboard.background =  QColor(blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "");
 
         if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
             qreal w = blackBoardValue["width"].GetFloat();
