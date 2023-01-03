@@ -1114,3 +1114,33 @@ __forceinline__ __device__ vec4 convertTo4(vec3 v) {
 __forceinline__ __device__ vec4 convertTo4(vec4 v) {
     return v;
 }
+
+__forceinline__ __device__ float luminance(vec3 c) {
+    return dot(c, vec3(0.2722287, 0.6740818, 0.0536895));
+}
+
+__forceinline__ __device__ float safepower(float in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec2 safepower(vec2 in1, vec2 in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+__forceinline__ __device__ vec2 safepower(vec2 in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec3 safepower(vec3 in1, vec3 in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+__forceinline__ __device__ vec3 safepower(vec3 in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec3 hsvAdjust(vec3 c, vec3 amount) {
+    vec3 hsv = rgbToHsv(c);
+    hsv.x = fract(hsv.x + amount.x);
+    hsv.y = hsv.y * amount.y;
+    hsv.z = hsv.z * amount.z;
+    return hsvToRgb(hsv);
+}
