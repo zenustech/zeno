@@ -81,23 +81,28 @@ void ZenoMainWindow::initMenu()
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
  */
+    setActionProperty();
     auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
     for (QAction* action : actions)
     {
-        connect(action, SIGNAL(triggered(bool)), this, SLOT(onMenuActionTriggered(bool)));
-        if (!action->isCheckable())
-            action->setIcon(QIcon());
+        connect(action, SIGNAL(triggered(bool)), this, SLOT(onMenuActionTriggered(bool)));  
+        setActionIcon(action);
     }
 
-    connect(m_ui->action_New, SIGNAL(triggered()), this, SLOT(onNewFile()));
-    connect(m_ui->action_Open, SIGNAL(triggered()), this, SLOT(openFileDialog()));
-    connect(m_ui->action_Save, SIGNAL(triggered()), this, SLOT(save()));
-    connect(m_ui->action_Save_As, SIGNAL(triggered()), this, SLOT(saveAs()));
-    connect(m_ui->action_Import, SIGNAL(triggered()), this, SLOT(importGraph()));
-    connect(m_ui->actionExportGraph, SIGNAL(triggered()), this, SLOT(exportGraph()));
-    connect(m_ui->action_Close, SIGNAL(triggered()), this, SLOT(saveQuit()));
-    connect(m_ui->actionSave_Layout, SIGNAL(triggered()), this, SLOT(saveDockLayout()));
-    connect(m_ui->actionEnglish_Chinese, SIGNAL(triggered(bool)), this, SLOT(onLangChanged(bool)));
+    QActionGroup *actionGroup = new QActionGroup(this);
+    actionGroup->addAction(m_ui->actionShading);
+    actionGroup->addAction(m_ui->actionSolid);
+    actionGroup->addAction(m_ui->actionOptix);
+
+    //connect(m_ui->action_New, SIGNAL(triggered()), this, SLOT(onNewFile()));
+    //connect(m_ui->action_Open, SIGNAL(triggered()), this, SLOT(openFileDialog()));
+    //connect(m_ui->action_Save, SIGNAL(triggered()), this, SLOT(save()));
+    //connect(m_ui->action_Save_As, SIGNAL(triggered()), this, SLOT(saveAs()));
+    //connect(m_ui->action_Import, SIGNAL(triggered()), this, SLOT(importGraph()));
+    //connect(m_ui->actionExportGraph, SIGNAL(triggered()), this, SLOT(exportGraph()));
+    //connect(m_ui->action_Close, SIGNAL(triggered()), this, SLOT(saveQuit()));
+    //connect(m_ui->actionSave_Layout, SIGNAL(triggered()), this, SLOT(saveDockLayout()));
+    //connect(m_ui->actionEnglish_Chinese, SIGNAL(triggered(bool)), this, SLOT(onLangChanged(bool)));
 
     m_ui->menubar->setProperty("cssClass", "mainWin");
 
@@ -108,7 +113,64 @@ void ZenoMainWindow::initMenu()
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
 {
     QAction* pAction = qobject_cast<QAction*>(sender());
-    dispatchCommand(pAction, bTriggered);
+    int actionType = pAction->property("ActionType").toInt();
+    if (actionType == ACTION_SHADONG || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
+    {
+        setActionIcon(m_ui->actionShading);
+        setActionIcon(m_ui->actionSolid);
+        setActionIcon(m_ui->actionOptix);
+    } 
+    else 
+    {
+        setActionIcon(pAction);
+    }
+    switch (actionType)
+    {
+    case ACTION_NEW: {
+        onNewFile();
+        break;
+    }
+    case ACTION_OPEN: {
+        openFileDialog();
+        break;
+    }
+    case ACTION_SAVE: {
+        save();
+        break;
+    }
+    case ACTION_SAVE_AS: {
+        saveAs();
+        break;
+    }
+    case ACTION_IMPORT: {
+        importGraph();
+        break;
+    }
+    case ACTION_EXPORT_GRAPH: {
+        exportGraph();
+        break;
+    }
+    case ACTION_CLOSE: {
+        saveQuit();
+        break;
+    }
+    case ACTION_SAVE_LAYOUT: {
+        saveDockLayout();
+        break;
+    }
+    case ACTION_LANGUAGE: {
+        onLangChanged(bTriggered);
+        break;
+    }
+    case ACTION_SCREEN_SHOOT: {
+        screenShoot();
+        break;
+    }
+    default: {
+        dispatchCommand(pAction, bTriggered);
+        break;
+    }
+    }
 }
 
 void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
@@ -469,13 +531,17 @@ void ZenoMainWindow::openFileDialog()
         return;
 
     //todo: path validation
-    saveQuit();
-    openFile(filePath);
+    if (saveQuit()) 
+    {
+        openFile(filePath);
+    }
 }
 
 void ZenoMainWindow::onNewFile() {
-    saveQuit();
-    zenoApp->graphsManagment()->newFile();
+    if (saveQuit()) 
+    {
+        zenoApp->graphsManagment()->newFile();
+    }
 }
 
 void ZenoMainWindow::resizeEvent(QResizeEvent *event)
@@ -543,7 +609,7 @@ static bool saveContent(const QString &strContent, QString filePath) {
 
 void ZenoMainWindow::exportGraph() {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "",
+    QString path = QFileDialog::getSaveFileName(this, "Path to Export", "",
                                                 "C++ Source File(*.cpp);; JSON file(*.json);; All Files(*);;");
     if (path.isEmpty()) {
         return;
@@ -644,6 +710,75 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
     default:
         return UiHelper::generateUuid("dock_empty_");
+    }
+}
+
+void ZenoMainWindow::setActionProperty() 
+{
+    m_ui->action_New->setProperty("ActionType", ACTION_NEW);
+    m_ui->action_Open->setProperty("ActionType", ACTION_OPEN);
+    m_ui->action_Save->setProperty("ActionType", ACTION_SAVE);
+    m_ui->action_Save_As->setProperty("ActionType", ACTION_SAVE_AS);
+    m_ui->action_Import->setProperty("ActionType", ACTION_IMPORT);
+    m_ui->actionExportGraph->setProperty("ActionType", ACTION_EXPORT_GRAPH);
+    m_ui->actionScreen_Shoot->setProperty("ActionType", ACTION_SCREEN_SHOOT);
+    m_ui->actionRecord_Video->setProperty("ActionType", ACTION_RECORD_VIDEO);
+    m_ui->action_Close->setProperty("ActionType", ACTION_CLOSE);
+    m_ui->actionUndo->setProperty("ActionType", ACTION_UNDO);
+    m_ui->actionRedo->setProperty("ActionType", ACTION_REDO);
+    m_ui->action_Copy->setProperty("ActionType", ACTION_COPY);
+    m_ui->action_Paste->setProperty("ActionType", ACTION_PASTE);
+    m_ui->action_Cut->setProperty("ActionType", ACTION_CUT);
+    m_ui->actionCollaspe->setProperty("ActionType", ACTION_COLLASPE);
+    m_ui->actionExpand->setProperty("ActionType", ACTION_EXPAND);
+    m_ui->actionEasy_Graph->setProperty("ActionType", ACTION_EASY_GRAPH);
+    m_ui->actionOpen_View->setProperty("ActionType", ACTION_OPEN_VIEW);
+    m_ui->actionClear_View->setProperty("ActionType", ACTION_CLEAR_VIEW);
+    m_ui->actionSmooth_Shading->setProperty("ActionType", ACTION_SMOOTH_SHADING);
+    m_ui->actionNormal_Check->setProperty("ActionType", ACTION_NORMAL_CHECK);
+    m_ui->actionWireFrame->setProperty("ActionType", ACTION_WIRE_FRAME);
+    m_ui->actionShow_Grid->setProperty("ActionType", ACTION_SHOW_GRID);
+    m_ui->actionBackground_Color->setProperty("ActionType", ACTION_BACKGROUND_COLOR);
+    m_ui->actionSolid->setProperty("ActionType", ACTION_SOLID);
+    m_ui->actionShading->setProperty("ActionType", ACTION_SHADONG);
+    m_ui->actionOptix->setProperty("ActionType", ACTION_OPTIX);
+    m_ui->actionBlackWhite->setProperty("ActionType", ACTION_BLACK_WHITE);
+    m_ui->actionCreek->setProperty("ActionType", ACTION_GREEK);
+    m_ui->actionDay_Light->setProperty("ActionType", ACTION_DAY_LIGHT);
+    m_ui->actionDefault->setProperty("ActionType", ACTION_DEFAULT);
+    m_ui->actionFootballField->setProperty("ActionType", ACTION_FOOTBALL_FIELD);
+    m_ui->actionForest->setProperty("ActionType", ACTION_FOREST);
+    m_ui->actionLake->setProperty("ActionType", ACTION_LAKE);
+    m_ui->actionSee->setProperty("ActionType", ACTION_SEA);
+    m_ui->actionNode_Camera->setProperty("ActionType", ACTION_NODE_CAMERA);
+    m_ui->actionSave_Layout->setProperty("ActionType", ACTION_SAVE_LAYOUT);
+    m_ui->actionDefault_2->setProperty("ActionType", ACTION_DEFAULT_LAYOUT);
+    m_ui->actionEnglish_Chinese->setProperty("ActionType", ACTION_LANGUAGE);
+    m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
+    m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
+
+}
+
+void ZenoMainWindow::screenShoot() 
+{
+    QString path = QFileDialog::getSaveFileName(
+        nullptr, tr("Path to Save"), "",
+        tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
+    QString ext = QFileInfo(path).suffix();
+    if (!path.isEmpty()) {
+        Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+    }
+}
+
+void ZenoMainWindow::setActionIcon(QAction *action) 
+{
+    if (!action->isCheckable() || !action->isChecked()) 
+    {
+        action->setIcon(QIcon());
+    }
+    if (action->isChecked()) 
+    {
+        action->setIcon(QIcon("://icons/checked.png"));
     }
 }
 

@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -121,12 +121,20 @@
     </property>
     <addaction name="actionEnglish_Chinese"/>
    </widget>
+   <widget class="QMenu" name="menuOption">
+    <property name="title">
+     <string>Option</string>
+    </property>
+    <addaction name="actionSet_NASLOC"/>
+    <addaction name="actionSet_ZENCACHE"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuRender"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuHelp"/>
+   <addaction name="menuOption"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">
@@ -184,10 +192,16 @@ border-top: 1px solid black;</string>
    <property name="text">
     <string>&amp;Save As</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+S</string>
+   </property>
   </action>
   <action name="action_Import">
    <property name="text">
     <string>&amp;Import</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+O</string>
    </property>
   </action>
   <action name="action_Close">
@@ -217,6 +231,9 @@ border-top: 1px solid black;</string>
    <property name="text">
     <string>Smooth Shading</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">F5</string>
+   </property>
   </action>
   <action name="actionNormal_Check">
    <property name="checkable">
@@ -224,6 +241,9 @@ border-top: 1px solid black;</string>
    </property>
    <property name="text">
     <string>Normal Check</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F5</string>
    </property>
   </action>
   <action name="actionWireFrame">
@@ -233,13 +253,22 @@ border-top: 1px solid black;</string>
    <property name="text">
     <string>Wireframe</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">F6</string>
+   </property>
   </action>
   <action name="actionShow_Grid">
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Grid</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F6</string>
    </property>
   </action>
   <action name="actionBackground_Color">
@@ -248,18 +277,39 @@ border-top: 1px solid black;</string>
    </property>
   </action>
   <action name="actionSolid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Solid</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">F7</string>
+   </property>
   </action>
   <action name="actionShading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Shading</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F7</string>
+   </property>
   </action>
   <action name="actionOptix">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Optix</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F8</string>
    </property>
   </action>
   <action name="actionBlackWhite">
@@ -321,10 +371,16 @@ border-top: 1px solid black;</string>
    <property name="text">
     <string>Screenshoot</string>
    </property>
+   <property name="shortcut">
+    <string notr="true">F12</string>
+   </property>
   </action>
   <action name="actionRecord_Video">
    <property name="text">
     <string>Record Video</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F12</string>
    </property>
   </action>
   <action name="actionEnglish_Chinese">
@@ -338,6 +394,9 @@ border-top: 1px solid black;</string>
   <action name="actionExportGraph">
    <property name="text">
     <string>Graph</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+E</string>
    </property>
   </action>
   <action name="actionCollaspe">
@@ -363,6 +422,16 @@ border-top: 1px solid black;</string>
   <action name="actionClear_View">
    <property name="text">
     <string>Clear View</string>
+   </property>
+  </action>
+  <action name="actionSet_NASLOC">
+   <property name="text">
+    <string>Set NASLOC</string>
+   </property>
+  </action>
+  <action name="actionSet_ZENCACHE">
+   <property name="text">
+    <string>Set ZENCACHE</string>
    </property>
   </action>
  </widget>

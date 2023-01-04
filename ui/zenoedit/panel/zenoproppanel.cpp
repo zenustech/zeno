@@ -283,6 +283,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
         val = paramItem->data(ROLE_VPARAM_LINK_MODEL);
         cbSet.cbNodeSelected = [=](const QModelIndex& outNodeIdx) {
             QAction act("Select Node");
+            act.setProperty("ActionType", ZenoMainWindow::ACTION_SELECT_NODE);
             act.setData(outNodeIdx);
 
             RetryScope scope(m_bReentry);

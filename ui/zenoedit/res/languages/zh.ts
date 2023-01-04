@@ -101,7 +101,7 @@
 <context>
     <name>DisplayWidget</name>
     <message>
-        <location filename="../../viewport/viewportwidget.cpp" line="1026"/>
+        <location filename="../../viewport/viewportwidget.cpp" line="1029"/>
         <source>Run the graph before recording</source>
         <translation>开始录制前请先点一下“运行”按钮</translation>
     </message>
@@ -528,200 +528,215 @@
         <translation type="unfinished">帮助</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="140"/>
+        <location filename="../../zenomainwindow.ui" line="126"/>
+        <source>Option</source>
+        <translation type="unfinished">选项</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.ui" line="148"/>
         <source>&amp;Undo</source>
         <translation type="unfinished">撤销</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="148"/>
+        <location filename="../../zenomainwindow.ui" line="156"/>
         <source>&amp;Redo</source>
         <translation type="unfinished">重做</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="156"/>
+        <location filename="../../zenomainwindow.ui" line="164"/>
         <source>Default layout</source>
         <translation type="unfinished">默认布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="161"/>
+        <location filename="../../zenomainwindow.ui" line="169"/>
         <source>&amp;New</source>
         <translation type="unfinished">新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="169"/>
+        <location filename="../../zenomainwindow.ui" line="177"/>
         <source>&amp;Open</source>
         <translation type="unfinished">打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="177"/>
+        <location filename="../../zenomainwindow.ui" line="185"/>
         <source>&amp;Save</source>
         <translation type="unfinished">保存</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="185"/>
+        <location filename="../../zenomainwindow.ui" line="193"/>
         <source>&amp;Save As</source>
         <translation type="unfinished">另存为</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="190"/>
+        <location filename="../../zenomainwindow.ui" line="201"/>
         <source>&amp;Import</source>
         <translation type="unfinished">导入</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="195"/>
+        <location filename="../../zenomainwindow.ui" line="209"/>
         <source>&amp;Close</source>
         <translation type="unfinished">关闭</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="200"/>
+        <location filename="../../zenomainwindow.ui" line="214"/>
         <source>&amp;Copy</source>
         <translation type="unfinished">复制</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="205"/>
+        <location filename="../../zenomainwindow.ui" line="219"/>
         <source>&amp;Paste</source>
         <translation type="unfinished">粘贴</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="210"/>
+        <location filename="../../zenomainwindow.ui" line="224"/>
         <source>Cu&amp;t</source>
         <translation type="unfinished">剪切</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="218"/>
+        <location filename="../../zenomainwindow.ui" line="232"/>
         <source>Smooth Shading</source>
         <translation type="unfinished">平滑渲染</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="226"/>
+        <location filename="../../zenomainwindow.ui" line="243"/>
         <source>Normal Check</source>
         <translation type="unfinished">法线检查</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="234"/>
+        <location filename="../../zenomainwindow.ui" line="254"/>
         <source>Wireframe</source>
         <translation type="unfinished">线框</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="242"/>
+        <location filename="../../zenomainwindow.ui" line="268"/>
         <source>Show Grid</source>
         <translation type="unfinished">显示网格</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="247"/>
+        <location filename="../../zenomainwindow.ui" line="276"/>
         <source>Background Color</source>
         <translation type="unfinished">背景颜色</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="252"/>
+        <location filename="../../zenomainwindow.ui" line="284"/>
         <source>Solid</source>
         <translation type="unfinished">实体</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="257"/>
+        <location filename="../../zenomainwindow.ui" line="295"/>
         <source>Shading</source>
         <translation type="unfinished">上色</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="262"/>
+        <location filename="../../zenomainwindow.ui" line="309"/>
         <source>Optix</source>
         <translation type="unfinished">光线追踪</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="267"/>
+        <location filename="../../zenomainwindow.ui" line="317"/>
         <source>BlackWhite</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="272"/>
+        <location filename="../../zenomainwindow.ui" line="322"/>
         <source>Creek</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="277"/>
+        <location filename="../../zenomainwindow.ui" line="327"/>
         <source>Day Light</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="282"/>
-        <location filename="../../zenomainwindow.ui" line="317"/>
+        <location filename="../../zenomainwindow.ui" line="332"/>
+        <location filename="../../zenomainwindow.ui" line="367"/>
         <source>Default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="287"/>
+        <location filename="../../zenomainwindow.ui" line="337"/>
         <source>FootballField</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="292"/>
+        <location filename="../../zenomainwindow.ui" line="342"/>
         <source>Forest</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="297"/>
+        <location filename="../../zenomainwindow.ui" line="347"/>
         <source>Lake</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="302"/>
+        <location filename="../../zenomainwindow.ui" line="352"/>
         <source>Sea</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="307"/>
+        <location filename="../../zenomainwindow.ui" line="357"/>
         <source>Node Camera</source>
         <translation type="unfinished">来自节点的摄像机</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="312"/>
+        <location filename="../../zenomainwindow.ui" line="362"/>
         <source>Save Layout</source>
         <translation type="unfinished">保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="322"/>
+        <location filename="../../zenomainwindow.ui" line="372"/>
         <source>Screenshoot</source>
         <translation type="unfinished">截屏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="327"/>
+        <location filename="../../zenomainwindow.ui" line="380"/>
         <source>Record Video</source>
         <translation type="unfinished">录制视频</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="335"/>
+        <location filename="../../zenomainwindow.ui" line="391"/>
         <source>English Chinese</source>
         <translation type="unfinished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="340"/>
+        <location filename="../../zenomainwindow.ui" line="396"/>
         <source>Graph</source>
         <translation type="unfinished">图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="345"/>
+        <location filename="../../zenomainwindow.ui" line="404"/>
         <source>Collaspe</source>
         <translation type="unfinished">折叠</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="350"/>
+        <location filename="../../zenomainwindow.ui" line="409"/>
         <source>Expand</source>
         <translation type="unfinished">展开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="355"/>
+        <location filename="../../zenomainwindow.ui" line="414"/>
         <source>Easy Subgraph</source>
         <translation type="unfinished">简易子图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="360"/>
+        <location filename="../../zenomainwindow.ui" line="419"/>
         <source>Open View</source>
         <translation type="unfinished">打开显示</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="365"/>
+        <location filename="../../zenomainwindow.ui" line="424"/>
         <source>Clear View</source>
         <translation type="unfinished">清除显示</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.ui" line="429"/>
+        <source>Set NASLOC</source>
+        <translation type="unfinished">设置NASLOC</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.ui" line="434"/>
+        <source>Set ZENCACHE</source>
+        <translation type="unfinished">设置ZENCACHE</translation>
     </message>
 </context>
 <context>
@@ -764,6 +779,80 @@
         <location filename="../../../zenodesign/propertypane.cpp" line="9"/>
         <source>Inspector</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>QColorDialog</name>
+    <message>
+        <source>Hu&amp;e:</source>
+        <translation type="vanished">色调(&amp;E)：</translation>
+    </message>
+    <message>
+        <source>&amp;Sat:</source>
+        <translation type="vanished">饱和度(&amp;S)：</translation>
+    </message>
+    <message>
+        <source>&amp;Val:</source>
+        <translation type="vanished">亮度(&amp;V)：</translation>
+    </message>
+    <message>
+        <source>&amp;Red:</source>
+        <translation type="vanished">红色(&amp;R)：</translation>
+    </message>
+    <message>
+        <source>&amp;Green:</source>
+        <translation type="vanished">绿色(&amp;G)：</translation>
+    </message>
+    <message>
+        <source>Bl&amp;ue:</source>
+        <translation type="vanished">蓝色(&amp;U)：</translation>
+    </message>
+    <message>
+        <source>A&amp;lpha channel:</source>
+        <translation type="vanished">Alpha通道(&amp;A)：</translation>
+    </message>
+    <message>
+        <source>Select Color</source>
+        <translation type="vanished">选择颜色</translation>
+    </message>
+    <message>
+        <source>&amp;Basic colors</source>
+        <translation type="vanished">基本颜色(&amp;B)</translation>
+    </message>
+    <message>
+        <source>&amp;Custom colors</source>
+        <translation type="vanished">自定义颜色(&amp;C)</translation>
+    </message>
+    <message>
+        <source>&amp;Add to Custom Colors</source>
+        <translation type="vanished">添加到自定义颜色(&amp;A)</translation>
+    </message>
+    <message>
+        <source>Select color</source>
+        <translation type="obsolete">选择颜色</translation>
+    </message>
+    <message>
+        <source>&amp;Pick Screen Color</source>
+        <translation type="vanished">拾取屏幕颜色</translation>
+    </message>
+</context>
+<context>
+    <name>QPlatformTheme</name>
+    <message>
+        <source>OK</source>
+        <translation type="vanished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="vanished">取消</translation>
+    </message>
+    <message>
+        <source>&amp;Yes</source>
+        <translation type="vanished">是</translation>
+    </message>
+    <message>
+        <source>&amp;No</source>
+        <translation type="vanished">否</translation>
     </message>
 </context>
 <context>
@@ -1356,14 +1445,12 @@
         <translation>下一个？</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="635"/>
         <source>Open View</source>
-        <translation type="unfinished">打开显示</translation>
+        <translation type="obsolete">打开显示</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="639"/>
         <source>Clear View</source>
-        <translation type="unfinished">清除显示</translation>
+        <translation type="obsolete">清除显示</translation>
     </message>
     <message>
         <source>Collaspe</source>
@@ -1484,12 +1571,12 @@
         <translation type="vanished">新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="817"/>
+        <location filename="../../zenomainwindow.cpp" line="952"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="696"/>
+        <location filename="../../zenomainwindow.cpp" line="831"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -1563,32 +1650,42 @@
         <translation type="unfinished">状态栏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="148"/>
+        <location filename="../../zenomainwindow.cpp" line="210"/>
         <source>layout format is invalid.</source>
         <translation type="unfinished">布局格式无效。</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="162"/>
+        <location filename="../../zenomainwindow.cpp" line="224"/>
         <source>Save Layout</source>
         <translation>保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="162"/>
+        <location filename="../../zenomainwindow.cpp" line="224"/>
         <source>layout name:</source>
         <translation>布局名称：</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="170"/>
+        <location filename="../../zenomainwindow.cpp" line="232"/>
         <source>alreday has same layout, override?</source>
         <translation type="unfinished">已具有相同的布局，是否覆盖？</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="202"/>
+        <location filename="../../zenomainwindow.cpp" line="264"/>
         <source>Language</source>
         <translation type="unfinished">语言</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="696"/>
+        <location filename="../../zenomainwindow.cpp" line="765"/>
+        <source>Path to Save</source>
+        <translation type="unfinished">文件保存路径</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.cpp" line="766"/>
+        <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
+        <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.cpp" line="831"/>
         <source>Save changes?</source>
         <translation type="unfinished">保存更改？</translation>
     </message>
@@ -1605,7 +1702,7 @@
         <translation type="vanished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="203"/>
+        <location filename="../../zenomainwindow.cpp" line="265"/>
         <source>Please restart Zeno to apply changes.</source>
         <translation>请重启Zeno以应用更改。</translation>
     </message>
@@ -1841,7 +1938,7 @@ All Files (*)</source>
         <translation type="vanished">文档</translation>
     </message>
     <message>
-        <location filename="../../panel/zenoproppanel.cpp" line="588"/>
+        <location filename="../../panel/zenoproppanel.cpp" line="589"/>
         <source>Edit Parameter Layout</source>
         <translation>编辑参数布局</translation>
     </message>
@@ -2072,82 +2169,9 @@ All Files (*)</source>
 <context>
     <name>ZlogPanel</name>
     <message>
+        <location filename="../../panel/zlogpanel.cpp" line="192"/>
         <source>Search</source>
         <translation>查询</translation>
-    </message>
-</context>
-<context>
-    <name>QColorDialog</name>
-    <message>
-        <source>Hu&amp;e:</source>
-        <translation>色调(&amp;E)：</translation>
-    </message>
-    <message>
-        <source>&amp;Sat:</source>
-        <translation>饱和度(&amp;S)：</translation>
-    </message>
-    <message>
-        <source>&amp;Val:</source>
-        <translation>亮度(&amp;V)：</translation>
-    </message>
-    <message>
-        <source>&amp;Red:</source>
-        <translation>红色(&amp;R)：</translation>
-    </message>
-    <message>
-        <source>&amp;Green:</source>
-        <translation>绿色(&amp;G)：</translation>
-    </message>
-    <message>
-        <source>Bl&amp;ue:</source>
-        <translation>蓝色(&amp;U)：</translation>
-    </message>
-    <message>
-        <source>A&amp;lpha channel:</source>
-        <translation>Alpha通道(&amp;A)：</translation>
-    </message>
-    <message>
-        <source>Select Color</source>
-        <translation>选择颜色</translation>
-    </message>
-    <message>
-        <source>&amp;Basic colors</source>
-        <translation>基本颜色(&amp;B)</translation>
-    </message>
-    <message>
-        <source>&amp;Custom colors</source>
-        <translation>自定义颜色(&amp;C)</translation>
-    </message>
-    <message>
-        <source>&amp;Add to Custom Colors</source>
-        <translation>添加到自定义颜色(&amp;A)</translation>
-    </message>
-    <message>
-        <source>Select color</source>
-        <translation type="obsolete">选择颜色</translation>
-    </message>
-	<message>
-        <source>&amp;Pick Screen Color</source>
-        <translation>拾取屏幕颜色</translation>
-    </message>
-</context>
-<context>
-    <name>QPlatformTheme</name>
-    <message>
-        <source>OK</source>
-        <translation>确定</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>取消</translation>
-    </message>
-	<message>
-        <source>&amp;Yes</source>
-        <translation>是</translation>
-    </message>
-	<message>
-        <source>&amp;No</source>
-        <translation>否</translation>
     </message>
 </context>
 </TS>

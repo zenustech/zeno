@@ -330,7 +330,7 @@ void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
     if (!pAction)
         return;
 
-    const QString& content = pAction->text();
+    int actionType = pAction->property("ActionType").toInt();
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
@@ -340,7 +340,7 @@ void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
         if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
         {
             //todo: translate.
-            pView->onCommandDispatched(content, bTriggered);
+            pView->onCommandDispatched(actionType, bTriggered);
         }
         if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
         {
