@@ -214,6 +214,9 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #else
     rho = 0.1;
 #endif
+#if !useNewtonSolver
+    K = 288; 
+#endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
 }

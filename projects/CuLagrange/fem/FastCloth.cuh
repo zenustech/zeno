@@ -262,14 +262,10 @@ struct FastClothSystem : IObject {
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
     int K = 72, ISoft = 10 /*6~16*/, IHard = 8, IInit = 6;
-#if !s_useNewtonSolver 
-    // currently for debugging gradient descent solver TODO: use IDyn parameter 
-    K = 720; 
-#endif 
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
-    int IDyn = 3 /*1~6*/, R = 8;
+    int IDyn = 6 /*1~6*/, R = 8;
     T chebyOmega = 1.0f; 
-    T chebyRho = 0.98f; 
+    T chebyRho = 0.77f; 
 
     T proximityRadius() const {
         return std::sqrt((B + Btight) * (B + Btight) + epsSlack);

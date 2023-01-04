@@ -433,9 +433,8 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
         {
             auto grad = vtemp("grad", d, i); 
             auto pre = vtemp("P", d, i); 
-            if (pre < 1e-15f)
+            if (pre < limits<T>::epsilon() * 10.0f)
                 pre = 1.0f; 
-            auto dir = grad/pre; 
             vtemp("dir", d, i) = grad / pre;
         } 
     }); 
