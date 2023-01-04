@@ -421,15 +421,9 @@ struct ZSTracerAdvectDiffuse : INode {
         ///
         if (get_input2<bool>("Density")) {
             compute(pol, "rho", diffuse, dt, scheme, 1.f, NSGrid.get());
-
-            auto clampBelow = get_input2<float>("ClampDensityBelow");
-            clampDensity(pol, "rho", clampBelow, NSGrid.get());
         }
         if (get_input2<bool>("Temperature")) {
             compute(pol, "T", diffuse, dt, scheme, 1.f, NSGrid.get());
-
-            auto coolingRate = get_input2<float>("CoolingRate");
-            coolingTemp(pol, "T", coolingRate, dt, NSGrid.get());
         }
         if (get_input2<bool>("Fuel")) {
             auto speedScale = get_input2<float>("FuelSpeedScale");
@@ -447,8 +441,6 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                     {"bool", "Temperature", "1"},
                                     {"bool", "Fuel", "0"},
                                     {"enum Finite-Volume Semi-Lagrangian MacCormack BFECC", "Scheme", "Finite-Volume"},
-                                    {"float", "ClampDensityBelow", "0.01"},
-                                    {"float", "CoolingRate", "0.0"},
                                     {"float", "FuelSpeedScale", "0.05"},
                                     {"float", "Diffusion", "0.0"}},
                                    /* outputs: */
