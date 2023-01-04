@@ -555,7 +555,8 @@ void ViewParamModel::clone(ViewParamModel* pModel)
 {
     QStandardItem* pRoot = invisibleRootItem();
     ZASSERT_EXIT(pRoot);
-    pRoot->removeRows(0, pRoot->rowCount());
+    while (pRoot->rowCount() > 0)
+        pRoot->removeRow(0);
 
     QStandardItem* pRightRoot = pModel->invisibleRootItem();
     for (int r = 0; r < pRightRoot->rowCount(); r++)

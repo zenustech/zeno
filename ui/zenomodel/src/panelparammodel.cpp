@@ -21,12 +21,18 @@ PanelParamModel::PanelParamModel(
     connect(nodeParams, &NodeParamModel::rowsAboutToBeRemoved, this, &PanelParamModel::onNodeParamsAboutToBeRemoved);
 }
 
+PanelParamModel::PanelParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
+    : ViewParamModel(false, nodeIdx, pModel, parent)
+{
+}
+
 PanelParamModel::~PanelParamModel()
 {
 }
 
 void PanelParamModel::initParams(NodeParamModel* nodeParams)
 {
+    ZASSERT_EXIT(nodeParams);
     auto root = nodeParams->invisibleRootItem();
     /*default structure:
                 root

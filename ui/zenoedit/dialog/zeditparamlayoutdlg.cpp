@@ -7,11 +7,13 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/nodeparammodel.h>
+#include <zenomodel/include/panelparammodel.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenoui/comctrl/zwidgetfactory.h>
 #include <zenomodel/include/globalcontrolmgr.h>
 #include "variantptr.h"
 #include <zenomodel/include/command.h>
+#include "enum.h"
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -109,7 +111,16 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     m_bSubgraphNode = m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel();
 
-    m_proxyModel = new ViewParamModel(bNodeUI, m_model->nodeIdx(), m_pGraphsModel, this);
+    if (bNodeUI)
+    {
+        QModelIndex subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        m_proxyModel = new NodeParamModel(subgIdx, m_model->nodeIdx(), m_pGraphsModel, true, this);
+    }
+    else
+    {
+        m_proxyModel = new PanelParamModel(m_model->nodeIdx(), m_pGraphsModel, this);
+    }
+
     m_proxyModel->clone(m_model);
 
     m_ui->paramsView->setModel(m_proxyModel);
@@ -403,12 +414,12 @@ void ZEditParamLayoutDlg::onBtnAdd()
         pItem->appendRow(pNewItem);
 
         //record some command about SubInput/SubOutput.
-
-
+#if 0
         QString objPath = pItem->data(ROLE_OBJPATH).toString();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
         ViewParamAddCommand *pCmd = new ViewParamAddCommand(m_pGraphsModel, objPath, vParam);
         m_commandSeq.append(pCmd);
+#endif
     }
 }
 
@@ -635,33 +646,25 @@ void ZEditParamLayoutDlg::applySubgraphNode()
     if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel())
     {
         //sync to core param model first, and then the coreparam model will notify the view param model to update.
-        QStandardItem* _root = m_proxyModel->invisibleRootItem();
-        ZASSERT_EXIT(_root && _root->rowCount() == 1);
+        NodeParamModel* pNodeModel = qobject_cast<NodeParamModel*>(m_proxyModel);
+        ZASSERT_EXIT(pNodeModel);
 
-        QStandardItem* pRoot = _root->child(0);
-        ZASSERT_EXIT(pRoot && pRoot->rowCount() == 1);
+        const QString &subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        const QModelIndex &subgIdx = m_pGraphsModel->index(subgName);
 
-        const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        const QModelIndex& subgIdx = m_pGraphsModel->index(subgName);
+        VParamItem* pInputs = pNodeModel->getInputs();
+        VParamItem* pOutputs = pNodeModel->getOutputs();
 
         QStringList newInputsKeys, newOutputsKeys;
-
-        QStandardItem* pTab = pRoot->child(0);
-        for (int i = 0; i < pTab->rowCount(); i++)
+        for (VParamItem* pGroup : QList<VParamItem*>({pInputs, pOutputs}))
         {
-            QStandardItem* pGroup = pTab->child(i);
             ZASSERT_EXIT(pGroup);
             const QString& groupName = pGroup->text();
 
-            if (groupName != "In Sockets" && groupName != "Out Sockets")
-            {
-                continue;
-            }
-
-            bool bSubInput = groupName == "In Sockets";
+            bool bSubInput = groupName == iotags::params::node_inputs;
 
             QSet<QString> deleteParams;
-            if (groupName == "In Sockets")
+            if (bSubInput)
             {
                 INPUT_SOCKETS inputs = m_nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
                 for (QString coreName : inputs.keys())
@@ -774,7 +777,7 @@ void ZEditParamLayoutDlg::applySubgraphNode()
         m_pGraphsModel->undoRedo_updateSubgDesc(subgName, descSubg);
 
         //arrange the specific order for view model.
-        m_model->arrangeOrder(newInputsKeys, newOutputsKeys);
+        //m_model->arrangeOrder(newInputsKeys, newOutputsKeys);
         //second, update all other subgraph nodes
     }
 }

@@ -17,7 +17,7 @@ class ViewParamModel : public QStandardItemModel
 public:
     explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     ~ViewParamModel();
-    void clone(ViewParamModel* pModel);
+    virtual void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
     IGraphsModel* graphsModel() const;
     virtual QModelIndex indexFromPath(const QString& path);

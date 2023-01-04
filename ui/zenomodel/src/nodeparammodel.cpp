@@ -9,19 +9,20 @@
 #include "enum.h"
 
 
-NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
+NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel, QObject* parent)
     : ViewParamModel(true, nodeIdx, pModel, parent)
     , m_inputs(nullptr)
     , m_params(nullptr)
     , m_outputs(nullptr)
     , m_pGraphsModel(pModel)
     , m_subgIdx(subgIdx)
+    , m_bTempModel(bTempModel)
 {
     initUI();
     connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
     connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
     connect(this, &NodeParamModel::rowsInserted, this, &NodeParamModel::onRowsInserted);
-    if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
+    if (!m_bTempModel && m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
     {
         GlobalControlMgr &mgr = GlobalControlMgr::instance();
         connect(this, &NodeParamModel::rowsInserted, &mgr, &GlobalControlMgr::onCoreParamsInserted);
@@ -537,6 +538,27 @@ QStringList NodeParamModel::sockNames(PARAM_CLASS cls) const
     return names;
 }
 
+void NodeParamModel::clone(ViewParamModel* pModel)
+{
+    //only add params.
+    NodeParamModel* pOtherModel = qobject_cast<NodeParamModel*>(pModel);
+    for (int i = 0; i < pOtherModel->m_inputs->rowCount(); i++)
+    {
+        QStandardItem* item = pOtherModel->m_inputs->child(i)->clone();
+        m_inputs->appendRow(item);
+    }
+    for (int i = 0; i < pOtherModel->m_params->rowCount(); i++)
+    {
+        QStandardItem* item = pOtherModel->m_params->child(i)->clone();
+        m_params->appendRow(item);
+    }
+    for (int i = 0; i < pOtherModel->m_outputs->rowCount(); i++)
+    {
+        QStandardItem* item = pOtherModel->m_outputs->child(i)->clone();
+        m_outputs->appendRow(item);
+    }
+}
+
 bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     switch (role)
@@ -550,7 +572,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
                 return false;
 
             pItem->setData(newName, role);
-            if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && pItem->vType == VPARAM_PARAM)
+            if (!m_bTempModel && m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && pItem->vType == VPARAM_PARAM)
             {
                 VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
                 PARAM_CLASS cls = PARAM_UNKNOWN;
@@ -700,7 +722,7 @@ bool NodeParamModel::removeRows(int row, int count, const QModelIndex& parent)
 
 void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* pItem)
 {
-    if (m_pGraphsModel->IsIOProcessing())
+    if (m_pGraphsModel->IsIOProcessing() || m_bTempModel)
         return;
 
     const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -708,11 +730,10 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
     {
         bool bInput = nodeName == "SubInput";
         const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-        VParamItem* pGroup = bInput ? m_inputs : m_outputs;
 
-        VParamItem* deflItem = pGroup->getItem("defl");
-        VParamItem* nameItem = pGroup->getItem("name");
-        VParamItem* typeItem = pGroup->getItem("type");
+        VParamItem* deflItem = m_params->getItem("defl");
+        VParamItem* nameItem = m_params->getItem("name");
+        VParamItem* typeItem = m_params->getItem("type");
 
         ZASSERT_EXIT(deflItem && nameItem && typeItem);
         const QString& sockName = nameItem->m_value.toString();
@@ -726,10 +747,9 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             GlobalControlMgr::instance().onParamUpdated(subgName, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, newCtrl);
 
             const QModelIndex& idx_defl = deflItem->index();
-            deflItem->m_type = newType;
-            deflItem->m_value = newValue;
-
-            emit dataChanged(idx_defl, idx_defl, QVector<int>{ROLE_PARAM_TYPE});
+            setData(idx_defl, newType, ROLE_PARAM_TYPE);
+            setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
+            setData(idx_defl, newValue, ROLE_PARAM_VALUE);
 
             //update desc.
             NODE_DESC desc;
@@ -755,6 +775,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                 QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
                 nodeParams->setData(paramIdx, newType, ROLE_PARAM_TYPE);
+                nodeParams->setData(paramIdx, newCtrl, ROLE_PARAM_CTRL);
+                nodeParams->setData(paramIdx, newValue, ROLE_PARAM_VALUE);
             }
         }
         else if (pItem->m_name == "name")
@@ -812,6 +834,9 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 
 void NodeParamModel::onLinkAdded(const VParamItem* pItem)
 {
+    if (m_bTempModel)
+        return;
+
     //dynamic socket from MakeList/Dict and ExtractDict
     QStringList lst = sockNames(PARAM_INPUT);
     int maxObjId = UiHelper::getMaxObjId(lst);

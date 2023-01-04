@@ -7,10 +7,11 @@ class NodeParamModel : public ViewParamModel
 {
     Q_OBJECT
 public:
-    explicit NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
+    explicit NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel = false, QObject* parent = nullptr);
     ~NodeParamModel();
 
     void clearParams();
+    void clone(ViewParamModel* pModel) override;
 
     bool getInputSockets(INPUT_SOCKETS &inputs);
     bool getOutputSockets(OUTPUT_SOCKETS &outputs);
@@ -59,6 +60,8 @@ private:
     VParamItem* m_inputs;
     VParamItem* m_params;
     VParamItem* m_outputs;
+
+    bool m_bTempModel;      //temp model on edit param dialog, no actual operation to the graph.
 };
 
 #endif

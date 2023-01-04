@@ -110,7 +110,7 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, this);
+    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, false, this);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -379,6 +379,11 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         {
             VPARAM_INFO root = item.panelParams->exportParams();
             return QVariant::fromValue(root);
+        }
+        case ROLE_SUBGRAPH_IDX:
+        {
+            const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
+            return subgIdx;
         }
         default:
             return QVariant();

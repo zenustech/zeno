@@ -15,6 +15,12 @@ public:
         const QModelIndex& nodeIdx,
         IGraphsModel* pModel,
         QObject* parent = nullptr);
+
+    explicit PanelParamModel(
+        const QModelIndex& nodeIdx,
+        IGraphsModel* pModel,
+        QObject* parent = nullptr);
+
     ~PanelParamModel();
     void initParams(NodeParamModel* nodeParams);
 
