@@ -600,8 +600,10 @@ void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
     }
 }
 
-void ZenoGraphsEditor::onSubnetListPanel(bool bShow)
+void ZenoGraphsEditor::onSubnetListPanel(bool bShow, SideBarItem item) 
 {
+    QModelIndex idx = m_sideBarModel->match(m_sideBarModel->index(0, 0), Qt::UserRole + 1, item)[0];
+    m_selection->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
     m_ui->stackedWidget->setVisible(bShow);
 }
 

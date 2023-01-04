@@ -134,7 +134,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
-    ZToolBarButton* pSearchBtn = new ZToolBarButton(false, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
+    ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
     QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
@@ -185,7 +185,24 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
     pVLayout->addWidget(pLine);
 
-    connect(pListView, &ZToolBarButton::toggled, m_pEditor, &ZenoGraphsEditor::onSubnetListPanel);
+    connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Subnet); 
+        pTreeView->setChecked(false);
+        pSearchBtn->setChecked(false);
+    });
+    connect(pTreeView, &ZToolBarButton::toggled, this,[=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Tree); 
+        pSearchBtn->setChecked(false);
+        pListView->setChecked(false);
+    });
+    connect(pSearchBtn, &ZToolBarButton::toggled, this, [=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Search); 
+        pTreeView->setChecked(false);
+        pListView->setChecked(false);
+    });
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {
         QAction act("Collaspe");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_COLLASPE);

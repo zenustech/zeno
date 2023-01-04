@@ -17,7 +17,7 @@ namespace Ui
 class ZenoGraphsEditor : public QWidget
 {
     Q_OBJECT
-
+  public:
     enum SideBarItem
     {
         Side_Subnet,
@@ -42,7 +42,7 @@ public slots:
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
-    void onSubnetListPanel(bool bShow);
+    void onSubnetListPanel(bool bShow, SideBarItem item);
     void onAction(QAction* pAction, const QVariantList& args = QVariantList());
     void onCommandDispatched(QAction* pAction, bool bTriggered);
 
