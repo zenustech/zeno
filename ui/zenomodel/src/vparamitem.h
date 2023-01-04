@@ -41,6 +41,7 @@ struct VParamItem : public QStandardItem
     VPARAM_INFO m_tempInfo;
     PARAM_LINKS m_links;
     SOCKET_PROPERTY m_sockProp;
+    uint m_uuid;
 
     ProxySlotObject m_proxySlot;
 
@@ -58,6 +59,7 @@ struct VParamItem : public QStandardItem
     void mapCoreParam(const QPersistentModelIndex& idx);
     rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName, int* r = 0) const;
+    VParamItem* findItem(uint uuid, int* r = 0) const;
     VPARAM_INFO exportParamInfo();
     PARAM_CLASS getParamClass();
     void importParamInfo(const VPARAM_INFO& paramInfo);

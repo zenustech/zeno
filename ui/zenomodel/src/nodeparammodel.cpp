@@ -6,7 +6,7 @@
 #include "variantptr.h"
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
-#include "enum.h"
+#include "iotags.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel, QObject* parent)
@@ -21,7 +21,6 @@ NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QMode
     initUI();
     connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
     connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
-    connect(this, &NodeParamModel::rowsInserted, this, &NodeParamModel::onRowsInserted);
     if (!m_bTempModel && m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
     {
         GlobalControlMgr &mgr = GlobalControlMgr::instance();
@@ -189,6 +188,7 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         pItem->m_value = inSocket.info.defaultValue;
         pItem->m_type = inSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)inSocket.info.sockProp;
+        initDictSocket(pItem);
 
         const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
         CONTROL_INFO infos =
@@ -235,6 +235,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_value = outSocket.info.defaultValue;
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
+        initDictSocket(pItem);
         m_outputs->appendRow(pItem);
     }
 }
@@ -327,6 +328,7 @@ void NodeParamModel::setAddParam(
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
+            initDictSocket(pItem);
             pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
 
             m_inputs->appendRow(pItem);
@@ -357,6 +359,7 @@ void NodeParamModel::setAddParam(
             pItem->m_sockProp = prop;
             pItem->m_type = type;
             pItem->m_ctrl = ctrl;
+            initDictSocket(pItem);
             pItem->setData(props, ROLE_VPARAM_CTRL_PROPERTIES);
 
             m_outputs->appendRow(pItem);
@@ -557,6 +560,10 @@ void NodeParamModel::clone(ViewParamModel* pModel)
         QStandardItem* item = pOtherModel->m_outputs->child(i)->clone();
         m_outputs->appendRow(item);
     }
+
+    m_inputs->m_uuid = pOtherModel->m_inputs->m_uuid;
+    m_params->m_uuid = pOtherModel->m_params->m_uuid;
+    m_outputs->m_uuid = pOtherModel->m_outputs->m_uuid;
 }
 
 bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -637,16 +644,11 @@ void NodeParamModel::clearLinks(VParamItem* pItem)
     pItem->m_links.clear();
 }
 
-void NodeParamModel::onRowsInserted(const QModelIndex& parent, int first, int last)
+void NodeParamModel::initDictSocket(VParamItem* pItem)
 {
-    VParamItem* parentItem = static_cast<VParamItem*>(itemFromIndex(parent));
-    if (!parentItem || parentItem->vType != VPARAM_GROUP)
+    if (!pItem || pItem->vType != VPARAM_PARAM)
         return;
 
-    if (first < 0 || first >= parentItem->rowCount())
-        return;
-
-    VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(first));
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
     NODE_DESC desc;
     m_model->getDescriptor(nodeCls, desc);
@@ -677,8 +679,6 @@ void NodeParamModel::onRowsInserted(const QModelIndex& parent, int first, int la
         DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
         pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
     }
-
-    m_model->markDirty();
 }
 
 void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)

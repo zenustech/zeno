@@ -4,7 +4,7 @@
 #include "uihelper.h"
 #include "../customui/customuirw.h"
 #include "nodeparammodel.h"
-#include "enum.h"
+#include "iotags.h"
 
 
 static const char* qsToString(const QString& qs)
@@ -83,6 +83,7 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
 {
     m_ctrl = CONTROL_NONE;
     m_name = text;
+    m_uuid = UiHelper::generateUuidInt();
 }
 
 VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text, bool bMapCore)
@@ -92,6 +93,7 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text,
 {
     m_ctrl = CONTROL_NONE;
     m_name = text;
+    m_uuid = UiHelper::generateUuidInt();
 }
 
 VParamItem::VParamItem(const VParamItem& other)
@@ -103,6 +105,7 @@ VParamItem::VParamItem(const VParamItem& other)
     , m_ctrl(other.m_ctrl)
     , m_sockProp(other.m_sockProp)
     , m_links(other.m_links)
+    , m_uuid(other.m_uuid)
     , m_proxySlot(this)
 {
     mapCoreParam(other.m_index);
@@ -334,6 +337,21 @@ VParamItem* VParamItem::getItem(const QString& uniqueName, int* targetIdx) const
     {
         VParamItem* pChild = static_cast<VParamItem*>(child(r));
         if (pChild->m_name == uniqueName)
+        {
+            if (targetIdx)
+                *targetIdx = r;
+            return pChild;
+        }
+    }
+    return nullptr;
+}
+
+VParamItem* VParamItem::findItem(uint uuid, int* targetIdx) const
+{
+    for (int r = 0; r < rowCount(); r++)
+    {
+        VParamItem* pChild = static_cast<VParamItem*>(child(r));
+        if (pChild->m_uuid == uuid)
         {
             if (targetIdx)
                 *targetIdx = r;

@@ -2,7 +2,7 @@
 #include "nodeparammodel.h"
 #include "vparamitem.h"
 #include "modelrole.h"
-#include "enum.h"
+#include "iotags.h"
 
 
 PanelParamModel::PanelParamModel(

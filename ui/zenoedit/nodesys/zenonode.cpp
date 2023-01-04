@@ -28,7 +28,7 @@
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
-#include "enum.h"
+#include "iotags.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -514,16 +514,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
         bool bInput = groupName == iotags::params::node_inputs;
         ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
         ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (pModel->IsSubGraphNode(m_index))
-        {
-            //dynamic socket added, ensure that the key is above the SRC key.
-            pSocketsLayout->insertLayout(0, pSocketLayout);
-        }
-        else
-        {
-            pSocketsLayout->addLayout(pSocketLayout);
-        }
+        pSocketsLayout->addLayout(pSocketLayout);
         updateWhole();
     }
     else if (groupName == iotags::params::node_params)

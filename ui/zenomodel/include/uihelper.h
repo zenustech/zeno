@@ -32,6 +32,7 @@ public:
     static NODE_DESCS parseDescs(const rapidjson::Value &descs);
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
+    static uint generateUuidInt();
     static QVariant initDefaultValue(const QString& type);
     static bool validateVariant(const QVariant& var, const QString& type);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);

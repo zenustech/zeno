@@ -267,7 +267,8 @@ bool ViewParamModel::moveRows(
         return false;
 
     QStandardItem *dstParent = itemFromIndex(destinationParent);
-    if (!dstParent)
+    //only allow the movement in the same layer.
+    if (!dstParent || srcParent != dstParent)
         return false;
 
     if (srcParent == dstParent && sourceRow == destinationChild && count == 1)
@@ -300,7 +301,9 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     pItem->m_ctrl = pItem->m_tempInfo.m_info.control;
     pItem->m_type = pItem->m_tempInfo.m_info.typeDesc;
     pItem->m_name = pItem->m_tempInfo.m_info.name;
+    pItem->setText(pItem->m_tempInfo.m_info.name);
     pItem->m_value = pItem->m_tempInfo.m_info.value;
+    pItem->m_uuid = pItem->m_tempInfo.m_uuid;
 
     if (!coreparam.isEmpty())
     {

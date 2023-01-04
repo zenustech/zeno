@@ -204,6 +204,7 @@ struct VPARAM_INFO
     PARAM_CLASS m_cls;
     QVector<VPARAM_INFO> children;
     QVariant controlInfos;
+    uint m_uuid;
 
     VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN) {}
 };

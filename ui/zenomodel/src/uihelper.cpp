@@ -315,6 +315,12 @@ QString UiHelper::generateUuid(const QString& name)
     return QString::number(uuid.data1, 16) + "-" + name;
 }
 
+uint UiHelper::generateUuidInt()
+{
+    QUuid uuid = QUuid::createUuid();
+    return uuid.data1;
+}
+
 bool UiHelper::parseVecType(const QString& type, int& dim, bool& bFloat)
 {
     static QRegExp rx("vec(2|3|4)(i|f)?");

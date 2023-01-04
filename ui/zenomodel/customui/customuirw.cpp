@@ -44,13 +44,15 @@ namespace zenomodel
         {
             bool bCoreParam = pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
             const QString& corename = pItem->data(ROLE_PARAM_NAME).toString();
-            if (!corename.isEmpty())
+            if (pItem->m_index.isValid())
             {
                 writer.Key("core-param");
                 JsonObjBatch _scope(writer);
 
+                const QString& refPath = pItem->m_index.data(ROLE_OBJPATH).toString();
+
                 writer.Key("name");
-                writer.String(corename.toUtf8());
+                writer.String(refPath.toUtf8());
 
                 writer.Key("class");
                 PARAM_CLASS cls = (PARAM_CLASS)pItem->data(ROLE_PARAM_CLASS).toInt();
@@ -119,6 +121,10 @@ namespace zenomodel
                     writer.Int(pros["max"].toInt());
                 }
             }
+
+            //disable drag!!!
+            writer.Key("uuid");
+            writer.Uint(pItem->m_uuid);
             //todo: link.
         }
     }
@@ -165,6 +171,13 @@ namespace zenomodel
             {
                 param.m_cls = PARAM_UNKNOWN;
             }
+        }
+
+        if (paramVal.HasMember("uuid"))
+        {
+            const rapidjson::Value& uuidObj = paramVal["uuid"];
+            ZASSERT_EXIT(uuidObj.IsUint(), param);
+            param.m_uuid = uuidObj.GetUint();
         }
 
         ZASSERT_EXIT(paramVal.HasMember("control"), param);

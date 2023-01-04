@@ -58,6 +58,7 @@ private slots:
 
 private:
     void applySubgraphNode();
+    void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void updateSubgParamControl(
             IGraphsModel* pGraphsModel,
             const QString& subgName,
@@ -73,6 +74,7 @@ private:
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
+    QPersistentModelIndex m_subgIdx;
     static const int rowValueControl = 4;
     bool m_bSubgraphNode;
 
