@@ -795,30 +795,30 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     m_view->update();
 }
 
-void DisplayWidget::onCommandDispatched(const QString& name, bool bChecked)
+void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
 {
-    if (name == "Smooth Shading")
+    if (actionType == ZenoMainWindow::ACTION_SMOOTH_SHADING)
     {
         Zenovis::GetInstance().getSession()->set_smooth_shading(bChecked);
         updateFrame("");
     }
-    if (name == "Normal Check")
+    else if (actionType == ZenoMainWindow::ACTION_NORMAL_CHECK)
     {
         Zenovis::GetInstance().getSession()->set_normal_check(bChecked);
         updateFrame("");
     }
-    if (name == "Wireframe")
+    else if (actionType == ZenoMainWindow::ACTION_WIRE_FRAME)
     {
         Zenovis::GetInstance().getSession()->set_render_wireframe(bChecked);
         updateFrame("");
     }
-    if (name == "Show Grid")
+    else if (actionType == ZenoMainWindow::ACTION_SHOW_GRID)
     {
         Zenovis::GetInstance().getSession()->set_show_grid(bChecked);
         //todo: need a notify mechanism from zenovis/session.
         updateFrame("");
     }
-    if (name == "Background Color")
+    else if (actionType == ZenoMainWindow::ACTION_BACKGROUND_COLOR)
     {
         auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
         auto c = QColor::fromRgbF(r, g, b);
@@ -828,26 +828,26 @@ void DisplayWidget::onCommandDispatched(const QString& name, bool bChecked)
             updateFrame("");
         }
     }
-    if (name == "Solid")
+    else if (actionType == ZenoMainWindow::ACTION_SOLID)
     {
         const char* e = "bate";
         Zenovis::GetInstance().getSession()->set_render_engine(e);
         updateFrame(QString::fromUtf8(e));
     }
-    if (name == "Shading")
+    else if (actionType == ZenoMainWindow::ACTION_SHADONG)
     {
         const char* e = "zhxx";
         Zenovis::GetInstance().getSession()->set_render_engine(e);
         //Zenovis::GetInstance().getSession()->set_enable_gi(false);
         updateFrame(QString::fromUtf8(e));
     }
-    if (name == "Optix")
+    else if (actionType == ZenoMainWindow::ACTION_OPTIX)
     {
         const char* e = "optx";
         Zenovis::GetInstance().getSession()->set_render_engine(e);
         updateFrame(QString::fromUtf8(e));
     }
-    if (name == "Node Camera")
+    else if (actionType == ZenoMainWindow::ACTION_NODE_CAMERA)
     {
         int frameid = Zenovis::GetInstance().getSession()->get_curr_frameid();
         auto* scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -858,16 +858,19 @@ void DisplayWidget::onCommandDispatched(const QString& name, bool bChecked)
                 updateFrame();
             }
         }
+    } 
+    else if (actionType == ZenoMainWindow::ACTION_RECORD_VIDEO) 
+    {
+        onRecord();
     }
-
-    if (name == "BlackWhite" ||
-        name == "Creek" ||
-        name == "Day Light" ||
-        name == "Default" ||
-        name == "FootballField" ||
-        name == "Forest" ||
-        name == "Lake" ||
-        name == "Sea")
+    else if (actionType == ZenoMainWindow::ACTION_BLACK_WHITE 
+        || actionType == ZenoMainWindow::ACTION_GREEK
+        || actionType == ZenoMainWindow::ACTION_DAY_LIGHT 
+        || actionType == ZenoMainWindow::ACTION_DEFAULT 
+        || actionType == ZenoMainWindow::ACTION_FOOTBALL_FIELD 
+        || actionType == ZenoMainWindow::ACTION_FOREST 
+        || actionType == ZenoMainWindow::ACTION_LAKE 
+        || actionType == ZenoMainWindow::ACTION_SEA) 
     {
         //todo: no implementation from master.
     }

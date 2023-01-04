@@ -36,6 +36,64 @@ public:
     ZenoLights* lightPanel = nullptr;
     float mouseSen = 0.2;
 
+    enum ActionType {
+        //File
+        ACTION_NEW = 0,
+        ACTION_OPEN,
+        ACTION_SAVE,
+        ACTION_SAVE_AS,
+        ACTION_IMPORT,
+        //File export
+        ACTION_EXPORT_GRAPH,
+        ACTION_SCREEN_SHOOT,
+        ACTION_RECORD_VIDEO,
+
+        ACTION_CLOSE,
+        //Edit
+        ACTION_UNDO,
+        ACTION_REDO,
+        ACTION_COPY,
+        ACTION_PASTE,
+        ACTION_CUT,
+        ACTION_COLLASPE,
+        ACTION_EXPAND,
+        ACTION_EASY_GRAPH,
+        ACTION_OPEN_VIEW,
+        ACTION_CLEAR_VIEW,
+        //Render
+        ACTION_SMOOTH_SHADING,
+        ACTION_NORMAL_CHECK,
+        ACTION_WIRE_FRAME,
+        ACTION_SHOW_GRID,
+        ACTION_BACKGROUND_COLOR,
+        ACTION_SOLID,
+        ACTION_SHADONG,
+        ACTION_OPTIX,
+        //View EnvTex
+        ACTION_BLACK_WHITE,
+        ACTION_GREEK,
+        ACTION_DAY_LIGHT,
+        ACTION_DEFAULT,
+        ACTION_FOOTBALL_FIELD,
+        ACTION_FOREST,
+        ACTION_LAKE,
+        ACTION_SEA,
+        //View Camera
+        ACTION_NODE_CAMERA,
+        //Window
+        ACTION_SAVE_LAYOUT,
+        //Window Custom Layout
+        ACTION_DEFAULT_LAYOUT,
+        //Help
+        ACTION_LANGUAGE,
+        //Others
+        ACTION_CUSTOM_UI,
+        ACTION_SET_NASLOC,
+        ACTION_ZENCACHE,
+        ACTION_ZOOM,
+        ACTION_SELECT_NODE
+    };
+
 public slots:
     void openFileDialog();
     void onNewFile();
@@ -81,6 +139,9 @@ private:
     void SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation);
     QString getOpenFileByDialog();
     QString uniqueDockObjName(DOCK_TYPE type);
+    void setActionProperty();
+    void screenShoot();
+    void setActionIcon(QAction *action);
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

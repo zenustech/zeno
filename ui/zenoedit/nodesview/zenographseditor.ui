@@ -171,7 +171,7 @@ font: 12pt 'Segoe UI Bold';</string>
               <property name="styleSheet">
                <string notr="true">QTreeView
 {
-	background-color: rgb(37,37,38);
+	background-color: rgb(45,50,57);
 	show-decoration-selected: 1;
 	font: 12pt 'HarmonyOS Sans';
 }
@@ -274,7 +274,7 @@ font: 12pt 'HarmonyOS Sans';</string>
               <property name="styleSheet">
                <string notr="true">QTreeView
 {
-	background-color: rgb(43,43,43);
+	background-color: rgb(66,70,76);
 	show-decoration-selected: 1;
 	font: 12pt 'HarmonyOS Sans';
 }

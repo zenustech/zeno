@@ -600,8 +600,10 @@ void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
     }
 }
 
-void ZenoGraphsEditor::onSubnetListPanel(bool bShow)
+void ZenoGraphsEditor::onSubnetListPanel(bool bShow, SideBarItem item) 
 {
+    QModelIndex idx = m_sideBarModel->match(m_sideBarModel->index(0, 0), Qt::UserRole + 1, item)[0];
+    m_selection->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
     m_ui->stackedWidget->setVisible(bShow);
 }
 
@@ -617,30 +619,30 @@ void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 
 void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
 {
-    const QString& text = pAction->text();
-    if (text == "Collaspe")
+    int actionType = pAction->property("ActionType").toInt();
+    if (actionType == ZenoMainWindow::ACTION_COLLASPE)
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
         QModelIndex subgIdx = pView->scene()->subGraphIndex();
         m_model->collaspe(subgIdx);
     }
-    else if (text == "Expand")
+    else if (actionType == ZenoMainWindow::ACTION_EXPAND) 
 	{
 		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
     }
-    else if (text == tr("Open View"))
+    else if (actionType == ZenoMainWindow::ACTION_OPEN_VIEW) 
     {
         toggleViewForSelected(false);
     }
-    else if (text == tr("Clear View"))
+    else if (actionType == ZenoMainWindow::ACTION_CLEAR_VIEW) 
     {
         toggleViewForSelected(false);
     }
-    else if (text == "CustomUI")
+    else if (actionType == ZenoMainWindow::ACTION_CUSTOM_UI) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
@@ -657,7 +659,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             }
         }
     }
-    else if (text == "Easy Subgraph")
+    else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
@@ -681,7 +683,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             }
         }
     }
-    else if (text == "Set NASLOC")
+    else if (actionType == ZenoMainWindow::ACTION_SET_NASLOC) 
     {
         QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("nas_loc").toString();
@@ -697,7 +699,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             startUp();
         }
     }
-    else if (text == "Set ZENCACHE")
+    else if (actionType == ZenoMainWindow::ACTION_ZENCACHE) 
     {
         QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("zencachedir").toString();
@@ -716,7 +718,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             settings.setValue("zencachenum", text2);
         }
     }
-    else if (text == "zoom")
+    else if (actionType == ZenoMainWindow::ACTION_ZOOM) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
@@ -725,17 +727,17 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             pView->setZoom(args[0].toFloat());
         }
     }
-    else if (text == "&Undo")
+    else if (actionType == ZenoMainWindow::ACTION_UNDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         pGraphsModel->undo();
     }
-    else if (text == "&Redo")
+    else if (actionType == ZenoMainWindow::ACTION_REDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         pGraphsModel->redo();
     }
-    else if (text == "Select Node")
+    else if (actionType == ZenoMainWindow::ACTION_SELECT_NODE) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         QModelIndex nodeIdx = pAction->data().toModelIndex();

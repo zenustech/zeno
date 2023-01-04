@@ -16,7 +16,7 @@ QLineEdit[cssClass="searchEditor"]
 {
     border: 1px solid #252525;
     padding: 0 4px;
-    background: rgb(60, 60, 60);
+    background: rgb(28, 28, 28);
     selection-background-color: #4B9EF4;
     font: 14px 'HarmonyOS Sans';
     color: rgba(255,255,255,0.40);

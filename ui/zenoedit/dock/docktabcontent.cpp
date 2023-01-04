@@ -13,6 +13,7 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
 #include <zenoui/comctrl/zwidgetfactory.h>
+#include "zenomainwindow.h"
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -133,7 +134,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
-    ZToolBarButton* pSearchBtn = new ZToolBarButton(false, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
+    ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
     QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
@@ -146,6 +147,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
         auto caps = rx.capturedTexts();
         qreal scale = caps[1].toFloat() / 100.;
         QAction act("zoom");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_ZOOM);
         m_pEditor->onAction(&act, {scale});
     };
     CallbackCollection cbSet;
@@ -183,17 +185,37 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
     pVLayout->addWidget(pLine);
 
-    connect(pListView, &ZToolBarButton::toggled, m_pEditor, &ZenoGraphsEditor::onSubnetListPanel);
+    connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Subnet); 
+        pTreeView->setChecked(false);
+        pSearchBtn->setChecked(false);
+    });
+    connect(pTreeView, &ZToolBarButton::toggled, this,[=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Tree); 
+        pSearchBtn->setChecked(false);
+        pListView->setChecked(false);
+    });
+    connect(pSearchBtn, &ZToolBarButton::toggled, this, [=](bool isShow) 
+    { 
+        m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Search); 
+        pTreeView->setChecked(false);
+        pListView->setChecked(false);
+    });
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {
         QAction act("Collaspe");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_COLLASPE);
         m_pEditor->onAction(&act);
     });
     connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
         QAction act("Expand");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_EXPAND);
         m_pEditor->onAction(&act);
     });
     connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
         QAction act("CustomUI");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_CUSTOM_UI);
         m_pEditor->onAction(&act);
     });
 
