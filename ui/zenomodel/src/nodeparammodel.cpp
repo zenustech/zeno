@@ -6,6 +6,7 @@
 #include "variantptr.h"
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
+#include "enum.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
@@ -70,9 +71,9 @@ void NodeParamModel::initUI()
                 - output param1 (Item)
                 - output param2 (Item)
     */
-    m_inputs = new VParamItem(VPARAM_GROUP, "inputs");
-    m_params = new VParamItem(VPARAM_GROUP, "params");
-    m_outputs = new VParamItem(VPARAM_GROUP, "outputs");
+    m_inputs = new VParamItem(VPARAM_GROUP, iotags::params::node_inputs);
+    m_params = new VParamItem(VPARAM_GROUP, iotags::params::node_params);
+    m_outputs = new VParamItem(VPARAM_GROUP, iotags::params::node_outputs);
     appendRow(m_inputs);
     appendRow(m_params);
     appendRow(m_outputs);
@@ -427,21 +428,16 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
 
     switch (role)
     {
-    case ROLE_INPUT_MODEL:
-    case ROLE_PARAM_MODEL:
-    case ROLE_OUTPUT_MODEL:
-        //legacy interface.
-        return QVariant();
     case ROLE_PARAM_CLASS:
     {
         if (pItem->vType != VPARAM_PARAM)
             return QVariant();
         VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
-        if ("inputs" == parentItem->m_name)
+        if (iotags::params::node_inputs == parentItem->m_name)
             return PARAM_INPUT;
-        else if ("outputs" == parentItem->m_name)
+        else if (iotags::params::node_outputs == parentItem->m_name)
             return PARAM_OUTPUT;
-        else if ("params" == parentItem->m_name)
+        else if (iotags::params::node_params == parentItem->m_name)
             return PARAM_PARAM;
         return PARAM_UNKNOWN;
     }
@@ -469,7 +465,7 @@ QModelIndex NodeParamModel::indexFromPath(const QString& path)
     const QString& name = lst[1];
     QString subkey = lst.size() > 2 ? lst[2] : "";
 
-    if (group == "inputs")
+    if (group == iotags::params::node_inputs)
     {
         if (VParamItem* pItem = m_inputs->getItem(name))
         {
@@ -485,14 +481,14 @@ QModelIndex NodeParamModel::indexFromPath(const QString& path)
             return pItem->index();
         }
     }
-    else if (group == "params")
+    else if (group == iotags::params::node_params)
     {
         if (VParamItem* pItem = m_params->getItem(name))
         {
             return pItem->index();
         }
     }
-    else if (group == "outputs")
+    else if (group == iotags::params::node_outputs)
     {
         if (VParamItem* pItem = m_outputs->getItem(name))
         {
@@ -550,16 +546,19 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             const QString& oldName = pItem->m_name;
             const QString& newName = value.toString();
-            pItem->m_name = newName;
+            if (oldName == newName)
+                return false;
+
+            pItem->setData(newName, role);
             if (m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && pItem->vType == VPARAM_PARAM)
             {
                 VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
                 PARAM_CLASS cls = PARAM_UNKNOWN;
-                if (parentItem->m_name == "inputs")
+                if (parentItem->m_name == iotags::params::node_inputs)
                     cls = PARAM_INPUT;
-                else if (parentItem->m_name == "params")
+                else if (parentItem->m_name == iotags::params::node_params)
                     cls = PARAM_PARAM;
-                else if (parentItem->m_name == "outputs")
+                else if (parentItem->m_name == iotags::params::node_outputs)
                     cls = PARAM_OUTPUT;
 
                 const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -572,7 +571,8 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             if (pItem->m_type == value.toString())
                 return false;
-            pItem->m_type = value.toString();
+
+            pItem->setData(value, role);
             break;
         }
         case ROLE_PARAM_VALUE:
@@ -581,46 +581,24 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             QVariant oldValue = pItem->m_value;
             if (oldValue == value)
                 return false;
-            pItem->m_value = value;
+
+            pItem->setData(value, role);
             onSubIOEdited(oldValue, pItem);
             break;
         }
         case ROLE_ADDLINK:
         case ROLE_REMOVELINK:
         {
-            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
-            ZASSERT_EXIT(linkIdx.isValid(), false);
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             if (pItem->vType != VPARAM_PARAM)
                 return false;
 
+            pItem->setData(value, role);
+
             if (role == ROLE_ADDLINK)
             {
-                pItem->m_links.append(linkIdx);
-                QStringList lst = sockNames(PARAM_INPUT);
-                int maxObjId = UiHelper::getMaxObjId(lst);
-                if (maxObjId == -1)
-                    maxObjId = 0;
-                QString maxObjSock = QString("obj%1").arg(maxObjId);
-                QString lastKey = lst.last();
-                QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                if ((nodeCls == "MakeList" || nodeCls == "MakeDict") && pItem->m_name == lastKey)
-                {
-                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
-                    SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
-                    setAddParam(PARAM_INPUT, newObjName, "", QVariant(), prop);
-                }
-                else if (nodeCls == "ExtractDict" && pItem->m_name == lastKey)
-                {
-                    const QString& newObjName = QString("obj%1").arg(maxObjId + 1);
-                    setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), SOCKPROP_EDITABLE);
-                }
+                onLinkAdded(pItem);
             }
-            else
-            {
-                pItem->m_links.removeAll(linkIdx);
-            }
-            emit dataChanged(index, index, QVector<int>{role});
             break;
         }
     default:
@@ -832,3 +810,26 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
     }
 }
 
+void NodeParamModel::onLinkAdded(const VParamItem* pItem)
+{
+    //dynamic socket from MakeList/Dict and ExtractDict
+    QStringList lst = sockNames(PARAM_INPUT);
+    int maxObjId = UiHelper::getMaxObjId(lst);
+    if (maxObjId == -1)
+        maxObjId = 0;
+
+    QString maxObjSock = QString("obj%1").arg(maxObjId);
+    QString lastKey = lst.last();
+    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    if ((nodeCls == "MakeList" || nodeCls == "MakeDict") && pItem->m_name == lastKey)
+    {
+        const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
+        SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
+        setAddParam(PARAM_INPUT, newObjName, "", QVariant(), prop);
+    }
+    else if (nodeCls == "ExtractDict" && pItem->m_name == lastKey)
+    {
+        const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
+        setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), SOCKPROP_EDITABLE);
+    }
+}

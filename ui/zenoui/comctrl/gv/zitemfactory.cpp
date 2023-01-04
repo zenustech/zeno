@@ -116,8 +116,9 @@ namespace zenoui
                 pCheckbox->setCheckState(isChecked ? Qt::Checked : Qt::Unchecked);
 
                 QObject::connect(pCheckbox, &ZenoParamCheckBox::stateChanged, [=](int state) {
-                    cbFunc(state);
-                    });
+                    bool bChecked = (state == Qt::Checked);
+                    cbFunc(bChecked);
+                });
                 pItemWidget = pCheckbox;
                 break;
             }

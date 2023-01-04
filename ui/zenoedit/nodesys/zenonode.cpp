@@ -28,6 +28,7 @@
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
+#include "enum.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -322,7 +323,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
 
     if (role == ROLE_VPARAM_NAME)
     {
-        if (groupName == "In Sockets")
+        if (groupName == iotags::params::node_inputs)
         {
             for (auto it = m_inSockets.begin(); it != m_inSockets.end(); it++)
             {
@@ -335,7 +336,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
             }
         }
-        else if (groupName == "Parameters")
+        else if (groupName == iotags::params::node_params)
         {
             for (auto it = m_params.begin(); it != m_params.end(); it++)
             {
@@ -348,7 +349,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
             }
         }
-        else if (groupName == "Out Sockets")
+        else if (groupName == iotags::params::node_outputs)
         {
             for (auto it = m_outSockets.begin(); it != m_outSockets.end(); it++)
             {
@@ -364,7 +365,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
         return;
     }
 
-    if (groupName == "In Sockets")
+    if (groupName == iotags::params::node_inputs)
     {
         ZASSERT_EXIT(m_inSockets.find(paramName) != m_inSockets.end());
         ZSocketLayout* pControlLayout = m_inSockets[paramName];
@@ -398,7 +399,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             }
         }
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
         const QString& newType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
@@ -461,7 +462,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
             if (!pGroup) return;
 
             const QString& groupName = pGroup->text();
-            if (groupName == "Parameters")
+            if (groupName == iotags::params::node_params)
             {
                 ZGraphicsLayout* playout = initParams(pGroup, pScene);
                 if (m_paramsLayout)
@@ -473,7 +474,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
                 m_bodyLayout->insertLayout(0, m_paramsLayout);
                 updateWhole();
             }
-            else if (groupName == "In Sockets")
+            else if (groupName == iotags::params::node_inputs)
             {
                 ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
                 if (m_inputsLayout)
@@ -485,7 +486,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
                 m_bodyLayout->insertLayout(1, m_inputsLayout);
                 updateWhole();
             }
-            else if (groupName == "Out Sockets")
+            else if (groupName == iotags::params::node_outputs)
             {
                 ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
                 if (m_outputsLayout)
@@ -508,9 +509,9 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     const QModelIndex& viewParamIdx = paramItem->index();
 
     //see ViewParamModel::initNode
-    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
-        bool bInput = groupName == "In Sockets";
+        bool bInput = groupName == iotags::params::node_inputs;
         ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
         ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -525,7 +526,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
         }
         updateWhole();
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
     }
@@ -540,13 +541,13 @@ void ZenoNode::onViewParamsMoved(const QModelIndex& parent, int start, int end, 
         return;
 
     const QString& groupName = parentItem->text();
-    if (groupName == "In Sockets")
+    if (groupName == iotags::params::node_inputs)
     {
         m_inSockets.swap(start, row);
         m_inputsLayout->moveItem(start, row);
         updateWhole();
     }
-    else if (groupName == "Out Sockets")
+    else if (groupName == iotags::params::node_outputs)
     {
         m_outSockets.swap(start, row);
         m_outputsLayout->moveItem(start, row);
@@ -583,9 +584,9 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     const QString& groupName = parentItem->text();
     const QModelIndex& viewParamIdx = paramItem->index();
 
-    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
-        bool bInput = groupName == "In Sockets";
+        bool bInput = groupName == iotags::params::node_inputs;
         const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
         ZSocketLayout* pSocketLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
         if (bInput)
@@ -596,7 +597,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         pParentLayout->removeLayout(pSocketLayout);
         updateWhole();
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         const QString& paramName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
 

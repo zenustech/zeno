@@ -47,6 +47,7 @@ private:
     EdgeInfo exportLink(const QModelIndex& linkIdx);
     QStringList sockNames(PARAM_CLASS cls) const;
     void onSubIOEdited(const QVariant& value, const VParamItem* pItem);
+    void onLinkAdded(const VParamItem* pItem);
     void clearLinks(VParamItem* pItem);
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);

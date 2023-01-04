@@ -521,6 +521,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             const QString& paramName = param->data(ROLE_VPARAM_NAME).toString();
             const QVariant& value = param->data(ROLE_PARAM_VALUE);
             _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+            BlockSignalScope scope(ctrl.pControl);
+
             if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
             {
                 pLineEdit->setText(value.toString());

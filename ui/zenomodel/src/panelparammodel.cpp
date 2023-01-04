@@ -2,6 +2,7 @@
 #include "nodeparammodel.h"
 #include "vparamitem.h"
 #include "modelrole.h"
+#include "enum.h"
 
 
 PanelParamModel::PanelParamModel(
@@ -45,14 +46,14 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
                             - output param2 (Item)
                 ...
             */
-    VParamItem *pRoot = new VParamItem(VPARAM_ROOT, "root");
+    VParamItem *pRoot = new VParamItem(VPARAM_ROOT, iotags::params::panel_root);
     pRoot->setEditable(false);
 
-    VParamItem *pTab = new VParamItem(VPARAM_TAB, "Default");
+    VParamItem *pTab = new VParamItem(VPARAM_TAB, iotags::params::panel_default_tab);
     {
-        VParamItem *pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
-        VParamItem *paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
-        VParamItem *pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
+        VParamItem *pInputsGroup = new VParamItem(VPARAM_GROUP, iotags::params::panel_inputs);
+        VParamItem *paramsGroup = new VParamItem(VPARAM_GROUP, iotags::params::panel_params);
+        VParamItem *pOutputsGroup = new VParamItem(VPARAM_GROUP, iotags::params::panel_outputs);
 
         pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
         paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
@@ -106,24 +107,24 @@ void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first,
     VParamItem* pNodeParam = static_cast<VParamItem*>(pModel->itemFromIndex(idxNodeParam));
     VParamItem* parentItem = static_cast<VParamItem*>(pNodeParam->parent());
     const QString& parentName = parentItem->m_name;
-    if (parentName == "inputs")
+    if (parentName == iotags::params::node_inputs)
     {
-        QList<QStandardItem*> lst = findItems("In Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        QList<QStandardItem*> lst = findItems(iotags::params::panel_inputs, Qt::MatchRecursive | Qt::MatchExactly);
         ZASSERT_EXIT(lst.size() == 1);
         VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
         pNewItem->mapCoreParam(pNodeParam->index());
         lst[0]->appendRow(pNewItem);
     }
-    else if (parentName == "params")
+    else if (parentName == iotags::params::node_params)
     {
-        QList<QStandardItem*> lst = findItems("Parameters", Qt::MatchRecursive | Qt::MatchExactly);
+        QList<QStandardItem*> lst = findItems(iotags::params::panel_params, Qt::MatchRecursive | Qt::MatchExactly);
         ZASSERT_EXIT(lst.size() == 1);
         VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
         lst[0]->appendRow(pNewItem);
     }
-    else if (parentName == "outputs")
+    else if (parentName == iotags::params::node_outputs)
     {
-        QList<QStandardItem*> lst = findItems("Out Sockets", Qt::MatchRecursive | Qt::MatchExactly);
+        QList<QStandardItem*> lst = findItems(iotags::params::panel_outputs, Qt::MatchRecursive | Qt::MatchExactly);
         ZASSERT_EXIT(lst.size() == 1);
         VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
         lst[0]->appendRow(pNewItem);

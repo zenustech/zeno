@@ -4,6 +4,7 @@
 #include "uihelper.h"
 #include "../customui/customuirw.h"
 #include "nodeparammodel.h"
+#include "enum.h"
 
 
 static const char* qsToString(const QString& qs)
@@ -227,12 +228,7 @@ void VParamItem::setData(const QVariant& value, int role)
             if (m_index.isValid())
             {
                 QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                bool ret = pModel->setData(m_index, value, role);
-                if (ret)
-                {
-                    //when core name updated, need to sync view name.
-                    setData(value, ROLE_VPARAM_NAME);
-                }
+                pModel->setData(m_index, value, role);
             }
             m_name = value.toString();
             break;
@@ -247,28 +243,30 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_PARAM_TYPE:
         {
+            if (m_type == value.toString())
+                return;
+
             if (m_index.isValid())
             {
-                //only update core type by editing SubInput/SubOutput.
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+                bool ret = pModel->setData(m_index, value, role);
             }
             m_type = value.toString();
             break;
         }
         case ROLE_PARAM_VALUE:
         {
+            if (value == m_value)
+                return;
+
             if (m_index.isValid())
             {
                 QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
                 pModel->setData(m_index, value, role);
-                return;
             }
-            else
-            {
-                if (value == m_value)
-                    return;
-                m_value = value;
-                qobject_cast<ViewParamModel*>(model())->markDirty();
-            }
+            m_value = value;
+            qobject_cast<ViewParamModel*>(model())->markDirty();
+            break;
         }
         case ROLE_PARAM_COREIDX:
         {
@@ -281,13 +279,21 @@ void VParamItem::setData(const QVariant& value, int role)
         case ROLE_ADDLINK:
         case ROLE_REMOVELINK:
         {
+            if (vType != VPARAM_PARAM)
+                return;
+
             if (m_index.isValid())
             {
                 QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
                 bool ret = pModel->setData(m_index, value, role);
             }
-            QModelIndex idx = index();
-            emit this->model()->dataChanged(idx, idx, {role});
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            if (role == ROLE_ADDLINK) {
+                m_links.append(linkIdx);
+            }
+            else {
+                m_links.removeAll(linkIdx);
+            }
             break;
         }
         case ROLE_VAPRAM_EDITTABLE:
@@ -457,11 +463,11 @@ PARAM_CLASS VParamItem::getParamClass()
     VParamItem* parentItem = static_cast<VParamItem*>(this->parent());
     ZASSERT_EXIT(parentItem, PARAM_UNKNOWN);
 
-    if (parentItem->m_name == "inputs")
+    if (parentItem->m_name == iotags::params::node_inputs)
         return PARAM_INPUT;
-    else if (parentItem->m_name == "params")
+    else if (parentItem->m_name == iotags::params::node_params)
         return PARAM_PARAM;
-    else if (parentItem->m_name == "outputs")
+    else if (parentItem->m_name == iotags::params::node_outputs)
         return PARAM_OUTPUT;
     else
         return PARAM_UNKNOWN;

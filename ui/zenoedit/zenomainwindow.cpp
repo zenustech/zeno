@@ -304,7 +304,7 @@ void ZenoMainWindow::initDocks()
     SplitDockWidget(viewDock, logDock, Qt::Horizontal);
     SplitDockWidget(editorDock, paramDock, Qt::Horizontal);
 
-    paramDock->hide();
+    //paramDock->hide();
     logDock->hide();
 }
 
