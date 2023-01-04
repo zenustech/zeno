@@ -990,32 +990,79 @@ struct ToZSSurfaceMesh : INode {
             auto comp = [](const auto &x, const auto &y) {
                 return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
             };
+            std::map<vec2i, int, RM_CVREF_T(comp)> edge2tri(comp);
+            for (int i = 0; i != tris.size(); ++i) {
+                auto tri = tris[i];
+                for (int k = 0; k != 3; ++k) {
+                    auto e0 = tri[k];
+                    auto e1 = tri[(k + 1) % 3];
+                    if (edge2tri.find(vec2i{e0, e1}) != edge2tri.end())
+                        throw std::runtime_error(
+                            fmt::format("the same edge <{}, {}> is being shared by multiple triangles!", e0, e1));
+                    edge2tri[vec2i{e0, e1}] = i;
+                }
+            }
             std::set<vec2i, RM_CVREF_T(comp)> sedges(comp);
-#if 0
-            auto ist = [&sedges](int i, int j) {
-                if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
-                    sedges.insert(vec2i{i, j});
-            };
-#endif
+            using vec4i = std::array<int, 4>;
+            std::vector<vec4i> bedges;
             for (auto &&tri : tris) {
                 {
                     int i = tri[0], j = tri[1];
-                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                    auto it = sedges.find(vec2i{j, i});
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && it == sedges.end())
                         sedges.insert(vec2i{i, j});
+                    else if (it != sedges.end()) {
+                        auto neighborTriNo = edge2tri[vec2i{j, i}];
+                        auto neighborTri = tris[neighborTriNo];
+
+                        auto selfVertNo = tri[2];
+                        int neighborVertNo = -1;
+                        for (int k = 0; k != 3; ++k)
+                            if (neighborTri[k] != i && neighborTri[k] != j) {
+                                neighborVertNo = neighborTri[k];
+                                break;
+                            }
+                        bedges.push_back(vec4i{selfVertNo, i, j, neighborVertNo});
+                    }
                 }
                 {
                     int i = tri[1], j = tri[2];
-                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                    auto it = sedges.find(vec2i{j, i});
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && it == sedges.end())
                         sedges.insert(vec2i{i, j});
+                    else if (it != sedges.end()) {
+                        auto neighborTriNo = edge2tri[vec2i{j, i}];
+                        auto neighborTri = tris[neighborTriNo];
+
+                        auto selfVertNo = tri[0];
+                        int neighborVertNo = -1;
+                        for (int k = 0; k != 3; ++k)
+                            if (neighborTri[k] != i && neighborTri[k] != j) {
+                                neighborVertNo = neighborTri[k];
+                                break;
+                            }
+                        bedges.push_back(vec4i{selfVertNo, i, j, neighborVertNo});
+                    }
                 }
                 {
                     int i = tri[2], j = tri[0];
-                    if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+                    auto it = sedges.find(vec2i{j, i});
+                    if (sedges.find(vec2i{i, j}) == sedges.end() && it == sedges.end())
                         sedges.insert(vec2i{i, j});
+                    else if (it != sedges.end()) {
+                        auto neighborTriNo = edge2tri[vec2i{j, i}];
+                        auto neighborTri = tris[neighborTriNo];
+
+                        auto selfVertNo = tri[1];
+                        int neighborVertNo = -1;
+                        for (int k = 0; k != 3; ++k)
+                            if (neighborTri[k] != i && neighborTri[k] != j) {
+                                neighborVertNo = neighborTri[k];
+                                break;
+                            }
+                        bedges.push_back(vec4i{selfVertNo, i, j, neighborVertNo});
+                    }
                 }
-                // ist(tri[0], tri[1]);
-                // ist(tri[1], tri[2]);
-                // ist(tri[2], tri[0]);
             }
             auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
             surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, sedges.size(), zs::memsrc_e::host);
@@ -1027,22 +1074,16 @@ struct ToZSSurfaceMesh : INode {
                 no++;
             }
             surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-#if 0
-      fmt::print("surf edge (addr: {}) sizes: {} (correct) - {} (actual)\n", (void*)&surfEdges, sedges.size(), surfEdges.size());
-          {
-          auto sv = proxy<execspace_e::host>({}, surfEdges);
-              for (int i = 0; i != 10; ++i) {
-                auto se = sv.pack(dim_c<2>, "inds", i).template reinterpret_bits<int>();
-                fmt::print("checking surf edge! {}-th se<{}, {}>\n", i, se[0],
-                         se[1]);
-                  auto ii = sedges.size() - 1 - i;
-                  se = sv.pack(dim_c<2>, "inds", ii)
-                            .template reinterpret_bits<int>();
-                  fmt::print("checking surf edge! {}-th se<{}, {}>\n", ii,
-                             se[0], se[1]);
-              }
-          }
-#endif
+
+            auto &bendingEdges = (*zstris)[ZenoParticles::s_bendingEdgeTag];
+            bendingEdges = typename ZenoParticles::particles_t({{"inds", 4}}, bedges.size(), zs::memsrc_e::host);
+            ompExec(zs::range(bedges.size()), [&, bes = proxy<space>({}, bendingEdges)](int beNo) mutable {
+                bes("inds", 0, beNo) = reinterpret_bits<float>(bedges[beNo][0]);
+                bes("inds", 1, beNo) = reinterpret_bits<float>(bedges[beNo][1]);
+                bes("inds", 2, beNo) = reinterpret_bits<float>(bedges[beNo][2]);
+                bes("inds", 3, beNo) = reinterpret_bits<float>(bedges[beNo][3]);
+            });
+            bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
 #endif
             // surface vert indices
             auto &surfVerts = (*zstris)[ZenoParticles::s_surfVertTag];
