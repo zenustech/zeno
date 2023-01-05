@@ -24,9 +24,9 @@ enum MODEL_ROLE
 	ROLE_INPUT_MODEL,		//input socket model
 	ROLE_PARAM_MODEL,		//param model
 	ROLE_OUTPUT_MODEL,		//output socket model.
-	ROLE_CUSTOMUI_PANEL,	// all viewed panel parameters.
+	ROLE_PANEL_PARAMS,	// all viewed panel parameters.
 	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io. see VARAM_INFO
-	ROLE_CUSTOMUI_NODE,		// all viewed node parameters.
+	ROLE_NODE_PARAMS,		// all viewed node parameters.
 	ROLE_CUSTOMUI_NODE_IO,
 
 	//synchronize link change, param
@@ -65,7 +65,6 @@ enum MODEL_ROLE
     ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 	ROLE_VPARAM_CTRL_PROPERTIES,
 	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
-	ROLE_VPARAM_COREIDX,        // set core idx
 };
 
 enum LOG_ROLE

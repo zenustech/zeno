@@ -28,6 +28,7 @@
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
+#include "iotags.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -204,26 +205,21 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setContentsMargin(margin, margin, margin, margin);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams, nullptr);
 
     QStandardItem* inv_root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(inv_root && inv_root->rowCount() == 1, nullptr);
-
-    QStandardItem* root = inv_root->child(0);
-    ZASSERT_EXIT(root && root->rowCount() == 1, nullptr);
-
-    QStandardItem* tab = root->child(0);
-    ZASSERT_EXIT(tab && tab->rowCount() == 3, nullptr);
+    ZASSERT_EXIT(inv_root, nullptr);
 
     //see ViewParamModel::initNode()
-    QStandardItem* inputsItem = tab->child(0);
-    QStandardItem* paramsItem = tab->child(1);
-    QStandardItem* outputsItem = tab->child(2);
+    QStandardItem* inputsItem = inv_root->child(0);
+    QStandardItem* paramsItem = inv_root->child(1);
+    QStandardItem* outputsItem = inv_root->child(2);
 
     connect(viewParams, &QStandardItemModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
     connect(viewParams, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
     connect(viewParams, &QStandardItemModel::dataChanged, this, &ZenoNode::onViewParamDataChanged);
+    connect(viewParams, &QStandardItemModel::rowsMoved, this, &ZenoNode::onViewParamsMoved);
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
@@ -296,7 +292,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     if (!m_index.isValid())
         return;
 
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
     if (!viewParams)
         return;
 
@@ -327,7 +323,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
 
     if (role == ROLE_VPARAM_NAME)
     {
-        if (groupName == "In Sockets")
+        if (groupName == iotags::params::node_inputs)
         {
             for (auto it = m_inSockets.begin(); it != m_inSockets.end(); it++)
             {
@@ -340,7 +336,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
             }
         }
-        else if (groupName == "Parameters")
+        else if (groupName == iotags::params::node_params)
         {
             for (auto it = m_params.begin(); it != m_params.end(); it++)
             {
@@ -353,7 +349,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
             }
         }
-        else if (groupName == "Out Sockets")
+        else if (groupName == iotags::params::node_outputs)
         {
             for (auto it = m_outSockets.begin(); it != m_outSockets.end(); it++)
             {
@@ -369,7 +365,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
         return;
     }
 
-    if (groupName == "In Sockets")
+    if (groupName == iotags::params::node_inputs)
     {
         ZASSERT_EXIT(m_inSockets.find(paramName) != m_inSockets.end());
         ZSocketLayout* pControlLayout = m_inSockets[paramName];
@@ -403,7 +399,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             }
         }
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
         const QString& newType = viewParamIdx.data(ROLE_PARAM_TYPE).toString();
@@ -448,7 +444,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
 
     if (!m_index.isValid())
         return;
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams);
 
     if (!parent.isValid())
@@ -466,7 +462,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
             if (!pGroup) return;
 
             const QString& groupName = pGroup->text();
-            if (groupName == "Parameters")
+            if (groupName == iotags::params::node_params)
             {
                 ZGraphicsLayout* playout = initParams(pGroup, pScene);
                 if (m_paramsLayout)
@@ -478,7 +474,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
                 m_bodyLayout->insertLayout(0, m_paramsLayout);
                 updateWhole();
             }
-            else if (groupName == "In Sockets")
+            else if (groupName == iotags::params::node_inputs)
             {
                 ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
                 if (m_inputsLayout)
@@ -490,7 +486,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
                 m_bodyLayout->insertLayout(1, m_inputsLayout);
                 updateWhole();
             }
-            else if (groupName == "Out Sockets")
+            else if (groupName == iotags::params::node_outputs)
             {
                 ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
                 if (m_outputsLayout)
@@ -513,26 +509,40 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     const QModelIndex& viewParamIdx = paramItem->index();
 
     //see ViewParamModel::initNode
-    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
-        bool bInput = groupName == "In Sockets";
+        bool bInput = groupName == iotags::params::node_inputs;
         ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
         ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (pModel->IsSubGraphNode(m_index))
-        {
-            //dynamic socket added, ensure that the key is above the SRC key.
-            pSocketsLayout->insertLayout(0, pSocketLayout);
-        }
-        else
-        {
-            pSocketsLayout->addLayout(pSocketLayout);
-        }
+        pSocketsLayout->addLayout(pSocketLayout);
         updateWhole();
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
+    }
+}
+
+void ZenoNode::onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
+{
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
+    QStandardItem* parentItem = viewParams->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+    if (parent != destination || start == end)
+        return;
+
+    const QString& groupName = parentItem->text();
+    if (groupName == iotags::params::node_inputs)
+    {
+        m_inSockets.swap(start, row);
+        m_inputsLayout->moveItem(start, row);
+        updateWhole();
+    }
+    else if (groupName == iotags::params::node_outputs)
+    {
+        m_outSockets.swap(start, row);
+        m_outputsLayout->moveItem(start, row);
+        updateWhole();
     }
 }
 
@@ -556,7 +566,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     if (!m_index.isValid())
         return;
 
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_CUSTOMUI_NODE));
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams);
 
     QStandardItem* parentItem = viewParams->itemFromIndex(parent);
@@ -565,9 +575,9 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     const QString& groupName = parentItem->text();
     const QModelIndex& viewParamIdx = paramItem->index();
 
-    if (groupName == "In Sockets" || groupName == "Out Sockets")
+    if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
-        bool bInput = groupName == "In Sockets";
+        bool bInput = groupName == iotags::params::node_inputs;
         const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
         ZSocketLayout* pSocketLayout = bInput ? m_inSockets[sockName] : m_outSockets[sockName];
         if (bInput)
@@ -578,7 +588,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         pParentLayout->removeLayout(pSocketLayout);
         updateWhole();
     }
-    else if (groupName == "Parameters")
+    else if (groupName == iotags::params::node_params)
     {
         const QString& paramName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
 

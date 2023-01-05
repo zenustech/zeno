@@ -121,6 +121,9 @@ ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
 {
     setAcceptHoverEvents(true);
     updateBoundingRect();
+#ifdef DEBUG_TEXTITEM
+    m_text = text;
+#endif
 }
 
 ZSimpleTextItem::~ZSimpleTextItem()
@@ -214,6 +217,9 @@ void ZSimpleTextItem::setBackground(const QColor& clr)
 
 void ZSimpleTextItem::setText(const QString& text)
 {
+#ifdef DEBUG_TEXTITEM
+    m_text = text;
+#endif
     base::setText(text);
     updateBoundingRect();
 }

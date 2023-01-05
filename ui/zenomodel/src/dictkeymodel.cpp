@@ -3,6 +3,7 @@
 #include "modeldata.h"
 #include "zassert.h"
 #include "uihelper.h"
+#include "command.h"
 
 
 DictKeyModel::DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, QObject* parent)
@@ -11,6 +12,19 @@ DictKeyModel::DictKeyModel(IGraphsModel* pGraphs, const QModelIndex& dictParam, 
     , m_pGraphs(pGraphs)
     , m_bCollasped(false)
 {
+}
+
+DictKeyModel::~DictKeyModel()
+{
+}
+
+void DictKeyModel::clearAll()
+{
+    const QString& dictPath = m_dictParam.data(ROLE_OBJPATH).toString();
+    while (rowCount() > 0)
+    {
+        m_pGraphs->addExecuteCommand(new DictKeyAddRemCommand(false, m_pGraphs, dictPath, 0));
+    }
 }
 
 QModelIndex DictKeyModel::index(int row, int column, const QModelIndex& parent) const
@@ -170,7 +184,7 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     {
         const _DictItem &item = m_items[index.row()];
         QString path;
-        path = m_dictParam.data(ROLE_OBJPATH).toString() + ":" + item.key;
+        path = m_dictParam.data(ROLE_OBJPATH).toString() + "/" + item.key;
         return path;
     }
     case ROLE_COLLASPED:

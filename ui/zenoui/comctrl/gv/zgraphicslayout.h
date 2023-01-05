@@ -82,6 +82,7 @@ public:
     QMargins getContentsMargin() const;
     QRectF geometry() const;
     void moveUp(int i);
+    void moveItem(int i, int j);
     void removeElement(int i);
     void removeItem(QGraphicsItem* item);
     void removeLayout(ZGraphicsLayout* layout);

@@ -80,6 +80,7 @@ public slots:
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;

@@ -60,7 +60,6 @@ public:
     QModelIndex indexFromPath(const QString& path) override;
     QModelIndex linkIndex(int r) override;
     QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
-    QModelIndex paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName) override;
 
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
@@ -124,7 +123,6 @@ public:
     void endApiLevel() override;
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
-    IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const override;
     QModelIndexList findSubgraphNode(const QString& subgName) override;
     int ModelSetData(
         const QPersistentModelIndex& idx,
@@ -132,6 +130,7 @@ public:
         int role,
         const QString& comment = "") override;
     int undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
+    bool addExecuteCommand(QUndoCommand* pCommand) override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -156,7 +155,6 @@ private:
     NODE_DESCS getCoreDescs();
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
-    void onSubIOUpdate(SubGraphModel* pGraph, const QModelIndex& nodeIdx, PARAM_UPDATE_INFO info);
     bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
 
     void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,

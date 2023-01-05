@@ -282,6 +282,16 @@ void ZGraphicsLayout::moveUp(int i)
     m_items[i] = tmp;
 }
 
+void ZGraphicsLayout::moveItem(int i, int j)
+{
+    if (i < 0 || j < 0 || i >= m_items.size() || j >= m_items.size() || i == j)
+        return;
+
+    auto tmp = m_items[i];
+    m_items[i] = m_items[j];
+    m_items[j] = tmp;
+}
+
 void ZGraphicsLayout::removeElement(int i)
 {
     if (m_items[i]->type == Type_Layout) {

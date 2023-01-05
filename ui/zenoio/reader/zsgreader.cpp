@@ -369,17 +369,16 @@ void ZsgReader::_parseSocket(
     }
     pAcceptor->addSocket(bInput, id, inSock, sockProp);
 
+    QString link;
     if (sockObj.HasMember("link") && sockObj["link"].IsString())
+        link = QString::fromLocal8Bit(sockObj["link"].GetString());
+    if (sockObj.HasMember("default-value"))
     {
-        QString link = QString::fromLocal8Bit(sockObj["link"].GetString());
-        if (sockObj.HasMember("default-value"))
-        {
-            pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
-        }
-        else
-        {
-            pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
-        }
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+    }
+    else
+    {
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
     }
 
     if (sockObj.HasMember("dictlist-panel"))

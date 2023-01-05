@@ -19,6 +19,10 @@ ZLayoutBackground::ZLayoutBackground(QGraphicsItem* parent, Qt::WindowFlags wFla
     setAcceptHoverEvents(true);
 }
 
+ZLayoutBackground::~ZLayoutBackground()
+{
+}
+
 QRectF ZLayoutBackground::boundingRect() const
 {
     QRectF rc = _base::boundingRect();

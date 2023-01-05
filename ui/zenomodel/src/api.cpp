@@ -4,7 +4,8 @@
 #include "nodesmgr.h"
 #include "apiutil.h"
 #include "variantptr.h"
-#include "iparammodel.h"
+#include "nodeparammodel.h"
+#include "uihelper.h"
 
 
 ZENO_ERROR Zeno_NewFile()
@@ -177,11 +178,11 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    IParamModel* pInputs = QVariantPtr<IParamModel>::asPtr(inIdx.data(ROLE_INPUT_MODEL));
-    QModelIndex inSockIdx = pInputs->index(QString::fromStdString(inSock));
+    NodeParamModel* inputs = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex inSockIdx = inputs->getParam(PARAM_INPUT, QString::fromStdString(inSock));
 
-    IParamModel* pOutputs = QVariantPtr<IParamModel>::asPtr(outIdx.data(ROLE_OUTPUT_MODEL));
-    QModelIndex outSockIdx = pOutputs->index(QString::fromStdString(inSock));
+    NodeParamModel* outputs = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex outSockIdx = outputs->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
 
     pModel->addLink(outSockIdx, inSockIdx);
     return Err_NoError;
@@ -239,11 +240,8 @@ ZENO_ERROR Zeno_GetOutNodes(
     OUTPUT_SOCKET output = outputs[qsOutSock];
     for (auto link : output.info.links)
     {
-        QString inNode, inSock;
-        link.getSockInfo(true, inNode, inSock);
-
+        QString inNode = UiHelper::getSockNode(link.inSockPath);
         QModelIndex inIdx = pModel->index(inNode, subgIdx);
-
         ZENO_HANDLE hdl = inIdx.internalId();
         res.push_back(std::make_pair(hdl, inNode.toStdString()));
     }
@@ -279,9 +277,8 @@ ZENO_ERROR Zeno_GetInput(
     {
         EdgeInfo link = input.info.links[0];
 
-        QString outNode, outSock;
-        link.getSockInfo(false, outNode, outSock);
-
+        QString outNode = UiHelper::getSockNode(link.outSockPath);
+        QString outSock = UiHelper::getSockName(link.outSockPath);
         QModelIndex outIdx = pModel->index(outNode, subgIdx);
         ret.first = outIdx.internalId();
         ret.second = outSock.toStdString();
