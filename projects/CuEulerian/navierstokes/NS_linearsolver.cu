@@ -1061,6 +1061,8 @@ struct ZSNSPressureProject : INode {
                     cut_x[1] = cutShmem[idx + 1];
 
                     outputShmem[idx] = (u_x[1] * cut_x[1] - u_x[0] * cut_x[0]) * dxSqOverDt;
+
+                    spgv("tmp", 1, blockno, cellno) = cut_x[0] + cut_x[1];
                 }
 
                 //-------------------v-------------------
@@ -1105,6 +1107,8 @@ struct ZSNSPressureProject : INode {
                     cut_y[1] = cutShmem[idx + halo_side_length];
 
                     outputShmem[idx] += (u_y[1] * cut_y[1] - u_y[0] * cut_y[0]) * dxSqOverDt;
+
+                    spgv("tmp", 1, blockno, cellno) += cut_y[0] + cut_y[1];
                 }
 
                 //-------------------w-------------------
@@ -1151,8 +1155,10 @@ struct ZSNSPressureProject : INode {
                     float div_term = outputShmem[idx];
                     div_term += (u_z[1] * cut_z[1] - u_z[0] * cut_z[0]) * dxSqOverDt;
 
-                    if (hasDiv) {
-                        div_term -= spgv.value("div", blockno, cellno) * dx * dxSqOverDt;
+                    float cut_sum = spgv("tmp", 1, blockno, cellno) + cut_z[0] + cut_z[1];
+
+                    if (hasDiv && cut_sum > 3.f) {
+                        div_term -= cut_sum / 6.f * spgv.value("div", blockno, cellno) * dx * dxSqOverDt;
                     }
 
                     spgv("tmp", blockno, cellno) = div_term;
