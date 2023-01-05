@@ -3,8 +3,8 @@
 #include "zensim/geometry/PoissonDisk.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
-#include "zensim/math/DihedralAngle.hpp"
 #include "zensim/io/MeshIO.hpp"
+#include "zensim/math/DihedralAngle.hpp"
 #include "zensim/math/bit/Bits.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/types/Property.h"
@@ -853,6 +853,7 @@ struct ToZSSurfaceMesh : INode {
         auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
         auto prim = get_input<PrimitiveObject>("prim");
         bool useDouble = get_input2<bool>("high_precision");
+        bool withBending = get_input2<bool>("with_bending");
         const auto &pos = prim->attr<zeno::vec3f>("pos");
         const auto &points = prim->points;
         const auto &lines = prim->lines;
@@ -885,6 +886,14 @@ struct ToZSSurfaceMesh : INode {
             constexpr auto space = zs::execspace_e::openmp;
             constexpr bool use_double = RM_CVREF_T(tag)::value;
             using T = conditional_t<use_double, double, float>;
+
+            T E, nu;
+            match([&E, &nu](const auto &model) {
+                auto [E_self, nu_self] = E_nu_from_lame_parameters(model.mu, model.lam);
+                E = E_self;
+                nu = nu_self;
+            })(zsmodel->getElasticModel());
+
             if constexpr (use_double)
                 zstris->getParticles<true>() = dtiles_t{tags, pos.size(), zs::memsrc_e::host};
             else
@@ -1076,34 +1085,37 @@ struct ToZSSurfaceMesh : INode {
             }
             surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
 
-            auto &bendingEdges = (*zstris)[ZenoParticles::s_bendingEdgeTag];
-            bendingEdges = typename ZenoParticles::particles_t({{"inds", 4}, {"k", 1}, {"ra", 1}, {"e", 1}, {"h", 1}},
-                                                               bedges.size(), zs::memsrc_e::host);
-            ompExec(zs::range(bedges.size()),
-                    [&, pars = proxy<space>({}, pars), bes = proxy<space>({}, bendingEdges)](int beNo) mutable {
-                        bes("inds", 0, beNo) = reinterpret_bits<float>(bedges[beNo][0]);
-                        bes("inds", 1, beNo) = reinterpret_bits<float>(bedges[beNo][1]);
-                        bes("inds", 2, beNo) = reinterpret_bits<float>(bedges[beNo][2]);
-                        bes("inds", 3, beNo) = reinterpret_bits<float>(bedges[beNo][3]);
-                        /**
+            if (withBending) {
+                auto &bendingEdges = (*zstris)[ZenoParticles::s_bendingEdgeTag];
+                bendingEdges = typename ZenoParticles::particles_t(
+                    {{"inds", 4}, {"k", 1}, {"ra", 1}, {"e", 1}, {"h", 1}}, bedges.size(), zs::memsrc_e::host);
+                ompExec(zs::range(bedges.size()), [&, E, nu, pars = proxy<space>({}, pars),
+                                                   bes = proxy<space>({}, bendingEdges)](int beNo) mutable {
+                    bes("inds", 0, beNo) = reinterpret_bits<float>(bedges[beNo][0]);
+                    bes("inds", 1, beNo) = reinterpret_bits<float>(bedges[beNo][1]);
+                    bes("inds", 2, beNo) = reinterpret_bits<float>(bedges[beNo][2]);
+                    bes("inds", 3, beNo) = reinterpret_bits<float>(bedges[beNo][3]);
+                    /**
                           *             x2 --- x3
                           *            /  \    /
                           *           /    \  /
                           *          x0 --- x1
                           */
-                        auto x0 = pars.pack(dim_c<3>, "x", bedges[beNo][0]);
-                        auto x1 = pars.pack(dim_c<3>, "x", bedges[beNo][1]);
-                        auto x2 = pars.pack(dim_c<3>, "x", bedges[beNo][2]);
-                        auto x3 = pars.pack(dim_c<3>, "x", bedges[beNo][3]);
-                        bes("ra", beNo) = zs::dihedral_angle(x0, x1, x2, x3);
-                        auto n1 = (x1 - x0).cross(x2 - x0);
-                        auto n2 = (x2 - x3).cross(x1 - x3);
-                        auto e = (x2 - x1).norm();
-                        bes("e", beNo) = e;
-                        bes("h", beNo) = (n1.norm() + n2.norm()) / (e * 6);
-                        bes("k", beNo) = 0; // stiffness
-                    });
-            bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
+                    auto x0 = pars.pack(dim_c<3>, "x", bedges[beNo][0]);
+                    auto x1 = pars.pack(dim_c<3>, "x", bedges[beNo][1]);
+                    auto x2 = pars.pack(dim_c<3>, "x", bedges[beNo][2]);
+                    auto x3 = pars.pack(dim_c<3>, "x", bedges[beNo][3]);
+                    bes("ra", beNo) = zs::dihedral_angle(x0, x1, x2, x3);
+                    auto n1 = (x1 - x0).cross(x2 - x0);
+                    auto n2 = (x2 - x3).cross(x1 - x3);
+                    auto e = (x2 - x1).norm();
+                    bes("e", beNo) = e;
+                    bes("h", beNo) = (n1.norm() + n2.norm()) / (e * 6);
+                    auto k_bend = E / (24 * (1.0 - nu * nu)) * zsmodel->dx * zsmodel->dx * zsmodel->dx;
+                    bes("k", beNo) = k_bend; // stiffness
+                });
+                bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
+            }
 #endif
             // surface vert indices
             auto &surfVerts = (*zstris)[ZenoParticles::s_surfVertTag];
@@ -1122,10 +1134,12 @@ struct ToZSSurfaceMesh : INode {
     }
 };
 
-ZENDEFNODE(ToZSSurfaceMesh, {{{"ZSModel"}, {"surf (tri) mesh", "prim"}, {"bool", "high_precision", "true"}},
-                             {{"trimesh on gpu", "ZSParticles"}},
-                             {},
-                             {"FEM"}});
+ZENDEFNODE(
+    ToZSSurfaceMesh,
+    {{{"ZSModel"}, {"surf (tri) mesh", "prim"}, {"bool", "high_precision", "true"}, {"bool", "with_bending", "false"}},
+     {{"trimesh on gpu", "ZSParticles"}},
+     {},
+     {"FEM"}});
 
 struct MakeSample1dLine : INode {
     void apply() override {

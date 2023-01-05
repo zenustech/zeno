@@ -108,13 +108,16 @@ struct IPCSystem : IObject {
                 return true;
             return zsprimPtr->asBoundary;
         }
+        bool hasBendingConstraints() const noexcept {
+            return static_cast<bool>(bendingEdgesPtr);
+        }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
         std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
-        typename ZenoParticles::dtiles_t etemp, btemp;  // elasticity, bending
+        typename ZenoParticles::dtiles_t etemp, btemp; // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
