@@ -31,7 +31,9 @@ public:
             const QString& name,
             const QString& type,
             const QVariant& deflValue,
-            SOCKET_PROPERTY prop);
+            PARAM_CONTROL ctrl = CONTROL_NONE,
+            QVariant ctrlProps = QVariant(),
+            SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;
     QModelIndex getParam(PARAM_CLASS cls, const QString& name) const;

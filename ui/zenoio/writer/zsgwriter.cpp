@@ -199,6 +199,41 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         if (!bValid)
             deflVal = QVariant();
         AddVariant(deflVal, sockType, writer, true);
+
+        writer.Key("control");
+        QString controlDesc = UiHelper::getControlDesc(socket.control);
+        writer.String(controlDesc.toUtf8());
+
+        if (socket.control == CONTROL_ENUM)
+        {
+            writer.Key("control-items");
+            writer.StartArray();
+            if (socket.ctrlProps.find("items") != socket.ctrlProps.end())
+            {
+                QStringList items = socket.ctrlProps["items"].toStringList();
+                for (QString item : items)
+                {
+                    writer.String(item.toUtf8());
+                }
+            }
+            writer.EndArray();
+        }
+        if (socket.control == CONTROL_SPINBOX_SLIDER ||
+            socket.control == CONTROL_HSPINBOX ||
+            socket.control == CONTROL_HSLIDER)
+        {
+            writer.Key("control-slider");
+            JsonObjBatch _scope(writer);
+
+            writer.Key("step");
+            writer.Int(socket.ctrlProps["step"].toInt());
+
+            writer.Key("min");
+            writer.Int(socket.ctrlProps["min"].toInt());
+
+            writer.Key("max");
+            writer.Int(socket.ctrlProps["max"].toInt());
+        }
     }
 
     writer.EndObject();
@@ -223,13 +258,10 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         {
             writer.Key(inSock.info.name.toUtf8());
 
-            if (true || inSock.info.sockProp & SOCKPROP_DICTLIST_PANEL)
-            {
-                //adapt new io format, bacause the legacy link array is very restricted!
-                dumpSocket(inSock.info, true, writer);
-                continue;
-            }
-
+#ifndef LEGACY_ZSG_WRITE
+            //adapt new io format, bacause the legacy io format is very restricted!
+            dumpSocket(inSock.info, true, writer);
+#else
             QVariant deflVal = inSock.info.defaultValue;
             const QString& sockType = inSock.info.type;
             bool bValid = UiHelper::validateVariant(deflVal, sockType);
@@ -247,6 +279,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
                     deflVal = QVariant();
                 AddVariantList({ QVariant(), QVariant(), deflVal }, sockType, writer, true);
             }
+#endif
         }
     }
     writer.Key("params");

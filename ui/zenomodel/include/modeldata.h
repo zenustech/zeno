@@ -80,6 +80,7 @@ struct PARAM_INFO {
     QVariant value;
     PARAM_CONTROL control;
     QString typeDesc;
+    QVariant controlProps;
     bool bEnableConnect;     //enable connection with other out socket.
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}
@@ -94,8 +95,7 @@ struct SLIDER_INFO {
 };
 Q_DECLARE_METATYPE(SLIDER_INFO)
 
-typedef QMap<QString, QVariant> CONTROL_PROPERTIES;
-Q_DECLARE_METATYPE(CONTROL_PROPERTIES)
+typedef QVariantMap CONTROL_PROPERTIES;
 
 inline const char* cPathSeperator = ":";
 
@@ -150,6 +150,8 @@ struct SOCKET_INFO {
     //QList<DICTKEY_INFO> keys;
     DICTPANEL_INFO dictpanel;
     int sockProp;
+
+    CONTROL_PROPERTIES ctrlProps;
 
     SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}
     SOCKET_INFO(const QString& id, const QString& name)

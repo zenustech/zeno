@@ -1689,7 +1689,8 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     const QString& nameValue = nameIdx.data(ROLE_PARAM_VALUE).toString();
     const QString& typeValue = typeIdx.data(ROLE_PARAM_VALUE).toString();
     QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
-    PARAM_CONTROL ctrl = UiHelper::getControlByType(typeValue);
+    const PARAM_CONTROL ctrl = (PARAM_CONTROL)deflIdx.data(ROLE_PARAM_CTRL).toInt();
+    QVariant ctrlProps = deflIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     const QString& subnetNodeName = pSubModel->name();
 
@@ -1719,7 +1720,15 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         for (QModelIndex subgNode : subgNodes)
         {
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
-            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, nameValue, typeValue, deflVal, SOCKPROP_NORMAL);
+            nodeParams->setAddParam(
+                        bInput ? PARAM_INPUT : PARAM_OUTPUT,
+                        nameValue,
+                        typeValue,
+                        deflVal,
+                        ctrl,
+                        ctrlProps,
+                        SOCKPROP_NORMAL
+            );
         }
     }
     else

@@ -239,7 +239,11 @@ namespace zenoui
             }
             case CONTROL_ENUM:
             {
-                QStringList items = controlProps.toStringList();
+                //todo: legacy case compatible
+                QStringList items;
+                QVariantMap props = controlProps.toMap();
+                if (props.find("items") != props.end())
+                    items = props["items"].toStringList();
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));

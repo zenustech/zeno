@@ -215,7 +215,7 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
     if (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict")
     {
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
-        nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", prop);
+        nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
     }
 }
 
@@ -369,7 +369,7 @@ void ModelAcceptor::setInputSocket2(
             //the layout should be standard inputs desc by latest descriptors.
 
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
-            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", prop);
+            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
         }
         else
         {

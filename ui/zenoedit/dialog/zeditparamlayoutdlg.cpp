@@ -852,6 +852,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 {
                     const QVariant& defl = pCurrent->m_value;
                     const QString& typeDesc = pCurrent->m_type;
+                    const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
 
                     QPointF pos(0, 0);
                     //todo: node arrangement.
@@ -868,6 +869,8 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     params["type"].value = typeDesc;
                     params["defl"].typeDesc = typeDesc;
                     params["defl"].value = defl;
+                    params["defl"].control = ctrl;
+                    params["defl"].controlProps = pCurrent->data(ROLE_VPARAM_CTRL_PROPERTIES);
                     node[ROLE_PARAMETERS] = QVariant::fromValue(params);
 
                     const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();

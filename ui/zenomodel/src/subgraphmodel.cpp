@@ -409,7 +409,15 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
-                    item.nodeParams->setAddParam(PARAM_INPUT, name, inSocket.info.type, inSocket.info.defaultValue, (SOCKET_PROPERTY)inSocket.info.sockProp);
+                    item.nodeParams->setAddParam(
+                                PARAM_INPUT, 
+                                name,
+                                inSocket.info.type,
+                                inSocket.info.defaultValue,
+                                inSocket.info.control,
+                                inSocket.info.ctrlProps,
+                                (SOCKET_PROPERTY)inSocket.info.sockProp
+                    );
                 }
                 break;
             }
@@ -423,7 +431,15 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
-                    item.nodeParams->setAddParam(PARAM_OUTPUT, name, outSocket.info.type, outSocket.info.defaultValue, (SOCKET_PROPERTY)outSocket.info.sockProp);
+                    item.nodeParams->setAddParam(
+                                PARAM_OUTPUT,
+                                name,
+                                outSocket.info.type,
+                                outSocket.info.defaultValue,
+                                outSocket.info.control,
+                                outSocket.info.ctrlProps,
+                                (SOCKET_PROPERTY)outSocket.info.sockProp
+                    );
                 }
                 break;
             }
@@ -437,7 +453,14 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
-                    item.nodeParams->setAddParam(PARAM_INPUT, name, param.typeDesc, param.value, SOCKPROP_UNKNOWN);
+                    item.nodeParams->setAddParam(
+                                PARAM_INPUT,
+                                name,
+                                param.typeDesc,
+                                param.value,
+                                param.control,
+                                param.controlProps,
+                                SOCKPROP_UNKNOWN);
                 }
                 break;
             }
@@ -494,7 +517,8 @@ bool SubGraphModel::setParamValue(
     if (!itemFromIndex(idx, item))
         return false;
 
-    item.nodeParams->setAddParam(cls, sockName, type, value, sockProp);
+    //todo: control properties
+    item.nodeParams->setAddParam(cls, sockName, type, value, CONTROL_NONE, QVariant(), sockProp);
     return false;
 }
 
