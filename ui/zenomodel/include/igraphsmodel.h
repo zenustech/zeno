@@ -6,7 +6,6 @@
 #include "modeldata.h"
 #include "modelrole.h"
 
-class IParamModel;
 class LinkModel;
 class ViewParamModel;
 
@@ -32,8 +31,6 @@ public:
 
 	virtual QModelIndex linkIndex(int r) = 0;
 	virtual QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
-
-	virtual QModelIndex paramIndex(const QModelIndex& nodeIdx, PARAM_CLASS cls, const QString& sockName) = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
     virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;
@@ -100,7 +97,6 @@ public:
     virtual void beginApiLevel() = 0;
 	virtual void endApiLevel() = 0;
 	virtual LinkModel* linkModel() const = 0;
-	virtual IParamModel* paramModel(const QModelIndex& nodeIdx, PARAM_CLASS cls) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,
@@ -109,6 +105,7 @@ public:
 			const QString& comment = "") = 0;
 	virtual int undoRedo_updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual QModelIndex indexFromPath(const QString& path) = 0;
+	virtual bool addExecuteCommand(QUndoCommand* pCommand) = 0;
 
 signals:
 	void clearLayout2();

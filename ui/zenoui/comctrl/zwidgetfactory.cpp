@@ -177,7 +177,11 @@ namespace zenoui
             }
             case CONTROL_ENUM:
             {
-                QStringList items = properties.toStringList();
+                QStringList items;
+                QVariantMap props = properties.toMap();
+                if (props.find("items") != props.end())
+                    items = props["items"].toStringList();
+
                 QComboBox* pComboBox = new QComboBox;
                 pComboBox->setProperty("cssClass", "newstyle");
                 pComboBox->addItems(items);

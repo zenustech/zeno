@@ -4,62 +4,12 @@
 #include <QtWidgets>
 #include "modeldata.h"
 #include <zenomodel/include/jsonhelper.h>
-
 #include <rapidxml/rapidxml_print.hpp>
-
-#define ENABLE_DRAG_DROP_ITEM
 
 using namespace rapidxml;
 
-struct VParamItem;
 class IGraphsModel;
-
-class ProxySlotObject : public QObject
-{
-    Q_OBJECT
-public:
-    ProxySlotObject(VParamItem* pItem, QObject* parent = nullptr);
-    ~ProxySlotObject();
-    void mapCoreIndex(const QPersistentModelIndex& idx);
-    void unmap();
-
-public slots:
-    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
-
-private:
-    VParamItem* m_pItem;
-};
-
-
-struct VParamItem : public QStandardItem
-{
-    QPersistentModelIndex m_index;      //index to core param, see IParamModel.
-
-    //for easy to debug, store here rather than QStandardItem internal data:
-    PARAM_INFO m_info;
-    VPARAM_TYPE vType;
-    VPARAM_INFO m_tempInfo;
-
-    ProxySlotObject m_proxySlot;
-
-    VParamItem(VPARAM_TYPE vType, const QString& text, bool bMapCore = false);
-    VParamItem(VPARAM_TYPE vType, const QIcon& icon, const QString& text, bool bMapCore = false);
-
-    VParamItem(const VParamItem& other);
-    ~VParamItem();
-
-    QVariant data(int role = Qt::UserRole + 1) const override;
-    void setData(const QVariant& value, int role) override;
-    QStandardItem* clone() const override;
-    void mapCoreParam(const QPersistentModelIndex& idx);
-    rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
-    VParamItem* getItem(const QString& uniqueName) const;
-    bool operator==(VParamItem* rItem) const;
-#ifdef ENABLE_DRAG_DROP_ITEM
-    void read(QDataStream& in) override;
-    void write(QDataStream& out) const override;
-#endif
-};
+struct VParamItem;
 
 class ViewParamModel : public QStandardItemModel
 {
@@ -67,38 +17,39 @@ class ViewParamModel : public QStandardItemModel
 public:
     explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     ~ViewParamModel();
-    void clone(ViewParamModel* pModel);
+    virtual void clone(ViewParamModel* pModel);
     QPersistentModelIndex nodeIdx() const;
-    QModelIndex indexFromPath(const QString& path);
+    IGraphsModel* graphsModel() const;
+    virtual QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
 
     //for node ui params:
     void getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs);
     QModelIndexList paramsIndice();
     QModelIndexList outputsIndice();
+    void arrangeOrder(const QStringList &inputKeys, const QStringList &outputKeys);
 
-    void resetParams(const VPARAM_INFO& invisibleRoot);
+    static VParamItem* importParam(IGraphsModel* pGraphsModel, const VPARAM_INFO& param);
+    void importParamInfo(const VPARAM_INFO& invisibleRoot);
     VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool isNodeModel() const;
     bool isDirty() const;
     void markDirty();
-#ifdef ENABLE_DRAG_DROP_ITEM
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
-#endif
+    bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
+                  int destinationChild) override;
 
-public slots:
-    void onCoreParamsInserted(const QModelIndex& parent, int first, int last);
-    void onCoreParamsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+signals:
+    void editNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
-private:
-    void setup(const QString& customUI);
-    void initCustomUI();
+protected:
+    virtual void initUI();
 
     const QPersistentModelIndex m_nodeIdx;
-    const IGraphsModel* const m_model;
+    IGraphsModel* m_model;
     const bool m_bNodeUI;
     bool m_bDirty;
 };

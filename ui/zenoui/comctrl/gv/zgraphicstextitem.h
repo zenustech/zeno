@@ -8,6 +8,8 @@
 
 extern qreal editor_factor;		//temp: global editor zoom factor.
 
+#define DEBUG_TEXTITEM 1
+
 
 class ZGraphicsTextItem : public QGraphicsTextItem
 {
@@ -89,6 +91,9 @@ private:
     Qt::CursorShape m_hoverCursor;
     bool m_bRight;
     bool m_bHovered;
+#ifdef DEBUG_TEXTITEM
+    QString m_text;
+#endif
 };
 
 class ZEditableTextItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>

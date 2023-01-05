@@ -1,8 +1,9 @@
 #include "globalcontrolmgr.h"
 #include "uihelper.h"
 #include "zassert.h"
-#include "iparammodel.h"
+#include "nodeparammodel.h"
 #include "modelrole.h"
+#include "vparamitem.h"
 
 
 static CONTROL_INFO _infos[] = {
@@ -63,12 +64,15 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
 
 void GlobalControlMgr::onCoreParamsInserted(const QModelIndex &parent, int first, int last)
 {
-    IParamModel* pModel = qobject_cast<IParamModel*>(sender());
+    NodeParamModel* pModel = qobject_cast<NodeParamModel*>(sender());
     ZASSERT_EXIT(pModel);
+
     const QModelIndex& idx = pModel->index(first, 0, parent);
+    VParamItem* pItem = static_cast<VParamItem*>(pModel->itemFromIndex(idx));
+    PARAM_CLASS cls = pItem->getParamClass();
+
     QPersistentModelIndex nodeIdx = pModel->data(idx, ROLE_NODE_IDX).toPersistentModelIndex();
     const QString& objCls = nodeIdx.data(ROLE_OBJNAME).toString();
-    PARAM_CLASS cls = pModel->paramClass();
     const QString& coreParam = idx.data(ROLE_PARAM_NAME).toString();
 
     CONTROL_INFO info(objCls, cls, coreParam, CONTROL_NONE, QVariant());
@@ -78,14 +82,16 @@ void GlobalControlMgr::onCoreParamsInserted(const QModelIndex &parent, int first
 
 void GlobalControlMgr::onCoreParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-    IParamModel* pModel = qobject_cast<IParamModel*>(sender());
+    NodeParamModel* pModel = qobject_cast<NodeParamModel*>(sender());
     ZASSERT_EXIT(pModel);
+
     const QModelIndex &idx = pModel->index(first, 0, parent);
+    VParamItem* pItem = static_cast<VParamItem*>(pModel->itemFromIndex(idx));
+    PARAM_CLASS cls = pItem->getParamClass();
+
     QPersistentModelIndex nodeIdx = pModel->data(idx, ROLE_NODE_IDX).toPersistentModelIndex();
     const QString& objCls = nodeIdx.data(ROLE_OBJNAME).toString();
-    PARAM_CLASS cls = pModel->paramClass();
     const QString& coreParam = idx.data(ROLE_PARAM_NAME).toString();
-
     CONTROL_INFO info(objCls, cls, coreParam, CONTROL_NONE, QVariant());
     m_infos.removeAll(info);
 }

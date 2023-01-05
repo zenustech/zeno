@@ -10,6 +10,7 @@ class ZLayoutBackground : public ZGraphicsLayoutItem<QGraphicsWidget>
     Q_OBJECT
 public:
     ZLayoutBackground(QGraphicsItem* parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
+    ~ZLayoutBackground();
     QRectF boundingRect() const override;
     void setBorder(qreal width, const QColor& clrBorder);
     void setGeometry(const QRectF& rect) override;

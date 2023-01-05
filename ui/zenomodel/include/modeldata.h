@@ -81,6 +81,7 @@ struct PARAM_INFO {
     QVariant value;
     PARAM_CONTROL control;
     QString typeDesc;
+    QVariant controlProps;
     bool bEnableConnect;     //enable connection with other out socket.
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}
@@ -95,8 +96,7 @@ struct SLIDER_INFO {
 };
 Q_DECLARE_METATYPE(SLIDER_INFO)
 
-typedef QMap<QString, QVariant> CONTROL_PROPERTIES;
-Q_DECLARE_METATYPE(CONTROL_PROPERTIES)
+typedef QVariantMap CONTROL_PROPERTIES;
 
 inline const char* cPathSeperator = ":";
 
@@ -111,53 +111,6 @@ struct EdgeInfo
     EdgeInfo() = default;
     EdgeInfo(const QString &outpath, const QString &inpath)
         : outSockPath(outpath), inSockPath(inpath) {}
-
-    EdgeInfo(
-            const QString& inSubgraph,
-            const QString& inNodeIdent,
-            const QString& inSockName,
-            const QString& outSubgraph,
-            const QString& outNodeIdent,
-            const QString& outSockName
-    )
-    {
-        QStringList inseq = {inSubgraph, inNodeIdent, "core-param", "/inputs/" + inSockName};
-        QStringList outseq = {outSubgraph, outNodeIdent, "core-param", "/outputs/" + outSockName};
-        inSockPath = inseq.join(cPathSeperator);
-        outSockPath = inseq.join(cPathSeperator);
-    }
-
-    void getSockInfo(bool bInput, QString& ident, QString& sockName) const
-    {
-        QStringList lst;
-
-        if (bInput)
-            lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-        else
-            lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-
-        //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
-        if (lst.size() >= 4) {
-            ident = lst[1];
-            sockName = lst[3];
-#if 0
-            lst = lst[3].split("/", Qt::SkipEmptyParts);
-            outSock = lst.last();
-#endif
-        }
-    }
-
-    QString subgraphName(bool bInput) const {
-        if (bInput) {
-            QStringList lst = inSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-            ZASSERT_EXIT(!lst.isEmpty(), "");
-            return lst[0];
-        } else {
-            QStringList lst = outSockPath.split(cPathSeperator, Qt::SkipEmptyParts);
-            ZASSERT_EXIT(!lst.isEmpty(), "");
-            return lst[0];
-        }
-    }
     
     bool operator==(const EdgeInfo &rhs) const {
         return outSockPath == rhs.outSockPath && inSockPath == rhs.inSockPath;
@@ -198,6 +151,8 @@ struct SOCKET_INFO {
     //QList<DICTKEY_INFO> keys;
     DICTPANEL_INFO dictpanel;
     int sockProp;
+
+    CONTROL_PROPERTIES ctrlProps;
 
     SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}
     SOCKET_INFO(const QString& id, const QString& name)
@@ -248,10 +203,11 @@ struct VPARAM_INFO
 {
     PARAM_INFO m_info;
     VPARAM_TYPE vType;
-    QString coreParam;
+    QString refParamPath;
     PARAM_CLASS m_cls;
     QVector<VPARAM_INFO> children;
     QVariant controlInfos;
+    uint m_uuid;
 
     VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN) {}
 };

@@ -532,7 +532,7 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             for (auto idx : subgNodes)
             {
                 // update socket for current subgraph node.
-                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+                IParamModel* sockModel = QVariantPtr<IParamModel>::asPtr(idx.data(bInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
                 QModelIndex paramIdx = sockModel->index(sockName);
                 sockModel->setData(paramIdx, newType, ROLE_PARAM_TYPE);
             }
@@ -562,8 +562,8 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             QModelIndexList subgNodes = m_model->findSubgraphNode(subgName);
             for (auto idx : subgNodes)
             {
-                // update socket for current subgraph node.
-                IParamModel* sockModel = m_model->paramModel(idx, bInput ? PARAM_INPUT : PARAM_OUTPUT);
+                //update socket for current subgraph node.
+                IParamModel* sockModel = QVariantPtr<IParamModel>::asPtr(idx.data(bInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
                 QModelIndex paramIdx = sockModel->index(oldName);
                 sockModel->setData(paramIdx, newName, ROLE_PARAM_NAME);
             }

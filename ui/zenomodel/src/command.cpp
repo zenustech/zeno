@@ -4,9 +4,12 @@
 #include "modeldata.h"
 #include "zassert.h"
 #include "apilevelscope.h"
+#include "viewparammodel.h"
+#include "vparamitem.h"
+#include "variantptr.h"
 
 
-AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, IGraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
     , m_id(id)
     , m_model(pModel)
@@ -210,4 +213,294 @@ void UpdateSubgDescCommand::redo()
 void UpdateSubgDescCommand::undo()
 {
     m_model->updateSubgDesc(m_subgName, m_oldDesc);
+}
+
+
+
+
+static QStandardItem* getParentPath(IGraphsModel* pGraphsModel, const QString& parentPath)
+{
+    ZASSERT_EXIT(pGraphsModel, nullptr);
+    QModelIndex parent = pGraphsModel->indexFromPath(parentPath);
+    if (parent.isValid())
+    {
+        const QAbstractItemModel* model = parent.model();
+        ZASSERT_EXIT(model, nullptr);
+        ViewParamModel* pModel = qobject_cast<ViewParamModel*>(const_cast<QAbstractItemModel*>(model));
+        QStandardItem* parentItem = pModel->itemFromIndex(parent);
+        return parentItem;
+    }
+    return nullptr;
+}
+
+
+///////////////////////////////////////////////////////////////////////
+ViewParamAddCommand::ViewParamAddCommand(IGraphsModel* pModel, const QString& parentObjPath, const VPARAM_INFO& newItem)
+    : QUndoCommand(COMMAND_VIEWADD)
+    , m_model(pModel)
+    , m_parentPath(parentObjPath)
+    , m_itemData(newItem)
+    , m_rowInserted(0)
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    ZASSERT_EXIT(parentItem);
+    m_rowInserted = parentItem->rowCount();
+}
+
+void ViewParamAddCommand::redo()
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    ZASSERT_EXIT(parentItem);
+    VParamItem* newItem = ViewParamModel::importParam(m_model, m_itemData);
+    parentItem->appendRow(newItem);
+}
+
+void ViewParamAddCommand::undo()
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    ZASSERT_EXIT(parentItem);
+    parentItem->removeRow(m_rowInserted);
+}
+
+
+/////////////////////////////////////////////////////////////////////
+ViewParamRemoveCommand::ViewParamRemoveCommand(IGraphsModel* pModel, const QString& parentObjPath, int row)
+    : QUndoCommand(COMMAND_VIEWREMOVE)
+    , m_model(pModel)
+    , m_parentPath(parentObjPath)
+    , m_row(row)
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    VParamItem* pItem = static_cast<VParamItem*>(parentItem->child(m_row));
+    m_deleteItem = pItem->exportParamInfo();
+}
+
+void ViewParamRemoveCommand::redo()
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    ZASSERT_EXIT(parentItem);
+    parentItem->removeRow(m_row);
+}
+
+void ViewParamRemoveCommand::undo()
+{
+    QStandardItem* parentItem = getParentPath(m_model, m_parentPath);
+    VParamItem* newItem = ViewParamModel::importParam(m_model, m_deleteItem);
+    parentItem->appendRow(newItem);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
+ViewParamSetDataCommand::ViewParamSetDataCommand(IGraphsModel *pModel, const QString &vitemPath, const QVariant &newValue, int role)
+    : QUndoCommand(COMMAND_VIEWSETDATA)
+    , m_model(pModel)
+    , m_vitemPath(vitemPath)
+    , m_newValue(newValue)
+    , m_role(role)
+{
+    QModelIndex itemIdx = m_model->indexFromPath(m_vitemPath);
+    m_oldValue = itemIdx.data(m_role);
+}
+
+void ViewParamSetDataCommand::redo()
+{
+    QModelIndex itemIdx = m_model->indexFromPath(m_vitemPath);
+    if (itemIdx.isValid())
+    {
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(itemIdx.model());
+        ZASSERT_EXIT(model);
+        model->setData(itemIdx, m_newValue, m_role);
+    }
+}
+
+void ViewParamSetDataCommand::undo()
+{
+    QModelIndex itemIdx = m_model->indexFromPath(m_vitemPath);
+    if (itemIdx.isValid())
+    {
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(itemIdx.model());
+        ZASSERT_EXIT(model);
+        model->setData(itemIdx, m_oldValue, m_role);
+    }
+}
+
+
+ViewParamMoveCommand::ViewParamMoveCommand(IGraphsModel* pModel, const QString& srcParentPath, int srcRow, const QString& dstParentPath, int dstRow)
+    : QUndoCommand(COMMAND_VIEWMOVE)
+    , m_model(pModel)
+    , m_srcParent(srcParentPath)
+    , m_srcRow(srcRow)
+    , m_dstParent(dstParentPath)
+    , m_dstRow(dstRow)
+{
+}
+
+void ViewParamMoveCommand::redo()
+{
+
+}
+
+void ViewParamMoveCommand::undo()
+{
+
+}
+
+
+MapParamIndexCommand::MapParamIndexCommand(IGraphsModel* pModel, const QString& sourceObj, const QString& dstObj)
+    : QUndoCommand(COMMAND_MAPPING)
+    , m_model(pModel)
+    , m_sourceObj(sourceObj)
+    , m_dstObj(dstObj)
+{
+    QModelIndex paramIdx = m_model->indexFromPath(m_sourceObj);
+    QModelIndex oldIdx = paramIdx.data(ROLE_PARAM_COREIDX).toModelIndex();
+    if (oldIdx.isValid())
+        m_oldMappingObj = oldIdx.data(ROLE_OBJPATH).toString();
+}
+
+void MapParamIndexCommand::redo()
+{
+    QModelIndex paramIdx = m_model->indexFromPath(m_sourceObj);
+    QAbstractItemModel* model = const_cast<QAbstractItemModel*>(paramIdx.model());
+    if (model)
+    {
+        QModelIndex targetIdx = m_model->indexFromPath(m_dstObj);
+        model->setData(paramIdx, targetIdx, ROLE_PARAM_COREIDX);
+    }
+}
+
+void MapParamIndexCommand::undo()
+{
+    QModelIndex paramIdx = m_model->indexFromPath(m_sourceObj);
+    QAbstractItemModel *model = const_cast<QAbstractItemModel *>(paramIdx.model());
+    if (model)
+    {
+        QModelIndex oldIdx = m_model->indexFromPath(m_oldMappingObj);
+        model->setData(paramIdx, oldIdx, ROLE_PARAM_COREIDX);
+    }
+}
+
+
+RenameObjCommand::RenameObjCommand(IGraphsModel* pModel, const QString& objPath, const QString& newName)
+    : m_model(pModel)
+    , m_oldPath(objPath)
+    , m_newName(newName)
+{
+
+}
+
+void RenameObjCommand::redo()
+{
+    QModelIndex itemIdx = m_model->indexFromPath(m_oldPath);
+    if (itemIdx.isValid())
+    {
+        m_oldName = itemIdx.data(ROLE_PARAM_NAME).toString();
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(itemIdx.model());
+        ZASSERT_EXIT(model);
+        model->setData(itemIdx, m_newName, ROLE_PARAM_NAME);
+        m_newPath = itemIdx.data(ROLE_OBJPATH).toString();
+    }
+}
+
+void RenameObjCommand::undo()
+{
+    QModelIndex itemIdx = m_model->indexFromPath(m_newPath);
+    if (itemIdx.isValid())
+    {
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(itemIdx.model());
+        ZASSERT_EXIT(model);
+        model->setData(itemIdx, m_oldName, ROLE_PARAM_NAME);
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+DictKeyAddRemCommand::DictKeyAddRemCommand(bool bAdd, IGraphsModel *pModel, const QString &dictlistSock, int row)
+    : m_model(pModel)
+    , m_distlistSock(dictlistSock)
+    , m_row(row)
+    , m_bAdd(bAdd)
+{
+}
+
+void DictKeyAddRemCommand::redo()
+{
+    ZASSERT_EXIT(m_model);
+    QModelIndex idx = m_model->indexFromPath(m_distlistSock);
+    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(idx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(pKeyObjModel);
+    if (m_bAdd)
+    {
+        pKeyObjModel->insertRow(m_row);
+        QModelIndex newIdx = pKeyObjModel->index(m_row, 0);
+        if (m_keyName.isEmpty())
+        {
+            //cache the key, in order to restore next time.
+            m_keyName = newIdx.data().toString();
+        }
+        else
+        {
+            pKeyObjModel->setData(newIdx, m_keyName, ROLE_PARAM_NAME);
+        }
+    }
+    else
+    {
+        QModelIndex newIdx = pKeyObjModel->index(m_row, 0);
+        if (m_keyName.isEmpty()) {
+            //cache the key, in order to restore next time.
+            m_keyName = newIdx.data().toString();
+        }
+        pKeyObjModel->removeRow(m_row);
+    }
+}
+
+void DictKeyAddRemCommand::undo()
+{
+    ZASSERT_EXIT(m_model);
+    QModelIndex idx = m_model->indexFromPath(m_distlistSock);
+    QAbstractItemModel *pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(idx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(pKeyObjModel);
+    if (m_bAdd) {
+        pKeyObjModel->removeRow(m_row);
+    }
+    else {
+        pKeyObjModel->insertRow(m_row);
+        QModelIndex newIdx = pKeyObjModel->index(m_row, 0);
+        pKeyObjModel->setData(newIdx, m_keyName, ROLE_PARAM_NAME);
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+ModelMoveCommand::ModelMoveCommand(IGraphsModel* pModel, const QString& movingItemPath, int destRow)
+    : m_model(pModel)
+    , m_movingObj(movingItemPath)
+    , m_destRow(destRow)
+{
+
+}
+
+void ModelMoveCommand::redo()
+{
+    QModelIndex idx = m_model->indexFromPath(m_movingObj);
+    if (idx.isValid())
+    {
+        QModelIndex parent = idx.parent();
+        m_srcRow = idx.row();
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(idx.model());
+        ZASSERT_EXIT(model);
+        model->moveRow(parent, m_srcRow, parent, m_destRow);
+    }
+}
+
+void ModelMoveCommand::undo()
+{
+    QModelIndex idx = m_model->indexFromPath(m_movingObj);
+    if (idx.isValid())
+    {
+        QModelIndex parent = idx.parent();
+        QAbstractItemModel* model = const_cast<QAbstractItemModel*>(idx.model());
+        ZASSERT_EXIT(model);
+        model->moveRow(parent, m_destRow, parent, m_srcRow);
+    }
 }

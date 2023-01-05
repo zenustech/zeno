@@ -32,6 +32,7 @@ public:
     static NODE_DESCS parseDescs(const rapidjson::Value &descs);
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
+    static uint generateUuidInt();
     static QVariant initDefaultValue(const QString& type);
     static bool validateVariant(const QVariant& var, const QString& type);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
@@ -46,6 +47,10 @@ public:
     static QStringList getCoreTypeList();
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
+    static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
+    static QString getSockNode(const QString& sockPath);
+    static QString getSockName(const QString& sockPath);
+    static QString getSockSubgraph(const QString& sockPath);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QVariant initVariantByControl(PARAM_CONTROL ctrl);

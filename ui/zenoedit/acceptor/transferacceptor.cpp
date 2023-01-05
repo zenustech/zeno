@@ -245,8 +245,8 @@ void TransferAcceptor::setInputSocket2(
             inputs[inSock].info.defaultValue = defaultValue;
         if (!outLinkPath.isEmpty())
         {
-            EdgeInfo info(m_currSubgraph, inNode, inSock, m_currSubgraph, "", "");
-            info.outSockPath = outLinkPath;
+            const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
+            EdgeInfo info(outLinkPath, inSockPath);
             inputs[inSock].info.links.append(info);
             m_links.append(info);
         }
@@ -268,8 +268,8 @@ void TransferAcceptor::setInputSocket2(
 
             if (!outLinkPath.isEmpty())
             {
-                EdgeInfo info(m_currSubgraph, inNode, inSock, m_currSubgraph, "", "");
-                info.outSockPath = outLinkPath;
+                const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
+                EdgeInfo info(outLinkPath, inSockPath);
                 inputs[inSock].info.links.append(info);
                 m_links.append(info);
             }
@@ -495,9 +495,10 @@ void TransferAcceptor::reAllocIdents()
 
     for (EdgeInfo& link : m_links)
     {
-        QString inputNode, outputNode, inputSock, outputSock;
-        link.getSockInfo(true, inputNode, inputSock);
-        link.getSockInfo(false, outputNode, outputSock);
+        QString outputNode = UiHelper::getSockNode(link.outSockPath);
+        QString outputSock = UiHelper::getSockName(link.outSockPath);
+        QString inputNode = UiHelper::getSockNode(link.inSockPath);
+        QString inputSock = UiHelper::getSockName(link.inSockPath);
 
         ZASSERT_EXIT(old2new.find(inputNode) != old2new.end() &&
                     old2new.find(outputNode) != old2new.end());
@@ -505,13 +506,13 @@ void TransferAcceptor::reAllocIdents()
         QString newInputNode = old2new[inputNode];
         QString newOutputNode = old2new[outputNode];
 
-        //todo: how to set this new node ident into link?
-        QString inSubg = link.subgraphName(true);
-        QString outSubg = link.subgraphName(false);
+        const QString& newInSock =
+            UiHelper::constructObjPath(m_currSubgraph, newInputNode, "[node]/inputs/", inputSock);
+        const QString& newOutSock =
+            UiHelper::constructObjPath(m_currSubgraph, newOutputNode, "[node]/outputs/", outputSock);
 
-        EdgeInfo newLink(inSubg, newInputNode, inputSock, outSubg, newOutputNode, outputSock);
-        link.inSockPath = newLink.inSockPath;
-        link.outSockPath = newLink.outSockPath;
+        link.inSockPath = newInSock;
+        link.outSockPath = newOutSock;
     }
 
     m_nodes.clear();

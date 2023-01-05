@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenomodel/include/viewparammodel.h>
+#include <zenomodel/include/vparamitem.h>
 
 namespace Ui
 {
@@ -53,15 +54,19 @@ private slots:
     void onControlItemChanged(int);
     void onTypeItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
+    void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 private:
     void applySubgraphNode();
+    void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void updateSubgParamControl(
             IGraphsModel* pGraphsModel,
             const QString& subgName,
             bool bSubInput,
             const QString& paramName,
             PARAM_CONTROL ctrl);
+    void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
+    void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
@@ -69,7 +74,12 @@ private:
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
+    QPersistentModelIndex m_subgIdx;
     static const int rowValueControl = 4;
+    bool m_bSubgraphNode;
+
+    QMap<QString, QString> m_renameRecord;
+    QVector<QUndoCommand*> m_commandSeq;
 };
 
 

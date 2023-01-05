@@ -6,6 +6,8 @@
 #include <zenomodel/include/jsonhelper.h>
 #include "common.h"
 
+//#define LEGACY_ZSG_WRITE
+
 using namespace JsonHelper;
 
 class ZsgWriter

@@ -17,6 +17,12 @@ public:
     {
     }
 
+    ~ZGraphicsLayoutItem()
+    {
+        delete m_layout;        //todo: sp wrap.
+        m_layout = nullptr;
+    }
+
     void setLayout(ZGraphicsLayout* pLayout) {
         m_layout = pLayout;
         m_layout->setParentItem(this);
@@ -24,7 +30,7 @@ public:
     }
 
     ZGraphicsLayout* layout() const {
-        return m_layout;
+        return m_layout.get();
     }
 
     void setParentLayout(ZGraphicsLayout* pLayout) {
