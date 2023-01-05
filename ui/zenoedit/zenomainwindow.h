@@ -82,8 +82,6 @@ public:
         ACTION_NODE_CAMERA,
         //Window
         ACTION_SAVE_LAYOUT,
-        //Window Custom Layout
-        ACTION_DEFAULT_LAYOUT,
         //Help
         ACTION_LANGUAGE,
         //Others
@@ -142,6 +140,9 @@ private:
     void setActionProperty();
     void screenShoot();
     void setActionIcon(QAction *action);
+    PANEL_TYPE title2Type(const QString &title);
+    void initCustomLayoutAction(const QStringList &list);
+    void loadDockLayout(QString name);
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

@@ -160,7 +160,7 @@
     </message>
     <message>
         <location filename="../../dialog/zeditparamlayoutdlg.ui" line="175"/>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="237"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="240"/>
         <source>type</source>
         <translation type="unfinished">类型</translation>
     </message>
@@ -170,57 +170,57 @@
         <translation type="unfinished">默认值</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="218"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="221"/>
         <source>Core Mapping</source>
         <translation type="unfinished">参数映射</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="230"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="233"/>
         <source>TextLabel</source>
         <translation type="unfinished">文字标签</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="251"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="254"/>
         <source>...</source>
         <translation type="unfinished">...</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="290"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="296"/>
         <source>Control Properties</source>
         <translation type="unfinished">参数控制</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="320"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="326"/>
         <source>items</source>
         <translation type="unfinished">项目</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="341"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="347"/>
         <source>min</source>
         <translation type="unfinished">最小</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="348"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="354"/>
         <source>max</source>
         <translation type="unfinished">最大</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="369"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="375"/>
         <source>step</source>
         <translation type="unfinished">梯度</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="414"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="423"/>
         <source>OK</source>
         <translation type="unfinished">确定</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="421"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="430"/>
         <source>Cancel</source>
         <translation type="unfinished">取消</translation>
     </message>
     <message>
-        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="428"/>
+        <location filename="../../dialog/zeditparamlayoutdlg.ui" line="437"/>
         <source>Apply</source>
         <translation type="unfinished">应用</translation>
     </message>
@@ -550,7 +550,7 @@
     <message>
         <location filename="../../zenomainwindow.ui" line="169"/>
         <source>&amp;New</source>
-        <translation type="unfinished">新建</translation>
+        <translation type="unfinished">&amp;新建</translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.ui" line="177"/>
@@ -779,80 +779,6 @@
         <location filename="../../../zenodesign/propertypane.cpp" line="9"/>
         <source>Inspector</source>
         <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>QColorDialog</name>
-    <message>
-        <source>Hu&amp;e:</source>
-        <translation type="vanished">色调(&amp;E)：</translation>
-    </message>
-    <message>
-        <source>&amp;Sat:</source>
-        <translation type="vanished">饱和度(&amp;S)：</translation>
-    </message>
-    <message>
-        <source>&amp;Val:</source>
-        <translation type="vanished">亮度(&amp;V)：</translation>
-    </message>
-    <message>
-        <source>&amp;Red:</source>
-        <translation type="vanished">红色(&amp;R)：</translation>
-    </message>
-    <message>
-        <source>&amp;Green:</source>
-        <translation type="vanished">绿色(&amp;G)：</translation>
-    </message>
-    <message>
-        <source>Bl&amp;ue:</source>
-        <translation type="vanished">蓝色(&amp;U)：</translation>
-    </message>
-    <message>
-        <source>A&amp;lpha channel:</source>
-        <translation type="vanished">Alpha通道(&amp;A)：</translation>
-    </message>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">选择颜色</translation>
-    </message>
-    <message>
-        <source>&amp;Basic colors</source>
-        <translation type="vanished">基本颜色(&amp;B)</translation>
-    </message>
-    <message>
-        <source>&amp;Custom colors</source>
-        <translation type="vanished">自定义颜色(&amp;C)</translation>
-    </message>
-    <message>
-        <source>&amp;Add to Custom Colors</source>
-        <translation type="vanished">添加到自定义颜色(&amp;A)</translation>
-    </message>
-    <message>
-        <source>Select color</source>
-        <translation type="obsolete">选择颜色</translation>
-    </message>
-    <message>
-        <source>&amp;Pick Screen Color</source>
-        <translation type="vanished">拾取屏幕颜色</translation>
-    </message>
-</context>
-<context>
-    <name>QPlatformTheme</name>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">确定</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">取消</translation>
-    </message>
-    <message>
-        <source>&amp;Yes</source>
-        <translation type="vanished">是</translation>
-    </message>
-    <message>
-        <source>&amp;No</source>
-        <translation type="vanished">否</translation>
     </message>
 </context>
 <context>
@@ -1161,6 +1087,26 @@
 <context>
     <name>ZSubnetListItemDelegate</name>
     <message>
+        <location filename="../../nodesview/zsubnetlistitemdelegate.cpp" line="134"/>
+        <source>Copy subnet</source>
+        <translation>复制子图</translation>
+    </message>
+    <message>
+        <location filename="../../nodesview/zsubnetlistitemdelegate.cpp" line="135"/>
+        <source>Paste subnet</source>
+        <translation>粘贴子图</translation>
+    </message>
+    <message>
+        <location filename="../../nodesview/zsubnetlistitemdelegate.cpp" line="136"/>
+        <source>Rename</source>
+        <translation>重命名</translation>
+    </message>
+    <message>
+        <location filename="../../nodesview/zsubnetlistitemdelegate.cpp" line="137"/>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
         <location filename="../../nodesview/zsubnetlistitemdelegate.cpp" line="159"/>
         <source>Zeno</source>
         <translation>Zeno</translation>
@@ -1404,7 +1350,7 @@
     <message>
         <location filename="../../nodesview/zenographseditor.cpp" line="237"/>
         <location filename="../../nodesview/zenographseditor.cpp" line="250"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="668"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="670"/>
         <source>create subnet</source>
         <translation>创建子图</translation>
     </message>
@@ -1425,7 +1371,7 @@
     </message>
     <message>
         <location filename="../../nodesview/zenographseditor.cpp" line="250"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="668"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="670"/>
         <source>new subgraph name:</source>
         <translation>新建子图名称：</translation>
     </message>
@@ -1465,12 +1411,12 @@
         <translation type="vanished">简易子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="690"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="692"/>
         <source>Set NASLOC</source>
         <translation>设置NASLOC</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="691"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="693"/>
         <source>NASLOC</source>
         <translation>NASLOC</translation>
     </message>
@@ -1479,22 +1425,22 @@
         <translation type="vanished">设置ZENCACHE</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="707"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="709"/>
         <source>Set ZENCACHE directory</source>
         <translation>设置ZENCACHE缓存目录</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="708"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="710"/>
         <source>ZENCACHEDIR</source>
         <translation>ZENCACHE目录</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="710"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="712"/>
         <source>Set ZENCACHE count</source>
         <translation>设置ZENCACHE缓存上限</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="711"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="713"/>
         <source>ZENCACHENUM</source>
         <translation>ZENCACHE上限</translation>
     </message>
@@ -1571,12 +1517,12 @@
         <translation type="vanished">新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="952"/>
+        <location filename="../../zenomainwindow.cpp" line="974"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="831"/>
+        <location filename="../../zenomainwindow.cpp" line="853"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -1650,42 +1596,42 @@
         <translation type="unfinished">状态栏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="210"/>
+        <location filename="../../zenomainwindow.cpp" line="215"/>
         <source>layout format is invalid.</source>
         <translation type="unfinished">布局格式无效。</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="224"/>
+        <location filename="../../zenomainwindow.cpp" line="229"/>
         <source>Save Layout</source>
         <translation>保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="224"/>
+        <location filename="../../zenomainwindow.cpp" line="229"/>
         <source>layout name:</source>
         <translation>布局名称：</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="232"/>
+        <location filename="../../zenomainwindow.cpp" line="237"/>
         <source>alreday has same layout, override?</source>
         <translation type="unfinished">已具有相同的布局，是否覆盖？</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="264"/>
+        <location filename="../../zenomainwindow.cpp" line="269"/>
         <source>Language</source>
         <translation type="unfinished">语言</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="765"/>
+        <location filename="../../zenomainwindow.cpp" line="787"/>
         <source>Path to Save</source>
         <translation type="unfinished">文件保存路径</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="766"/>
+        <location filename="../../zenomainwindow.cpp" line="788"/>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
         <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="831"/>
+        <location filename="../../zenomainwindow.cpp" line="853"/>
         <source>Save changes?</source>
         <translation type="unfinished">保存更改？</translation>
     </message>
@@ -1702,7 +1648,7 @@
         <translation type="vanished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="265"/>
+        <location filename="../../zenomainwindow.cpp" line="270"/>
         <source>Please restart Zeno to apply changes.</source>
         <translation>请重启Zeno以应用更改。</translation>
     </message>

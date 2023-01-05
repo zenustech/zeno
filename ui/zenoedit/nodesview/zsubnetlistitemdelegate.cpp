@@ -131,10 +131,10 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
         if (me->button() == Qt::RightButton)
         {
             QMenu* menu = new QMenu(qobject_cast<QWidget*>(parent()));
-            QAction* pCopySubnet = new QAction("Copy subnet");
-            QAction* pPasteSubnet = new QAction("Paste subnet");
-            QAction* pRename = new QAction("Rename");
-            QAction* pDelete = new QAction("Delete");
+            QAction* pCopySubnet = new QAction(tr("Copy subnet"));
+            QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
+            QAction* pRename = new QAction(tr("Rename"));
+            QAction* pDelete = new QAction(tr("Delete"));
 
             connect(pDelete, &QAction::triggered, this, [=]() {
                 onDelete(index);

@@ -110,7 +110,6 @@
      <property name="title">
       <string>Custom Layout</string>
      </property>
-     <addaction name="actionDefault_2"/>
     </widget>
     <addaction name="actionSave_Layout"/>
     <addaction name="menuCustom_Layout"/>
@@ -360,11 +359,6 @@ border-top: 1px solid black;</string>
   <action name="actionSave_Layout">
    <property name="text">
     <string>Save Layout</string>
-   </property>
-  </action>
-  <action name="actionDefault_2">
-   <property name="text">
-    <string>Default</string>
    </property>
   </action>
   <action name="actionScreen_Shoot">

@@ -69,12 +69,16 @@ int main(int argc, char *argv[])
 
 
     QTranslator t;
+    QTranslator qtTran;
     QSettings settings(zsCompanyName, zsEditor);
     QVariant use_chinese = settings.value("use_chinese");
 
     if (use_chinese.isNull() || use_chinese.toBool()) {
         if (t.load(":languages/zh.qm")) {
             a.installTranslator(&t);
+        }
+        if (qtTran.load(":languages/qt_zh_CN.qm")) {
+            a.installTranslator(&qtTran);
         }
     }
 

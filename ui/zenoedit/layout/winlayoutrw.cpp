@@ -77,7 +77,7 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
     else
     {
         writer.Key("widget");
-        if (root->pWidget == nullptr)
+        if (root->pWidget == nullptr || root->pWidget->isHidden())
         {
             writer.Null();
         }
@@ -130,7 +130,7 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
                     writer.String("Data");
                 }
-                else if (qobject_cast<ZlogPanel*>(wid)) {
+                else if (qobject_cast<ZPlainLogPanel*>(wid)) {
                     writer.String("Logger");
                 }
             }
