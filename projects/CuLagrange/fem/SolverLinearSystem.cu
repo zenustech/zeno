@@ -404,8 +404,32 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
 void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                                  bool includeHessian) {
     using namespace zs;
+    constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
-        ;
+        if (!primHandle.hasBendingConstraints())
+            continue;
+        auto &btemp = primHandle.btemp;
+        auto &bedges = *primHandle.bendingEdgesPtr;
+        cudaPol(range(btemp.size()),
+                [bedges = proxy<space>({}, bedges), btemp = proxy<space>(btemp)] __device__(int i) mutable {
+                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
+                    auto e = bedges("e", i);
+                    auto h = bedges("h", i);
+                    auto k = bedges("k", i);
+                    auto ra = bedges("ra", i);
+                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
+                    auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
+                    auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
+                    auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
+                    auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
+                    auto e = bedges("e", i);
+                    auto h = bedges("h", i);
+                    auto k = bedges("k", i);
+                    auto ra = bedges("ra", i);
+                    auto theta = dihedral_angle(x0, x1, x2, x3);
+                    btemp.tuple(dim_c<12>, 0, i) = zs::vec<float, 12>::zeros();
+                    btemp.tuple(dim_c<12, 12>, 0, i) = zs::vec<float, 12, 12>::zeros();
+                });
     }
 }
 

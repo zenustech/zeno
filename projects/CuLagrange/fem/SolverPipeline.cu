@@ -4,6 +4,7 @@
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/math/DihedralAngle.hpp"
 #include "zensim/profile/CppTimers.hpp"
 #include "zensim/types/SmallVector.hpp"
 #include <cooperative_groups.h>
@@ -1951,9 +1952,35 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     }
 
     for (auto &primHandle : prims) {
+        /// @note elasticity
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
         })(primHandle.getModels().getElasticModel());
+
+        if (primHandle.hasBendingConstraints()) {
+            /// @note bending energy (if exist)
+            auto &btemp = primHandle.btemp;
+            auto &bedges = *primHandle.bendingEdgesPtr;
+            es.resize(count_warps(bedges.size()));
+            es.reset(0);
+            pol(range(bedges.size()),
+                [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), bedges = proxy<space>({}, bedges), dt = dt,
+                 n = bedges.size()] __device__(int i) mutable {
+                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
+                    auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
+                    auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
+                    auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
+                    auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
+                    auto e = bedges("e", i);
+                    auto h = bedges("h", i);
+                    auto k = bedges("k", i);
+                    auto ra = bedges("ra", i);
+                    auto theta = dihedral_angle(x0, x1, x2, x3);
+                    T E = zs::sqr(theta - ra) * e / h * dt * dt;
+                    reduce_to(i, n, E, es[i / 32]);
+                });
+            Es.push_back(reduce(pol, es));
+        }
     }
     for (auto &primHandle : auxPrims) {
         using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
@@ -2729,7 +2756,8 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
     using bvh_t = typename IPCSystem::bvh_t;
     using bv_t = typename IPCSystem::bv_t;
 #endif
-    template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
+    template <typename VecT>
+    static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
         using namespace zs;
         const auto &mi = bv._min;
         const auto &ma = bv._max;
