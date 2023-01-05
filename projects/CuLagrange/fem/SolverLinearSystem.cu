@@ -3,6 +3,7 @@
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/math/DihedralAngle.hpp"
 #include "zensim/types/SmallVector.hpp"
 
 namespace zeno {
@@ -410,26 +411,57 @@ void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
             continue;
         auto &btemp = primHandle.btemp;
         auto &bedges = *primHandle.bendingEdgesPtr;
-        cudaPol(range(btemp.size()),
-                [bedges = proxy<space>({}, bedges), btemp = proxy<space>(btemp)] __device__(int i) mutable {
-                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
-                    auto e = bedges("e", i);
-                    auto h = bedges("h", i);
-                    auto k = bedges("k", i);
-                    auto ra = bedges("ra", i);
-                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
-                    auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
-                    auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
-                    auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
-                    auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
-                    auto e = bedges("e", i);
-                    auto h = bedges("h", i);
-                    auto k = bedges("k", i);
-                    auto ra = bedges("ra", i);
-                    auto theta = dihedral_angle(x0, x1, x2, x3);
-                    btemp.tuple(dim_c<12>, 0, i) = zs::vec<float, 12>::zeros();
-                    btemp.tuple(dim_c<12, 12>, 0, i) = zs::vec<float, 12, 12>::zeros();
-                });
+        cudaPol(range(btemp.size()), [bedges = proxy<space>({}, bedges), btemp = proxy<space>(btemp),
+                                      vtemp = proxy<space>({}, vtemp), dt2 = dt * dt, projectDBC = projectDBC,
+                                      vOffset = primHandle.vOffset, includeHessian] __device__(int i) mutable {
+            auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c) + vOffset;
+
+            mat3 BCbasis[4];
+            int BCorder[4];
+            int BCfixed[4];
+            for (int i = 0; i != 4; ++i) {
+                BCbasis[i] = vtemp.pack(dim_c<3, 3>, "BCbasis", stcl[i]);
+                BCorder[i] = vtemp("BCorder", stcl[i]);
+                BCfixed[i] = vtemp("BCfixed", stcl[i]);
+            }
+            if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) {
+                btemp.tuple(dim_c<12 * 12>, 0, i) = zs::vec<T, 12, 12>::zeros();
+                return;
+            }
+
+            auto e = bedges("e", i);
+            auto h = bedges("h", i);
+            auto k = bedges("k", i);
+            auto ra = bedges("ra", i);
+            auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
+            auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
+            auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
+            auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
+            auto theta = dihedral_angle(x0, x1, x2, x3);
+
+            auto localGrad = dihedral_angle_gradient(x0, x1, x2, x3);
+            auto grad = -localGrad * dt2 * k * 2 * (theta - ra) * e / h;
+            for (int j = 0; j != 4; ++j)
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_cuda, &vtemp("grad", d, stcl[j]), grad(j * 3 + d));
+
+            if (!includeHessian)
+                return;
+
+            // rotate and project
+            auto H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) + dyadic_prod(localGrad, localGrad)) * k *
+                     2 * e / h * dt2;
+            make_pd(H);
+
+            rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
+            btemp.tuple(dim_c<12 * 12>, 0, i) = H;
+            for (int vi = 0; vi != 4; ++vi) {
+                for (int i = 0; i != 3; ++i)
+                    for (int j = 0; j != 3; ++j) {
+                        atomic_add(exec_cuda, &vtemp("P", i * 3 + j, stcl[vi]), H(vi * 3 + i, vi * 3 + j));
+                    }
+            }
+        });
     }
 }
 
