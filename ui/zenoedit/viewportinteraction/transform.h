@@ -4,6 +4,7 @@
 #include <viewport/zenovis.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zeno/types/PrimitiveObject.h>
+#include "nodesync.h"
 
 #include <QtWidgets>
 
@@ -50,11 +51,12 @@ class FakeTransformer {
     void translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis);
     void scale(float scale_size, vec3i axis);
     void rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis);
-    void createNewTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel,
-                                QModelIndex& node_index, QModelIndex& subgraph_index, bool change_visibility=true);
-    QVariant linkedToVisibleTransformNode(QString& node_id, QModelIndex& node_index, IGraphsModel* pModel);
-    void syncToTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel,
-                             QModelIndex& node_index, QModelIndex& subgraph_index);
+
+    void createNewTransformNode(NodeLocation& node_location,
+                                const std::string& obj_name);
+    void syncToTransformNode(NodeLocation& node_location,
+                             const std::string& obj_name);
+
     void doTransform();
     const char* getNodePrimSockName(std::string node_name);
 
