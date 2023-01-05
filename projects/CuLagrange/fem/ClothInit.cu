@@ -169,7 +169,8 @@ void ClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     Btight = B / 12;
     LRef = 2 * L / 3;
     LAda = B + Btight;
-    D = std::sqrt((B+Btight) * (B+Btight) - B * B) * (T)0.1;   // one-tenth of the actual vertex displacement limit, ref Sec.5
+    D = std::sqrt((B + Btight) * (B + Btight) - B * B) *
+        (T)0.1; // one-tenth of the actual vertex displacement limit, ref Sec.5
     epsSlack = 9 * B * B / 16;
     zeno::log_warn("automatically computed params: L[{}], D[{}]\n", L, D);
 }

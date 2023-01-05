@@ -47,6 +47,12 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &
     sfOffset += getSurfTris().size();
     seOffset += getSurfEdges().size();
     svOffset += getSurfVerts().size();
+    /// @note check if bending constraints exist
+    if (zsprim.hasAuxData(ZenoParticles::s_bendingEdgeTag)) {
+        bendingEdgesPtr =
+            std::shared_ptr<ZenoParticles::particles_t>(&zsprim[ZenoParticles::s_bendingEdgeTag], [](void *) {});
+        btemp = typename ZenoParticles::dtiles_t{etemp.get_allocator(), {{"Hb", 12 * 12}}, bendingEdgesPtr->size()};
+    }
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)

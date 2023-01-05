@@ -4,12 +4,14 @@
 #include <cuda_runtime.h>
 #include <nvrtc.h>
 #include <cuda.h>
+#include "Structures.hpp"
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/zeno.h>
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/memory/Allocator.h"
 #include "zensim/cuda/Cuda.h"
@@ -63,5 +65,40 @@ ZENDEFNODE(ZSCULinkTest, {
                            {},
                            {"ZPCTest"},
                        });
+
+struct ZSTestExtraction : INode {
+  void apply() override {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    auto zspars = get_input<ZenoParticles>("ZSParticles");
+    auto ret = std::make_shared<PrimitiveObject>();
+    const auto &verts = zspars->getParticles().clone({memsrc_e::host, -1});
+    const auto &eles = (*zspars)[ZenoParticles::s_bendingEdgeTag].clone({memsrc_e::host, -1});
+    auto &pos = ret->verts;
+    auto &lines = ret->lines;
+    pos.resize(verts.size());
+    lines.resize(eles.size());
+    auto ompExec = omp_exec();
+    // verts
+    ompExec(range(pos.size()), [&pos, verts = proxy<space>({}, verts)](int i) mutable {
+      auto p = verts.pack(dim_c<3>, "x", i);
+      pos[i] = vec3f{p[0], p[1], p[2]};
+    });
+    // eles
+    ompExec(range(lines.size()), [&lines, eles = proxy<space>({}, eles)](int i) mutable {
+      auto line = eles.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
+      lines[i] = vec2i{line[1], line[2]};
+    });
+    set_output("prim", ret);
+  }
+};
+
+ZENDEFNODE(ZSTestExtraction, {
+                           {"ZSParticles"},
+                           {"prim"},
+                           {},
+                           {"ZPCTest"},
+                       });
+
 
 } // namespace zeno

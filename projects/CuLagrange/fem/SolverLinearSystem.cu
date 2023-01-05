@@ -401,6 +401,14 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
     }
 }
 
+void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                                 bool includeHessian) {
+    using namespace zs;
+    for (auto &primHandle : prims) {
+        ;
+    }
+}
+
 void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;

@@ -113,7 +113,8 @@ struct IPCSystem : IObject {
         std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
-        typename ZenoParticles::dtiles_t etemp;
+        std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
+        typename ZenoParticles::dtiles_t etemp, btemp;  // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
@@ -180,6 +181,8 @@ struct IPCSystem : IObject {
     void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
                                           const zs::SmallString &gTag); // for kappaMin
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                          bool includeHessian = true);
+    void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
