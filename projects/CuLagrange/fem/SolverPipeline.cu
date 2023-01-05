@@ -1965,8 +1965,8 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
             es.reset(0);
             pol(range(bedges.size()),
                 [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), bedges = proxy<space>({}, bedges), dt = dt,
-                 n = bedges.size()] __device__(int i) mutable {
-                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c);
+                 vOffset = primHandle.vOffset, n = bedges.size()] __device__(int i) mutable {
+                    auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c) + vOffset;
                     auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
                     auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
                     auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
