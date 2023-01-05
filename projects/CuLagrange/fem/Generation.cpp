@@ -887,7 +887,7 @@ struct ToZSSurfaceMesh : INode {
             constexpr bool use_double = RM_CVREF_T(tag)::value;
             using T = conditional_t<use_double, double, float>;
 
-            T E, nu;
+            float E, nu;
             match([&E, &nu](const auto &model) {
                 auto [E_self, nu_self] = E_nu_from_lame_parameters(model.mu, model.lam);
                 E = E_self;
@@ -1089,7 +1089,8 @@ struct ToZSSurfaceMesh : INode {
                 auto &bendingEdges = (*zstris)[ZenoParticles::s_bendingEdgeTag];
                 bendingEdges = typename ZenoParticles::particles_t(
                     {{"inds", 4}, {"k", 1}, {"ra", 1}, {"e", 1}, {"h", 1}}, bedges.size(), zs::memsrc_e::host);
-                ompExec(zs::range(bedges.size()), [&, E, nu, pars = proxy<space>({}, pars),
+
+                ompExec(zs::range(bedges.size()), [E, nu, pars = proxy<space>({}, pars), &bedges, &zsmodel,
                                                    bes = proxy<space>({}, bendingEdges)](int beNo) mutable {
                     bes("inds", 0, beNo) = reinterpret_bits<float>(bedges[beNo][0]);
                     bes("inds", 1, beNo) = reinterpret_bits<float>(bedges[beNo][1]);
@@ -1105,14 +1106,14 @@ struct ToZSSurfaceMesh : INode {
                     auto x1 = pars.pack(dim_c<3>, "x", bedges[beNo][1]);
                     auto x2 = pars.pack(dim_c<3>, "x", bedges[beNo][2]);
                     auto x3 = pars.pack(dim_c<3>, "x", bedges[beNo][3]);
-                    bes("ra", beNo) = zs::dihedral_angle(x0, x1, x2, x3);
+                    bes("ra", beNo) = (float)zs::dihedral_angle(x0, x1, x2, x3);
                     auto n1 = (x1 - x0).cross(x2 - x0);
                     auto n2 = (x2 - x3).cross(x1 - x3);
-                    auto e = (x2 - x1).norm();
+                    float e = (x2 - x1).norm();
                     bes("e", beNo) = e;
-                    bes("h", beNo) = (n1.norm() + n2.norm()) / (e * 6);
-                    auto k_bend = E / (24 * (1.0 - nu * nu)) * zsmodel->dx * zsmodel->dx * zsmodel->dx;
-                    bes("k", beNo) = k_bend; // stiffness
+                    bes("h", beNo) = (float)((n1.norm() + n2.norm()) / (e * 6));
+                    float k_bend = E / (24 * (1 - nu * nu)) * zsmodel->dx * zsmodel->dx * zsmodel->dx;
+                    bes("k", beNo) = k_bend;
                 });
                 bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
             }
