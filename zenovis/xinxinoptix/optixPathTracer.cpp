@@ -2450,7 +2450,7 @@ void UpdateInst()
 
         const auto& numInstMats = instTrs.translate.size() / 3;
         instMat.resize(numInstMats);
-
+#pragma omp parallel for
         for (int i = 0; i < numInstMats; ++i)
         {
             auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
