@@ -3,6 +3,7 @@
 #include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include <zeno/types/ListObject.h>
+#include <fstream> 
 
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                                  \
     ([this](const std::string_view str) {                                             \
@@ -214,8 +215,11 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #else
     rho = 0.1;
 #endif
-#if !useNewtonSolver
-    K = 288; 
+#if !s_useNewtonSolver
+    K = 72 * 3; 
+#else 
+    K = 72; 
+    IDyn = 1; 
 #endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
@@ -516,6 +520,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"yn", 3},
                         {"yn0", 3},
                         {"yk", 3},
+                        {"ytmp", 3}, 
 #if s_useChebyshevAcc
                         {"yn-1", 3},
                         {"yn-2", 3},
@@ -633,6 +638,14 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
                 // no need to update v here. positions are moved accordingly
                 // also, boundary velocies are set elsewhere
             });
+}
+
+void FastClothSystem::writeFile(std::string filename, std::string info)
+{
+    std::ofstream outFile; 
+    outFile.open(filename, std::ios::app); 
+    outFile << info; 
+    outFile.close(); 
 }
 
 struct MakeClothSystem : INode {

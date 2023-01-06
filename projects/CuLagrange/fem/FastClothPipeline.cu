@@ -30,6 +30,12 @@ typename FastClothSystem::T FastClothSystem::infNorm(zs::CudaExecutionPolicy &cu
     });
     return reduce(cudaPol, temp, thrust::maximum<T>{});
 }
+
+typename FastClothSystem::T FastClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString tag)
+{
+    return zs::sqrt(dot(pol, tag, tag)); 
+}
+
 typename FastClothSystem::T FastClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0,
                                                  const zs::SmallString tag1) {
     using namespace zs;
@@ -538,7 +544,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 });
             }
 #endif
-
+#if s_useHardPhase
             if (!success) {
                 /// @brief restore xn with xk for hard phase
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
@@ -549,6 +555,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             }
             if (!success)
                 throw std::runtime_error("collision step in initialization fails!\n");
+#endif 
             /// done collision solver
 
             if (++i == IInit)
@@ -569,100 +576,124 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     /// @note ref: Sec 4.3.2
 #if s_useChebyshevAcc
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA (int i) mutable {
-        vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); // restore yn from yk 
+        vtemp.tuple(dim_c<3>, "yn-2", i) = vtemp.pack(dim_c<3>, "yn", i);
+        vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); 
     }); 
 #endif 
-    /// optimizer
-    for (int k = 0; k != K; ++k) {
-        bool converged = false; 
-        if (k == K - 1)
-        {
-            fmt::print("\t\t\tdynamics iter reaches {}\n", k); 
-        }
-
-        for (int dynK = 0; dynK < IDyn; dynK++)
-        {
-
-            if constexpr (s_enableProfile)
-                timer.tick();
-
-            // check constraints
-            if (!projectDBC) {
-                computeBoundaryConstraints(pol);
-                auto cr = boundaryConstraintResidual(pol);
-                if (cr < s_constraint_residual) {
-                    projectDBC = true;
-                }
-                fmt::print(fg(fmt::color::alice_blue), "iteration {} cons residual: {}\n", k, cr);
-            }
-#if s_useNewtonSolver 
-            newtonDynamicsStep(pol); 
-#else 
-            gdDynamicsStep(pol); 
+#if s_useLineSearch
+    T lastEnergy = dynamicsEnergy(pol); 
+    if (alpha < alphaMin)
+        alpha = alphaMin; 
+    alpha /= alphaDecrease; 
 #endif 
-            // CHECK PN CONDITION
-            T res = infNorm(pol) / dt;
-            T cons_res = boundaryConstraintResidual(pol);
-            fmt::print("\t\t\tdynamics res: {}, targetGRes: {}\n", 
-                res, targetGRes); 
-            if (res < targetGRes && cons_res == 0) {
-                fmt::print("\t\t\tdynamics ended: substep {} iteration {}: direction residual(/dt) {}, "
-                                    "grad residual {}\n",
-                                    substep, k, res, res * dt); 
-                converged = true; 
-                break;
+
+    int maxIters = K * IDyn; 
+    int k = 0; 
+    /// optimizer
+    for (int iters = 0; iters < maxIters; ++iters) {
+        k++; 
+        bool converged = false; 
+
+        if constexpr (s_enableProfile)
+            timer.tick();
+
+        // check constraints
+        if (!projectDBC) {
+            computeBoundaryConstraints(pol);
+            auto cr = boundaryConstraintResidual(pol);
+            if (cr < s_constraint_residual) {
+                projectDBC = true;
             }
-            ZS_INFO(fmt::format("substep {} iteration {}: direction residual(/dt) {}, "
-                                "grad residual {}\n",
-                                substep, k, res, res * dt));
-            T alpha = 1.0f;
-#if !s_useNewtonSolver && s_useLineSearch
-            T E0 = dynamicsEnergy(pol);
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-                vtemp.tuple(dim_c<3>, "yn0", i) = vtemp.pack(dim_c<3>, "yn", i); 
-            });
-            T E;  
-            do {
-                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-                    vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
-                });
-                E = dynamicsEnergy(pol);     
-                if (E <= E0 + limits<T>::epsilon() * 50.0f)
-                {
-                    fmt::print("\tdynamics linesearch alpha: {}, E: {}, E0: {}\n", alpha, E, E0);   
-                    break; 
-                }
-                alpha /= 2; 
-            } while (true); 
+            fmt::print(fg(fmt::color::alice_blue), "iteration {} cons residual: {}\n", iters, cr);
+        }
+#if s_useNewtonSolver 
+        newtonDynamicsStep(pol); 
 #else 
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+        gdDynamicsStep(pol); 
+#endif 
+        // CHECK PN CONDITION
+        T res = infNorm(pol) / dt;
+        T cons_res = boundaryConstraintResidual(pol);
+#if 0
+        if (res < targetGRes && cons_res == 0) {
+            fmt::print("\t\t\tdynamics ended: substep {} iteration {}: direction residual(/dt) {}, "
+                                "grad residual {}\n",
+                                substep, iters, res, res * dt); 
+            converged = true; 
+            break;
+        }
+#endif 
+        ZS_INFO(fmt::format("substep {} iteration {}: direction residual(/dt) {}, "
+                            "grad residual {}\n",
+                            substep, iters, res, res * dt));
+#if s_useLineSearch
+        if (alpha < 1e-2f)
+            converged = true; 
+        if (k % 30 == 0)
+            fmt::print("\t\tdynamics iteration: {}, alpha: {}\n", k, alpha); 
+#if s_debugOutput
+        T gradNorm = l2Norm(pol, "grad"); 
+        T dirNorm = l2Norm(pol, "dir"); 
+        writeFile(fmt::format("../zeno_out/optimization_data/{}.csv", frameCnt), 
+            fmt::format("{},\t{},\t{}\n", E0, gradNorm, dirNorm)); 
+#endif 
+        if (!converged && iters % 8 == 0)
+        {
+            T E = dynamicsEnergy(pol);      
+            if (firstStepping || (!std::isnan(E) && E <= lastEnergy + limits<T>::epsilon() * 50.0f))
+            {
+                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+                    vtemp.tuple(dim_c<3>, "ytmp", i) = vtemp.pack(dim_c<3>, "yn", i); 
+                });
+                // fmt::print("\tfinal dynamics linesearch alpha: {}, E: {}, E0: {}\n", alpha, E, lastEnergy);   
+                lastEnergy = E; 
+                firstStepping = false; 
+            } else {
+                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+                    vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "ytmp", i); 
+                });
+                alpha *= alphaDecrease; 
+                maxIters -= (iters - 8);                  
+                iters = -1;
+                k -= 8; 
+                firstStepping = true; 
+                continue; 
+            }
+        }
+#else 
+        alpha = 0.1f; 
+#endif  
+        if (!converged)
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); 
                 vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
             });
-#endif 
 #if s_useChebyshevAcc
-            int iters = k * IDyn + dynK;  // TODO: k * IDyn + kd, after using IDyn  
-            if (iters == 0)
-            {
-                chebyOmega = 1.0f; // omega_{k}
-            } else if (iters == 1){
-                chebyOmega = 2.0f / (2.0f - chebyRho * chebyRho); 
-            } else {
-                chebyOmega = 4.0f / (4.0f - chebyRho * chebyRho * chebyOmega); 
-            }
-            if (iters > 0)
-            {
-                // fmt::print("\t\tChebyshev acceleration: chebyOmega: {}\n", (float)chebyOmega); 
-                pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), omega = chebyOmega] __device__ (int vi) mutable {
-                    vtemp.tuple(dim_c<3>, "yn", vi) = omega * vtemp.pack(dim_c<3>, "yn", vi) + 
-                        (1.0f - omega) * vtemp.pack(dim_c<3>, "yn-2", vi); 
-                });  
-            }
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-                vtemp.tuple(dim_c<3>, "yn-2", i) = vtemp.pack(dim_c<3>, "yn-1", i); 
-                vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i);
-            });      
-#endif   
+        if (iters == 0)
+        {
+            chebyOmega = 1.0f; // omega_{k}
+        } else if (iters == 1){
+            chebyOmega = 2.0f / (2.0f - chebyRho * chebyRho); 
+        } else {
+            chebyOmega = 4.0f / (4.0f - chebyRho * chebyRho * chebyOmega); 
         }
+        if (!converged && iters > 0)
+        {
+            // fmt::print("\t\tChebyshev acceleration: chebyOmega: {}\n", (float)chebyOmega); 
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), omega = chebyOmega] __device__ (int vi) mutable {
+                vtemp.tuple(dim_c<3>, "yn", vi) = omega * vtemp.pack(dim_c<3>, "yn", vi) + 
+                    (1.0f - omega) * vtemp.pack(dim_c<3>, "yn-2", vi); 
+            });  
+        }
+        if (!converged)
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple(dim_c<3>, "yn-2", i) = vtemp.pack(dim_c<3>, "yn-1", i); 
+            });  
+#endif  
+
+        if (!converged && (k % IDyn != 0))
+            continue; 
+        
         /// start collision solver
         ///
         initialStepping(pol);
@@ -706,6 +737,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             collisionTime[0] += timer.elapsed();
             collisionTime[1] += timer.elapsed();
         }
+#if s_useHardPhase
         if (!success) {
             /// @brief restore xn with xk for hard phase
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
@@ -741,6 +773,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if (!success) {
             throw std::runtime_error("collision step failure!\n");
         }
+#endif 
         /// done collision solver
         if (converged)
             break; 
@@ -773,6 +806,9 @@ struct StepClothSystem : INode {
         }
         // update velocity and positions
         A->writebackPositionsAndVelocities(cudaPol);
+#if s_debugOutput
+        A->frameCnt++; 
+#endif 
 
         if constexpr (FastClothSystem::s_enableProfile) {
             auto str =

@@ -558,7 +558,6 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
                 E -= yn.dot(vtemp.pack(dim_c<3>, "extf", vi)) * dt * dt; 
             reduce_to(vi, n, E, energy[0]);
     }); 
-    T inertialE = temp.getVal(); 
 
     // constraint energy 
     if (!projectDBC)
@@ -570,9 +569,6 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
                 auto cons = vtemp.pack(dim_c<3>, "cons", vi); 
                 reduce_to(i, n, 0.5f * kappa * w * cons.l2NormSqr(), energy[0]);
             }); 
-    T constraintE = temp.getVal() - inertialE; 
-    fmt::print("\t\tdynamics elasticE: {}, inertialE: {}, constraintE: {}, E: {}\n", 
-        elasticE, inertialE, constraintE, temp.getVal() + elasticE); 
     return temp.getVal() + elasticE; 
 }
 } // namespace zeno
