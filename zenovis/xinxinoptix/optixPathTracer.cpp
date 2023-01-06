@@ -1570,8 +1570,11 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
-void update_hdr_sky(float sky_rot, float sky_strength) {
+void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
     state.params.sky_rot = sky_rot;
+    state.params.sky_rot_x = sky_rot3d[0];
+    state.params.sky_rot_y = sky_rot3d[1];
+    state.params.sky_rot_z = sky_rot3d[2];
     state.params.sky_strength = sky_strength;
 }
 
