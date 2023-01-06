@@ -106,6 +106,7 @@ private:
     QTimer* m_pauseRenderDally;
 
 public:
+    bool simpleRenderChecked;
     bool updateLightOnce;
 };
 

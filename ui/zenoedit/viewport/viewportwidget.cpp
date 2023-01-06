@@ -481,6 +481,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
     , m_pauseRenderDally(new QTimer)
+    , simpleRenderChecked(false)
 {
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -501,14 +502,18 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         scene->drawOptions->simpleRender = false;
         scene->drawOptions->needRefresh = true;
         m_pauseRenderDally->stop();
+        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
     });
 }
 
 void ViewportWidget::setSimpleRenderOption() {
+    if(simpleRenderChecked)
+        return;
+
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
     m_pauseRenderDally->stop();
-    m_pauseRenderDally->start(1000);
+    m_pauseRenderDally->start(4000);
 }
 
 ViewportWidget::~ViewportWidget()
