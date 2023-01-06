@@ -195,41 +195,16 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
 
 void ZenoMainWindow::loadSavedLayout()
 {
+	//default layout
+    QJsonObject obj = readDefaultLayout();
+    QStringList lst = obj.keys();
+    initCustomLayoutAction(lst, true);
+	//custom layout
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
-    QStringList lst = settings.childGroups();
-    if (!lst.isEmpty())
-    {
-        initCustomLayoutAction(lst);
-    }
-    else 
-	{
-        QString filename = ":/templates/DefaultLayout.txt";
-        QFile file(filename);
-        bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-        if (!ret) {
-            throw std::runtime_error(QString("file: [%1] not found").arg(filename).toStdString());
-        }
-        QByteArray byteArray = file.readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(byteArray);
-        if (doc.isObject()) {
-            QJsonObject obj = doc.object();
-            QStringList list;
-            for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++)
-			{
-                QString name = it.key();
-                list << name;
-                QJsonDocument layoutDoc(it.value().toObject());
-                QString layoutInfo = layoutDoc.toJson();
-                QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                settings.beginGroup("layout");
-                settings.beginGroup(name);
-                settings.setValue("content", layoutInfo);
-                settings.endGroup();
-                settings.endGroup();                
-			}
-            initCustomLayoutAction(list);
-        }
+    lst = settings.childGroups();
+    if (!lst.isEmpty()) {
+        initCustomLayoutAction(lst, false);
     }
 }
 
@@ -258,8 +233,9 @@ void ZenoMainWindow::saveDockLayout()
         settings.beginGroup(name);
         settings.setValue("content", layoutInfo);
         settings.endGroup();
-        initCustomLayoutAction(settings.childGroups());
         settings.endGroup();
+        m_ui->menuCustom_Layout->clear();
+        loadSavedLayout();
     }
 }
 
@@ -369,36 +345,84 @@ PANEL_TYPE ZenoMainWindow::title2Type(const QString &title)
     return type;
 }
 
-void ZenoMainWindow::initCustomLayoutAction(const QStringList &list) 
+void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) 
 {
-    m_ui->menuCustom_Layout->clear();
+    if (!isDefault) {
+        m_ui->menuCustom_Layout->addSeparator();
+	}
     for (QString name : list) {
+		if (name == g_latest_layout)
+		{
+			continue;
+		}
         QAction *pCustomLayout_ = new QAction(name);
         connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
-			loadDockLayout(name);
+			loadDockLayout(name, isDefault);
 		});
         m_ui->menuCustom_Layout->addAction(pCustomLayout_);
     }
 }
 
-void ZenoMainWindow::loadDockLayout(QString name) 
+void ZenoMainWindow::loadDockLayout(QString name, bool isDefault) 
 {
-    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-    settings.beginGroup("layout");
-    if (!settings.childGroups().contains(name)) {
-        name = "Default";
-	}
-    settings.beginGroup(name);
-    if (settings.allKeys().indexOf("content") != -1) {
-        QString content = settings.value("content").toString();
+    QString content;
+    if (isDefault) 
+	{
+        QJsonObject obj = readDefaultLayout();
+        for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++) 
+		{
+            if (it.key() == name) 
+			{
+                QJsonObject layout = it.value().toObject();
+                QJsonDocument doc(layout);
+                content = doc.toJson();
+                break;
+            }
+        }
+    } 
+	else 
+	{
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+        settings.beginGroup("layout");
+        settings.beginGroup(name);
+        if (settings.allKeys().indexOf("content") != -1) 
+		{
+            content = settings.value("content").toString();
+            settings.endGroup();
+            settings.endGroup();
+        } 
+		else
+		{
+            loadDockLayout("Default", true);
+            return;
+        }
+    }
+    if (!content.isEmpty()) 
+	{
         PtrLayoutNode root = readLayout(content);
         resetDocks(root);
-    } else {
+    } 
+	else 
+	{
         QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
         msg.exec();
     }
-    settings.endGroup();
-    settings.endGroup();
+}
+
+QJsonObject ZenoMainWindow::readDefaultLayout() 
+{
+    QString filename = ":/templates/DefaultLayout.txt";
+    QFile file(filename);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        return QJsonObject();
+    }
+    QByteArray byteArray = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(byteArray);
+    if (doc.isObject()) {
+        return doc.object();
+    }
+    return QJsonObject();
 }
 
 void ZenoMainWindow::initDocks()
@@ -433,7 +457,7 @@ void ZenoMainWindow::initDocks()
     //paramDock->hide();
     logDock->hide();*/
 
-	loadDockLayout(g_latest_layout);
+	loadDockLayout(g_latest_layout, false);
     initTimelineDock();
 }
 
