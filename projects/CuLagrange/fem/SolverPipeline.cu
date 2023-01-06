@@ -831,7 +831,7 @@ void IPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString
     constexpr execspace_e space = execspace_e::cuda;
     // precondition
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-        vtemp.template tuple<3>(dstTag, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcTag, vi);
+        vtemp.tuple(dim_c<3>, dstTag, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcTag, vi);
     });
 }
 
@@ -1976,7 +1976,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
                     auto k = bedges("k", i);
                     auto ra = bedges("ra", i);
                     auto theta = dihedral_angle(x0, x1, x2, x3);
-                    T E = zs::sqr(theta - ra) * e / h * dt * dt;
+                    T E = k * zs::sqr(theta - ra) * e / h * dt * dt;
                     reduce_to(i, n, E, es[i / 32]);
                 });
             Es.push_back(reduce(pol, es));
@@ -2418,8 +2418,10 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), dirOffset = cgtemp.getPropertyOffset("dir"),
                                  pOffset = cgtemp.getPropertyOffset("p"), rOffset = cgtemp.getPropertyOffset("r"),
                                  tempOffset = cgtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
-            cgtemp.tuple<3>(dirOffset, vi) = cgtemp.pack<3>(dirOffset, vi) + alpha * cgtemp.pack<3>(pOffset, vi);
-            cgtemp.tuple<3>(rOffset, vi) = cgtemp.pack<3>(rOffset, vi) - alpha * cgtemp.pack<3>(tempOffset, vi);
+            cgtemp.tuple(dim_c<3>, dirOffset, vi) =
+                cgtemp.pack(dim_c<3>, dirOffset, vi) + alpha * cgtemp.pack<3>(pOffset, vi);
+            cgtemp.tuple(dim_c<3>, rOffset, vi) =
+                cgtemp.pack(dim_c<3>, rOffset, vi) - alpha * cgtemp.pack<3>(tempOffset, vi);
         });
 
         precondition(cudaPol, true_c, "r", "q");

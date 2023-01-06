@@ -450,8 +450,9 @@ void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
 
             // rotate and project
             auto H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) + dyadic_prod(localGrad, localGrad)) * k *
-                     2 * e / h * dt2;
+                     2 * e / h;
             make_pd(H);
+            H *= dt2;
 
             rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
             btemp.tuple(dim_c<12 * 12>, 0, i) = H;
