@@ -112,6 +112,30 @@ __forceinline__ __device__ int atomicAggInc(int *ctr) noexcept {
 }
 #define USE_COALESCED 1
 
+void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type) {
+    // exclSes, exclSts, stInds, seInds, seBvh
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    exclSes.reset(0);
+    exclSts.reset(0);
+    exclBouSes.reset(0);
+    exclBouSts.reset(0);
+
+    Vector<int> cnt{vtemp.get_allocator(), 1};
+    cnt.setVal(0);
+
+    findCollisionConstraints(pol, dHat, xi); // csPT, csEE
+    // exclSes, exclSts, exclBouSes, exclBouSts
+
+    zeno::log_info("{} self et intersections\n", cnt.getVal());
+
+    if (coEdges) {
+        cnt.setVal(0);
+
+        zeno::log_info("{} boundary et intersections\n", cnt.getVal());
+    }
+    return;
+}
 void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
     //exclSes, exclSts, stInds, seInds, seBvh
     using namespace zs;

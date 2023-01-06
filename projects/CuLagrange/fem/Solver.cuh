@@ -13,7 +13,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#if 1
 #include "SolverUtils.cuh"
+#endif
 
 namespace zeno {
 
@@ -174,6 +176,7 @@ struct IPCSystem : IObject {
         return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
     }
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
