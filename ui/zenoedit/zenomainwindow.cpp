@@ -101,16 +101,6 @@ void ZenoMainWindow::initMenu()
     actionGroup->addAction(m_ui->actionSolid);
     actionGroup->addAction(m_ui->actionOptix);
 
-    //connect(m_ui->action_New, SIGNAL(triggered()), this, SLOT(onNewFile()));
-    //connect(m_ui->action_Open, SIGNAL(triggered()), this, SLOT(openFileDialog()));
-    //connect(m_ui->action_Save, SIGNAL(triggered()), this, SLOT(save()));
-    //connect(m_ui->action_Save_As, SIGNAL(triggered()), this, SLOT(saveAs()));
-    //connect(m_ui->action_Import, SIGNAL(triggered()), this, SLOT(importGraph()));
-    //connect(m_ui->actionExportGraph, SIGNAL(triggered()), this, SLOT(exportGraph()));
-    //connect(m_ui->action_Close, SIGNAL(triggered()), this, SLOT(saveQuit()));
-    //connect(m_ui->actionSave_Layout, SIGNAL(triggered()), this, SLOT(saveDockLayout()));
-    //connect(m_ui->actionEnglish_Chinese, SIGNAL(triggered(bool)), this, SLOT(onLangChanged(bool)));
-
     m_ui->menubar->setProperty("cssClass", "mainWin");
 
     //check user saved layout.

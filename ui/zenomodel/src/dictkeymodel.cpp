@@ -238,6 +238,7 @@ bool DictKeyModel::removeColumns(int column, int count, const QModelIndex& paren
 bool DictKeyModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
                   const QModelIndex &destinationParent, int destinationChild)
 {
+    //only support simple move up/move down, so the actual movement is swaping the two elements.
     beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild);
     _DictItem dstItem = m_items[destinationChild];
     m_items[destinationChild] = m_items[sourceRow];

@@ -80,6 +80,8 @@ public slots:
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+
+    void onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
 
 protected:
@@ -111,6 +113,9 @@ protected:
 
 private:
     void _drawBorderWangStyle(QPainter* painter);
+    ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
+    bool removeSocketLayout(bool bInput, const QString& sockName);
+
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     QGraphicsItem* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
@@ -121,9 +126,13 @@ private:
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
 
+#if 0
     FuckQMap<QString, ZSocketLayout*> m_inSockets;
+#endif
+    QVector<ZSocketLayout*> m_inSockets;
+
     FuckQMap<QString, _param_ctrl> m_params;
-    FuckQMap<QString, ZSocketLayout*> m_outSockets;
+    QVector<ZSocketLayout*> m_outSockets;
 
     ZSimpleTextItem* m_NameItem;
     ZenoMinStatusBtnWidget* m_pStatusWidgets;

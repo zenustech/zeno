@@ -460,7 +460,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 {
                     const PARAM_INFO& param = params[name];
                     item.nodeParams->setAddParam(
-                                PARAM_INPUT,
+                                PARAM_PARAM,
                                 name,
                                 param.typeDesc,
                                 param.value,

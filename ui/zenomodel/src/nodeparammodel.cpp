@@ -189,7 +189,6 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         pItem->m_value = inSocket.info.defaultValue;
         pItem->m_type = inSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)inSocket.info.sockProp;
-        initDictSocket(pItem);
 
         // init control
         const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -210,6 +209,9 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
         m_inputs->appendRow(pItem);
+
+        //if current item is a dict socket, init dict sockets after new item insered, and then get the valid index to init dict model.
+        initDictSocket(pItem);
     }
 }
 
@@ -253,8 +255,8 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_value = outSocket.info.defaultValue;
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
-        initDictSocket(pItem);
         m_outputs->appendRow(pItem);
+        initDictSocket(pItem);
     }
 }
 
@@ -354,10 +356,11 @@ void NodeParamModel::setAddParam(
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
-            initDictSocket(pItem);
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
             m_inputs->appendRow(pItem);
+
+            initDictSocket(pItem);
         }
     }
     else if (PARAM_PARAM == cls)
@@ -385,10 +388,11 @@ void NodeParamModel::setAddParam(
             pItem->m_sockProp = prop;
             pItem->m_type = type;
             pItem->m_ctrl = ctrl;
-            initDictSocket(pItem);
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
             m_outputs->appendRow(pItem);
+
+            initDictSocket(pItem);
         }
     }
 }

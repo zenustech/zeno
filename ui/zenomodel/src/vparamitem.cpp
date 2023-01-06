@@ -104,7 +104,7 @@ VParamItem::VParamItem(const VParamItem& other)
     , m_value(other.m_value)
     , m_ctrl(other.m_ctrl)
     , m_sockProp(other.m_sockProp)
-    , m_links(other.m_links)
+    /*, m_links(other.m_links)   link cannot be clone directly.*/
     , m_uuid(other.m_uuid)
     , m_proxySlot(this)
 {
@@ -125,7 +125,7 @@ QVariant VParamItem::data(int role) const
 {
     switch (role)
     {
-    case Qt::DisplayRole: return QStandardItem::data(role);
+    case Qt::DisplayRole:// return QStandardItem::data(role);
     case Qt::EditRole:
     case ROLE_VPARAM_NAME:  return m_name;
     case ROLE_VPARAM_TYPE:  return vType;
@@ -234,6 +234,7 @@ void VParamItem::setData(const QVariant& value, int role)
                 pModel->setData(m_index, value, role);
             }
             m_name = value.toString();
+            //QStandardItem::setData(value, Qt::DisplayRole); //will emit signal, take care!
             break;
         }
         case ROLE_PARAM_CTRL:
@@ -371,6 +372,28 @@ QStandardItem* VParamItem::clone() const
         pItem->appendRow(newItem);
     }
     return pItem;
+}
+
+void VParamItem::cloneFrom(VParamItem* pOther)
+{
+    if (!pOther)
+        return;
+
+    m_index = pOther->m_index;
+    m_name = pOther->m_name;
+    m_type = pOther->m_type;
+    m_ctrl = pOther->m_ctrl;
+
+    vType = pOther->vType;
+    m_tempInfo = pOther->m_tempInfo;
+    m_links = pOther->m_links;
+    m_sockProp = pOther->m_sockProp;
+
+    m_uuid = pOther->m_uuid;
+    m_customData = pOther->m_customData;
+
+    setData(m_name, Qt::DisplayRole);
+    //todo: data
 }
 
 void VParamItem::mapCoreParam(const QPersistentModelIndex& idx)

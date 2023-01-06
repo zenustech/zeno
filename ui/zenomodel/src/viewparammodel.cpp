@@ -165,7 +165,7 @@ QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &corePa
 
 QMimeData *ViewParamModel::mimeData(const QModelIndexList &indexes) const
 {
-    QMimeData *mimeD = QAbstractItemModel::mimeData(indexes);
+    QMimeData* mimeD = new QMimeData();// QAbstractItemModel::mimeData(indexes);
     if (indexes.size() > 0) {
         QModelIndex index = indexes.at(0);
         VParamItem *node = (VParamItem *)itemFromIndex(index);
@@ -251,10 +251,10 @@ void ViewParamModel::arrangeOrder(const QStringList& inputKeys, const QStringLis
 
 bool ViewParamModel::moveRows(
         const QModelIndex& sourceParent,
-        int sourceRow,
+        int srcRow,
         int count,
         const QModelIndex& destinationParent,
-        int destinationChild)
+        int dstRow)
 {
     if (count != 1)
         return false;       //todo: multiline movement.
@@ -263,7 +263,7 @@ bool ViewParamModel::moveRows(
     if (!srcParent)
         return false;
 
-    if (!srcParent->child(sourceRow))
+    if (!srcParent->child(srcRow))
         return false;
 
     QStandardItem *dstParent = itemFromIndex(destinationParent);
@@ -271,15 +271,48 @@ bool ViewParamModel::moveRows(
     if (!dstParent || srcParent != dstParent)
         return false;
 
-    if (srcParent == dstParent && sourceRow == destinationChild && count == 1)
+    if (srcParent == dstParent && srcRow == dstRow && count == 1)
         return false;
 
-    beginMoveRows(sourceParent, sourceRow, sourceRow + count, destinationParent, destinationChild);
+    QStandardItem* srcItem = nullptr;
+
+    QPersistentModelIndex sourceRowIdx = index(srcRow, 0, sourceParent);
+
+    beginMoveRows(sourceParent, srcRow, srcRow, destinationParent, dstRow);
     {
         BlockSignalScope scope(this);
-        QStandardItem *srcItem = srcParent->takeChild(sourceRow);
-        srcParent->removeRow(sourceRow);
-        dstParent->insertRow(destinationChild, srcItem);
+
+        //cannot insert and then remove item, because the persist indice will be destroyed.
+        /*
+            QStandardItem* srcItem = srcParent->takeChild(srcRow);
+            dstParent->insertRow(dstRow, srcItem);
+            srcParent->removeRow(srcRow + 1);
+        */
+        VParamItem* pSrcItem = static_cast<VParamItem*>(srcParent->child(srcRow));
+        VParamItem* pSrcItemClone = new VParamItem(VPARAM_PARAM, pSrcItem->m_name);
+        pSrcItemClone->cloneFrom(pSrcItem);
+        if (srcRow < dstRow)
+        {
+            for (int r = srcRow + 1; r <= dstRow; r++)
+            {
+                //copy data from data[r] to data[r-1].
+                VParamItem* pItem_r = static_cast<VParamItem*>(srcParent->child(r));
+                VParamItem* pItem_r_minus_1 = static_cast<VParamItem *>(srcParent->child(r - 1));
+                pItem_r_minus_1->cloneFrom(pItem_r);
+            }
+        }
+        else
+        {
+            for (int r = srcRow - 1; r >= dstRow; r--)
+            {
+                //copy data from row r to row r + 1;
+                VParamItem* pItem_r = static_cast<VParamItem*>(srcParent->child(r));
+                VParamItem* pItem_r_plus_1 = static_cast<VParamItem *>(srcParent->child(r + 1));
+                pItem_r_plus_1->cloneFrom(pItem_r);
+            }
+        }
+        VParamItem *pDstItem = static_cast<VParamItem *>(srcParent->child(dstRow));
+        pDstItem->cloneFrom(pSrcItemClone);
     }
     endMoveRows();
     return true;

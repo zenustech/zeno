@@ -282,14 +282,21 @@ void ZGraphicsLayout::moveUp(int i)
     m_items[i] = tmp;
 }
 
-void ZGraphicsLayout::moveItem(int i, int j)
+void ZGraphicsLayout::moveItem(int start, int destRow)
 {
-    if (i < 0 || j < 0 || i >= m_items.size() || j >= m_items.size() || i == j)
+    if (start < 0 || destRow < 0 || start >= m_items.size() || destRow >= m_items.size() || start == destRow)
         return;
 
-    auto tmp = m_items[i];
-    m_items[i] = m_items[j];
-    m_items[j] = tmp;
+    if (start < destRow)
+    {
+        m_items.insert(destRow, m_items[start]);
+        m_items.removeAt(start);
+    }
+    else
+    {
+        m_items.insert(destRow, m_items[start]);
+        m_items.removeAt(start + 1);
+    }
 }
 
 void ZGraphicsLayout::removeElement(int i)
