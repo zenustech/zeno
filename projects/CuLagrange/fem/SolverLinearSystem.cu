@@ -624,6 +624,19 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                     hess4.inds[offset + ei] = inds;
                 });
         }
+        if (primHandle.hasBendingConstraints()) {
+            auto &btemp = primHandle.btemp;
+            auto &bedges = *primHandle.bendingEdgesPtr;
+            auto offset = hess4.increaseCount(bedges.size());
+            pol(zs::range(bedges.size()),
+                [btemp = proxy<space>(btemp), bedges = proxy<space>({}, bedges), hess4 = proxy<space>(hess4),
+                 vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                    auto H = btemp.pack(dim_c<12, 12>, 0, ei);
+                    auto inds = bedges.pack(dim_c<4>, "inds", ei).reinterpret_bits(int_c) + vOffset;
+                    hess4.hess[offset + ei] = H;
+                    hess4.inds[offset + ei] = inds;
+                });
+        }
     }
     for (auto &primHandle : auxPrims) {
         auto &eles = primHandle.getEles();

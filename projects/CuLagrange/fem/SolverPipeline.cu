@@ -2595,6 +2595,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
         computeInertialAndGravityPotentialGradient(pol);
         computeElasticGradientAndHessian(pol, "grad");
+        computeBendingGradientAndHessian(pol, "grad");
         if (enableGround)
             computeBoundaryBarrierGradientAndHessian(pol);
         if (enableContact) {
