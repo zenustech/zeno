@@ -141,8 +141,9 @@ private:
     void screenShoot();
     void setActionIcon(QAction *action);
     PANEL_TYPE title2Type(const QString &title);
-    void initCustomLayoutAction(const QStringList &list);
-    void loadDockLayout(QString name);
+    void initCustomLayoutAction(const QStringList &list, bool isDefault = false);
+    void loadDockLayout(QString name, bool isDefault = false);
+    QJsonObject readDefaultLayout();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
