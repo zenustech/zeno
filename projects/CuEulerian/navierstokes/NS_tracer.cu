@@ -371,9 +371,10 @@ struct ZSTracerAdvectDiffuse : INode {
                         spgv(trcDstOffset, blockno, cellno) = trc_self + diff_term * dt;
                     }
                 });
+            pol.shmem(0);
+
             update_cur(NSGrid, tag);
         }
-        pol.shmem(0);
     }
 
     void clampDensity(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float clampBelow, ZenoSparseGrid *NSGrid) {
