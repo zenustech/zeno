@@ -37,6 +37,17 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     QDir dir(m_recordInfo.record_path);
     ZASSERT_EXIT(dir.exists());
     dir.mkdir("P");
+    // remove old image
+    {
+        QString dir_path = m_recordInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        fileList.sort();
+        for (auto i = 0; i < fileList.size(); i++) {
+            qDir.remove(fileList.at(i));
+        }
+    }
 
     if (m_recordInfo.bRecordRun)
     {
@@ -60,9 +71,7 @@ void RecordVideoMgr::finishRecord()
         QString dir_path = m_recordInfo.record_path + "/P/";
         QDir qDir = QDir(dir_path);
         qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files);
-        fileList.removeOne(".");
-        fileList.removeOne("..");
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
         fileList.sort();
         for (auto i = 0; i < fileList.size(); i++) {
             auto new_name = dir_path + zeno::format("{:07d}.jpg", i).c_str();
