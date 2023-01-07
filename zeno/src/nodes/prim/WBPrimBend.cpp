@@ -251,20 +251,22 @@ ZENDEFNODE(MatTranspose,
 struct ParameterizeLine : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        prim->lines.add_attr<float>("parameterization");
-        float total = 0;
-        std::vector<float> linesLen(prim->lines.size());
-        for (size_t i = 0; i < prim->lines.size(); i++) {
-            auto const& ind = prim->lines[i];
-            auto a = prim->verts[ind[0]];
-            auto b = prim->verts[ind[1]];
-            auto area = length(b - a);
-            total += area;
-            linesLen[i] = total;
-        }
-        auto inv_total = 1 / total;
-        for (size_t i=0; i<prim->lines.size();i++) {
-            prim->lines.attr<float>("parameterization")[i] = linesLen[i] * inv_total;
+        if(! prim->lines.has_attr("parameterization")) {
+            prim->lines.add_attr<float>("parameterization");
+            float total = 0;
+            std::vector<float> linesLen(prim->lines.size());
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                auto const &ind = prim->lines[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto area = length(b - a);
+                total += area;
+                linesLen[i] = total;
+            }
+            auto inv_total = 1 / total;
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                prim->lines.attr<float>("parameterization")[i] = linesLen[i] * inv_total;
+            }
         }
         set_output("prim", std::move(prim));
     }
