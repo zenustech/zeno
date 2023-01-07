@@ -74,12 +74,12 @@ struct ZSTracerAdvectDiffuse : INode {
                         spgv.value(trcSrcTag, blockno, cellno) + (spgv.value(trcTag, blockno, cellno) - trc_sl) / 2.f;
 
                     // clamp
-                    auto wcoord_src = wcoord - u_adv * dt;
-                    auto arena = spgv.wArena(wcoord_src);
+                    auto icoord_src = spgv.worldToIndex(wcoord - u_adv * dt);
+                    auto arena = spgv.iArena(icoord_src);
                     auto sl_mi = arena.minimum(trcTag);
                     auto sl_ma = arena.maximum(trcTag);
                     if (trc_mc > sl_ma || trc_mc < sl_mi) {
-                        trc_mc = spgv.wSample(trcTag, wcoord_src);
+                        trc_mc = arena.isample(trcTag, 0, spgv._background);
                     }
 
                     spgv(trcDstTag, blockno, cellno) = trc_mc;
@@ -121,16 +121,16 @@ struct ZSTracerAdvectDiffuse : INode {
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
-                    auto wcoord_src = wcoord - u_adv * dt;
+                    auto icoord_src = spgv.worldToIndex(wcoord - u_adv * dt);
+                    auto arena = spgv.iArena(icoord_src);
 
-                    float trc_sl = spgv.wSample(trcSrcTag, wcoord_src);
+                    float trc_sl = arena.isample(trcSrcTag, 0, spgv._background);
 
                     // clamp
-                    auto arena = spgv.wArena(wcoord_src);
                     auto sl_mi = arena.minimum(trcTag);
                     auto sl_ma = arena.maximum(trcTag);
                     if (trc_sl > sl_ma || trc_sl < sl_mi) {
-                        trc_sl = spgv.wSample(trcTag, wcoord_src);
+                        trc_sl = arena.isample(trcTag, 0, spgv._background);
                     }
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;

@@ -315,12 +315,12 @@ struct ZSNSAdvectDiffuse : INode {
                                      (spgv.value(vTag, ch, blockno, cellno) - u_sl) / 2.f;
 
                         // clamp
-                        auto wcoord_face_src = wcoord_face - u_adv * dt;
-                        auto arena = spgv.wArena(wcoord_face_src, ch);
+                        auto icoord_face_src = spgv.worldToIndex(wcoord_face - u_adv * dt);
+                        auto arena = spgv.iArena(icoord_face_src, ch);
                         auto sl_mi = arena.minimum(vTag, ch);
                         auto sl_ma = arena.maximum(vTag, ch);
                         if (u_mc > sl_ma || u_mc < sl_mi) {
-                            u_mc = spgv.wStaggeredSample(vTag, ch, wcoord_face_src);
+                            u_mc = arena.isample(vTag, ch, spgv._background);
                         }
 
                         spgv(vDstTag, ch, blockno, cellno) = u_mc;
@@ -370,16 +370,16 @@ struct ZSNSAdvectDiffuse : INode {
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
-                        auto wcoord_face_src = wcoord_face - u_adv * dt;
+                        auto icoord_face_src = spgv.worldToIndex(wcoord_face - u_adv * dt);
+                        auto arena = spgv.iArena(icoord_face_src, ch);
 
-                        float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face_src);
+                        float u_sl = arena.isample(vSrcTag, ch, spgv._background);
 
                         // clamp
-                        auto arena = spgv.wArena(wcoord_face_src, ch);
                         auto sl_mi = arena.minimum(vTag, ch);
                         auto sl_ma = arena.maximum(vTag, ch);
                         if (u_sl > sl_ma || u_sl < sl_mi) {
-                            u_sl = spgv.wStaggeredSample(vTag, ch, wcoord_face_src);
+                            u_sl = arena.isample(vTag, ch, spgv._background);
                         }
 
                         spgv(vDstTag, ch, blockno, cellno) = u_sl;
