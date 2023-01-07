@@ -213,6 +213,22 @@ ZENDEFNODE(ZSNavierStokesDt, {/* inputs: */
                               /* category: */
                               {"Eulerian"}});
 
+struct ZSAdvectionScheme : INode {
+    void apply() override {
+        auto scheme = get_input2<std::string>("Scheme");
+        set_output("Scheme", std::make_shared<StringObject>(scheme));
+    }
+};
+
+ZENDEFNODE(ZSAdvectionScheme, {/* inputs: */
+                               {{"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"}},
+                               /* outputs: */
+                               {"Scheme"},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
+
 struct ZSNSAdvectDiffuse : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
