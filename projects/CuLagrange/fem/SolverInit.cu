@@ -349,7 +349,6 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"BCsoft", 1}, // mark if this dof is a soft boundary vert or not
                       {"ws", 1},     // also as constraint jacobian
                       {"cons", 3},
-                      {"lambda", 3},
 
                       {"dir", 3},
                       {"xn", 3},
@@ -474,7 +473,6 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
             vtemp("ws", voffset + i) = asBoundary || BCorder == 3 ? avgNodeMass * augLagCoeff : zs::sqrt(verts("m", i));
             vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
-            vtemp.tuple<3>("lambda", voffset + i) = vec3::zeros();
             vtemp.tuple<3>("xn", voffset + i) = x;
             vtemp.tuple<3>("xhat", voffset + i) = x;
             if (BCorder > 0) {
@@ -508,7 +506,6 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
                     vtemp.tuple<3>("xtilde", coOffset + i) = newX;
-                    vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
                     vtemp.tuple<3>("xn", coOffset + i) = x;
                     vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
                     // vtemp.tuple<3>("xt", coOffset + i) = x;

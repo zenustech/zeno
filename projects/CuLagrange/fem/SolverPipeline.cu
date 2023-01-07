@@ -2496,11 +2496,12 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
             // already updated during "xn" update
             auto cons = vtemp.pack(dim_c<3>, "cons", vi);
             auto w = vtemp("ws", vi);
-            auto lambda = vtemp.pack<3>("lambda", vi);
+            // auto lambda = vtemp.pack<3>("lambda", vi);
             int BCfixed = vtemp("BCfixed", vi);
             T E = 0;
             if (!BCfixed)
-                E = (T)(-lambda.dot(cons) * w + 0.5 * w * boundaryKappa * cons.l2NormSqr());
+                // E = (T)(-lambda.dot(cons) * w + 0.5 * w * boundaryKappa * cons.l2NormSqr());
+                E = (T)(0.5 * w * boundaryKappa * cons.l2NormSqr());
             reduce_to(vi, n, E, es[vi / 32]);
         });
         Es.push_back(reduce(pol, es));
@@ -2754,8 +2755,8 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
         // GRAD, HESS, P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple<9>("P", i) = mat3::zeros();
-            vtemp.tuple<3>("grad", i) = vec3::zeros();
+            vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
+            vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
         });
         computeInertialAndGravityPotentialGradient(pol);
         computeElasticGradientAndHessian(pol, "grad");
@@ -2782,7 +2783,8 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                     auto cons = vtemp.pack<3>("cons", i);
                     auto w = vtemp("ws", i);
                     vtemp.tuple<3>("grad", i) =
-                        vtemp.pack<3>("grad", i) + w * vtemp.pack<3>("lambda", i) - boundaryKappa * w * cons;
+                        // vtemp.pack<3>("grad", i) + w * vtemp.pack<3>("lambda", i) - boundaryKappa * w * cons;
+                        vtemp.pack<3>("grad", i) - boundaryKappa * w * cons;
                     int BCfixed = vtemp("BCfixed", i);
                     if (!BCfixed) {
                         int BCorder = vtemp("BCorder", i);
@@ -2843,7 +2845,8 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple<3>("xn", i) = vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
         });
-        // UPDATE RULE
+// UPDATE RULE
+#if 0
         cons_res = constraintResidual(pol);
         if (res * dt < updateZoneTol && cons_res > consTol) {
             if (boundaryKappa < kappaMax) {
@@ -2865,6 +2868,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 // getchar();
             }
         }
+#endif
     }
 }
 
