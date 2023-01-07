@@ -129,7 +129,9 @@ struct IPCSystem : IObject {
     };
 
     bool hasBoundary() const noexcept {
-        return coVerts != nullptr;
+        if (coVerts != nullptr && coEdges != nullptr && coEles != nullptr)
+            return (coVerts->size() > 0) && (coEdges->size() > 0) && (coEles->size() > 0);
+        return false;
     }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);

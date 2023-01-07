@@ -142,7 +142,7 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std
     }
     zeno::log_info("after self proximity check, <{} pt, {} ee> pairs excluded\n", ncsPT.getVal(), ncsEE.getVal());
 
-    if (coEdges) {
+    if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
@@ -202,7 +202,7 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
     });
     zeno::log_info("{} self et intersections\n", cnt.getVal());
 
-    if (coEdges) {
+    if (hasBoundary()) {
         cnt.setVal(0);
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
@@ -300,16 +300,15 @@ void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T
         findCollisionConstraintsImpl(pol, dHat, xi, false);
     }
 
-    if (coVerts)
-        if (coVerts->size()) {
-            bvs.resize(coEles->size());
-            retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
-            bouStBvh.refit(pol, bvs);
-            bvs.resize(coEdges->size());
-            retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
-            bouSeBvh.refit(pol, bvs);
-            findCollisionConstraintsImpl(pol, dHat, xi, true);
-        }
+    if (hasBoundary()) {
+        bvs.resize(coEles->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+        bouStBvh.refit(pol, bvs);
+        bvs.resize(coEdges->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+        bouSeBvh.refit(pol, bvs);
+        findCollisionConstraintsImpl(pol, dHat, xi, true);
+    }
     auto [npt, nee] = getCollisionCnts();
 #if PROFILE_IPC
     timer.tock(fmt::format("dcd broad phase [pt, ee]({}, {})", npt, nee));
@@ -751,20 +750,20 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
     checkSize(ncsPT, "PT");
     checkSize(ncsEE, "EE");
 
-    if (coVerts)
-        if (coVerts->size()) {
-            auto triBvs =
-                retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, vtemp, "dir", alpha, coOffset);
-            bouStBvh.refit(pol, triBvs);
-            auto edgeBvs =
-                retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, vtemp, "dir", alpha, coOffset);
-            bouSeBvh.refit(pol, edgeBvs);
+    if (hasBoundary()) {
+        bvs.resize(coEles->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, vtemp, "dir", alpha, coOffset, bvs);
+        bouStBvh.refit(pol, bvs);
 
-            findCCDConstraintsImpl(pol, alpha, xi, true);
+        bvs.resize(coEdges->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, vtemp, "dir", alpha, coOffset, bvs);
+        bouSeBvh.refit(pol, bvs);
 
-            checkSize(ncsPT, "PT");
-            checkSize(ncsEE, "EE");
-        }
+        findCCDConstraintsImpl(pol, alpha, xi, true);
+
+        checkSize(ncsPT, "PT");
+        checkSize(ncsEE, "EE");
+    }
     auto [npt, nee] = getCollisionCnts();
 #if PROFILE_IPC
     timer.tock(fmt::format("ccd broad phase [pt, ee]({}, {})", npt, nee));
