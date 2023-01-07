@@ -369,7 +369,7 @@ struct ZSNSAdvectDiffuse : INode {
                         spgv(vDstTag, ch, blockno, cellno) = u_sl;
                     }
                 });
-        } else if (scheme == "Finite-Difference") {
+        } else if (scheme == "Stencil") {
             // shared memory
             using value_type = typename RM_CVREF_T(spg)::value_type;
             constexpr int side_length = RM_CVREF_T(spg)::side_length;
@@ -607,20 +607,19 @@ struct ZSNSAdvectDiffuse : INode {
     }
 };
 
-ZENDEFNODE(ZSNSAdvectDiffuse,
-           {/* inputs: */
-            {"NSGrid",
-             "dt",
-             {"float", "Density", "1.0"},
-             {"float", "Viscosity", "0.0"},
-             {"enum Finite-Difference Semi-Lagrangian MacCormack BFECC", "Scheme", "Finite-Difference"},
-             {"bool", "Reflection", "0"}},
-            /* outputs: */
-            {"NSGrid"},
-            /* params: */
-            {},
-            /* category: */
-            {"Eulerian"}});
+ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
+                               {"NSGrid",
+                                "dt",
+                                {"float", "Density", "1.0"},
+                                {"float", "Viscosity", "0.0"},
+                                {"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"},
+                                {"bool", "Reflection", "0"}},
+                               /* outputs: */
+                               {"NSGrid"},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
 
 struct ZSNSExternalForce : INode {
     void apply() override {
