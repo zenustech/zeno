@@ -177,6 +177,7 @@ struct IPCSystem : IObject {
     }
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
+    void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization

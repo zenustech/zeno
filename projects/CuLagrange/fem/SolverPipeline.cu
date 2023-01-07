@@ -450,7 +450,6 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 // all affected by sticky boundary conditions
                 if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
                     return;
-                // ccd
                 auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
                 auto rv2 = vtemp.pack(dim_c<3>, "x0", ejInds[0]);
@@ -619,6 +618,101 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
             sefront.reorder(pol);
     }
     pol.profile(false);
+}
+void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    /// pt
+    const auto &stbvh = withBoundary ? bouStBvh : stBvh;
+    auto &stfront = withBoundary ? boundaryStFront : selfStFront;
+    pol(Collapse{stfront.size()},
+        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds),
+         exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts), vtemp = proxy<space>({}, vtemp),
+         bvh = proxy<space>(stbvh), front = proxy<space>(stfront), PP = proxy<space>(PP), nPP = proxy<space>(nPP),
+         PE = proxy<space>(PE), nPE = proxy<space>(nPE), PT = proxy<space>(PT), nPT = proxy<space>(nPT),
+         csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT), dHat, xi, thickness = xi + dHat,
+         voffset = withBoundary ? coOffset : 0, frontManageRequired = frontManageRequired] __device__(int i) mutable {
+            auto vi = front.prim(i);
+            vi = reinterpret_bits<int>(svInds("inds", vi));
+            const auto dHat2 = zs::sqr(dHat + xi);
+            int BCorder0 = vtemp("BCorder", vi);
+            auto p = vtemp.pack(dim_c<3>, "xn", vi);
+            auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+            auto f = [&](int stI) {
+                if (exclTris[stI])
+                    return;
+                auto tri = eles.pack(dim_c<3>, "inds", stI).template reinterpret_bits<int>() + voffset;
+                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                    return;
+                // all affected by sticky boundary conditions
+                if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
+                    vtemp("BCorder", tri[2]) == 3)
+                    return;
+                // ccd
+                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+
+                if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2)
+                    csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+            };
+            if (frontManageRequired)
+                bvh.iter_neighbors(bv, i, front, f);
+            else
+                bvh.iter_neighbors(bv, front.node(i), f);
+        });
+    if (frontManageRequired)
+        stfront.reorder(pol);
+    /// ee
+    if (enableContactEE) {
+        const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
+        auto &sefront = withBoundary ? boundarySeFront : selfSeFront;
+        pol(Collapse{sefront.size()},
+            [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+             exclSes = proxy<space>(exclSes), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+             front = proxy<space>(sefront), PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE),
+             nPE = proxy<space>(nPE), EE = proxy<space>(EE), nEE = proxy<space>(nEE),
+             // mollifier
+             PPM = proxy<space>(PPM), nPPM = proxy<space>(nPPM), PEM = proxy<space>(PEM), nPEM = proxy<space>(nPEM),
+             EEM = proxy<space>(EEM), nEEM = proxy<space>(nEEM), enableMollification = enableMollification,
+             //
+             csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat2 = zs::sqr(dHat + xi), xi,
+             thickness = xi + dHat, voffset = withBoundary ? coOffset : 0,
+             frontManageRequired = frontManageRequired] __device__(int i) mutable {
+                auto sei = front.prim(i);
+                if (exclSes[sei])
+                    return;
+                auto eiInds = seInds.pack(dim_c<2>, "inds", sei).template reinterpret_bits<int>();
+                bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                auto [mi, ma] = get_bounding_box(v0, v1);
+                auto bv = bv_t{mi - thickness, ma + thickness};
+                auto f = [&](int sej) {
+                    if (voffset == 0 && sei < sej)
+                        return;
+                    auto ejInds = sedges.pack(dim_c<2>, "inds", sej).reinterpret_bits(int_c) + voffset;
+                    if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                        eiInds[1] == ejInds[1])
+                        return;
+                    // all affected by sticky boundary conditions
+                    if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                        return;
+                    auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
+                    auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
+
+                    if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2)
+                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                };
+                if (frontManageRequired)
+                    bvh.iter_neighbors(bv, i, front, f);
+                else
+                    bvh.iter_neighbors(bv, front.node(i), f);
+            });
+        if (frontManageRequired)
+            sefront.reorder(pol);
+    }
 }
 void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) {
     ncsPT.setVal(0);
