@@ -2114,7 +2114,6 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
 
         if (primHandle.hasBendingConstraints()) {
             /// @note bending energy (if exist)
-            auto &btemp = primHandle.btemp;
             auto &bedges = *primHandle.bendingEdgesPtr;
             es.resize(count_warps(bedges.size()));
             es.reset(0);
@@ -2828,9 +2827,12 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
         });
         T alpha = 1.;
+        if (enableContact) {
+            /// @note dcd filter to reduce potential ccd stepsize
+            intersectionFreeStepsize(pol, xi, alpha);
+        }
         if (enableGround) {
             groundIntersectionFreeStepsize(pol, alpha);
-            fmt::print("\tstepsize after ground: {}\n", alpha);
         }
         if (enableContact) {
             // A.intersectionFreeStepsize(cudaPol, xi, alpha);
@@ -2838,7 +2840,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             findCCDConstraints(pol, alpha, xi);
             auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] = getCnts();
             intersectionFreeStepsize(pol, xi, alpha);
-            fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha, ncspt, ncsee);
+            zeno::log_info("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha, ncspt, ncsee);
         }
         lineSearch(pol, alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
