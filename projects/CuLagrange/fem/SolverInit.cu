@@ -406,7 +406,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // check initial self intersections
         // including proximity pairs
         // do once
-        markSelfIntersectionPrimitives(cudaPol);
+        // markSelfIntersectionPrimitives(cudaPol);
+        markSelfIntersectionPrimitives(cudaPol, zs::true_c);
     }
 
     // output adaptive setups

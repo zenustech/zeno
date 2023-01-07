@@ -122,25 +122,37 @@ __forceinline__ __device__ int atomicAggInc(int *ctr) noexcept {
 void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type) {
     // exclSes, exclSts, stInds, seInds, seBvh
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
     exclSes.reset(0);
     exclSts.reset(0);
     exclBouSes.reset(0);
     exclBouSts.reset(0);
 
-    Vector<int> cnt{vtemp.get_allocator(), 1};
-    cnt.setVal(0);
-
     ncsPT.setVal(0);
     ncsEE.setVal(0);
     // exclSes, exclSts, exclBouSes, exclBouSts
 
-    zeno::log_info("{} self et intersections\n", cnt.getVal());
+    if (enableContactSelf) {
+        bvs.resize(stInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
+        stBvh.refit(pol, bvs);
+        bvs.resize(seInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
+        seBvh.refit(pol, bvs);
+        findProximityPairs(pol, dHat, xi, false);
+    }
+    zeno::log_info("after self proximity check, <{} pt, {} ee> pairs excluded\n", ncsPT.getVal(), ncsEE.getVal());
 
     if (coEdges) {
-        cnt.setVal(0);
+        bvs.resize(coEles->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+        bouStBvh.refit(pol, bvs);
+        bvs.resize(coEdges->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+        bouSeBvh.refit(pol, bvs);
+        findProximityPairs(pol, dHat, xi, true);
 
-        zeno::log_info("{} boundary et intersections\n", cnt.getVal());
+        zeno::log_info("after boundary proximity check, <{} pt, {} ee> pairs excluded\n", ncsPT.getVal(),
+                       ncsEE.getVal());
     }
     return;
 }
@@ -629,10 +641,9 @@ void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, b
     pol(Collapse{stfront.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds),
          exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts), vtemp = proxy<space>({}, vtemp),
-         bvh = proxy<space>(stbvh), front = proxy<space>(stfront), PP = proxy<space>(PP), nPP = proxy<space>(nPP),
-         PE = proxy<space>(PE), nPE = proxy<space>(nPE), PT = proxy<space>(PT), nPT = proxy<space>(nPT),
-         csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT), dHat, xi, thickness = xi + dHat,
-         voffset = withBoundary ? coOffset : 0, frontManageRequired = frontManageRequired] __device__(int i) mutable {
+         bvh = proxy<space>(stbvh), front = proxy<space>(stfront), csPT = proxy<space>(csPT),
+         ncsPT = proxy<space>(ncsPT), dHat, xi, thickness = xi + dHat, voffset = withBoundary ? coOffset : 0,
+         frontManageRequired = frontManageRequired] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = reinterpret_bits<int>(svInds("inds", vi));
             const auto dHat2 = zs::sqr(dHat + xi);
@@ -640,9 +651,7 @@ void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, b
             auto p = vtemp.pack(dim_c<3>, "xn", vi);
             auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
             auto f = [&](int stI) {
-                if (exclTris[stI])
-                    return;
-                auto tri = eles.pack(dim_c<3>, "inds", stI).template reinterpret_bits<int>() + voffset;
+                auto tri = eles.pack(dim_c<3>, "inds", stI).reinterpret_bits(int_c) + voffset;
                 if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                     return;
                 // all affected by sticky boundary conditions
@@ -654,8 +663,10 @@ void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, b
                 auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
                 auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
-                if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2)
+                if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2) {
                     csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    exclTris[stI] = 1;
+                }
             };
             if (frontManageRequired)
                 bvh.iter_neighbors(bv, i, front, f);
@@ -670,19 +681,14 @@ void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, b
         auto &sefront = withBoundary ? boundarySeFront : selfSeFront;
         pol(Collapse{sefront.size()},
             [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-             exclSes = proxy<space>(exclSes), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
-             front = proxy<space>(sefront), PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE),
-             nPE = proxy<space>(nPE), EE = proxy<space>(EE), nEE = proxy<space>(nEE),
-             // mollifier
-             PPM = proxy<space>(PPM), nPPM = proxy<space>(nPPM), PEM = proxy<space>(PEM), nPEM = proxy<space>(nPEM),
-             EEM = proxy<space>(EEM), nEEM = proxy<space>(nEEM), enableMollification = enableMollification,
+             exclSes = proxy<space>(exclSes),
+             oExclSes = withBoundary ? proxy<space>(exclBouSes) : proxy<space>(exclSes),
+             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), front = proxy<space>(sefront),
              //
              csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat2 = zs::sqr(dHat + xi), xi,
              thickness = xi + dHat, voffset = withBoundary ? coOffset : 0,
              frontManageRequired = frontManageRequired] __device__(int i) mutable {
                 auto sei = front.prim(i);
-                if (exclSes[sei])
-                    return;
                 auto eiInds = seInds.pack(dim_c<2>, "inds", sei).template reinterpret_bits<int>();
                 bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
                 auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
@@ -702,8 +708,11 @@ void IPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, b
                     auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
                     auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
 
-                    if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2)
+                    if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        exclSes[sei] = 1;
+                        oExclSes[sej] = 1;
+                    }
                 };
                 if (frontManageRequired)
                     bvh.iter_neighbors(bv, i, front, f);
