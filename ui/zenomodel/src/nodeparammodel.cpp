@@ -351,49 +351,47 @@ void NodeParamModel::setAddParam(
         if (!(pItem = m_inputs->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_type = type;
-            pItem->m_sockProp = prop;
-            pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-
             m_inputs->appendRow(pItem);
-
             initDictSocket(pItem);
         }
+        ZASSERT_EXIT(pItem);
+        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+        pItem->m_name = name;
+        pItem->m_value = deflValue;
+        pItem->m_type = type;
+        pItem->m_sockProp = prop;
+        pItem->m_ctrl = ctrl;
     }
     else if (PARAM_PARAM == cls)
     {
         if (!(pItem = m_params->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_type = type;
-            pItem->m_sockProp = prop;
-            pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-
             m_params->appendRow(pItem);
         }
+        ZASSERT_EXIT(pItem);
+        pItem->m_name = name;
+        pItem->m_value = deflValue;
+        pItem->m_type = type;
+        pItem->m_sockProp = prop;
+        pItem->m_ctrl = ctrl;
+        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
     }
     else if (PARAM_OUTPUT == cls)
     {
         if (!(pItem = m_outputs->getItem(name)))
         {
             pItem = new VParamItem(VPARAM_PARAM, name);
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_sockProp = prop;
-            pItem->m_type = type;
-            pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-
             m_outputs->appendRow(pItem);
-
             initDictSocket(pItem);
         }
+        ZASSERT_EXIT(pItem);
+        pItem->m_name = name;
+        pItem->m_value = deflValue;
+        pItem->m_sockProp = prop;
+        pItem->m_type = type;
+        pItem->m_ctrl = ctrl;
+        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
     }
 }
 

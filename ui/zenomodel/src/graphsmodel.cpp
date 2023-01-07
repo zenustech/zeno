@@ -1688,7 +1688,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
 
     const QString& nameValue = nameIdx.data(ROLE_PARAM_VALUE).toString();
     const QString& typeValue = typeIdx.data(ROLE_PARAM_VALUE).toString();
-    QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
+    QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE);
     const PARAM_CONTROL ctrl = (PARAM_CONTROL)deflIdx.data(ROLE_PARAM_CTRL).toInt();
     QVariant ctrlProps = deflIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
@@ -1701,6 +1701,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     info.control = ctrl;
     info.defaultValue = deflVal;
     info.name = nameValue;
+    info.type = typeValue;
 
     if (bInsert)
     {

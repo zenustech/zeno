@@ -196,6 +196,11 @@ QVariant VParamItem::data(int role) const
     case ROLE_ADDLINK:
     case ROLE_REMOVELINK:
         break;  //todo: link for custom param.
+    case ROLE_VPARAM_CTRL_PROPERTIES:
+        if (m_customData.find(role) != m_customData.end())
+        {
+            return m_customData[role];
+        }
     case ROLE_VAPRAM_EDITTABLE:
     default:
         return QStandardItem::data(role);
@@ -298,6 +303,11 @@ void VParamItem::setData(const QVariant& value, int role)
             else {
                 m_links.removeAll(linkIdx);
             }
+            break;
+        }
+        case ROLE_VPARAM_CTRL_PROPERTIES:
+        {
+            m_customData[role] = value;
             break;
         }
         case ROLE_VAPRAM_EDITTABLE:
