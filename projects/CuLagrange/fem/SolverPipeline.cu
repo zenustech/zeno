@@ -26,6 +26,12 @@ inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename 
         auto v = data.pack<3>(offset, pi);
         auto val = v.abs().max();
 
+#if __CUDA_ARCH__ >= 800
+        auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+        auto ret = zs::cg::reduce(tile, val, zs::cg::greater<T>());
+        if (tile.thread_rank() == 0)
+            res[pi / 32] = ret;
+#else
         auto [mask, numValid] = warp_mask(pi, n);
         auto locid = threadIdx.x & 31;
         for (int stride = 1; stride < 32; stride <<= 1) {
@@ -35,6 +41,7 @@ inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename 
         }
         if (locid == 0)
             res[pi / 32] = val;
+#endif
     });
     return reduce(cudaPol, res, thrust::maximum<T>{});
 }
@@ -124,7 +131,8 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std
     Vector<int> cnt{vtemp.get_allocator(), 1};
     cnt.setVal(0);
 
-    findCollisionConstraints(pol, dHat, xi); // csPT, csEE
+    ncsPT.setVal(0);
+    ncsEE.setVal(0);
     // exclSes, exclSts, exclBouSes, exclBouSts
 
     zeno::log_info("{} self et intersections\n", cnt.getVal());
@@ -148,8 +156,9 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
     Vector<int> cnt{vtemp.get_allocator(), 1};
     cnt.setVal(0);
 
-    auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, wrapv<2>{}, 0);
-    seBvh.refit(pol, edgeBvs);
+    bvs.resize(seInds.size());
+    retrieve_bounding_volumes(pol, vtemp, "xn", seInds, wrapv<2>{}, 0, bvs);
+    seBvh.refit(pol, bvs);
     pol(range(stInds.size()), [vtemp = proxy<space>({}, vtemp), stInds = proxy<space>({}, stInds),
                                seInds = proxy<space>({}, seInds), exclSes = proxy<space>(exclSes),
                                exclSts = proxy<space>(exclSts), bvh = proxy<space>(seBvh), cnt = proxy<space>(cnt),
@@ -183,8 +192,9 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
 
     if (coEdges) {
         cnt.setVal(0);
-        edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
-        bouSeBvh.refit(pol, edgeBvs);
+        bvs.resize(coEdges->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+        bouSeBvh.refit(pol, bvs);
         pol(range(stInds.size()),
             [vtemp = proxy<space>({}, vtemp), stInds = proxy<space>({}, stInds), seInds = proxy<space>({}, *coEdges),
              exclBouSes = proxy<space>(exclBouSes), exclSts = proxy<space>(exclSts), bvh = proxy<space>(bouSeBvh),
@@ -215,8 +225,9 @@ void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol) {
                     exclSts[sti] = 1;
             });
 
-        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
-        bouStBvh.refit(pol, triBvs);
+        bvs.resize(coEles->size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+        bouStBvh.refit(pol, bvs);
         pol(range(seInds.size()),
             [vtemp = proxy<space>({}, vtemp), seInds = proxy<space>({}, seInds), coTris = proxy<space>({}, *coEles),
              exclBouSts = proxy<space>(exclBouSts), exclSes = proxy<space>(exclSes), bvh = proxy<space>(bouStBvh),
@@ -263,26 +274,36 @@ void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T
     ncsPT.setVal(0);
     ncsEE.setVal(0);
 
+#if PROFILE_IPC
     zs::CppTimer timer;
     timer.tick();
+#endif
     if (enableContactSelf) {
-        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
-        stBvh.refit(pol, triBvs);
-        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
-        seBvh.refit(pol, edgeBvs);
+        bvs.resize(stInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
+        stBvh.refit(pol, bvs);
+        bvs.resize(seInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
+        seBvh.refit(pol, bvs);
         findCollisionConstraintsImpl(pol, dHat, xi, false);
     }
 
     if (coVerts)
         if (coVerts->size()) {
-            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
-            bouStBvh.refit(pol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
-            bouSeBvh.refit(pol, edgeBvs);
+            bvs.resize(coEles->size());
+            retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+            bouStBvh.refit(pol, bvs);
+            bvs.resize(coEdges->size());
+            retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+            bouSeBvh.refit(pol, bvs);
             findCollisionConstraintsImpl(pol, dHat, xi, true);
         }
     auto [npt, nee] = getCollisionCnts();
+#if PROFILE_IPC
     timer.tock(fmt::format("dcd broad phase [pt, ee]({}, {})", npt, nee));
+#else
+    fmt::print(fg(fmt::color::light_golden_rod_yellow), "dcd broad phase [pt, ee]({}, {})", npt, nee);
+#endif
 
     frontManageRequired = false;
 }
@@ -604,14 +625,18 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
     ncsEE.setVal(0);
 
     if (enableContactSelf) {
-        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0);
-        stBvh.refit(pol, triBvs);
-        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0);
-        seBvh.refit(pol, edgeBvs);
+        bvs.resize(stInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0, bvs);
+        stBvh.refit(pol, bvs);
+        bvs.resize(seInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0, bvs);
+        seBvh.refit(pol, bvs);
     }
 
+#if PROFILE_IPC
     zs::CppTimer timer;
     timer.tick();
+#endif
 
     if (enableContactSelf)
         findCCDConstraintsImpl(pol, alpha, xi, false);
@@ -638,7 +663,11 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
             checkSize(ncsEE, "EE");
         }
     auto [npt, nee] = getCollisionCnts();
+#if PROFILE_IPC
     timer.tock(fmt::format("ccd broad phase [pt, ee]({}, {})", npt, nee));
+#else
+    fmt::print(fg(fmt::color::light_golden_rod_yellow), "ccd broad phase [pt, ee]({}, {})", npt, nee);
+#endif
 }
 void IPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary) {
     using namespace zs;
@@ -2470,7 +2499,8 @@ void IPCSystem::groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &
     // constexpr T slackness = 0.8;
     constexpr auto space = execspace_e::cuda;
 
-    zs::Vector<T> finalAlpha{vtemp.get_allocator(), 1};
+    // zs::Vector<T> finalAlpha{vtemp.get_allocator(), 1};
+    auto &finalAlpha = temp;
     finalAlpha.setVal(stepSize);
     pol(Collapse{coOffset},
         [vtemp = proxy<space>({}, vtemp),
@@ -2496,11 +2526,14 @@ void IPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    Vector<T> alpha{vtemp.get_allocator(), 1};
+    // Vector<T> alpha{vtemp.get_allocator(), 1};
+    auto &alpha = temp;
     alpha.setVal(stepSize);
     auto npt = ncsPT.getVal();
+#if PROFILE_IPC
     CppTimer timer;
     timer.tick();
+#endif
     pol.profile(PROFILE_IPC);
     pol(range(npt), [csPT = proxy<space>(csPT), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
                      xi, coOffset = (int)coOffset] __device__(int pti) {
@@ -2546,7 +2579,9 @@ void IPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &
             atomic_min(exec_cuda, &alpha[0], tmp);
     });
     pol.profile(false);
+#if PROFILE_IPC
     timer.tock("ccd time");
+#endif
     stepSize = alpha.getVal();
 }
 void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {

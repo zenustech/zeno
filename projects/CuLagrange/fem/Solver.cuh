@@ -304,6 +304,7 @@ struct IPCSystem : IObject {
     // end contacts
 
     zs::Vector<T> temp;
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;

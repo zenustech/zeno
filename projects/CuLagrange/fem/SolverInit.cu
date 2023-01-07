@@ -364,6 +364,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"p", 3},
                       {"q", 3}},
                      numDofs};
+    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
+
     // inertial hessian
     tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
 
@@ -534,22 +536,26 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         }                                                                                                  \
     }
     {
-        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
-        stBvh.build(pol, triBvs);
+        bvs.resize(stInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
+        stBvh.build(pol, bvs);
         init_front(svInds, selfStFront);
 
-        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
-        seBvh.build(pol, edgeBvs);
+        bvs.resize(seInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
+        seBvh.build(pol, bvs);
         init_front(seInds, selfSeFront);
     }
     if (coVerts)
         if (coVerts->size()) {
-            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
-            bouStBvh.build(pol, triBvs);
+            bvs.resize(coEles->size());
+            retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+            bouStBvh.build(pol, bvs);
             init_front(svInds, boundaryStFront);
 
-            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
-            bouSeBvh.build(pol, edgeBvs);
+            bvs.resize(coEdges->size());
+            retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+            bouSeBvh.build(pol, bvs);
             init_front(seInds, boundarySeFront);
         }
 
