@@ -241,9 +241,16 @@ namespace zenoui
             {
                 //todo: legacy case compatible
                 QStringList items;
-                QVariantMap props = controlProps.toMap();
-                if (props.find("items") != props.end())
-                    items = props["items"].toStringList();
+                if (controlProps.type() == QMetaType::QVariantMap)
+                {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.find("items") != props.end())
+                        items = props["items"].toStringList();
+                }
+                else if (controlProps.type() == QVariant::StringList)
+                {
+                    items = controlProps.toStringList();
+                }
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));

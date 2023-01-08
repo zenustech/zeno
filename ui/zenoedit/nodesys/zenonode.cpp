@@ -834,7 +834,8 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded)
 {
     ZSocketLayout *pSocketLayout = getSocketLayout(bInput, sockName);
-    ZASSERT_EXIT(pSocketLayout);
+    if (!pSocketLayout)
+        return;
 
     ZenoSocketItem *pSocket = pSocketLayout->socketItem();
     pSocket->toggle(bAdded);
