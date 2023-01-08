@@ -89,7 +89,7 @@ void BlackboardNode::updateBlackboard()
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
 }
 
-ZLayoutBackground* BlackboardNode::initHeaderWidget()
+ZLayoutBackground* BlackboardNode::initHeaderWidget(IGraphsModel*)
 {
     ZLayoutBackground* headerWidget = new ZLayoutBackground(this);
     auto headerBg = m_renderParams.headerBg;

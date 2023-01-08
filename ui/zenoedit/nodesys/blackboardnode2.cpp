@@ -180,7 +180,8 @@ ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
     return new ZLayoutBackground(this);
 }
 
-ZLayoutBackground *BlackboardNode2::initHeaderWidget() {
+ZLayoutBackground *BlackboardNode2::initHeaderWidget(IGraphsModel*)
+{
     return new ZLayoutBackground(this);    
 }
 

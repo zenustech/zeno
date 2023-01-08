@@ -24,24 +24,13 @@ public:
         , m_pMoveUpBtn(nullptr)
         , m_bDict(bDict)
     {
-        ImageElement elem;
-        elem.image = ":/icons/socket-off.svg";
-        elem.imageHovered = ":/icons/socket-hover.svg";
-        elem.imageOn = ":/icons/socket-on.svg";
-        elem.imageOnHovered = ":/icons/socket-on-hover.svg";
-
         const int cSocketWidth = ZenoStyle::dpiScaled(12);
         const int cSocketHeight = ZenoStyle::dpiScaled(12);
 
         PARAM_CLASS sockCls = (PARAM_CLASS)m_sockKeyIdx.data(ROLE_PARAM_CLASS).toInt();
         const bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
 
-        m_socket = new ZenoSocketItem(m_sockKeyIdx, bInput, elem, QSizeF(cSocketWidth, cSocketHeight));
-        qreal leftMargin = ZenoStyle::dpiScaled(10);
-        qreal rightMargin = ZenoStyle::dpiScaled(10);
-        qreal topMargin = ZenoStyle::dpiScaled(10);
-        qreal bottomMargin = ZenoStyle::dpiScaled(10);
-        m_socket->setContentMargins(leftMargin, topMargin, rightMargin, bottomMargin);
+        m_socket = new ZenoSocketItem(m_sockKeyIdx, QSizeF(cSocketWidth, cSocketHeight));
 
         QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
             if (cbSock.cbOnSockClicked)
@@ -49,6 +38,7 @@ public:
         });
 
         //move up button
+        ImageElement elem;
         elem.image = ":/icons/moveUp.svg";
         elem.imageHovered = ":/icons/moveUp-on.svg";
         elem.imageOn = ":/icons/moveUp.svg";

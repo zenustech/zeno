@@ -8,6 +8,7 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include "zdictpanel.h"
 #include "variantptr.h"
+#include "render/common_id.h"
 
 
 ZSocketLayout::ZSocketLayout(
@@ -18,6 +19,7 @@ ZSocketLayout::ZSocketLayout(
     : ZGraphicsLayout(true)
     , m_text(nullptr)
     , m_control(nullptr)
+    , m_socket(nullptr)
     , m_bInput(bInput)
     , m_bEditable(false)
     , m_viewSockIdx(viewSockIdx)
@@ -44,21 +46,42 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
     }
 
+    QSizeF szSocket(10, 20);
+    m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
+    m_socket->setZValue(ZVALUE_ELEMENT);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
+        cbSock.cbOnSockClicked(m_socket);
+    });
+
     if (m_bEditable)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
             pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
         };
         m_text = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
-        addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
+        //addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
     else
     {
         m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-        addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
+        //addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
+
+    if (m_bInput)
+    {
+        addItem(m_socket, Qt::AlignVCenter);
+        addItem(m_text, Qt::AlignVCenter);
+    }
+    else
+    {
+        addSpacing(-1, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+        addItem(m_text, Qt::AlignVCenter);
+        addItem(m_socket, Qt::AlignVCenter);
+    }
+
+    setSpacing(ZenoStyle::dpiScaled(5));
 }
 
 void ZSocketLayout::setControl(QGraphicsItem* pControl)
@@ -75,37 +98,27 @@ QGraphicsItem* ZSocketLayout::control() const
 
 ZenoSocketItem* ZSocketLayout::socketItem() const
 {
-    if (m_bEditable)
-    {
-        //not base on qgraphicsitem_cast because we need a unify "type", see QGraphicsItem::Type.
-        ZSocketEditableItem* pEdit = static_cast<ZSocketEditableItem*>(m_text);
-        return pEdit->socketItem();
-    }
-    else
-    {
-        ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
-        return pEdit->socketItem();
-    }
+    return m_socket;
+    //if (m_bEditable)
+    //{
+    //    //not base on qgraphicsitem_cast because we need a unify "type", see QGraphicsItem::Type.
+    //    ZSocketEditableItem* pEdit = static_cast<ZSocketEditableItem*>(m_text);
+    //    return pEdit->socketItem();
+    //}
+    //else
+    //{
+    //    ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
+    //    return pEdit->socketItem();
+    //}
 }
 
 QPointF ZSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 {
     exist = false;
-    if (m_viewSockIdx == sockIdx || m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx)
+    if (m_viewSockIdx == sockIdx && m_socket)
     {
-        int sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-        if (sockProp & SOCKPROP_EDITABLE)
-        {
-            ZSocketEditableItem* pEdit = static_cast<ZSocketEditableItem*>(m_text);
-            exist = true;
-            return pEdit->socketItem()->center();
-        }
-        else
-        {
-            ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
-            exist = true;
-            return pEdit->socketItem()->center();
-        }
+        exist = true;
+        return m_socket->center();
     }
     return QPointF();
 }
@@ -114,17 +127,7 @@ ZenoSocketItem* ZSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
 {
     if (m_viewSockIdx == sockIdx || m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx)
     {
-        int sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-        if (sockProp & SOCKPROP_EDITABLE)
-        {
-            ZSocketEditableItem* pEdit = static_cast<ZSocketEditableItem*>(m_text);
-            return pEdit->socketItem();
-        }
-        else
-        {
-            ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
-            return pEdit->socketItem();
-        }
+        return m_socket;
     }
     return nullptr;
 }
@@ -173,6 +176,12 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
     const QString& sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+
+    QSizeF szSocket(10, 20);
+    m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
+    m_socket->setZValue(ZVALUE_ELEMENT);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
+
     m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
 
     QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(28, 28));
@@ -187,6 +196,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 
     if (bInput)
     {
+        pHLayout->addItem(m_socket);
         pHLayout->addItem(m_text);
         pHLayout->addItem(m_collaspeBtn);
 
@@ -198,6 +208,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
         pHLayout->addSpacing(-1, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
         pHLayout->addItem(m_collaspeBtn);
         pHLayout->addItem(m_text);
+        pHLayout->addItem(m_socket);
 
         pHPanelLayout->addSpacing(ZenoStyle::dpiScaled(64), QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred));
         pHPanelLayout->addItem(m_panel);
@@ -249,7 +260,7 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
     {
         ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem *>(m_text);
         exist = true;
-        return pEdit->socketItem()->center();
+        return m_socket->center();
     }
 
     if (m_panel->isVisible())
@@ -264,6 +275,6 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
     {
         ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem *>(m_text);
         exist = true;
-        return pEdit->socketItem()->center();
+        return m_socket->center();
     }
 }

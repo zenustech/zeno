@@ -14,7 +14,7 @@ class BlackboardNode2 : public ZenoNode {
     void onUpdateParamsNotDesc() override;
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
-    ZLayoutBackground *initHeaderWidget() override;
+    ZLayoutBackground *initHeaderWidget(IGraphsModel*) override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;

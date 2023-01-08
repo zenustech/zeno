@@ -100,7 +100,7 @@ protected:
     //ZenoNode:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
-    virtual ZLayoutBackground* initHeaderWidget();
+    virtual ZLayoutBackground* initHeaderWidget(IGraphsModel* pGraphsModel);
     virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
@@ -135,7 +135,7 @@ private:
     QVector<ZSocketLayout*> m_outSockets;
 
     ZSimpleTextItem* m_NameItem;
-    ZenoMinStatusBtnWidget* m_pStatusWidgets;
+    ZenoMinStatusBtnItem* m_pStatusWidgets;
 
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;

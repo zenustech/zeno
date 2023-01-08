@@ -112,7 +112,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
 
-    m_headerWidget = initHeaderWidget();
+    m_headerWidget = initHeaderWidget(pGraphsModel);
     m_bodyWidget = initBodyWidget(pScene);
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
@@ -146,18 +146,19 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_bUIInited = true;
 }
 
-ZLayoutBackground* ZenoNode::initHeaderWidget()
+ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 {
     ZLayoutBackground* headerWidget = new ZLayoutBackground;
     auto headerBg = m_renderParams.headerBg;
     headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
+    qreal bdrWidth = ZenoStyle::dpiScaled(headerBg.border_witdh);
+    headerWidget->setBorder(bdrWidth, headerBg.clr_border);
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel && m_index.isValid(), nullptr);
+    ZASSERT_EXIT(m_index.isValid(), nullptr);
 
     QColor clrHeaderBg;
     if (pGraphsModel->IsSubGraphNode(m_index))
-        clrHeaderBg = QColor(86, 143, 131);
+        clrHeaderBg = QColor("#1D5F51");
     else
         clrHeaderBg = headerBg.clr_normal;
 
@@ -165,15 +166,35 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
     const QString& name = m_index.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    pGraphsModel->getDescriptor(name, desc);
+    QString category;
+    if (!desc.categories.isEmpty())
+        category = desc.categories[0];
+
+    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(false);
+    qreal margin = ZenoStyle::dpiScaled(10);
+    pNameLayout->setContentsMargin(margin, margin, margin, margin);
+
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor(226, 226, 226));
-    QFont font2("HarmonyOS Sans Bold", 14);
+    QFont font2("HarmonyOS Sans Bold", 16);
     font2.setBold(true);
     m_NameItem->setFont(font2);
     m_NameItem->updateBoundingRect();
 
-    m_pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status);
-    m_pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    pNameLayout->addItem(m_NameItem);
+    if (!category.isEmpty())
+    {
+        ZSimpleTextItem *pCategoryItem = new ZSimpleTextItem(category);
+        pCategoryItem->setBrush(QColor("#AB6E40"));
+        pCategoryItem->setFont(QFont("Segoe UI bold", 10));
+        pCategoryItem->updateBoundingRect();
+        pCategoryItem->setAcceptHoverEvents(false);
+        pNameLayout->addItem(pCategoryItem);
+    }
+
+    m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
     int options = m_index.data(ROLE_OPTIONS).toInt();
     m_pStatusWidgets->setOptions(options);
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
@@ -181,7 +202,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
     pHLayout->setDebugName("Header HLayout");
     pHLayout->addSpacing(10);
-    pHLayout->addItem(m_NameItem, Qt::AlignVCenter);
+    pHLayout->addLayout(pNameLayout);
     pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
     pHLayout->addItem(m_pStatusWidgets);
 
@@ -196,13 +217,15 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     const auto& bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
     bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal);
-    bodyWidget->setBorder(ZenoStyle::dpiScaled(bodyBg.border_witdh), bodyBg.clr_border);
+
+    qreal bdrWidth = ZenoStyle::dpiScaled(bodyBg.border_witdh);
+    bodyWidget->setBorder(bdrWidth, bodyBg.clr_border);
 
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
     m_bodyLayout->setSpacing(ZenoStyle::dpiScaled(5));
     qreal margin = ZenoStyle::dpiScaled(16);
-    m_bodyLayout->setContentsMargin(margin, margin, margin, margin);
+    m_bodyLayout->setContentsMargin(margin, bdrWidth, margin, bdrWidth);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
     QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
@@ -838,7 +861,7 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
         return;
 
     ZenoSocketItem *pSocket = pSocketLayout->socketItem();
-    pSocket->toggle(bAdded);
+    //pSocket->toggle(bAdded);
     pSocket->setSockStatus(bAdded ? ZenoSocketItem::STATUS_CONNECTED : ZenoSocketItem::STATUS_NOCONN);
 
     if (bInput)

@@ -163,12 +163,12 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     ZenoSocketItem *socketItem = outNode->getSocketItem(outSockIdx);
     ZASSERT_EXIT(socketItem);
     socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
-    socketItem->toggle(true);
+    //socketItem->toggle(true);
 
     socketItem = inNode->getSocketItem(inSockIdx);
     ZASSERT_EXIT(socketItem);
     socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
-    socketItem->toggle(true);
+    //socketItem->toggle(true);
 }
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
