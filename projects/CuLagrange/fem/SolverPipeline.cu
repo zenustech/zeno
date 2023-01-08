@@ -2093,7 +2093,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     es.reset(0);
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, extForce = extForce,
                           dt = this->dt, n = coOffset] __device__(int vi) mutable {
-        auto m = zs::sqr(vtemp("ws", vi));
+        auto m = vtemp("ws", vi);
         auto x = vtemp.pack<3>(tag, vi);
         auto xt = vtemp.pack<3>("xhat", vi);
         int BCorder = vtemp("BCorder", vi);

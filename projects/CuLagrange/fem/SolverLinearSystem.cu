@@ -15,7 +15,7 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
     // inertial
     cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp), dt = dt,
                                   projectDBC = projectDBC] ZS_LAMBDA(int i) mutable {
-        auto m = zs::sqr(vtemp("ws", i));
+        auto m = vtemp("ws", i);
         vtemp.tuple<3>("grad", i) =
             vtemp.pack<3>("grad", i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
 
@@ -32,7 +32,7 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
             continue;
         cudaPol(zs::range(primHandle.getVerts().size()), [vtemp = proxy<space>({}, vtemp), extForce = extForce, dt = dt,
                                                           vOffset = primHandle.vOffset] ZS_LAMBDA(int vi) mutable {
-            auto m = zs::sqr(vtemp("ws", vOffset + vi));
+            auto m = vtemp("ws", vOffset + vi);
             int BCorder = vtemp("BCorder", vOffset + vi);
             int BCsoft = vtemp("BCsoft", vOffset + vi);
             if (BCsoft == 0 && BCorder != 3)
@@ -54,7 +54,7 @@ void IPCSystem::computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPo
     constexpr auto space = execspace_e::cuda;
     // inertial
     cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), gTag, dt = dt] ZS_LAMBDA(int i) mutable {
-        auto m = zs::sqr(vtemp("ws", i));
+        auto m = vtemp("ws", i);
         vtemp.tuple<3>(gTag, i) = vtemp.pack<3>(gTag, i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
     });
 }
