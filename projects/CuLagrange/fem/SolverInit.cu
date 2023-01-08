@@ -313,8 +313,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
       fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
       //
-      temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles<true>().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
-      csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      temp{estNumCps, zs::memsrc_e::um, 0}, csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
+      ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
       ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
@@ -340,10 +340,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
 
     vtemp = dtiles_t{zsprims[0]->getParticles<true>().get_allocator(),
                      {{"grad", 3},
-                      {"P", 9},
-                      // dirichlet boundary condition type; 0: NOT, 1: ZERO, 2: NONZERO
-                      {"BCorder", 1}, // 0: unbounded; 1: soft; 2: hard
-                      {"BCbasis", 9},
+                      {"P", 9},       // diagonal block preconditioner
+                      {"BCorder", 1}, // 0: unbounded, 3: sticky boundary condition
                       {"BCtarget", 3},
                       {"BCfixed", 1},
                       {"BCsoft", 1}, // mark if this dof is a soft boundary vert or not
@@ -353,11 +351,10 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"dir", 3},
                       {"xn", 3},
                       {"vn", 3},
-                      {"x0", 3},  // initial positions
+                      {"x0", 3},  // original model positions
                       {"xn0", 3}, // for line search
                       {"xtilde", 3},
-                      {"xhat", 3}, // initial positions at the current substep (constraint,
-                                   // extforce)
+                      {"xhat", 3}, // initial positions at the current substep (constraint, extforce)
                       {"temp", 3},
                       {"r", 3},
                       {"p", 3},
@@ -431,14 +428,18 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         nPT.setVal(0);
         nEE.setVal(0);
 
-        nPPM.setVal(0);
-        nPEM.setVal(0);
-        nEEM.setVal(0);
+        if (enableMollification) {
+            nPPM.setVal(0);
+            nPEM.setVal(0);
+            nEEM.setVal(0);
+        }
 
-        nFPP.setVal(0);
-        nFPE.setVal(0);
-        nFPT.setVal(0);
-        nFEE.setVal(0);
+        if (s_enableFriction) {
+            nFPP.setVal(0);
+            nFPE.setVal(0);
+            nFPT.setVal(0);
+            nFEE.setVal(0);
+        }
 
         ncsPT.setVal(0);
         ncsEE.setVal(0);
@@ -457,33 +458,27 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
             auto v = verts.pack<3>("v", i);
             int BCorder = 0;
             auto BCtarget = x + v * dt;
-            auto BCbasis = mat3::identity();
             int BCfixed = 0;
             if (!asBoundary) {
                 BCorder = verts("BCorder", i);
                 BCtarget = verts.pack(dim_c<3>, "BCtarget", i);
-                BCbasis = verts.pack(dim_c<3, 3>, "BCbasis", i);
                 BCfixed = verts("BCfixed", i);
             }
             vtemp("BCorder", voffset + i) = BCorder;
-            vtemp.template tuple<3>("BCtarget", voffset + i) = BCtarget;
-            vtemp.tuple(dim_c<9>, "BCbasis", voffset + i) = BCbasis;
+            vtemp.tuple(dim_c<3>, "BCtarget", voffset + i) = BCtarget;
             vtemp("BCfixed", voffset + i) = BCfixed;
             vtemp("BCsoft", voffset + i) = (int)asBoundary;
 
             vtemp("ws", voffset + i) = asBoundary || BCorder == 3 ? avgNodeMass * augLagCoeff : zs::sqrt(verts("m", i));
-            vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
-            vtemp.tuple<3>("xn", voffset + i) = x;
-            vtemp.tuple<3>("xhat", voffset + i) = x;
+            vtemp.tuple(dim_c<3>, "xtilde", voffset + i) = x + v * dt;
+            vtemp.tuple(dim_c<3>, "xn", voffset + i) = x;
             if (BCorder > 0) {
-                // recover original BCtarget
-                BCtarget = BCbasis * BCtarget;
-                vtemp.tuple<3>("vn", voffset + i) = (BCtarget - x) / dt;
+                vtemp.tuple(dim_c<3>, "vn", voffset + i) = (BCtarget - x) / dt;
             } else {
-                vtemp.tuple<3>("vn", voffset + i) = v;
+                vtemp.tuple(dim_c<3>, "vn", voffset + i) = v;
             }
             // vtemp.tuple<3>("xt", voffset + i) = x;
-            vtemp.tuple<3>("x0", voffset + i) = verts.pack<3>("x0", i);
+            vtemp.tuple(dim_c<3>, "x0", voffset + i) = verts.pack<3>("x0", i);
         });
     }
     if (hasBoundary()) {
@@ -500,17 +495,15 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
                     newX = x + v * dt;
                 }
                 vtemp("BCorder", coOffset + i) = 3;
-                vtemp.tuple(dim_c<9>, "BCbasis", coOffset + i) = mat3::identity();
-                vtemp.template tuple<3>("BCtarget", coOffset + i) = newX;
+                vtemp.tuple(dim_c<3>, "BCtarget", coOffset + i) = newX;
                 vtemp("BCfixed", coOffset + i) = (newX - x).l2NormSqr() == 0 ? 1 : 0;
+                vtemp("BCsoft", coOffset + i) = 0;
 
                 vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                vtemp.tuple<3>("xtilde", coOffset + i) = newX;
-                vtemp.tuple<3>("xn", coOffset + i) = x;
-                vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
-                // vtemp.tuple<3>("xt", coOffset + i) = x;
-                vtemp.tuple<3>("xhat", coOffset + i) = x;
-                vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
+                vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
+                vtemp.tuple(dim_c<3>, "xn", coOffset + i) = x;
+                vtemp.tuple(dim_c<3>, "vn", coOffset + i) = (newX - x) / dt;
+                vtemp.tuple(dim_c<3>, "x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
     }
 
@@ -566,7 +559,9 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     hess3.init(PP.get_allocator(), estNumCps);
     hess4.init(PP.get_allocator(), estNumCps);
 
-    zeno::log_warn("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
+    zeno::log_warn("box diag size: {}, targetGRes: {}.\n\tdHat: {}, averageNodeMass: {}, averageEdgeLength: {}, "
+                   "averageSurfaceArea: {}\n",
+                   std::sqrt(boxDiagSize2), targetGRes, dHat, avgNodeMass, meanEdgeLength, meanSurfaceArea);
 }
 void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
@@ -609,65 +604,53 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
     BCsatisfied = false;
     pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         int BCorder = vtemp("BCorder", vi);
-        auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
-        auto projVec = [&BCbasis, BCorder](auto &dx) {
-            dx = BCbasis.transpose() * dx;
-            for (int d = 0; d != BCorder; ++d)
-                dx[d] = 0;
-            dx = BCbasis * dx;
-        };
         auto xn = vtemp.pack(dim_c<3>, "xn", vi);
-        vtemp.template tuple<3>("xhat", vi) = xn;
+        vtemp.tuple(dim_c<3>, "xhat", vi) = xn;
         auto deltaX = vtemp.pack(dim_c<3>, "vn", vi) * dt;
-        if (BCorder > 0)
-            projVec(deltaX);
         auto newX = xn + deltaX;
-        vtemp.template tuple<3>("xtilde", vi) = newX;
+        vtemp.tuple(dim_c<3>, "xtilde", vi) = newX;
 
         // update "BCfixed", "BCtarget" for dofs under boundary influence
+        /// @note if BCorder > 0, "vn" remains constant throughout this frame
         if (BCorder > 0) {
-            vtemp.template tuple<3>("BCtarget", vi) = BCbasis.transpose() * newX;
+            vtemp.tuple(dim_c<3>, "BCtarget", vi) = newX;
             vtemp("BCfixed", vi) = deltaX.l2NormSqr() == 0 ? 1 : 0;
         }
     });
     if (hasBoundary()) {
         const auto coSize = coVerts->size();
         pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
-                               coOffset = coOffset, framedt = framedt, curRatio = curRatio] __device__(int i) mutable {
+                               coOffset = coOffset, dt = dt] __device__(int i) mutable {
             auto xhat = vtemp.pack(dim_c<3>, "xhat", coOffset + i);
             auto xn = vtemp.pack(dim_c<3>, "xn", coOffset + i);
-            vtemp.template tuple<3>("xhat", coOffset + i) = xn;
-            vec3 newX{};
-            if (coverts.hasProperty("BCtarget"))
-                newX = coverts.pack<3>("BCtarget", i);
-            else {
-                auto v = coverts.pack<3>("v", i);
-                newX = xhat + v * framedt;
-            }
-            // auto xk = xhat + (newX - xhat) * curRatio;
-            auto xk = newX * curRatio + (1 - curRatio) * xhat;
-            vtemp.template tuple<3>("BCtarget", coOffset + i) = xk;
-            vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
-            vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
+            vtemp.tuple(dim_c<3>, "xhat", coOffset + i) = xn;
+            auto deltaX = vtemp.pack(dim_c<3>, "vn", coOffset + i) * dt;
+            vec3 newX = xn + deltaX;
+
+            vtemp.tuple(dim_c<3>, "BCtarget", coOffset + i) = newX;
+            vtemp("BCfixed", coOffset + i) = (newX - xn).l2NormSqr() == 0 ? 1 : 0;
+            vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
         });
     }
+    /// @brief additional hard constraints
     for (auto &primHandle : auxPrims) {
         if (primHandle.category == ZenoParticles::category_e::tracker) {
             const auto &eles = primHandle.getEles();
-            pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-                                        framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
-                auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>();
-                // retrieve motion from associated boundary vert
-                auto deltaX = vtemp.pack(dim_c<3>, "BCtarget", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);
-                //
-                auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
-                vtemp.template tuple<3>("BCtarget", inds[0]) = xn + deltaX;
-                vtemp.tuple(dim_c<9>, "BCbasis", inds[0]) = mat3::identity();
-                vtemp("BCfixed", inds[0]) = deltaX.l2NormSqr() == 0 ? 1 : 0;
-                vtemp("BCorder", inds[0]) = 3;
-                vtemp("BCsoft", inds[0]) = 0;
-                vtemp.template tuple<3>("xtilde", inds[0]) = xn + deltaX;
-            });
+            pol(Collapse(eles.size()),
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
+                    auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                    /// @note inds[1] here must point to a boundary primitive
+                    /// @note retrieve motion from associated boundary vert
+                    auto deltaX = vtemp.pack(dim_c<3>, "BCtarget", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);
+                    //
+                    auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
+                    vtemp.tuple(dim_c<3>, "BCtarget", inds[0]) = xn + deltaX;
+                    vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+                    vtemp("BCfixed", inds[0]) = deltaX.l2NormSqr() == 0 ? 1 : 0;
+                    vtemp("BCorder", inds[0]) = 3;
+                    vtemp("BCsoft", inds[0]) = 0;
+                    vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+                });
         }
     }
 }
@@ -675,23 +658,14 @@ void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
-        auto newX = vtemp.pack<3>("xn", vi);
-        auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
-        auto vn = vtemp.pack<3>("vn", vi);
-        if (dv.length() > 4)
-            dv = dv.normalized() * 4;
-        vn += dv;
         int BCorder = vtemp("BCorder", vi);
-        auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
-        auto projVec = [&BCbasis, BCorder](auto &dx) {
-            dx = BCbasis.transpose() * dx;
-            for (int d = 0; d != BCorder; ++d)
-                dx[d] = 0;
-            dx = BCbasis * dx;
-        };
-        if (BCorder > 0)
-            projVec(vn);
-        vtemp.tuple<3>("vn", vi) = vn;
+        if (BCorder == 0) {
+            auto newX = vtemp.pack(dim_c<3>, "xn", vi);
+            auto dv = (newX - vtemp.pack(dim_c<3>, "xtilde", vi)) / dt;
+            auto vn = vtemp.pack<3>("vn", vi);
+            vn += dv;
+            vtemp.tuple<3>("vn", vi) = vn;
+        }
     });
 }
 void IPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {

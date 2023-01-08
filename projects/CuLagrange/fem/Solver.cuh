@@ -201,6 +201,7 @@ struct IPCSystem : IObject {
     // krylov solver
     void convertHessian(zs::CudaExecutionPolicy &pol);
     void compactHessian(zs::CudaExecutionPolicy &pol);
+    void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);

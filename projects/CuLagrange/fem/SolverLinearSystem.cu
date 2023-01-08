@@ -8,53 +8,6 @@
 
 namespace zeno {
 
-template <typename VecT, int N = VecT::template range_t<0>::value,
-          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
-__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const typename IPCSystem::mat3 BCbasis[N / 3],
-                                               const int BCorder[N / 3], const int BCfixed[], bool projectDBC) {
-    // hessian rotation: trans^T hess * trans
-    // left trans^T: multiplied on rows
-    // right trans: multiplied on cols
-    constexpr int NV = N / 3;
-    // rotate and project
-    for (int vi = 0; vi != NV; ++vi) {
-        int offsetI = vi * 3;
-        for (int vj = 0; vj != NV; ++vj) {
-            int offsetJ = vj * 3;
-            IPCSystem::mat3 tmp{};
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    tmp(i, j) = H(offsetI + i, offsetJ + j);
-            // rotate
-            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-            // project
-            if (projectDBC) {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi];
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj];
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            } else {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            }
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    H(offsetI + i, offsetJ + j) = tmp(i, j);
-        }
-    }
-    return;
-}
-
 /// inertia
 void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol) {
     using namespace zs;
@@ -67,15 +20,11 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
             vtemp.pack<3>("grad", i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
 
         auto M = mat3::identity() * m;
-        mat3 BCbasis[1] = {vtemp.pack(dim_c<3, 3>, "BCbasis", i)};
         int BCorder[1] = {(int)vtemp("BCorder", i)};
-        int BCfixed[1] = {(int)vtemp("BCfixed", i)};
-        rotate_hessian(M, BCbasis, BCorder, BCfixed, projectDBC);
         tempI.tuple(dim_c<9>, "Hi", i) = M;
         // prepare preconditioner
-        for (int r = 0; r != 3; ++r)
-            for (int c = 0; c != 3; ++c)
-                vtemp("P", r * 3 + c, i) += M(r, c);
+        for (int d = 0; d != 3; ++d)
+            vtemp("P", d * 3 + d, i) += M(d, d);
     });
     // extforce (only grad modified)
     for (auto &primHandle : prims) {
@@ -132,13 +81,9 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  vOffset = primHandle.vOffset, includeHessian,
                  n = primHandle.getEles().size()] __device__(int ei) mutable {
                     auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
-                    mat3 BCbasis[2];
                     int BCorder[2];
-                    int BCfixed[2];
                     for (int i = 0; i != 2; ++i) {
-                        BCbasis[i] = vtemp.pack<3, 3>("BCbasis", inds[i]);
                         BCorder[i] = vtemp("BCorder", inds[i]);
-                        BCfixed[i] = vtemp("BCfixed", inds[i]);
                     }
 
                     if (BCorder[0] == 3 && BCorder[1] == 3) {
@@ -180,8 +125,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     H *= dt * dt * vole;
 
                     // rotate and project
-                    rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
-                    etemp.tuple<6 * 6>("He", ei) = H;
+                    etemp.tuple(dim_c<6, 6>, "He", ei) = H;
                     for (int vi = 0; vi != 2; ++vi) {
                         for (int i = 0; i != 3; ++i)
                             for (int j = 0; j != 3; ++j) {
@@ -204,17 +148,13 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     auto x1x0 = xs[1] - xs[0];
                     auto x2x0 = xs[2] - xs[0];
 
-                    mat3 BCbasis[3];
                     int BCorder[3];
-                    int BCfixed[3];
                     for (int i = 0; i != 3; ++i) {
-                        BCbasis[i] = vtemp.pack<3, 3>("BCbasis", inds[i]);
                         BCorder[i] = vtemp("BCorder", inds[i]);
-                        BCfixed[i] = vtemp("BCfixed", inds[i]);
                     }
                     zs::vec<T, 9, 9> H;
                     if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
-                        etemp.tuple<9 * 9>("He", ei) = H.zeros();
+                        etemp.tuple(dim_c<9, 9>, "He", ei) = H.zeros();
                         return;
                     }
 
@@ -313,8 +253,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     H *= dt * dt * vole;
 
                     // rotate and project
-                    rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
-                    etemp.tuple<9 * 9>("He", ei) = H;
+                    etemp.tuple(dim_c<9, 9>, "He", ei) = H;
                     for (int vi = 0; vi != 3; ++vi) {
                         for (int i = 0; i != 3; ++i)
                             for (int j = 0; j != 3; ++j) {
@@ -333,13 +272,9 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     vec3 xs[4] = {vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
                                   vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
 
-                    mat3 BCbasis[4];
                     int BCorder[4];
-                    int BCfixed[4];
                     for (int i = 0; i != 4; ++i) {
-                        BCbasis[i] = vtemp.pack<3, 3>("BCbasis", inds[i]);
                         BCorder[i] = vtemp("BCorder", inds[i]);
-                        BCfixed[i] = vtemp("BCfixed", inds[i]);
                     }
                     zs::vec<T, 12, 12> H;
                     if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) {
@@ -372,7 +307,6 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     H = dFdXT * Hq * dFdX * vole * dt * dt;
 
                     // rotate and project
-                    rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
                     etemp.tuple<12 * 12>("He", ei) = H;
                     for (int vi = 0; vi != 4; ++vi) {
                         for (int i = 0; i != 3; ++i)
@@ -416,13 +350,9 @@ void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
                                       vOffset = primHandle.vOffset, includeHessian] __device__(int i) mutable {
             auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c) + vOffset;
 
-            mat3 BCbasis[4];
             int BCorder[4];
-            int BCfixed[4];
             for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack(dim_c<3, 3>, "BCbasis", stcl[i]);
                 BCorder[i] = vtemp("BCorder", stcl[i]);
-                BCfixed[i] = vtemp("BCfixed", stcl[i]);
             }
             if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) {
                 btemp.tuple(dim_c<12 * 12>, 0, i) = zs::vec<T, 12, 12>::zeros();
@@ -454,7 +384,6 @@ void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
             make_pd(H);
             H *= dt2;
 
-            rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
             btemp.tuple(dim_c<12 * 12>, 0, i) = H;
             for (int vi = 0; vi != 4; ++vi) {
                 for (int i = 0; i != 3; ++i)
@@ -500,10 +429,7 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
                 }
 
                 // make_pd(hess);
-                mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
                 int BCorder[1] = {(int)vtemp("BCorder", vi)};
-                int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
-                rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
                 svtemp.tuple<9>("H", svi) = hess;
                 for (int i = 0; i != 3; ++i)
                     for (int j = 0; j != 3; ++j) {
@@ -555,10 +481,7 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
                         hess(2, 2) = coeff / epsvh;
                     }
 
-                    mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
                     int BCorder[1] = {(int)vtemp("BCorder", vi)};
-                    int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
-                    rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
                     svtemp.tuple(dim_c<9>, "H", svi) = svtemp.pack(dim_c<3, 3>, "H", svi) + hess;
                     for (int i = 0; i != 3; ++i)
                         for (int j = 0; j != 3; ++j) {

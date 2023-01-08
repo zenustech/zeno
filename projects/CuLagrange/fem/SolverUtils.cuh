@@ -271,4 +271,101 @@ inline T dot(zs::CudaExecutionPolicy &cudaPol, zs::TileVector<T, 32, AllocatorT>
     return reduce(cudaPol, res, thrust::plus<T>{});
 }
 
+template <typename VecT, typename VecTM, int N = VecT::template range_t<0>::value,
+          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value, VecTM::dim == 2,
+                            VecTM::template range_t<0>::value == 3, VecTM::template range_t<1>::value == 3> = 0>
+__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const VecTM BCbasis[N / 3],
+                                               const int BCorder[N / 3], const int BCfixed[], bool projectDBC) {
+    // hessian rotation: trans^T hess * trans
+    // left trans^T: multiplied on rows
+    // right trans: multiplied on cols
+    constexpr int NV = N / 3;
+    // rotate and project
+    for (int vi = 0; vi != NV; ++vi) {
+        int offsetI = vi * 3;
+        for (int vj = 0; vj != NV; ++vj) {
+            int offsetJ = vj * 3;
+            VecTM tmp{};
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    tmp(i, j) = H(offsetI + i, offsetJ + j);
+            // rotate
+            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+            // project
+            if (projectDBC) {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi];
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj];
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            } else {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            }
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    H(offsetI + i, offsetJ + j) = tmp(i, j);
+        }
+    }
+    return;
+}
+
+template <typename VecT, int N = VecT::template range_t<0>::value,
+          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
+__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const int BCorder[], const int BCfixed[],
+                                               bool projectDBC) {
+    // hessian rotation: trans^T hess * trans
+    // left trans^T: multiplied on rows
+    // right trans: multiplied on cols
+    constexpr int NV = N / 3;
+    using T = typename VecT::value_type;
+    // rotate and project
+    for (int vi = 0; vi != NV; ++vi) {
+        int offsetI = vi * 3;
+        for (int vj = 0; vj != NV; ++vj) {
+            int offsetJ = vj * 3;
+            using mat3 = zs::vec<T, 3, 3>;
+            mat3 tmp{};
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    tmp(i, j) = H(offsetI + i, offsetJ + j);
+            // rotate
+            // tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+            // project
+            if (projectDBC) {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi];
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj];
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            } else {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            }
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    H(offsetI + i, offsetJ + j) = tmp(i, j);
+        }
+    }
+    return;
+}
+
 } // namespace zeno

@@ -50,10 +50,10 @@ void IPCSystem::computeConstraints(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     pol(Collapse{numDofs}, [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
-        auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
-        auto BCtarget = vtemp.pack<3>("BCtarget", vi);
+        auto BCtarget = vtemp.pack(dim_c<3>, "BCtarget", vi);
         int BCorder = vtemp("BCorder", vi);
-        auto x = BCbasis.transpose() * vtemp.pack<3>("xn", vi);
+        // auto x = BCbasis.transpose() * vtemp.pack<3>("xn", vi);
+        auto x = vtemp.pack(dim_c<3>, "xn", vi);
         int d = 0;
         for (; d != BCorder; ++d)
             vtemp("cons", d, vi) = x[d] - BCtarget[d];
@@ -75,16 +75,15 @@ typename IPCSystem::T IPCSystem::constraintResidual(zs::CudaExecutionPolicy &pol
     Vector<T> num{vtemp.get_allocator(), numDofs}, den{vtemp.get_allocator(), numDofs};
     pol(Collapse{numDofs}, [vtemp = proxy<space>({}, vtemp), den = proxy<space>(den), num = proxy<space>(num),
                             maintainFixed] __device__(int vi) mutable {
-        auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
-        auto BCtarget = vtemp.pack<3>("BCtarget", vi);
+        auto BCtarget = vtemp.pack(dim_c<3>, "BCtarget", vi);
         int BCorder = vtemp("BCorder", vi);
-        auto cons = vtemp.pack<3>("cons", vi);
-        auto xt = vtemp.pack<3>("xhat", vi);
+        auto cons = vtemp.pack(dim_c<3>, "cons", vi);
+        auto xt = vtemp.pack(dim_c<3>, "xhat", vi);
         T n = 0, d_ = 0;
         // https://ipc-sim.github.io/file/IPC-supplement-A-technical.pdf Eq5
         for (int d = 0; d != BCorder; ++d) {
             n += zs::sqr(cons[d]);
-            d_ += zs::sqr(col(BCbasis, d).dot(xt) - BCtarget[d]);
+            d_ += zs::sqr(xt[d] - BCtarget[d]);
         }
         num[vi] = n;
         den[vi] = d_;
@@ -313,7 +312,7 @@ void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T
 #if PROFILE_IPC
     timer.tock(fmt::format("dcd broad phase [pt, ee]({}, {})", npt, nee));
 #else
-    fmt::print(fg(fmt::color::light_golden_rod_yellow), "dcd broad phase [pt, ee]({}, {})", npt, nee);
+    fmt::print(fg(fmt::color::light_golden_rod_yellow), "dcd broad phase [pt, ee]({}, {})\n", npt, nee);
 #endif
 
     frontManageRequired = false;
@@ -768,7 +767,7 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
 #if PROFILE_IPC
     timer.tock(fmt::format("ccd broad phase [pt, ee]({}, {})", npt, nee));
 #else
-    fmt::print(fg(fmt::color::light_golden_rod_yellow), "ccd broad phase [pt, ee]({}, {})", npt, nee);
+    fmt::print(fg(fmt::color::light_golden_rod_yellow), "ccd broad phase [pt, ee]({}, {})\n", npt, nee);
 #endif
 }
 void IPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary) {
@@ -945,7 +944,33 @@ void IPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi) 
     }
 }
 
-void IPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) {
+void IPCSystem::project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag) {
+    using namespace zs;
+    constexpr execspace_e space = execspace_e::cuda;
+    // projection
+    if (projectDBC)
+        pol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
+                                 tagOffset = cgtemp.getPropertyOffset(tag),
+                                 orderOffset = vtemp.getPropertyOffset("BCorder")] ZS_LAMBDA(int vi) mutable {
+            int BCorder = vtemp(orderOffset, vi);
+            for (int d = 0; d != BCorder; ++d)
+                cgtemp(tagOffset + d, vi) = 0;
+        });
+    else
+        pol(zs::range(numDofs),
+            [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
+             tagOffset = cgtemp.getPropertyOffset(tag), fixedOffset = vtemp.getPropertyOffset("BCfixed"),
+             orderOffset = vtemp.getPropertyOffset("BCorder")] ZS_LAMBDA(int vi) mutable {
+                int BCfixed = vtemp(fixedOffset, vi);
+                if (BCfixed) {
+                    int BCorder = vtemp(orderOffset, vi);
+                    for (int d = 0; d != BCorder; ++d)
+                        cgtemp(tagOffset + d, vi) = 0;
+                }
+            });
+}
+
+void IPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) { // deprecated
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // projection
@@ -2518,6 +2543,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
+    /// @note assume right-hand side is already projected
     /// copy diagonal block preconditioners
     cudaPol.sync(false);
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp)] ZS_LAMBDA(
@@ -2536,13 +2562,14 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
             });
     // temp = A * dir
     multiply(cudaPol, true_c, "dir", "temp");
+    project(cudaPol, true_c, "temp"); // project production
     // r = grad - temp
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
                                  rOffset = cgtemp.getPropertyOffset("r"), gradOffset = vtemp.getPropertyOffset("grad"),
                                  tempOffset = cgtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
         cgtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - cgtemp.pack<3>(tempOffset, i);
     });
-    // project(cudaPol, "r");
+    // project(cudaPol, true_c, "r"); // project right hand side
     precondition(cudaPol, true_c, "r", "q");
     cudaPol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), pOffset = cgtemp.getPropertyOffset("p"),
                                  qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
@@ -2567,7 +2594,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         if (residualPreconditionedNorm2 <= localTol2)
             break;
         multiply(cudaPol, true_c, "p", "temp");
-        // project(cudaPol, "temp"); // need further checking hessian!
+        project(cudaPol, true_c, "temp"); // project production
 
         double alpha = zTrk / dot(cudaPol, wrapt<double>{}, cgtemp, "temp", "p");
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), dirOffset = cgtemp.getPropertyOffset("dir"),
@@ -2768,11 +2795,14 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                     computeFrictionBarrierGradientAndHessian(pol, "grad");
                 }
         }
-        // ROTATE GRAD, APPLY CONSTRAINTS, PROJ GRADIENT
+#if 0
+// ROTATE GRAD (NO MORE)
         pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() * vtemp.pack<3>("grad", i);
             vtemp.tuple<3>("grad", i) = grad;
         });
+#endif
+        // APPLY CONSTRAINTS, PROJ GRADIENT
         if (!BCsatisfied) {
             // grad
             pol(zs::range(numDofs),
@@ -2793,9 +2823,37 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             // hess (embedded in multiply)
         }
         project(pol, "grad");
-        // PREPARE P
+// PREPARE P (INVERSION)
+#if 0
+        if (projectDBC)
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                int BCorder = vtemp("BCorder", i);
+                if (BCorder == 3)
+                    vtemp.tuple<9>("P", i) = mat3::identity();
+                else {
+                    auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
+                    if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
+                        vtemp.tuple<9>("P", i) = inverse(mat);
+                    else
+                        vtemp.tuple<9>("P", i) = mat3::identity();
+                }
+            });
+        else
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                int BCfixed = vtemp("BCfixed", i);
+                if (BCfixed)
+                    vtemp.tuple<9>("P", i) = mat3::identity();
+                else {
+                    auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
+                    if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
+                        vtemp.tuple<9>("P", i) = inverse(mat);
+                    else
+                        vtemp.tuple<9>("P", i) = mat3::identity();
+                }
+            });
+#endif
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            auto mat = vtemp.pack<3, 3>("P", i);
+            auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
                 vtemp.tuple<9>("P", i) = inverse(mat);
             else
@@ -2805,17 +2863,19 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         convertHessian(pol);
         // CG SOLVE
         cgsolve(pol);
-        // ROTATE BACK
+#if 0
+// ROTATE BACK (NO MORE)
         pol(Collapse{vtemp.size()}, [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int vi) mutable {
             vtemp.template tuple<3>("dir", vi) =
                 vtemp.pack(dim_c<3, 3>, "BCbasis", vi) * vtemp.pack(dim_c<3>, "dir", vi);
         });
+#endif
         // CHECK PN CONDITION
         T res = infNorm(pol, vtemp, "dir") / dt;
         T cons_res = constraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
-            // zeno::log_info("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
-            //               res);
+            zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
+                           res);
             break;
         }
         fmt::print(fg(fmt::color::aquamarine),
@@ -2844,7 +2904,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         }
         lineSearch(pol, alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple<3>("xn", i) = vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+            vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
 // UPDATE RULE
 #if 0
