@@ -241,7 +241,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                         Pshear(d, 0) = 2 * f0Tf1 * f1(d);
                         Pshear(d, 1) = 2 * f0Tf1 * f0(d);
                     }
-                    auto vecP = flatten(model.mu * Pstretch + (model.mu * 0.3) * Pshear);
+                    auto vecP = flatten(model.mu * Pstretch + (model.mu * s_clothShearingCoeff) * Pshear);
                     auto vfdt2 = -vole * (dFdXT * vecP) * (dt * dt);
 
                     for (int i = 0; i != 3; ++i) {
@@ -310,7 +310,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
 
                         mat6 dPdF =
                             zs::abs(I6) * (t - (dyadic_prod(Tq, Tq) / normTq)) + lambda0 * (dyadic_prod(q0, q0));
-                        dPdF *= (model.mu * 0.3);
+                        dPdF *= (model.mu * s_clothShearingCoeff);
                         return dPdF;
                     };
                     auto He = stretchHessian() + shearHessian();
@@ -325,7 +325,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                             }
                     }
 #else 
-                    // vole * model.mu, 0.3 for shear energy 
+                    // vole * model.mu, s_clothShearingCoeff(0.1) for shear energy 
                     mat3 H0, H1, H01, H10; 
                     zs::vec<T, 6, 6> He;  
                     auto f0f0T = dyadic_prod(f0, f0); 
@@ -334,10 +334,10 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     auto f1f0T = f0f1T.transpose(); 
                     auto id3 = mat3::identity(); 
                     H0 = 2.0f / (f0Norm * f0Norm * f0Norm) * f0f0T
-                         + 2.0f * (1 - 1.0f / (f0Norm)) * id3 + 2.0f * f1f1T * 0.3f;
+                         + 2.0f * (1 - 1.0f / (f0Norm)) * id3 + 2.0f * f1f1T * s_clothShearingCoeff;
                     H1 = 2.0f / (f1Norm * f1Norm * f1Norm) * f1f1T
-                         + 2.0f * (1 - 1.0f / (f1Norm)) * id3 + 2.0f * f0f0T * 0.3f;
-                    H01 = 2.0f * 0.3f * (f1f0T + f0Tf1 * id3); 
+                         + 2.0f * (1 - 1.0f / (f1Norm)) * id3 + 2.0f * f0f0T * s_clothShearingCoeff;
+                    H01 = 2.0f * s_clothShearingCoeff * (f1f0T + f0Tf1 * id3); 
                     H10 = H01.transpose(); 
                     for (int di = 0; di < 3; di++)
                         for (int dj = 0; dj < 3; dj++)
@@ -550,7 +550,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
                 });
-                findConstraints(pol, dHat, "xn");
+                findConstraints(pol, dHat, "xinit");
                 success = collisionStep(pol, true);
             }
             if (!success)
@@ -590,8 +590,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     int maxIters = K * IDyn; 
     int k = 0; 
     /// optimizer
-    for (int iters = 0; iters < maxIters; ++iters) {
-        k++; 
+    for (int iters = 0; iters < maxIters; ++iters, ++k) {
         bool converged = false; 
 
         if constexpr (s_enableProfile)
@@ -627,7 +626,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                             "grad residual {}\n",
                             substep, iters, res, res * dt));
 #if s_useLineSearch
-        if (alpha < 1e-2f)
+        if (alpha < 1e-3f)
             converged = true; 
         if (k % 30 == 0)
             fmt::print("\t\tdynamics iteration: {}, alpha: {}\n", k, alpha); 
@@ -644,18 +643,24 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "ytmp", i) = vtemp.pack(dim_c<3>, "yn", i); 
+                    vtemp.tuple(dim_c<3>, "xtmp", i) = vtemp.pack(dim_c<3>, "xn", i); 
                 });
-                // fmt::print("\tfinal dynamics linesearch alpha: {}, E: {}, E0: {}\n", alpha, E, lastEnergy);   
+                // fmt::print("\tfinal dynamics linesearch alpha: {}, E: {}, E0: {}, E1: {}, E2: {}, iters: {}, k: {}, maxIters: {}\n", 
+                //     alpha, E, lastEnergy, E1, E2, iters, k, maxIters);   
                 lastEnergy = E; 
                 firstStepping = false; 
             } else {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "ytmp", i); 
+                    vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xtmp", i); 
+                    // when to calculate E: before or after calculating "xn"?
                 });
+                // fmt::print("\t\t\trollback dynamics linesearch alpha: {}, new alpha: {}, E: {}, E0: {}, iters: {}, k: {}, maxIters: {}\n", 
+                //     alpha, alpha * alphaDecrease, E, lastEnergy, iters, k, maxIters);   
                 alpha *= alphaDecrease; 
                 maxIters -= (iters - 8);                  
                 iters = -1;
-                k -= 8; 
+                k -= 9; 
                 firstStepping = true; 
                 continue; 
             }
@@ -665,7 +670,9 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 #endif  
         if (!converged)
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+#if s_useChebyshevAcc
                 vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); 
+#endif 
                 vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
             });
 #if s_useChebyshevAcc
@@ -749,7 +756,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 collisionCnt[2]++;
             }
 
-            findConstraints(pol, dHat, "xn");
+            findConstraints(pol, dHat, "xinit");
 
             if constexpr (s_enableProfile) {
                 timer.tock();

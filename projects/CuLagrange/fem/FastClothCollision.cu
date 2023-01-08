@@ -242,8 +242,9 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     constexpr auto space = execspace_e::cuda;
 
     std::tie(npp, ne) = getConstraintCnt();
+#if !s_silentMode
     fmt::print("collision stepping [pp, edge constraints]: {}, {}\n", npp, ne);
-
+#endif 
     ///
     /// @brief soft phase for constraints
     ///
@@ -263,17 +264,23 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     ///
     if (constraintSatisfied(pol))
     {
+#if !s_silentMode
         fmt::print(fg(fmt::color::yellow),"\tsoft phase finished successfully!\n"); 
         return true;
+#endif 
     }
+#if !s_silentMode
     fmt::print(fg(fmt::color::red),"\tsoft phase failed!\n"); 
+#endif
     if (!enableHardPhase)
         return false;
 
     ///
     /// @brief hard phase for constraints
     ///
+#if !s_silentMode
     fmt::print(fg(fmt::color::light_golden_rod_yellow), "entering hard phase.\n");
+#endif 
     /// @note start from collision-free state x^k
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
