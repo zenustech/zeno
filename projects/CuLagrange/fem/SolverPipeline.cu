@@ -2618,6 +2618,16 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         residualPreconditionedNorm2 = zTrk;
     } // end cg step
     /// copy back results
+    if (iter == CGCap) {
+        // r = grad - temp
+        cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
+                                     tempOffset = cgtemp.getPropertyOffset("temp"),
+                                     gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
+            cgtemp.tuple<3>(tempOffset, i) = vtemp.pack<3>(gradOffset, i);
+        });
+        precondition(cudaPol, true_c, "temp", "dir");
+        zeno::log_warn("falling back to gradient descent.");
+    }
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp)] ZS_LAMBDA(
                                     int i) mutable { vtemp.tuple<3>("dir", i) = cgtemp.pack<3>("dir", i); });
     cudaPol.sync(true);
