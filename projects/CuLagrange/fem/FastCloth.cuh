@@ -16,6 +16,8 @@
 #define s_useLineSearch 1
 #define s_debugOutput 0
 #define s_useHardPhase 0
+#define s_clothShearingCoeff 0.01f
+#define s_silentMode 1
 namespace zeno {
 
 /// for cell-based collision detection
@@ -213,7 +215,7 @@ struct FastClothSystem : IObject {
     std::size_t estNumCps = 1000000;
 
     bool firstStepping = true; 
-    T alpha = 1.0f; // step size 
+    T alpha = 0.3f; // step size 
     T alphaMin = 0.10f; 
     T alphaDecrease = 0.7f; 
     T pnRel = 1e-2;
@@ -276,7 +278,7 @@ struct FastClothSystem : IObject {
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
     int IDyn = 1 /*1~6*/, R = 8;
     T chebyOmega = 1.0f; 
-    T chebyRho = 0.96f; 
+    T chebyRho = 0.99f; 
 
     T proximityRadius() const {
         return std::sqrt((B + Btight) * (B + Btight) + epsSlack);

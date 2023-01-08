@@ -218,7 +218,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #if !s_useNewtonSolver
     K = 72 * 3; 
 #else 
-    K = 72; 
+    K = 72 * 3; 
     IDyn = 1; 
 #endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
@@ -518,6 +518,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
+                        {"xtmp", 3}, 
                         {"yn0", 3},
                         {"yk", 3},
                         {"ytmp", 3}, 
