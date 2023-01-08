@@ -210,6 +210,7 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
