@@ -43,7 +43,7 @@ void ZenoParamWidget::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 ZenoFrame::ZenoFrame(QWidget* parent, Qt::WindowFlags f)
     : QFrame(parent, f)
 {
-    setFrameShape(QFrame::VLine);
+	setFrameShape(QFrame::VLine);
     QPalette pal = palette();
     pal.setBrush(QPalette::WindowText, QColor(86, 96, 143));
     setPalette(pal);
@@ -609,9 +609,9 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit->setFont(param.font);
     m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
 
-    QTextCharFormat format;
+	QTextCharFormat format;
     QFont font("HarmonyOS Sans", 12);
-    format.setFont(font);
+	format.setFont(font);
     m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setText(value);
 
@@ -900,9 +900,9 @@ ZenoSpacerItem::ZenoSpacerItem(bool bHorizontal, qreal size, QGraphicsItem* pare
 
 void ZenoSpacerItem::setGeometry(const QRectF& rect)
 {
-    prepareGeometryChange();
-    QGraphicsLayoutItem::setGeometry(rect);
-    setPos(rect.topLeft());
+	prepareGeometryChange();
+	QGraphicsLayoutItem::setGeometry(rect);
+	setPos(rect.topLeft());
 }
 
 QRectF ZenoSpacerItem::boundingRect() const
@@ -919,17 +919,17 @@ void ZenoSpacerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 
 QSizeF ZenoSpacerItem::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
 {
-    QRectF rc = boundingRect();
-    switch (which)
-    {
-    case Qt::MinimumSize:
-    case Qt::PreferredSize:
+	QRectF rc = boundingRect();
+	switch (which)
+	{
+	case Qt::MinimumSize:
+	case Qt::PreferredSize:
     case Qt::MaximumSize:
-        return rc.size();
-    default:
-        break;
-    }
-    return constraint;
+		return rc.size();
+	default:
+		break;
+	}
+	return constraint;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -988,182 +988,97 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
 }
 
 
-//////////////////////////////////////////////////////////////////////////////
-ZenoStatusBtnGroup::ZenoStatusBtnGroup(QGraphicsItem* parent)
-    : _base(parent)
-    , m_options(0)
-    , m_mute(nullptr)
-    , m_once(nullptr)
-    , m_view(nullptr)
-{
-    m_once = new ZenoImageItem(
-        ":/icons/ONCE_dark.svg",
-        ":/icons/ONCE_light.svg",
-        ":/icons/ONCE_light.svg",
-        ZenoStyle::dpiScaledSize(QSize(50, m_btnHeight)),
-        this);
-    m_mute = new ZenoImageItem(
-        ":/icons/MUTE_dark.svg",
-        ":/icons/MUTE_light.svg",
-        ":/icons/MUTE_light.svg", 
-        ZenoStyle::dpiScaledSize(QSize(50, m_btnHeight)),
-        this);
-    m_view = new ZenoImageItem(
-        ":/icons/VIEW_dark.svg",
-        ":/icons/VIEW_light.svg",
-        ":/icons/VIEW_light.svg",
-        ZenoStyle::dpiScaledSize(QSize(50, m_btnHeight)),
-        this);
-
-    setAcceptHoverEvents(true);
-
-    m_once->setContentsMargin(QMargins(0, 0, 0, ZenoStyle::dpiScaled(8)));
-    m_mute->setContentsMargin(QMargins(0, 0, 0, ZenoStyle::dpiScaled(8)));
-    m_view->setContentsMargin(QMargins(0, 0, 
-        ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(72)));
-
-    m_once->setCheckable(true);
-    m_mute->setCheckable(true);
-    m_view->setCheckable(true);
-
-    QPointF base = QPointF(0, 0);
-    m_once->setPos(base);
-    base += QPointF(ZenoStyle::dpiScaled(38), 0);
-    m_mute->setPos(base);
-    base += QPointF(ZenoStyle::dpiScaled(38), 0);
-    m_view->setPos(base);
-
-    connect(m_once, SIGNAL(hoverChanged(bool)), this, SLOT(onBigButtonHoverChanged(bool)));
-    connect(m_view, SIGNAL(hoverChanged(bool)), this, SLOT(onBigButtonHoverChanged(bool)));
-    connect(m_mute, SIGNAL(hoverChanged(bool)), this, SLOT(onBigButtonHoverChanged(bool)));
-}
-
-qreal ZenoStatusBtnGroup::buttonHeight() const
-{
-    return m_once->boundingRect().height();
-}
-
-QRectF ZenoStatusBtnGroup::boundingRect() const
-{
-    QRectF rc = childrenBoundingRect();
-    return rc;
-}
-
-void ZenoStatusBtnGroup::onBigButtonHoverChanged(bool bChecked)
-{
-    QObject* pSender = this->sender();
-    if (pSender == m_once)
-    {
-        emit toggleHoverChanged(OPT_ONCE, bChecked);
-    }
-    else if (pSender == m_view)
-    {
-        emit toggleHoverChanged(OPT_VIEW, bChecked);
-    }
-    else if (pSender == m_mute)
-    {
-        emit toggleHoverChanged(OPT_MUTE, bChecked);
-    }
-}
-
-void ZenoStatusBtnGroup::updateHovered(NODE_OPTION opt, bool bHovered)
-{
-    if (opt == OPT_ONCE)
-    {
-        m_once->toggle((m_options & OPT_ONCE) || bHovered);
-        m_mute->toggle((m_options & OPT_MUTE));
-        m_view->toggle((m_options & OPT_VIEW));
-    }
-    else if (opt == OPT_MUTE)
-    {
-        m_mute->toggle((m_options & OPT_MUTE) || bHovered);
-        m_once->toggle((m_options & OPT_ONCE));
-        m_view->toggle((m_options & OPT_VIEW));
-    }
-    else if (opt == OPT_VIEW)
-    {
-        m_view->toggle((m_options & OPT_VIEW) || bHovered);
-        m_mute->toggle((m_options & OPT_MUTE));
-        m_once->toggle((m_options & OPT_ONCE));
-    }
-    else if (opt == OPT_NONE)
-    {
-        m_once->toggle((m_options & OPT_ONCE));
-        m_view->toggle((m_options & OPT_VIEW));
-        m_mute->toggle((m_options & OPT_MUTE));
-    }
-}
-
-void ZenoStatusBtnGroup::onZoomed()
-{
-    if (1 - editor_factor > 0.00001f)
-    {
-        QSize size = ZenoStyle::dpiScaledSize(QSize(50 / editor_factor, 42 / editor_factor));
-        m_once->resize(size);
-        m_mute->resize(size);
-        m_view->resize(size);
-        QSizeF sz2 = m_once->size();
-        QPointF base = QPointF(0, 0);
-        //base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
-        m_once->setPos(base);
-        base += QPointF(ZenoStyle::dpiScaled(38. / editor_factor), 0);
-        m_mute->setPos(base);
-        base += QPointF(ZenoStyle::dpiScaled(38. / editor_factor), 0);
-        m_view->setPos(base);
-    }
-}
-
-void ZenoStatusBtnGroup::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
-}
-
-void ZenoStatusBtnGroup::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
-{
-    _base::hoverEnterEvent(event);
-}
-
-void ZenoStatusBtnGroup::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
-{
-    _base::hoverMoveEvent(event);
-}
-
-void ZenoStatusBtnGroup::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
-{
-    _base::hoverLeaveEvent(event);
-    hide();
-}
-
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent)
     : _base(parent)
-    , m_options(0)
-    , m_lTopLeft(0)
-    , m_lBtnWidth(0)
-    , m_hoverOption(OPT_NONE)
-    , m_group(nullptr)
+    , m_minMute(nullptr)
+    , m_minView(nullptr)
+    , m_minOnce(nullptr)
 {
-    m_size = ZenoStyle::dpiScaledSize(QSizeF(110, 64));
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(25, 42)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
+	m_once = new ZenoImageItem(
+        ":/icons/ONCE_dark.svg",
+        ":/icons/ONCE_light.svg",
+        ":/icons/ONCE_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+	m_mute = new ZenoImageItem(
+        ":/icons/MUTE_dark.svg",
+        ":/icons/MUTE_light.svg",
+        ":/icons/MUTE_light.svg", 
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+	m_view = new ZenoImageItem(
+        ":/icons/VIEW_dark.svg",
+        ":/icons/VIEW_light.svg",
+        ":/icons/VIEW_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
 
-    m_group = new ZenoStatusBtnGroup(this);
+    //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_mute->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_view->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 
-    qreal groupHeight = m_group->buttonHeight();
-    static const qreal margin = ZenoStyle::dpiScaled(8);
-    QPointF base = QPointF(ZenoStyle::dpiScaled(12), -groupHeight - margin);
-    m_group->setPos(base);
-    m_group->hide();
+    m_minMute->setCheckable(true);
+    m_minView->setCheckable(true);
+    m_minOnce->setCheckable(true);
+    m_once->setCheckable(true);
+    m_mute->setCheckable(true);
+    m_view->setCheckable(true);
+    m_once->hide();
+    m_mute->hide();
+    m_view->hide();
 
-    //onZoomed();
+    m_minOnce->setPos(QPointF(0, 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(20), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(40), 0));
 
-    connect(m_group, SIGNAL(toggleHoverChanged(NODE_OPTION, bool)),
-        this, SLOT(onGroupHoveredChanged(NODE_OPTION, bool)));
+    QSizeF sz2 = m_once->size();
+    //todo: kill these magin number.
+	QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+	m_once->setPos(base);
+	base += QPointF(ZenoStyle::dpiScaled(38), 0);
+	m_mute->setPos(base);
+	base += QPointF(ZenoStyle::dpiScaled(38), 0);
+	m_view->setPos(base);
+
+    onZoomed();
+
+    m_minOnce->setZValue(ZVALUE_ELEMENT);
+    m_minView->setZValue(ZVALUE_ELEMENT);
+    m_minMute->setZValue(ZVALUE_ELEMENT);
+
+    connect(m_minOnce, SIGNAL(hoverChanged(bool)), m_once, SLOT(setHovered(bool)));
+    connect(m_minView, SIGNAL(hoverChanged(bool)), m_view, SLOT(setHovered(bool)));
+    connect(m_minMute, SIGNAL(hoverChanged(bool)), m_mute, SLOT(setHovered(bool)));
+	connect(m_once, SIGNAL(hoverChanged(bool)), m_minOnce, SLOT(setHovered(bool)));
+	connect(m_view, SIGNAL(hoverChanged(bool)), m_minView, SLOT(setHovered(bool)));
+	connect(m_mute, SIGNAL(hoverChanged(bool)), m_minMute, SLOT(setHovered(bool)));
+
+	connect(m_minOnce, SIGNAL(toggled(bool)), m_once, SLOT(toggle(bool)));
+	connect(m_minView, SIGNAL(toggled(bool)), m_view, SLOT(toggle(bool)));
+	connect(m_minMute, SIGNAL(toggled(bool)), m_mute, SLOT(toggle(bool)));
+	connect(m_once, SIGNAL(toggled(bool)), m_minOnce, SLOT(toggle(bool)));
+	connect(m_view, SIGNAL(toggled(bool)), m_minView, SLOT(toggle(bool)));
+	connect(m_mute, SIGNAL(toggled(bool)), m_minMute, SLOT(toggle(bool)));
+
+    connect(m_minMute, &ZenoImageItem::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_MUTE, hovered);
+    });
+	connect(m_minView, &ZenoImageItem::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_VIEW, hovered);
+    });
+	connect(m_minOnce, &ZenoImageItem::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_ONCE, hovered);
+	});
 
     setAcceptHoverEvents(true);
 }
 
 void ZenoMinStatusBtnItem::setOptions(int options)
 {
-    m_options = options;
     setChecked(STATUS_ONCE, options & OPT_ONCE);
     setChecked(STATUS_MUTE, options & OPT_MUTE);
     setChecked(STATUS_VIEW, options & OPT_VIEW);
@@ -1171,190 +1086,88 @@ void ZenoMinStatusBtnItem::setOptions(int options)
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 {
-    //todo:
-}
-
-void ZenoMinStatusBtnItem::onGroupHoveredChanged(NODE_OPTION opt, bool bHovered)
-{
-    if (bHovered)
+    if (btn == STATUS_MUTE)
     {
-        m_hoverOption = opt;
+        m_mute->toggle(bChecked);
+        m_minMute->toggle(bChecked);
     }
-    else
+    if (btn == STATUS_ONCE)
     {
-        m_hoverOption = OPT_NONE;
+		m_once->toggle(bChecked);
+		m_minOnce->toggle(bChecked);
     }
-    update();
-}
-
-void ZenoMinStatusBtnItem::hoverChanged(bool bHoverEntered, const QPointF& pt)
-{
-    if (bHoverEntered)
-    {
-        if (m_oncePath.contains(pt))
-        {
-            m_hoverOption = OPT_ONCE;
-            m_group->updateHovered(m_hoverOption, true);
-        }
-        else if (m_mutePath.contains(pt))
-        {
-            m_hoverOption = OPT_MUTE;
-            m_group->updateHovered(m_hoverOption, true);
-        }
-        else if (m_viewPath.contains(pt))
-        {
-            m_hoverOption = OPT_VIEW;
-            m_group->updateHovered(m_hoverOption, true);
-        }
-        m_group->show();
-    }
-    else
-    {
-        m_hoverOption = OPT_NONE;
-        m_group->updateHovered(m_hoverOption, false);
-    }
-    update();
-}
-
-void ZenoMinStatusBtnItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
-{
-    switch (m_hoverOption)
-    {
-        case OPT_ONCE:
-        {
-            
-            break;
-        }
-        case OPT_MUTE:
-        {
-
-            break;
-        }
-        case OPT_VIEW:
-        {
-
-            break;
-        }
-    }
-    _base::mouseReleaseEvent(event);
+	if (btn == STATUS_VIEW)
+	{
+		m_view->toggle(bChecked);
+		m_minView->toggle(bChecked);
+	}
 }
 
 void ZenoMinStatusBtnItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
+    m_mute->show();
+    m_view->show();
+    m_once->show();
     _base::hoverEnterEvent(event);
-    hoverChanged(true, event->pos());
 }
 
 void ZenoMinStatusBtnItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
     _base::hoverMoveEvent(event);
-    hoverChanged(true, event->pos());
 }
 
 void ZenoMinStatusBtnItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
+	m_mute->hide();
+	m_view->hide();
+	m_once->hide();
     _base::hoverLeaveEvent(event);
-    hoverChanged(false, QPointF());
 }
 
 QRectF ZenoMinStatusBtnItem::boundingRect() const
 {
-    return QRectF(0, 0, m_size.width(), m_size.height());
-}
-
-void ZenoMinStatusBtnItem::setSize(const QSizeF& sz)
-{
-    m_size = sz;
+    if (!m_mute->isVisible() && !m_view->isVisible() && !m_once->isVisible())
+    {
+        QRectF rc;
+		rc = m_minMute->sceneBoundingRect();
+		rc |= m_minView->sceneBoundingRect();
+		rc |= m_minOnce->sceneBoundingRect();
+        rc = mapRectFromScene(rc);
+        return rc;
+    }
+    else
+    {
+		QRectF rc = childrenBoundingRect();
+		return rc;
+    }
 }
 
 void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    static int borderwidth = ZenoStyle::dpiScaled(2);
-    static QColor bgDark(59, 64, 72);
-    static QColor bgOnce(254, 189, 35);
-    static QColor bgMute(226, 2, 246);
-    static QColor bgView(0, 224, 252);
-
-    //m_size = boundingRect().size();
-    m_lBtnWidth = 0.3 * m_size.width(); //can finetune this factor.
-    m_lTopLeft = 0.6 * m_lBtnWidth;
-
-    painter->setRenderHint(QPainter::Antialiasing);
-
-    //draw once button
-    QPainterPath path;
-
-    int xUp = m_lTopLeft;
-    int xDown = m_lBtnWidth;
-
-    m_oncePath.clear();
-    m_oncePath.moveTo(xUp, 0);
-    m_oncePath.lineTo(xUp + m_lBtnWidth, 0);
-    m_oncePath.lineTo(xDown, m_size.height());
-    m_oncePath.lineTo(0, m_size.height());
-    m_oncePath.closeSubpath();
-    if ((m_options & OPT_ONCE) || m_hoverOption == OPT_ONCE)
-    {
-        painter->fillPath(m_oncePath, bgOnce);
-    }
-    else
-    {
-        painter->fillPath(m_oncePath, bgDark);
-    }
-
-    m_mutePath.clear();
-    //draw mute button
-    xUp += m_lBtnWidth + borderwidth;
-    xDown += borderwidth;
-    m_mutePath.moveTo(xUp, 0);
-    m_mutePath.lineTo(xUp + m_lBtnWidth, 0);
-    m_mutePath.lineTo(xDown + m_lBtnWidth, m_size.height());
-    m_mutePath.lineTo(xDown, m_size.height());
-    m_mutePath.closeSubpath();
-    if ((m_options & OPT_MUTE) || m_hoverOption == OPT_MUTE)
-    {
-        painter->fillPath(m_mutePath, bgMute);
-    }
-    else
-    {
-        painter->fillPath(m_mutePath, bgDark);
-    }
-
-    m_viewPath.clear();
-    xUp += m_lBtnWidth + borderwidth;
-    xDown += m_lBtnWidth + borderwidth;
-
-    m_viewPath.moveTo(xUp, 0);
-    m_viewPath.lineTo(m_size.width(), 0);
-    m_viewPath.lineTo(m_size.width(), m_size.height());
-    m_viewPath.lineTo(xDown, m_size.height());
-    m_viewPath.closeSubpath();
-    if ((m_options & OPT_VIEW) || m_hoverOption == OPT_VIEW)
-    {
-        painter->fillPath(m_viewPath, bgView);
-    }
-    else
-    {
-        painter->fillPath(m_viewPath, bgDark);
-    }
 }
 
 void ZenoMinStatusBtnItem::onZoomed() 
 {
-    m_group->onZoomed();
-    qreal buttonH = m_group->buttonHeight();
-    static const qreal margin = ZenoStyle::dpiScaled(0);
-    qreal hOffset = -buttonH - margin;
-    //hOffset *= editor_factor;
-    QPointF base = QPointF(ZenoStyle::dpiScaled(12), hOffset);
-    m_group->setPos(base);
+    if (1 - editor_factor > 0.00001f) 
+    {
+        QSize size = ZenoStyle::dpiScaledSize(QSize(50 / editor_factor, 42 / editor_factor));
+        m_once->resize(size);
+        m_mute->resize(size);
+        m_view->resize(size);
+        QSizeF sz2 = m_once->size();
+        QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+        m_once->setPos(base);
+        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        m_mute->setPos(base);
+        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        m_view->setPos(base);
+    }
 }
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnWidget::ZenoMinStatusBtnWidget(const StatusComponent& statusComp, QGraphicsItem* parent)
-    : QGraphicsLayoutItem()
-    , ZenoMinStatusBtnItem(statusComp, parent)
+	: QGraphicsLayoutItem()
+	, ZenoMinStatusBtnItem(statusComp, parent)
 {
 }
 
@@ -1365,35 +1178,35 @@ void ZenoMinStatusBtnWidget::updateGeometry()
 
 void ZenoMinStatusBtnWidget::setGeometry(const QRectF& rect)
 {
-    prepareGeometryChange();
-    QGraphicsLayoutItem::setGeometry(rect);
-    setPos(rect.topLeft());
+	prepareGeometryChange();
+	QGraphicsLayoutItem::setGeometry(rect);
+	setPos(rect.topLeft());
 }
 
 QRectF ZenoMinStatusBtnWidget::boundingRect() const
 {
     return ZenoMinStatusBtnItem::boundingRect();
-    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
-    return rc;
+	QRectF rc = QRectF(QPointF(0, 0), geometry().size());
+	return rc;
 }
 
 QSizeF ZenoMinStatusBtnWidget::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
 {
-    switch (which)
+	switch (which)
+	{
+	case Qt::MinimumSize:
+	case Qt::PreferredSize:
+	case Qt::MaximumSize:
     {
-    case Qt::MinimumSize:
-    case Qt::PreferredSize:
-    case Qt::MaximumSize:
-    //{
-    //    QRectF rc = m_minMute->sceneBoundingRect();
-    //    rc |= m_minOnce->sceneBoundingRect();
-    //    rc |= m_minView->sceneBoundingRect();
-    //    return rc.size();
-    //}
-    default:
-        break;
+        QRectF rc = m_minMute->sceneBoundingRect();
+        rc |= m_minOnce->sceneBoundingRect();
+        rc |= m_minView->sceneBoundingRect();
+        return rc.size();
     }
-    return constraint;
+	default:
+		break;
+	}
+	return constraint;
 }
 
 

@@ -206,9 +206,6 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
     pHLayout->addItem(m_pStatusWidgets);
 
-    margin = headerBg.border_witdh;
-    pHLayout->setContentsMargin(margin, margin, margin, margin);
-
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
     return headerWidget;

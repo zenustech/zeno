@@ -35,7 +35,6 @@ public:
     QSizeF size() const { return m_size; }
     bool isHovered() const;
     void setCheckable(bool bCheckable);
-    void setContentsMargin(const QMargins& margins);
 
 signals:
     void clicked();
@@ -53,7 +52,6 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
-    QMargins m_margins;     //content margins.
     QString m_normal;
     QString m_hovered;
     QString m_selected;

@@ -76,9 +76,7 @@ ZenoImageItem::ZenoImageItem(const QString &normal, const QString &hovered, cons
 
 QRectF ZenoImageItem::boundingRect() const
 {
-    QRectF rc = m_svg->boundingRect();
-    rc = rc.marginsAdded(m_margins);
-    return rc;
+    return m_svg->boundingRect();
 }
 
 void ZenoImageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -117,11 +115,6 @@ bool ZenoImageItem::isHovered() const
     return m_bHovered;
 }
 
-void ZenoImageItem::setContentsMargin(const QMargins& margins)
-{
-    m_margins = margins;
-}
-
 void ZenoImageItem::setCheckable(bool bCheckable)
 {
     m_bCheckable = bCheckable;
@@ -132,22 +125,22 @@ void ZenoImageItem::setHovered(bool bHovered)
     m_bHovered = bHovered;
     if (m_bHovered)
     {
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_hovered, this);
-        m_svg->setSize(m_size);
+		delete m_svg;
+		m_svg = new ZenoSvgItem(m_hovered, this);
+		m_svg->setSize(m_size);
     }
     else
     {
-        delete m_svg;
+		delete m_svg;
         if (m_bToggled)
         {
-            m_svg = new ZenoSvgItem(m_selected, this);
-            m_svg->setSize(m_size);
+			m_svg = new ZenoSvgItem(m_selected, this);
+			m_svg->setSize(m_size);
         }
         else
         {
-            m_svg = new ZenoSvgItem(m_normal, this);
-            m_svg->setSize(m_size);
+			m_svg = new ZenoSvgItem(m_normal, this);
+			m_svg->setSize(m_size);
         }
     }
 }
