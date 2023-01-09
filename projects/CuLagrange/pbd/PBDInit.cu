@@ -197,7 +197,6 @@ ZENDEFNODE(ExtractTetEdges, {{
 struct MakePBDSystem : INode {
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto zstets = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         /// solver parameters
         auto input_cap = get_input2<int>("iter_cap");

@@ -160,7 +160,7 @@ struct ZSDoSkinning : INode {
         constexpr auto space = execspace_e::openmp;
         auto ompExec = omp_exec();
         
-        auto weight_dim = pars.getChannelSize(prefix);
+        auto weight_dim = pars.getPropertySize(prefix);
         fmt::print("weight_dim : {}\n",weight_dim);
         fmt::print("nm_handles : {}\n",nm_handles);
         

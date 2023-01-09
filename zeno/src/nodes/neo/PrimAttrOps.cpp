@@ -155,7 +155,7 @@ struct PrimAttrInterp : INode {
         auto factor = get_input2<float>("factor");
         auto facAttr = get_input2<std::string>("facAttr");
         auto facAcc = functor_variant(facAttr.empty() ? 1 : 0,
-                                      [&] {
+                                      [&, &facAttr = facAttr] {
                                           auto &facArr = prim->verts.attr<float>(facAttr);
                                           return [&] (size_t i) {
                                               return facArr[i];

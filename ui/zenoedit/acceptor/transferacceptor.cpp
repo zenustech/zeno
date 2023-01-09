@@ -270,6 +270,29 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
     }
     else
     {
+        if (nodeCls == "MakeCurvemap" && (name == "_POINTS" || name == "_HANDLERS"))
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_NONVISIBLE;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            return;
+        }
+        if (nodeCls == "MakeHeatmap" && name == "_RAMPS")
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_COLOR;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            return;
+        }
+
         PARAMS_INFO _params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
         _params[name].value = var;
         data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(_params);
@@ -366,7 +389,7 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
 
         const QString& descType = params["type"].value.toString();
         PARAM_INFO& defl = params["defl"];
-        defl.control = UiHelper::getControlType(descType);
+        defl.control = UiHelper::getControlType(descType, defl.name);
         defl.value = UiHelper::parseVarByType(descType, defl.value, nullptr);
         defl.typeDesc = descType;
         data[ROLE_PARAMETERS] = QVariant::fromValue(params);

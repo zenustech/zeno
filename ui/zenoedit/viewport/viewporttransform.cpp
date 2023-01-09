@@ -19,7 +19,8 @@ FakeTransformer::FakeTransformer()
       , m_last_scale(1.0f)
       , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
-      , m_operation(NONE) {}
+      , m_operation(NONE)
+      , m_handler_scale(1.f) {}
 
 FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
     : m_objects_center(0.0f)
@@ -31,11 +32,13 @@ FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
       , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE)
+      , m_handler_scale(1.f)
 {
     addObject(names);
 }
 
 void FakeTransformer::addObject(const std::string& name) {
+    if (name.empty()) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
@@ -71,6 +74,7 @@ void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
 }
 
 void FakeTransformer::removeObject(const std::string& name) {
+    if (name.empty()) return;
     auto p = m_objects.find(name);
     if (p == m_objects.end())
         return ;
@@ -265,9 +269,12 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
     }
 }
 
+bool FakeTransformer::isTransforming() const {
+    return m_status;
+}
+
 void FakeTransformer::startTransform() {
-    m_status = true;
-    Zenovis::GetInstance().getSession()->set_interactive(true);
+    markObjectsInteractive();
 }
 
 void FakeTransformer::endTransform(bool moved) {
@@ -304,6 +311,7 @@ void FakeTransformer::endTransform(bool moved) {
         for (auto &[obj_name, obj] : m_objects) {
             QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
             auto search_result = pModel->search(node_id, SEARCH_NODEID);
+            if (search_result.empty()) break;
             auto subgraph_index = search_result[0].subgIdx;
             auto node_index = search_result[0].targetIdx;
             auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
@@ -325,8 +333,7 @@ void FakeTransformer::endTransform(bool moved) {
             }
         }
     }
-
-    m_status = false;
+    unmarkObjectsInteractive();
 
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
@@ -338,12 +345,6 @@ void FakeTransformer::endTransform(bool moved) {
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
-
-    Zenovis::GetInstance().getSession()->set_interactive(false);
-}
-
-bool FakeTransformer::isTransforming() const {
-    return m_status;
 }
 
 void FakeTransformer::toTranslate() {
@@ -355,7 +356,7 @@ void FakeTransformer::toTranslate() {
     else {
         m_operation = TRANSLATE;
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
 }
@@ -369,7 +370,7 @@ void FakeTransformer::toRotate() {
     else {
         m_operation = ROTATE;
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
 }
@@ -383,9 +384,51 @@ void FakeTransformer::toScale() {
     else {
         m_operation = SCALE;
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
+}
+
+void FakeTransformer::markObjectInteractive(const std::string& obj_name) {
+    auto& user_data = m_objects[obj_name]->userData();
+    user_data.setLiterial("interactive", 1);
+}
+
+void FakeTransformer::unmarkObjectInteractive(const std::string& obj_name) {
+    auto& user_data = m_objects[obj_name]->userData();
+    user_data.setLiterial("interactive", 0);
+}
+
+void FakeTransformer::markObjectsInteractive() {
+    m_status = true;
+    for (const auto& [obj_name, obj] : m_objects) {
+        markObjectInteractive(obj_name);
+    }
+}
+
+void FakeTransformer::unmarkObjectsInteractive() {
+    m_status = false;
+    for (const auto& [obj_name, obj] : m_objects) {
+        unmarkObjectInteractive(obj_name);
+    }
+}
+
+void FakeTransformer::resizeHandler(int dir) {
+    if (!m_handler) return;
+    switch (dir) {
+    case 0:
+        m_handler_scale = 1.f;
+        break;
+    case 1:
+        m_handler_scale /= 0.89;
+        break;
+    case 2:
+        m_handler_scale *= 0.89;
+        break;
+    default:
+        break;
+    }
+    m_handler->resize(m_handler_scale);
 }
 
 void FakeTransformer::changeTransOpt() {
@@ -397,13 +440,13 @@ void FakeTransformer::changeTransOpt() {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     switch (m_operation) {
     case TRANSLATE:
-        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case ROTATE:
-        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case SCALE:
-        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case NONE:
         m_handler = nullptr;
@@ -563,6 +606,7 @@ QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelI
         auto next_node_id = linked_edge.data(ROLE_INNODE).toString();
         if (next_node_id.contains("TransformPrimitive")) {
             auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
+            if (search_result.empty()) return {};
             auto linked_node_index = search_result[0].targetIdx;
             auto option = linked_node_index.data(ROLE_OPTIONS).toInt();
             if (option & OPT_VIEW) {
@@ -622,6 +666,7 @@ void FakeTransformer::syncToTransformNode(QString& node_id, const std::string& o
 }
 
 void FakeTransformer::doTransform() {
+    // qDebug() << "transformer's objects count " << m_objects.size();
     m_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
@@ -646,10 +691,6 @@ void FakeTransformer::doTransform() {
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
-
-        m_last_trans = m_trans;
-        m_last_rotate = m_rotate;
-        m_last_scale = m_scale;
 
         if (obj->has_attr("pos")) {
             // transform pos
@@ -680,6 +721,10 @@ void FakeTransformer::doTransform() {
         }
         m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
+    m_last_trans = m_trans;
+    m_last_rotate = m_rotate;
+    m_last_scale = m_scale;
+
     m_objects_center /= m_objects.size();
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
 }

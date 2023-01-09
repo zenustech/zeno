@@ -18,7 +18,13 @@ template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&v
     using Dst = std::remove_cv_t<std::remove_reference_t<DstT>>;
     static_assert(sizeof(Src) == sizeof(Dst),
                   "Source Type and Destination Type must be of the same size");
-    return reinterpret_cast<Dst const volatile &>(val);
+    static_assert(std::is_trivially_copyable_v<Src> && std::is_trivially_copyable_v<Dst>,
+                  "Both types should be trivially copyable.");
+    static_assert(std::alignment_of_v<Src> % std::alignment_of_v<Dst> == 0,
+                  "The original type should at least have an alignment as strict.");
+    Dst dst{};
+    std::memcpy(&dst, const_cast<const Src *>(&val), sizeof(Dst));
+    return dst;
   }
 ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip, std::string nrmAttr)
 {

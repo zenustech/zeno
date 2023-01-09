@@ -31,6 +31,7 @@ void ZRecordProgressDlg::onRecordFinished()
 {
     m_bCompleted = true;
     m_ui->lblFrameHint->setText(tr("Record completed:"));
+    m_ui->progressBar->setValue(m_info.frameRange.second);
     m_ui->btn->setText(tr("Open file location"));
 }
 

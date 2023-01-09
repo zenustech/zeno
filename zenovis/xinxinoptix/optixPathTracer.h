@@ -45,7 +45,7 @@ struct Params
     ParallelogramLight     *lights;
     OptixTraversableHandle handle;
 
-    int usingProceduralSky;
+    int usingHdrSky;
     cudaTextureObject_t sky_texture;
     float sky_rot;
     float sky_strength;
@@ -53,6 +53,9 @@ struct Params
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;
+    float sunLightIntensity;
+    float colorTemperatureMix;
+    float colorTemperature;
 
     float windDirX;
     float windDirY;
@@ -60,6 +63,7 @@ struct Params
 
     float sunSoftness;
     float elapsedTime;
+    bool simpleRender;
 };
 
 
@@ -82,6 +86,9 @@ struct HitGroupData
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
-    float* uniforms;//TODO
+    int* meshIdxs;
+    float* meshMats;
+    float4* uniforms;
     cudaTextureObject_t textures[32];
+
 };

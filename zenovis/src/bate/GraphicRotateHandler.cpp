@@ -69,6 +69,7 @@ struct RotateHandler final : IGraphicHandler {
 
     vec3f center;
     float bound;
+    float scale;
     int mode;
     int coord_sys;
 
@@ -76,8 +77,8 @@ struct RotateHandler final : IGraphicHandler {
     std::unique_ptr<Buffer> lines_ebo;
     size_t lines_count;
 
-    explicit RotateHandler(Scene *scene_, vec3f &center_)
-        : scene(scene_), center(center_), mode(INTERACT_NONE) {
+    explicit RotateHandler(Scene *scene_, vec3f &center_, float scale_)
+        : scene(scene_), center(center_), scale(scale_), mode(INTERACT_NONE) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         ibo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
     }
@@ -101,7 +102,7 @@ struct RotateHandler final : IGraphicHandler {
 
         auto dist = glm::distance(camera_pos, glm::vec3(center[0], center[1], center[2]));
 
-        bound = dist / 5.0f;
+        bound = dist / 5.0f * scale;
 
         vec3f r = vec3f(0.8, 0.2, 0.2);
         vec3f g = vec3f(0.2, 0.6, 0.2);
@@ -191,12 +192,16 @@ struct RotateHandler final : IGraphicHandler {
         if (intersect.has_value()) return ray_origin + intersect.value() * ray_direction;
         return std::nullopt;
     }
+
+    virtual void resize(float s) override {
+        scale = s;
+    }
 };
 
 } // namespace
 
-std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center) {
-    return std::make_shared<RotateHandler>(scene, center);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center, float scale) {
+    return std::make_shared<RotateHandler>(scene, center, scale);
 }
 
 } // namespace zenovis

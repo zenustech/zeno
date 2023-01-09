@@ -4,6 +4,7 @@
 #include "heatmapnode.h"
 #include "cameranode.h"
 #include "readfbxprim.h"
+#include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -18,6 +19,7 @@
 #include "util/log.h"
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -137,6 +139,14 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);
+    }
+    else if(descName == "LiveMeshNode")
+    {
+        return new LiveMeshNode(params);
+    }
+    else if(descName == "LiveCameraNode")
+    {
+        return new LiveCameraNode(params);
     }
     else
     {
@@ -329,6 +339,19 @@ void ZenoSubGraphScene::clearMark()
         }
     }
     m_errNodes.clear();
+}
+
+QList<ZenoParamWidget*> ZenoSubGraphScene::getScrollControls() const
+{
+    return m_scrollControls;
+}
+
+void ZenoSubGraphScene::addScrollControl(ZenoParamWidget* pWidget)
+{
+    if (!pWidget)
+        return;
+    m_scrollControls.append(pWidget);
+    emit scrollControlAdded(pWidget);
 }
 
 void ZenoSubGraphScene::undo()

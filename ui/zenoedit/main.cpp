@@ -15,12 +15,15 @@ int main(int argc, char *argv[])
 
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 3 && !strcmp(argv[1], "-runner")) {
-        extern int runner_main(int sessionid, int port);
+        extern int runner_main(int sessionid, int port, char* cachedir);
         int sessionid = atoi(argv[2]);
         int port = -1;
+        char* cachedir = nullptr;
         if (argc >= 5 && !strcmp(argv[3], "-port"))
             port = atoi(argv[4]);
-        return runner_main(sessionid, port);
+        if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
+            cachedir = argv[6];
+        return runner_main(sessionid, port, cachedir);
     }
 #endif
 
@@ -43,6 +46,12 @@ int main(int argc, char *argv[])
         return offline_main(argv[2], begin, end);
     }
 
+    //entrance for the zenoedit-player.
+    if (argc >= 2 && !strcmp(argv[1], "--record"))
+    {
+        extern int record_main(const QCoreApplication& app);
+        return record_main(a);
+    }
 
     QTranslator t;
     QSettings settings(zsCompanyName, zsEditor);

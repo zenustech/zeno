@@ -148,14 +148,10 @@ struct ZSParticleNeighborWrangler : INode {
 
         /// symbols
         auto def_sym = [&opts](const std::string &prefix, std::string key, int dim) {
-            if (key == "x" || key == "v")
-                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
-                               "now on to keep "
-                               "consistent with cpu-side wrangles");
-            if (key == "pos")
-                key = "x";
-            else if (key == "vel")
-                key = "v";
+            if (key == "x")
+                opts.define_symbol(prefix + "pos", dim);
+            else if (key == "v")
+                opts.define_symbol(prefix + "vel", dim);
             opts.define_symbol(prefix + key, dim);
         };
 
@@ -218,6 +214,14 @@ struct ZSParticleNeighborWrangler : INode {
             cuLinkDestroy((CUlinkState)state);
         }
 
+        auto transTag = [](std::string str) {
+            if (str == "pos")
+                str = "x";
+            else if (str == "vel")
+                str = "v";
+            return str;
+        };
+
         /// symbols
         zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
         auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
@@ -245,7 +249,7 @@ struct ZSParticleNeighborWrangler : INode {
                                               (unsigned short)unitBytes,
                                               (unsigned short)tileSize,
                                               (unsigned short)targetParPtr->numChannels(),
-                                              (unsigned short)(targetParPtr->getPropertyOffset(name) + dimid),
+                                              (unsigned short)(targetParPtr->getPropertyOffset(transTag(name)) + dimid),
                                               (unsigned short)isNeighborProperty};
         }
         auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});

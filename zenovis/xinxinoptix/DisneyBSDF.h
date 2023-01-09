@@ -61,6 +61,14 @@ namespace DisneyBSDF{
         v = normalize(vec3(dot(T,v), dot(B,v), dot(N,v)));
     }
 
+    static __inline__ __device__
+    void rotateTangent(vec3& _T, vec3& _B, vec3 N, float rotInRadian) {
+        vec3 T = normalize(cos(rotInRadian) * _T - sin(rotInRadian) * _B);
+        vec3 B = normalize(sin(rotInRadian) * _T + cos(rotInRadian) * _B);
+        _T = T;
+        _B = B;
+    }
+
     static __inline__ __device__ 
     void pdf(
         float metallic,
@@ -309,6 +317,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -331,6 +340,7 @@ namespace DisneyBSDF{
         float nDl)
 
     {
+        rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926);
         //Onb tbn = Onb(N);
         world2local(wi, T ,B, N);
         world2local(wo, T ,B, N);
@@ -449,11 +459,12 @@ namespace DisneyBSDF{
         wi = normalize(reflect(-wo, wm)); 
         if(wi.z<=0.0f)
         {
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            wi = vec3(0,0,0);
-            reflectance = vec3(0,0,0);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            wi = vec3(0,0,0);
+//            reflectance = vec3(0,0,0);
+//            return false;
+            wi.z = 1e-4;
         }
 
         vec3 F = DisneyFresnel(baseColor, metallic, ior, specularTint, dot(wm, wo), dot(wm, wi), is_inside);
@@ -507,9 +518,9 @@ namespace DisneyBSDF{
 
         wi = normalize(reflect(-wo,wm));
 
-        if(dot(wi,wo) < 0.0f){ //removable?
-            return false;
-        }
+//        if(dot(wi,wo) < 0.0f){ //removable?
+//            return false;
+//        }
 
         float NoH = wm.z;
         float LoH = dot(wm,wi);
@@ -578,11 +589,12 @@ namespace DisneyBSDF{
             )
     {
         if(wo.z == 0.0f){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            wo.z = 1e-5;
         }
         float rscaled = thin ? BRDFBasics::ThinTransmissionRoughness(ior,  roughness) : roughness;
 
@@ -649,11 +661,18 @@ namespace DisneyBSDF{
         }
 
         if(wi.z == 0.0f){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            if(rnd(seed)>0.5)
+            {
+                wi.z = 1e-5;
+            } else
+            {
+                wi.z = - (1e-5);
+            }
         }
 
         //if(roughness < 0.01f){
@@ -709,11 +728,12 @@ namespace DisneyBSDF{
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
         if(NoL==0.0f ){
-            fPdf = 0.0f;
-            rPdf = 0.0f;
-            reflectance = vec3(0.0f);
-            wi = vec3(0.0f);
-            return false;
+//            fPdf = 0.0f;
+//            rPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//            wi = vec3(0.0f);
+//            return false;
+            wi.z = 1e-5;
         }
 
         float NoV = wo.z;
@@ -801,8 +821,7 @@ namespace DisneyBSDF{
             c = extinction.z;
             p = pb;
         }
-
-        float s = -log(rnd(seed)) / c;
+        float s = -log(max(rnd(seed),0.00001f)) / max(c, 1e-10);
         //*pdf = Math::Expf(-c * s) / p;
 
         return s;
@@ -816,7 +835,7 @@ namespace DisneyBSDF{
         float r1 = r01.y;//rnd(seed);
 
         float theta = 2.0 * M_PIf * r0;
-        float phi = acos(1 - 2 * r1);
+        float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
         float x = sin(phi) * cos(theta);
         float y = sin(phi) * sin(theta);
         float z = cos(phi);
@@ -845,6 +864,7 @@ namespace DisneyBSDF{
         float roughness,
         float specularTint,
         float anisotropic,
+        float anisoRotation,
         float sheen,
         float sheenTint,
         float clearCoat,
@@ -871,6 +891,7 @@ namespace DisneyBSDF{
         bool& isSS
             )
     {
+        rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926);
         world2local(wo, T, B, N);
         float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
 
@@ -919,7 +940,7 @@ namespace DisneyBSDF{
             rPdf *= pLobe;
             fPdf *= pLobe;
         }
-        return success;
+        return true;
 
     }
 }
@@ -1226,6 +1247,34 @@ static __inline__ __device__ vec3 hdrSky(
     return col * params.sky_strength;
 }
 
+static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
+{
+    vec3 retColor;
+
+    temperatureInKelvins = clamp(temperatureInKelvins, 1000.0, 40000.0) / 100.0;
+
+    if (temperatureInKelvins <= 66.0)
+    {
+        retColor.x = 1.0;
+        retColor.y = saturate(0.39008157876901960784 * log(temperatureInKelvins) - 0.63184144378862745098);
+    }
+    else
+    {
+        float t = temperatureInKelvins - 60.0;
+        retColor.x = saturate(1.29293618606274509804 * pow(t, -0.1332047592f));
+        retColor.y = saturate(1.12989086089529411765 * pow(t, -0.0755148492f));
+    }
+
+    if (temperatureInKelvins >= 66.0)
+        retColor.z = 1.0;
+    else if(temperatureInKelvins <= 19.0)
+        retColor.z = 0.0;
+    else
+        retColor.z = saturate(0.54320678911019607843 * log(temperatureInKelvins - 10.0) - 1.19625408914);
+
+    return retColor;
+}
+
 static __inline__ __device__ vec3 envSky(
     vec3 dir,
     vec3 sunLightDir,
@@ -1236,8 +1285,9 @@ static __inline__ __device__ vec3 envSky(
     float absorption,
     float t
 ){
-    if (params.usingProceduralSky) {
-        return proceduralSky(
+    vec3 color;
+    if (!params.usingHdrSky) {
+        color = proceduralSky(
             dir,
             sunLightDir,
             windDir,
@@ -1249,8 +1299,14 @@ static __inline__ __device__ vec3 envSky(
         );
     }
     else {
-        return hdrSky(
+        color = hdrSky(
             dir
         );
     }
+    if (params.colorTemperatureMix > 0) {
+        vec3 colorTemp = colorTemperatureToRGB(params.colorTemperature);
+        colorTemp = mix(vec3(1, 1, 1), colorTemp, params.colorTemperatureMix);
+        color = color * colorTemp;
+    }
+    return color;
 }

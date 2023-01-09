@@ -79,7 +79,7 @@ struct ZSComputeBaryCentricWeights : INode {
             }
         );
 
-        auto e_dim = e_eles.getChannelSize("inds");
+        auto e_dim = e_eles.getPropertySize("inds");
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
@@ -127,6 +127,8 @@ ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed s
                             {{"interpolator on gpu", "zsvolume"}},
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
+
+
 
 struct ZSSampleEmbedVectorField : zeno::INode {
     void apply() override {
@@ -260,6 +262,134 @@ ZENDEFNODE(ZSSampleEmbedTagField, {{{"volume"}, {"embed tag field", "tag_field"}
                             {"ZSGeometry"}});
 
 
+struct ZSInterpolateEmbedAttr : zeno::INode {
+    template<int DIM,typename SRC_TILEVEC,typename DST_TILEVEC,typename TOPO_TIELVEC,typename BCW_TILEVEC>
+    void interpolate_p2p_imp(const std::string& srcAttr,const std::string& dstAttr,
+            const SRC_TILEVEC& src_tilevec,DST_TILEVEC& dst_tilevec,const TOPO_TIELVEC& src_topo,const BCW_TILEVEC& bcw) {
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if(!dst_tilevec.hasProperty(dstAttr))
+            dst_tilevec.append_channels(cudaExec, {{dstAttr, DIM}});
+
+        cudaExec(zs::range(dst_tilevec.size()),
+            [srcAttr = zs::SmallString{srcAttr},dstAttr = zs::SmallString{dstAttr},
+                    src_tilevec = zs::proxy<space>({},src_tilevec), bcw = zs::proxy<space>({},bcw),
+                    dst_tilevec = zs::proxy<space>({},dst_tilevec),
+                    src_topo = zs::proxy<space>({},src_topo)] ZS_LAMBDA (int vi) mutable {
+                using T = typename RM_CVREF_T(dst_tilevec)::value_type;
+                const auto& ei = bcw.template pack<1>("inds",vi).template reinterpret_bits<int>()[0];
+                if(ei < 0)
+                    return;
+                const auto& inds = src_topo.template pack<4>("inds",ei).template reinterpret_bits<int>();
+
+                const auto& w = bcw.template pack<4>("w",vi);
+                dst_tilevec.template tuple<DIM>(dstAttr,vi) = zs::vec<T,DIM>::zeros();
+                for(size_t i = 0;i < 4;++i){
+                    auto idx = inds[i];
+                    dst_tilevec.template tuple<DIM>(dstAttr,vi) = dst_tilevec.template pack<DIM>(dstAttr,vi) + w[i] * src_tilevec.template pack<DIM>(srcAttr, idx);
+                }
+
+        });
+    }
+
+    template<int DIM,typename QUAD_TILEVEC,typename POINT_TILEVEC,typename BCW_TILEVEC>
+    void interpolate_q2p_imp(const std::string& quadAttr,const std::string& pointAttr,
+            const QUAD_TILEVEC& quad_tilevec,POINT_TILEVEC& point_tilevec,const BCW_TILEVEC& bcw) {
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if(!point_tilevec.hasProperty(pointAttr))
+            point_tilevec.append_channels(cudaExec, {{pointAttr, DIM}});   
+             
+        cudaExec(zs::range(point_tilevec.size()),
+            [pointAttr = zs::SmallString{pointAttr},quadAttr = zs::SmallString{quadAttr},
+                point_tilevec = zs::proxy<space>({},point_tilevec),bcw = zs::proxy<space>({},bcw),
+                quad_tilevec = zs::proxy<space>({},quad_tilevec)] ZS_LAMBDA (int vi) mutable {
+            using T = typename RM_CVREF_T(point_tilevec)::value_type;
+            const auto& ei = bcw.template pack<1>("inds",vi).template reinterpret_bits<int>()[0];
+            if(ei < 0)
+                return;
+            point_tilevec.template tuple<DIM>(pointAttr,vi) = quad_tilevec.template pack<DIM>(quadAttr,ei);
+        });
+    }
+
+
+    void apply() override {
+        using namespace zs;
+        auto source = get_input<ZenoParticles>("source");
+        auto dest = get_input<ZenoParticles>("dest");
+
+        auto srcAttr = get_param<std::string>("srcAttr");
+        auto dstAttr = get_param<std::string>("dstAttr");
+        auto bcw_tag = get_param<std::string>("bcw_tag");
+        auto strategy = get_param<std::string>("strategy");
+        const auto& bcw = (*source)[bcw_tag];
+        auto& dest_pars = dest->getParticles();
+
+        if(bcw.size() != dest_pars.size()) {
+            fmt::print("the dest and bcw's size not match\n");
+            throw std::runtime_error("the dest and bcw's size not match");
+        }
+
+        
+        if(strategy == "p2p") {
+            const auto& source_pars = source->getParticles();
+            const auto& topo = source->getQuadraturePoints();
+            if(!source_pars.hasProperty(srcAttr)) {
+                fmt::print("the source have no {} channel\n",srcAttr);
+                throw std::runtime_error("the source have no specified channel");
+            }           
+            if(topo.getPropertySize("inds") != 4) {
+                fmt::print("only support tetrahedra mesh as source\n");
+                throw std::runtime_error("only support tetrahedra mesh as source");
+            }
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getPropertySize(dstAttr) != source_pars.getPropertySize(srcAttr)){
+                fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
+                throw std::runtime_error("the dest attr and source attr not match in size");
+            }
+
+            if(source_pars.getPropertySize(srcAttr) == 1)
+                interpolate_p2p_imp<1>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+            if(source_pars.getPropertySize(srcAttr) == 2)
+                interpolate_p2p_imp<2>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+            if(source_pars.getPropertySize(srcAttr) == 3)
+                interpolate_p2p_imp<3>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
+        }else if(strategy == "q2p") {
+            const auto& source_quads = source->getQuadraturePoints();
+            if(!source_quads.hasProperty(srcAttr)) {
+                fmt::print("the source have no {} channel\n",srcAttr);
+                throw std::runtime_error("the source have no specified channel");
+            }    
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getPropertySize(dstAttr) != source_quads.getPropertySize(srcAttr)){
+                fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
+                throw std::runtime_error("the dest attr and source attr not match in size");
+            }
+
+            if(source_quads.getPropertySize(srcAttr) == 1)
+                interpolate_q2p_imp<1>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+            if(source_quads.getPropertySize(srcAttr) == 2)
+                interpolate_q2p_imp<2>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+            if(source_quads.getPropertySize(srcAttr) == 3)
+                interpolate_q2p_imp<3>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
+        }
+        set_output("dest",dest);
+    }
+};
+
+
+ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"}},
+                            {{"dest"}},
+                            {
+                                {"string","srcAttr","x"},
+                                {"string","dstAttr","x"},
+                                {"string","bcw_tag","skin_bw"},
+                                {"enum p2p q2p","strategy","p2p"}
+
+                            },
+                            {"ZSGeometry"}});
+
+// deprecated
 struct ZSInterpolateEmbedPrim : zeno::INode {
     void apply() override {
         using namespace zs;
@@ -269,16 +399,151 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         auto tag = get_param<std::string>("tag");
         auto inAttr = get_param<std::string>("inAttr");
         auto outAttr = get_param<std::string>("outAttr");
+        // auto refAttr = get_param<std::string>("refAttr");
 
-        auto cudaExec = zs::cuda_exec();
+        // auto useDispMap = get_param<int>("useDispMap");
+        // auto refDispMapTag = get_param<std::string>("refDispMapTag");
+        // auto outDispMapTag = get_param<std::string>("outDispMapTag");
+
+        // auto use_xform = get_param<int>("use_xform");
 
         auto &everts = zssurf->getParticles();
-        if(!everts.hasProperty(outAttr))
-            everts.append_channels(cudaExec, {{outAttr, 3}});
-        
+    
         const auto& verts = zstets->getParticles();
         const auto& eles = zstets->getQuadraturePoints();
         const auto& bcw = (*zstets)[tag];
+
+        // if(useDispMap && (!everts.hasProperty(refDispMapTag) || !everts.hasProperty(outDispMapTag))) {
+        //     fmt::print("the input everts have no {} or {} dispMap when useDispMap is on\n",refDispMapTag,outDispMapTag);
+        //     throw std::runtime_error("the input everts have no specified dispMap when useDispMap is on");
+        // }
+
+
+        // if(use_xform && !everts.hasProperty(refAttr)) {
+        //     fmt::print("the input everts have no {} channel when use_xform is on\n",refAttr);
+        //     throw std::runtime_error("the input everts have no refAttr channel when use_xform is on");
+        // }
+        // if(use_xform && !verts.hasProperty(refAttr)) {
+        //     fmt::print("the input verts have no {} channel when use_xform is on\n",refAttr);
+        //     throw std::runtime_error("the input verts have no refAttr channel when use_xform is on");
+        // }
+
+        const auto nmEmbedVerts = bcw.size();
+        if(everts.size() != nmEmbedVerts)
+            throw std::runtime_error("INPUT SURF SIZE AND BCWS SIZE DOES NOT MATCH");
+
+
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        cudaExec(zs::range(nmEmbedVerts),
+            [inAttr = zs::SmallString{inAttr},outAttr = zs::SmallString{outAttr},
+                    verts = proxy<space>({},verts),eles = proxy<space>({},eles),
+                    bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)
+                    // use_xform,refAttr = zs::SmallString{refAttr},
+                    // useDispMap,
+                    // refDispMapTag = zs::SmallString{refDispMapTag},
+                    // outDispMapTag = zs::SmallString{outDispMapTag}
+                    ] ZS_LAMBDA (int vi) mutable {
+                using T = typename RM_CVREF_T(verts)::value_type;
+                const auto& ei = bcw.pack<1>("inds",vi).reinterpret_bits<int>()[0];
+                if(ei < 0)
+                    return;
+                const auto& inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
+                // if(use_xform || useDispMap) {
+                //     zs::vec<T,3,3> F{};
+                //     zs::vec<T,3> b{};
+
+                //     LSL_GEO::deformation_xform(
+                //         verts.template pack<3>(inAttr,inds[0]),
+                //         verts.template pack<3>(inAttr,inds[1]),
+                //         verts.template pack<3>(inAttr,inds[2]),
+                //         verts.template pack<3>(inAttr,inds[3]),
+                //         verts.template pack<3>(refAttr,inds[0]),
+                //         eles.template pack<3,3>("IB",ei),F,b);
+                    
+                //     everts.template tuple<3>(outAttr,vi) = F * everts.template pack<3>(refAttr,vi) + b;
+
+                //     // if(vi == 0){
+                //     //     printf("F : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+                //     //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
+                //     //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
+                //     //         (float)F(2,0),(float)F(2,1),(float)F(2,2));
+                //     //     printf("b : %f %f %f\n",(float)b[0],(float)b[1],(float)b[2]);
+                //     // }
+
+                //     if(useDispMap) {
+                //         everts.template tuple<3>(outDispMapTag,vi) = F * everts.template pack<3>(refDispMapTag,vi);
+                //     }
+                // }else{
+                    const auto& w = bcw.pack<4>("w",vi);
+                    everts.tuple<3>(outAttr,vi) = vec3::zeros();
+                    for(size_t i = 0;i < 4;++i){
+                        // const auto& idx = eles.pack<4>("inds",ei).reinterpret_bits<int>()[i];
+                        // const auto idx = reinterpret_bits<int>(eles("inds", i, ei));
+                        auto idx = inds[i];
+                        everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>(inAttr, idx);
+                    }
+#if 0
+                    if(vi == 100){
+                        auto vert = everts.pack<3>(outAttr,vi);
+                        printf("V<%d>->E<%d>(%f,%f,%f,%f) :\t%f\t%f\t%f\n",vi,ei,w[0],w[1],w[2],w[3],vert[0],vert[1],vert[2]);
+                    }
+#endif
+
+                // }
+        });
+        set_output("zssurf",zssurf);
+    }
+};
+
+ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
+                            {{"embed primitive", "zssurf"}},
+                            {
+                                {"string","inAttr","x"},
+                                {"string","outAttr","x"},
+                                // {"string","refAttr","X"},
+                                {"string","tag","skin_bw"}
+                                // {"int","use_xform","0"},
+                                // {"int","useDispMap","0"},
+                                // {"string","refDispMapTag","dX"},
+                                // {"string","outDispMapTag","dx"}
+                                },
+                            {"ZSGeometry"}});
+
+
+struct ZSDeformEmbedPrim : zeno::INode {
+    void apply() override {
+        using namespace zs;
+        auto zsvolume = get_input<ZenoParticles>("zsvolume");
+        auto zssurf = get_input<ZenoParticles>("zssurf");
+
+        auto tag = get_param<std::string>("tag");
+        auto inAttr = get_param<std::string>("inAttr");
+        auto outAttr = get_param<std::string>("outAttr");
+
+        auto deformField = get_param<std::string>("deformField");
+
+        auto &everts = zssurf->getParticles();
+
+        auto cudaExec = zs::cuda_exec();
+
+        if(!everts.hasProperty(inAttr)) {
+            fmt::print("the embed prim has no {} attribute as input\n",inAttr);
+            throw std::runtime_error("the embed prim has no attribute as input");
+        }
+        if(!everts.hasProperty(outAttr))
+            everts.append_channels(cudaExec, {{outAttr, 3}});
+
+        
+        const auto& verts = zsvolume->getParticles();
+        const auto& eles = zsvolume->getQuadraturePoints();
+        const auto& bcw = (*zsvolume)[tag];
+
+        if(!eles.hasProperty(deformField)) {
+            fmt::print("the embed prim has no {} deformField\n",deformField);
+            throw std::runtime_error("the embed prim has no deformField");
+        }
 
         const auto nmEmbedVerts = bcw.size();
 
@@ -289,34 +554,43 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         constexpr auto space = zs::execspace_e::cuda;
 
         cudaExec(zs::range(nmEmbedVerts),
-            [inAttr = zs::SmallString{inAttr},outAttr = zs::SmallString{outAttr},verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)] ZS_LAMBDA (int vi) mutable {
+            [inAttr = zs::SmallString{inAttr},outAttr = zs::SmallString{outAttr},
+                    everts = proxy<space>({},everts),eles = proxy<space>({},eles),
+                    bcw = proxy<space>({},bcw),
+                    deformField = zs::SmallString{deformField}] ZS_LAMBDA (int vi) mutable {
+                using T = typename RM_CVREF_T(verts)::value_type;
                 const auto& ei = bcw.pack<1>("inds",vi).reinterpret_bits<int>()[0];
                 if(ei < 0)
                     return;
-                const auto& w = bcw.pack<4>("w",vi);
+                everts.template tuple<3>(outAttr,vi) = eles.template pack<3,3>(deformField,ei) * everts.template pack<3>(inAttr,vi);
+                // if(vi == 114754){
+                //     auto dx = everts.template pack<3>(outAttr,vi);
+                //     auto dX = everts.template pack<3>(inAttr,vi);
+                //     auto F = eles.template pack<3,3>(deformField,ei);
+                //     printf("F : %f %f %f\n%f %f %f\n%f %f %f\n",
+                //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
+                //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
+                //         (float)F(2,0),(float)F(2,1),(float)F(2,2)
+                //     );
+                //     printf("Fdet : %f\n",(float)zs::determinant(F));
+                //     printf("dX : %f %f %f with length %f\n",(float)dX[0],(float)dX[1],(float)dX[2],(float)dX.norm());
+                //     printf("dx : %f %f %f with length %f\n",(float)dx[0],(float)dx[1],(float)dx[2],(float)dx.norm());
+                // }
 
-                everts.tuple<3>(outAttr,vi) = vec3::zeros();
-
-                for(size_t i = 0;i < 4;++i){
-                    // const auto& idx = eles.pack<4>("inds",ei).reinterpret_bits<int>()[i];
-                    const auto idx = reinterpret_bits<int>(eles("inds", i, ei));
-                    everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>(inAttr, idx);
-                }
-#if 0
-                if(vi == 100){
-                    auto vert = everts.pack<3>(outAttr,vi);
-                    printf("V<%d>->E<%d>(%f,%f,%f,%f) :\t%f\t%f\t%f\n",vi,ei,w[0],w[1],w[2],w[3],vert[0],vert[1],vert[2]);
-                }
-#endif
         });
         set_output("zssurf",zssurf);
+        set_output("zsvolume",zsvolume);
     }
 };
 
-ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
-                            {{"embed primitive", "zssurf"}},
-                            {{"string","inAttr","x"},{"string","outAttr","x"},{"string","tag","skin_bw"}},
+ZENDEFNODE(ZSDeformEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
+                            {{"embed primitive", "zssurf"},{"zsvolume"}},
+                            {
+                                {"string","inAttr","V"},
+                                {"string","outAttr","v"},
+                                {"string","tag","skin_bw"},
+                                {"string","deformField","F"}
+                                },
                             {"ZSGeometry"}});
-
 
 } // namespace zeno

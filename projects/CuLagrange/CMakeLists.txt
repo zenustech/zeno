@@ -5,18 +5,15 @@ if(NOT ZENO_WITH_CUDA)
     "Please specify: -DZENO_WITH_CUDA:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
 endif()
 
-target_link_libraries(zeno PRIVATE zshelper)
-
 #[=[
 target_sources(zeno PRIVATE
   test1.cu
 )
 #]=]
 set_target_properties(zeno
-  PROPERTIES # CUDA_EXTENSIONS ON
+  PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_ARCHITECTURES OFF
 )
 
 #[=[
@@ -42,23 +39,50 @@ target_sources(zeno PRIVATE
   pbd/PBDPipeline.cu
 )
 
+# fem-cloth
+target_sources(zeno PRIVATE
+
+  # fem/ClothInit.cu
+  # fem/ClothPipeline.cu
+  # fem/ClothLinearSystem.cu
+  # fem/ClothCollision.cu
+  fem/FastClothInit.cu
+  fem/FastClothPipeline.cu
+  fem/FastClothLinearSystem.cu
+  fem/FastClothCollision.cu
+)
+
 # fem
 target_sources(zeno PRIVATE
   fem/SolverInit.cu
   fem/SolverPipeline.cu
   fem/SolverLinearSystem.cu
   fem/SolverIPC.cu
+
+  fem/ipc/UnifiedSolverInit.cu
+  fem/ipc/UnifiedSolverPipeline.cu
+  fem/ipc/UnifiedSolverLinearSystem.cu
+  fem/ipc/UnifiedSolverIPC.cu
+
   fem/BoundaryCondition.cu
   fem/Collisions.cu
 
   # fem/Check.cu
   fem/Generation.cpp
+
   # fem/test.cpp
-  fem/QuasiStaticStepping.cu
+  # fem/QuasiStaticStepping.cu
 
-  fem/FastQuasiStaticStepping.cu
-
+  # fem/FastQuasiStaticStepping.cu
   fem/FleshQuasiStepping.cu
+
+  fem/FleshDynamicStepping.cu # CHECK THIS
+  fem/collision_energy/vertex_face_collision.hpp
+  fem/collision_energy/vertex_face_sqrt_collision.hpp
+  fem/collision_energy/edge_edge_collision.hpp
+  fem/collision_energy/edge_edge_sqrt_collition.hpp
+  fem/collision_energy/evaluate_collision.hpp
+  fem/collision_energy/collision_utils.hpp
 )
 
 # geometry
@@ -71,6 +95,11 @@ target_sources(zeno PRIVATE
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
+  geometry/kernel/compute_characteristic_length.hpp
+  geometry/kernel/topology.hpp
+  geometry/kernel/calculate_facet_normal.hpp
+  geometry/kernel/calculate_bisector_normal.hpp
+  geometry/kernel/tiled_vector_ops.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
@@ -79,4 +108,9 @@ target_sources(zeno PRIVATE
   geometry/BiharmonicBoundedWeight.cu
   geometry/MeshIO.cu
   geometry/Jiggle.cu
+  geometry/DeformationField.cu
+
+  geometry/CollisionVis.cu # CHECK THIS
+  geometry/CalcSurfaceArea.cu
+  geometry/MarkSurfaceTag.cu
 )

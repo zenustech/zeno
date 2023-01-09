@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "sutil.h"
+#include <cudaMemMarco.hpp>
 
 namespace sutil
 {

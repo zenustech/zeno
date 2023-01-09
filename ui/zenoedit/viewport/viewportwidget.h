@@ -7,40 +7,11 @@
 #include "comctrl/zmenu.h"
 #include "common.h"
 #include "viewporttransform.h"
+#include "viewportpicker.h"
+#include "recordvideomgr.h"
 
 class ZTimeline;
 class ZenoMainWindow;
-
-#if 0
-class QDMDisplayMenu : public ZMenu
-{
-public:
-    QDMDisplayMenu();
-};
-
-class QDMRecordMenu : public ZMenu
-{
-public:
-    QDMRecordMenu();
-};
-#endif
-
-struct VideoRecInfo
-{
-    QString record_path;
-    QString videoname;
-    QVector2D res;
-    QPair<int, int> frameRange;
-    int fps;
-    int bitrate;
-    int numMSAA = 0;
-    int numOptix = 1;
-    VideoRecInfo() {
-        res = { 0,0 };
-        fps = bitrate = 0;
-        frameRange = { -1, -1 };
-    }
-};
 
 class CameraControl : public QWidget
 {
@@ -58,7 +29,7 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event);
+    // void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
@@ -68,6 +39,10 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void resizeTransformHandler(int dir);
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
 
 private:
     bool m_mmb_pressed;
@@ -85,6 +60,7 @@ private:
 
     QSet<int> m_pressedKeys;
     std::unique_ptr<zeno::FakeTransformer> transformer;
+    std::unique_ptr<zeno::Picker> picker;
 };
 
 class ViewportWidget : public QGLWidget
@@ -97,7 +73,6 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void checkRecord(std::string a_record_file, QVector2D a_record_res);
     QVector2D cameraRes() const;
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
@@ -107,6 +82,10 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void setPickTarget(const string& prim_name);
+    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
+    void unbindNodeFromPicker();
+    void setSimpleRenderOption();
 
 signals:
     void frameRecorded(int);
@@ -115,16 +94,16 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    // void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     std::shared_ptr<CameraControl> m_camera;
-    std::string record_path;
     QVector2D record_res;
     QPointF m_lastPos;
+    QTimer* m_pauseRenderDally;
 
 public:
     bool updateLightOnce;
@@ -143,6 +122,7 @@ public:
     TIMELINE_INFO timelineInfo();
     void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
+    void runAndRecord(const VideoRecInfo& info);
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -153,6 +133,7 @@ public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();
+    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 signals:
     void frameUpdated(int new_frame);
@@ -165,7 +146,8 @@ private:
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
-    QThread m_recThread;
+    RecordVideoMgr m_recordMgr;
+    bool m_bRecordRun;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
 };

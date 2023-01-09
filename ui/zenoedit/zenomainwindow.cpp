@@ -17,6 +17,8 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/core/Session.h>
+#include <zenovis/DrawOptions.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
@@ -26,6 +28,7 @@
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
+#include "viewport/recordvideomgr.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -53,6 +56,7 @@ ZenoMainWindow::~ZenoMainWindow()
 void ZenoMainWindow::init()
 {
     initMenu();
+    initLive();
     initDocks();
     verticalLayout();
     //onlyEditorLayout();
@@ -61,6 +65,10 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+}
+
+void ZenoMainWindow::initLive() {
+
 }
 
 void ZenoMainWindow::initMenu() {
@@ -73,6 +81,7 @@ void ZenoMainWindow::initMenu() {
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+N")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
@@ -84,18 +93,21 @@ void ZenoMainWindow::initMenu() {
         pAction = new QAction(tr("Open"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+O")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
+        pAction->setShortcutContext(Qt::ApplicationShortcut);
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 
@@ -326,6 +338,61 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+
+void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    ZASSERT_EXIT(m_viewDock);
+    DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
+    ZASSERT_EXIT(viewWidget);
+    ViewportWidget* pViewport = viewWidget->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    //hide other component
+    if (m_editor) m_editor->hide();
+    if (m_logger) m_logger->hide();
+    if (m_parameter) m_parameter->hide();
+
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = 1;
+    recInfo.numSamples = param.iSample;
+    recInfo.audioPath = param.audioPath;
+    recInfo.record_path = param.sPath;
+    recInfo.bRecordRun = true;
+    recInfo.videoname = "output.mp4";
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = {(float)pixw, (float)pixh};
+
+        pViewport->setFixedSize(pixw, pixh);
+        pViewport->setCameraRes(QVector2D(pixw, pixh));
+        pViewport->updatePerspective();
+    } else {
+        recInfo.res = {(float)1000, (float)680};
+        pViewport->setMinimumSize(1000, 680);
+    }
+
+    auto sess = Zenovis::GetInstance().getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->drawOptions->num_samples = param.bRecord ? param.iSample : 16;
+        }
+    }
+
+    bool ret = openFile(param.sZsgPath);
+    ZASSERT_EXIT(ret);
+    viewWidget->runAndRecord(recInfo);
+}
+
 void ZenoMainWindow::updateViewport(const QString& action)
 {
     //todo: temp code for single view.
@@ -452,8 +519,9 @@ void ZenoMainWindow::exportGraph() {
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
-            JsonArrayBatch batch(writer);
+            writer.StartArray();
             serializeScene(pModel, writer);
+            writer.EndArray();
             content = QString(s.GetString());
         }
     }
@@ -583,15 +651,14 @@ void ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
-    if (pModel && pModel->isDirty()) {
-        QMessageBox msgBox =
-            QMessageBox(QMessageBox::Question, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, this);
+    if (!zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
+        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
         msgBox.setPalette(pal);
         int ret = msgBox.exec();
         if (ret & QMessageBox::Yes) {
-            saveAs();
+            save();
         }
     }
     pGraphsMgm->clear();

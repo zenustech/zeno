@@ -106,6 +106,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
     {
         if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(option))
         {
+            return;
             QRect editRect = proxy()->subControlRect(CC_ComboBox, cb, SC_ComboBoxEditField, widget);
             painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
@@ -120,6 +121,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
                              cb->palette, cb->state & State_Enabled, cb->currentText, QPalette::ButtonText);
             }
             painter->restore();
+            return;
         }
     }
     if (CE_ItemViewItem == element)
@@ -131,7 +133,19 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
 
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const
 {
-    if (cc == CC_ZenoComboBox && sc == SC_ComboBoxArrow)
+    if (cc == CC_ComboBox && sc == SC_ComboBoxEditField)
+    {
+        ZComboBox* pCombobox = qobject_cast<ZComboBox*>(const_cast<QWidget*>(widget));
+        const QStyleOptionComboBox* cb = qstyleoption_cast<const QStyleOptionComboBox*>(option);
+        if (pCombobox && cb)
+        {
+            QRect comboxRc = option->rect;
+            QRect rc = comboxRc;
+            rc.setRight(comboxRc.right() - comboxRc.height());
+            return rc;
+        }
+    }
+    else if (cc == CC_ZenoComboBox && sc == SC_ComboBoxArrow)
     {
         if (const QStyleOptionComboBox* cb = qstyleoption_cast<const QStyleOptionComboBox*>(option))
         {

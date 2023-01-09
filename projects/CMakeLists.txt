@@ -27,13 +27,14 @@ set(ZENO_EXTENSIONS
     CalcGeometryUV
     MeshSubdiv
     CUDA
-    CuOcean
+    CuEulerian
     CuLagrange
     Audio
-    Parameterization
+    ImgCV
     GUI
     PBD
     Python
+    Parameterization
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

@@ -10,6 +10,7 @@
 
 namespace zeno {
 
+
 struct MaintainSpatialAccelerator : INode {
     void apply() override {
         auto zstets = get_input<ZenoParticles>("ZSParticles");
@@ -17,7 +18,6 @@ struct MaintainSpatialAccelerator : INode {
 
         using namespace zs;
         using bv_t = typename ZenoParticles::lbvh_t::Box;
-        constexpr auto space = execspace_e::cuda;
 
         auto cudaPol = cuda_exec().device(0);
 
@@ -27,7 +27,7 @@ struct MaintainSpatialAccelerator : INode {
             if (numDgr == 3 && zstets->category == ZenoParticles::surface) {
                 const auto &elements = zstets->getQuadraturePoints();
                 auto bvs = retrieve_bounding_volumes(cudaPol, verts, elements, wrapv<3>{}, thickness);
-                if (zstets->hasBvh(ZenoParticles::s_elementTag)) {
+                if (!zstets->hasBvh(ZenoParticles::s_elementTag)) {
                     auto &bvh = zstets->bvh(ZenoParticles::s_elementTag);
                     bvh.build(cudaPol, bvs);
                 } else {
@@ -39,7 +39,7 @@ struct MaintainSpatialAccelerator : INode {
         if (zstets->hasAuxData(ZenoParticles::s_surfTriTag)) {
             const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
             auto bvs = retrieve_bounding_volumes(cudaPol, verts, surfaces, wrapv<3>{}, thickness);
-            if (zstets->hasBvh(ZenoParticles::s_surfTriTag)) {
+            if (!zstets->hasBvh(ZenoParticles::s_surfTriTag)) {
                 auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
                 surfBvh.build(cudaPol, bvs);
             } else {
@@ -51,7 +51,7 @@ struct MaintainSpatialAccelerator : INode {
             const auto &boundaryEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
             auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryEdges, wrapv<2>{}, thickness);
 
-            if (zstets->hasBvh(ZenoParticles::s_surfEdgeTag)) {
+            if (!zstets->hasBvh(ZenoParticles::s_surfEdgeTag)) {
                 auto &beBvh = zstets->bvh(ZenoParticles::s_surfEdgeTag);
                 beBvh.build(cudaPol, bvs);
             } else {
@@ -63,7 +63,7 @@ struct MaintainSpatialAccelerator : INode {
             const auto &boundaryVerts = (*zstets)[ZenoParticles::s_surfVertTag];
             auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryVerts, wrapv<1>{}, thickness);
 
-            if (zstets->hasBvh(ZenoParticles::s_surfVertTag)) {
+            if (!zstets->hasBvh(ZenoParticles::s_surfVertTag)) {
                 auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
                 bvBvh.build(cudaPol, bvs);
             } else {

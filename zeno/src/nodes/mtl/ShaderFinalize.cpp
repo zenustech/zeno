@@ -36,6 +36,7 @@ struct ShaderFinalize : INode {
             {1, "mat_curvature"},
             {1, "mat_specularTint"},
             {1, "mat_anisotropic"},
+            {1, "mat_anisoRotation"},
             {1, "mat_sheen"},
             {1, "mat_sheenTint"},
             {1, "mat_clearcoat"},
@@ -79,6 +80,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("curvature", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sheen", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sheenTint", std::make_shared<NumericObject>(float(0.5f))),
             get_input<IObject>("clearcoat", std::make_shared<NumericObject>(float(0.0f))),
@@ -109,7 +111,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
 
-            
+
         });
         auto commonCode = em.getCommonCode();
 
@@ -155,6 +157,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "curvature", "0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
+        {"float", "anisoRotation", "0.0"},
         {"float", "sheen", "0.0"},
         {"float", "sheenTint", "0.0"},
         {"float", "clearcoat", "0.0"},

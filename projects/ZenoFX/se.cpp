@@ -45,6 +45,7 @@ namespace {
                 int w = 1;
                 if (auto nepos = necode.find(':'); nepos != std::string::npos) {
                     w = std::stoi(necode.substr(nepos + 1));
+                    necode = necode.substr(0, nepos);
                 }
                 int val = std::rint(temp_node("NumericEval")
                     .set2("zfxCode", necode)
@@ -55,8 +56,9 @@ namespace {
                     oss << std::setfill('0') << std::setw(w);
                 }
                 oss << val;
-                code.replace(pos, pos2 + 1 - pos, oss.str());
-                pos0 = pos2 + 1;
+                auto ost = oss.str();
+                code.replace(pos, pos2 + 1 - pos, ost);
+                pos0 = pos + ost.size();
             } else break;
 
             pos0 = 0;

@@ -1,6 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
+#include <zeno/types/UserData.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
 
@@ -33,5 +37,70 @@ ZENDEFNODE(ShaderInputAttr, {
     {"shader"},
 });
 
+struct MakeShaderUniform : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<PrimitiveObject>();
+        auto size = get_input2<int>("size");
+        prim->resize(size);
+        if (has_input("uniformDict")) {
+            auto uniformDict = get_input<zeno::DictObject>("uniformDict");
+            for (const auto& [key, value] : uniformDict->lut) {
+                auto index = std::stoi(key);
+                if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
+                    auto value = num->get<vec3f>();
+                    std::vector<vec3f>& attr_arr = prim->add_attr<vec3f>("pos");
+                    if (index < attr_arr.size()) {
+                        attr_arr[index] = value;
+                    }
+                }
+                else {
+                    throw Exception("Not NumericObject");
+                }
+            }
+        }
+        prim->userData().set2("ShaderUniforms", 1);
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(MakeShaderUniform, {
+    {
+        {"int", "size", "512"},
+        {"uniformDict"},
+    },
+    {
+        {"prim"},
+    },
+    {},
+    {"shader"},
+});
+
+
+struct ShaderUniformAttr : ShaderNodeClone<ShaderUniformAttr> {
+    virtual int determineType(EmissionPass *em) override {
+        auto type = get_input2<std::string>("type");
+        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
+        auto idx = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
+        return idx + 1;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto idx = get_input2<int>("idx");
+        auto type = get_input2<std::string>("type");
+        return em->emitCode(type + "(vec4(uniforms[" + std::to_string(idx) + "]))");
+    }
+};
+
+ZENDEFNODE(ShaderUniformAttr, {
+                                {
+                                    {"int", "idx", "0"},
+                                    {"enum float vec2 vec3 vec4", "type", "vec3"},
+                                },
+                                {
+                                    {"shader", "out"},
+                                },
+                                {},
+                                {"shader"},
+                            });
 
 }
