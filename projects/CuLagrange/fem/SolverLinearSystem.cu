@@ -757,4 +757,78 @@ void IPCSystem::compactHessian(zs::CudaExecutionPolicy &pol) {
     tab.reset(true);
 }
 
+IPCSystem::T IPCSystem::infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag) {
+    using namespace zs;
+    using T = typename IPCSystem::T;
+    constexpr auto space = execspace_e::cuda;
+    auto &vertData = vtemp;
+    auto &res = temp;
+    res.resize(count_warps(vertData.size()));
+    res.reset(0);
+    cudaPol(range((vertData.size() + 31) / 32 * 32),
+            [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
+             offset = vertData.getPropertyOffset(tag)] __device__(int pi) mutable {
+                T val = 0;
+                if (pi < n) {
+                    auto v = data.pack<3>(offset, pi);
+                    val = v.abs().max();
+                }
+
+#if __CUDA_ARCH__ >= 800
+                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto ret = zs::cg::reduce(tile, val, zs::cg::greater<T>());
+                if (tile.thread_rank() == 0)
+                    res[pi / 32] = ret;
+#else
+        auto [mask, numValid] = warp_mask(pi, n);
+        auto locid = threadIdx.x & 31;
+        for (int stride = 1; stride < 32; stride <<= 1) {
+            auto tmp = __shfl_down_sync(mask, val, stride);
+            if (locid + stride < numValid)
+                val = zs::max(val, tmp);
+        }
+        if (locid == 0)
+            res[pi / 32] = val;
+#endif
+            });
+    return reduce(cudaPol, res, thrust::maximum<T>{});
+}
+IPCSystem::T IPCSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto &vertData = vtemp;
+    auto &res = temp;
+    res.resize(count_warps(vertData.size()));
+    cudaPol(range((vertData.size() + 31) / 32 * 32),
+            [data = proxy<space>({}, vertData), res = proxy<space>(res), n = vertData.size(),
+             offset0 = vertData.getPropertyOffset(tag0),
+             offset1 = vertData.getPropertyOffset(tag1)] __device__(int pi) mutable {
+                T val = 0;
+                if (pi < n) {
+                    auto v0 = data.pack(dim_c<3>, offset0, pi);
+                    auto v1 = data.pack(dim_c<3>, offset1, pi);
+                    val = v0.dot(v1);
+                }
+        // reduce_to(pi, n, v, res[pi / 32]);
+
+#if __CUDA_ARCH__ >= 800
+                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto ret = zs::cg::reduce(tile, val, zs::cg::plus<T>());
+                if (tile.thread_rank() == 0)
+                    res[pi / 32] = ret;
+#else
+        auto [mask, numValid] = warp_mask(pi, n);
+        auto locid = threadIdx.x & 31;
+        for (int stride = 1; stride < 32; stride <<= 1) {
+            auto tmp = __shfl_down_sync(mask, val, stride);
+            if (locid + stride < numValid)
+                val = val + tmp;
+        }
+        if (locid == 0)
+            res[pi / 32] = val;
+#endif
+            });
+    return reduce(cudaPol, res, thrust::plus<double>{});
+}
+
 } // namespace zeno

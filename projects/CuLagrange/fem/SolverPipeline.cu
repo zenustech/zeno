@@ -2619,7 +2619,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
                                  qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         cgtemp.tuple<3>(pOffset, i) = cgtemp.pack<3>(qOffset, i);
     });
-    double zTrk = dot(cudaPol, wrapt<double>{}, cgtemp, "r", "q");
+    double zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "r", "q");
     double residualPreconditionedNorm2 = zTrk;
     double localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
     int iter = 0;
@@ -2640,7 +2640,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
         multiply(cudaPol, true_c, "p", "temp");
         project(cudaPol, true_c, "temp"); // project production
 
-        double alpha = zTrk / dot(cudaPol, wrapt<double>{}, cgtemp, "temp", "p");
+        double alpha = zTrk / zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "temp", "p");
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), dirOffset = cgtemp.getPropertyOffset("dir"),
                                  pOffset = cgtemp.getPropertyOffset("p"), rOffset = cgtemp.getPropertyOffset("r"),
                                  tempOffset = cgtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
@@ -2652,7 +2652,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
 
         precondition(cudaPol, true_c, "r", "q");
         double zTrkLast = zTrk;
-        zTrk = dot(cudaPol, wrapt<double>{}, cgtemp, "q", "r");
+        zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "q", "r");
         double beta = zTrk / zTrkLast;
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), beta, pOffset = cgtemp.getPropertyOffset("p"),
                                  qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
@@ -2713,7 +2713,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
                                  qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple<3>(pOffset, i) = vtemp.pack<3>(qOffset, i);
     });
-    double zTrk = dot(cudaPol, wrapt<double>{}, vtemp, "r", "q");
+    double zTrk = dot(cudaPol, "r", "q");
     double residualPreconditionedNorm2 = zTrk;
     double localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
     int iter = 0;
@@ -2729,7 +2729,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         multiply(cudaPol, "p", "temp");
         project(cudaPol, "temp"); // project production
 
-        double alpha = zTrk / dot(cudaPol, wrapt<double>{}, vtemp, "temp", "p");
+        double alpha = zTrk / dot(cudaPol, "temp", "p");
         cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
                                  pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
                                  tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
@@ -2741,7 +2741,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
 
         precondition(cudaPol, "r", "q");
         double zTrkLast = zTrk;
-        zTrk = dot(cudaPol, wrapt<double>{}, vtemp, "q", "r");
+        zTrk = dot(cudaPol, "q", "r");
         double beta = zTrk / zTrkLast;
         cudaPol(range(numDofs), [vtemp = proxy<space>(vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
                                  qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
@@ -2862,7 +2862,7 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
     T E{E0};
     T c1m = 0;
     int lsIter = 0;
-    c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
+    c1m = armijoParam * dot(cudaPol, "dir", "grad");
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
     do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] __device__(int i) mutable {
@@ -3015,7 +3015,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 #endif
         // CHECK PN CONDITION
-        T res = infNorm(pol, vtemp, "dir") / dt;
+        T res = infNorm(pol, "dir") / dt;
         T cons_res = constraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
             zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
@@ -3025,7 +3025,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         fmt::print(fg(fmt::color::aquamarine),
                    "substep {} newton iter {}: direction residual(/dt) {}, "
                    "grad residual {}\n",
-                   substep, newtonIter, res, infNorm(pol, vtemp, "grad"));
+                   substep, newtonIter, res, infNorm(pol, "grad"));
         // LINESEARCH
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);

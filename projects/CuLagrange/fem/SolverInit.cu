@@ -208,8 +208,8 @@ void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
     computeBarrierGradientAndHessian(pol, "q", false);
     // computeBoundaryBarrierGradientAndHessian(pol, "q", false);
     kappa = prevKappa;
-    auto gsum = dot(pol, vtemp, "p", "q");
-    auto gsnorm = dot(pol, vtemp, "q", "q");
+    auto gsum = dot(pol, "p", "q");
+    auto gsnorm = dot(pol, "q", "q");
     if (gsnorm < limits<T>::epsilon() * 10)
         kappaMin = 0;
     else

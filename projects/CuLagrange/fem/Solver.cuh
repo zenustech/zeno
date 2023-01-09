@@ -199,6 +199,8 @@ struct IPCSystem : IObject {
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                   bool includeHessian = true);
     // krylov solver
+    T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     void convertHessian(zs::CudaExecutionPolicy &pol);
     void compactHessian(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
