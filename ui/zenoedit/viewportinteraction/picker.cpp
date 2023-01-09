@@ -208,7 +208,7 @@ void Picker::syncResultToNode() {
     pModel->updateParamInfo(node_id, new_info, subgraph, true);
 }
 
-static std::optional<float> ray_box_intersect(
+std::optional<float> ray_box_intersect(
     zeno::vec3f const &bmin,
     zeno::vec3f const &bmax,
     zeno::vec3f const &ray_pos,
@@ -254,7 +254,7 @@ static std::optional<float> ray_box_intersect(
 }
 
 
-static bool test_in_selected_bounding(
+bool test_in_selected_bounding(
     QVector3D centerWS,
     QVector3D cam_posWS,
     QVector3D left_normWS,
