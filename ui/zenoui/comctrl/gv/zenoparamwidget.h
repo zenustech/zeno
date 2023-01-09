@@ -345,34 +345,78 @@ private:
     QSizeF m_size;
 };
 
-class ZenoMinStatusBtnItem : public QGraphicsObject
+
+class ZenoStatusBtnGroup : public QGraphicsObject
 {
     Q_OBJECT
     typedef QGraphicsObject _base;
 public:
-    ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
-	QRectF boundingRect() const override;
-	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    void setChecked(STATUS_BTN btn, bool bChecked);
-    void setOptions(int options);
+    ZenoStatusBtnGroup(QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void updateHovered(NODE_OPTION opt, bool bHovered);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void onZoomed();
+    qreal buttonHeight() const;
+
+signals:
+    void toggleHoverChanged(NODE_OPTION opt, bool bHovered);
+
+private slots:
+    void onBigButtonHoverChanged(bool bChecked);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
-signals:
-    void toggleChanged(STATUS_BTN btn, bool hovered);
-
-protected:
-    ZenoImageItem* m_minMute;
-    ZenoImageItem* m_minView;
-    ZenoImageItem* m_minOnce;
-
+private:
+    const int m_btnHeight = 42;
+    int m_options;      //persistent status.
     ZenoImageItem* m_mute;
     ZenoImageItem* m_view;
     ZenoImageItem* m_once;
+};
+
+class ZenoMinStatusBtnItem : public QGraphicsObject
+{
+    Q_OBJECT
+    typedef QGraphicsObject _base;
+public:
+    ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void setChecked(STATUS_BTN btn, bool bChecked);
+    void setOptions(int options);
+    void onZoomed();
+    void setSize(const QSizeF& sz);
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+signals:
+    void toggleChanged(STATUS_BTN btn, bool hovered);
+
+private slots:
+    void onGroupHoveredChanged(NODE_OPTION opt, bool bHovered);
+
+private:
+    void hoverChanged(bool bHoverEntered, const QPointF& pt);
+
+    int m_options;
+    NODE_OPTION m_hoverOption;
+
+    qreal m_lTopLeft;     //the length of top-left line.
+    qreal m_lBtnWidth;
+    QSizeF m_size;
+
+    QPainterPath m_oncePath;
+    QPainterPath m_mutePath;
+    QPainterPath m_viewPath;
+
+    ZenoStatusBtnGroup* m_group;
 };
 
 class ZenoMinStatusBtnWidget : public QGraphicsLayoutItem, public ZenoMinStatusBtnItem
