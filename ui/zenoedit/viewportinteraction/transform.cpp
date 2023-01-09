@@ -22,21 +22,6 @@ FakeTransformer::FakeTransformer()
       , m_operation(NONE)
       , m_handler_scale(1.f) {}
 
-FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
-    : m_objects_center(0.0f)
-      , m_trans(0.0f)
-      , m_scale(1.0f)
-      , m_rotate({0, 0, 0, 1})
-      , m_last_trans(0.0f)
-      , m_last_scale(1.0f)
-      , m_last_rotate({0, 0, 0, 1})
-      , m_status(false)
-      , m_operation(NONE)
-      , m_handler_scale(1.f)
-{
-    addObject(names);
-}
-
 void FakeTransformer::addObject(const std::string& name) {
     if (name.empty()) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -603,7 +588,7 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
-    m_objects_center = {0, 0, 0};
+    glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
 
@@ -626,7 +611,10 @@ void FakeTransformer::doTransform() {
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
-        auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
+        auto transform_matrix = translate_matrix *
+                                rotate_matrix *
+                                scale_matrix *
+                                inv_pre_transform;
 
         if (obj->has_attr("pos")) {
             // transform pos
@@ -655,24 +643,15 @@ void FakeTransformer::doTransform() {
             user_data.setLiterial("_bboxMin", bmin);
             user_data.setLiterial("_bboxMax", bmax);
         }
-        m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
+        new_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
     m_last_trans = m_trans;
     m_last_rotate = m_rotate;
     m_last_scale = m_scale;
 
-    m_objects_center /= m_objects.size();
+    new_objects_center /= m_objects.size();
+    m_objects_center = new_objects_center;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
-}
-
-const char* FakeTransformer::getNodePrimSockName(std::string node_name) {
-    if (table.empty()) {
-        table["TransformPrimitive"] = "outPrim";
-        table["BindMaterial"] = "object";
-    }
-    if (table.find(node_name) == table.end())
-        return "prim";
-    return table[node_name].c_str();
 }
 
 }

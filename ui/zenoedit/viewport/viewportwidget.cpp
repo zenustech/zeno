@@ -38,8 +38,6 @@ CameraControl::CameraControl(QWidget* parent)
     , m_aperture(0.1f)
     , m_focalPlaneDistance(2.0f)
 {
-    transformer = std::make_unique<zeno::FakeTransformer>();
-    picker = std::make_unique<zeno::Picker>();
     updatePerspective();
 }
 
@@ -65,9 +63,13 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
         // check if clicked a selected object
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto front = scene->camera->m_lodfront;
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
-        if (!scene->selected.empty() && transformer->isTransformMode() && transformer->clickedAnyHandler(realPos(), dir, front)) {
-            transformer->startTransform();
+        auto dir = screenToWorldRay(event->x() / res().x(),
+                                    event->y() / res().y());
+        auto& transformer = zeno::FakeTransformer::GetInstance();
+        if (!scene->selected.empty() &&
+            transformer.isTransformMode() &&
+            transformer.clickedAnyHandler(realPos(), dir, front)) {
+            transformer.startTransform();
         }
     }
 }
@@ -124,34 +126,37 @@ void CameraControl::lookTo(int dir) {
 }
 
 void CameraControl::clearTransformer() {
-    transformer->clear();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.clear();
 }
 
 void CameraControl::changeTransformOperation(const QString& node) {
-    auto opt = transformer->getTransOpt();
-    transformer->clear();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    auto opt = transformer.getTransOpt();
+    transformer.clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     for (auto const &[key, _] : scene->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
-            transformer->addObject(key);
+            transformer.addObject(key);
         }
     }
-    transformer->setTransOpt(opt);
-    transformer->changeTransOpt();
+    transformer.setTransOpt(opt);
+    transformer.changeTransOpt();
     zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::changeTransformOperation(int mode) {
+    auto& transformer = zeno::FakeTransformer::GetInstance();
     switch (mode) {
     case 0:
-        transformer->toTranslate();
+        transformer.toTranslate();
         break;
     case 1:
-        transformer->toRotate();
+        transformer.toRotate();
         break;
     case 2:
-        transformer->toScale();
+        transformer.toScale();
         break;
     default:
         break;
@@ -160,25 +165,27 @@ void CameraControl::changeTransformOperation(int mode) {
 }
 
 void CameraControl::changeTransformCoordSys() {
-    transformer->changeCoordSys();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.changeCoordSys();
     zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::resizeTransformHandler(int dir) {
-    transformer->resizeHandler(dir);
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.resizeHandler(dir);
     zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::setPickTarget(const std::string &prim_name) {
-    picker->setTarget(prim_name);
+    zeno::Picker::GetInstance().setTarget(prim_name);
 }
 
 void CameraControl::bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name) {
-    picker->bindNode(node, subgraph, sock_name);
+    zeno::Picker::GetInstance().bindNode(node, subgraph, sock_name);
 }
 
 void CameraControl::unbindNodeFromPicker() {
-    picker->unbindNode();
+    zeno::Picker::GetInstance().unbindNode();
 }
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
@@ -216,7 +223,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
         m_lastPos = QPointF(xpos, ypos);
     }
     else if (event->buttons() & Qt::LeftButton) {
-        if (transformer->isTransforming()) {
+        auto& transformer = zeno::FakeTransformer::GetInstance();
+        if (transformer.isTransforming()) {
             auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
             auto camera_pos = realPos();
             auto x = event->x() * 1.0f;
@@ -225,7 +233,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
             y = 1 - (2 * y / res().y());
             auto mouse_pos = glm::vec2(x, y);
             auto vp = scene->camera->m_proj * scene->camera->m_view;
-            transformer->transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
+            transformer.transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
@@ -280,7 +288,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
 
 void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
     auto pos = event->pos();
-    auto picked_prim = picker->just_pick_prim(pos.x(), pos.y());
+    auto picked_prim = zeno::Picker::GetInstance().just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
@@ -378,15 +386,17 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //}
 
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        auto& picker = zeno::Picker::GetInstance();
+        auto& transformer = zeno::FakeTransformer::GetInstance();
         qDebug() << scene->select_mode;
 
-        if (transformer->isTransforming()) {
+        if (transformer.isTransforming()) {
             bool moved = false;
             if (m_boundRectStartPos != event->pos()) {
                 // create/modify transform primitive node
                 moved = true;
             }
-            transformer->endTransform(moved);
+            transformer.endTransform(moved);
         }
         else {
             auto cam_pos = realPos();
@@ -395,33 +405,24 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
             if (!shift_pressed) {
                 scene->selected.clear();
-                transformer->clear();
+                transformer.clear();
             }
 
             QPoint releasePos = event->pos();
             if (m_boundRectStartPos == releasePos) {
-                float x = (float)event->x() / m_res.x();
-                float y = (float)event->y() / m_res.y();
-                auto rdir = screenToWorldRay(x, y);
-                // pick with framebuffer
-                picker->pick(releasePos.x(), releasePos.y());
-                picker->sync_to_scene();
+                picker.pick(releasePos.x(), releasePos.y());
+                picker.sync_to_scene();
+                transformer.clear();
+                transformer.addObject(picker.get_picked_prims());
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)releasePos.x());
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)releasePos.x());
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)releasePos.y());
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)releasePos.y());
-                auto left_up = screenToWorldRay(min_x / m_res.x(), min_y / m_res.y());
-                auto left_down = screenToWorldRay(min_x / m_res.x(), max_y / m_res.y());
-                auto right_up = screenToWorldRay(max_x / m_res.x(), min_y / m_res.y());
-                auto right_down = screenToWorldRay(max_x / m_res.x(), max_y / m_res.y());
-                // pick with framebuffer
                 int x0 = m_boundRectStartPos.x();
                 int y0 = m_boundRectStartPos.y();
                 int x1 = releasePos.x();
                 int y1 = releasePos.y();
-                picker->pick(x0, y0, x1, y1);
-                picker->sync_to_scene();
+                picker.pick(x0, y0, x1, y1);
+                picker.sync_to_scene();
+                transformer.clear();
+                transformer.addObject(picker.get_picked_prims());
             }
         }
     }

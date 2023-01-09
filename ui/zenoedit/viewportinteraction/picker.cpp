@@ -76,7 +76,6 @@ namespace zeno {
 
 void Picker::pick(int x, int y) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     // auto picker = zenovis::makeFrameBufferPicker(scene);
     // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x, y);

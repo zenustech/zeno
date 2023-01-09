@@ -60,8 +60,6 @@ private:
     QVector2D m_res;
 
     QSet<int> m_pressedKeys;
-    std::unique_ptr<zeno::FakeTransformer> transformer;
-    std::unique_ptr<zeno::Picker> picker;
 };
 
 class ViewportWidget : public QGLWidget

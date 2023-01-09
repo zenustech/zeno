@@ -57,7 +57,10 @@ struct PickingContext{
 
 class Picker {
   public:
-    Picker() : need_sync(false) {};
+    static Picker& GetInstance() {
+        static Picker instance;
+        return instance;
+    }
 //    void pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
 //                     const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
 //    void pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
@@ -72,6 +75,11 @@ class Picker {
     void bindNode(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNode();
   private:
+    Picker() : need_sync(false) {
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        picker = zenovis::makeFrameBufferPicker(scene);
+    };
+
     std::unique_ptr<zenovis::IPicker> picker;
     std::vector<string> prim_set;
     bool need_sync;
