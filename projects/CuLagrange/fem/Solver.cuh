@@ -239,7 +239,7 @@ struct IPCSystem : IObject {
     int CCDCap = 20000;
     T kappa0 = 1e4;
     T fricMu = 0;
-    T &boundaryKappa = kappa;
+    T boundaryKappa = 1;
     T xi = 0; // 1e-2; // 2e-3;
     T dHat = 0.0025;
     T epsv = 0.0;

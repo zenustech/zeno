@@ -2653,6 +2653,11 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
         precondition(cudaPol, true_c, "r", "q");
         double zTrkLast = zTrk;
         zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "q", "r");
+        if (zs::isnan(zTrk, zs::exec_seq)) {
+            iter = CGCap;
+            residualPreconditionedNorm2 = (localTol2 / (cgRel * cgRel)) + std::max((localTol2 / (cgRel * cgRel)), (T)1);
+            continue;
+        }
         double beta = zTrk / zTrkLast;
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), beta, pOffset = cgtemp.getPropertyOffset("p"),
                                  qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
@@ -2662,7 +2667,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
         residualPreconditionedNorm2 = zTrk;
     } // end cg step
     /// copy back results
-    if (iter == CGCap) {
+    if (iter == CGCap && residualPreconditionedNorm2 > (localTol2 / (cgRel * cgRel))) {
         // r = grad - temp
         cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
                                      tempOffset = cgtemp.getPropertyOffset("temp"),
@@ -2742,6 +2747,11 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         precondition(cudaPol, "r", "q");
         double zTrkLast = zTrk;
         zTrk = dot(cudaPol, "q", "r");
+        if (zs::isnan(zTrk, zs::exec_seq)) {
+            iter = CGCap;
+            residualPreconditionedNorm2 = (localTol2 / (cgRel * cgRel)) + std::max((localTol2 / (cgRel * cgRel)), (T)1);
+            continue;
+        }
         double beta = zTrk / zTrkLast;
         cudaPol(range(numDofs), [vtemp = proxy<space>(vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
                                  qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
@@ -2751,7 +2761,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         residualPreconditionedNorm2 = zTrk;
     } // end cg step
     /// copy back results
-    if (iter == CGCap) {
+    if (iter == CGCap && residualPreconditionedNorm2 > (localTol2 / (cgRel * cgRel))) {
         // r = grad - temp
         cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), tempOffset = vtemp.getPropertyOffset("temp"),
                                      gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
