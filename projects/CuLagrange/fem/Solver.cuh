@@ -164,7 +164,7 @@ struct IPCSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// pipeline
-    void newtonKrylov(zs::CudaExecutionPolicy &pol);
+    bool newtonKrylov(zs::CudaExecutionPolicy &pol);
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);

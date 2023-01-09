@@ -2903,12 +2903,13 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
     } while (true);
 }
 
-void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
+bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
     /// optimizer
-    for (int newtonIter = 0; newtonIter != PNCap; ++newtonIter) {
+    int newtonIter = 0;
+    for (; newtonIter != PNCap; ++newtonIter) {
         // check constraints
         if (!BCsatisfied) {
             computeConstraints(pol);
@@ -3056,7 +3057,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             intersectionFreeStepsize(pol, xi, alpha);
             zeno::log_info("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha, ncspt, ncsee);
         }
-        lineSearch(pol, alpha);
+        // lineSearch(pol, alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
@@ -3085,6 +3086,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         }
 #endif
     }
+    return newtonIter != PNCap;
 }
 
 struct StepIPCSystem : INode {
@@ -3107,12 +3109,14 @@ struct StepIPCSystem : INode {
         for_fric:
             A->needFricPrecompute = true;
 
-            A->newtonKrylov(cudaPol);
+            bool success = A->newtonKrylov(cudaPol);
 
             if (--numFricSolve > 0)
                 goto for_fric;
 
-            A->updateVelocities(cudaPol);
+            /// @note only update substep velocity when converged
+            if (success)
+                A->updateVelocities(cudaPol);
         }
         // update velocity and positions
         A->writebackPositionsAndVelocities(cudaPol);
