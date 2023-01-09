@@ -14,6 +14,8 @@
 	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 
 using std::string;
+using std::unordered_set;
+using std::unordered_map;
 namespace zeno {
 
 std::optional<float> ray_box_intersect(
@@ -56,14 +58,16 @@ struct PickingContext{
 class Picker {
   public:
     Picker() : need_sync(false) {};
-    void pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
-                     const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
-    void pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
-                     const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
-    void pickWithFrameBuffer(int x, int y,
-                             const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
-    void pickWithFrameBuffer(int x0, int y0, int x1, int y1,
-                             const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
+//    void pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
+//                     const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
+//    void pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
+//                     const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete);
+    void pick(int x, int y);
+    void pick(int x0, int y0, int x1, int y1);
+    string just_pick_prim(int x, int y);
+    const unordered_set<string>& get_picked_prims();
+    const unordered_map<string, unordered_set<int>>& get_picked_elems();
+    void sync_to_scene();
     void setTarget(const string& prim_name);
     void bindNode(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNode();
@@ -76,6 +80,9 @@ class Picker {
     string sock_name;
     inline void onPrimitiveSelected();
     void syncResultToNode();
+
+    unordered_set<string> selected_prims;
+    unordered_map<string, unordered_set<int>> selected_elements;
 };
 
 }

@@ -17,64 +17,64 @@
 
 namespace zeno {
 
-void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
-                         const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    float min_t = std::numeric_limits<float>::max();
-    std::string name("");
-    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-        zeno::vec3f ro(ray_ori[0], ray_ori[1], ray_ori[2]);
-        zeno::vec3f rd(ray_dir[0], ray_dir[1], ray_dir[2]);
-        zeno::vec3f bmin, bmax;
-        if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
-            if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
-                float t = *ret;
-                if (t < min_t) {
-                    min_t = t;
-                    name = key;
-                }
-            }
-        }
-    }
-    if (scene->selected.count(name) > 0) {
-        scene->selected.erase(name);
-        on_delete(name);
-    }
-    else {
-        scene->selected.insert(name);
-        on_add(name);
-    }
-    onPrimitiveSelected();
-}
+//void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
+//                         const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
+//    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+//    float min_t = std::numeric_limits<float>::max();
+//    std::string name("");
+//    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+//        zeno::vec3f ro(ray_ori[0], ray_ori[1], ray_ori[2]);
+//        zeno::vec3f rd(ray_dir[0], ray_dir[1], ray_dir[2]);
+//        zeno::vec3f bmin, bmax;
+//        if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
+//            if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
+//                float t = *ret;
+//                if (t < min_t) {
+//                    min_t = t;
+//                    name = key;
+//                }
+//            }
+//        }
+//    }
+//    if (scene->selected.count(name) > 0) {
+//        scene->selected.erase(name);
+//        on_delete(name);
+//    }
+//    else {
+//        scene->selected.insert(name);
+//        on_add(name);
+//    }
+//    onPrimitiveSelected();
+//}
 
-void Picker::pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
-                         const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+//void Picker::pickWithRay(QVector3D cam_pos, QVector3D left_up, QVector3D left_down, QVector3D right_up, QVector3D right_down,
+//                         const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
+//    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+//
+//    auto left_normWS = QVector3D::crossProduct(left_down, left_up);
+//    auto right_normWS = QVector3D::crossProduct(right_up, right_down);
+//    auto up_normWS = QVector3D::crossProduct(left_up, right_up);
+//    auto down_normWS = QVector3D::crossProduct(right_down, left_down);
+//
+//    std::vector<std::string> passed_prim;
+//    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+//        zeno::vec3f c;
+//        float radius;
+//        if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
+//            bool passed = test_in_selected_bounding(QVector3D(c[0], c[1], c[2]), cam_pos, left_normWS,
+//                                                    right_normWS, up_normWS, down_normWS);
+//            if (passed) {
+//                passed_prim.push_back(key);
+//                string t;
+//                on_add(key);
+//            }
+//        }
+//    }
+//    scene->selected.insert(passed_prim.begin(), passed_prim.end());
+//    onPrimitiveSelected();
+//}
 
-    auto left_normWS = QVector3D::crossProduct(left_down, left_up);
-    auto right_normWS = QVector3D::crossProduct(right_up, right_down);
-    auto up_normWS = QVector3D::crossProduct(left_up, right_up);
-    auto down_normWS = QVector3D::crossProduct(right_down, left_down);
-
-    std::vector<std::string> passed_prim;
-    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-        zeno::vec3f c;
-        float radius;
-        if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
-            bool passed = test_in_selected_bounding(QVector3D(c[0], c[1], c[2]), cam_pos, left_normWS,
-                                                    right_normWS, up_normWS, down_normWS);
-            if (passed) {
-                passed_prim.push_back(key);
-                string t;
-                on_add(key);
-            }
-        }
-    }
-    scene->selected.insert(passed_prim.begin(), passed_prim.end());
-    onPrimitiveSelected();
-}
-
-void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
+void Picker::pick(int x, int y) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     // auto picker = zenovis::makeFrameBufferPicker(scene);
@@ -83,37 +83,34 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
 
     if (scene->select_mode == zenovis::PICK_OBJECT) {
         if (selected.empty()) {
-            for (const auto& s : scene->selected) on_delete(s);
-            scene->selected.clear();
+            selected_prims.clear();
             return;
         }
-        if (scene->selected.count(selected) > 0) {
-            scene->selected.erase(selected);
-            on_delete(selected);
+        if (selected_prims.count(selected) > 0) {
+            selected_prims.erase(selected);
         } else {
-            scene->selected.insert(selected);
-            on_add(selected);
+            selected_prims.insert(selected);
         }
     }
     else {
         if (selected.empty()) {
-            scene->selected_elements.clear();
+            selected_elements.clear();
             return;
         }
-        qDebug() << selected.c_str();
+        // qDebug() << selected.c_str();
         auto t = selected.find_last_of(':');
         auto obj_id = selected.substr(0, t);
         std::stringstream ss;
         ss << selected.substr(t+1);
         int elem_id; ss >> elem_id;
-        if (scene->selected_elements.find(obj_id) != scene->selected_elements.end()) {
-            if (scene->selected_elements[obj_id].count(elem_id) > 0)
-                scene->selected_elements[obj_id].erase(elem_id);
+        if (selected_elements.find(obj_id) != selected_elements.end()) {
+            if (selected_elements[obj_id].count(elem_id) > 0)
+                selected_elements[obj_id].erase(elem_id);
             else
-                scene->selected_elements[obj_id].insert(elem_id);
+                selected_elements[obj_id].insert(elem_id);
         }
         else
-            scene->selected_elements[obj_id] = {elem_id};
+            selected_elements[obj_id] = {elem_id};
     }
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
@@ -121,8 +118,7 @@ void Picker::pickWithFrameBuffer(int x, int y, const std::function<void(string)>
     syncResultToNode();
 }
 
-void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
-                                 const std::function<void(string)>& on_add, const std::function<void(string)>& on_delete) {
+void Picker::pick(int x0, int y0, int x1, int y1) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
     // auto picker = zenovis::makeFrameBufferPicker(scene);
@@ -139,8 +135,7 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
 
     if (scene->select_mode == zenovis::PICK_OBJECT) {
         while (p != end) {
-            scene->selected.insert(*p);
-            on_add(*p);
+            selected_prims.insert(*p);
             p++;
         }
         onPrimitiveSelected();
@@ -154,16 +149,47 @@ void Picker::pickWithFrameBuffer(int x0, int y0, int x1, int y1,
             std::stringstream ss;
             ss << result.substr(t+1);
             int elem_id; ss >> elem_id;
-            if (scene->selected_elements.find(obj_id) != scene->selected_elements.end()) {
-                auto &elements = scene->selected_elements[obj_id];
+            if (selected_elements.find(obj_id) != selected_elements.end()) {
+                auto &elements = selected_elements[obj_id];
                 if (elements.count(elem_id) > 0)
                     elements.erase(elem_id);
                 else
                     elements.insert(elem_id);
-            } else scene->selected_elements[obj_id] = {elem_id};
+            } else selected_elements[obj_id] = {elem_id};
         }
     }
     syncResultToNode();
+}
+
+string Picker::just_pick_prim(int x, int y) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto store_mode = scene->select_mode;
+    scene->select_mode = zenovis::PICK_OBJECT;
+    auto res = picker->getPicked(x, y);
+    scene->select_mode = store_mode;
+    return res;
+}
+
+void Picker::sync_to_scene() {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (scene->select_mode == zenovis::PICK_OBJECT) {
+        scene->selected.clear();
+        for (const auto& s : selected_prims)
+            scene->selected.insert(s);
+    }
+    else {
+        scene->selected_elements.clear();
+        for (const auto& p : selected_elements)
+            scene->selected_elements.insert(p);
+    }
+}
+
+const unordered_set<string>& Picker::get_picked_prims() {
+    return selected_prims;
+}
+
+const unordered_map<string, unordered_set<int>>& Picker::get_picked_elems() {
+    return selected_elements;
 }
 
 void Picker::setTarget(const string& prim_name) {
