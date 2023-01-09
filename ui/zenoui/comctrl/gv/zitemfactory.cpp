@@ -294,6 +294,24 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
+            case CONTROL_HSLIDER: 
+			{
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
+                ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
+					cbFunc(value);
+				});
+                pItemWidget = pSlider;
+                break;
+			}
             default:
             {
                 return nullptr;

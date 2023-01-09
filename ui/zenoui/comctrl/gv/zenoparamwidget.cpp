@@ -698,6 +698,62 @@ bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
     return ZenoParamWidget::eventFilter(object, event);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSlider::ZenoParamSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) {
+    m_pSlider = new QSlider(orientation);
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    QObject::connect(m_pSlider, &QSlider::valueChanged, this, &ZenoParamSlider::valueChanged);
+
+    QObject::connect(m_pSlider, &QSlider::sliderPressed, [=]() {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(m_pSlider->value()), nullptr);
+    });
+
+    QObject::connect(m_pSlider, &QSlider::sliderMoved, [=](int value) {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(value), nullptr);
+    });
+}
+
+void ZenoParamSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet(R"(
+					QSlider {
+					    background: rgb(31,39,42);
+						margin-top : 8px;
+					}
+                    QSlider::groove:horizontal {
+                        height: 4px;
+                        background: #707D9C;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #DFE2E5;
+                        width: 6px;
+                        margin: -8px 0;
+                    }
+                    QSlider::add-page:horizontal {
+                        background: #191D21;
+                    }
+                    
+                    QSlider::sub-page:horizontal {
+                        background: #707D9C;
+                    }
+    )"));
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)

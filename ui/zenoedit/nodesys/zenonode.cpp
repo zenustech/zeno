@@ -385,7 +385,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 
     int role = roles[0];
-    if (role != ROLE_PARAM_NAME && role != ROLE_PARAM_VALUE && role != ROLE_PARAM_CTRL)
+    if (role != ROLE_PARAM_NAME && role != ROLE_PARAM_VALUE && role != ROLE_PARAM_CTRL && role != ROLE_VPARAM_CTRL_PROPERTIES)
         return;
 
     QModelIndex viewParamIdx = pItem->index();
@@ -472,6 +472,12 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 ZenoGvHelper::setValue(pControl, ctrl, deflValue);
                 break;
             }
+            case ROLE_VPARAM_CTRL_PROPERTIES: 
+			{
+                QVariant value = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+                ZenoGvHelper::setCtrlProperties(pControl, value);
+                break;
+            }
         }
     }
     else if (groupName == iotags::params::node_params)
@@ -506,6 +512,12 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             {
                 const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
                 ZenoGvHelper::setValue(paramCtrl.param_control, ctrl, deflValue);
+                break;
+            }
+            case ROLE_VPARAM_CTRL_PROPERTIES: 
+            {
+                QVariant value = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+                ZenoGvHelper::setCtrlProperties(paramCtrl.param_control, value);
                 break;
             }
         }

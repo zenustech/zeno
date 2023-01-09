@@ -274,7 +274,20 @@ private:
     QTextEdit *m_pTextEdit;
 };
 
+class ZenoParamSlider : public ZenoParamWidget {
+    Q_OBJECT
+  public:
+    ZenoParamSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(int);
 
+  private:
+    void updateStyleSheet();
+  private:
+    QSlider *m_pSlider;
+};
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
 public:

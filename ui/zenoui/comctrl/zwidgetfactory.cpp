@@ -253,7 +253,15 @@ namespace zenoui
                 "));
                 pSlider->setValue(value.toInt());
 
-                SLIDER_INFO sliderInfo = properties.value<SLIDER_INFO>();
+                SLIDER_INFO sliderInfo;
+                if (properties.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = properties.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
 

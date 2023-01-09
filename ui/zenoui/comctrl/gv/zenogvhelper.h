@@ -11,6 +11,7 @@ public:
     static void setSizeInfo(QGraphicsItem* item, const SizeInfo& sz);
     static QSizeF sizehintByPolicy(QGraphicsItem* item);
     static void setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVariant& value);
+    static void setCtrlProperties(QGraphicsItem *item,  const QVariant &value);
 };
 
 

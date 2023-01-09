@@ -307,15 +307,15 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         {
             m_ui->stackProperties->setCurrentIndex(2);
             bool bIntVal = dataType == "int";
-            SLIDER_INFO sliderInfo = controlProperties.value<SLIDER_INFO>();
+            QVariantMap map = controlProperties.toMap();
 
-            QVariant step = sliderInfo.step;
+            QVariant step = map["step"];
             m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
 
-            QVariant min = sliderInfo.min;
+            QVariant min = map["min"];
             m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
 
-            QVariant max = sliderInfo.max;
+            QVariant max = map["max"];
             m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
         }
         else
@@ -806,6 +806,11 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         const QString typeDesc = pCurrent->m_type;
         const QVariant value = pCurrent->m_value;
         const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
+        QVariant ctrlProperties;
+        if (pCurrent->m_customData.find(ROLE_VPARAM_CTRL_PROPERTIES) != pCurrent->m_customData.end()) 
+		{
+            ctrlProperties = pCurrent->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
+        }
 
         int targetRow = 0;
         VParamItem* pTarget = nullptr;
@@ -871,6 +876,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 if (pTarget->m_ctrl != ctrl)
                 {
                     pTarget->setData(ctrl, ROLE_PARAM_CTRL);
+                }
+
+				//control properties
+                bool isChanged = pTarget->m_customData[ROLE_VPARAM_CTRL_PROPERTIES] != ctrlProperties;
+                if (isChanged) 
+				{
+                    pTarget->setData(ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
                 }
 
                 //todo: other info, like mapping, control properties, etc.
