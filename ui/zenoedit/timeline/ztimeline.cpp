@@ -1,12 +1,17 @@
 #include "ztimeline.h"
 #include "zslider.h"
+#include "zenomainwindow.h"
+#include "zenoapplication.h"
+#include "viewport/viewportwidget.h"
 #include <comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
 #include <zenomodel/include/uihelper.h>
 #include "ui_ztimeline.h"
-
+#include "viewport/zenovis.h"
+#include <zenovis/DrawOptions.h>
+#include <iostream>
 
 //////////////////////////////////////////////
 ZTimeline::ZTimeline(QWidget* parent)
@@ -45,6 +50,14 @@ void ZTimeline::initSignals()
     connect(m_ui->btnAlways, &QPushButton::clicked, this, [=](bool bChecked) {
         if (bChecked)
             emit alwaysChecked();
+    });
+    connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
+        //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
+        auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        viewport->simpleRenderChecked = bChecked;
+        scene->drawOptions->simpleRender = bChecked;
+        scene->drawOptions->needRefresh = true;
     });
     m_ui->btnAlways->setShortcut(QKeySequence("F1"));
     m_ui->btnRun->setShortcut(QKeySequence("F2"));
