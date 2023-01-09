@@ -220,6 +220,31 @@ struct FrameBufferPicker : IPicker {
     };
 
     explicit FrameBufferPicker(Scene* s) : scene(s) {
+        // generate buffers
+        generate_buffers();
+
+        // generate draw buffer
+        vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
+        ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        vao = make_unique<VAO>();
+
+        // unbind fbo & texture
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
+        fbo->unbind();
+
+        // prepare shaders
+        obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
+        vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
+        prim_shader = scene->shaderMan->compile_program(obj_vert_code, prim_frag_code);
+        empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
+        empty_and_offset_shader = scene->shaderMan->compile_program(obj_vert_code, empty_and_offset_frag_code);
+    }
+
+    ~FrameBufferPicker() {
+        destroy_buffers();
+    }
+
+    void generate_buffers() {
         // generate framebuffer
         fbo = make_unique<FBO>();
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
@@ -246,25 +271,9 @@ struct FrameBufferPicker : IPicker {
 
         // check fbo
         if(!fbo->complete()) printf("fbo error\n");
-
-        // generate draw buffer
-        vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
-        ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        vao = make_unique<VAO>();
-
-        // unbind fbo & texture
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
-        fbo->unbind();
-
-        // prepare shaders
-        obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
-        vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
-        prim_shader = scene->shaderMan->compile_program(obj_vert_code, prim_frag_code);
-        empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
-        empty_and_offset_shader = scene->shaderMan->compile_program(obj_vert_code, empty_and_offset_frag_code);
     }
 
-    ~FrameBufferPicker() {
+    void destroy_buffers() {
         if (fbo->fbo) CHECK_GL(glDeleteFramebuffers(1, &fbo->fbo));
         if (picking_texture->tex) CHECK_GL(glDeleteTextures(1, &picking_texture->tex));
         if (depth_texture->tex) CHECK_GL(glDeleteTextures(1, &depth_texture->tex));
@@ -436,7 +445,14 @@ struct FrameBufferPicker : IPicker {
     }
 
     virtual string getPicked(int x, int y) override {
+        // re-generate buffers for possible window resize
+        destroy_buffers();
+        generate_buffers();
+
+        // draw framebuffer
         draw();
+
+        // check fbo
         if (!fbo->complete()) return "";
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
@@ -482,7 +498,14 @@ struct FrameBufferPicker : IPicker {
     }
 
     virtual string getPicked(int x0, int y0, int x1, int y1) override {
+        // re-generate buffers for possible window resize
+        destroy_buffers();
+        generate_buffers();
+
+        // draw framebuffer
         draw();
+
+        // check fbo
         if (!fbo->complete()) return "";
 
         // prepare fbo
