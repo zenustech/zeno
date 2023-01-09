@@ -7,28 +7,23 @@
 
 ZenoSocketItem::ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        bool bInput,
-        const ImageElement& elem,
         const QSizeF& sz,
-        QGraphicsItem* parent)
-    : ZenoImageItem(elem, sz, parent)
-    , m_bInput(bInput)
+        QGraphicsItem* parent
+)
+    : _base(parent)
     , m_viewSockIdx(viewSockIdx)
     , m_status(STATUS_UNKNOWN)
-    , m_svgHover(nullptr)
-    , m_hoverSvg(elem.imageHovered)
-    , m_noHoverSvg(elem.image)
-    , sHorLargeMargin(ZenoStyle::dpiScaled(40))
-    , sTopMargin(ZenoStyle::dpiScaled(10))
-    , sHorSmallMargin(ZenoStyle::dpiScaled(5))
-    , sBottomMargin(ZenoStyle::dpiScaled(10))
-    , sLeftMargin(0)
-    , sRightMargin(0)
+    , m_size(sz)
+    , m_bgClr(QColor("#1992D7"))
 {
-    setCheckable(true);
+    PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
+    ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
+                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
+    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
+    m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
+    m_margin = ZenoStyle::dpiScaled(15);
     setSockStatus(STATUS_NOCONN);
-    if (m_svg)
-        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
+    setAcceptHoverEvents(true);
 }
 
 int ZenoSocketItem::type() const
@@ -36,52 +31,9 @@ int ZenoSocketItem::type() const
     return Type;
 }
 
-void ZenoSocketItem::setContentMargins(qreal left, qreal top, qreal right, qreal bottom)
-{
-    sTopMargin = top;
-    sBottomMargin = bottom;
-    sLeftMargin = left;
-    sRightMargin = right;
-    if (m_bInput) {
-        sHorLargeMargin = left;
-        sHorSmallMargin = right;
-    } else {
-        sHorLargeMargin = right;
-        sHorSmallMargin = left;
-    }
-    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-}
-
-void ZenoSocketItem::getContentMargins(qreal& left, qreal& top, qreal& right, qreal& bottom)
-{
-    left = sLeftMargin;
-    top = sTopMargin;
-    right = sRightMargin;
-    bottom = sBottomMargin;
-}
-
-void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
-{
-    m_offsetToName = offsetToName;
-}
-
 QPointF ZenoSocketItem::center() const
 {
-    QRectF rcImage = ZenoImageItem::boundingRect();
-    QRectF br = boundingRect();
-    QPointF cen = br.topLeft();
-    if (m_bInput)
-    {
-        cen += QPointF(sHorLargeMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
-        QPointF c = mapToScene(cen);
-        return c;
-    }
-    else
-    {
-        cen += QPointF(sHorSmallMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
-        QPointF c = mapToScene(cen);
-        return c;
-    }
+    return this->sceneBoundingRect().center();
 }
 
 QModelIndex ZenoSocketItem::paramIndex() const
@@ -91,15 +43,15 @@ QModelIndex ZenoSocketItem::paramIndex() const
 
 QRectF ZenoSocketItem::boundingRect() const
 {
-    QRectF rc = ZenoImageItem::boundingRect();
-    if (m_bInput) {
-        rc = rc.adjusted(-sHorLargeMargin, -sTopMargin, sHorSmallMargin, sBottomMargin);
+    if (m_bInnerSock)
+    {
+        QRectF rc(QPointF(0, 0), m_size + QSize(2 * m_margin, 2 * m_margin));
+        return rc;
     }
-    else {
-        rc = rc.adjusted(-sHorSmallMargin, -sTopMargin, sHorLargeMargin, sBottomMargin);
+    else
+    {
+        return QRectF(QPointF(0, 0), m_size);
     }
-    return QRectF(0, 0, rc.width(), rc.height());
-    //return rc;
 }
 
 bool ZenoSocketItem::isInputSocket() const
@@ -128,73 +80,110 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     }
 
     m_status = status;
-    switch (m_status)
-    {
-    case STATUS_CONNECTED:
-        m_noHoverSvg = m_selected;
-        m_hoverSvg = ":/icons/socket-on-hover.svg";
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-        break;
-    case STATUS_TRY_CONN:
-        m_noHoverSvg = ":/icons/socket-on-hover.svg";
-        m_hoverSvg = ":/icons/socket-on-hover.svg";
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-        break;
-    case STATUS_TRY_DISCONN:
-    case STATUS_NOCONN:
-        m_noHoverSvg = m_normal;
-        m_hoverSvg = m_hoverSvg;
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-        break;
-    }
     update();
 }
 
 void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
-    delete m_svg;
-    m_svg = new ZenoSvgItem(m_hoverSvg, this);
-    m_svg->setSize(m_size);
-    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-    QGraphicsObject::hoverEnterEvent(event);
+    m_bgClr = QColor("#5FD2FF");
+    _base::hoverEnterEvent(event);
 }
 
 void ZenoSocketItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    QGraphicsObject::hoverMoveEvent(event);
+    _base::hoverMoveEvent(event);
 }
 
 void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    delete m_svg;
-    m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-    m_svg->setSize(m_size);
-    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
-    QGraphicsObject::hoverLeaveEvent(event);
+    m_bgClr = QColor("#1992D7");
+    _base::hoverLeaveEvent(event);
 }
 
 void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    ZenoImageItem::mousePressEvent(event);
+    _base::mousePressEvent(event);
+    event->setAccepted(true);
 }
 
 void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    ZenoImageItem::mouseReleaseEvent(event);
-    m_svg->setPos(QPointF(sLeftMargin, sTopMargin));
+    _base::mouseReleaseEvent(event);
+    update();
     emit clicked(m_bInput);
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    ZenoImageItem::paint(painter, option, widget);
+    QPen pen(m_bgClr, 4);
+    pen.setJoinStyle(Qt::RoundJoin);
+
+    QColor innerBgclr(m_bgClr.red(), m_bgClr.green(), m_bgClr.blue(), 120);
+
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    static const int startAngle = 0;
+    static const int spanAngle = 360;
+    painter->setPen(pen);
+    bool bDrawBg = (m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED);
+
+    if (bDrawBg)
+    {
+        painter->setBrush(m_bgClr);
+    }
+    else
+    {
+        painter->setBrush(innerBgclr);
+    }
+
+    if (!m_bInnerSock)
+    {
+        QPainterPath path;
+        qreal halfpw = pen.widthF() / 2;
+        qreal xleft = halfpw, xright = m_size.width() - halfpw,
+              ytop = halfpw, ybottom = m_size.height() - halfpw;
+
+        if (m_bInput)
+        {
+            path.moveTo(QPointF(xleft, ybottom));
+            path.lineTo(QPointF((xleft + xright) / 2., ybottom));
+            //bottom right arc.
+            QRectF rcBr(QPointF(xleft, (ytop + ybottom) / 2.), QPointF(xright, ybottom));
+            path.arcTo(rcBr, 270, 90);
+
+            QRectF rcTopRight(QPointF(xleft, ytop), QPointF(xright, (ybottom + ytop) / 2));
+            path.lineTo(QPointF(xright, rcTopRight.center().y()));
+            path.arcTo(rcTopRight, 0, 90);
+            path.lineTo(QPointF(xleft, ytop));
+
+            painter->drawPath(path);
+
+            QRectF rc(QPointF(0, 0), QPointF(halfpw, m_size.height()));
+            painter->fillRect(rc, bDrawBg ? m_bgClr : innerBgclr);
+        }
+        else
+        {
+            path.moveTo(QPointF(xright, ytop));
+            path.lineTo(QPointF((xleft + xright) / 2., ytop));
+
+            QRectF rcTopLeft(QPointF(xleft, ytop), QPointF(xright, (ytop + ybottom)/2.));
+            path.arcTo(rcTopLeft, 90, 90);
+
+            QRectF rcBottomLeft(QPointF(xleft, (ytop + ybottom) / 2.), QPointF(xright, ybottom));
+            path.lineTo(QPointF(xleft, rcBottomLeft.center().y()));
+
+            path.arcTo(rcBottomLeft, 180, 90);
+            path.lineTo(QPointF(xright, ybottom));
+
+            painter->drawPath(path);
+
+            QRectF rc(QPointF(m_size.width(), 0), QPointF(m_size.width() - halfpw, m_size.height()));
+            painter->fillRect(rc, bDrawBg ? m_bgClr : innerBgclr);
+        }
+    }
+    else
+    {
+        QRectF rc(m_margin, m_margin, m_size.width(), m_size.height());
+        painter->drawEllipse(rc);
+    }
 }

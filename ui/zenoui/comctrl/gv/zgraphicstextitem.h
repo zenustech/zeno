@@ -109,8 +109,6 @@ private:
     void initUI();
 };
 
-
-
 class ZenoSocketItem;
 
 class ZSocketGroupItem : public ZSimpleTextItem
@@ -124,7 +122,6 @@ public:
         Callback_OnSockClicked cbSockOnClick,
         QGraphicsItem* parent = nullptr);
 
-    ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
 
 protected:
@@ -152,7 +149,6 @@ public:
         QGraphicsItem* parent = nullptr);
 
     void updateSockName(const QString& name);
-    ZenoSocketItem* socketItem() const;
     QPointF getPortPos();
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 

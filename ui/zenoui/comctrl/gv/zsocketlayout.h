@@ -31,6 +31,7 @@ public:
     QPersistentModelIndex viewSocketIdx() const;
 
 protected:
+    ZenoSocketItem* m_socket;
     QGraphicsItem* m_text;
     QGraphicsItem* m_control;
     bool m_bInput;

@@ -784,16 +784,31 @@ void ZEditParamLayoutDlg::applySubgraphNode()
 void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* appliedItem)
 {
     //oldItem: proxy.
-    for (int r = 0; r < proxyItem->rowCount(); r++)
+
+    QString subgName;
+    QModelIndex subgIdx;
+    bool bSubInput = false;
+    bool bApplySubnetParam = m_bSubgraphNode && proxyItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP;
+    if (bApplySubnetParam)
     {
-        VParamItem *pCurrent = static_cast<VParamItem*>(proxyItem->child(r));
+        VParamItem *pGroup = static_cast<VParamItem *>(proxyItem);
+        bSubInput = pGroup->m_name == iotags::params::node_inputs;
+        subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        subgIdx = m_pGraphsModel->index(subgName);
+    }
+
+    int r = 0;
+    for (r = 0; r < proxyItem->rowCount(); r++)
+    {
+        VParamItem* pCurrent = static_cast<VParamItem*>(proxyItem->child(r));
         uint uuid = pCurrent->m_uuid;
-        const QString& name = pCurrent->m_name;
-        const QString& typeDesc = pCurrent->m_type;
-        const QVariant& value = pCurrent->m_value;
+        const QString name = pCurrent->m_name;
+        const QString typeDesc = pCurrent->m_type;
+        const QVariant value = pCurrent->m_value;
+        const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
 
         int targetRow = 0;
-        VParamItem *pTarget = nullptr;
+        VParamItem* pTarget = nullptr;
         for (int _r = 0; _r < appliedItem->rowCount(); _r++)
         {
             VParamItem* pChild = static_cast<VParamItem*>(appliedItem->child(_r));
@@ -813,13 +828,30 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 QModelIndex parent = appliedItem->index();
                 bool ret = m_model->moveRow(parent, targetRow, parent, r);
                 ZASSERT_EXIT(ret);
+                //reacquire pTarget, because the implementation of moveRow is simplily
+                //copy data, rather than insert/remove.
+                pTarget = static_cast<VParamItem*>(appliedItem->child(r));
             }
 
             //the corresponding item exists.
             if (name != pTarget->m_name)
             {
                 //rename
-                appliedItem->setData(name, ROLE_PARAM_NAME);
+                QString oldName = pTarget->m_name;
+                QString newName = name;
+                if (bApplySubnetParam)
+                {
+                    //get subinput name idx, update its value, and then sync to all subgraph node.
+                    const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, oldName, subgIdx);
+                    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                    const QModelIndex& nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
+                    //update the value on "name" in SubInput/SubOutput.
+                    m_pGraphsModel->ModelSetData(nameIdx, newName, ROLE_PARAM_VALUE);
+                }
+                else
+                {
+                    pTarget->setData(newName, ROLE_PARAM_NAME);
+                }
             }
             if (pCurrent->vType == VPARAM_PARAM)
             {
@@ -835,8 +867,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     pTarget->setData(value, ROLE_PARAM_VALUE);
                 }
 
-                //todo: other info, like mapping, control properties, etc.
+                //control
+                if (pTarget->m_ctrl != ctrl)
+                {
+                    pTarget->setData(ctrl, ROLE_PARAM_CTRL);
+                }
 
+                //todo: other info, like mapping, control properties, etc.
             }
             else
             {
@@ -857,11 +894,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     QPointF pos(0, 0);
                     //todo: node arrangement.
                     VParamItem* pGroup = static_cast<VParamItem*>(proxyItem);
-                    const QString& groupName = pGroup->m_name;
-
                     VParamItem* pTargetGroup = static_cast<VParamItem*>(appliedItem);
-
-                    bool bSubInput = groupName == iotags::params::node_inputs;
 
                     NODE_DATA node = NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
                     PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -872,9 +905,6 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     params["defl"].control = ctrl;
                     params["defl"].controlProps = pCurrent->data(ROLE_VPARAM_CTRL_PROPERTIES);
                     node[ROLE_PARAMETERS] = QVariant::fromValue(params);
-
-                    const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                    const QModelIndex& subgIdx = m_pGraphsModel->index(subgName);
 
                     m_pGraphsModel->addNode(node, subgIdx, true);
 
@@ -902,44 +932,50 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         }
     }
 
-    //detect the elements deleted by proxy model.
-    if (m_bSubgraphNode && proxyItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP)
+    //remove items which don't exist in proxyitem.
+    QStringList deleteParams;
+    for (int _r = 0; _r < appliedItem->rowCount(); _r++)
     {
-        VParamItem *pGroup = static_cast<VParamItem *>(proxyItem);
-        const QString &groupName = pGroup->m_name;
-        bool bSubInput = groupName == iotags::params::node_inputs;
-        const QString &subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        const QModelIndex &subgIdx = m_pGraphsModel->index(subgName);
-
-        QStringList deleteParams;
-        for (int _r = 0; _r < appliedItem->rowCount(); _r++)
+        VParamItem* pExisted = static_cast<VParamItem*>(appliedItem->child(_r));
+        bool bDeleted = true;
+        for (int r = 0; r < proxyItem->rowCount(); r++)
         {
-            VParamItem* pExisted = static_cast<VParamItem*>(appliedItem->child(_r));
-            bool bDeleted = true;
-            for (int r = 0; r < proxyItem->rowCount(); r++)
+            VParamItem* pItem = static_cast<VParamItem*>(proxyItem->child(r));
+            if (pItem->m_uuid == pExisted->m_uuid)
             {
-                VParamItem* pItem = static_cast<VParamItem*>(proxyItem->child(r));
-                if (pItem->m_uuid == pExisted->m_uuid)
-                {
-                    bDeleted = false;
-                }
-            }
-            if (bDeleted)
-            {
-                deleteParams.append(pExisted->m_name);
+                bDeleted = false;
+                break;
             }
         }
-
-        QStringList removeList;
-        for (QString delParam : deleteParams)
+        if (bDeleted)
         {
-            const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, delParam, subgIdx);
-            removeList.append(subInOutput.data(ROLE_OBJID).toString());
+            deleteParams.append(pExisted->m_name);
         }
-        for (QString ident : removeList) {
+    }
+
+    for (QString deleteParam : deleteParams)
+    {
+        if (bApplySubnetParam)
+        {
+            const QModelIndex& subInOutput =
+                UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, deleteParam, subgIdx);
+            const QString ident = subInOutput.data(ROLE_OBJID).toString();
+
             //currently, the param about subgraph is construct or deconstruct by SubInput/SubOutput node.
             //so, we have to remove or add the SubInput/SubOutput node to affect the params.
             m_pGraphsModel->removeNode(ident, subgIdx, true);
+        }
+        else
+        {
+            for (int r = 0; r < appliedItem->rowCount(); r++)
+            {
+                VParamItem* pItem = static_cast<VParamItem*>(appliedItem->child(r));
+                if (pItem->m_name == deleteParam)
+                {
+                    appliedItem->removeRow(r);
+                    break;
+                }
+            }
         }
     }
 }
@@ -949,7 +985,7 @@ void ZEditParamLayoutDlg::onApply()
     m_pGraphsModel->beginTransaction("edit custom param for node");
     zeno::scope_exit scope([=]() { m_pGraphsModel->endTransaction(); });
 
-    if (m_bSubgraphNode)
+    if (true || m_bSubgraphNode)
     {
         applyForItem(m_proxyModel->invisibleRootItem(), m_model->invisibleRootItem());
     }

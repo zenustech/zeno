@@ -27,13 +27,15 @@ public:
     QModelIndexList getParamIndice() const;
     QModelIndexList getOutputIndice() const;
 
-    void setAddParam(PARAM_CLASS cls,
+    void setAddParam(
+            PARAM_CLASS cls,
             const QString& name,
             const QString& type,
             const QVariant& deflValue,
-            PARAM_CONTROL ctrl = CONTROL_NONE,
-            QVariant ctrlProps = QVariant(),
-            SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
+            PARAM_CONTROL ctrl,
+            QVariant ctrlProps,
+            SOCKET_PROPERTY prop
+    );
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;
     QModelIndex getParam(PARAM_CLASS cls, const QString& name) const;

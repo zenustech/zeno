@@ -43,7 +43,7 @@ struct VParamItem : public QStandardItem
     SOCKET_PROPERTY m_sockProp;
     uint m_uuid;
 
-    ProxySlotObject m_proxySlot;
+    ProxySlotObject m_proxySlot;    //todo: pointer.
 
     QMap<int, QVariant> m_customData;
 
@@ -56,6 +56,7 @@ struct VParamItem : public QStandardItem
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant& value, int role) override;
     QStandardItem* clone() const override;
+    void cloneFrom(VParamItem* pOther);
     void mapCoreParam(const QPersistentModelIndex& idx);
     rapidxml::xml_node<>* exportXml(rapidxml::xml_document<>& doc);
     VParamItem* getItem(const QString& uniqueName, int* r = 0) const;

@@ -5,11 +5,10 @@
 #include <zenoui/nodesys/zenosvgitem.h>
 #include "../../nodesys/nodesys_common.h"
 
-class ZenoSocketItem : public ZenoImageItem
+class ZenoSocketItem : public QGraphicsObject
 {
     Q_OBJECT
-    typedef ZenoImageItem _base;
-
+    typedef QGraphicsObject _base;
 public:
     enum SOCK_STATUS
     {
@@ -22,15 +21,10 @@ public:
 
     ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
-        bool bInput,
-        const ImageElement &elem,
-        const QSizeF &sz,
+        const QSizeF& sz,
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
-    void setContentMargins(qreal left, qreal top, qreal right, qreal bottom);
-    void getContentMargins(qreal& left, qreal& top, qreal& right, qreal& bottom);
-    void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
     QModelIndex paramIndex() const;
@@ -50,22 +44,13 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-    QPointF m_offsetToName;
     SOCK_STATUS m_status;
-    ZenoSvgItem* m_svgHover;
-    QString m_noHoverSvg;
-    QString m_hoverSvg;
-
     const QPersistentModelIndex m_viewSockIdx;
-
-    int sHorLargeMargin;
-    int sTopMargin;
-    int sLeftMargin;
-    int sHorSmallMargin;
-    int sRightMargin;
-    int sBottomMargin;
-
-    const bool m_bInput;
+    bool m_bInput;
+    bool m_bInnerSock;
+    QSizeF m_size;
+    int m_margin;
+    QColor m_bgClr;
 };
 
 #endif
