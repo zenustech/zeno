@@ -3057,12 +3057,11 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             intersectionFreeStepsize(pol, xi, alpha);
             zeno::log_info("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha, ncspt, ncsee);
         }
-        // lineSearch(pol, alpha);
+        lineSearch(pol, alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
-// UPDATE RULE
-#if 0
+        // UPDATE RULE
         cons_res = constraintResidual(pol);
         if (res * dt < updateZoneTol && cons_res > consTol) {
             if (boundaryKappa < kappaMax) {
@@ -3073,6 +3072,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                            boundaryKappa);
                 // getchar();
             } else {
+#if 0
                 pol(Collapse{numDofs},
                     [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa] ZS_LAMBDA(int vi) mutable {
                         if (int BCorder = vtemp("BCorder", vi); BCorder > 0) {
@@ -3082,9 +3082,9 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                     });
                 fmt::print(fg(fmt::color::ivory), "updating constraint lambda due to constraint difficulty.\n");
                 // getchar();
+#endif
             }
         }
-#endif
     }
     return newtonIter != PNCap;
 }

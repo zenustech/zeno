@@ -394,7 +394,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // kappa (dynamic)
         suggestKappa(cudaPol);
         if (kappa0 != 0) {
-            // zeno::log_info("manual kappa: {}\n", this->kappa);
+            zeno::log_info("manual kappa: {}\n", this->kappa);
         }
     }
 
@@ -586,9 +586,8 @@ void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
                 kappa = kappaSurf;
             }
         }
-        // boundaryKappa = kappa;
-        // zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
-        //               this->kappaMax);
+        boundaryKappa = kappa;
+        zeno::log_info("auto kappa: {} ({} - {})\n", this->kappa, this->kappaMin, this->kappaMax);
     }
 }
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
