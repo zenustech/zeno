@@ -1183,6 +1183,11 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         emit inSocketPosChanged();
         emit outSocketPosChanged();
     }
+    else if (change == ItemScenePositionHasChanged)
+    {
+        emit inSocketPosChanged();
+        emit outSocketPosChanged();
+    }
     return value;
 }
 

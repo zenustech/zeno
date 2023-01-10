@@ -117,6 +117,10 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
         update();
         updateClidItem(true, item->nodeId());
         item->updateNodePos(pos);
+
+        emit item->inSocketPosChanged();
+        emit item->outSocketPosChanged();
+
         return true;
     } else if ((!this->sceneBoundingRect().contains(item->sceneBoundingRect())) && item->parentItem() == this) {
         QGraphicsItem *newParent = this->parentItem();
