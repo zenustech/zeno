@@ -120,8 +120,6 @@ public:
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
-    TIMELINE_INFO timelineInfo();
-    void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
 

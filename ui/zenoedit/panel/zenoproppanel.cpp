@@ -240,7 +240,6 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         const QString& tabName = pTabItem->data(ROLE_VPARAM_NAME).toString();
         const QString& groupName = parentItem->data(ROLE_VPARAM_NAME).toString();
         const QString& paramName = name;
-				pComboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
         ZExpandableSection* pGroupWidget = findGroup(tabName, groupName);
         if (!pGroupWidget)
@@ -291,7 +290,6 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
             zenoApp->getMainWindow()->dispatchCommand(&act, true);
         };
     }
-				pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
     cbSet.cbEditFinished = [=](QVariant newValue) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -484,10 +482,6 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 
     QStandardItem* groupItem = paramItem->parent();
     ZASSERT_EXIT(groupItem);
-    else if (QTextEdit* pTextEdit = qobject_cast<QTextEdit*>(pSender))
-    {
-		info.newValue = pTextEdit->toPlainText();
-    }
 
     QStandardItem* tabItem = groupItem->parent();
     ZASSERT_EXIT(tabItem);

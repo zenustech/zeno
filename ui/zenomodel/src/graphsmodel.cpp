@@ -1870,7 +1870,6 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
             }
         }
     }
-    }
     if (searchOpts & SEARCH_NODECLS)
     {
         for (auto subgInfo : m_subGraphs)
@@ -1894,7 +1893,6 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
             }
         }
     }
-
     return results;
 }
 

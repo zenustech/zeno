@@ -525,6 +525,7 @@ void ZenoMainWindow::onMaximumTriggered()
 
 void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
 {
+#if 0
     ZASSERT_EXIT(m_viewDock);
     DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
     ZASSERT_EXIT(viewWidget);
@@ -575,6 +576,7 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
     viewWidget->runAndRecord(recInfo);
+#endif
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)

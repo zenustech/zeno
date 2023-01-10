@@ -195,11 +195,11 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    NodeParamModel* inputs = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
-    QModelIndex inSockIdx = inputs->getParam(PARAM_INPUT, QString::fromStdString(inSock));
+    NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, QString::fromStdString(inSock));
 
-    NodeParamModel* outputs = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
-    QModelIndex outSockIdx = outputs->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
+    NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
 
     pModel->addLink(outSockIdx, inSockIdx);
     return Err_NoError;

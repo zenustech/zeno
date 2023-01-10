@@ -460,6 +460,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     [this](string obj) -> void{this->transformer->removeObject(obj);});
             }
     }
+    }
 }
 
 //void CameraControl::createPointNode(QPointF pnt) {
@@ -702,23 +703,6 @@ DisplayWidget::~DisplayWidget()
 void DisplayWidget::init()
 {
     //m_camera->installEventFilter(this);
-}
-
-TIMELINE_INFO DisplayWidget::timelineInfo()
-{
-    TIMELINE_INFO info;
-    info.bAlways = m_timeline->isAlways();
-    info.beginFrame = m_timeline->fromTo().first;
-    info.endFrame = m_timeline->fromTo().second;
-    return info;
-}
-
-void DisplayWidget::resetTimeline(TIMELINE_INFO info)
-{
-    BlockSignalScope scope(m_timeline);
-    m_timeline->setAlways(info.bAlways);
-    m_timeline->initFromTo(info.beginFrame, info.endFrame);
-    m_timeline->setSliderValue(info.currFrame);
 }
 
 ViewportWidget* DisplayWidget::getViewportWidget()
