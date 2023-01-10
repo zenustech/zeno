@@ -89,6 +89,7 @@ void Picker::pick(int x, int y) {
         if (selected_prims.count(selected) > 0) {
             selected_prims.erase(selected);
         } else {
+            selected_prims.clear();
             selected_prims.insert(selected);
         }
     }
