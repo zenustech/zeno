@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <random>
+#include <algorithm>
 
 namespace zenovis {
 namespace {
@@ -180,7 +181,7 @@ static void load_buffer_to_image(unsigned int* ids, int w, int h, const std::str
 // framebuffer picker referring to https://doc.yonyoucloud.com/doc/wiki/project/modern-opengl-tutorial/tutorial29.html
 struct FrameBufferPicker : IPicker {
     Scene* scene;
-    vector<string> prim_set;
+    string focus_prim_name;
 
     unique_ptr<FBO> fbo;
     unique_ptr<Texture> picking_texture;
@@ -285,35 +286,23 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // construct prim set
-        vector<std::pair<string, PrimitiveObject*>> prims;
+        vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
         auto prims_shared = scene->objectsMan->pairsShared();
-        for (const auto& prim_name : prim_set) {
-            PrimitiveObject* prim = nullptr;
-            auto optional_prim = scene->objectsMan->get(prim_name);
-            if (optional_prim.has_value())
-                prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_name).value());
-            else {
-                auto node_id = prim_name.substr(0, prim_name.find_first_of(':'));
-                for (const auto& [n, p] : scene->objectsMan->pairsShared()) {
-                    if (n.find(node_id) != std::string::npos) {
-                        prim = dynamic_cast<PrimitiveObject*>(p.get());
-                        break;
-                    }
-                }
+        if (!focus_prim_name.empty()) {
+            std::shared_ptr<zeno::IObject> focus_prim;
+            for (const auto& [k, v] : prims_shared) {
+                if (focus_prim_name == k)
+                    focus_prim = v;
             }
-            if (prim) prims.emplace_back(std::make_pair(prim_name, prim));
+            if (focus_prim) prims.emplace_back(focus_prim_name, focus_prim);
         }
-        if (prims.empty()) {
-            for (const auto& [prim_name, prim] : prims_shared) {
-                auto p = dynamic_cast<PrimitiveObject*>(prim.get());
-                if (p) prims.emplace_back(std::make_pair(prim_name, p));
-            }
-        }
+        else
+            prims = std::move(prims_shared);
 
         // shading primitive objects
         for (unsigned int id = 0; id < prims.size(); id++) {
             auto it = prims.begin() + id;
-            auto prim = it->second;
+            auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
             if (prim->has_attr("pos")) {
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -570,9 +559,8 @@ struct FrameBufferPicker : IPicker {
         return result;
     }
 
-    virtual void setPrimSet(const std::vector<std::string>& prims) override {
-        prim_set.clear();
-        prim_set.assign(prims.begin(), prims.end());
+    virtual void focus(const std::string& prim_name) override {
+        focus_prim_name = prim_name;
     }
 };
 

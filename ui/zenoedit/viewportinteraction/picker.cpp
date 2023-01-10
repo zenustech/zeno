@@ -14,6 +14,7 @@
 #include <sstream>
 #include <functional>
 #include <regex>
+#include <utility>
 
 namespace zeno {
 
@@ -76,7 +77,7 @@ namespace zeno {
 
 void Picker::pick(int x, int y) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // auto picker = zenovis::makeFrameBufferPicker(scene);
+    qDebug() << scene->select_mode;
     // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x, y);
 
@@ -113,36 +114,59 @@ void Picker::pick(int x, int y) {
     }
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
-    onPrimitiveSelected();
-    syncResultToNode();
+    // onPrimitiveSelected();
 }
 
 void Picker::pick(int x0, int y0, int x1, int y1) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
-    // auto picker = zenovis::makeFrameBufferPicker(scene);
-    // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x0, y0, x1, y1);
-    // qDebug() << "clicked (" << x0 << "," << y0 <<  ") to (" << x1 << "," << y1 << ")\nselected " << selected.c_str();
+    // qDebug() << "pick: " << selected.c_str();
+    if (scene->select_mode == zenovis::PICK_OBJECT) {
+        load_from_str(selected, zenovis::PICK_OBJECT);
+    }
+    else {
+        load_from_str(selected, scene->select_mode);
+        if (picked_elems_callback) picked_elems_callback(selected_elements);
+    }
+}
 
-    if (selected.empty()) return;
+string Picker::just_pick_prim(int x, int y) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto store_mode = scene->select_mode;
+    scene->select_mode = zenovis::PICK_OBJECT;
+    auto res = picker->getPicked(x, y);
+    scene->select_mode = store_mode;
+    return res;
+}
 
+void Picker::sync_to_scene() {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->selected.clear();
+    for (const auto& s : selected_prims)
+        scene->selected.insert(s);
+    scene->selected_elements.clear();
+    for (const auto& p : selected_elements)
+        scene->selected_elements.insert(p);
+
+}
+
+void Picker::load_from_str(const string& str, int mode) {
+    if (str.empty()) return;
     // parse selected string
     std::regex reg(" ");
-    std::sregex_token_iterator p(selected.begin(), selected.end(), reg, -1);
+    std::sregex_token_iterator p(str.begin(), str.end(), reg, -1);
     std::sregex_token_iterator end;
 
-    if (scene->select_mode == zenovis::PICK_OBJECT) {
+    if (mode == zenovis::PICK_OBJECT) {
         while (p != end) {
             selected_prims.insert(*p);
             p++;
         }
-        onPrimitiveSelected();
     }
     else {
         while (p != end) {
             string result = *p++;
-            qDebug() << result.c_str();
+            // qDebug() << result.c_str();
             auto t = result.find_last_of(':');
             auto obj_id = result.substr(0, t);
             std::stringstream ss;
@@ -157,30 +181,51 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
             } else selected_elements[obj_id] = {elem_id};
         }
     }
-    syncResultToNode();
 }
 
-string Picker::just_pick_prim(int x, int y) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    auto store_mode = scene->select_mode;
-    scene->select_mode = zenovis::PICK_OBJECT;
-    auto res = picker->getPicked(x, y);
-    scene->select_mode = store_mode;
+string Picker::save_to_str(int mode) {
+    string res;
+    if (mode == zenovis::PICK_OBJECT) {
+        for (const auto& p : selected_prims)
+            res += p + " ";
+    }
+    else {
+        for (const auto& [p, es] : selected_elements) {
+            for (const auto& e : es)
+                res += p + ":" + std::to_string(e) + " ";
+        }
+    }
     return res;
 }
 
-void Picker::sync_to_scene() {
+void Picker::save_context() {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (scene->select_mode == zenovis::PICK_OBJECT) {
-        scene->selected.clear();
-        for (const auto& s : selected_prims)
-            scene->selected.insert(s);
-    }
-    else {
-        scene->selected_elements.clear();
-        for (const auto& p : selected_elements)
-            scene->selected_elements.insert(p);
-    }
+    select_mode_context = scene->select_mode;
+    selected_prims_context = std::move(selected_prims);
+    selected_elements_context = std::move(selected_elements);
+}
+
+void Picker::load_context() {
+    if (select_mode_context < 0) return;
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->select_mode = select_mode_context;
+    selected_prims = std::move(selected_prims_context);
+    selected_elements = std::move(selected_elements_context);
+    select_mode_context = -1;
+}
+
+void Picker::focus(const string& prim_name) {
+    focused_prim = prim_name;
+    picker->focus(prim_name);
+}
+
+void Picker::clear() {
+    selected_prims.clear();
+    selected_elements.clear();
+}
+
+void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
+    picked_elems_callback = std::move(callback);
 }
 
 const unordered_set<string>& Picker::get_picked_prims() {
@@ -189,48 +234,6 @@ const unordered_set<string>& Picker::get_picked_prims() {
 
 const unordered_map<string, unordered_set<int>>& Picker::get_picked_elems() {
     return selected_elements;
-}
-
-void Picker::setTarget(const string& prim_name) {
-    prim_set = {prim_name};
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!picker) picker = zenovis::makeFrameBufferPicker(scene);
-    picker->setPrimSet(prim_set);
-}
-
-void Picker::bindNode(const QModelIndex& n, const QModelIndex& s, const std::string& sn) {
-    node = n;
-    subgraph = s;
-    sock_name = sn;
-    need_sync = true;
-}
-
-void Picker::unbindNode() {
-    need_sync = false;
-}
-
-void Picker::onPrimitiveSelected() {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-    mainWin->onPrimitiveSelected(scene->selected);
-}
-
-void Picker::syncResultToNode() {
-    if (!need_sync) return;
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    // construct result
-    string result;
-    const auto& elems = scene->selected_elements[prim_set[0]];
-    for (const auto& e : elems)
-        result += std::to_string(e) + ',';
-    // construct update info
-    auto params = node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    PARAM_INFO info = params.value(sock_name.c_str());
-    PARAM_UPDATE_INFO new_info = {sock_name.c_str(), info.value, QVariant(result.c_str())};
-    // sync to node
-    auto node_id = node.data(ROLE_OBJID).toString();
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    pModel->updateParamInfo(node_id, new_info, subgraph, true);
 }
 
 std::optional<float> ray_box_intersect(

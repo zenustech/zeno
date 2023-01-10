@@ -11,10 +11,13 @@ namespace zeno {
 struct NodeLocation{
     QModelIndex node;
     QModelIndex subgraph;
-    NodeLocation(QModelIndex& n,
-                 QModelIndex& s)
+    NodeLocation(const QModelIndex& n,
+                 const QModelIndex& s)
         : node(n),
           subgraph(s){
+    }
+    QString get_node_id() const {
+        return node.data(ROLE_OBJID).toString();
     }
 };
 
@@ -37,18 +40,25 @@ class NodeSyncMgr {
 
     // node check functions
     bool checkNodeType(const QModelIndex& node,
-                              const std::string& node_type);
+                       const std::string& node_type);
     bool checkNodeInputHasValue(const QModelIndex& node,
-                                       const std::string& input_name);
+                                const std::string& input_name);
     std::optional<NodeLocation> checkNodeLinkedSpecificNode(const QModelIndex& node,       // check which node's output?
                                                             const std::string& node_type); // check node output linked which node type
+    // get input or output
+    std::vector<NodeLocation> getInputNodes(const QModelIndex& node,
+                                            const std::string& input_name);
+    std::string getInputValString(const QModelIndex& node,
+                                  const std::string& input_name);
+    std::string getParamValString(const QModelIndex& node,
+                                  const std::string& param_name);
 
     // node update functions
     void updateNodeVisibility(NodeLocation& node_location);
     template <class T>
     void updateNodeInputVec(NodeLocation& node_location,
-                                         const std::string& input_name,
-                                         const QVector<T>& new_value) {
+                            const std::string& input_name,
+                            const QVector<T>& new_value) {
         auto node_id = node_location.node.data(ROLE_OBJID).toString();
         auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         auto old_value = inputs[input_name.c_str()].info.defaultValue.value<UI_VECTYPE>();
@@ -62,6 +72,12 @@ class NodeSyncMgr {
                                         node_location.subgraph,
                                         true);
     }
+    void updateNodeInputString(NodeLocation node_location,
+                               const std::string& input_name,
+                               const std::string& new_value);
+    void updateNodeParamString(NodeLocation node_location,
+                               const std::string& param_name,
+                               const std::string& new_value);
 
     // other tool functions
     std::string getPrimSockName(const std::string& node_type);

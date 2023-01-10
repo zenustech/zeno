@@ -75,6 +75,32 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     return {};
 }
 
+std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
+                                                     const std::string& input_name) {
+    std::vector<NodeLocation> res;
+    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    auto input_edges = inputs[input_name.c_str()].linkIndice;
+    for (const auto& input_edge : input_edges) {
+        auto input_node_id = input_edge.data(ROLE_OUTNODE).toString();
+        auto searched_node = searchNode(input_node_id.toStdString());
+        if (searched_node.has_value())
+            res.emplace_back(searched_node.value());
+    }
+    return res;
+}
+
+std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
+                                           const std::string& input_name) {
+    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    return inputs[input_name.c_str()].info.defaultValue.value<QString>().toStdString();
+}
+
+std::string NodeSyncMgr::getParamValString(const QModelIndex& node,
+                                           const std::string& param_name) {
+    auto params = node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    return params.value(param_name.c_str()).value.value<QString>().toStdString();
+}
+
 void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
     auto node_id = node_location.node.data(ROLE_OBJID).toString();
     int old_option = node_location.node.data(ROLE_OPTIONS).toInt();
@@ -85,6 +111,40 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
                                     status_info,
                                     node_location.subgraph,
                                     true);
+}
+
+void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
+                                        const std::string& input_name,
+                                        const std::string& new_value) {
+    auto node_id = node_location.node.data(ROLE_OBJID).toString();
+    auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    auto old_value = inputs[input_name.c_str()].info.defaultValue.value<QString>();
+    PARAM_UPDATE_INFO update_info{
+        input_name.c_str(),
+        QVariant::fromValue(old_value),
+        QVariant::fromValue(QString(new_value.c_str()))
+    };
+    m_graph_model->updateSocketDefl(node_id,
+                                    update_info,
+                                    node_location.subgraph,
+                                    true);
+}
+
+void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
+                                        const std::string& param_name,
+                                        const std::string& new_value) {
+    auto params = node_location.node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    PARAM_INFO info = params.value(param_name.c_str());
+    PARAM_UPDATE_INFO new_info = {
+        param_name.c_str(),
+        info.value,
+        QVariant(new_value.c_str())
+    };
+
+    m_graph_model->updateParamInfo(node_location.get_node_id(),
+                                   new_info,
+                                   node_location.subgraph,
+                                   true);
 }
 
 std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
