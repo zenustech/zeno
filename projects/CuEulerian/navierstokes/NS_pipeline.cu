@@ -38,7 +38,7 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"T1", 1},
                                                  {"fuel0", 1}, // combustion
                                                  {"fuel1", 1},
-                                                 {"tmp", 3}, // FVM, BFECC, MultiGrid
+                                                 {"tmp", 3}, // FVM, BFECC, MultiGrid, normal
                                                  {"adv", 3}, // reflection
                                                  {"cut", 3}  // cut-cell face weight
                                              });
