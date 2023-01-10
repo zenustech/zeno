@@ -4,6 +4,7 @@
 #include "heatmapnode.h"
 #include "cameranode.h"
 #include "readfbxprim.h"
+#include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -200,6 +201,14 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);
+    }
+    else if(descName == "LiveMeshNode")
+    {
+        return new LiveMeshNode(params);
+    }
+    else if(descName == "LiveCameraNode")
+    {
+        return new LiveCameraNode(params);
     }
     else
     {

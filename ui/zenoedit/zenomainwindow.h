@@ -3,12 +3,31 @@
 
 #include <unordered_set>
 #include <QtWidgets>
+#include "launch/livetcpserver.h"
+#include "dock/zenodockwidget.h"
 #include "dock/ztabdockwidget.h"
 #include "panel/zenolights.h"
 #include "common.h"
 #include "layout/winlayoutrw.h"
 
 
+struct ZENO_RECORD_RUN_INITPARAM {
+    QString sZsgPath = "";
+    bool bRecord = false;
+    int iFrame = 0;
+    int iSFrame = 0;
+    int iSample = 0;
+    int iBitrate = 0;
+    int iFps = 0;
+    QString sPixel = "";
+    QString sPath = "";
+    QString audioPath = "";
+    QString configFilePath = "";
+    bool exitWhenRecordFinish = false;
+};
+
+
+class ZenoDockWidget;
 class DisplayWidget;
 class ZTimeline;
 
@@ -35,6 +54,7 @@ public:
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
     float mouseSen = 0.2;
+    LiveTcpServer liveTcpServer;
 
     enum ActionType {
         //File
@@ -118,6 +138,7 @@ public slots:
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
+    void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -127,6 +148,7 @@ protected:
 private:
     void init();
     void initMenu();
+    void initLive();
     void initDocks();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);

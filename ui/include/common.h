@@ -37,4 +37,11 @@ struct SEARCH_RESULT
     QString socket;     //the socket/param which contains the result.
 };
 
+struct LiveObjectData{
+    std::string verSrc = "";
+    std::string camSrc = "";
+    int verLoadCount = 0;
+    int camLoadCount = 0;
+};
+
 #endif

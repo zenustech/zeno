@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "nodesmgr.h"
 #include "apiutil.h"
+#include "zeno/utils/log.h"
 #include "variantptr.h"
 #include "nodeparammodel.h"
 #include "uihelper.h"
@@ -168,12 +169,28 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
         return Err_ModelNull;
 
     QModelIndex outIdx = pModel->nodeIndex(hOutnode);
-    if (!outIdx.isValid())
+    if (!outIdx.isValid()) {
+        zeno::log_error("miss hOutnode: {}", hOutnode);
         return Err_NodeNotExist;
+    }
+    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    const QString qsOutSock = QString::fromStdString(outSock);
+    if (!outputs.contains(qsOutSock)) {
+        zeno::log_error("miss outSock: {}", outSock);
+        return Err_SockNotExist;
+    }
 
     QModelIndex inIdx = pModel->nodeIndex(hInnode);
-    if (!inIdx.isValid())
+    if (!inIdx.isValid()) {
+        zeno::log_error("miss hInnode: {}", hInnode);
         return Err_NodeNotExist;
+    }
+    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    const QString qsInSock = QString::fromStdString(inSock);
+    if (!inputs.contains(qsInSock)) {
+        zeno::log_error("miss inSock: {}", inSock);
+        return Err_SockNotExist;
+    }
 
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);

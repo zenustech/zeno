@@ -22,7 +22,7 @@ namespace zeno {
         Vector<T> length_sum{verts.get_allocator(),1};
         length_sum.setVal((T)0);
         
-        auto elm_dim = elms.getChannelSize("inds");
+        auto elm_dim = elms.getPropertySize("inds");
         auto nm_elms = elms.size();
         auto nm_edges = (elm_dim * nm_elms); 
 

@@ -10,6 +10,7 @@
 #include "dialog/zrecprogressdlg.h"
 #include <zeno/utils/log.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/DrawOptions.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
@@ -24,7 +25,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/uihelper.h>
-#include "recordvideomgr.h"
+
 
 CameraControl::CameraControl(QWidget* parent)
     : m_mmb_pressed(false)
@@ -437,7 +438,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 picker->pickWithFrameBuffer(releasePos.x(), releasePos.y(),
                     [this](string obj) -> void{this->transformer->addObject(obj);},
                     [this](string obj) -> void{this->transformer->removeObject(obj);});
-                    } else {
+            } else {
                 float min_x = std::min((float)m_boundRectStartPos.x(), (float)releasePos.x());
                 float max_x = std::max((float)m_boundRectStartPos.x(), (float)releasePos.x());
                 float min_y = std::min((float)m_boundRectStartPos.y(), (float)releasePos.y());
@@ -457,10 +458,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 picker->pickWithFrameBuffer(x0, y0, x1, y1,
                     [this](string obj) -> void{this->transformer->addObject(obj);},
                     [this](string obj) -> void{this->transformer->removeObject(obj);});
-                        }
-                    }
-                }
             }
+    }
+}
 
 //void CameraControl::createPointNode(QPointF pnt) {
     //auto pModel = zenoApp->graphsManagment()->currentModel();
@@ -479,6 +479,8 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     : QGLWidget(parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
+    , m_pauseRenderDally(new QTimer)
+    , simpleRenderChecked(false)
 {
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -493,6 +495,24 @@ ViewportWidget::ViewportWidget(QWidget* parent)
 
     m_camera = std::make_shared<CameraControl>();
     Zenovis::GetInstance().m_camera_control = m_camera.get();
+
+    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->drawOptions->simpleRender = false;
+        scene->drawOptions->needRefresh = true;
+        m_pauseRenderDally->stop();
+        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
+    });
+}
+
+void ViewportWidget::setSimpleRenderOption() {
+    if(simpleRenderChecked)
+        return;
+
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->drawOptions->simpleRender = true;
+    m_pauseRenderDally->stop();
+    m_pauseRenderDally->start(4000);
 }
 
 ViewportWidget::~ViewportWidget()
@@ -550,33 +570,13 @@ void ViewportWidget::paintGL()
             updateLightOnce = false;
         }
     }
-
-    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
-    {
-        int f = Zenovis::GetInstance().getCurrentFrameId();
-        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
-        checkRecord(record_file, record_res);
-    }
-}
-
-void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res)
-{
-    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
-    {
-        QVector2D oldRes = m_camera->res();
-        m_camera->setRes(a_record_res);
-        m_camera->updatePerspective();
-        auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
-        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname);
-        m_camera->setRes(oldRes);
-        m_camera->updatePerspective();
-        //if f == self.frame_end:
-        //    self.parent_widget.record_video.finish_record()
-    }
 }
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
+    if(event->button() == Qt::MidButton){
+        setSimpleRenderOption();
+    }
     _base::mousePressEvent(event);
     m_camera->fakeMousePressEvent(event);
     update();
@@ -584,6 +584,8 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    setSimpleRenderOption();
+
     _base::mouseMoveEvent(event);
     m_camera->fakeMouseMoveEvent(event);
     update();
@@ -591,12 +593,14 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 
 void ViewportWidget::wheelEvent(QWheelEvent* event)
 {
+    setSimpleRenderOption();
+
     _base::wheelEvent(event);
     m_camera->fakeWheelEvent(event);
     update();
 }
 
-void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();
@@ -647,73 +651,12 @@ void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     updatePerspective();
 }
 
-/*
-QDMDisplayMenu::QDMDisplayMenu()r("Show Grid")
-{
-    setTitle(tr("Display"));
-    QAction* pAction = new QAction(tr("Show Grid"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(true);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Background Color"), this);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Smooth Shading"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Wireframe"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Enable PBR"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    pAction = new QAction(tr("Enable GI"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(false);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("Camera Keyframe"), this);
-    addAction(pAction);
-
-    addSeparator();
-
-    pAction = new QAction(tr("English / Chinese"), this);
-    pAction->setCheckable(true);
-    pAction->setChecked(true);
-    addAction(pAction);
-}
-
-QDMRecordMenu::QDMRecordMenu()
-{
-    setTitle(tr("Record"));
-
-    QAction* pAction = new QAction(tr("Screenshot"), this);
-    pAction->setShortcut(QKeySequence("F12"));
-    addAction(pAction);
-
-    pAction = new QAction(tr("Record Video"), this);
-    pAction->setShortcut(QKeySequence(tr("Shift+F12")));
-    addAction(pAction);
-}
-*/
-
 
 DisplayWidget::DisplayWidget(QWidget* parent)
     : QWidget(parent)
     , m_view(nullptr)
     , m_pTimer(nullptr)
+    , m_bRecordRun(false)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -761,6 +704,23 @@ void DisplayWidget::init()
     //m_camera->installEventFilter(this);
 }
 
+TIMELINE_INFO DisplayWidget::timelineInfo()
+{
+    TIMELINE_INFO info;
+    info.bAlways = m_timeline->isAlways();
+    info.beginFrame = m_timeline->fromTo().first;
+    info.endFrame = m_timeline->fromTo().second;
+    return info;
+}
+
+void DisplayWidget::resetTimeline(TIMELINE_INFO info)
+{
+    BlockSignalScope scope(m_timeline);
+    m_timeline->setAlways(info.bAlways);
+    m_timeline->initFromTo(info.beginFrame, info.endFrame);
+    m_timeline->setSliderValue(info.currFrame);
+}
+
 ViewportWidget* DisplayWidget::getViewportWidget()
 {
     return m_view;
@@ -769,6 +729,20 @@ ViewportWidget* DisplayWidget::getViewportWidget()
 QSize DisplayWidget::sizeHint() const
 {
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
+}
+
+void DisplayWidget::onPlayClicked(bool bChecked)
+{
+    if (bChecked)
+    {
+        m_pTimer->start(m_sliderFeq);
+    }
+    else
+    {
+        if (!isOptxRendering())
+            m_pTimer->stop();
+    }
+    Zenovis::GetInstance().startPlay(bChecked);
 }
 
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
@@ -782,7 +756,8 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
         //zeno::log_warn("stop");
         return;
     } else if (action == "finishFrame") {
-        if (isOptxRendering()) {
+        bool bPlaying = Zenovis::GetInstance().isPlaying();
+        if (isOptxRendering() || bPlaying) {
             m_pTimer->start(m_updateFeq);
         }
     } else if (!action.isEmpty()) {
@@ -906,20 +881,6 @@ bool DisplayWidget::isOptxRendering() const
     return (scene->renderMan && scene->renderMan->getDefaultEngineName() == "optx");
 }
 
-void DisplayWidget::onPlayClicked(bool bChecked)
-{
-    if (bChecked)
-    {
-        m_pTimer->start(m_sliderFeq);
-    }
-    else
-    {
-        if (!isOptxRendering())
-            m_pTimer->stop();
-    }
-    Zenovis::GetInstance().startPlay(bChecked);
-}
-
 void DisplayWidget::onSliderValueChanged(int frame)
 {
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
@@ -976,6 +937,28 @@ void DisplayWidget::onRun()
     scene->objectsMan->lightObjects.clear();
 }
 
+void DisplayWidget::runAndRecord(const VideoRecInfo& recInfo)
+{
+    //reset the record info first.
+    m_bRecordRun = true;
+    m_recordMgr.setRecordInfo(recInfo);
+
+    Zenovis::GetInstance().startPlay(true);
+
+    //and then play.
+    onPlayClicked(true);
+
+    //run first.
+    onRun();
+
+    if (recInfo.exitWhenRecordFinish)
+    {
+        connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
+            zenoApp->quit();
+        });
+    }
+}
+
 void ViewportWidget::keyPressEvent(QKeyEvent* event) {
     _base::keyPressEvent(event);
     //qInfo() << event->key();
@@ -1021,37 +1004,74 @@ void DisplayWidget::onRecord()
 {
     auto& inst = Zenovis::GetInstance();
 
-    auto& ptr = zeno::getSession().globalComm;
-    ZASSERT_EXIT(ptr);
+    auto& pGlobalComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(pGlobalComm);
 
-    if (ptr->maxPlayFrames() == 0) {
-        //run.
-        QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
-        return;
+    int frameLeft = 0, frameRight = 0;
+    if (pGlobalComm->maxPlayFrames() > 0)
+    {
+        frameLeft = pGlobalComm->beginFrameNumber;
+        frameRight = pGlobalComm->endFrameNumber;
     }
-
-    int frameLeft = ptr->beginFrameNumber;
-    int frameRight = ptr->endFrameNumber;
+    else
+    {
+        frameLeft = 0;
+        frameRight = 0;
+    }
 
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
+        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
+        QString presets, path, filename;
+        bool bRecordOnRun = false;
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA, bRecordOnRun);
+        //validation.
+
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo);
+        recInfo.record_path = path;
+        recInfo.frameRange = {frameStart, frameEnd};
+        recInfo.res = {(float)width, (float)height};
+        recInfo.bitrate = bitrate;
+        recInfo.fps = fps;
+        recInfo.videoname = filename;
+        recInfo.numOptix = numOptix;
+        recInfo.numMSAA = numMSAA;
+        recInfo.bRecordRun = bRecordOnRun;
 
-        Zenovis::GetInstance().startPlay(true);
+        m_recordMgr.setRecordInfo(recInfo);
 
-        RecordVideoMgr recordMgr(m_view, recInfo, nullptr);
-        ZRecordProgressDlg dlgProc(recInfo);
-        connect(&recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
-        connect(&recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
-        connect(&recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
-        if (QDialog::Accepted == dlgProc.exec())
+        if (recInfo.bRecordRun)
         {
+            connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
+                ZRecordProgressDlg dlgProc(recInfo);
+                dlgProc.onRecordFinished();
+                dlgProc.exec();
+            });
         }
         else
         {
-            recordMgr.cancelRecord();
+            if (pGlobalComm->maxPlayFrames() == 0)
+            {
+                QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
+                return;
+            }
+
+            Zenovis::GetInstance().startPlay(true);
+
+            ZRecordProgressDlg dlgProc(recInfo);
+            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+            connect(&m_recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
+            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+
+            dlgProc.show();
+            if (QDialog::Accepted == dlgProc.exec())
+            {
+            }
+            else
+            {
+                m_recordMgr.cancelRecord();
+            }
         }
     }
 }

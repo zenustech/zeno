@@ -21,6 +21,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <cudaMemMarco.hpp>
 
 namespace xinxinoptix {
 
@@ -50,7 +51,9 @@ template <class T> struct raii_traits {
     }
 
     static void deallocate(CUdeviceptr p) {
-        CUDA_CHECK(cudaFree((void *)p));
+        if(p) {
+            CUDA_CHECK(cudaFree((void *)p));
+        }
     }
 };
 

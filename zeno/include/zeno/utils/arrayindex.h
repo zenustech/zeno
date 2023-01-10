@@ -51,4 +51,9 @@ T const &array_lookup(std::initializer_list<T> arr, I const &index) {
     return *std::next(std::begin(arr), index);
 }
 
+template <class T, class I>
+auto const &array_lookup(T const &arr, I const &index) {
+    return *std::next(std::begin(arr), index);
+}
+
 }

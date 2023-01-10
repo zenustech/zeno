@@ -2,6 +2,7 @@
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
+#include "zensim/container/SpatialHash.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
@@ -124,6 +125,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   static constexpr auto s_edgeTag = "edges";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
+  static constexpr auto s_bendingEdgeTag = "bendingEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
   static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
@@ -375,6 +377,16 @@ struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
   element_e et{point};
 };
 
+struct ZenoSpatialHash : IObjectClone<ZenoSpatialHash> {
+  enum element_e { point, curve, surface, tet };
+  using sh_t = zs::SpatialHash<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return sh; }
+  const auto &get() const noexcept { return sh; }
+  sh_t sh;
+  zs::f32 thickness;
+  element_e et{point};
+};
+
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
   // this supports a wide range of grid types (not just collocated)
   // default channel contains "sdf"
@@ -462,6 +474,20 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
   }
   bool hasMeta(const std::string &tag) const {
     if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+  /// @note -1 implies not a double buffer; 0/1 indicates the current double buffer index.
+  int checkDoubleBuffer(const std::string &attr) const {
+    auto metaTag = attr + "_cur";
+    if (hasMeta(metaTag)) 
+      return readMeta<int>(metaTag);
+    return -1;
+  }
+  bool isDoubleBufferAttrib(const std::string &attr) const {
+    if (attr.back() == '0' || attr.back() == '1')
+      return true;
+    else if (hasMeta(attr + "_cur"))
       return true;
     return false;
   }

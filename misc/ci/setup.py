@@ -10,6 +10,10 @@ if sys.platform == 'linux':
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',
+        'libdbus-1-dev', 'libxi-dev', 'libxtst-dev',
+    ])
+    subprocess.check_call([
+        'sudo', 'apt-get', 'install', '-y',
         'autoconf-archive', 'libcgal-dev', 'libxext-dev',
     ])
     subprocess.check_call([

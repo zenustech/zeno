@@ -1112,8 +1112,8 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         {
             auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
             viewport->changeTransformOperation(nodeId());
+        }
     }
-}
 }
 
 void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
