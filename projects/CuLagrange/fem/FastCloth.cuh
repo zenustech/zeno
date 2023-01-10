@@ -10,10 +10,14 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
-#define s_useNewtonSolver 1 // 0 for gradient descent solver 
-#define s_useChebyshevAcc 0 // for GD solver 
-#define s_useGDDiagHess 0 // for GD solver 
-#define s_useLineSearch 0 
+#define s_useNewtonSolver 0 // 0 for gradient descent solver 
+#define s_useChebyshevAcc 1 // for GD solver 
+#define s_useGDDiagHess 1 // for GD solver 
+#define s_useLineSearch 1
+#define s_debugOutput 0
+#define s_useHardPhase 0
+#define s_clothShearingCoeff 0.01f
+#define s_silentMode 1
 namespace zeno {
 
 /// for cell-based collision detection
@@ -188,6 +192,7 @@ struct FastClothSystem : IObject {
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     T infNorm(zs::CudaExecutionPolicy &pol);
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString tag); 
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
@@ -195,6 +200,10 @@ struct FastClothSystem : IObject {
     void newtonDynamicsStep(zs::CudaExecutionPolicy& pol); 
     void gdDynamicsStep(zs::CudaExecutionPolicy& pol); 
     T dynamicsEnergy(zs::CudaExecutionPolicy &pol); 
+
+    // for debug output data 
+    void writeFile(std::string filename, std::string info); 
+    int frameCnt = 0; 
 
     // contacts
     auto getConstraintCnt() const {
@@ -205,6 +214,10 @@ struct FastClothSystem : IObject {
     int substep = -1;
     std::size_t estNumCps = 1000000;
 
+    bool firstStepping = true; 
+    T alpha = 0.3f; // step size 
+    T alphaMin = 0.10f; 
+    T alphaDecrease = 0.7f; 
     T pnRel = 1e-2;
     T cgRel = 1e-2;
     int PNCap = 1000;
@@ -257,19 +270,15 @@ struct FastClothSystem : IObject {
     /// @brief initial displacement limit during the start of K iteration collision steps
     T D = 0.25;
     /// @brief coupling coefficients between cloth dynamics and collision dynamics
-    T sigma = 80000; // s^{-2} // TODO: use sigma(8e4) * dt2 to replace sigma in energy terms
+    T sigma = 160000; // s^{-2} 
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
     int K = 72, ISoft = 10 /*6~16*/, IHard = 8, IInit = 6;
-#if !s_useNewtonSolver 
-    // currently for debugging gradient descent solver TODO: use IDyn parameter 
-    K = 720; 
-#endif 
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
-    int IDyn = 3 /*1~6*/, R = 8;
+    int IDyn = 1 /*1~6*/, R = 8;
     T chebyOmega = 1.0f; 
-    T chebyRho = 0.98f; 
+    T chebyRho = 0.99f; 
 
     T proximityRadius() const {
         return std::sqrt((B + Btight) * (B + Btight) + epsSlack);

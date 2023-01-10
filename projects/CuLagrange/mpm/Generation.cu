@@ -1454,10 +1454,12 @@ struct MakeZSLevelSet : INode {
     }
 };
 ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"}, "aux"},
-                               {"ZSLevelSet"},
-                               {{"enum unknown apic flip aflip boundary", "transfer", "unknown"},
+                               {{"float", "dx", "0.1"},
+                                "aux",
+                                {"enum unknown apic flip aflip boundary", "transfer", "unknown"},
                                 {"enum cellcentered collocated staggered const_velocity", "category", "cellcentered"}},
+                               {"ZSLevelSet"},
+                               {},
                                {"SOP"},
                            });
 

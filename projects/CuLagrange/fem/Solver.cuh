@@ -13,7 +13,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#if 1
 #include "SolverUtils.cuh"
+#endif
 
 namespace zeno {
 
@@ -108,12 +110,16 @@ struct IPCSystem : IObject {
                 return true;
             return zsprimPtr->asBoundary;
         }
+        bool hasBendingConstraints() const noexcept {
+            return static_cast<bool>(bendingEdgesPtr);
+        }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
         std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
-        typename ZenoParticles::dtiles_t etemp;
+        std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
+        typename ZenoParticles::dtiles_t etemp, btemp; // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
@@ -123,7 +129,9 @@ struct IPCSystem : IObject {
     };
 
     bool hasBoundary() const noexcept {
-        return coVerts != nullptr;
+        if (coVerts != nullptr && coEdges != nullptr && coEles != nullptr)
+            return (coVerts->size() > 0) && (coEdges->size() > 0) && (coEles->size() > 0);
+        return false;
     }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
@@ -156,7 +164,7 @@ struct IPCSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// pipeline
-    void newtonKrylov(zs::CudaExecutionPolicy &pol);
+    bool newtonKrylov(zs::CudaExecutionPolicy &pol);
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
@@ -170,6 +178,8 @@ struct IPCSystem : IObject {
         return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
     }
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
+    void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
@@ -181,14 +191,19 @@ struct IPCSystem : IObject {
                                           const zs::SmallString &gTag); // for kappaMin
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
+    void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                          bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                   bool includeHessian = true);
     // krylov solver
+    T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     void convertHessian(zs::CudaExecutionPolicy &pol);
     void compactHessian(zs::CudaExecutionPolicy &pol);
+    void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);
@@ -197,6 +212,7 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
@@ -223,7 +239,7 @@ struct IPCSystem : IObject {
     int CCDCap = 20000;
     T kappa0 = 1e4;
     T fricMu = 0;
-    T &boundaryKappa = kappa;
+    T boundaryKappa = 1;
     T xi = 0; // 1e-2; // 2e-3;
     T dHat = 0.0025;
     T epsv = 0.0;
@@ -295,6 +311,7 @@ struct IPCSystem : IObject {
     // end contacts
 
     zs::Vector<T> temp;
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;

@@ -124,7 +124,6 @@ void PBDSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
 struct StepPBDSystem : INode {
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto A = get_input<PBDSystem>("ZSPBDSystem");
         auto dt = get_input2<float>("dt");
 

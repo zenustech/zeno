@@ -23,7 +23,7 @@ LiveTcpServer::LiveTcpServer(QObject *parent) :
     }
     else
     {
-        std::cout << "Server started!\n";
+        //std::cout << "Server started!\n";
     }
 }
 

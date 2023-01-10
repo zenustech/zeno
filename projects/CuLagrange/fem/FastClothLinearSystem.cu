@@ -433,9 +433,8 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
         {
             auto grad = vtemp("grad", d, i); 
             auto pre = vtemp("P", d, i); 
-            if (pre < 1e-15f)
+            if (pre < limits<T>::epsilon() * 10.0f)
                 pre = 1.0f; 
-            auto dir = grad/pre; 
             vtemp("dir", d, i) = grad / pre;
         } 
     }); 
@@ -500,7 +499,7 @@ typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typen
                 auto f0Norm = zs::sqrt(f0.l2NormSqr());
                 auto f1Norm = zs::sqrt(f1.l2NormSqr());
                 auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-                auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
+                auto Eshear = (model.mu * s_clothShearingCoeff) * vole * zs::sqr(f0.dot(f1));
                 E = Estretch + Eshear;
                 reduce_to(ei, n, E, energy[0]);
             });
@@ -556,10 +555,9 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
             auto E = 0.5f * m * ((yn - ytilde).l2NormSqr() + sigma * (yn - xn).l2NormSqr())
              - m * yn.dot(extAccel) * dt * dt; 
             if (hasExt)
-                E -= yn.dot(vtemp.pack(dim_c<3>, "extf", vi)) * dt * dt; 
+                E -= yn.dot(vtemp.pack(dim_c<3>, "extf", vi)) * dt * dt;
             reduce_to(vi, n, E, energy[0]);
     }); 
-    T inertialE = temp.getVal(); 
 
     // constraint energy 
     if (!projectDBC)
@@ -571,9 +569,6 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
                 auto cons = vtemp.pack(dim_c<3>, "cons", vi); 
                 reduce_to(i, n, 0.5f * kappa * w * cons.l2NormSqr(), energy[0]);
             }); 
-    T constraintE = temp.getVal() - inertialE; 
-    fmt::print("\t\tdynamics elasticE: {}, inertialE: {}, constraintE: {}, E: {}\n", 
-        elasticE, inertialE, constraintE, temp.getVal() + elasticE); 
     return temp.getVal() + elasticE; 
 }
 } // namespace zeno

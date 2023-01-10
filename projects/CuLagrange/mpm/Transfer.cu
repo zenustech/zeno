@@ -25,7 +25,6 @@ struct ZSParticleToZSGrid : INode {
                  isAffineAugmented] __device__(size_t pi) mutable {
                     using grid_t = RM_CVREF_T(grid);
                     using mat3 = zs::vec<float, 3, 3>;
-                    const auto Dinv = 4.f * dxinv * dxinv;
                     auto pos = pars.pack<3>("x", pi);
                     auto vel = pars.pack<3>("v", pi);
                     auto mass = pars("m", pi);
@@ -459,7 +458,6 @@ struct ZSParticleToZSGrid : INode {
                 using mat2 = zs::vec<float, 2, 2>;
                 using mat3 = zs::vec<float, 3, 3>;
                 using vec3 = zs::vec<float, 3>;
-                const auto Dinv = 4.f * dxinv * dxinv;
                 auto k = eles("k", pi);
                 auto restAngle = eles("ra", pi);
                 auto vinds = eles.pack<4>("vinds", pi).reinterpret_bits<int>();
@@ -796,7 +794,6 @@ struct ZSParticleToZSGrid : INode {
                                       isAffineAugmented] __device__(size_t pi) mutable {
             using grid_t = RM_CVREF_T(grid);
             using mat3 = zs::vec<float, 3, 3>;
-            const auto Dinv = 4.f * dxinv * dxinv;
             auto pos = verts.pack<3>("x", pi);
             auto vel = verts.pack<3>("v", pi);
             auto impulse = verts.pack<3>("imp", pi);
@@ -1545,7 +1542,6 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
                               grid = proxy<execspace_e::cuda>({}, grid), dxinv = 1.f / grid.dx, offset, includeNormal,
                               flag = proxy<execspace_e::cuda>(flag)] __device__(size_t pi) mutable {
             using grid_t = RM_CVREF_T(grid);
-            const auto Dinv = 4.f * dxinv * dxinv;
             pi += offset;
             auto pos = pars.pack<3>("x", pi);
             auto vel = pars.pack<3>("v", pi);
