@@ -1051,9 +1051,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minView(nullptr)
     , m_minOnce(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
-    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(25, 42)), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(48, 63)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(48, 63)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(37, 63)), this);
 	m_once = new ZenoImageItem(
         ":/icons/ONCE_dark.svg",
         ":/icons/ONCE_light.svg",
@@ -1087,13 +1087,14 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_mute->hide();
     m_view->hide();
 
-    m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(20), 0));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(40), 0));
+    m_minOnce->setPos(QPointF(0, 1));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(29), 1));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(58), 1));
 
     QSizeF sz2 = m_once->size();
+    qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
     //todo: kill these magin number.
-	QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+    QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
 	m_once->setPos(base);
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_mute->setPos(base);
@@ -1211,7 +1212,8 @@ void ZenoMinStatusBtnItem::onZoomed()
         m_mute->resize(size);
         m_view->resize(size);
         QSizeF sz2 = m_once->size();
-        QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+        qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
+        QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
         m_once->setPos(base);
         base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
         m_mute->setPos(base);
