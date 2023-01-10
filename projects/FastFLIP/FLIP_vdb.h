@@ -169,7 +169,8 @@ struct FLIP_vdb {
 
   static void calculate_shear_rate(
     openvdb::FloatGrid::Ptr &shear_rate,
-    openvdb::Vec3fGrid::Ptr &velocity);
+    openvdb::Vec3fGrid::Ptr &velocity,
+    openvdb::FloatGrid::Ptr &liquid_sdf);
 
   static void solve_viscosity(
     packed_FloatGrid3 &velocity,

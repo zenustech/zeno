@@ -18,15 +18,17 @@ struct CalcShearRate : zeno::INode {
   void apply() override {
     auto velocity = get_input<VDBFloat3Grid>("Velocity");
     auto shear_rate = get_input<VDBFloatGrid>("ShearRate");
+    auto liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF");
 
-    FLIP_vdb::calculate_shear_rate(shear_rate->m_grid, velocity->m_grid);
+    FLIP_vdb::calculate_shear_rate(shear_rate->m_grid, velocity->m_grid, liquid_sdf->m_grid);
   }
 };
 
 ZENDEFNODE(CalcShearRate, {
                             /* inputs: */
                             {"Velocity",
-                             "ShearRate"},
+                             "ShearRate",
+                             "LiquidSDF"},
                             /* outputs: */
                             {},
                             /* params: */

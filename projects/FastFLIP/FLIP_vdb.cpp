@@ -3088,54 +3088,57 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	rhsgrid->setName("RHS");
 }
 
-void FLIP_vdb::calculate_shear_rate(
-    openvdb::FloatGrid::Ptr &shear_rate,
-    openvdb::Vec3fGrid::Ptr &velocity
-) {
-  shear_rate->setTransform(velocity->transformPtr());
-  shear_rate->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
-	shear_rate->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), shear_rate->background(), openvdb::TopologyCopy()));
-  
-  float dx = static_cast<float>(velocity->voxelSize()[0]);
+void FLIP_vdb::calculate_shear_rate(openvdb::FloatGrid::Ptr &shear_rate, openvdb::Vec3fGrid::Ptr &velocity,
+                                    openvdb::FloatGrid::Ptr &liquid_sdf) {
+        shear_rate->setTransform(velocity->transformPtr());
+        shear_rate->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
+        shear_rate->setTree(
+            std::make_shared<openvdb::FloatTree>(velocity->tree(), shear_rate->background(), openvdb::TopologyCopy()));
 
-  auto shear_rate_setter = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-    auto vel_axr = velocity->getConstUnsafeAccessor();
-    for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-      openvdb::Vec3f gcoord = iter.getCoord().asVec3s();
-      openvdb::Vec3f vel_stencil[3][2];
-      for (int ch = 0; ch < 3; ch++) { // x, y, z
-        for (int dir = -1; dir <= 1; dir += 2) { // -1, 1
-          int i = dir < 0? 0 : 1;
-          openvdb::Vec3f shift{0, 0, 0};
-          shift[ch] += dir*0.5f;
-          vel_stencil[ch][i] = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, gcoord + shift);
-        }
-      }
+        float dx = static_cast<float>(velocity->voxelSize()[0]);
 
-      float vel_diff[3][3];
-      for (int ch = 0; ch < 3; ch++) { // u_, v_, w_
-        for (int i = 0; i < 3; i++) { //_x, _y, _z
-          vel_diff[ch][i] = (vel_stencil[i][1][ch] - vel_stencil[i][0][ch]) / dx;
-        }
-      }
+        auto shear_rate_setter = [&](openvdb::FloatTree::LeafNodeType &leaf, openvdb::Index leafpos) {
+            auto vel_axr = velocity->getConstUnsafeAccessor();
+            auto sdf_axr = liquid_sdf->getConstUnsafeAccessor();
+            for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                float shear_rate_this = 0.f;
 
-      float shear_rate_this = 0.f;
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          float norm = vel_diff[i][j] + vel_diff[j][i];
-          shear_rate_this += norm*norm;
-        }
-      }
+                openvdb::Vec3f gcoord = iter.getCoord().asVec3s();
+                float sdf = openvdb::tools::BoxSampler::sample(sdf_axr, gcoord);
 
-      shear_rate_this = std::sqrt(shear_rate_this);
+                if (sdf < 1.5 * dx) {
+                    openvdb::Vec3f vel_stencil[3][2];
+                    for (int ch = 0; ch < 3; ch++) {             // x, y, z
+                        for (int dir = -1; dir <= 1; dir += 2) { // -1, 1
+                            int i = dir < 0 ? 0 : 1;
+                            openvdb::Vec3f shift{0, 0, 0};
+                            shift[ch] += dir * 0.5f;
+                            vel_stencil[ch][i] = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, gcoord + shift);
+                        }
+                    }
 
-      iter.setValue(shear_rate_this);
-    }
-  }; //shear_rate_setter
+                    float vel_diff[3][3];
+                    for (int ch = 0; ch < 3; ch++) {  // u_, v_, w_
+                        for (int i = 0; i < 3; i++) { //_x, _y, _z
+                            vel_diff[ch][i] = (vel_stencil[i][1][ch] - vel_stencil[i][0][ch]) / dx;
+                        }
+                    }
 
-  auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(shear_rate->tree());
-	visc_leafman.foreach(shear_rate_setter);
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            float norm = vel_diff[i][j] + vel_diff[j][i];
+                            shear_rate_this += norm * norm;
+                        }
+                    }
+
+                    shear_rate_this = std::sqrt(shear_rate_this);
+                }
+                iter.setValue(shear_rate_this);
+            }
+        }; //shear_rate_setter
+
+        auto visc_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(shear_rate->tree());
+        visc_leafman.foreach (shear_rate_setter);
 }
 
 void FLIP_vdb::solve_viscosity(
