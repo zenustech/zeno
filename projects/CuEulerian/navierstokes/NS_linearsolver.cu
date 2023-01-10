@@ -1422,6 +1422,8 @@ struct ZSNSPressureProject : INode {
         const float tolerence = 1e-5;
         printf("========MultiGrid V-cycle Begin========\n");
 
+        clearInit<0>(pol, NSGrid.get());
+
         coarseFaceFrac<0>(pol, NSGrid.get());
         coarseFaceFrac<1>(pol, NSGrid.get());
         coarseFaceFrac<2>(pol, NSGrid.get());
