@@ -12,6 +12,7 @@
 #include <zenoui/comctrl/zcheckboxbar.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/znumslider.h>
+#include <zenoui/comctrl/zspinboxslider.h>
 
 
 class ZenoTextLayoutItem;
@@ -288,6 +289,35 @@ class ZenoParamSlider : public ZenoParamWidget {
   private:
     QSlider *m_pSlider;
 };
+
+class ZenoParamSpinBoxSlider : public ZenoParamWidget 
+{
+    Q_OBJECT
+  public:
+    ZenoParamSpinBoxSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(int);
+
+  private:
+    void updateStyleSheet();
+
+  private:
+    ZSpinBoxSlider *m_pSlider;
+};
+
+class ZenoParamSpinBox : public ZenoParamWidget {
+    Q_OBJECT
+  public:
+    ZenoParamSpinBox(QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+  signals:
+    void valueChanged(int);
+  private:
+    QSpinBox *m_pSpinBox;
+};
+
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
 public:

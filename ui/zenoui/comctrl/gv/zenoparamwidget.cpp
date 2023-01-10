@@ -756,6 +756,50 @@ void ZenoParamSlider::updateStyleSheet() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBoxSlider::ZenoParamSpinBoxSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) 
+{
+    m_pSlider = new ZSpinBoxSlider();
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    m_pSlider->setAttribute(Qt::WA_StyledBackground, false);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    connect(m_pSlider, &ZSpinBoxSlider::valueChanged, this, &ZenoParamSpinBoxSlider::valueChanged);
+}
+
+void ZenoParamSpinBoxSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSpinBoxSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSpinBoxSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet("background:rgb(31,39,42);");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(parent) 
+{
+    m_pSpinBox = new QSpinBox;
+    m_pSpinBox->setProperty("cssClass", "control");
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
+}
+
+void ZenoParamSpinBox::setValue(int value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+    //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)

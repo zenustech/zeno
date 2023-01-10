@@ -75,6 +75,7 @@ ZSpinBoxSlider::ZSpinBoxSlider(QWidget* parent)
 
     pLayout->addWidget(m_pSpinbox);
     pLayout->addWidget(m_pSlider);
+    pLayout->setMargin(0);
 
     connect(m_pSlider, &QSlider::valueChanged, this, [=](int value) {
         BlockSignalScope sp(m_pSpinbox);

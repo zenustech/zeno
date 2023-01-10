@@ -107,6 +107,14 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
 			{
                 pSlider->setValue(value.toInt());
             }
+			else if (ZenoParamSpinBoxSlider *pSlider = qobject_cast<ZenoParamSpinBoxSlider *>(pItem)) 
+			{
+                pSlider->setValue(value.toInt());
+            }
+			else if (ZenoParamSpinBox*pSpinBox = qobject_cast<ZenoParamSpinBox *>(pItem)) 
+			{
+                pSpinBox->setValue(value.toInt());
+            }
             break;
         }
         case QGraphicsWidget::Type:

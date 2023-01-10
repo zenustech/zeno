@@ -291,12 +291,24 @@ namespace zenoui
                 QSpinBox* pSpinBox = new QSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
+                pSpinBox->setValue(value.toInt());
+                QObject::connect(pSpinBox, static_cast<void (QSpinBox::*)(int)>(& QSpinBox::valueChanged),[=](int value) { 
+					cbSet.cbEditFinished(value);
+				});
                 return pSpinBox;
             }
             case CONTROL_SPINBOX_SLIDER:
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
-                SLIDER_INFO sliderInfo = properties.value<SLIDER_INFO>();
+                SLIDER_INFO sliderInfo;
+                if (properties.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = properties.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
                 pSlider->setValue(value.toInt());

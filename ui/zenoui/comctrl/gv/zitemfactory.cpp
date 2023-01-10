@@ -312,6 +312,33 @@ namespace zenoui
                 pItemWidget = pSlider;
                 break;
 			}
+            case CONTROL_HSPINBOX: 
+			{
+                ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox;
+                QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
+					cbFunc(value); 
+				});
+                pItemWidget = pSpinBox;
+                break;
+            }
+            case CONTROL_SPINBOX_SLIDER: 
+			{
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
+                ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
+					cbFunc(value); 
+				});
+                pItemWidget = pSlider;
+                break;
+            }
             default:
             {
                 return nullptr;
