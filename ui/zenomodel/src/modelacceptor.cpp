@@ -85,16 +85,17 @@ bool ModelAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& 
     return true;
 }
 
-void ModelAcceptor::EndSubgraph()
+void ModelAcceptor::EndGraphs()
 {
-    if (!m_currentGraph)
-        return;
+    resolveAllLinks();
+}
 
+void ModelAcceptor::resolveAllLinks()
+{
     //add links on this subgraph.
     for (EdgeInfo link : m_subgLinks)
     {
         QModelIndex inSock, outSock, inNode, outNode;
-
         QString subgName, inNodeCls, outNodeCls, inSockName, outSockName, paramCls;
 
         if (!link.outSockPath.isEmpty())
@@ -120,7 +121,12 @@ void ModelAcceptor::EndSubgraph()
         }
         m_pModel->addLink(outSock, inSock);
     }
+}
 
+void ModelAcceptor::EndSubgraph()
+{
+    if (!m_currentGraph)
+        return;
     m_currentGraph->onModelInited();
     m_currentGraph = nullptr;
 }

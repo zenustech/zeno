@@ -31,6 +31,25 @@ QPushButton[cssClass="blueStyle"]:hover
 	color: rgb(255, 255, 255);
 }
 
+QPushButton[cssClass="dictkeypanel"]
+{
+	padding-top: 2.5px;
+	padding-left: 48px;
+	padding-right: 48px;
+	padding-bottom: 2.5px;
+
+    border-width: 2px;
+    border-radius: 2px;
+	background-color: rgb(72, 78, 90);
+	font: 14px 'Segoe UI Bold';
+	color: rgb(147, 159, 172);
+}
+
+QPushButton[cssClass="dictkeypanel"]:hover
+{
+	color: #FFFFFF;
+}
+
 QPushButton[cssClass="welcomepage"]
 {
 	border-style: solid;

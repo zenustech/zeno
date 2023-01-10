@@ -147,6 +147,9 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
         return;
 
     const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+    if (m_links.find(linkId) != m_links.end())
+        return;
+
     const QString& inId = linkIdx.data(ROLE_INNODE).toString();
     const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
     const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
@@ -270,6 +273,9 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
         //todo: half link across from two different subgraph.
         return;
     }
+
+    if (m_links.find(linkId) != m_links.end())
+        return;
 
     ZenoNode* pInNode = m_nodes[inId];
     ZenoNode* pOutNode = m_nodes[outId];

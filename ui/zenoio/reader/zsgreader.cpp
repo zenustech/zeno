@@ -89,6 +89,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
+    pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
     if (doc.HasMember("views"))

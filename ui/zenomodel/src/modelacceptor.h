@@ -18,6 +18,7 @@ public:
 	void BeginSubgraph(const QString& name) override;
 	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
+    void EndGraphs() override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
 	bool addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) override;
@@ -77,6 +78,8 @@ public:
 	void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) override;
 
 private:
+    void resolveAllLinks();
+
 	TIMELINE_INFO m_timeInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
 	SubGraphModel* m_currentGraph;
