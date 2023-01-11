@@ -4,6 +4,7 @@
 #include <zenomodel/include/modeldata.h>
 #include <rapidjson/document.h>
 #include <zenomodel/include/igraphsmodel.h>
+#include <zenomodel/include/globalcontrolmgr.h>
 
 
 class BlockSignalScope
@@ -38,6 +39,7 @@ public:
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static PARAM_CONTROL getControlByType(const QString& type);
+    static CONTROL_INFO getControlByType(const QString &nodeCls, PARAM_CLASS cls, const QString &socketName,const QString &socketType);    
     static QString getTypeByControl(PARAM_CONTROL ctrl);
     static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramCls, QString& paramPath);
     static QStringList getControlLists(const QString& type);

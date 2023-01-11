@@ -497,7 +497,6 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_OBJPOS:
             {
                 item.viewpos = value.toPointF();
-                qDebug() << id << item.viewpos;
                 break;
             }
             case ROLE_PARAMS_NO_DESC: {

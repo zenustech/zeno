@@ -315,6 +315,7 @@ namespace zenoui
             case CONTROL_HSPINBOX: 
 			{
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox;
+                pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
 					cbFunc(value); 
 				});
@@ -333,6 +334,7 @@ namespace zenoui
                     }
                 }
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
 					cbFunc(value); 
 				});

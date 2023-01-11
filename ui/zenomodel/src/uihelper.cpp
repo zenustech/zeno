@@ -58,11 +58,13 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = input_triple[0].GetString();
                 const QString &socketName = input_triple[1].GetString();
                 const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlByType(socketType);
+
+                CONTROL_INFO ctrlInfo = getControlByType(name, PARAM_INPUT, socketName, socketType);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = ctrlType;
+                inputSocket.info.control = ctrlInfo.control;
+                inputSocket.info.ctrlProps = ctrlInfo.controlProps.toMap();
                 inputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
@@ -76,10 +78,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = param_triple[0].GetString();
                 const QString &socketName = param_triple[1].GetString();
                 const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlByType(socketType);
+                CONTROL_INFO ctrlInfo = getControlByType(name, PARAM_PARAM, socketName, socketType);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
-                paramInfo.control = ctrlType;
+                paramInfo.control = ctrlInfo.control;
+                paramInfo.controlProps = ctrlInfo.controlProps.toMap();
                 paramInfo.name = socketName;
                 paramInfo.typeDesc = socketType;
                 paramInfo.defaultValue = parseStringByType(socketDefl, socketType);
@@ -472,8 +475,8 @@ QStringList UiHelper::getCoreTypeList()
         "vec3i",
         "vec4f",
         "vec4i",
-        "writepath",
-        "readpath",
+        //"writepath",
+        //"readpath",
         "color",
         "curve"
     };
@@ -577,6 +580,11 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
     }
+}
+
+CONTROL_INFO UiHelper::getControlByType(const QString &nodeCls, PARAM_CLASS cls, const QString &socketName, const QString &socketType) 
+{
+    return GlobalControlMgr::instance().controlInfo(nodeCls, cls, socketName, socketType);
 }
 
 QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)

@@ -17,7 +17,7 @@ static CONTROL_INFO _infos[] = {
     {"StringEval",                  PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
     {"NumericEval",                 PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
     {"ParticlesNeighborz",          PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"SubInput",                    PARAM_PARAM, "type",        CONTROL_ENUM,             QVariant::fromValue(UiHelper::getCoreTypeList())},
+    {"SubInput",                    PARAM_PARAM, "type",        CONTROL_ENUM,             UiHelper::getCoreTypeList()},
 };
 
 
@@ -52,12 +52,19 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
     {
         if (m_infos[idx].control == CONTROL_NONE)
             return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
+        if (m_infos[idx].controlProps.isValid()) {
+            QVariantMap map;
+            map["items"] = m_infos[idx].controlProps;
+            m_infos[idx].controlProps = map;
+        }
         return m_infos[idx];
     }
     if (coreType.startsWith("enum "))
     {
         QStringList items = coreType.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-        return CONTROL_INFO(CONTROL_ENUM, QVariant::fromValue(items));
+        QVariantMap map;
+        map["items"] = items;
+        return CONTROL_INFO(CONTROL_ENUM, map);
     }
     return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
 }

@@ -391,6 +391,30 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     keyModel->setCollasped(bCollasped);
 }
 
+void ModelAcceptor::setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties) 
+{
+    if (!m_currentGraph)
+        return;
+
+    QString subgName, paramCls;
+    subgName = m_currentGraph->name();
+    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
+
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    if (sockIdx.isValid()) {
+        QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
+        ZASSERT_EXIT(pModel);
+        if (!control.isNull()) {
+            pModel->setData(sockIdx, UiHelper::getControlByDesc(control), ROLE_PARAM_CTRL);
+        }
+        if (ctrlProperties.isValid()) {
+            pModel->setData(sockIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
+		}
+    } else {
+         zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
+    }
+}
+
 void ModelAcceptor::addInnerDictKey(
             bool bInput,
             const QString& ident,
@@ -528,6 +552,19 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         }
         zeno::log_warn("not found param name {}", name.toStdString());
     }
+}
+
+void ModelAcceptor::setParamValue2(const QString &id, const PARAMS_INFO &params) 
+{
+    if (!m_currentGraph)
+        return;
+    if (params.isEmpty())
+        return;
+
+    QModelIndex idx = m_currentGraph->index(id);
+    ZASSERT_EXIT(idx.isValid());
+
+    m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
 }
 
 void ModelAcceptor::setPos(const QString& id, const QPointF& pos)
