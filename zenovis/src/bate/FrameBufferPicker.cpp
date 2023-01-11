@@ -303,7 +303,7 @@ struct FrameBufferPicker : IPicker {
         for (unsigned int id = 0; id < prims.size(); id++) {
             auto it = prims.begin() + id;
             auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
-            if (prim->has_attr("pos")) {
+            if (prim && prim->has_attr("pos")) {
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
                 auto vertex_count = prim->size();
