@@ -11,24 +11,39 @@ struct PrimitiveAttrPicker : zeno::INode {
         // parse selected elements string
         auto selected = get_param<std::string>("selected");
         std::vector<zany> selected_indices_numeric;
-        std::vector<int> selected_indices;
-        std::stringstream ss;
-        auto get_split = [&ss, &selected_indices, &selected_indices_numeric]() {
-            int i;
-            ss >> i;
-            selected_indices.push_back(i);
-            auto idx = std::make_shared<NumericObject>(i);
-            selected_indices_numeric.push_back(idx);
-            ss.clear();
-        };
-        for (auto c : selected) {
-            if (c == ',') get_split();
-            else ss << c;
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (!selected.empty()) {
+            std::vector<int> selected_indices;
+            std::stringstream ss;
+            auto get_split = [&ss, &selected_indices, &selected_indices_numeric]() {
+                int i;
+                ss >> i;
+                selected_indices.push_back(i);
+                auto idx = std::make_shared<NumericObject>(i);
+                selected_indices_numeric.push_back(idx);
+                ss.clear();
+            };
+            for (auto c : selected) {
+                if (c == ',')
+                    get_split();
+                else
+                    ss << c;
+            }
+            get_split();
+
+            // set new attr
+            auto new_attr = get_input<StringObject>("newAttr");
+            if (!new_attr->get().empty()) {
+                auto new_value = get_input2<float>("attrVal");
+                auto &attr = prim->add_attr<float>(new_attr->get());
+                for (const auto& idx : selected_indices)
+                    attr[idx] = new_value;
+            }
         }
-        get_split();
         auto list = std::make_shared<ListObject>(selected_indices_numeric);
 
         set_output("list", std::move(list));
+        set_output("outPrim", std::move(prim));
     }
 };
 
@@ -37,10 +52,13 @@ ZENDEFNODE(PrimitiveAttrPicker, {
     {
     {"PrimitiveObject", "prim"},
     {"enum point line triangle", "mode", "point"},
+    {"string", "newAttr", ""},
+    {"float", "attrVal", ""},
     },
     // outputs
     {
     {"list"},
+    {"PrimitiveObject", "outPrim"}
     },
     // params
     {{"string", "selected", ""}},
