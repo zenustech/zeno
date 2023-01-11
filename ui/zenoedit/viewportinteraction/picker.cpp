@@ -77,7 +77,7 @@ namespace zeno {
 
 void Picker::pick(int x, int y) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    qDebug() << scene->select_mode;
+    // qDebug() << scene->select_mode;
     // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x, y);
 
