@@ -381,6 +381,8 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     // GRAD, HESS, P
+    if constexpr (s_enableProfile)
+        timer.tick();
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
 #if 1
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
@@ -439,6 +441,10 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
         } 
     }); 
 #endif 
+    if constexpr (s_enableProfile) {
+        timer.tock();
+        dynamicsTime[0] += timer.elapsed();
+    }
 }
 
 template <typename Model>

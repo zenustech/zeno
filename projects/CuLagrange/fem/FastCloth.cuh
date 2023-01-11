@@ -15,9 +15,10 @@
 #define s_useGDDiagHess 1 // for GD solver 
 #define s_useLineSearch 1
 #define s_debugOutput 0
-#define s_useHardPhase 0
+#define s_useHardPhase 1
 #define s_clothShearingCoeff 0.01f
 #define s_silentMode 1
+#define s_useFrontLine 1
 namespace zeno {
 
 /// for cell-based collision detection
@@ -326,12 +327,14 @@ struct FastClothSystem : IObject {
     sh_t svSh;
     sh_t bouSvSh;
     bvfront_t selfSvFront, boundarySvFront;
+    bool frontManageRequired; 
     T dt, framedt, curRatio;
 
     zs::CppTimer timer;
     float auxTime[10]; // bvh build, bvh iter, sh build, sh iter
     float dynamicsTime[10];
     float collisionTime[10];
+    int auxCnt[10]; 
     int dynamicsCnt[10];
     int collisionCnt[10];
     static constexpr bool s_enableProfile = true;

@@ -216,7 +216,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     rho = 0.1;
 #endif
 #if !s_useNewtonSolver
-    K = 72 * 3; 
+    K = 72 * 10;// * 10; 
 #else 
     K = 72 * 3; 
     IDyn = 1; 
@@ -359,6 +359,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auxTime[i] = 0;
             dynamicsTime[i] = 0;
             collisionTime[i] = 0;
+            auxCnt[i] = 0; 
             dynamicsCnt[i] = 0;
             collisionCnt[i] = 0;
         }
@@ -396,7 +397,9 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
-
+#if s_useFrontLine
+    frontManageRequired = true;
+#endif 
         /// spatial accel initialization
 #define init_front(sInds, front)                                                                           \
     {                                                                                                      \
@@ -425,9 +428,12 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         svBvh.build(pol, bvs);
-
+#if s_useFrontLine
+        init_front(svInds, selfSvFront);
+#endif 
         if constexpr (s_enableProfile) {
             timer.tock();
+            auxCnt[0]++; 
             auxTime[0] += timer.elapsed();
         }
         if constexpr (s_testSh) {
@@ -440,6 +446,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             if constexpr (s_enableProfile) {
                 timer.tock();
+                auxCnt[2]++; 
                 auxTime[2] += timer.elapsed();
             }
         }
@@ -453,6 +460,9 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         bouSvBvh.build(pol, bvs);
+#if s_useFrontLine
+        init_front(svInds, boundarySvFront);
+#endif 
 
         if constexpr (s_enableProfile) {
             timer.tock();
