@@ -237,6 +237,7 @@ struct ZSNSAdvectDiffuse : INode {
         auto dt = get_input2<float>("dt");
         auto scheme = get_input2<std::string>("Scheme");
         auto isReflection = get_input2<bool>("Reflection");
+        auto wind = get_input2<zeno::vec3f>("WindVelocity");
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
@@ -267,13 +268,14 @@ struct ZSNSAdvectDiffuse : INode {
         if (scheme == "Semi-Lagrangian") {
             // Semi-Lagrangian advection (1st order)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vSrcTag = src_tag(NSGrid, "v"),
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
@@ -284,13 +286,14 @@ struct ZSNSAdvectDiffuse : INode {
         } else if (scheme == "MacCormack") {
             // MacCormack scheme
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vSrcTag = src_tag(NSGrid, "v"),
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
@@ -299,14 +302,14 @@ struct ZSNSAdvectDiffuse : INode {
                     }
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vTag = src_tag(NSGrid, "v"),
-                 vSrcTag = zs::SmallString{"tmp"},
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face + u_adv * dt);
@@ -329,13 +332,14 @@ struct ZSNSAdvectDiffuse : INode {
         } else if (scheme == "BFECC") {
             // Back and Forth Error Compensation and Correction (BFECC)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vSrcTag = src_tag(NSGrid, "v"),
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face - u_adv * dt);
@@ -344,14 +348,14 @@ struct ZSNSAdvectDiffuse : INode {
                     }
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vTag = src_tag(NSGrid, "v"),
-                 vSrcTag = dst_tag(NSGrid, "v"),
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vTag = src_tag(NSGrid, "v"), vSrcTag = dst_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
 
                         float u_sl = spgv.wStaggeredSample(vSrcTag, ch, wcoord_face + u_adv * dt);
@@ -361,14 +365,14 @@ struct ZSNSAdvectDiffuse : INode {
                     }
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, advTag, vTag = src_tag(NSGrid, "v"),
-                 vSrcTag = zs::SmallString{"tmp"},
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind), advTag,
+                 vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                        auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
                         auto icoord_face_src = spgv.worldToIndex(wcoord_face - u_adv * dt);
                         auto arena = spgv.iArena(icoord_face_src, ch);
@@ -397,8 +401,9 @@ struct ZSNSAdvectDiffuse : INode {
 
             // advection
             pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{},
-                 blockCnt = block_cnt, advTag, vSrcOffset = spg.getPropertyOffset(src_tag(NSGrid, "v")),
+                [spgv = zs::proxy<space>(spg), dx, dt, wind = zs::vec<float, 3>::from_array(wind),
+                 ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{}, blockCnt = block_cnt, advTag,
+                 vSrcOffset = spg.getPropertyOffset(src_tag(NSGrid, "v")),
                  vDstOffset = spg.getPropertyOffset(dst_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
                                                                                       int tid) mutable {
                     using vec3i = zs::vec<int, 3>;
@@ -557,7 +562,7 @@ struct ZSNSAdvectDiffuse : INode {
                             ccoord += 2;
 
                             auto icoord = spgv.iCoord(blockno, cellno);
-                            auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch);
+                            auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
 
                             const int stcl = 2; // stencil point in each side
                             float u_x[2 * stcl + 1], u_y[2 * stcl + 1], u_z[2 * stcl + 1];
@@ -629,7 +634,8 @@ ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
                                 {"float", "Density", "1.0"},
                                 {"float", "Viscosity", "0.0"},
                                 {"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"},
-                                {"bool", "Reflection", "0"}},
+                                {"bool", "Reflection", "0"},
+                                {"vec3f", "WindVelocity", "0, 0, 0"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */
@@ -652,7 +658,8 @@ struct ZSNSExternalForce : INode {
 
         // add force (accelaration)
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), gravity, dt, vSrcTag = src_tag(NSGrid, "v"),
+            [spgv = zs::proxy<space>(spg), gravity = zs::vec<float, 3>::from_array(gravity), dt,
+             vSrcTag = src_tag(NSGrid, "v"),
              forceTag = zs::SmallString{forceTag}] __device__(int blockno, int cellno) mutable {
                 for (int ch = 0; ch < 3; ++ch) {
                     float acc = (spgv.value(forceTag, ch, blockno, cellno) + gravity[ch]) * dt;
