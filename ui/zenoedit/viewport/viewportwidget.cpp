@@ -55,13 +55,27 @@ void CameraControl::setDisPlane(float disPlane){
 
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (scene->camera->m_need_sync) {
+        m_center = {
+            scene->camera->m_zxx_in.cx,
+            scene->camera->m_zxx_in.cy,
+            scene->camera->m_zxx_in.cz
+        };
+        m_theta = scene->camera->m_zxx_in.theta;
+        m_phi = scene->camera->m_zxx_in.phi;
+        m_radius = scene->camera->m_zxx_in.radius;
+        m_fov = scene->camera->m_fov;
+        m_aperture = scene->camera->m_aperture;
+        m_focalPlaneDistance = scene->camera->focalPlaneDistance;
+        scene->camera->m_need_sync = false;
+    }
     if (event->buttons() & Qt::MiddleButton) {
         m_lastPos = event->pos();
     }
     else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto front = scene->camera->m_lodfront;
         auto dir = screenToWorldRay(event->x() / res().x(),
                                     event->y() / res().y());
