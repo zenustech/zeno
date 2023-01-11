@@ -47,6 +47,7 @@ public:
     static QString getControlDesc(PARAM_CONTROL ctrl);
     static PARAM_CONTROL getControlByDesc(const QString& descName);
     static QStringList getCoreTypeList();
+    static PARAM_CONTROL getControlType(const QString& type, const QString& sockName);
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);

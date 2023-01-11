@@ -12,6 +12,7 @@ public:
     bool setLegacyDescs(const rapidjson::Value &graphObj, const NODE_DESCS &legacyDescs) override;
     void BeginSubgraph(const QString &name) override;
     void EndSubgraph() override;
+    void EndGraphs() override;
     bool setCurrentSubGraph(IGraphsModel *pModel, const QModelIndex &subgIdx) override;
     void setFilePath(const QString &fileName) override;
     void switchSubGraph(const QString &graphName) override;

@@ -1127,8 +1127,8 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         {
             auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
             viewport->changeTransformOperation(nodeId());
+        }
     }
-}
 }
 
 void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -1195,6 +1195,11 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         m_bMoving = true;
         m_lastMovig = value.toPointF();
+        emit inSocketPosChanged();
+        emit outSocketPosChanged();
+    }
+    else if (change == ItemScenePositionHasChanged)
+    {
         emit inSocketPosChanged();
         emit outSocketPosChanged();
     }

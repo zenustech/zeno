@@ -164,15 +164,17 @@ struct QueryNearestPrimitive : zeno::INode {
       auto idTag = get_input2<std::string>("idTag");
       auto distTag = get_input2<std::string>("distTag");
       auto weightTag = get_input2<std::string>("weightTag");
+      auto closestPointTag = get_input2<std::string>("closestPointTag");
 
       auto &bvhids = prim->add_attr<float>(idTag);
       auto &dists = prim->add_attr<float>(distTag);
       auto &ws = prim->add_attr<zeno::vec3f>(weightTag);
+      auto &closestPoints = prim->add_attr<zeno::vec3f>(closestPointTag);
 
       std::vector<KVPair> kvs(prim->size());
       std::vector<Ti> ids(prim->size(), -1);
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided, 4)
 #endif
       for (Ti i = 0; i < prim->size(); ++i) {
         kvs[i].dist = std::numeric_limits<float>::max();
@@ -182,6 +184,7 @@ struct QueryNearestPrimitive : zeno::INode {
         bvhids[i] = ids[i];
         dists[i] = kvs[i].dist;
         ws[i] = kvs[i].w;
+        closestPoints[i] = lbvh->retrievePrimitiveCenter(ids[i], kvs[i].w);
       }
 
       KVPair mi{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits<float>::max(), -1};
@@ -232,6 +235,7 @@ ZENDEFNODE(QueryNearestPrimitive, {
                                       {{"prim"}, {"LBvh", "lbvh"},
                                       {"string", "idTag", "bvh_id"},
                                       {"string", "distTag", "bvh_dist"},
+                                      {"string", "closestPointTag", "cp"},
                                       {"string", "weightTag", "bvh_ws"}
                                       },
                                       {{"NumericObject", "primid"},
@@ -249,6 +253,17 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
     auto primNei = get_input<zeno::PrimitiveObject>("primNei");
     auto lbvh = get_input<zeno::LBvh>("lbvh");
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
+
+        // BEGIN张心欣快乐自动加@IND
+        if (auto pos = code.find("@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalnum(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalnum(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+            auto &indatt = prim->verts.add_attr<float>("IND");
+            for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
+        }
+        if (auto pos = code.find("@@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalnum(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalnum(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+            auto &indatt = primNei->verts.add_attr<float>("IND");
+            for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
+        }
+        // END张心欣快乐自动加@IND
 
     zfx::Options opts(zfx::Options::for_x64);
     opts.detect_new_symbols = true;

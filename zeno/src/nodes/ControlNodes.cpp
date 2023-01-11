@@ -110,17 +110,18 @@ ZENDEFNODE(EndFor, {
 
 
 struct BreakFor : zeno::INode {
-    virtual void preApply() override {
+    virtual void apply() override {
         auto [sn, ss] = safe_at(inputBounds, "FOR", "input socket of BreakFor");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
-        if (!has_input("breaks") || get_input2<bool>("breaks"))
-            fore->breakThisFor();  // will still keep going the rest of loop body?
+        if (!has_input("breaks") || get_input2<bool>("breaks")) {
+            fore->breakThisFor();  // will still keep going the rest of loop body? yes
+        }
     }
 
-    virtual void apply() override {}
+    //virtual void apply() override {}
 };
 
 ZENDEFNODE(BreakFor, {

@@ -7,6 +7,7 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 #include "iotags.h"
+#include "dictkeymodel.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel, QObject* parent)
@@ -96,7 +97,12 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
         inSocket.info.control = param->m_ctrl;
         inSocket.info.ctrlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
 
-        //todo: dict key model as children of this item?
+        if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
+        {
+            DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(param->m_customData[ROLE_VPARAM_LINK_MODEL]);
+            ZASSERT_EXIT(pModel, false);
+            exportDictkeys(pModel, inSocket.info.dictpanel);
+        }
         inputs.insert(name, inSocket);
     }
     return true;
@@ -726,6 +732,38 @@ void NodeParamModel::initDictSocket(VParamItem* pItem)
     {
         DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
         pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
+    }
+}
+
+void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
+{
+    if (!pModel)
+        return;
+
+    panel.bCollasped = pModel->isCollasped();
+
+    int rowCnt = pModel->rowCount();
+    QStringList keyNames;
+    for (int i = 0; i < rowCnt; i++)
+    {
+        const QModelIndex &keyIdx = pModel->index(i, 0);
+        QString key = keyIdx.data().toString();
+
+        DICTKEY_INFO keyInfo;
+        keyInfo.key = key;
+
+        QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
+        if (linkIdx.isValid())
+        {
+            QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+            QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+            ZASSERT_EXIT(insock.isValid() && outsock.isValid());
+
+            EdgeInfo link = exportLink(linkIdx);
+            keyInfo.link = link;
+        }
+        panel.keys.append(keyInfo);
+        keyNames.push_back(key);
     }
 }
 

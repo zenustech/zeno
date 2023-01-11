@@ -59,13 +59,11 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
             pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
         };
         m_text = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
-        //addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
     else
     {
         m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-        //addItem(m_text, m_bInput ? Qt::AlignVCenter : Qt::AlignRight | Qt::AlignVCenter);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
 
@@ -81,7 +79,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         addItem(m_socket, Qt::AlignVCenter);
     }
 
-    setSpacing(ZenoStyle::dpiScaled(5));
+    setSpacing(ZenoStyle::dpiScaled(8));
 }
 
 void ZSocketLayout::setControl(QGraphicsItem* pControl)
@@ -191,17 +189,14 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock, pModel);
 
     ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
-    ZGraphicsLayout *pHPanelLayout = new ZGraphicsLayout(true);
     pHLayout->setDebugName("dict socket");
+    pHLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
     if (bInput)
     {
-        pHLayout->addItem(m_socket);
-        pHLayout->addItem(m_text);
-        pHLayout->addItem(m_collaspeBtn);
-
-        pHPanelLayout->addItem(m_panel);
-        pHPanelLayout->addSpacing(ZenoStyle::dpiScaled(64), QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred));
+        pHLayout->addItem(m_socket, Qt::AlignVCenter);
+        pHLayout->addItem(m_text, Qt::AlignVCenter);
+        pHLayout->addItem(m_collaspeBtn, Qt::AlignVCenter);
     }
     else
     {
@@ -209,15 +204,12 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
         pHLayout->addItem(m_collaspeBtn);
         pHLayout->addItem(m_text);
         pHLayout->addItem(m_socket);
-
-        pHPanelLayout->addSpacing(ZenoStyle::dpiScaled(64), QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred));
-        pHPanelLayout->addItem(m_panel);
     }
 
     addLayout(pHLayout);
-    addLayout(pHPanelLayout);
+    addItem(m_panel);
 
-    setSpacing(ZenoStyle::dpiScaled(0));
+    setSpacing(ZenoStyle::dpiScaled(5));
 
     QAbstractItemModel *dictkeyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
     ZASSERT_EXIT(dictkeyModel);

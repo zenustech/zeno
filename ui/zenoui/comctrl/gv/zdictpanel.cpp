@@ -78,6 +78,7 @@ public:
         const QString& key = m_sockKeyIdx.data().toString();
         m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbEditFinished, nullptr, CALLBACK_SWITCH(), QVariant());
         m_editText->setEnabled(bDict);
+        m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
         if (bInput)
         {
@@ -137,7 +138,8 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
 {
     int radius = ZenoStyle::dpiScaled(0);
     setRadius(radius, radius, radius, radius);
-    setColors(false, QColor(50, 50, 50), QColor(50, 50, 50), QColor(50, 50, 50));
+    QColor clr(26, 29, 34);
+    setColors(false, clr, clr, clr);
     setBorder(0, QColor());
 
     ZGraphicsLayout* pVLayout = new ZGraphicsLayout(false);
@@ -158,8 +160,8 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
         pVLayout->addLayout(pkey);
     }
 
-    QString btnName = m_bDict ? "+ Add Dict Key" : "+ Add List Item";
-    m_pEditBtn = new ZenoParamPushButton(btnName, "blueStyle");
+    QString btnName = m_bDict ? "+ Add Key" : "+ Add Item";
+    m_pEditBtn = new ZenoParamPushButton(btnName, "dictkeypanel");
     pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
 
     connect(m_pEditBtn, SIGNAL(clicked()), this, SLOT(onEditBtnClicked()));

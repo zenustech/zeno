@@ -89,6 +89,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
+    pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
     if (doc.HasMember("views"))
@@ -445,7 +446,7 @@ void ZsgReader::_parseDictPanel(
             pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
             if (bInput)
             {
-                QString sockGrp = inSock + ":" + keyName;
+                QString sockGrp = inSock + "/" + keyName;   //dict key io specific.
                 pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, "editable", rapidjson::Value());
             }
         }

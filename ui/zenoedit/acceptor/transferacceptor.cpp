@@ -33,6 +33,10 @@ void TransferAcceptor::EndSubgraph()
     m_currSubgraph = "";
 }
 
+void TransferAcceptor::EndGraphs()
+{
+}
+
 bool TransferAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx)
 {
     return true;

@@ -252,6 +252,17 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
+        <widget class="QPushButton" name="btnSimpleRender">
+         <property name="text">
+          <string>SR</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+ 
         <widget class="ZToolButton" name="btnAlways" native="true">
          <property name="minimumSize">
           <size>

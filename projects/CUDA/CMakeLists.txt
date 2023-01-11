@@ -11,7 +11,6 @@ if(ZENO_SYSTEM_OPENVDB)
 endif()
 
 # assume cuda
-SET(CMAKE_CUDA_ARCHITECTURES OFF)
 project(ZENO_CUDA CXX CUDA)
 set(ZS_ENABLE_CUDA ON)
 set(ZS_ENABLE_OPENVDB ON)
@@ -28,8 +27,12 @@ target_include_directories(zshelper INTERFACE
 )
 target_link_libraries(zshelper INTERFACE zensim ZFX)
 target_compile_features(zshelper INTERFACE cuda_std_17)
-target_link_options(zshelper
-  INTERFACE $<$<LINK_LANGUAGE:CUDA>:-dlto>
+target_compile_options(zpc_cuda_deps
+  INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-arch=sm_${ZS_CUDA_ARCH}>
+)
+
+target_link_options(zeno
+  PRIVATE $<DEVICE_LINK:-dlto>
 )
 target_link_libraries(zeno PRIVATE zshelper)
 
@@ -39,10 +42,10 @@ target_sources(zeno PRIVATE
 )
 #]=]
 set_target_properties(zeno
-  PROPERTIES # CUDA_EXTENSIONS ON
+  PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_ARCHITECTURES OFF
+  CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
 )
 
 # wrangler

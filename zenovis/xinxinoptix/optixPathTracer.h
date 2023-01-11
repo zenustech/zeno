@@ -63,6 +63,7 @@ struct Params
 
     float sunSoftness;
     float elapsedTime;
+    bool simpleRender;
 };
 
 
@@ -85,6 +86,8 @@ struct HitGroupData
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
+    int* meshIdxs;
+    float* meshMats;
     float4* uniforms;
     cudaTextureObject_t textures[32];
 

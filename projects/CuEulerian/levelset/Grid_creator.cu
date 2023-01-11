@@ -100,8 +100,12 @@ struct ZSSparseGridToVDB : INode {
         auto &spg = zs_grid->spg;
 
         auto attrTag = src_tag(zs_grid, attr);
+        auto num_ch = spg.getPropertySize(attrTag);
+        if (VDBGridClass == "STAGGERED" && num_ch != 3) {
+            throw std::runtime_error("The size of Attribute is not 3!");
+        }
 
-        if (attr == "v") {
+        if (num_ch == 3) {
             auto vdb_ = zs::convert_sparse_grid_to_float3grid(spg, attrTag);
             auto vdb_grid = std::make_shared<VDBFloat3Grid>();
             vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
@@ -115,8 +119,6 @@ struct ZSSparseGridToVDB : INode {
                 gridClass = 1;
             else if (VDBGridClass == "FOG_VOLUME")
                 gridClass = 2;
-            else if (VDBGridClass == "STAGGERED")
-                gridClass = 3;
 
             auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg, attrTag, gridClass);
 

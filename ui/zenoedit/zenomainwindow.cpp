@@ -19,6 +19,8 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/core/Session.h>
+#include <zenovis/DrawOptions.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
@@ -28,6 +30,7 @@
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
+#include "viewport/recordvideomgr.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
 
@@ -61,6 +64,7 @@ void ZenoMainWindow::init()
     m_ui->setupUi(this);
 
     initMenu();
+    initLive();
     initDocks();
 
     QPalette pal = palette();
@@ -69,6 +73,10 @@ void ZenoMainWindow::init()
     setPalette(pal);
 
     m_ui->statusbar->showMessage(tr("Status Bar"));
+}
+
+void ZenoMainWindow::initLive() {
+
 }
 
 void ZenoMainWindow::initMenu()
@@ -512,6 +520,63 @@ void ZenoMainWindow::onMaximumTriggered()
             pDock->close();
         }
     }
+}
+
+
+void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+#if 0
+    ZASSERT_EXIT(m_viewDock);
+    DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
+    ZASSERT_EXIT(viewWidget);
+    ViewportWidget* pViewport = viewWidget->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    //hide other component
+    if (m_editor) m_editor->hide();
+    if (m_logger) m_logger->hide();
+    if (m_parameter) m_parameter->hide();
+
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = 1;
+    recInfo.numSamples = param.iSample;
+    recInfo.audioPath = param.audioPath;
+    recInfo.record_path = param.sPath;
+    recInfo.bRecordRun = true;
+    recInfo.videoname = "output.mp4";
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = {(float)pixw, (float)pixh};
+
+        pViewport->setFixedSize(pixw, pixh);
+        pViewport->setCameraRes(QVector2D(pixw, pixh));
+        pViewport->updatePerspective();
+    } else {
+        recInfo.res = {(float)1000, (float)680};
+        pViewport->setMinimumSize(1000, 680);
+    }
+
+    auto sess = Zenovis::GetInstance().getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->drawOptions->num_samples = param.bRecord ? param.iSample : 16;
+        }
+    }
+
+    bool ret = openFile(param.sZsgPath);
+    ZASSERT_EXIT(ret);
+    viewWidget->runAndRecord(recInfo);
+#endif
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)

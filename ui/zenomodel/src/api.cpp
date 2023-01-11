@@ -3,6 +3,7 @@
 #include "modelrole.h"
 #include "nodesmgr.h"
 #include "apiutil.h"
+#include "zeno/utils/log.h"
 #include "variantptr.h"
 #include "nodeparammodel.h"
 #include "uihelper.h"
@@ -168,21 +169,37 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
         return Err_ModelNull;
 
     QModelIndex outIdx = pModel->nodeIndex(hOutnode);
-    if (!outIdx.isValid())
+    if (!outIdx.isValid()) {
+        zeno::log_error("miss hOutnode: {}", hOutnode);
         return Err_NodeNotExist;
+    }
+    OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    const QString qsOutSock = QString::fromStdString(outSock);
+    if (!outputs.contains(qsOutSock)) {
+        zeno::log_error("miss outSock: {}", outSock);
+        return Err_SockNotExist;
+    }
 
     QModelIndex inIdx = pModel->nodeIndex(hInnode);
-    if (!inIdx.isValid())
+    if (!inIdx.isValid()) {
+        zeno::log_error("miss hInnode: {}", hInnode);
         return Err_NodeNotExist;
+    }
+    INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    const QString qsInSock = QString::fromStdString(inSock);
+    if (!inputs.contains(qsInSock)) {
+        zeno::log_error("miss inSock: {}", inSock);
+        return Err_SockNotExist;
+    }
 
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    NodeParamModel* inputs = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
-    QModelIndex inSockIdx = inputs->getParam(PARAM_INPUT, QString::fromStdString(inSock));
+    NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, QString::fromStdString(inSock));
 
-    NodeParamModel* outputs = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
-    QModelIndex outSockIdx = outputs->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
+    NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
 
     pModel->addLink(outSockIdx, inSockIdx);
     return Err_NoError;
