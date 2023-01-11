@@ -3,6 +3,8 @@
 
 #include "viewparammodel.h"
 
+class DictKeyModel;
+
 class NodeParamModel : public ViewParamModel
 {
     Q_OBJECT
@@ -57,6 +59,7 @@ private:
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void initDictSocket(VParamItem* pItem);
+    void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
 
     IGraphsModel* m_pGraphsModel;
     const QPersistentModelIndex m_subgIdx;

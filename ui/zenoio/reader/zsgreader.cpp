@@ -417,7 +417,7 @@ void ZsgReader::_parseDictPanel(
             pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
             if (bInput)
             {
-                QString sockGrp = inSock + ":" + keyName;
+                QString sockGrp = inSock + "/" + keyName;   //dict key io specific.
                 pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, "editable", rapidjson::Value());
             }
         }

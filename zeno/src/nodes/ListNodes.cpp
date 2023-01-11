@@ -199,6 +199,21 @@ ZENDEFNODE(MakeList, {
     });
 
 
+struct MockList : zeno::INode {
+    virtual void apply() override {
+        auto lst = get_input2<zeno::ListObject>("list");
+        set_output("list", std::move(lst));
+    }
+};
+
+ZENDEFNODE(MockList, {
+    {"list"},
+    {"list"},
+    {},
+    {"list2"},
+    });
+
+
 struct NumericRangeList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();

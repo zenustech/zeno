@@ -150,7 +150,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                         {
                             const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
                             const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                            // todo: may be outSock is a inner key idx.
                             const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
 
                             QString newOutId, outSock;

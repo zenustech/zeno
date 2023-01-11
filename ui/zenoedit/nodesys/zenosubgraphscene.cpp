@@ -733,14 +733,14 @@ void ZenoSubGraphScene::onTempLinkClosed()
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphsModel);
 
-        bool bTargetInput = targetSock->isInputSocket();
+        bool bTargetIsInput = targetSock->isInputSocket();
 
         QString fixedNodeId;
         bool fixedInput = false;
         QPointF fixedPos;
         m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput);
 
-        if (bTargetInput != fixedInput)
+        if (bTargetIsInput != fixedInput)
         {
             QPersistentModelIndex fromSockIdx, toSockIdx;
             if (fixedInput) {
@@ -772,16 +772,29 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             //dict panel.
             SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
-            QString inSockType = toSockIdx.data(ROLE_PARAM_TYPE).toString();
-            if (bTargetInput && (inProp & SOCKPROP_DICTLIST_PANEL))
+            if (bTargetIsInput && (inProp & SOCKPROP_DICTLIST_PANEL))
             {
+                QString inSockType = toSockIdx.data(ROLE_PARAM_TYPE).toString();
                 SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)fromSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
                 QString outSockType = fromSockIdx.data(ROLE_PARAM_TYPE).toString();
                 QAbstractItemModel *pKeyObjModel =
                     QVariantPtr<QAbstractItemModel>::asPtr(toSockIdx.data(ROLE_VPARAM_LINK_MODEL));
 
-                //check if outSock is a dict
-                if (inSockType == outSockType)
+                bool outSockIsContainer = false;
+                if (inSockType == "list")
+                {
+                    outSockIsContainer = outSockType == "list";
+                }
+                else if (inSockType == "dict")
+                {
+                    const QModelIndex& fromNodeIdx = fromSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                    const QString& outNodeCls = fromNodeIdx.data(ROLE_OBJNAME).toString();
+                    const QString& outSockName = fromSockIdx.data(ROLE_PARAM_NAME).toString();
+                    outSockIsContainer = outSockType == "dict" || (outNodeCls == "FuncBegin" && outSockName == "args");
+                }
+
+                //if outSock is a container, connects it as usual.
+                if (outSockIsContainer)
                 {
                     //legacy dict/list connection, and then we have to remove all inner dict key connection.
                     ZASSERT_EXIT(pKeyObjModel);
@@ -803,7 +816,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             }
 
             //remove the edge in inNode:inSock, if exists.
-            if (bTargetInput && inProp != SOCKPROP_MULTILINK)
+            if (bTargetIsInput && inProp != SOCKPROP_MULTILINK)
             {
                 QPersistentModelIndex linkIdx;
                 const QModelIndex& paramIdx = targetSock->paramIndex();
