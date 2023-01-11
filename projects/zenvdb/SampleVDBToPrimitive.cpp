@@ -177,7 +177,7 @@ struct PrimSample3D : zeno::INode {
         auto remapMax = get_input2<float>("remapMax");
 
         primSampleVDB(prim, srcChannel, dstChannel, grid, remapMin, remapMax);
-        set_output("prim", std::move(prim));
+        set_output("outPrim", std::move(prim));
     }
 };
 ZENDEFNODE(PrimSample3D, {

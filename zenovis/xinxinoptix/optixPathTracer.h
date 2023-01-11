@@ -48,6 +48,9 @@ struct Params
     int usingHdrSky;
     cudaTextureObject_t sky_texture;
     float sky_rot;
+    float sky_rot_x;
+    float sky_rot_y;
+    float sky_rot_z;
     float sky_strength;
 
     float sunLightDirX;

@@ -427,11 +427,12 @@ struct GraphicsManager {
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
             }
         }
