@@ -42,6 +42,7 @@ class Picker {
     }
     void pick(int x, int y);
     void pick(int x0, int y0, int x1, int y1);
+    void add(const string& prim_name);
     string just_pick_prim(int x, int y);
     const unordered_set<string>& get_picked_prims();
     const unordered_map<string, unordered_set<int>>& get_picked_elems();

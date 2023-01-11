@@ -131,6 +131,10 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
     }
 }
 
+void Picker::add(const string& prim_name) {
+    selected_prims.insert(prim_name);
+}
+
 string Picker::just_pick_prim(int x, int y) {
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     auto store_mode = scene->select_mode;
