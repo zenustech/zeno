@@ -64,6 +64,18 @@ QWidget* ZTabDockWidget::widget(int i) const
     return m_tabWidget->widget(i);
 }
 
+DisplayWidget* ZTabDockWidget::getUniqueViewport() const
+{
+    if (1 == count())
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        return qobject_cast<DisplayWidget*>(wid);
+    }
+    else {
+        return nullptr;
+    }
+}
+
 QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
 {
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
@@ -355,6 +367,9 @@ void ZTabDockWidget::onAddTabClicked()
 
 void ZTabDockWidget::onAddTab(PANEL_TYPE type)
 {
+    if (getUniqueViewport())
+        return;     //because of the unsteadiness of create/delete viewport widget, we only allow to use the default one.
+
     QWidget *wid = createTabWidget(type);
     if (wid) {
         QString name = type2TabName(type);

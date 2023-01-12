@@ -24,7 +24,6 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
 
 SubGraphModel::~SubGraphModel()
 {
-    clear();
 }
 
 SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
@@ -65,12 +64,6 @@ void SubGraphModel::clear()
     m_row2Key.clear();
     const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
     emit m_pGraphsModel->clearLayout(subgIdx);
-}
-
-void SubGraphModel::reload()
-{
-    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
-    emit m_pGraphsModel->reloaded(subgIdx);
 }
 
 NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const

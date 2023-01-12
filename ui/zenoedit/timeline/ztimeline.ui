@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>639</width>
-    <height>61</height>
+    <height>64</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -125,7 +125,7 @@
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true"></string>
+        <string notr="true"/>
        </property>
        <property name="editable">
         <bool>false</bool>
@@ -253,6 +253,24 @@
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <widget class="QPushButton" name="btnSimpleRender">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>64</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>64</width>
+           <height>16777215</height>
+          </size>
+         </property>
          <property name="text">
           <string>SR</string>
          </property>
@@ -262,7 +280,6 @@
         </widget>
        </item>
        <item>
- 
         <widget class="ZToolButton" name="btnAlways" native="true">
          <property name="minimumSize">
           <size>
