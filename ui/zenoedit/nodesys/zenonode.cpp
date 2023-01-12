@@ -745,10 +745,15 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     int sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
     ZSocketLayout* pMiniLayout = nullptr;
-    if (sockProp & SOCKPROP_DICTLIST_PANEL)
+    if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
-    else
+    }
+    else {
         pMiniLayout = new ZSocketLayout(pModel, viewSockIdx, bInput);
+        qreal margin = ZenoStyle::dpiScaled(16);
+        if (bInput)
+            pMiniLayout->setContentsMargin(0, 0, 0, margin);
+    }
     pMiniLayout->initUI(pModel, cbSocket);
     pMiniLayout->setDebugName(sockName);
 
@@ -772,6 +777,8 @@ ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphSce
 {
     ZGraphicsLayout* paramsLayout = new ZGraphicsLayout(false);
     paramsLayout->setSpacing(5);
+    qreal margin = ZenoStyle::dpiScaled(16);
+    paramsLayout->setContentsMargin(0, margin, 0, margin);
 
     for (int r = 0; r < paramItems->rowCount(); r++)
     {

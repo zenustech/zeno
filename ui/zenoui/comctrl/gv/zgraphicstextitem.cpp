@@ -443,7 +443,7 @@ ZSocketEditableItem::ZSocketEditableItem(
 
     QTextFrame* frame = document()->rootFrame();
     QTextFrameFormat format = frame->frameFormat();
-    format.setBackground(QColor(37, 37, 37));
+    format.setBackground(QColor(25, 29, 33));
     frame->setFrameFormat(format);
 
     setFlag(ItemSendsGeometryChanges);
@@ -459,7 +459,7 @@ void ZSocketEditableItem::updateSockName(const QString& name)
     //have to reset the text format, which is trivial.
     QTextFrame* frame = document()->rootFrame();
     QTextFrameFormat format = frame->frameFormat();
-    format.setBackground(QColor(37, 37, 37));
+    format.setBackground(QColor(25, 29, 33));
     frame->setFrameFormat(format);
 }
 

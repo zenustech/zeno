@@ -91,7 +91,7 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
     if (param.propertyParam.isEmpty())
-        param.propertyParam = "proppanel";
+        param.propertyParam = "zeno2_2_lineedit";
     m_pLineEdit->setProperty("cssClass", param.propertyParam);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
@@ -592,7 +592,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
 
     QPalette pal;
-    pal.setColor(QPalette::Base, QColor(37, 37, 37));
+    pal.setColor(QPalette::Base, QColor(25, 29, 33));
     m_pTextEdit->setPalette(pal);
 }
 
@@ -604,20 +604,20 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit = new QTextEdit;
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    //m_pTextEdit->setProperty("cssClass", "proppanel");
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
     m_pTextEdit->setFont(param.font);
     m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
 
-	QTextCharFormat format;
+	//QTextCharFormat format;
     QFont font("HarmonyOS Sans", 12);
-	format.setFont(font);
     m_pTextEdit->setCurrentFont(font);
-    m_pTextEdit->setText(value);
+    m_pTextEdit->setFont(font);
 
-    QPalette pal = param.palette;
-    pal.setColor(QPalette::Base, QColor(37, 37, 37));
-    m_pTextEdit->setPalette(pal);
+    //QPalette pal = param.palette;
+    //pal.setColor(QPalette::Base, QColor(25, 29, 33));
+    //m_pTextEdit->setPalette(pal);
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)
