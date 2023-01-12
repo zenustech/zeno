@@ -230,6 +230,38 @@ ZENDEFNODE(ZSGridVoxelSize, {/* inputs: */
                              /* category: */
                              {"Eulerian"}});
 
+struct ZSGridAppendAttribute : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto nchns = get_input2<int>("ChannelNumber");
+
+        auto &spg = zs_grid->spg;
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if (!spg.hasProperty(attrTag)) {
+            spg.append_channels(pol, {{attrTag, nchns}});
+        } else {
+            int m_nchns = spg.getPropertySize(attrTag);
+            if (m_nchns != nchns)
+                throw std::runtime_error(
+                    fmt::format("the SparseGrid already has [{}] with [{}] channels!", attrTag, m_nchns));
+        }
+
+        set_output("SparseGrid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
+                                   {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                   /* outputs: */
+                                   {"SparseGrid"},
+                                   /* params: */
+                                   {},
+                                   /* category: */
+                                   {"Eulerian"}});
+
 struct ZSMakeDenseSDF : INode {
     void apply() override {
         float dx = get_input2<float>("dx");
