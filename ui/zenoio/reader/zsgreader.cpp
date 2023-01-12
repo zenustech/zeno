@@ -372,7 +372,7 @@ void ZsgReader::_parseSocket(
 
     QString link;
     if (sockObj.HasMember("link") && sockObj["link"].IsString())
-        link = QString::fromLocal8Bit(sockObj["link"].GetString());
+        link = QString::fromUtf8(sockObj["link"].GetString());
     if (sockObj.HasMember("default-value"))
     {
         pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);

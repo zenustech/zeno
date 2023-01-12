@@ -20,6 +20,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_searchEdit = new ZenoGvLineEdit;
     m_searchEdit->setAutoFillBackground(false);
     m_searchEdit->setTextMargins(QMargins(8, 0, 0, 0));
+    m_searchEdit->installEventFilter(this);
 
     QPalette palette;
     palette.setColor(QPalette::Base, QColor(37, 37, 37));
@@ -62,6 +63,10 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
             pMenu->hide();
             return true;
         }
+    }
+    if (watched == m_searchEdit && event->type() == QEvent::Show) 
+	{
+        m_searchEdit->activateWindow();
     }
     return QMenu::eventFilter(watched, event);
 }
