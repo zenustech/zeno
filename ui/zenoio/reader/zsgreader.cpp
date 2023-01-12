@@ -724,7 +724,6 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
 bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor) 
 {
     QObject *currGraph = pAcceptor->currGraphObj();
-    ZASSERT_EXIT(currGraph, true);
     if (jsonParams.IsObject()) {
         PARAMS_INFO params;
         for (const auto &paramObj : jsonParams.GetObject()) {
@@ -738,8 +737,7 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
                 paramData.typeDesc = value["typeDesc"].GetString();
             QVariant var;
             if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-                var = UiHelper::parseJsonByValue(paramData.typeDesc, value["value"],
-                                                 nullptr); //dynamic type on SubInput defl.
+                var = UiHelper::parseJsonByValue(paramData.typeDesc, value["value"],nullptr); //dynamic type on SubInput defl.
             else
                 var = UiHelper::parseJsonByType(paramData.typeDesc, value["value"], currGraph);
 
