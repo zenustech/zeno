@@ -122,20 +122,20 @@ extern "C" __global__ void __raygen__rg()
                     prd.maxDistance,  // tmax
                     &prd );
 
-            vec3 radiance = vec3(prd.radiance);
-            vec3 oldradiance = radiance;
-            RadiancePRD shadow_prd;
-            shadow_prd.depth = prd.depth;
-            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
-            traceOcclusion(params.handle, prd.LP, prd.Ldir,
-                           1e-5f, // tmin
-                           1e16f, // tmax,
-                           &shadow_prd);
-            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
-            radiance = radiance + vec3(prd.emission);
+//            vec3 radiance = vec3(prd.radiance);
+//            vec3 oldradiance = radiance;
+//            RadiancePRD shadow_prd;
+//            shadow_prd.depth = prd.depth;
+//            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
+//            traceOcclusion(params.handle, prd.LP, prd.Ldir,
+//                           1e-5f, // tmin
+//                           1e16f, // tmax,
+//                           &shadow_prd);
+//            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
+//            radiance = radiance + vec3(prd.emission);
 
-            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
+//            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
             //result += prd.emitted;
             if(prd.countEmitted==false || prd.depth>0)
