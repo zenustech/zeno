@@ -24,6 +24,7 @@ private:
     void _dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer);
     void _dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer);
     void dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer);
+    void dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer);
 };
 
 #endif

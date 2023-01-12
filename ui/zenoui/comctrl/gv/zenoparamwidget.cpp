@@ -698,8 +698,108 @@ bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
     return ZenoParamWidget::eventFilter(object, event);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSlider::ZenoParamSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) {
+    m_pSlider = new QSlider(orientation);
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    QObject::connect(m_pSlider, &QSlider::valueChanged, this, &ZenoParamSlider::valueChanged);
+
+    QObject::connect(m_pSlider, &QSlider::sliderPressed, [=]() {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(m_pSlider->value()), nullptr);
+    });
+
+    QObject::connect(m_pSlider, &QSlider::sliderMoved, [=](int value) {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(value), nullptr);
+    });
+}
+
+void ZenoParamSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet(R"(
+					QSlider {
+					    background: rgb(31,39,42);
+						margin-top : 8px;
+					}
+                    QSlider::groove:horizontal {
+                        height: 4px;
+                        background: #707D9C;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #DFE2E5;
+                        width: 6px;
+                        margin: -8px 0;
+                    }
+                    QSlider::add-page:horizontal {
+                        background: #191D21;
+                    }
+                    
+                    QSlider::sub-page:horizontal {
+                        background: #707D9C;
+                    }
+    )"));
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBoxSlider::ZenoParamSpinBoxSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) 
+{
+    m_pSlider = new ZSpinBoxSlider();
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    m_pSlider->setAttribute(Qt::WA_StyledBackground, false);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    connect(m_pSlider, &ZSpinBoxSlider::valueChanged, this, &ZenoParamSpinBoxSlider::valueChanged);
+}
+
+void ZenoParamSpinBoxSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSpinBoxSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSpinBoxSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet("background:rgb(31,39,42);");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(parent) 
+{
+    m_pSpinBox = new QSpinBox;
+    m_pSpinBox->setProperty("cssClass", "control");
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
+}
+
+void ZenoParamSpinBox::setValue(int value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+    //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)

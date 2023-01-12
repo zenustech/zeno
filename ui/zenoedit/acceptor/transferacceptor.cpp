@@ -286,8 +286,24 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
-void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value)
+void TransferAcceptor::setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties) 
 {
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA &data = m_nodes[inNode];
+
+    //standard inputs desc by latest descriptors.
+    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    if (inputs.find(inSock) != inputs.end()) {
+        if (!control.isEmpty())
+            inputs[inSock].info.control = UiHelper::getControlByDesc(control);
+        if (ctrlProperties.isValid()) {
+            inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
+        }
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
+}
+
+void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];
 
@@ -345,6 +361,17 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
         _params[name].value = var;
         data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(_params);
         zeno::log_warn("not found param name {}", name.toStdString());
+    }
+}
+
+void TransferAcceptor::setParamValue2(const QString &id, const PARAMS_INFO &params) 
+{
+    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+    NODE_DATA &data = m_nodes[id];
+
+	if (!params.isEmpty()) 
+	{
+        data[ROLE_PARAMETERS] = QVariant::fromValue(params);
     }
 }
 

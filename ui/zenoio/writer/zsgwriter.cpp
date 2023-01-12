@@ -288,7 +288,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         for (const PARAM_INFO& info : params)
         {
             writer.Key(info.name.toUtf8());
-            AddVariant(info.value, info.typeDesc, writer, true);
+            dumpParams(info, writer);
         }
     }
     writer.Key("outputs");
@@ -426,6 +426,60 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
         writer.Key(timeline::always);
         writer.Bool(info.bAlways);
     }
+}
+
+void ZsgWriter::dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer) 
+{
+    writer.StartObject();
+    writer.Key("default-value");
+    QVariant deflVal = info.defaultValue;
+    const QString &sockType = info.typeDesc;
+    bool bValid = UiHelper::validateVariant(deflVal, sockType);
+    if (!bValid)
+        deflVal = QVariant();
+    AddVariant(deflVal, sockType, writer, true);
+
+	writer.Key("value");
+    QVariant value = info.value;
+    bValid = UiHelper::validateVariant(value, sockType);
+    if (!bValid)
+        value = QVariant();
+    AddVariant(value, sockType, writer, true);
+
+    writer.Key("control");
+    QString controlDesc = UiHelper::getControlDesc(info.control);
+    writer.String(controlDesc.toUtf8());
+
+	writer.Key("typeDesc");
+    writer.String(info.typeDesc.toUtf8());
+
+	QVariantMap map = info.controlProps.toMap();
+	if (info.control == CONTROL_ENUM) {
+        writer.Key("control-items");
+        writer.StartArray();
+        if (map.find("items") != map.end()) {
+            QStringList items = map["items"].toStringList();
+            for (QString item : items) {
+                writer.String(item.toUtf8());
+            }
+        }
+        writer.EndArray();
+    }
+    if (info.control == CONTROL_SPINBOX_SLIDER || info.control == CONTROL_HSPINBOX ||
+        info.control == CONTROL_HSLIDER) {
+        writer.Key("control-slider");
+        JsonObjBatch _scope(writer);
+
+        writer.Key("step");
+        writer.Int(map["step"].toInt());
+
+        writer.Key("min");
+        writer.Int(map["min"].toInt());
+
+        writer.Key("max");
+        writer.Int(map["max"].toInt());
+    }
+    writer.EndObject();
 }
 
 void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer)

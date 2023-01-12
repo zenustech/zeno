@@ -565,6 +565,22 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
             //...
         }
+		else if (role == ROLE_VPARAM_CTRL_PROPERTIES)
+		{
+            const QString &paramName = param->data(ROLE_VPARAM_NAME).toString();
+            const QVariant &value = param->data(ROLE_VPARAM_CTRL_PROPERTIES);
+            _PANEL_CONTROL &ctrl = m_controls[tabName][groupName][paramName];
+            BlockSignalScope scope(ctrl.pControl);
+
+            if (QComboBox *pCombobox = qobject_cast<QComboBox *>(ctrl.pControl)) 
+			{
+                if (value.type() == QMetaType::QVariantMap && value.toMap().contains("items"))
+				{
+                    pCombobox->clear();
+                    pCombobox->addItems(value.toMap()["items"].toStringList());
+				}
+            }
+		}
     }
 }
 

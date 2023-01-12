@@ -519,6 +519,7 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             {
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.type = newType;
+                desc.inputs[sockName].info.control = newCtrl;
             }
             else
             {

@@ -95,6 +95,7 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
         inSocket.info.sockProp = param->m_sockProp;
         inSocket.info.links = exportLinks(param->m_links);
         inSocket.info.control = param->m_ctrl;
+        inSocket.info.ctrlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -139,6 +140,8 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.value = param->m_value;
         paramInfo.typeDesc = param->m_type;
         paramInfo.name = name;
+        paramInfo.control = param->m_ctrl;
+        paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
         params.insert(name, paramInfo);
     }
     return true;
@@ -198,20 +201,9 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
 
         // init control
         const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        CONTROL_INFO infos =
-            GlobalControlMgr::instance().controlInfo(nodeCls, PARAM_PARAM, pItem->m_name, pItem->m_type);
 
-        QVariant ctrlProps;
-        if (inSocket.info.control != CONTROL_NONE)
-            pItem->m_ctrl = inSocket.info.control;
-        else
-            pItem->m_ctrl = infos.control;
-
-        if (inSocket.info.ctrlProps == QVariant())
-            ctrlProps = infos.controlProps;
-        else
-            ctrlProps = inSocket.info.ctrlProps;
-
+        pItem->m_ctrl = inSocket.info.control;
+        QVariant ctrlProps = inSocket.info.ctrlProps;
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
         m_inputs->appendRow(pItem);
@@ -232,19 +224,10 @@ void NodeParamModel::setParams(const PARAMS_INFO& params)
         pItem->m_sockProp = SOCKPROP_UNKNOWN;
 
         const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        CONTROL_INFO infos =
-            GlobalControlMgr::instance().controlInfo(nodeCls, PARAM_PARAM, pItem->m_name, pItem->m_type);
 
         QVariant ctrlProps;
-        if (paramInfo.control != CONTROL_NONE)
-            pItem->m_ctrl = paramInfo.control;
-        else
-            pItem->m_ctrl = infos.control;
-
-        if (paramInfo.controlProps == QVariant())
-            ctrlProps = infos.controlProps;
-        else
-            ctrlProps = paramInfo.controlProps;
+        pItem->m_ctrl = paramInfo.control;
+		ctrlProps = paramInfo.controlProps;
 
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
@@ -341,16 +324,6 @@ void NodeParamModel::setAddParam(
 {
     VParamItem *pItem = nullptr;
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-
-    CONTROL_INFO infos = GlobalControlMgr::instance().controlInfo(nodeCls, cls, name, type);
-    if (ctrl == CONTROL_NONE)
-    {
-        ctrl = infos.control;
-    }
-    if (ctrlProps == QVariant())
-    {
-        ctrlProps = infos.controlProps;
-    }
 
     if (PARAM_INPUT == cls)
     {
@@ -691,6 +664,26 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             }
             break;
         }
+        case ROLE_PARAM_CTRL: {
+            VParamItem *pItem = static_cast<VParamItem *>(itemFromIndex(index));
+            QVariant oldValue = pItem->m_ctrl;
+            if (oldValue == value)
+                return false;
+
+            pItem->setData(value, role);
+            onSubIOEdited(oldValue, pItem);
+            break;
+        }
+        case ROLE_VPARAM_CTRL_PROPERTIES: {
+            VParamItem *pItem = static_cast<VParamItem *>(itemFromIndex(index));
+            QVariant oldValue = pItem->m_customData[role];
+            if (oldValue == value)
+                return false;
+
+            pItem->setData(value, role);
+            onSubIOEdited(oldValue, pItem);
+            break;
+        }
     default:
         return ViewParamModel::setData(index, value, role);
     }
@@ -852,6 +845,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             {
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.type = newType;
+                desc.inputs[sockName].info.control = newCtrl;
             }
             else
             {
@@ -909,10 +903,22 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             NODE_DESC desc;
             bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
             ZASSERT_EXIT(ret);
+            bool isUpdate = false;
             if (bInput)
             {
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.defaultValue = deflVal;
+                if (desc.inputs[sockName].info.control != pItem->m_ctrl)
+                {
+					desc.inputs[sockName].info.control = pItem->m_ctrl;
+                    isUpdate = true;
+				}
+                QVariantMap ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
+                if (desc.inputs[sockName].info.ctrlProps != ctrlProp)
+                {
+                    desc.inputs[sockName].info.ctrlProps = ctrlProp;
+                    isUpdate = true;
+				}
             }
             else
             {
@@ -921,6 +927,17 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             }
             m_pGraphsModel->updateSubgDesc(subgName, desc);
             //no need to update all subgraph node because it causes disturbance.
+            if (isUpdate) 
+			{
+                QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+                for (auto idx : subgNodes) {
+                    // update socket for current subgraph node.
+                    NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
+                    nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
+                    nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_VPARAM_CTRL_PROPERTIES);
+                }
+			}
         }
     }
 }

@@ -307,15 +307,15 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         {
             m_ui->stackProperties->setCurrentIndex(2);
             bool bIntVal = dataType == "int";
-            SLIDER_INFO sliderInfo = controlProperties.value<SLIDER_INFO>();
+            QVariantMap map = controlProperties.toMap();
 
-            QVariant step = sliderInfo.step;
+            QVariant step = map["step"];
             m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
 
-            QVariant min = sliderInfo.min;
+            QVariant min = map["min"];
             m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
 
-            QVariant max = sliderInfo.max;
+            QVariant max = map["max"];
             m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
         }
         else
@@ -806,6 +806,11 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         const QString typeDesc = pCurrent->m_type;
         const QVariant value = pCurrent->m_value;
         const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
+        QVariant ctrlProperties;
+        if (pCurrent->m_customData.find(ROLE_VPARAM_CTRL_PROPERTIES) != pCurrent->m_customData.end()) 
+		{
+            ctrlProperties = pCurrent->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
+        }
 
         int targetRow = 0;
         VParamItem* pTarget = nullptr;
@@ -858,22 +863,63 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 //check type
                 if (pTarget->m_type != typeDesc)
                 {
-                    pTarget->setData(typeDesc, ROLE_PARAM_TYPE);
+                    if (bApplySubnetParam) {
+                        //get subinput type idx, update its value, and then sync to all subgraph node.
+                        const QModelIndex &subInOutput =
+                         UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
+                        NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        const QModelIndex &typelIdx = nodeParams->getParam(PARAM_PARAM, "type");
+                        m_pGraphsModel->ModelSetData(typelIdx, typeDesc, ROLE_PARAM_VALUE);
+                    } else {
+                        pTarget->setData(typeDesc, ROLE_PARAM_TYPE);
+                    }
                 }
 
                 //check default value
                 if (pTarget->m_value != value)
                 {
-                    pTarget->setData(value, ROLE_PARAM_VALUE);
+                    if (bApplySubnetParam) {
+                        //get subinput defl idx, update its value, and then sync to all subgraph node.
+                        const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
+                        NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        const QModelIndex &deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
+                        //update the value on "defl" in SubInput/SubOutput.
+                        m_pGraphsModel->ModelSetData(deflIdx, value, ROLE_PARAM_VALUE);
+                    } else {
+                        pTarget->setData(value, ROLE_PARAM_VALUE);
+                    }
                 }
 
                 //control
                 if (pTarget->m_ctrl != ctrl)
                 {
+                    if (bApplySubnetParam) {
+                        //get subinput defl idx, update its value, and then sync to all subgraph node.
+                        const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
+                        NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        const QModelIndex &deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
+                        //update the control on "defl" in SubInput/SubOutput.
+                        m_pGraphsModel->ModelSetData(deflIdx, ctrl, ROLE_PARAM_CTRL);
+                    } 
                     pTarget->setData(ctrl, ROLE_PARAM_CTRL);
                 }
 
-                //todo: other info, like mapping, control properties, etc.
+				//control properties
+                bool isChanged = pTarget->m_customData[ROLE_VPARAM_CTRL_PROPERTIES] != ctrlProperties;
+                if (isChanged) 
+				{
+                    if (bApplySubnetParam) {
+                        //get subinput defl idx, update its value, and then sync to all subgraph node.
+                        const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
+                        NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        const QModelIndex &deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
+                        //update the value properties on "defl" in SubInput/SubOutput.
+                        m_pGraphsModel->ModelSetData(deflIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
+                    }
+                    pTarget->setData(ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
+                }
+
+                //todo: other info, like mapping, etc.
             }
             else
             {

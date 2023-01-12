@@ -96,7 +96,6 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     {
         _parseViews(doc["views"], pAcceptor);
     }
-
     return true;
 }
 
@@ -175,7 +174,8 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     }
     if (objValue.HasMember("params"))
     {
-        _parseParams(nodeid, name, objValue["params"], pAcceptor);
+        if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
+			_parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("outputs"))
     {
@@ -386,6 +386,35 @@ void ZsgReader::_parseSocket(
     {
         _parseDictPanel(bInput, sockObj["dictlist-panel"], id, inSock, nodeName, pAcceptor);
     }
+    if (sockObj.HasMember("control")) 
+	{
+        QString control;
+        control = sockObj["control"].GetString();
+        QVariantMap value;
+        if (sockObj.HasMember("control-items")) 
+		{
+            const rapidjson::Value &itemsValue = sockObj["control-items"];
+            if (itemsValue.IsArray()) 
+			{
+                QStringList itemList;
+                const auto &arr = itemsValue.GetArray();
+                for (int i = 0; i < arr.Size(); i++) 
+				{
+                    itemList << arr[i].GetString();
+                }
+                value["items"] = itemList;
+            }
+        }
+        if (sockObj.HasMember("control-slider")) 
+		{
+            const rapidjson::Value &sliderObj = sockObj["control-slider"];
+            for (const auto &obj : sliderObj.GetObject()) 
+			{
+                value[obj.name.GetString()] = obj.value.GetInt();
+            }            
+        }
+        pAcceptor->setControlAndProperties(nodeName, id, inSock, control, value);
+	}   
 }
 
 void ZsgReader::_parseDictPanel(
@@ -577,11 +606,11 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
     NODE_DESCS _descs;
     for (const auto& node : jsonDescs.GetObject())
     {
-        const QString& name = node.name.GetString();
+        const QString& nodeCls = node.name.GetString();
         const auto& objValue = node.value;
 
         NODE_DESC desc;
-        desc.name = name;
+        desc.name = nodeCls;
         if (objValue.HasMember("inputs") && objValue["inputs"].IsArray())
         {
             auto inputs = objValue["inputs"].GetArray();
@@ -602,11 +631,13 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
+                        CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_INPUT, socketName, socketType);
+
                         INPUT_SOCKET inputSocket;
                         inputSocket.info = SOCKET_INFO("", socketName);
                         inputSocket.info.type = socketType;
-                        inputSocket.info.control = ctrlType;
+                        inputSocket.info.control = infos.control;
+                        inputSocket.info.ctrlProps = infos.controlProps.toMap();
                         inputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
                         desc.inputs.insert(socketName, inputSocket);
                     }
@@ -634,10 +665,11 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
+                        CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_PARAM, socketName, socketType);
                         PARAM_INFO paramInfo;
                         paramInfo.bEnableConnect = false;
-                        paramInfo.control = ctrlType;
+                        paramInfo.control = infos.control;
+                        paramInfo.controlProps = infos.controlProps.toMap();
                         paramInfo.name = socketName;
                         paramInfo.typeDesc = socketType;
                         paramInfo.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
@@ -666,11 +698,9 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
                     //Q_ASSERT(!socketName.isEmpty());
                     if (!socketName.isEmpty())
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlByType(socketType);
                         OUTPUT_SOCKET outputSocket;
                         outputSocket.info = SOCKET_INFO("", socketName);
                         outputSocket.info.type = socketType;
-                        outputSocket.info.control = ctrlType;
                         outputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
                         desc.outputs.insert(socketName, outputSocket);
                     }
@@ -686,9 +716,63 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
             }
         }
 
-        _descs.insert(name, desc);
+        _descs.insert(nodeCls, desc);
     }
     return _descs;
+}
+
+bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor) 
+{
+    QObject *currGraph = pAcceptor->currGraphObj();
+    if (jsonParams.IsObject()) {
+        PARAMS_INFO params;
+        for (const auto &paramObj : jsonParams.GetObject()) {
+            const QString &name = paramObj.name.GetString();
+            const rapidjson::Value &value = paramObj.value;
+            if (!value.IsObject())
+                return false;
+
+            PARAM_INFO paramData;
+            if (value.HasMember("typeDesc"))
+                paramData.typeDesc = value["typeDesc"].GetString();
+            QVariant var;
+            if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+                var = UiHelper::parseJsonByValue(paramData.typeDesc, value["value"],nullptr); //dynamic type on SubInput defl.
+            else
+                var = UiHelper::parseJsonByType(paramData.typeDesc, value["value"], currGraph);
+
+            if (value.HasMember("control")) {
+                paramData.control = UiHelper::getControlByDesc(value["control"].GetString());
+            }
+            QVariantMap map;
+            if (value.HasMember("control-items")) {
+                const rapidjson::Value &itemsValue = value["control-items"];
+                if (itemsValue.IsArray()) {
+                    QStringList itemList;
+                    const auto &arr = itemsValue.GetArray();
+                    for (int i = 0; i < arr.Size(); i++) {
+                        itemList << arr[i].GetString();
+                    }
+                    map["items"] = itemList;
+                }
+            }
+            if (value.HasMember("control-slider")) {
+                const rapidjson::Value &sliderObj = value["control-slider"];
+                for (const auto &obj : sliderObj.GetObject()) {
+                    map[obj.name.GetString()] = obj.value.GetInt();
+                }
+            }
+            if (!map.isEmpty()) {
+                paramData.controlProps = map;
+            }
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+        }
+        pAcceptor->setParamValue2(id, params);
+    }
+    return true;
 }
 
 

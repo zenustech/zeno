@@ -409,7 +409,9 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				INPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-				socket.info.control = UiHelper::getControlByType(type);
+                CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_INPUT, name, type);
+                socket.info.control = ctrlInfo.control;
+                socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
 				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.inputs[name] = socket;
 			}
@@ -424,7 +426,9 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-				socket.info.control = UiHelper::getControlByType(type);
+                CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_OUTPUT, name, type);
+                socket.info.control = ctrlInfo.control;
+                socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
 				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
 				desc.outputs[name] = socket;
 			}
@@ -435,11 +439,14 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				type = _arr[0];
 				name = _arr[1];
 				defl = _arr[2];
+
 				PARAM_INFO paramInfo;
 				paramInfo.bEnableConnect = false;
 				paramInfo.name = name;
 				paramInfo.typeDesc = type;
-				paramInfo.control = UiHelper::getControlByType(type);
+                CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_PARAM, name, type);
+                paramInfo.control = ctrlInfo.control;
+                paramInfo.controlProps = ctrlInfo.controlProps.toMap();
 				paramInfo.defaultValue = UiHelper::parseStringByType(defl, type);
 				//thers is no "value" in descriptor, but it's convient to initialize param value. 
 				paramInfo.value = paramInfo.defaultValue;

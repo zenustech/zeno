@@ -52,6 +52,11 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
         {
             m_pItem->m_value = topLeft.data(ROLE_PARAM_VALUE);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+        } 
+		else if (ROLE_VPARAM_CTRL_PROPERTIES == role) 
+		{
+            m_pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES] = topLeft.data(ROLE_VPARAM_CTRL_PROPERTIES);
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
     }
 }
@@ -107,6 +112,7 @@ VParamItem::VParamItem(const VParamItem& other)
     /*, m_links(other.m_links)   link cannot be clone directly.*/
     , m_uuid(other.m_uuid)
     , m_proxySlot(this)
+	, m_customData(other.m_customData)
 {
     mapCoreParam(other.m_index);
 }
