@@ -361,7 +361,7 @@ bool ZenoNode::removeSocketLayout(bool bInput, const QString& name)
             }
         }
     }
-    return nullptr;
+    return false;
 }
 
 void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)

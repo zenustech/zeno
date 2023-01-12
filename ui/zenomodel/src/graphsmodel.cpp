@@ -5,7 +5,7 @@
 #include "nodesmgr.h"
 #include "zassert.h"
 #include <zeno/zeno.h>
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 #include <zeno/utils/scope_exit.h>
 #include "variantptr.h"
 #include "apilevelscope.h"
@@ -269,7 +269,7 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
 
 QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
-    QStringList lst = path.split(cPathSeperator, Qt::SkipEmptyParts);
+    QStringList lst = path.split(cPathSeperator, QtSkipEmptyParts);
     //format like: {subgraph-name}:{node-ident}:{[node|panel]param-layer-path}
     if (lst.size() == 1)
     {

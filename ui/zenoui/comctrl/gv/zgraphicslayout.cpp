@@ -529,7 +529,8 @@ void ZGraphicsLayout::calcItemsSize(QSizeF layoutSize)
 
     QVector<int> szs(m_items.size(), 0);
     std::set<int> fixedItems, expandingItems;
-    layoutSize = layoutSize.shrunkBy(m_margins);
+    layoutSize = QSizeF(layoutSize.width() - m_margins.left() - m_margins.right(), layoutSize.height() - m_margins.top() - m_margins.bottom());
+
     qreal remaining = getSize(layoutSize);
 
     QSizeF szMargin(m_margins.left() + m_margins.right(), m_margins.top() + m_margins.bottom());

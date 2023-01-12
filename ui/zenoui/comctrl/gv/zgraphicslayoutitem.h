@@ -26,16 +26,16 @@ public:
     void setLayout(ZGraphicsLayout* pLayout) {
         m_layout = pLayout;
         m_layout->setParentItem(this);
-        setData(GVKEY_OWNLAYOUT, QVariant::fromValue((void*)pLayout));
+        T::setData(GVKEY_OWNLAYOUT, QVariant::fromValue((void*)pLayout));
     }
 
     ZGraphicsLayout* layout() const {
-        return m_layout.get();
+        return m_layout;
     }
 
     void setParentLayout(ZGraphicsLayout* pLayout) {
         m_parentLayout = pLayout;
-        setData(GVKEY_PARENT_LAYOUT, QVariant::fromValue((void*)pLayout));
+        T::setData(GVKEY_PARENT_LAYOUT, QVariant::fromValue((void*)pLayout));
     }
 
     ZGraphicsLayout* parentLayout() const {
@@ -44,7 +44,7 @@ public:
 
     void setSizePolicy(const QSizePolicy& policy) {
         m_policy = policy;
-        setData(GVKEY_SIZEPOLICY, policy);
+        T::setData(GVKEY_SIZEPOLICY, policy);
     }
 
     QSizePolicy sizePolicy() const {
@@ -57,7 +57,7 @@ public:
 
     void setMinimumSize(const QSizeF& size) {
         m_minSize = size;
-        setData(GVKEY_SIZEHINT, size);
+        T::setData(GVKEY_SIZEHINT, size);
     }
 
     QSizeF minimumSize() const {
@@ -66,16 +66,17 @@ public:
 
     void setFixedSize(const QSizeF& size) {
         m_minSize = size;
-        setData(GVKEY_SIZEHINT, size);
+        T::setData(GVKEY_SIZEHINT, size);
     }
 
     QRectF boundingRect() const override {
         //skip QGraphicsWidget.
-        if (QGraphicsProxyWidget::Type == type())
+        if (QGraphicsProxyWidget::Type == T::type())
             return T::boundingRect();
 
-        QSizeF sizeHint = data(GVKEY_BOUNDING).toSizeF();
-        QSizePolicy policy = data(GVKEY_SIZEPOLICY).value<QSizePolicy>();
+        QSizeF sizeHint = T::data(GVKEY_BOUNDING).toSizeF();
+        QVariant varPolicy = T::data(GVKEY_SIZEPOLICY);
+        QSizePolicy policy = varPolicy.value<QSizePolicy>();
         QRectF br = T::boundingRect();
         qreal w = 0, h = 0;
 

@@ -882,13 +882,13 @@ QSlider::handle:horizontal {
   <customwidget>
    <class>ZenoRampBar</class>
    <extends>QGraphicsView</extends>
-   <header>zenoheatmapeditor.h</header>
+   <header>zenoui/comctrl/dialog/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>SVColorView</class>
    <extends>QWidget</extends>
-   <header>zenoheatmapeditor.h</header>
+   <header>zenoui/comctrl/dialog/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

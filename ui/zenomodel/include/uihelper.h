@@ -76,7 +76,7 @@ public:
 
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
-    static int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
+    static int tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
     static QModelIndex findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
                                           const QModelIndex &subgIdx);
     static void getAllParamsIndex(const QModelIndex &nodeIdx,

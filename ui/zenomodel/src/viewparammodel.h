@@ -2,7 +2,7 @@
 #define __VIEW_PARAM_MODEL_H__
 
 #include <QtWidgets>
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/jsonhelper.h>
 #include <rapidxml/rapidxml_print.hpp>
 
