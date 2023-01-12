@@ -560,7 +560,7 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
     }
 }
 
-void ModelAcceptor::setParamValue2(const QString &id, const PARAMS_INFO &params) 
+void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, const PARAMS_INFO &params) 
 {
     if (!m_currentGraph)
         return;
@@ -571,6 +571,33 @@ void ModelAcceptor::setParamValue2(const QString &id, const PARAMS_INFO &params)
     ZASSERT_EXIT(idx.isValid());
 
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+
+	if (noCls != "SubInput")
+        return;
+	 //update desc.
+    QString sockName;
+    PARAM_CONTROL newCtrl;
+    QVariant ctrlProps;
+	for (auto paramInfo : params)
+	{
+        if (paramInfo.name == "name") 
+		{
+            sockName = paramInfo.value.toString();
+        }
+        else if (paramInfo.name == "defl") 
+		{
+            newCtrl = paramInfo.control;
+            ctrlProps = paramInfo.controlProps;
+        }
+	}
+    NODE_DESC desc;
+    QString subGraphName = m_currentGraph->name();
+    bool ret = m_pModel->getDescriptor(subGraphName, desc);
+    ZASSERT_EXIT(ret);
+    ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+    desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
+    desc.inputs[sockName].info.control = newCtrl;
+    m_pModel->updateSubgDesc(subGraphName, desc);
 }
 
 void ModelAcceptor::setPos(const QString& id, const QPointF& pos)

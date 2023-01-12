@@ -1709,6 +1709,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     info.defaultValue = deflVal;
     info.name = nameValue;
     info.type = typeValue;
+    info.ctrlProps = ctrlProps.toMap();
 
     if (bInsert)
     {

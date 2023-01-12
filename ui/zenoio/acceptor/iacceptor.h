@@ -62,7 +62,7 @@ public:
 
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
-    virtual void setParamValue2(const QString &id, const PARAMS_INFO &params) = 0;
+    virtual void setParamValue2(const QString &id, const QString &noCls, const PARAMS_INFO &params) = 0;
     virtual void endParams(const QString& id, const QString& nodeCls) = 0;
     virtual void setPos(const QString& id, const QPointF& pos) = 0;
     virtual void setOptions(const QString& id, const QStringList& options) = 0;
