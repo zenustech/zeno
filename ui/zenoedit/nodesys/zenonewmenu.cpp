@@ -52,9 +52,9 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::KeyPress)
     {
+        QKeyEvent *pKeyEvent = static_cast<QKeyEvent *>(event);
         if (QMenu* pMenu = qobject_cast<QMenu*>(watched))
         {
-            QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(event);
             int ch = pKeyEvent->key();
             QChar c(ch);
             QString text = m_searchEdit->text();
@@ -63,8 +63,12 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
             pMenu->hide();
             return true;
         }
+        else if (watched == m_searchEdit && pKeyEvent->key() == Qt::Key_Down) 
+		{
+            focusNextPrevChild(true);
+        }
     }
-    if (watched == m_searchEdit && event->type() == QEvent::Show) 
+    else if (watched == m_searchEdit && event->type() == QEvent::Show) 
 	{
         m_searchEdit->activateWindow();
     }
