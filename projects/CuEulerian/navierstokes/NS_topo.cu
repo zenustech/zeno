@@ -23,7 +23,7 @@ namespace zeno {
 struct ZSExtendSparseGrid : INode {
 
     void apply() override {
-        auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
+        auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto nlayers = get_input2<int>("layers");
 
         using namespace zs;
@@ -34,7 +34,7 @@ struct ZSExtendSparseGrid : INode {
 
         auto nbs = spg.numBlocks();
         auto newNbs = nbs;
-        auto &table = spg._table;
+        // auto &table = spg._table;
         int nbsOffset = 0;
         /// @note iteratively resize table
         while (nlayers-- > 0) {
@@ -112,14 +112,14 @@ struct ZSExtendSparseGrid : INode {
             }
         }
 
-        set_output("NSGrid", zsSPG);
+        set_output("SparseGrid", zsSPG);
     }
 };
 
 ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
-                                {"NSGrid", {"int", "layers", "2"}, {"bool", "multigrid", "false"}},
+                                {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "false"}},
                                 /* outputs: */
-                                {"NSGrid"},
+                                {"SparseGrid"},
                                 /* params: */
                                 {},
                                 /* category: */
