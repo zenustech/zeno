@@ -57,7 +57,7 @@ public:
 
 	void setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties);
     void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) override;
-    void setParamValue2(const QString &id, const PARAMS_INFO &params) override;
+    void setParamValue2(const QString &id, const QString &noCls, const PARAMS_INFO &params) override;
     void setPos(const QString &id, const QPointF &pos) override;
     void setOptions(const QString &id, const QStringList &options) override;
     void setColorRamps(const QString &id, const COLOR_RAMPS &colorRamps) override;

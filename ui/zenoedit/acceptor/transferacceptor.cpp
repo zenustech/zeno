@@ -364,7 +364,7 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
     }
 }
 
-void TransferAcceptor::setParamValue2(const QString &id, const PARAMS_INFO &params) 
+void TransferAcceptor::setParamValue2(const QString &id, const QString &noCls,const PARAMS_INFO &params) 
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA &data = m_nodes[id];
