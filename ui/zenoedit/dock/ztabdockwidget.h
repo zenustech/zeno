@@ -7,7 +7,7 @@
 
 class ZenoMainWindow;
 class DisplayWidget;
-
+class ZenoGraphsEditor;
 class ZDockTabWidget;   //may confuse with ZTabDockWidget...
 
 enum PANEL_TYPE
@@ -31,6 +31,7 @@ public:
     int count() const;
     QWidget* widget(int i) const;
     DisplayWidget* getUniqueViewport() const;
+    ZenoGraphsEditor* getAnyEditor() const;
     void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);

@@ -223,6 +223,11 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     setLayout(pVLayout);
 }
 
+ZenoGraphsEditor* DockContent_Editor::getEditor() const
+{
+    return m_pEditor;
+}
+
 void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
     if (m_pEditor)
