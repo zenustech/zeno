@@ -257,6 +257,9 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             }
         }
     }
+    ViewParamModel *pModel = qobject_cast<ViewParamModel *>(sender());
+    if (pModel)
+        pModel->markDirty();
 }
 
 bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)

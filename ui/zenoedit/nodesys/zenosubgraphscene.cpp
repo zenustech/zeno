@@ -894,6 +894,11 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         QString id = idx.data(ROLE_OBJID).toString();
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         ZenoNode* pNode = m_nodes[id];
+        if (qobject_cast<BlackboardNode2 *>(pNode)) 
+        {
+            BlackboardNode2 *pBlackboard = qobject_cast<BlackboardNode2 *>(pNode);
+            pBlackboard->removeChildItems();
+        }
         removeItem(pNode);
         delete pNode;
         m_nodes.erase(id);

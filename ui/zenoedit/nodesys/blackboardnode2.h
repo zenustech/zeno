@@ -12,6 +12,7 @@ class BlackboardNode2 : public ZenoNode {
     void onZoomed() override;
     QRectF boundingRect() const override;
     void onUpdateParamsNotDesc() override;
+    void removeChildItems();
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
     ZLayoutBackground *initHeaderWidget(IGraphsModel*) override;
