@@ -103,7 +103,8 @@ void BlackboardNode2::updateClidItem(bool isAdd, const QString nodeId)
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
 }
 
-bool BlackboardNode2::nodePosChanged(ZenoNode *item) {
+bool BlackboardNode2::nodePosChanged(ZenoNode *item) 
+{
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && item->parentItem() != this) {
         if (item->parentItem() && item->parentItem()->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!item->parentItem()->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
@@ -167,6 +168,23 @@ void BlackboardNode2::onUpdateParamsNotDesc()
     QPalette palette = this->palette();
     palette.setColor(QPalette::Window, info.background);
     setPalette(palette);
+}
+
+void BlackboardNode2::removeChildItems() 
+{
+    for (auto item : this->childItems()) 
+    {
+        ZenoNode *node = dynamic_cast<ZenoNode *>(item);
+        if (node == nullptr)
+            continue;
+        QGraphicsItem *newParent = this->parentItem();
+        QPointF pos = node->mapToItem(newParent, 0, 0);
+        node->setParentItem(newParent);
+        node->setPos(pos);
+        update();
+        updateClidItem(false, node->nodeId());
+        node->updateNodePos(pos);
+    }
 }
 
 ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {

@@ -136,6 +136,7 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
     data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(NodesMgr::initParamsNotDesc(name));
 }
 
 void TransferAcceptor::addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty)
