@@ -3,7 +3,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)

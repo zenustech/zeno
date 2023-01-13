@@ -23,7 +23,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_searchEdit->installEventFilter(this);
 
     QPalette palette;
-    palette.setColor(QPalette::Base, QColor(37, 37, 37));
+    palette.setColor(QPalette::Base, QColor(25, 29, 33));
     QColor clr = QColor(255, 255, 255);
     palette.setColor(QPalette::Text, clr);
 

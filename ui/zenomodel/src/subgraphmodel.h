@@ -98,7 +98,6 @@ public:
     QRectF viewRect() const { return m_rect; }
 
     void clear();
-    void reload();
     void onModelInited();
     void collaspe();
     void expand();

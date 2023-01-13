@@ -6,6 +6,7 @@
 #include "zenodockwidget.h"
 
 class ZenoMainWindow;
+class DisplayWidget;
 
 class ZDockTabWidget;   //may confuse with ZTabDockWidget...
 
@@ -29,6 +30,7 @@ public:
 
     int count() const;
     QWidget* widget(int i) const;
+    DisplayWidget* getUniqueViewport() const;
     void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);

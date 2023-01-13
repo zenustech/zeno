@@ -16,7 +16,7 @@
 #include "ui_zenographseditor.h"
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 #include "startup/zstartup.h"
 #include "util/log.h"
 #include "settings/zsettings.h"

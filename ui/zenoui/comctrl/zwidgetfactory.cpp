@@ -104,7 +104,7 @@ namespace zenoui
                 pTextEdit->setText(value.toString());
 
                 QPalette pal = pTextEdit->palette();
-                pal.setColor(QPalette::Base, QColor(37, 37, 37));
+                pal.setColor(QPalette::Base, QColor(25, 29, 33));
                 pTextEdit->setPalette(pal);
 
                 QObject::connect(pTextEdit, &ZTextEdit::editFinished, [=]() {

@@ -9,7 +9,7 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 #include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"

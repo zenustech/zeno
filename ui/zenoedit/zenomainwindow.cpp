@@ -262,16 +262,28 @@ void ZenoMainWindow::resetDocks(PtrLayoutNode root)
     if (root == nullptr)
         return;
 
+    ZTabDockWidget* cake = nullptr;
+
     m_layoutRoot.reset();
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget *pDock : docks) {
-        pDock->close();
-        delete pDock;
+        if (pDock->getUniqueViewport()) {
+            //because of the unsteadiness of create/delete viewport widget,
+            //we keep the viewport dock, and divide docks based on it.
+            cake = pDock;
+        }
+        else {
+            pDock->close();
+            delete pDock;
+        }
     }
 
     m_layoutRoot = root;
-    ZTabDockWidget *cake = new ZTabDockWidget(this);
-    addDockWidget(Qt::TopDockWidgetArea, cake);
+    if (!cake)
+    {
+        cake = new ZTabDockWidget(this);
+        addDockWidget(Qt::TopDockWidgetArea, cake);
+    }
     initDocksWidget(cake, m_layoutRoot);
     m_nResizeTimes = 2;
 }

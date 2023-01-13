@@ -8,6 +8,7 @@
 #include "dictkeymodel.h"
 #include "iotags.h"
 #include "dictkeymodel.h"
+#include "common_def.h"
 
 
 NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel, QObject* parent)
@@ -495,7 +496,7 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
 
 QModelIndex NodeParamModel::indexFromPath(const QString& path)
 {
-    QStringList lst = path.split("/", Qt::SkipEmptyParts);
+    QStringList lst = path.split("/", QtSkipEmptyParts);
     if (lst.size() < 2)
         return QModelIndex();
 

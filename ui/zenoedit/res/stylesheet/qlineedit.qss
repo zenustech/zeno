@@ -85,8 +85,8 @@ QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
 
 
 QTextEdit {
-    background-color: rgb(36, 37, 36);
-    color: rgb(111, 111, 111);
+    background-color: rgb(25, 29, 33);
+    color: #FFFFFF;
 }
 
 QTextEdit[cssClass="proppanel"] {

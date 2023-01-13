@@ -1,8 +1,8 @@
 #ifndef __PARAM_MODEL_H__
 #define __PARAM_MODEL_H__
 
-#include "modeldata.h"
-#include "modelrole.h"
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
 
 class IGraphsModel;
 class DictKeyModel;

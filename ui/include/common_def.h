@@ -1,6 +1,5 @@
 #pragma once
 
-// jiao wo cihou da shi
 #include <QString>
 #include <map>
 #include <unordered_map>
@@ -9,6 +8,7 @@
 #define QtSkipEmptyParts Qt::SkipEmptyParts
 #define qt_unordered_map std::unordered_map
 #else
+
 #define QtSkipEmptyParts QString::SkipEmptyParts
 #define qt_unordered_map std::map
 #endif

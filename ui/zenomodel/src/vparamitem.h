@@ -4,7 +4,7 @@
 #include <QtWidgets>
 #include <zenomodel/include/jsonhelper.h>
 #include <rapidxml/rapidxml_print.hpp>
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 
 using namespace rapidxml;
 

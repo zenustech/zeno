@@ -1,8 +1,8 @@
 #ifndef __GLOBAL_CONTROL_MGR_H__
 #define __GLOBAL_CONTROL_MGR_H__
 
-#include "modeldata.h"
-#include "modelrole.h"
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
 
 struct CONTROL_INFO {
     QString objCls;
@@ -10,6 +10,12 @@ struct CONTROL_INFO {
     QString coreParam;
     PARAM_CONTROL control;
     QVariant controlProps;
+
+    CONTROL_INFO()
+        : cls(PARAM_UNKNOWN)
+        , control(CONTROL_NONE)
+    {
+    }
 
     CONTROL_INFO(PARAM_CONTROL control, QVariant controlProps)
         : control(control)

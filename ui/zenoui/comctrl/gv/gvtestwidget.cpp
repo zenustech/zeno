@@ -11,12 +11,6 @@ ZSocketLayout* socket4 = nullptr;
 ZSocketLayout* socket1 = nullptr;
 ZGraphicsLayout* pBodyLayout = nullptr;
 
-auto cbSockOnClick = [=](ZenoSocketItem*) {
-    pBodyLayout->removeLayout(socket1);
-    pBodyLayout->removeLayout(socket4);
-    ZGraphicsLayout::updateHierarchy(pBodyLayout);
-};
-
 
 TestGraphicsView::TestGraphicsView(QWidget* parent)
     : QGraphicsView(parent)

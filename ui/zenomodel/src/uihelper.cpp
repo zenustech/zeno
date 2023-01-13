@@ -9,6 +9,7 @@
 #include <zenomodel/include/viewparammodel.h>
 #include <zenomodel/include/nodeparammodel.h>
 #include <QUuid>
+#include "common_def.h"
 
 
 VarToggleScope::VarToggleScope(bool* pbVar)
@@ -622,7 +623,7 @@ void UiHelper::getSocketInfo(const QString& objPath,
                              QString& sockName)
 {
     //see GraphsModel::indexFromPath
-    QStringList lst = objPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
     //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
     if (lst.size() >= 4)
     {
@@ -630,7 +631,7 @@ void UiHelper::getSocketInfo(const QString& objPath,
         nodeIdent = lst[1];
         paramCls = lst[2];
         QString paramPath = lst[3];
-        lst = paramPath.split("/", Qt::SkipEmptyParts);
+        lst = paramPath.split("/", QtSkipEmptyParts);
         sockName = lst.last();
     }
 }
@@ -643,7 +644,7 @@ QString UiHelper::constructObjPath(const QString& subgraph, const QString& node,
 
 QString UiHelper::getSockNode(const QString& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
     if (lst.size() > 1)
         return lst[1];
     return "";
@@ -651,10 +652,10 @@ QString UiHelper::getSockNode(const QString& sockPath)
 
 QString UiHelper::getSockName(const QString& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
     if (lst.size() > 2)
     {
-        lst = lst[2].split("/", Qt::SkipEmptyParts);
+        lst = lst[2].split("/", QtSkipEmptyParts);
         if (!lst.isEmpty())
         {
             //todo: dict-key case
@@ -666,7 +667,7 @@ QString UiHelper::getSockName(const QString& sockPath)
 
 QString UiHelper::getSockSubgraph(const QString& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, Qt::SkipEmptyParts);
+    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
     if (lst.size() > 0)
         return lst[0];
     return "";

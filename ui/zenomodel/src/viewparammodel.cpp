@@ -7,6 +7,7 @@
 #include <zenomodel/customui/customuirw.h>
 #include "globalcontrolmgr.h"
 #include "vparamitem.h"
+#include "common_def.h"
 
 
 ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
@@ -71,7 +72,7 @@ QModelIndex ViewParamModel::indexFromPath(const QString& path)
 {
     QString root, tab, group, param;
 
-    QStringList lst = path.split("/", Qt::SkipEmptyParts);
+    QStringList lst = path.split("/", QtSkipEmptyParts);
     if (lst.isEmpty())
         return QModelIndex();
 
