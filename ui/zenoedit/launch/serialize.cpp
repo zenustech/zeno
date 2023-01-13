@@ -141,13 +141,19 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     bool bDict = inSockType == "dict";
                     QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(inSockIdx.data(ROLE_VPARAM_LINK_MODEL));
                     QString mockDictList;
+                    int idxWithLink = 0;
                     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
-                        const QString& keyName = keyIdx.data(ROLE_PARAM_NAME).toString();
+                        QString keyName = keyIdx.data(ROLE_PARAM_NAME).toString();
                         const QModelIndex& link = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
                         if (link.isValid())
                         {
+                            if (!bDict)
+                            {
+                                //obj number sequence resolve for MakeList.
+                                keyName = QString("obj%1").arg(idxWithLink);
+                            }
                             const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
                             const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
                             const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
@@ -166,6 +172,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                             }
                             // add link from outside node to the mock dict/list.
                             AddStringList({"bindNodeInput", mockDictList, keyName, newOutId, outSock}, writer);
+                            idxWithLink++;
                         }
                     }
                     if (!mockDictList.isEmpty())
