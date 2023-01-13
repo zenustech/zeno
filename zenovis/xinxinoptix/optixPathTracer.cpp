@@ -2459,9 +2459,10 @@ void UpdateInst()
             auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
 
             zeno::vec3f t0 = {instTrs.direct[3 * i + 0], instTrs.direct[3 * i + 1], instTrs.direct[3 * i + 2]};
+            zeno::vec3f t1 = {instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]};
             t0 = normalizeSafe(t0);
-            zeno::vec3f t1, t2;
-            zeno::pixarONB(t0, t1, t2);
+            zeno::vec3f t2;
+            zeno::guidedPixarONB(t0, t1, t2);
             glm::mat4x4 rotateMat(1);
             if (instTrs.onbType == "XYZ")
             {
@@ -2536,7 +2537,7 @@ void UpdateInst()
                 rotateMat[2][2] = t1[2];
             }
 
-            auto scaleMat = glm::scale(glm::vec3(instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]));
+            auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
         }
     }
