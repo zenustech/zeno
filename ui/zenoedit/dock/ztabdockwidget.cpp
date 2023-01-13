@@ -76,6 +76,19 @@ DisplayWidget* ZTabDockWidget::getUniqueViewport() const
     }
 }
 
+ZenoGraphsEditor* ZTabDockWidget::getAnyEditor() const
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
+        {
+            return pEditor->getEditor();
+        }
+    }
+    return nullptr;
+}
+
 QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
 {
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();

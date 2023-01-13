@@ -77,7 +77,7 @@ public:
 
         const QString& key = m_sockKeyIdx.data().toString();
         m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbEditFinished, nullptr, CALLBACK_SWITCH(), QVariant());
-        m_editText->setEnabled(bDict);
+        m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
         if (bInput)

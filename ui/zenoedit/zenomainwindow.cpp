@@ -185,9 +185,23 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
 
     //dispatch to every panel.
     auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    DisplayWidget* pViewport = nullptr;
+    ZenoGraphsEditor* pEditor = nullptr;
     for (ZTabDockWidget* pDock : docks)
     {
-        pDock->onMenuActionTriggered(pAction, bTriggered);
+        if (!pViewport)
+            pViewport = pDock->getUniqueViewport();
+        if (!pEditor)
+            pEditor = pDock->getAnyEditor();
+    }
+    if (pEditor)
+    {
+        pEditor->onCommandDispatched(pAction, bTriggered);
+    }
+    if (pViewport)
+    {
+        int actionType = pAction->property("ActionType").toInt();
+        pViewport->onCommandDispatched(actionType, bTriggered);
     }
 }
 

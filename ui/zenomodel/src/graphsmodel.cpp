@@ -1259,9 +1259,6 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, bool enableTransaction)
 {
     if (enableTransaction)
     {
-        beginTransaction("addLink issues");
-        zeno::scope_exit sp([=]() { endTransaction(); });
-
         LinkCommand* pCmd = new LinkCommand(true, info, this);
         m_stack->push(pCmd);
         //todo: return val on this level.
