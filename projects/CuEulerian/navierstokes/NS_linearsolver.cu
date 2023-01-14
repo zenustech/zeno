@@ -1378,6 +1378,7 @@ struct ZSNSPressureProject : INode {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
+        auto tolerance = get_input2<float>("Tolerance");
         auto maxIter = get_input2<int>("MaxIterations");
         auto hasDiv = get_input2<bool>("hasDivergence");
 
@@ -1419,7 +1420,6 @@ struct ZSNSPressureProject : INode {
 #endif
 
         // Multi-grid solver with V-Cycle
-        const float tolerence = 1e-5;
         printf("========MultiGrid V-cycle Begin========\n");
 
         clearInit<0>(pol, NSGrid.get());
@@ -1443,7 +1443,7 @@ struct ZSNSPressureProject : INode {
             float res = residual<0>(pol, NSGrid.get(), rho);
             res /= rhs_max;
             printf("%dth V-cycle residual: %e\n", iter + 1, res);
-            if (res < tolerence)
+            if (res < tolerance)
                 break;
         }
 
@@ -1495,7 +1495,7 @@ struct ZSNSPressureProject : INode {
 ZENDEFNODE(
     ZSNSPressureProject,
     {/* inputs: */
-     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
+     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Tolerance", "1e-4"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
      /* outputs: */
      {"NSGrid"},
      /* params: */
