@@ -1,4 +1,7 @@
 #pragma once
+#if __CUDA_ARCH__ >= 800
+#include <cooperative_groups/reduce.h>
+#endif
 
 namespace zeno {
 
@@ -17,7 +20,14 @@ constexpr auto warp_mask(int i, int n) noexcept {
     return zs::make_tuple(((unsigned)(1ull << k) - 1), k);
 }
 
-template <typename T> __forceinline__ __device__ void reduce_add(int i, int n, T val, T &dst) {
+template <typename T>
+__forceinline__ __device__ void reduce_add(int i, int n, T val, T &dst) {
+#if __CUDA_ARCH__ >= 800
+    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+    auto ret = zs::cg::reduce(tile, val, zs::cg::plus<T>());
+    if (tile.thread_rank() == 0)
+        zs::atomic_add(zs::exec_cuda, &dst, ret);
+#else
     auto [mask, numValid] = warp_mask(i, n);
     __syncwarp(mask);
     auto locid = threadIdx.x & 31;
@@ -28,9 +38,17 @@ template <typename T> __forceinline__ __device__ void reduce_add(int i, int n, T
     }
     if (locid == 0)
         zs::atomic_add(zs::exec_cuda, &dst, val);
+#endif
 }
 
-template <typename T> __forceinline__ __device__ void reduce_max(int i, int n, T val, T &dst) {
+template <typename T>
+__forceinline__ __device__ void reduce_max(int i, int n, T val, T &dst) {
+#if __CUDA_ARCH__ >= 800
+    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+    auto ret = zs::cg::reduce(tile, val, zs::cg::greater<T>());
+    if (tile.thread_rank() == 0)
+        zs::atomic_max(zs::exec_cuda, &dst, ret);
+#else
     auto [mask, numValid] = warp_mask(i, n);
     __syncwarp(mask);
     auto locid = threadIdx.x & 31;
@@ -41,6 +59,28 @@ template <typename T> __forceinline__ __device__ void reduce_max(int i, int n, T
     }
     if (locid == 0)
         zs::atomic_max(zs::exec_cuda, &dst, val);
+#endif
+}
+
+template <typename T>
+__forceinline__ __device__ void reduce_min(int i, int n, T val, T &dst) {
+#if __CUDA_ARCH__ >= 800
+    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+    auto ret = zs::cg::reduce(tile, val, zs::cg::less<T>());
+    if (tile.thread_rank() == 0)
+        zs::atomic_min(zs::exec_cuda, &dst, ret);
+#else
+    auto [mask, numValid] = warp_mask(i, n);
+    __syncwarp(mask);
+    auto locid = threadIdx.x & 31;
+    for (int stride = 1; stride < 32; stride <<= 1) {
+        auto tmp = __shfl_down_sync(mask, val, stride);
+        if (locid + stride < numValid)
+            val = zs::min(val, tmp);
+    }
+    if (locid == 0)
+        zs::atomic_min(zs::exec_cuda, &dst, val);
+#endif
 }
 
 template <typename T, typename Op = std::plus<T>>

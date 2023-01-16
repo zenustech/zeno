@@ -20,6 +20,7 @@ struct ZSGridPerlinNoise : INode {
     virtual void apply() override {
         auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto attrTag = get_input2<std::string>("GridAttribute");
+        auto opType = get_input2<std::string>("OpType");
         auto frequency = get_input2<vec3f>("Frequency");
         auto offset = get_input2<vec3f>("Offset");
         auto roughness = get_input2<float>("Roughness");
@@ -27,6 +28,8 @@ struct ZSGridPerlinNoise : INode {
         auto amplitude = get_input2<float>("Amplitude");
         auto attenuation = get_input2<float>("Attenuation");
         auto mean = get_input2<vec3f>("MeanNoise");
+
+        bool isAccumulate = opType == "accumulate" ? true : false;
 
         auto tag = src_tag(zsSPG, attrTag);
 
@@ -41,8 +44,9 @@ struct ZSGridPerlinNoise : INode {
         constexpr auto space = zs::execspace_e::cuda;
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), tag, nchns, frequency = zs::vec<float, 3>::from_array(frequency),
-             offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, amplitude, attenuation,
+            [spgv = zs::proxy<space>(spg), tag, nchns, isAccumulate,
+             frequency = zs::vec<float, 3>::from_array(frequency), offset = zs::vec<float, 3>::from_array(offset),
+             roughness, turbulence, amplitude, attenuation,
              mean = zs::vec<float, 3>::from_array(mean)] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto pp = frequency * wcoord - offset;
@@ -62,8 +66,12 @@ struct ZSGridPerlinNoise : INode {
                                                    zs::pow(fbm[2], attenuation)} +
                                  mean;
 
-                    spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
-                        spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + noise;
+                    if (isAccumulate)
+                        spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
+                            spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + noise;
+                    else
+                        spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) = noise;
+
                 } else if (nchns == 1) {
                     float fbm = 0;
                     for (int i = 0; i < turbulence; ++i, pp *= 2.f, scale *= roughness) {
@@ -72,7 +80,10 @@ struct ZSGridPerlinNoise : INode {
                     }
                     auto noise = zs::pow(fbm, attenuation) + mean[0];
 
-                    spgv(tag, blockno, cellno) += noise;
+                    if (isAccumulate)
+                        spgv(tag, blockno, cellno) += noise;
+                    else
+                        spgv(tag, blockno, cellno) = noise;
                 }
             });
 
@@ -83,6 +94,7 @@ struct ZSGridPerlinNoise : INode {
 ZENDEFNODE(ZSGridPerlinNoise, {/* inputs: */
                                {"SparseGrid",
                                 {"string", "GridAttribute", "v"},
+                                {"enum replace accumulate", "OpType", "accumulate"},
                                 {"vec3f", "Frequency", "1, 1, 1"},
                                 {"vec3f", "Offset", "0, 0, 0"},
                                 {"float", "Roughness", "0.5"},
@@ -102,12 +114,15 @@ struct ZSGridCurlNoise : INode {
         auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto attrTag = get_input2<std::string>("GridAttribute");
         bool isStaggered = get_input2<bool>("staggered");
+        auto opType = get_input2<std::string>("OpType");
         auto frequency = get_input2<vec3f>("Frequency");
         auto offset = get_input2<vec3f>("Offset");
         auto roughness = get_input2<float>("Roughness");
         auto turbulence = get_input2<int>("Turbulence");
         auto amplitude = get_input2<float>("Amplitude");
         auto mean = get_input2<vec3f>("MeanNoise");
+
+        bool isAccumulate = opType == "accumulate" ? true : false;
 
         auto tag = src_tag(zsSPG, attrTag);
 
@@ -124,7 +139,7 @@ struct ZSGridCurlNoise : INode {
 
         if (isStaggered) {
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), tag, frequency = zs::vec<float, 3>::from_array(frequency),
+                [spgv = zs::proxy<space>(spg), tag, isAccumulate, frequency = zs::vec<float, 3>::from_array(frequency),
                  offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, amplitude,
                  mean = zs::vec<float, 3>::from_array(mean)] __device__(int blockno, int cellno) mutable {
                     constexpr float eps = 1e-4f;
@@ -144,7 +159,10 @@ struct ZSGridCurlNoise : INode {
                         curl -= scale * (pln1 - pln2) / (2.f * eps);
                     }
 
-                    spgv(tag, 0, blockno, cellno) += curl + mean[0];
+                    if (isAccumulate)
+                        spgv(tag, 0, blockno, cellno) += curl + mean[0];
+                    else
+                        spgv(tag, 0, blockno, cellno) = curl + mean[0];
 
                     // v
                     wcoord_face = spgv.wStaggeredCoord(blockno, cellno, 1);
@@ -161,7 +179,10 @@ struct ZSGridCurlNoise : INode {
                         curl -= scale * (pln1 - pln2) / (2.f * eps);
                     }
 
-                    spgv(tag, 1, blockno, cellno) += curl + mean[1];
+                    if (isAccumulate)
+                        spgv(tag, 1, blockno, cellno) += curl + mean[1];
+                    else
+                        spgv(tag, 1, blockno, cellno) = curl + mean[1];
 
                     // w
                     wcoord_face = spgv.wStaggeredCoord(blockno, cellno, 2);
@@ -178,11 +199,14 @@ struct ZSGridCurlNoise : INode {
                         curl -= scale * (pln1 - pln2) / (2.f * eps);
                     }
 
-                    spgv(tag, 2, blockno, cellno) += curl + mean[2];
+                    if (isAccumulate)
+                        spgv(tag, 2, blockno, cellno) += curl + mean[2];
+                    else
+                        spgv(tag, 2, blockno, cellno) = curl + mean[2];
                 });
         } else {
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), tag, frequency = zs::vec<float, 3>::from_array(frequency),
+                [spgv = zs::proxy<space>(spg), tag, isAccumulate, frequency = zs::vec<float, 3>::from_array(frequency),
                  offset = zs::vec<float, 3>::from_array(offset), roughness, turbulence, amplitude,
                  mean = zs::vec<float, 3>::from_array(mean)] __device__(int blockno, int cellno) mutable {
                     constexpr float eps = 1e-4f;
@@ -207,8 +231,11 @@ struct ZSGridCurlNoise : INode {
                         curl += scale * zs::vec<float, 3>{dPln[1] - dPln[2], dPln[2] - dPln[0], dPln[0] - dPln[1]};
                     }
 
-                    spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
-                        spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + curl + mean;
+                    if (isAccumulate)
+                        spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) =
+                            spgv._grid.pack(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) + curl + mean;
+                    else
+                        spgv._grid.tuple(zs::dim_c<3>, tag, blockno * spgv.block_size + cellno) = curl + mean;
                 });
         }
 
@@ -220,6 +247,7 @@ ZENDEFNODE(ZSGridCurlNoise, {/* inputs: */
                              {"SparseGrid",
                               {"string", "GridAttribute", "v"},
                               {"bool", "staggered", "1"},
+                              {"enum replace accumulate", "OpType", "accumulate"},
                               {"vec3f", "Frequency", "1, 1, 1"},
                               {"vec3f", "Offset", "0, 0, 0"},
                               {"float", "Roughness", "0.5"},
