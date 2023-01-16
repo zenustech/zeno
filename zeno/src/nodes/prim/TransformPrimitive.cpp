@@ -1,4 +1,5 @@
 #include "zeno/types/UserData.h"
+#include "zeno/funcs/ObjectGeometryInfo.h"
 #include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -250,6 +251,18 @@ struct PrimitiveTransform : zeno::INode {
         auto matrix = pre_mat*local*matTrans*matRoty*matRotx*matRotz*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
+
+        std::string pivotType = get_input2<std::string>("pivot");
+        if (pivotType == "bboxCenter") {
+            zeno::vec3f _min;
+            zeno::vec3f _max;
+            objectGetBoundingBox(prim.get(), _min, _max);
+            auto p = (_min + _max) / 2;
+            auto pivot_to_local = glm::translate(glm::vec3(-p[0], -p[1], -p[2]));
+            auto pivot_to_world = glm::translate(glm::vec3(p[0], p[1], p[2]));
+            matrix = pivot_to_world * matrix * pivot_to_local;
+        }
+
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
 
         if (prim->has_attr("pos")) {
@@ -286,6 +299,7 @@ struct PrimitiveTransform : zeno::INode {
 ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
+        {"enum world bboxCenter", "pivot", "world"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
