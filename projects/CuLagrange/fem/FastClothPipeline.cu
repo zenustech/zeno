@@ -143,7 +143,8 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
 
 /// elasticity
 template <typename Model>
-void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, typename FastClothSystem::tiles_t &vtemp,
+void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, typename FastClothSystem::tiles_t &vtemp, 
+                                          typename FastClothSystem::tiles_t &seInds, 
                                           typename FastClothSystem::PrimitiveHandle &primHandle, const Model &model,
                                           typename FastClothSystem::T dt) {
     using namespace zs;
@@ -212,6 +213,64 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
     } else if (primHandle.category == ZenoParticles::surface) {
         if (primHandle.isBoundary())
             return;
+#if s_useMassSpring
+        auto &edges = primHandle.getSurfEdges(); 
+        cudaPol(range(edges.size()), 
+            [seInds = proxy<space>({}, seInds), vtemp = proxy<space>({}, vtemp), model = model, 
+            vOffset = primHandle.vOffset, seoffset = primHandle.seOffset, dt = dt, 
+            limit = limits<T>::epsilon() * 10.0f] __device__ (int ei) mutable {
+            int sei = ei + seoffset; 
+            auto inds = seInds.template pack<2>("inds", sei).template reinterpret_bits<int>();
+            T E; 
+            auto m = 0.5f * (vtemp("ws", inds[0]) + vtemp("ws", inds[1])); 
+            auto v0 = vtemp.pack(dim_c<3>, "yn", inds[0]); 
+            auto v1 = vtemp.pack(dim_c<3>, "yn", inds[1]); 
+            auto restL = seInds("restLen", sei); 
+            // auto restL = 4.2f; 
+            auto dist2 = zs::max((v0 - v1).l2NormSqr(), limit); 
+            auto dist = zs::sqrt(dist2); 
+            auto grad = m * model.mu * (1.0f - restL / dist) * (v0 - v1) * dt * dt; // minus grad for v1, -grad for v0
+            for (int d = 0; d != 3; d++)
+            {
+                atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), (T)-grad(d)); 
+                atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), (T)grad(d)); 
+            }
+#if s_useGDDiagHess 
+            auto restLDivDist3 = restL / (dist2 * dist); 
+            auto diag1 = (v0 - v1) * (v0 - v1) * restLDivDist3; 
+            auto diag2 = (dist - restL) / dist; 
+            for (int d = 0; d != 3; d++)
+            {
+                T val = (diag1(d) + diag2) * m * model.mu * dt * dt; 
+                if (val <= 0)
+                    continue; 
+                atomic_add(exec_cuda, &vtemp("P", d, inds[0]), val); 
+                atomic_add(exec_cuda, &vtemp("P", d, inds[1]), val); 
+            }
+#else 
+            // TODO: 9x9 etemp hessian? not implemented currently; as a result do not support newton solver
+            zs::vec<T, 6> y; 
+            for (int d = 0; d != 3; d++)
+            {
+                auto yd = v0(d) - v1(d); 
+                y(d) = yd; 
+                y(d + 3) = -yd; 
+            }
+            auto hess = restL / (dist2 * dist) * dyadic_prod(y, y); 
+            auto val = 1.0f - restL / dist; 
+            for (int d = 0; d != 3; d++)
+            {
+                hess(d, d) += val; 
+                hess(d + 3, d + 3) -= val; 
+            }
+            for (int vi = 0; vi != 2; vi++)
+                for (int di = 0; di != 3; di++)
+                    for (int dj = 0; dj != 3; dj++)
+                        atomic_add(exec_cuda, &vtemp("P", di * 3 + dj, inds[vi]), 
+                            hess(vi * 3 + di, vi * 3 + dj)); 
+#endif 
+        }); 
+#else
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
                  eles = proxy<space>({}, primHandle.getEles()), model, gradOffset = vtemp.getPropertyOffset("grad"),
@@ -359,6 +418,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     }
 #endif 
                 });
+#endif 
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
@@ -416,14 +476,14 @@ void FastClothSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &
     using namespace zs;
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
-            computeElasticGradientAndHessianImpl(cudaPol, vtemp, primHandle, elasticModel, dt);
+            computeElasticGradientAndHessianImpl(cudaPol, vtemp, seInds, primHandle, elasticModel, dt);
         })(primHandle.getModels().getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
         using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
         const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
         match([&](auto &elasticModel) {
-            computeElasticGradientAndHessianImpl(cudaPol, vtemp, primHandle, elasticModel, dt);
+            computeElasticGradientAndHessianImpl(cudaPol, vtemp, seInds, primHandle, elasticModel, dt);
         })(model);
     }
 }
@@ -461,7 +521,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         spg.resizeGrid(nbs);
         spg._grid.reset(0);
 
-        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp), coOffset = coOffset] __device__(int pi) mutable {
             auto m = vtemp("ws", pi);
             auto xt = vtemp.pack(dim_c<3>, "xn", pi);
             auto dir = vtemp.pack(dim_c<3>, "yn", pi) - xt;
@@ -476,6 +536,8 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
                 atomic_add(exec_cuda, &spgv("w", bno, cno), W);
             }
+            if (pi >= coOffset)
+                vtemp.tuple(dim_c<3>, "gridDir", pi) = dir;
         });
         pol(range((std::size_t)nbs * spg.block_size),
             [grid = proxy<space>({}, spg._grid)] __device__(std::size_t cellno) mutable {
@@ -483,7 +545,8 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 if (grid("w", cellno) > limits<T>::epsilon())
                     grid.tuple(dim_c<3>, "dir", cellno) = grid.pack(dim_c<3>, "dir", cellno) / grid("w", cellno);
             });
-        pol(range(numDofs), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
+        // test: fixing the boundary issues; numDofs -> coOffset
+        pol(range(coOffset), [spgv = proxy<space>(spg), vtemp = proxy<space>({}, vtemp)] __device__(int pi) mutable {
             using T = typename RM_CVREF_T(spgv)::value_type;
             using vec3 = zs::vec<T, 3>;
             auto xt = vtemp.pack(dim_c<3>, "xn", pi);
@@ -498,13 +561,13 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 dir[2] += W * spgv("dir", 2, bno, cno);
                 // dir += W * spgv._grid.pack(dim_c<3>, "dir", bno, cno);
             }
-            vtemp.tuple(dim_c<3>, "dir", pi) = dir;
+            vtemp.tuple(dim_c<3>, "gridDir", pi) = dir;
         });
     }
     {
         const auto ratio = (T)1 / (T)IInit;
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
-            auto dir = vtemp.pack(dim_c<3>, "dir", i);
+            auto dir = vtemp.pack(dim_c<3>, "gridDir", i);
             vtemp.tuple(dim_c<3>, "yk", i) = vtemp.pack(dim_c<3>, "yn", i); // record current yn in yk
             vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "xn", i) + ratio * dir;
         });
@@ -568,7 +631,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
             /// @brief update xinit for the next initialization iteration
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
-                auto dir = vtemp.pack(dim_c<3>, "dir", i);
+                auto dir = vtemp.pack(dim_c<3>, "gridDir", i);
                 vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + ratio * dir;
             });
         }
@@ -604,6 +667,8 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             timer.tick();
 
         // check constraints
+        // TODO: boundaries are dealt in init step, 
+        // it seemes that projectDBC can be directly set to true in the entire process 
         if (!projectDBC) {
             computeBoundaryConstraints(pol);
             auto cr = boundaryConstraintResidual(pol);
@@ -648,7 +713,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if (!converged && iters % 8 == 0)
         {
             T E = dynamicsEnergy(pol);      
-            if (firstStepping || (!std::isnan(E) && E <= lastEnergy + limits<T>::epsilon() * 50.0f))
+            if (firstStepping || (!std::isnan(E) && E <= lastEnergy + limits<T>::epsilon() * 10.0f))
             {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "ytmp", i) = vtemp.pack(dim_c<3>, "yn", i); 
@@ -662,7 +727,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "ytmp", i); 
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xtmp", i); 
-                    // when to calculate E: before or after calculating "xn"?
+                    // TODO: when to calculate E: before or after calculating "xn"?
                 });
                 // fmt::print("\t\t\trollback dynamics linesearch alpha: {}, new alpha: {}, E: {}, E0: {}, iters: {}, k: {}, maxIters: {}\n", 
                 //     alpha, alpha * alphaDecrease, E, lastEnergy, iters, k, maxIters);   
@@ -684,11 +749,13 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         alpha = 0.1f; 
 #endif  
         if (!converged)
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha = alpha] ZS_LAMBDA(int i) mutable {
+            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), 
+                alpha = alpha, projectDBC = projectDBC, coOffset = coOffset] ZS_LAMBDA(int i) mutable {
 #if s_useChebyshevAcc
                 vtemp.tuple(dim_c<3>, "yn-1", i) = vtemp.pack(dim_c<3>, "yn", i); 
 #endif 
-                vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
+                if (!projectDBC || (i < coOffset))
+                    vtemp.tuple(dim_c<3>, "yn", i) = vtemp.pack(dim_c<3>, "yn", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
             });
 #if s_useChebyshevAcc
         if (iters == 0)

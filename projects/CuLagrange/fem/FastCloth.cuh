@@ -15,10 +15,12 @@
 #define s_useGDDiagHess 1 // for GD solver 
 #define s_useLineSearch 1
 #define s_debugOutput 0
-#define s_useHardPhase 1
+#define s_useHardPhase 0
 #define s_clothShearingCoeff 0.01f
 #define s_silentMode 1
 #define s_useFrontLine 1
+#define s_useMassSpring 0
+#define s_debugRemoveHashTable 1
 namespace zeno {
 
 /// for cell-based collision detection
@@ -44,7 +46,9 @@ struct FastClothSystem : IObject {
     using sh_t = zs::SpatialHash<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using bv_t = typename bvh_t::Box;
+#if !s_debugRemoveHashTable
     using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>;
+#endif 
     static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
@@ -275,7 +279,7 @@ struct FastClothSystem : IObject {
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
-    int K = 72, ISoft = 10 /*6~16*/, IHard = 8, IInit = 6;
+    int K = 72, ISoft = 6 /*6~16*/, IHard = 8, IInit = 6;
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
     int IDyn = 1 /*1~6*/, R = 8;
     T chebyOmega = 1.0f; 
@@ -303,7 +307,9 @@ struct FastClothSystem : IObject {
     zs::Vector<int> nPP, nE;
     int npp, ne;
     tiles_t tempPP, tempE;
+#if !s_debugRemoveHashTable
     etab_t eTab; // global surface edge hash table
+#endif 
 
 #if 0
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion

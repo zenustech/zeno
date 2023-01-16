@@ -144,7 +144,9 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     auto &svfront = withBoundary ? boundarySvFront : selfSvFront;
     pol(Collapse{svfront.size()},
         [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+#if !s_debugRemoveHashTable
          eTab = proxy<space>(eTab), 
+#endif 
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), front = proxy<space>(svfront),
          PP = proxy<space>(PP), nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat,
          voffset = withBoundary ? coOffset : 0, frontManageRequired = frontManageRequired, 
@@ -162,8 +164,10 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
                 // edge or not
                 // TODO: use query 
+#if !s_debugRemoveHashTable 
                 if (eTab.single_query(ivec2 {vi, vj}) >= 0 || eTab.single_query(ivec2 {vj, vi}) >= 0)
                     return; 
+#endif 
                 if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
                     auto no = atomic_add(exec_cuda, &nPP[0], 1);
                     PP[no] = pair_t{vi, vj};
@@ -515,7 +519,6 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), 
             descentStepsize] __device__(int i) mutable {
         auto dir = vtemp.pack(dim_c<3>, "dir", i);
-        auto xn = vtemp.pack(dim_c<3>, "xn", i); 
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
             atomic_add(exec_cuda, &vtemp("xn", d, i), descentStepsize * dir(d));
