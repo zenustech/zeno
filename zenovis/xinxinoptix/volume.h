@@ -63,7 +63,6 @@ inline float PhaseHG(float cosTheta, float g) {
 
 // HenyeyGreenstein Method Definitions
 inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
-    //ProfilePhase _(Prof::PhaseFuncEvaluation);
     return PhaseHG(dot(wo, wi), g);
 }
 

@@ -1,14 +1,15 @@
 #include "optixVolume.h"
 
-
-
 #include "vec_math.h"
 // #include "OptiXStuff.h"
 
 #include <cstdint>
+#include <filesystem>
+
 #include <sutil/Exception.h>
 #include <nanovdb/util/IO.h>
 #include <nanovdb/util/GridStats.h>
+#include <nanovdb/util/OpenToNanoVDB.h>
 
 #include <optix_stubs.h>
 #include <optix_function_table_definition.h>
@@ -20,47 +21,119 @@
 template< class T >
 using decay_t = typename std::decay<T>::type;
 
-void loadVolume( Volume& grid, const std::string& filename )
+bool loadVolume( VolumeWrapper& volume, const std::string& path )
 {
-    // NanoVDB files are containers for NanoVDB Grids.
-    // Each Grid represents a distinct volume, point-cloud, or level-set.
-    // For the purpose of this sample only the first grid is loaded, additional
-    // grids are ignored.
-    auto list = nanovdb::io::readGridMetaData( filename );
-    std::cerr << "Opened file " << filename << std::endl;
+    std::filesystem::path filePath = path;
+
+    if ( !std::filesystem::exists(filePath) ) {
+        std::cout << filePath.filename() << " doesn't exist";
+        return false;
+    }
+
+    if (filePath.extension() == ".vdb")
+    {
+        loadVDB(volume, path);
+    }
+    else if(filePath.extension() == ".nvdb")
+    {
+        loadNVDB(volume, path);
+    } else {
+        std::cout << filePath.filename() << " is unsupported type";
+        return false;
+    }
+    return true;
+}
+
+void loadNVDB( VolumeWrapper& volume, const std::string& path) {
+
+    auto list= nanovdb::io::readGridMetaData( path );
+    assert( list.size() > 0 );
+
+    std::cerr << "Opened file " << path << std::endl;
     std::cerr << "    grids:" << std::endl;
     for (auto& m : list) {
         std::cerr << "        " << m.gridName << std::endl;
     }
 
-    assert( list.size() > 0 );
     // load the first grid in the file 
-    createGrid( grid.grid_density, filename, list[0].gridName );
-
-    auto tmp = grid.grid_density.handle.grid<float>();
-    nanovdb::gridStats(*tmp, nanovdb::StatsMode::All);
-
-    nanovdb::GridStats<nanovdb::NanoGrid<float>> state;
-    state(*tmp);
-
+    createGrid( volume.grid_density, path, list[0].gridName );
     if (list.size() > 1) {
-        createGrid(grid.grid_temp, filename, list[1].gridName);
+        createGrid(volume.grid_temp, path, list[1].gridName);
     }
 }
 
- void createGrid( GridWrapper& grid, std::string filename, std::string gridname )
-{
-    nanovdb::GridHandle<> gridHdl;
+void loadVDB(VolumeWrapper& volume, const std::string& path) {
+    openvdb::initialize();
+    openvdb::io::File file(path);
+    
+    file.open(); 
 
-	if( gridname.length() > 0 )
-		gridHdl = nanovdb::io::readGrid<>( filename, gridname );
-	else
-		gridHdl = nanovdb::io::readGrid<>( filename );
+    openvdb::GridBase::Ptr baseGrid, tempGrid;
+
+    if (file.getGrids()->size()>1) {
+
+        for (openvdb::io::File::NameIterator nameIter = file.beginName();
+        nameIter != file.endName(); ++nameIter)
+        {
+            // Read in only the grid we are interested in.
+            if (nameIter.gridName() == "density") { // temperature
+                baseGrid = file.readGrid(nameIter.gridName());
+            } else if (nameIter.gridName() == "temperature") {
+                tempGrid = file.readGrid(nameIter.gridName());
+            }else {
+                std::cout << "skipping grid " << nameIter.gridName() << std::endl;
+            }
+        }
+
+    } else if(file.getGrids()->size()==1) {
+        auto nameIter = file.beginName();
+        baseGrid = file.readGrid(nameIter.gridName());
+    } else {
+        throw std::runtime_error("This VDB file doesn't have any grid");
+    }
+    
+    file.close();
+
+    baseGrid->setTransform(volume.transform);
+    if (tempGrid != nullptr) {
+        tempGrid->setTransform(volume.transform);
+    }
+
+    auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
+
+        openvdb::FloatGrid::Ptr srcGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid_ptr);
+        
+        // Convert the OpenVDB grid, srcGrid, into a NanoVDB grid handle.
+        result = nanovdb::openToNanoVDB(*srcGrid, nanovdb::StatsMode::All);
+        // Define a (raw) pointer to the NanoVDB grid on the host. Note we match the value type of the srcGrid! 
+    };
+
+    nanovdb::GridHandle<> *baseNanoGridH, *tempNanoGridH;
+
+    parsing(baseGrid, volume.grid_density.handle);
+    createGrid(volume.grid_density, path, baseGrid->getName());
+
+    if (tempGrid != nullptr) {
+        parsing(tempGrid, volume.grid_temp.handle);
+        createGrid(volume.grid_temp, path, baseGrid->getName());
+    }
+}
+
+ void createGrid( GridWrapper& grid, const std::string& path, const std::string& gridname )
+{
+    nanovdb::GridHandle<>& gridHdl = grid.handle;
+
+    if ( gridHdl.size() == 0 ) {
+        if( gridname.length() > 0 )
+            gridHdl = nanovdb::io::readGrid<>( path, gridname );
+        else
+            gridHdl = nanovdb::io::readGrid<>( path );
+    }
 
     if( !gridHdl ) 
     {
         std::stringstream ss;
-        ss << "Unable to read " << gridname << " from " << filename;
+        ss << "Unable to read " << gridname << " from " << path;
         throw std::runtime_error( ss.str() );
     }
 
@@ -76,8 +149,7 @@ void loadVolume( Volume& grid, const std::string& filename )
     // uploaded to the device "as-is".
     assert( gridHdl.size() != 0 );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(),
-        cudaMemcpyHostToDevice ) );
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
 
         auto* tmp_grid = gridHdl.grid<float>(); //.grid<nanovdb::FloatGrid>();
         
@@ -99,20 +171,17 @@ void loadVolume( Volume& grid, const std::string& filename )
 
         grid.max_value = max_value;
 
-        std::cout << "max value for file: " << filename << " girdname " << gridname << " " << max_value << std::endl;
-
-    grid.handle = std::move( gridHdl );
+    std::cout << "max value in filename: " << path << " girdname " << gridname << " is " << max_value << std::endl;
 }
 
-
-void cleanupVolume( Volume& volume )
+void cleanupVolume( VolumeWrapper& volume )
 {
     // OptiX cleanup
 	CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_density.deviceptr ) ) );
     CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_temp.deviceptr ) ) );
 }
 
-void buildVolumeAccel( VolumeAccel& accel, const Volume& volume, const OptixDeviceContext& context )
+void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const OptixDeviceContext& context )
 {
     // Build accel for the volume and store it in a VolumeAccel struct.
     //
@@ -221,7 +290,7 @@ void cleanupVolumeAccel( VolumeAccel& accel )
 	CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( accel.d_buffer ) ) );
 }
 
-void getOptixTransform( const Volume& volume, float transform[] )
+void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 {
     // Extract the index-to-world-space affine transform from the Grid and convert
     // to 3x4 row-major matrix for Optix.
@@ -232,7 +301,7 @@ void getOptixTransform( const Volume& volume, float transform[] )
 	transform[8] = map.mMatF[6]; transform[9] = map.mMatF[7]; transform[10] = map.mMatF[8]; transform[11] = map.mVecF[2];
 }
 
-sutil::Aabb worldAabb( const Volume& volume )
+sutil::Aabb worldAabb( const VolumeWrapper& volume )
 {
 	auto* meta = volume.grid_density.handle.gridMetaData();
 

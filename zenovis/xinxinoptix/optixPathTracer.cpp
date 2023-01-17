@@ -7,6 +7,7 @@
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 
+#include <memory>
 #include <optix.h>
 #include <optix_function_table_definition.h>
 #include <optix_stubs.h>
@@ -34,6 +35,8 @@
 #include <zeno/types/UserData.h>
 #include "optixVolume.h"
 #include "zeno/core/Session.h"
+
+#include <thread>
 #include <array>
 #include <optional>
 #include <cstring>
@@ -96,8 +99,10 @@ int32_t mouse_button = -1;
 //int32_t samples_per_launch = 16;
 //int32_t samples_per_launch = 16;
 
-Volume g_volume = {};
-VolumeAccel g_volume_accel = {};
+std::vector<std::shared_ptr<VolumeWrapper>> list_volume;
+std::vector<std::shared_ptr<VolumeAccel>> list_volume_accel;
+
+std::vector<uint> list_volume_index;
 
 //------------------------------------------------------------------------------
 //
@@ -167,9 +172,6 @@ struct PathTracerState
     OptixProgramGroup              occlusion_hit_group;
     OptixProgramGroup              radiance_hit_group2;
     OptixProgramGroup              occlusion_hit_group2;
-
-    OptixProgramGroup              volume_radiance_group;
-    OptixProgramGroup              volume_occlusion_group;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
@@ -669,10 +671,8 @@ static void createSBT( PathTracerState& state )
                 cudaMemcpyHostToDevice
                 ) );
 
-    static const uint VDB_COUNT = 1; 
-
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
-    const size_t hitgroup_record_count = (g_mtlidlut.size() + VDB_COUNT) * RAY_TYPE_COUNT;
+    const size_t hitgroup_record_count = g_mtlidlut.size() * RAY_TYPE_COUNT;
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
     
@@ -684,7 +684,11 @@ static void createSBT( PathTracerState& state )
     uint sbt_idx = 0;
 
     for( int j = 0; j < g_mtlidlut.size(); ++j ) {
-        {
+
+        auto key_vdb = OptixUtil::rtMaterialShaders[j].m_vdb;
+
+        if (key_vdb.empty()) {
+
             sbt_idx = 2*j;  // SBT for radiance ray-type for ith material
             hitgroup_records[sbt_idx] = {};
 
@@ -700,8 +704,7 @@ static void createSBT( PathTracerState& state )
             {
                 hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[j].getTexture(t);
             }
-        }
-        {
+
             sbt_idx = 2*j + 1;  // SBT for occlusion ray-type for ith material
             memset( &hitgroup_records[sbt_idx], 0, hitgroup_record_size );
 
@@ -717,38 +720,34 @@ static void createSBT( PathTracerState& state )
             {
                 hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[j].getTexture(t);
             }
+        } else {
+
+            sbt_idx = 2*j; 
+            HitGroupRecord rec = {};
+
+            if (OptixUtil::g_vdb.count(key_vdb) == 0) continue;
+            auto volumeWrapper = OptixUtil::g_vdb[key_vdb];
+
+            rec.data.density_grid = reinterpret_cast<void*>( volumeWrapper->grid_density.deviceptr );
+            rec.data.temperature_grid = reinterpret_cast<void*>( volumeWrapper->grid_temp.deviceptr );
+
+            rec.data.density_max = volumeWrapper->grid_density.max_value;
+            rec.data.temperature_max = volumeWrapper->grid_temp.max_value;
+
+            rec.data.opacityHDDA = 0.25f;
+            rec.data.colorVDB = make_float3(1, 1, 1);
+
+            rec.data.sigma_a = 0.1;
+            rec.data.sigma_s = 0.9;
+            rec.data.greenstein = 0;
+
+            OPTIX_CHECK(optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[j].m_radiance_hit_group, &rec ) );
+            hitgroup_records[sbt_idx] = rec;
+
+            OPTIX_CHECK(optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[j].m_occlusion_hit_group, &rec ) );
+            hitgroup_records[sbt_idx+1] = rec;
         }
     }
-   
-    sbt_idx += 1;
-
-    // volume sbt record
-    {
-        HitGroupRecord rec = {};
-
-        std::cout << "Volume HitGROUP = " << sbt_idx << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
-
-        rec.data.density_grid = reinterpret_cast<void*>( g_volume.grid_density.deviceptr );
-        rec.data.temperature_grid = reinterpret_cast<void*>( g_volume.grid_temp.deviceptr );
-
-        rec.data.density_max = g_volume.grid_density.max_value;
-        rec.data.temperature_max = g_volume.grid_temp.max_value;
-
-        rec.data.opacityHDDA = 0.25f;
-        rec.data.colorVDB  = make_float3(1, 1, 1);
-
-        rec.data.sigma_a = 0;
-        rec.data.sigma_s = 1;
-        rec.data.greenstein = 0;
-
-        OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_radiance_group, &rec ) );
-        hitgroup_records[sbt_idx] = rec;
-
-        OPTIX_CHECK(optixSbtRecordPackHeader( state.volume_occlusion_group, &rec ) );
-        hitgroup_records[sbt_idx+1] = rec;
-    }
-
-    sbt_idx += 2;
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
@@ -796,20 +795,23 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
 
     // process volume
     {  
-        sbt_offset = g_mtlidlut.size() * RAY_TYPE_COUNT;
-        OptixInstance optix_instance = {};
+        //sbt_offset = g_mtlidlut.size() * RAY_TYPE_COUNT;
 
-        std::cout << "Volume SBT_OFFSET = " << sbt_offset << " <<<<<<<<<<<<<<<<<<<<" << std::endl;
+        for ( uint i=0; i<list_volume.size(); ++i ) {
 
-        optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-        optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
-        optix_instance.sbtOffset = sbt_offset;
-        optix_instance.visibilityMask = 2; //VOLUME_OBJECT;
-        optix_instance.traversableHandle = g_volume_accel.handle;
-        getOptixTransform( g_volume, optix_instance.transform ); // transform as stored in Grid
+            OptixInstance optix_instance = {};
 
-        //sbt_offset += rayTypeCount;  // one sbt record per GAS build input per RAY_TYPE
-        optix_instances.push_back( optix_instance );
+            sbt_offset = list_volume_index[i] * RAY_TYPE_COUNT;
+
+            optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
+            optix_instance.sbtOffset = sbt_offset;
+            optix_instance.visibilityMask = 2; //VOLUME_OBJECT;
+            optix_instance.traversableHandle = list_volume_accel[i]->handle;
+            getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+
+            optix_instances.push_back( optix_instance );
+        }
     }
 
     timer.tock("done IAS middle");
@@ -982,9 +984,6 @@ static void cleanupState( PathTracerState& state )
     OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
 
-    OPTIX_CHECK( optixProgramGroupDestroy( state.volume_radiance_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.volume_occlusion_group ) );
-
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
@@ -999,10 +998,13 @@ static void cleanupState( PathTracerState& state )
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.hitgroupRecordBase ) ) );
 
-    cleanupVolumeAccel(g_volume_accel);
-    cleanupVolume(g_volume);
+    for (auto& ele : list_volume_accel) {
+        cleanupVolumeAccel(*ele);
+    }
 
-        state;
+    for (auto& ele : list_volume) {
+        cleanupVolume(*ele);
+    }
 
         state.d_raygen_record.reset();
         state.d_miss_records.reset();
@@ -1119,11 +1121,28 @@ void optixinit( int argc, char* argv[] )
         }
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1);
     xinxinoptix::using_hdr_sky(false);
-
-    loadVolume( g_volume, "/home/iaomw/Public/fire.nvdb" );
-    buildVolumeAccel( g_volume_accel, g_volume, state.context );
 }
 
+void updateVolume() {
+
+    list_volume.clear();
+    list_volume_index.clear();
+    list_volume_accel.clear();
+
+    for (auto const& [key, val] : OptixUtil::g_vdb) {
+        list_volume.push_back(val);
+
+        auto index = OptixUtil::g_vdb_index[key];
+        list_volume_index.push_back(index);
+    }
+
+    for (uint i=0; i<list_volume.size(); ++i) {
+        VolumeAccel accel;
+        buildVolumeAccel( accel, *(list_volume[i]), state.context );
+
+        list_volume_accel.push_back(std::make_shared<VolumeAccel>(std::move(accel)) );
+    }
+}
 
 //static std::string get_content(std::string const &path) {
     //std::ifstream ifs("/home/bate/zeno/zenovis/xinxinoptix/" + path);
@@ -1468,6 +1487,7 @@ void optixupdatelight() {
 }
 
 void optixupdatematerial(std::vector<std::string> const     &shaders, 
+                         std::vector<std::string> const     &markers,
                          std::vector<std::vector<std::string>> &texs) 
 {
     camera_changed = true;
@@ -1480,21 +1500,26 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
                 state.context,
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
-
-            auto succ = OptixUtil::createModule(
-                OptixUtil::volume_module,
-                state.context,
-                sutil::lookupIncFile("volume.cu"),
-                "volume.cu");
-
-            if (!succ) throw std::runtime_error("volume module failed to compile");
             
         } hadOnce = true;
+
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
         if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-        OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout");
+        
+        if (markers[i].empty()) {
+            OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(), 
+                                                    "__closesthit__radiance", 
+                                                    "__anyhit__shadow_cutout");
+        } else { 
+            OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(), 
+                                                    "__closesthit__radiance_volume", 
+                                                    "__anyhit__occlusion_volume",
+                                                    "__intersection__volume");
+            OptixUtil::rtMaterialShaders.back().m_vdb = markers[i];                                        
+        }
+
         if(texs.size()>0){
             std::cout<<"texSize:"<<texs[i].size()<<std::endl;
             for(int j=0;j<texs[i].size();j++)
@@ -1504,26 +1529,41 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
             }
         }
     }
-    for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
+
+    CppTimer theTimer;
+    
+    uint task_count = OptixUtil::rtMaterialShaders.size();
+    std::vector<tbb::task_group> task_groups(task_count);
+
+    theTimer.tick();
+
+    for(int i=0; i<task_count; ++i)
     {
-        std::cout<<"now compiling "<<i<<"'th shader"<<std::endl;
-        if(OptixUtil::rtMaterialShaders[i].loadProgram()==false)
-        {
-            std::cout<<"program compile failed, using default"<<std::endl;
+        OptixUtil::_compile_group.run([&shaders, &task_groups, i] () {
             
-            OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0];
-            OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
-            OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
-            std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram()<<std::endl;
-            std::cout<<"shader restored to default\n";
-        }
+            std::cout<<"now compiling "<<i<<"'th shader"<<std::endl;
+            if(OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)==false)
+            {
+                std::cout<<"program compile failed, using default"<<std::endl;
+                
+                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0];
+                OptixUtil::rtMaterialShaders[i].m_hittingEntry   = "";
+                OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
+                OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
+                std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)<<std::endl;
+                std::cout<<"shader restored to default\n";
+            }
+        });
     }
+
+    OptixUtil::_compile_group.wait();
+
+    theTimer.tock("Done Optix Shader Compile:");
+
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
     }
-
-    OptixUtil::createVolProgramGroup(state.context, OptixUtil::volume_module);
 }
 
 void optixupdateend() {
@@ -1548,9 +1588,6 @@ void optixupdateend() {
         state.raygen_prog_group = OptixUtil::raygen_prog_group;
         state.radiance_miss_group = OptixUtil::radiance_miss_group;
         state.occlusion_miss_group = OptixUtil::occlusion_miss_group;
-
-        state.volume_radiance_group = OptixUtil::volume_radiance_group;
-        state.volume_occlusion_group = OptixUtil::volume_occlusion_group;
 
         //state.radiance_hit_group = OptixUtil::radiance_hit_group;
         //state.occlusion_hit_group = OptixUtil::occlusion_hit_group;
@@ -1989,9 +2026,6 @@ ray_module               .handle=0;
 raygen_prog_group        .handle=0;
 radiance_miss_group      .handle=0;
 occlusion_miss_group     .handle=0;
-
-volume_radiance_group    .handle=0;
-volume_occlusion_group   .handle=0;
 
     }
 }

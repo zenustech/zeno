@@ -10,16 +10,10 @@
 
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/GridHandle.h>
+#include <nanovdb/util/OpenToNanoVDB.h>
 
 #include <string>
 #include <cmath>
-
-// The Volume struct ties together the NanoVDB host representation
-// (NanoVDB Grid) and the device-buffer containing the sparse volume
-// representation (NanoVDB Tree). In addition to the Tree, the Grid
-// also contains an affine transform relating index space (i.e. voxel
-// indices) to world-space.
-//
 
 struct GridWrapper {
 	nanovdb::GridHandle<> handle;
@@ -27,7 +21,7 @@ struct GridWrapper {
 	float max_value = 1.0;
 };
 
-struct Volume
+struct VolumeWrapper
 {
 	GridWrapper grid_density;
     // nanovdb::GridHandle<> handle_density;
@@ -36,13 +30,18 @@ struct Volume
 	GridWrapper grid_temp;
 	// nanovdb::GridHandle<> handle_temp;
 	// CUdeviceptr d_temp = 0;
+
+	openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();  
 };
 
-void loadVolume( Volume& volume, const std::string& filename );
-void cleanupVolume( Volume& volume );
-void createGrid( GridWrapper& grid, std::string filename, std::string gridname );
-void getOptixTransform( const Volume& volume, float transform[] );
-sutil::Aabb worldAabb( const Volume& volume );
+bool loadVolume( VolumeWrapper& volume, const std::string& filename );
+void loadVDB( VolumeWrapper& volume, const std::string& path);
+void loadNVDB( VolumeWrapper& volume, const std::string& path);
+
+void cleanupVolume( VolumeWrapper& volume );
+void createGrid( GridWrapper& grid, const std::string& path, const std::string& gridname );
+void getOptixTransform( const VolumeWrapper& volume, float transform[] );
+sutil::Aabb worldAabb( const VolumeWrapper& volume );
 
 // The VolumeAccel struct contains a volume's geometric representation for
 // Optix: a traversalbe handle, and the (compacted) GAS device-buffer.
@@ -52,5 +51,5 @@ struct VolumeAccel
 	CUdeviceptr            d_buffer = 0;
 };
 
-void buildVolumeAccel( VolumeAccel& accel, const Volume& volume, const OptixDeviceContext& context );
+void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const OptixDeviceContext& context );
 void cleanupVolumeAccel( VolumeAccel& accel );

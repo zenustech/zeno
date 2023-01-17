@@ -41,8 +41,8 @@ namespace zeno
             size += commonLen;
 
             auto extensionsLen{extensions.size()};
-            size += sizeof(fragLen);
-            size += fragLen;
+            size += sizeof(extensionsLen);
+            size += extensionsLen;
 
             auto tex2DsSize{tex2Ds.size()};
             size += sizeof(tex2DsSize);

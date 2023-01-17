@@ -10,39 +10,18 @@
 #include <nanovdb/util/HDDA.h>
 #include <nanovdb/util/SampleFromVoxels.h>
 
+//PLACEHOLDER
+static const float _vol_absorption = 1.0f;
+static const float _vol_scattering = 1.0f;
+//PLACEHOLDER
+
 //COMMON_CODE
-
-// static __inlin__ __device__ VolMatOutput evalVolumeMat(
-// _CUDA_TEXTURE_OBJECT_LIST_32,
-// float4* uniforms,
-// MatInput const &attrs
-// )
-// {
-//     auto att_pos = attrs.pos;
-//     auto att_clr = attrs.clr;
-//     auto att_uv = attrs.uv;
-//     auto att_nrm = attrs.nrm;
-//     auto att_tang = attrs.tang;
-    
-//     //VOLUME_GENERATED_BEGIN
-//     float mat_density = 0;
-//     float mat_temperature = 0;
-//     vec3  mat_emission = vec3(0,0,0);
-//     vec3  mat_scatter = vec3(1,1,1);
-//     vec3  mat_absorb = vec3(1,1,1);
-//     //VOLUME_GENERATED_END
-
-//     VolMatOutput v;
-//     v.density = mat_density;
-//     v.temperature = 
-// }
 
 inline __device__ float _LERP_(float t, float s1, float s2)
 {
     //return (1 - t) * s1 + t * s2;
     return fma(t, s2, fma(-t, s1, s1));
 }
-
 
 template <typename Acc>
 inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
@@ -81,20 +60,47 @@ inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
     return _LERP_(delta[2], value_0, value_1);
 }
 
-struct VolumeInput {
+struct VolumeIn {
     vec3 pos;
 };
 
-struct VolumeOutput {
+struct VolumeOut {
     float density;
     float temp;
+
+    float anisotropy;
 
     vec3 emission;
 };
 
+// static __inlin__ __device__ VolMatOutput evalVolumeMat(
+// _CUDA_TEXTURE_OBJECT_LIST_32,
+// float4* uniforms,
+// MatInput const &attrs
+// )
+// {
+//     auto att_pos = attrs.pos;
+//     auto att_clr = attrs.clr;
+//     auto att_uv = attrs.uv;
+//     auto att_nrm = attrs.nrm;
+//     auto att_tang = attrs.tang;
+    
+//     //VOLUME_GENERATED_BEGIN
+//     float mat_density = 0;
+//     float mat_temperature = 0;
+//     vec3  mat_emission = vec3(0,0,0);
+//     vec3  mat_scatter = vec3(1,1,1);
+//     vec3  mat_absorb = vec3(1,1,1);
+//     //VOLUME_GENERATED_END
+
+//     VolMatOutput v;
+//     v.density = mat_density;
+//     v.temperature = 
+// }
+
 #define USING_VDB 1
 
-static __inline__ __device__ VolumeOutput evalVolume(void* density_ptr, void* temp_ptr, float4* uniforms, VolumeInput const &attrs) {
+static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_ptr, float4* uniforms, VolumeIn const &attrs) {
 
     auto att_pos = attrs.pos;
     auto att_clr = vec3(0);
@@ -102,14 +108,22 @@ static __inline__ __device__ VolumeOutput evalVolume(void* density_ptr, void* te
     auto att_nrm = vec3(0);
     auto att_tang = vec3(0);
 
-    //GENERATED_BEGIN_MARK
-    auto att_temp_offset = 0;
-    auto att_temp_scale = 50;
-    auto att_emission_intensity = 100;
+    HitGroupData* sbt_data = (HitGroupData*)optixGetSbtDataPointer();
+    auto zenotex = sbt_data->textures;
 
-    auto att_max_density = 1.0f;
-    auto att_max_temp = 100.0f;
+    //GENERATED_BEGIN_MARK
+        auto BlackbodyTempOffset = 0.f;
+        auto BlackbodyTempScale = 100.f;
+        auto BlackbodyIntensity = 100.f;
+        
+        auto vol_absorption = 0.1f;
+        auto vol_scattering = 0.9f;
+        auto vol_anisotropy = 0.0f;
+
     //GENERATED_END_MARK
+
+    auto att_max_density = sbt_data->density_max;
+    auto att_max_temp = sbt_data->temperature_max; 
 
 #if USING_VDB
 
@@ -131,20 +145,23 @@ static __inline__ __device__ VolumeOutput evalVolume(void* density_ptr, void* te
         float scale = temp / att_max_temp;
         scale = powf(scale, 4);
 
-        float kelvin = temp * att_temp_scale;
+        float kelvin = temp * BlackbodyTempScale;
 
         emission = fakeBlackBody(kelvin); // Normalized color;
-        emission *= scale * att_emission_intensity;
+        emission *= scale * BlackbodyIntensity;
     }
 
-    VolumeOutput output;
+    VolumeOut output;
     output.density = density;
     output.temp = temp;
+    output.anisotropy = vol_anisotropy;
+
     output.emission = emission;
 
     return output;
 #else
     //USING 3D ARRAY
+    //USING 3D Noise 
 #endif
 }
 
@@ -254,40 +271,6 @@ extern "C" __global__ void __intersection__volume()
     }
 }
 
-const static float temperatureOffset = 0;
-const static float temperatureScale = 50;
-
-const static float emissiveIntensity = 100;
-
-__device__
-float3 emitVDB(const HitGroupData* sbt_data, nanovdb::Vec3f& point) {
-    if (!sbt_data->temperature_grid) 
-        return make_float3(0);
-
-    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(sbt_data->temperature_grid );
-    const auto& acc = grid->tree().getAccessor();
-
-    const auto temp = linearSampling(acc, point);
-    // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::TreeType, 1, false>;
-    // Float temp = Sampler(temperatureFloatGrid->tree())(pIndex);
-    
-    auto kelvin = (temp - temperatureOffset) * temperatureScale;
-    
-    if (kelvin < 1000) 
-       return make_float3(0);
-
-    auto scale = temp / sbt_data->temperature_max;
-    scale = powf(scale, 4); 
-    //scale = scale * scale;
-    //scale = scale * scale;
-    float3 result = fakeBlackBody(kelvin);
-    //float3 result = kelvinRGB(temp); 
-    //scale = min(1.0f, emitValueMultiplier * scale);
-    result *= emissiveIntensity * scale;
-    return result;
-}
-
-
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
@@ -297,9 +280,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     prd->radiance = make_float3(0,0,0);
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
-
-    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>(sbt_data->density_grid );
-    const auto& acc = grid->tree().getAccessor();
 
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
@@ -336,9 +316,13 @@ extern "C" __global__ void __closesthit__radiance_volume()
    
     float v_density = 0.0;
 
+    float sigma_a = _vol_absorption;
+    float sigma_s = _vol_scattering;
+
+    float sigma_t = sigma_a + sigma_s;
+
 #if (!_DELTA_TRACKING_) 
 
-    auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
     t_ele -= log(1 - rnd(prd->seed)) / 0.1;
     float test_t = t0 + t_ele;
     if(test_t > t1)
@@ -385,7 +369,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     while(true) {
 
         auto prob = rnd(prd->seed);
-        auto sigma_t = sbt_data->sigma_a + sbt_data->sigma_s;
 
         t_ele -= log(1 - prob) / (sigma_t * sbt_data->density_max);
 
@@ -397,23 +380,27 @@ extern "C" __global__ void __closesthit__radiance_volume()
         } // over shoot, outside of volume
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
-        auto point_indexd = grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(test_point));
 
-        v_density = linearSampling(acc, point_indexd);
+        VolumeIn vol_in; vol_in.pos = test_point;
+        VolumeOut vol_out = evalVolume(sbt_data->density_grid, 
+                                          sbt_data->temperature_grid, 
+                                          nullptr, vol_in);
+
+        v_density = vol_out.density;
 
         if (rnd(prd->seed) < v_density/sbt_data->density_max) {
 
-            pbrt::HenyeyGreenstein hg {sbt_data->greenstein}; 
+            pbrt::HenyeyGreenstein hg { vol_out.anisotropy }; 
             
             float3 new_dir; 
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
             auto pdf = hg.Sample_p(ray_dir, new_dir, uu);
 
-            // scattering = make_float3(sbt_data->sigma_s / sigma_t);
+            scattering = make_float3(sigma_s / sigma_t);
             // scattering *= sbt_data->colorVDB;
-
-                auto le = emitVDB(sbt_data, point_indexd);
-                //emitting = le * scattering;
+                //auto le = emitVDB(sbt_data, point_indexd);
+                float3 le = vol_out.emission;
+                emitting = le * scattering;
             //scattering *= emitting;
 
             ray_orig = test_point;
@@ -557,6 +544,10 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     auto test_point = ray_orig; 
     float3 transmittance = make_float3(1.0f);
 
+    float sigma_a = _vol_absorption;
+    float sigma_s = _vol_scattering;
+    float sigma_t = sigma_a + sigma_s;
+
 #if (!_DELTA_TRACKING_) 
 
     const auto ray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
@@ -579,8 +570,6 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     while(++level<16) {
 
         auto prob = rnd(prd->seed);
-        auto sigma_t = (sbt_data->sigma_a + sbt_data->sigma_s);
-
         t_ele -= log(1 - prob) / (sigma_t * sbt_data->density_max);
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;

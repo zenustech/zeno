@@ -5,6 +5,7 @@
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 
+#include <memory>
 #include <optix.h>
 #include <optix_function_table_definition.h>
 #include <optix_stubs.h>
@@ -21,10 +22,14 @@
 #include <sutil/vec_math.h>
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
+#include "optixVolume.h"
 #include "raiicuda.h"
 
 //#include <GLFW/glfw3.h>
 
+#include <tbb/task_group.h>
+#include <glm/common.hpp>
+#include <glm/matrix.hpp>
 
 #include <array>
 #include <cstring>
@@ -50,10 +55,6 @@ inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 
-inline raii<OptixModule>                    volume_module            ;
-inline raii<OptixProgramGroup>              volume_radiance_group    ;
-inline raii<OptixProgramGroup>              volume_occlusion_group   ;
-
 ////end material independent stuffs
 inline void createContext()
 {
@@ -75,7 +76,37 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
+
+#define COMPILE_WITH_TASKS_CHECK( call ) check( call, #call, __FILE__, __LINE__ )
+
+inline tbb::task_group _compile_group;
+
+inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
+     
+    static const auto processor_count = std::thread::hardware_concurrency();
+
+    uint m_maxNumAdditionalTasks = processor_count;
+    uint numAdditionalTasksCreated = 0;
+
+    std::vector<OptixTask> additionalTasks( m_maxNumAdditionalTasks );
+
+    optixTaskExecute( theTask, 
+                      additionalTasks.data(), 
+                      m_maxNumAdditionalTasks, 
+                      &numAdditionalTasksCreated );
+
+    for( unsigned int i = 0; i < numAdditionalTasksCreated; ++i )
+    {
+        // Capture additionalTasks[i] by value since it will go out of scope.
+        OptixTask task = additionalTasks[i];
+
+        _c_group.run([task, &_c_group]() {
+            executeOptixTask(task, _c_group);
+        });
+    }  
+}
+
+inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location, tbb::task_group* _c_group = nullptr)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
@@ -96,19 +127,34 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     {
         return false;
     }
-    optixModuleCreateFromPTX(
-        context,
-        &module_compile_options,
-        &pipeline_compile_options,
-        input,
-        inputSize,
-        log,
-        &sizeof_log,
-        &m
-    );
+
+    if (_c_group == nullptr) {
+
+        OPTIX_CHECK(
+            optixModuleCreateFromPTX(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &m)
+        );
+    } else {
+        
+        OptixTask firstTask;
+        OPTIX_CHECK(
+            optixModuleCreateFromPTXWithTasks( 
+                context, 
+                &module_compile_options, 
+                &pipeline_compile_options,
+                input, 
+                inputSize, 
+                log, &sizeof_log, 
+                &m, 
+                &firstTask)
+        );
+
+        executeOptixTask(firstTask, *_c_group);
+        //COMPILE_WITH_TASKS_CHECK( //);
+        _c_group->wait();  
+    }
     return true;
-    //return m;
 }
+
 inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
 {
     OptixProgramGroupOptions  program_group_options = {};
@@ -161,92 +207,45 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
     
 }
 
-inline void createVolProgramGroup(OptixDeviceContext &context, OptixModule &_module) {
-
-    OptixProgramGroupOptions  program_group_options = {};
-    char   log[2048]; size_t sizeof_log = sizeof( log );
-    //
-    // Volume hit group
-    //
-    {
-        OptixProgramGroupDesc hit_prog_group_desc = {};
-        hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        hit_prog_group_desc.hitgroup.moduleCH = _module;
-        hit_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__radiance_volume";
-        hit_prog_group_desc.hitgroup.moduleAH = nullptr;
-        hit_prog_group_desc.hitgroup.entryFunctionNameAH = nullptr;
-        hit_prog_group_desc.hitgroup.moduleIS = _module;
-        hit_prog_group_desc.hitgroup.entryFunctionNameIS = "__intersection__volume";
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-            context,
-            &hit_prog_group_desc,
-            1,                             // num program groups
-            &program_group_options,
-            log, &sizeof_log,
-            &volume_radiance_group
-        ) );
-
-        memset( &hit_prog_group_desc, 0, sizeof( OptixProgramGroupDesc ) );
-        hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        
-        hit_prog_group_desc.hitgroup.moduleCH = nullptr;
-        hit_prog_group_desc.hitgroup.entryFunctionNameCH = nullptr;
-
-        hit_prog_group_desc.hitgroup.moduleAH = _module;
-        hit_prog_group_desc.hitgroup.entryFunctionNameAH = "__anyhit__occlusion_volume";
-        hit_prog_group_desc.hitgroup.moduleIS = _module;
-        hit_prog_group_desc.hitgroup.entryFunctionNameIS = "__intersection__volume";
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-            context,
-            &hit_prog_group_desc,
-            1,                             // num program groups
-            &program_group_options,
-            log, &sizeof_log,
-            &volume_occlusion_group
-        ) );
-    }     
-}
-
-inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
+inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
+                std::string kind, std::string entry, std::string nameIS, 
+                raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
     size_t sizeof_log = sizeof( log );
     std::cout<<kind<<std::endl;
     std::cout<<entry<<std::endl;
+
+    OptixProgramGroupDesc desc        = {};
+    desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+
+
     if(kind == "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP")
     {
-        OptixProgramGroupDesc desc        = {};
-        desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         desc.hitgroup.moduleCH            = _module;
         desc.hitgroup.entryFunctionNameCH = entry.c_str();
-        sizeof_log                        = sizeof( log );
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-                    context,
-                    &desc,
-                    1,  // num program groups
-                    &program_group_options,
-                    log,
-                    &sizeof_log,
-                    &oGroup.reset()
-                    ) );
-    } else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
+    } 
+    else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
-        OptixProgramGroupDesc desc        = {};
-        desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        desc.hitgroup.moduleAH            = _module;
+        desc.hitgroup.moduleAH           = _module;
         desc.hitgroup.entryFunctionNameAH = entry.c_str();
-        sizeof_log                        = sizeof( log );
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-                    context,
-                    &desc,
-                    1,  // num program groups
-                    &program_group_options,
-                    log,
-                    &sizeof_log,
-                    &oGroup.reset()
-                    ) );
     }
+
+    if (!nameIS.empty()) {
+        desc.hitgroup.moduleIS            = _module;
+        desc.hitgroup.entryFunctionNameIS = nameIS.c_str();
+    }
+
+    OPTIX_CHECK_LOG( optixProgramGroupCreate(
+                context,
+                &desc,
+                1,  // num program groups
+                &program_group_options,
+                log,
+                &sizeof_log,
+                &oGroup.reset()
+                ) );
 }
 struct cuTexture{
     cudaArray_t gpuImageArray;
@@ -380,6 +379,27 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
     }
     return texture;
 }
+
+inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb;
+inline std::map<std::string, uint> g_vdb_index;
+
+inline void preloadVDB(std::string& path, uint index, openvdb::math::Transform::Ptr transform) 
+{
+    zeno::log_debug("loading VDB :{}", path);
+    if (g_vdb.count(path)) {return;}
+
+    //auto volume = std::make_shared<VolumeWrapper>();
+    VolumeWrapper volume;
+    volume.transform = transform;
+
+    auto succ = loadVolume(volume, path); 
+    
+    if (!succ) return;
+
+    g_vdb[path] = std::make_shared<VolumeWrapper>(std::move(volume));
+    g_vdb_index[path] = index;
+}
+
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::optional<std::string> sky_tex;
@@ -424,7 +444,7 @@ inline void addTexture(std::string path)
 }
 struct rtMatShader
 {
-    raii<OptixModule>                    m_ptx_module             ;
+    raii<OptixModule>                    m_ptx_module                ; 
     
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
@@ -432,8 +452,10 @@ struct rtMatShader
     raii<OptixProgramGroup>              m_radiance_hit_group        ;
     raii<OptixProgramGroup>              m_occlusion_hit_group       ;
     std::string                          m_shaderFile                ;
+    std::string                          m_hittingEntry              ;
     std::string                          m_shadingEntry              ;
     std::string                          m_occlusionEntry            ;
+    std::string                          m_vdb                       ;
     std::map<int, std::string>           m_texs;
     void clearTextureRecords()
     {
@@ -463,8 +485,16 @@ struct rtMatShader
         m_occlusionEntry = occlusionEntry;
     }
 
+    rtMatShader(const char *shaderFile, std::string shadingEntry, std::string occlusionEntry, std::string hittingEntry)
+    {
+        m_shaderFile = shaderFile;
+        m_shadingEntry = shadingEntry;
+        m_occlusionEntry = occlusionEntry;
 
-    bool loadProgram()
+        m_hittingEntry = hittingEntry;
+    }
+
+    bool loadProgram(uint idx, tbb::task_group* _c_group = nullptr)
     {
         // try {
         //     createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
@@ -478,17 +508,23 @@ struct rtMatShader
         // } catch (sutil::Exception const &e) {
         //     throw std::runtime_error((std::string)"cannot create program group. Log:\n" + e.what() + "\n===BEG===\n" + m_shaderFile + "\n===END===\n");
         // }
+
+        std::string tmp_name = "MatShader.cu";
+        tmp_name = "$" + std::to_string(idx) + tmp_name;
         
-        if(createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu"))
+        if(createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), tmp_name.c_str(), _c_group))
         {
             std::cout<<"module created"<<std::endl;
-            createRTProgramGroups(context, m_ptx_module, 
-            "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
-            m_shadingEntry, m_radiance_hit_group);
 
             createRTProgramGroups(context, m_ptx_module, 
-            "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-            m_occlusionEntry, m_occlusion_hit_group);
+                "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
+                m_shadingEntry, m_hittingEntry, m_radiance_hit_group);
+
+            createRTProgramGroups(context, m_ptx_module, 
+                "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
+                m_occlusionEntry, m_hittingEntry, m_occlusion_hit_group);
+
+            //_c_group.wait();
             return true;
         }
         return false;
@@ -503,7 +539,7 @@ inline void createPipeline()
     pipeline_link_options.maxTraceDepth            = 4;
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2 + 2;
+    int num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
@@ -514,11 +550,6 @@ inline void createPipeline()
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;
     }
-
-    int offset = num_progs-2;
-
-    program_groups[offset] = volume_radiance_group;
-    program_groups[offset+1] = volume_occlusion_group;
 
     char   log[2048];
     size_t sizeof_log = sizeof( log );
@@ -541,9 +572,6 @@ inline void createPipeline()
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_occlusion_hit_group, &stack_sizes ) );
     }
-
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( volume_radiance_group,    &stack_sizes ) );
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( volume_occlusion_group,  &stack_sizes ) );
 
     uint32_t max_trace_depth = 4;
     uint32_t max_cc_depth = 0;

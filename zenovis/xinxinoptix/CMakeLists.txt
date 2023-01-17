@@ -35,6 +35,9 @@ target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 target_include_directories(zenovis PRIVATE nanovdb)
 target_include_directories(zenovis PRIVATE volume)
 
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
+
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
 

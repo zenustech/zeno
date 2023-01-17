@@ -14,7 +14,11 @@ void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
 void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate);
 void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut);
-void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
+void optixupdatematerial(std::vector<std::string> const &shaders, 
+                         std::vector<std::string> const &markers, 
+                         std::vector<std::vector<std::string>> &texs);
+void updateVolume();
+
 void optixupdatelight();
 void optixupdateend();
 
