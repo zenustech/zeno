@@ -109,8 +109,8 @@ struct FleshQuasiStaticStepping : INode {
               auto ei = reinterpret_bits<int>(bcws("inds",vi));
               if(ei < 0)
                   return;
-              auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-              auto w = bcws.pack<4>("w",vi);
+              auto inds = eles.pack(dim_c<4>, "inds", ei).reinterpret_bits<int>();
+              auto w = bcws.pack(dim_c<4>, "w",vi);
 
               auto tpos = vec3::zeros();
               for(size_t i = 0;i != 4;++i)
@@ -252,11 +252,11 @@ struct FleshQuasiStaticStepping : INode {
                     if(ei < 0)
                         return;
                     auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-                    auto w = bcws.pack<4>("w",vi);
+                    auto w = bcws.pack(dim_c<4>, "w", vi);
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i != 4;++i)
-                        tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
-                    auto pdiff = tpos - b_verts.pack<3>("x",vi);
+                        tpos += w[i] * vtemp.pack(dim_c<3>, tag, inds[i]);
+                    auto pdiff = tpos - b_verts.pack(dim_c<3>, "x", vi);
 
                     T stiffness = 2.0066 * mu + 1.0122 * lambda;
 
