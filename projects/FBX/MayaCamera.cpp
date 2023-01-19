@@ -27,7 +27,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <fstream>
-#include <regex>
 
 #define SET_CAMERA_DATA                         \
     out_pos->set(n->pos);                       \
@@ -140,22 +139,6 @@ struct CameraNode: zeno::INode{
         camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
         camera->userData().set2("frame", get_input2<float>("frame"));
 
-        auto other_props = get_input2<std::string>("other");
-        std::regex reg(",");
-        std::sregex_token_iterator p(other_props.begin(), other_props.end(), reg, -1);
-        std::sregex_token_iterator end;
-        std::vector<float> prop_vals;
-        while (p != end) {
-            prop_vals.push_back(std::stof(*p));
-            p++;
-        }
-        if (prop_vals.size() == 6) {
-            camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
-            camera->theta = prop_vals[3];
-            camera->phi = prop_vals[4];
-            camera->radius = prop_vals[5];
-        }
-
         set_output("camera", std::move(camera));
     }
 };
@@ -168,7 +151,6 @@ ZENO_DEFNODE(CameraNode)({
         {"float", "fov", "45"},
         {"float", "aperture", "0.1"},
         {"float", "focalPlaneDistance", "2.0"},
-        {"string", "other", ""},
         {"int", "frame", "0"},
     },
     {

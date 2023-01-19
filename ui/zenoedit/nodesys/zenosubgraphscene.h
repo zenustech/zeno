@@ -33,9 +33,6 @@ public:
     QList<ZenoParamWidget*> getScrollControls() const;
     void addScrollControl(ZenoParamWidget* pWidget);
 
-    // FIXME temp function for merge
-    void selectObjViaNodes();
-
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
