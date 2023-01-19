@@ -108,13 +108,4 @@ void CameraNode::onEditClicked()
     info.name = "frame";
     info.oldValue = frame.info.defaultValue;
     frame.info.defaultValue = QVariant::fromValue(frameId);
-
-    INPUT_SOCKET other = inputs["other"];
-    std::string other_prop;
-    for (int i = 12; i < camProp.size(); i++)
-        other_prop += std::to_string(camProp[i]) + ",";
-    info.name = "other";
-    info.oldValue = other.info.defaultValue;
-    info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 }
