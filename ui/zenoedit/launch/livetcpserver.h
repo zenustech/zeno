@@ -8,11 +8,23 @@
 
 #include "include/common.h"
 
+struct TcpSend{
+    std::string host{};
+    int port{};
+    std::string data{};
+};
+
+struct TcpReceive{
+    bool success{};
+    std::string data{};
+};
+
 class LiveTcpServer : public QObject
 {
     Q_OBJECT
 public:
     explicit LiveTcpServer(QObject *parent = 0);
+    ~LiveTcpServer();
 
 signals:
     void sendVertDone();
@@ -20,6 +32,8 @@ signals:
 public slots:
     void newConnection();
     void onReadyRead();
+public:
+    TcpReceive sendData(TcpSend s);
 
 private:
     QTcpServer *server;
@@ -29,6 +43,7 @@ private:
     std::string cameTmp;
 public:
     LiveObjectData liveData;
+    QTcpSocket* clientSocket;
 };
 
 #endif //ZENO_LIVETCPSERVER_H

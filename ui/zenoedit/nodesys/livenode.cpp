@@ -1,14 +1,14 @@
+#include "launch/livetcpserver.h"
 #include "livenode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "launch/livetcpserver.h"
 #include <zenomodel/include/api.h>
 #include <zenomodel/include/graphsmanagment.h>
 
 LiveMeshNode::LiveMeshNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
-      connect(&zenoApp->getMainWindow()->liveTcpServer, &LiveTcpServer::sendVertDone, this, [&](){
+      connect(zenoApp->getMainWindow()->liveTcpServer, &LiveTcpServer::sendVertDone, this, [&](){
                   std::cout << "sendDone vert slot\n";
 
                   onSyncClicked();
@@ -34,7 +34,7 @@ QGraphicsLinearLayout *LiveMeshNode::initCustomParamWidgets() {
 }
 
 void LiveMeshNode::onSyncClicked() {
-    auto liveData = zenoApp->getMainWindow()->liveTcpServer.liveData;
+    auto liveData = zenoApp->getMainWindow()->liveTcpServer->liveData;
     ZENO_HANDLE liveNode = index().internalId();
     Zeno_SetInputDefl(liveNode, "vertSrc", liveData.verSrc);
 }
@@ -42,7 +42,7 @@ void LiveMeshNode::onSyncClicked() {
 LiveCameraNode::LiveCameraNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
-    connect(&zenoApp->getMainWindow()->liveTcpServer, &LiveTcpServer::sendCamDone, this, [&](){
+    connect(zenoApp->getMainWindow()->liveTcpServer, &LiveTcpServer::sendCamDone, this, [&](){
         std::cout << "sendDone came slot\n";
 
         onSyncClicked();
@@ -68,7 +68,7 @@ QGraphicsLinearLayout *LiveCameraNode::initCustomParamWidgets() {
 }
 
 void LiveCameraNode::onSyncClicked() {
-    auto liveData = zenoApp->getMainWindow()->liveTcpServer.liveData;
+    auto liveData = zenoApp->getMainWindow()->liveTcpServer->liveData;
     ZENO_HANDLE liveNode = index().internalId();
     Zeno_SetInputDefl(liveNode, "camSrc", liveData.camSrc);
 }

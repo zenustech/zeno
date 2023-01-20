@@ -1,3 +1,5 @@
+#include "launch/livehttpserver.h"
+#include "launch/livetcpserver.h"
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -38,6 +40,9 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_bInDlgEventloop(false)
     , m_logger(nullptr)
 {
+    liveTcpServer = new LiveTcpServer;
+    liveHttpServer = new LiveHttpServer;
+
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
     setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
@@ -51,6 +56,8 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 
 ZenoMainWindow::~ZenoMainWindow()
 {
+    delete liveTcpServer;
+    delete liveHttpServer;
 }
 
 void ZenoMainWindow::init()
@@ -826,5 +833,26 @@ void ZenoMainWindow::updateLightList() {
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->newFrameUpdate();
+    }
+}
+void ZenoMainWindow::doFrameUpdate(int frame) {
+    if(liveHttpServer->clients.empty())
+        return;
+
+    std::cout << "====== Frame " << frame << "\n";
+    auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+    std::cout << "====== CameraMoving " << viewport->m_bMovingCamera << "\n";
+
+    // Sync Camera
+    if(viewport->m_bMovingCamera){
+
+    }
+    // Sync Frame
+    else {
+        std::string data = "FRAME " + std::to_string(frame);
+        for(auto& c: liveHttpServer->clients) {
+            auto r = liveTcpServer->sendData({c.first, c.second, data});
+            std::cout << "Client " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+        }
     }
 }
