@@ -65,6 +65,7 @@ class MayaApi:
         self.vertex_count_list = []
         self.vertex_list_list = []
         self.points_list = []
+        self.cam_trans = []
 
     def getCurrentFrame(self):
         ct = oma.MAnimControl.currentTime()
@@ -89,7 +90,7 @@ class MayaApi:
         #print("translate", translateX, translateY, translateZ)
         #print("rotate", rotateX, rotateY, rotateZ)
         #print("scale", scaleX, scaleY, scaleZ)
-        self.cam_trans.clear()
+        self.cam_trans = []
         self.cam_trans.append(translateX)
         self.cam_trans.append(translateY)
         self.cam_trans.append(translateZ)
@@ -141,6 +142,8 @@ class Helper(QtCore.QObject):
         
         self.api = MayaApi()
         self.server_started = False
+        self.enable_sync = True
+        self.is_syncying = False
         self.my_worker = None
         self.my_thread = None
         
@@ -184,9 +187,25 @@ class Helper(QtCore.QObject):
     def send_client_info(self, rem):
         _addr = 'http://{}/set_client_info'.format(self.host_address)
         print("SendClientInfo ", _addr)
-        data = {"Host": self.ip_address, "Port": self.server_port, "Remove": rem}
+        data = {
+            "Host": self.ip_address, 
+            "Port": self.server_port, 
+            "Remove": rem
+            }
         r = requests.post(_addr, json=data)
         print("SendClientInfo ", r)
+
+    def send_sync_data(self):
+        _addr = 'http://{}/sync_data'.format(self.host_address)
+        print("SendSyncData ", _addr)
+        data = {
+            "FRAME": self.api.getCurrentFrame(), 
+            "MESH_POINTS": self.api.points_list,
+            "MESH_VERTEX_LIST": self.api.vertex_list_list,
+            "MESH_VERTEX_COUNTS": self.api.vertex_count_list
+            }
+        r = requests.post(_addr, json=data)
+        print("SendSyncData ", r)
 
     def route_hello(self):
         global maya_basicTest_window
@@ -194,18 +213,34 @@ class Helper(QtCore.QObject):
         print("GlobalWindow", maya_basicTest_window)
         print("-"*10, "      ", "-"*10)
 
-    def route_set_frame(self, frame):
+    def route_set_frame(self, frame, c):
+        if not self.enable_sync:
+            return
+        if self.is_syncying:
+            return
+
+        s_sync = time.time()
+        self.is_syncying = True
         global maya_basicTest_window
         print("Set Frame ", frame)
         self.api.setCurrentFrame(frame)
+        if self.enable_sync and not c:
+            print("Sync Frame ", frame)
+            self.api.selectionMeshData()
+            self.send_sync_data()
+        self.is_syncying = False
+        e_sync = time.time()
+        print("SyncTime", e_sync - s_sync)
     
     @Slot(str)
     def onTcpSignal(self, d):
         print("onTcpSignal", d)
         ds = d.split(' ')
+        # e.g. FRAME 0 SYNCMESH 1
         if ds[0] == "FRAME":
             frame = int(ds[1])
-            self.route_set_frame(frame)
+            c = int(ds[3])
+            self.route_set_frame(frame, c)
         if ds[0] == "HELLO":
             self.route_hello()
     
@@ -221,9 +256,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.setMinimumSize(520, 520)
 
         self.helloButton = QtWidgets.QPushButton()
-        self.debugButton = QtWidgets.QPushButton()
+        self.debugInfoButton = QtWidgets.QPushButton()
+        self.debugSyncButton = QtWidgets.QPushButton()
         self.startServerButton = QtWidgets.QPushButton()
-        self.stopServerButton = QtWidgets.QPushButton()
+        self.syncDataBtn = QtWidgets.QPushButton()
         self.hostInput = QtWidgets.QLineEdit()
         self.serverPort = QtWidgets.QLineEdit()
         self.hostInputLabel = QtWidgets.QLabel()
@@ -241,8 +277,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.serverPortInputLayout.addWidget(self.serverPort)
         self.settingLayout.addWidget(self.helloButton)
         self.settingLayout.addWidget(self.startServerButton)
-        self.settingLayout.addWidget(self.stopServerButton)
-        self.debugLayout.addWidget(self.debugButton)
+        self.settingLayout.addWidget(self.syncDataBtn)
+        self.debugLayout.addWidget(self.debugInfoButton)
+        self.debugLayout.addWidget(self.debugSyncButton)
         self.mainLayout.addLayout(self.hostInputLayout)
         self.mainLayout.addLayout(self.serverPortInputLayout)
         self.mainLayout.addLayout(self.settingLayout)
@@ -264,9 +301,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         port = "18081"
         self.setWindowTitle("Zeno Live Sync")
         self.helloButton.setText("hello")
-        self.debugButton.setText("debug")
-        self.startServerButton.setText("start server")
-        self.stopServerButton.setText("stop server")
+        self.debugInfoButton.setText("d info")
+        self.debugSyncButton.setText("d dync")
+        self.startServerButton.setText("enable server")
+        self.syncDataBtn.setText("disable sync")
         self.hostInput.setText(host)
         self.serverPort.setText(port)
         self.hostInputLabel.setText("Host")
@@ -277,9 +315,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     
     def connectUi(self):
         self.helloButton.clicked.connect(self.onHelloButtonClicked)
-        self.debugButton.clicked.connect(self.onDebugButtonClicked)
+        self.debugInfoButton.clicked.connect(self.onDebugInfoButtonClicked)
+        self.debugSyncButton.clicked.connect(self.onDebugSyncButtonClicked)
         self.startServerButton.clicked.connect(self.onStartServerButtonClicked)
-        self.stopServerButton.clicked.connect(self.onStopServerButtonClicked)
+        self.syncDataBtn.clicked.connect(self.onSyncDataButtonClicked)
         self.hostInput.textChanged.connect(self.onHostTextChanged)
         self.serverPort.textChanged.connect(self.onServerPortTextChanged)
 
@@ -287,34 +326,59 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         print("onHostTextChanged ", self.hostInput.text())
         self.helper.host_address = self.hostInput.text()
 
+    def onSyncDataButtonClicked(self):
+        if self.helper.enable_sync:
+            self.helper.enable_sync = False
+            self.syncDataBtn.setText("enable sync")
+        else:
+            self.helper.enable_sync = True
+            self.syncDataBtn.setText("disable sync")
+
     def onServerPortTextChanged(self):
         self.helper.server_port = self.serverPort.text()
 
-    def onDebugButtonClicked(self):
+    def onDebugInfoButtonClicked(self):
         self.helper.api.perspCameraData()
         self.helper.api.selectionMeshData()
         print("=========="*2)
         print("Global Window ", maya_basicTest_window)
-        print("Camera Data ", self.helper.cam_trans)
+        print("Camera Data ", self.helper.api.cam_trans)
         print("Mesh Data Points ", self.helper.api.points_list)
         print("Mesh Data Vertex ", self.helper.api.vertex_list_list)
         print("Mesh Data Counts ", self.helper.api.vertex_count_list)
+        print("Server Enabled ", self.helper.server_started)
+        print("Sync Enabled ", self.helper.enable_sync)
         print("=========="*2)
+
+    def start_server(self):
+        self.helper.start_server()
+        self.helper.send_client_info(False)
+        self.startServerButton.setText("disable server")
+
+    def stop_server(self):
+        self.helper.stop_server()
+        self.helper.send_client_info(True)
+        self.startServerButton.setText("enable server")
+
+    def onDebugSyncButtonClicked(self):
+        self.helper.api.perspCameraData()
+        self.helper.api.selectionMeshData()
+        print("=========="*2)
+        self.helper.send_sync_data()
 
     def onHelloButtonClicked(self):
         self.helper.send_hello()
     
     def onStartServerButtonClicked(self):
-        self.helper.start_server()
-        self.helper.send_client_info(False)
-    
-    def onStopServerButtonClicked(self):
-        self.helper.stop_server()
-        self.helper.send_client_info(True)
+        if self.helper.server_started:
+            self.stop_server()
+        else:
+            self.start_server()
+
 
     def closeEvent(self, event):
         print("-"*10, "Window close")
-        self.onStopServerButtonClicked()
+        self.stop_server()
         event.accept()
 
 
@@ -325,7 +389,7 @@ def getMayaWindow():
 def mayaMain():
     global maya_basicTest_window
     try:
-        maya_basicTest_window.onStopServerButtonClicked()
+        maya_basicTest_window.stop_server()
         maya_basicTest_window.close()
     except:
         pass
@@ -333,6 +397,6 @@ def mayaMain():
 
     maya_basicTest_window = Ui_MainWindow(getMayaWindow())
     maya_basicTest_window.show()
-    maya_basicTest_window.onStartServerButtonClicked()
+    maya_basicTest_window.start_server()
 
 mayaMain()

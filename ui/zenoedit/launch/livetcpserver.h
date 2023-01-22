@@ -46,4 +46,13 @@ public:
     QTcpSocket* clientSocket;
 };
 
+class LiveSignalsBridge : public QObject{
+    Q_OBJECT
+  public:
+    explicit LiveSignalsBridge(QObject *parent = 0);
+
+  signals:
+    void frameMeshSendDone();
+};
+
 #endif //ZENO_LIVETCPSERVER_H

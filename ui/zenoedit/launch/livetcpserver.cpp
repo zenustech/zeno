@@ -75,14 +75,13 @@ void LiveTcpServer::onReadyRead() {
 TcpReceive LiveTcpServer::sendData(TcpSend s){
     clientSocket->connectToHost(QString::fromStdString(s.host), s.port);
     TcpReceive r;
-    if(clientSocket->waitForConnected(3000))
+    if(clientSocket->waitForConnected(2000))
     {
-        std::cout << "Connected! " << s.host << ":" << s.port << "\n";
         // send
         clientSocket->write(QByteArray::fromStdString(s.data));
         clientSocket->waitForBytesWritten(1000);
-        clientSocket->waitForReadyRead(3000);
-        std::cout << "Reading: " << clientSocket->bytesAvailable() << "\n";
+        clientSocket->waitForReadyRead(2000);
+        std::cout << "\tConnected! " << s.host << ":" << s.port << " Reading: " << clientSocket->bytesAvailable() << "\n";
 
         // receive
         r.data = clientSocket->readAll().toStdString();
@@ -95,4 +94,8 @@ TcpReceive LiveTcpServer::sendData(TcpSend s){
         std::cout << "Not connected! " << s.host << ":" << s.port << "\n";
     }
     return r;
+}
+
+LiveSignalsBridge::LiveSignalsBridge(QObject *parent) : QObject(parent) {
+
 }

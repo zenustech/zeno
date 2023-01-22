@@ -42,6 +42,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     liveTcpServer = new LiveTcpServer;
     liveHttpServer = new LiveHttpServer;
+    liveSignalsBridge = new LiveSignalsBridge;
 
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -58,6 +59,7 @@ ZenoMainWindow::~ZenoMainWindow()
 {
     delete liveTcpServer;
     delete liveHttpServer;
+    delete liveSignalsBridge;
 }
 
 void ZenoMainWindow::init()
@@ -849,10 +851,11 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
     }
     // Sync Frame
     else {
-        std::string data = "FRAME " + std::to_string(frame);
+        int count = liveHttpServer->frameMeshDataCount(frame);
+        std::string data = "FRAME " + std::to_string(frame) + " SYNCMESH " + std::to_string(count);
         for(auto& c: liveHttpServer->clients) {
             auto r = liveTcpServer->sendData({c.first, c.second, data});
-            std::cout << "Client " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+            std::cout << "\tClient " << c.first << ":" << c.second << " Receive " << r.data << "\n";
         }
     }
 }

@@ -29,6 +29,7 @@ class DisplayWidget;
 class ZenoGraphsEditor;
 class LiveTcpServer;
 class LiveHttpServer;
+class LiveSignalsBridge;
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -46,6 +47,7 @@ public:
     ZenoLights* lightPanel = nullptr;
     LiveTcpServer* liveTcpServer;
     LiveHttpServer* liveHttpServer;
+    LiveSignalsBridge* liveSignalsBridge;
 
 public slots:
     void openFileDialog();

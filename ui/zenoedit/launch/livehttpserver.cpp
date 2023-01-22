@@ -1,18 +1,40 @@
 #include "livehttpserver.h"
+#include "livetcpserver.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 LiveHttpServer::LiveHttpServer() {
+    d_frame_mesh = json({});
+
     CROW_ROUTE(app, "/hello")([&](){
         std::cout << "****** Client Num " << clients.size() << "\n";
         return "<h1>LiveHttpServer: Hello world - Zeno<h1>";
     });
 
-    CROW_ROUTE(app, "/sync_info")
+    CROW_ROUTE(app, "/sync_data")
         .methods("POST"_method)
             ([&](const crow::request& req){
                 auto x = crow::json::load(req.body);
+                //std::cout << "req.body " << req.body << "\n";
                 if (! x)
                     return crow::response(crow::status::BAD_REQUEST);
-                auto f = x["FRAME"].i();
+
+                json parseData = json::parse(req.body);
+
+                int frame = parseData["FRAME"].get<double>();
+                int vertices_size = parseData["MESH_POINTS"].size();
+                int vertexCount_size = parseData["MESH_VERTEX_COUNTS"].size();
+                int vertexList_size = parseData["MESH_VERTEX_LIST"].size();
+                if(vertices_size && vertexCount_size && vertexList_size) {
+                    d_frame_mesh[std::to_string(frame)] = parseData;
+
+                    //auto vertices = parseData["vertices"].get<std::vector<std::vector<float>>>();
+                    //auto vertexCount = parseData["vertexCount"].get<std::vector<int>>();
+                    //auto vertexList = parseData["vertexList"].get<std::vector<int>>();
+                    emit zenoApp->getMainWindow()->liveSignalsBridge->frameMeshSendDone();
+                    std::cout << " Frame " << frame << " Size " << vertices_size << " " << vertexCount_size << " " << vertexList_size << "\n";
+                }
+
                 return crow::response{"<h1>LiveHttpServer: SyncInfo - Zeno<h1>"};
             });
 
@@ -67,6 +89,7 @@ LiveHttpServer::LiveHttpServer() {
             std::cerr << e.what() << std::endl;
         }
     }).detach();
-
-
+}
+int LiveHttpServer::frameMeshDataCount(int frame) {
+    return d_frame_mesh.count(std::to_string(frame));
 }
