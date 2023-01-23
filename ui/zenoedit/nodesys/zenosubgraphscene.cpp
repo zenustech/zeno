@@ -26,11 +26,13 @@
 #include <zenomodel/include/vparamitem.h>
 #include <zenomodel/include/command.h>
 #include "nodesys/blackboardnode2.h"
+#include <zenoui/style/zenostyle.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
+    , m_hoverSocket(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -566,6 +568,9 @@ void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
 
 void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 {
+    if (m_tempLink)
+        return;
+
     ZASSERT_EXIT(pSocketItem);
 
     QModelIndex paramIdx = pSocketItem->paramIndex();
@@ -644,7 +649,47 @@ void ZenoSubGraphScene::onNodePosChanged()
     }
 }
 
-void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos) {
+void ZenoSubGraphScene::detectNearestSocket(const QPointF& mousePos)
+{
+    static const qreal sbrWidth = ZenoStyle::dpiScaled(100);
+    static const qreal sbrHeight = ZenoStyle::dpiScaled(24);
+
+    QRectF rcBr(mousePos.x() - sbrWidth / 2, mousePos.y() - sbrHeight / 2, sbrWidth, sbrHeight);
+
+    QList<QGraphicsItem*> catchedItems = items(rcBr, Qt::IntersectsItemShape);
+    float minDist = std::numeric_limits<float>::max();
+    ZenoSocketItem* pOldHover = m_hoverSocket;
+    m_hoverSocket = nullptr;
+    for (QGraphicsItem* item : catchedItems)
+    {
+        if (ZenoSocketItem* sock = qgraphicsitem_cast<ZenoSocketItem*>(item))
+        {
+            QPointF offset = sock->scenePos() - mousePos;
+            float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
+            if (dist < minDist)
+            {
+                m_hoverSocket = sock;
+                minDist = dist;
+            }
+        }
+    }
+    if (pOldHover) {
+        ZenoSocketItem::SOCK_STATUS status = pOldHover->sockStatus();
+        if (status == ZenoSocketItem::STATUS_TRY_CONN) {
+            pOldHover->setSockStatus(ZenoSocketItem::STATUS_NOCONN);
+        }
+    }
+    if (m_hoverSocket) {
+        ZenoSocketItem::SOCK_STATUS status = m_hoverSocket->sockStatus();
+        if (status != ZenoSocketItem::STATUS_CONNECTED) {
+            m_hoverSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
+        }
+    }
+    pOldHover = m_hoverSocket;
+}
+
+void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
+{
     bool bFixedInput = false;
     QString nodeId;
     QPointF fixedPos;
@@ -851,12 +896,20 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         onSocketAbsorted(event->scenePos());
         return;
     }
+    else
+    {
+        detectNearestSocket(event->scenePos());
+    }
     QGraphicsScene::mouseMoveEvent(event);
 }
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
+    if (!m_tempLink && event->button() == Qt::LeftButton && m_hoverSocket)
+    {
+        emit m_hoverSocket->clicked(m_hoverSocket->isInputSocket());
+    }
+    else if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
     {
         onTempLinkClosed();
         removeItem(m_tempLink);
@@ -871,6 +924,20 @@ void ZenoSubGraphScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
     //send to ZenoNode.
     QGraphicsScene::contextMenuEvent(event);
+}
+
+void ZenoSubGraphScene::focusOutEvent(QFocusEvent* event)
+{
+    QGraphicsScene::focusOutEvent(event);
+    if (m_hoverSocket)
+    {
+        ZenoSocketItem::SOCK_STATUS status = m_hoverSocket->sockStatus();
+        if (status == ZenoSocketItem::STATUS_TRY_CONN)
+        {
+            m_hoverSocket->setSockStatus(ZenoSocketItem::STATUS_NOCONN);
+        }
+        m_hoverSocket = nullptr;
+    }
 }
 
 void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)

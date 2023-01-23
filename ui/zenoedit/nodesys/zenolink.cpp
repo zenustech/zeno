@@ -80,7 +80,7 @@ ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF f
 
 ZenoTempLink::~ZenoTempLink()
 {
-    m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
+    //m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
 }
 
 QPointF ZenoTempLink::getSrcPos() const

@@ -31,6 +31,7 @@ public:
     bool isInputSocket() const;
     QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
+    SOCK_STATUS sockStatus() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
 signals:
