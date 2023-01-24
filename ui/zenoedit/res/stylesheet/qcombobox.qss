@@ -40,7 +40,7 @@ QComboBox[cssClass="newstyle"] {
     padding: 3px 5px 3px 10px;
     font: 14px 'HarmonyOS Sans';
     color: #FFFFFF;
-    background: #24282E;
+    background: rgb(25,29,33);
 }
 
 QComboBox[cssClass="newstyle"]::drop-down {
