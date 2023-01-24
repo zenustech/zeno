@@ -446,7 +446,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				paramInfo.typeDesc = type;
                 CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_PARAM, name, type);
                 paramInfo.control = ctrlInfo.control;
-                paramInfo.controlProps = ctrlInfo.controlProps.toMap();
+                paramInfo.controlProps = ctrlInfo.controlProps;
 				paramInfo.defaultValue = UiHelper::parseStringByType(defl, type);
 				//thers is no "value" in descriptor, but it's convient to initialize param value. 
 				paramInfo.value = paramInfo.defaultValue;
