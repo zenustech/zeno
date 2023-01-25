@@ -454,32 +454,39 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
-	QTransform tf = transform();
-	qreal scale = tf.m11();
-	int innerGrid = SCENE_GRID_SIZE;   //will be associated with scale factor.
+    //background color
+    painter->fillRect(rect, QColor(18, 22, 25));
 
-	qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
-	qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
-
-	QVarLengthArray<QLineF, 100> innerLines;
-
-	for (qreal x = left; x < rect.right(); x += innerGrid)
+	static const bool bDrawGrid = false;
+    if (bDrawGrid)
 	{
-		innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
-	}
-	for (qreal y = top; y < rect.bottom(); y += innerGrid)
-	{
-		innerLines.append(QLineF(rect.left(), y, rect.right(), y));
-	}
+		QTransform tf = transform();
+		qreal scale = tf.m11();
+		int innerGrid = SCENE_GRID_SIZE;   //will be associated with scale factor.
 
-	//background color
-	painter->fillRect(rect, QColor(18, 22, 25));
+		qreal left = int(rect.left()) - (int(rect.left()) % innerGrid);
+		qreal top = int(rect.top()) - (int(rect.top()) % innerGrid);
 
-	QPen pen;
-	pen.setColor(QColor(20, 20, 20));
-	pen.setWidthF(pen.widthF() / scale);
-	//painter->setPen(pen);
-	//painter->drawLines(innerLines.data(), innerLines.size());
+		QVarLengthArray<QLineF, 100> innerLines;
+
+		for (qreal x = left; x < rect.right(); x += innerGrid)
+		{
+			innerLines.append(QLineF(x, rect.top(), x, rect.bottom()));
+		}
+		for (qreal y = top; y < rect.bottom(); y += innerGrid)
+		{
+			innerLines.append(QLineF(rect.left(), y, rect.right(), y));
+		}
+
+		if (scale >= 0.25)
+		{
+			QPen pen;
+			pen.setColor(QColor(56, 62, 71));
+			pen.setWidthF(pen.widthF() / scale);
+			painter->setPen(pen);
+			painter->drawLines(innerLines.data(), innerLines.size());
+		}
+	}
 }
 
 void _ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
