@@ -84,6 +84,7 @@ public:
                                   QModelIndexList& params,
                                   QModelIndexList& outputs,
                                   bool bEnsureSRCDST_lastKey = true);
+    static QVector<qreal> scaleFactors();
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

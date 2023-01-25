@@ -137,7 +137,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
-    QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
+    QStringList items = {"25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%", "400%", "500%"};
     QVariant props = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
@@ -153,6 +153,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
     QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbZoom->setEditable(false);
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
