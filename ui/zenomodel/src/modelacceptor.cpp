@@ -231,7 +231,7 @@ void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool b
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    m_currentGraph->setParamValue(bInput ? PARAM_INPUT : PARAM_OUTPUT, idx, keyName, QVariant(), "", SOCKPROP_EDITABLE);
+    m_currentGraph->setParamValue(bInput ? PARAM_INPUT : PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_NONE, SOCKPROP_EDITABLE);
 }
 
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
@@ -476,7 +476,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
         QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
         deflVal = UiHelper::parseVarByType(type, deflVal, nullptr);
         PARAM_CONTROL control = UiHelper::getControlByType(type);
-        m_currentGraph->setParamValue(PARAM_PARAM, idx, "defl", deflVal, type);
+        m_currentGraph->setParamValue(PARAM_PARAM, idx, "defl", deflVal, type, control);
     }
 }
 

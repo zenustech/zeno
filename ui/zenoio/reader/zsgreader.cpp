@@ -453,27 +453,6 @@ void ZsgReader::_parseDictPanel(
     }
 }
 
-void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
-{
-    if (jsonParams.IsObject())
-    {
-        for (const auto& paramObj : jsonParams.GetObject())
-        {
-            const QString& name = paramObj.name.GetString();
-            const rapidjson::Value& val = paramObj.value;
-            pAcceptor->setParamValue(id, nodeName, name, val);
-        }
-        pAcceptor->endParams(id, nodeName);
-    } else {
-        if (nodeName == "Blackboard" && jsonParams.IsArray())
-        {
-            //deprecate by zeno-old.
-            return;
-        }
-        zeno::log_warn("not object json param");
-    }
-}
-
 void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const rapidjson::Value& outputs, IAcceptor *pAcceptor)
 {
     for (const auto& outObj : outputs.GetObject())
@@ -719,6 +698,27 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
         _descs.insert(nodeCls, desc);
     }
     return _descs;
+}
+
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+{
+    if (jsonParams.IsObject())
+    {
+        for (const auto& paramObj : jsonParams.GetObject())
+        {
+            const QString& name = paramObj.name.GetString();
+            const rapidjson::Value& val = paramObj.value;
+            pAcceptor->setParamValue(id, nodeName, name, val);
+        }
+        pAcceptor->endParams(id, nodeName);
+    } else {
+        if (nodeName == "Blackboard" && jsonParams.IsArray())
+        {
+            //deprecate by zeno-old.
+            return;
+        }
+        zeno::log_warn("not object json param");
+    }
 }
 
 bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor) 

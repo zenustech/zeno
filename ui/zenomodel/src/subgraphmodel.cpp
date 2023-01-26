@@ -517,6 +517,7 @@ bool SubGraphModel::setParamValue(
         const QString& sockName,
         const QVariant& value,
         const QString& type,
+        PARAM_CONTROL ctrl,
         SOCKET_PROPERTY sockProp)
 {
     _NodeItem item;
@@ -524,7 +525,7 @@ bool SubGraphModel::setParamValue(
         return false;
 
     //todo: control properties
-    item.nodeParams->setAddParam(cls, sockName, type, value, CONTROL_NONE, QVariant(), sockProp);
+    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp);
     return false;
 }
 

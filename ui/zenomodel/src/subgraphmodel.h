@@ -88,6 +88,7 @@ public:
         const QString& sockName,
         const QVariant& value,
         const QString& type = "",
+        PARAM_CONTROL ctrl = CONTROL_NONE,
         SOCKET_PROPERTY prop = SOCKPROP_NORMAL);
 
     QString name() const;
