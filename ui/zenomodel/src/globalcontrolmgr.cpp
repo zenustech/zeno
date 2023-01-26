@@ -36,15 +36,7 @@ GlobalControlMgr::GlobalControlMgr()
     }
 }
 
-void GlobalControlMgr::onParamUpdated(const QString& nodeCls, PARAM_CLASS cls, const QString& coreParam, PARAM_CONTROL newCtrl)
-{
-    CONTROL_INFO info(nodeCls, cls, coreParam, CONTROL_NONE, QVariant());
-    int idx = m_infos.indexOf(info);
-    if (idx != -1)
-        m_infos[idx].control = newCtrl;
-}
-
-CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS cls, const QString& coreParam, const QString& coreType)
+CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS cls, const QString& coreParam, const QString& coreType) const
 {
     CONTROL_INFO info(nodeCls, cls, coreParam, CONTROL_NONE, QVariant());
     int idx = m_infos.indexOf(info);
@@ -52,11 +44,6 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
     {
         if (m_infos[idx].control == CONTROL_NONE)
             return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
-        if (m_infos[idx].controlProps.isValid()) {
-            QVariantMap map;
-            map["items"] = m_infos[idx].controlProps;
-            m_infos[idx].controlProps = map;
-        }
         return m_infos[idx];
     }
     if (coreType.startsWith("enum "))
@@ -67,59 +54,4 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
         return CONTROL_INFO(CONTROL_ENUM, map);
     }
     return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
-}
-
-void GlobalControlMgr::onCoreParamsInserted(const QModelIndex &parent, int first, int last)
-{
-    NodeParamModel* pModel = qobject_cast<NodeParamModel*>(sender());
-    ZASSERT_EXIT(pModel);
-
-    const QModelIndex& idx = pModel->index(first, 0, parent);
-    VParamItem* pItem = static_cast<VParamItem*>(pModel->itemFromIndex(idx));
-    PARAM_CLASS cls = pItem->getParamClass();
-
-    QPersistentModelIndex nodeIdx = pModel->data(idx, ROLE_NODE_IDX).toPersistentModelIndex();
-    const QString& objCls = nodeIdx.data(ROLE_OBJNAME).toString();
-    const QString& coreParam = idx.data(ROLE_PARAM_NAME).toString();
-
-    CONTROL_INFO info(objCls, cls, coreParam, CONTROL_NONE, QVariant());
-    if (m_infos.indexOf(info) == -1)
-        m_infos.append(info);
-}
-
-void GlobalControlMgr::onCoreParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
-{
-    NodeParamModel* pModel = qobject_cast<NodeParamModel*>(sender());
-    ZASSERT_EXIT(pModel);
-
-    const QModelIndex &idx = pModel->index(first, 0, parent);
-    VParamItem* pItem = static_cast<VParamItem*>(pModel->itemFromIndex(idx));
-    PARAM_CLASS cls = pItem->getParamClass();
-
-    QPersistentModelIndex nodeIdx = pModel->data(idx, ROLE_NODE_IDX).toPersistentModelIndex();
-    const QString& objCls = nodeIdx.data(ROLE_OBJNAME).toString();
-    const QString& coreParam = idx.data(ROLE_PARAM_NAME).toString();
-    CONTROL_INFO info(objCls, cls, coreParam, CONTROL_NONE, QVariant());
-    m_infos.removeAll(info);
-}
-
-void GlobalControlMgr::onSubGraphRename(const QString& oldName, const QString& newName)
-{
-    for (int i = 0; i < m_infos.size(); i++)
-    {
-        if (m_infos[i].objCls == oldName)
-        {
-            m_infos[i].objCls = newName;
-        }
-    }
-}
-
-void GlobalControlMgr::onParamRename(const QString& nodeCls, PARAM_CLASS cls, const QString& oldName, const QString& newName)
-{
-    CONTROL_INFO info(nodeCls, cls, oldName, CONTROL_NONE, QVariant());
-    int idx = m_infos.indexOf(info);
-    if (idx != -1)
-    {
-        m_infos[idx].coreParam = newName;
-    }
 }

@@ -512,8 +512,9 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                 {
                     //register subnet param control.
                     const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                    GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
-                                                                paramItem->m_ctrl);
+                    //store control info on desc.
+                    //GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
+                    //                                            paramItem->m_ctrl);
                 }
                 pGroupItem->appendRow(paramItem);
             }

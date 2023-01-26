@@ -43,14 +43,7 @@ class GlobalControlMgr : public QObject
     Q_OBJECT
 public:
     static GlobalControlMgr& instance();
-    CONTROL_INFO controlInfo(const QString& objCls, PARAM_CLASS cls, const QString& coreParam, const QString& coreType);
-
-public slots:
-    void onParamUpdated(const QString &objCls, PARAM_CLASS cls, const QString &coreParam, PARAM_CONTROL newCtrl);
-    void onCoreParamsInserted(const QModelIndex &parent, int first, int last);
-    void onCoreParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
-    void onSubGraphRename(const QString& oldName, const QString& newName);
-    void onParamRename(const QString& nodeCls, PARAM_CLASS cls, const QString &oldName, const QString &newName);
+    CONTROL_INFO controlInfo(const QString& objCls, PARAM_CLASS cls, const QString& coreParam, const QString& coreType) const;
 
 private:
     GlobalControlMgr();

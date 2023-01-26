@@ -162,8 +162,6 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
         m_nodesCate[cate].nodes.append(newName);
     }
 
-    GlobalControlMgr::instance().onSubGraphRename(oldName, newName);
-
     emit graphRenamed(oldName, newName);
 }
 

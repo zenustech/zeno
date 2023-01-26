@@ -286,6 +286,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
     };
 
+    const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);

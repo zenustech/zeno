@@ -253,9 +253,10 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         PARAM_INFO param;
         param.name = descParam.name;
         param.control = descParam.control;
+        param.controlProps = descParam.controlProps;
         param.typeDesc = descParam.typeDesc;
         param.defaultValue = descParam.defaultValue;
-        param.value = param.defaultValue;
+        param.value = descParam.value;
         params.insert(param.name, param);
     }
 
@@ -264,6 +265,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         INPUT_SOCKET input;
         input.info.nodeid = id;
         input.info.control = descInput.info.control;
+        input.info.ctrlProps = descInput.info.ctrlProps;
         input.info.type = descInput.info.type;
         input.info.name = descInput.info.name;
         input.info.defaultValue = descInput.info.defaultValue;
@@ -275,6 +277,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         OUTPUT_SOCKET output;
         output.info.nodeid = id;
         output.info.control = descOutput.info.control;
+        output.info.ctrlProps = descOutput.info.ctrlProps;
         output.info.type = descOutput.info.type;
         output.info.name = descOutput.info.name;
         outputs[output.info.name] = output;
