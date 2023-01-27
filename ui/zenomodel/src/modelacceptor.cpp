@@ -400,7 +400,7 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     keyModel->setCollasped(bCollasped);
 }
 
-void ModelAcceptor::setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties) 
+void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) 
 {
     if (!m_currentGraph)
         return;
@@ -413,12 +413,8 @@ void ModelAcceptor::setControlAndProperties(const QString &nodeCls, const QStrin
     if (sockIdx.isValid()) {
         QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
         ZASSERT_EXIT(pModel);
-        if (!control.isNull()) {
-            pModel->setData(sockIdx, UiHelper::getControlByDesc(control), ROLE_PARAM_CTRL);
-        }
-        if (ctrlProperties.isValid()) {
-            pModel->setData(sockIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
-		}
+        pModel->setData(sockIdx, control, ROLE_PARAM_CTRL);
+        pModel->setData(sockIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
     } else {
          zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
     }

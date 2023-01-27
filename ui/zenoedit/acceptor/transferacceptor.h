@@ -55,7 +55,7 @@ public:
         bool bCollasped
     ) override;
 
-	void setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties);
+	void setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties);
     void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) override;
     void setParamValue2(const QString &id, const QString &noCls, const PARAMS_INFO &params) override;
     void setPos(const QString &id, const QPointF &pos) override;

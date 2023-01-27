@@ -287,7 +287,7 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
-void TransferAcceptor::setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties) 
+void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties)
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
     NODE_DATA &data = m_nodes[inNode];
@@ -295,11 +295,8 @@ void TransferAcceptor::setControlAndProperties(const QString &nodeCls, const QSt
     //standard inputs desc by latest descriptors.
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     if (inputs.find(inSock) != inputs.end()) {
-        if (!control.isEmpty())
-            inputs[inSock].info.control = UiHelper::getControlByDesc(control);
-        if (ctrlProperties.isValid()) {
-            inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
-        }
+        inputs[inSock].info.control = control;
+        inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     }
 }

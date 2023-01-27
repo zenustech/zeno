@@ -8,6 +8,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
+#include <zenomodel/include/modeldata.h>
 
 typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> PRETTY_WRITER;
@@ -59,6 +60,9 @@ namespace JsonHelper
 		);
 	void AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid);
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
+	void WriteVariant(const QVariant& var, RAPIDJSON_WRITER& writer);
+	void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer);
+    bool importControl(const rapidjson::Value& controlObj, PARAM_CONTROL& ctrl, QVariant& props);
 	CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
 	void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer);
 }
