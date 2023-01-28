@@ -8,6 +8,7 @@
 #include "globalcontrolmgr.h"
 #include "vparamitem.h"
 #include "common_def.h"
+#include "iotags.h"
 
 
 ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
@@ -260,7 +261,7 @@ bool ViewParamModel::moveRows(
     if (count != 1)
         return false;       //todo: multiline movement.
 
-    QStandardItem *srcParent = itemFromIndex(sourceParent);
+    VParamItem* srcParent = static_cast<VParamItem*>(itemFromIndex(sourceParent));
     if (!srcParent)
         return false;
 
@@ -314,6 +315,27 @@ bool ViewParamModel::moveRows(
         }
         VParamItem *pDstItem = static_cast<VParamItem *>(srcParent->child(dstRow));
         pDstItem->cloneFrom(pSrcItemClone);
+
+        //update the order on desc, if subnet node.
+        if (m_bNodeUI && m_model->IsSubGraphNode(m_nodeIdx))
+        {
+            const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+            NODE_DESC desc;
+            bool ret = m_model->getDescriptor(nodeCls, desc);
+            if (ret)
+            {
+                if (srcParent->m_name == iotags::params::node_inputs)
+                {
+                    desc.inputs.move(srcRow, dstRow);
+                    m_model->updateSubgDesc(nodeCls, desc);
+                }
+                else if (srcParent->m_name == iotags::params::node_outputs)
+                {
+                    desc.outputs.move(srcRow, dstRow);
+                    m_model->updateSubgDesc(nodeCls, desc);
+                }
+            }
+        }
     }
     endMoveRows();
     return true;

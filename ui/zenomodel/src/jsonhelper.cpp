@@ -53,6 +53,9 @@ namespace JsonHelper
 
     bool importControl(const rapidjson::Value& controlObj, PARAM_CONTROL& ctrl, QVariant& props)
     {
+        if (!controlObj.IsObject())
+            return false;
+
         if (!controlObj.HasMember("name"))
             return false;
 
