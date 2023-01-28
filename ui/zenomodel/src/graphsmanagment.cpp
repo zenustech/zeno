@@ -65,6 +65,9 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
     connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
+    connect(m_model, &IGraphsModel::dirtyChanged, this, [=]() {
+        emit dirtyChanged(m_model->isDirty());
+    });
 }
 
 QAbstractItemModel* GraphsManagment::treeModel()
@@ -87,6 +90,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 
     pModel->clearDirty();
     setCurrentModel(pModel);
+    emit fileOpened(fn);
     return pModel;
 }
 
@@ -156,6 +160,7 @@ void GraphsManagment::clear()
         }
         m_scenes.clear();
     }
+    emit fileClosed();
 }
 
 void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
