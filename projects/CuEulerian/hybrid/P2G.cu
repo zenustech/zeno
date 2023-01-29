@@ -18,8 +18,8 @@ namespace zeno {
 
 struct ZSPrimitiveToSparseGrid : INode {
     template <zs::kernel_e knl>
-    void activate_block(zs::CudaExecutionPolicy &pol, ZenoParticles *parObjPtr, ZenoSparseGrid *zsSPG,
-                        size_t num_pars) {
+    void activate_block(zs::CudaExecutionPolicy &pol, ZenoParticles *parObjPtr, ZenoSparseGrid *zsSPG, size_t num_pars,
+                        bool multigrid) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -47,43 +47,45 @@ struct ZSPrimitiveToSparseGrid : INode {
         const auto nbs = spg.numBlocks();
         spg.resizeGrid(nbs);
 
-        /// @brief adjust multigrid accordingly
-        // grid
-        auto &spg1 = zsSPG->spg1;
-        spg1.resize(pol, nbs);
-        auto &spg2 = zsSPG->spg2;
-        spg2.resize(pol, nbs);
-        auto &spg3 = zsSPG->spg3;
-        spg3.resize(pol, nbs);
-        // table
-        {
-            const auto &table = spg._table;
-            auto &table1 = spg1._table;
-            auto &table2 = spg2._table;
-            auto &table3 = spg3._table;
-            table1.reset(true);
-            table1._cnt.setVal(nbs);
-            table2.reset(true);
-            table2._cnt.setVal(nbs);
-            table3.reset(true);
-            table3._cnt.setVal(nbs);
+        if (multigrid) {
+            /// @brief adjust multigrid accordingly
+            // grid
+            auto &spg1 = zsSPG->spg1;
+            spg1.resize(pol, nbs);
+            auto &spg2 = zsSPG->spg2;
+            spg2.resize(pol, nbs);
+            auto &spg3 = zsSPG->spg3;
+            spg3.resize(pol, nbs);
+            // table
+            {
+                const auto &table = spg._table;
+                auto &table1 = spg1._table;
+                auto &table2 = spg2._table;
+                auto &table3 = spg3._table;
+                table1.reset(true);
+                table1._cnt.setVal(nbs);
+                table2.reset(true);
+                table2._cnt.setVal(nbs);
+                table3.reset(true);
+                table3._cnt.setVal(nbs);
 
-            table1._buildSuccess.setVal(1);
-            table2._buildSuccess.setVal(1);
-            table3._buildSuccess.setVal(1);
-            pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
-                             tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
-                auto bcoord = table._activeKeys[i];
-                tab1.insert(bcoord / 2, i, true);
-                tab2.insert(bcoord / 4, i, true);
-                tab3.insert(bcoord / 8, i, true);
-            });
+                table1._buildSuccess.setVal(1);
+                table2._buildSuccess.setVal(1);
+                table3._buildSuccess.setVal(1);
+                pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
+                                 tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
+                    auto bcoord = table._activeKeys[i];
+                    tab1.insert(bcoord / 2, i, true);
+                    tab2.insert(bcoord / 4, i, true);
+                    tab3.insert(bcoord / 8, i, true);
+                });
 
-            int tag1 = table1._buildSuccess.getVal();
-            int tag2 = table2._buildSuccess.getVal();
-            int tag3 = table3._buildSuccess.getVal();
-            if (tag1 == 0 || tag2 == 0 || tag3 == 0)
-                zeno::log_error("check P2G multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
+                int tag1 = table1._buildSuccess.getVal();
+                int tag2 = table2._buildSuccess.getVal();
+                int tag3 = table3._buildSuccess.getVal();
+                if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                    zeno::log_error("check P2G multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
+            }
         }
     }
 
@@ -219,6 +221,7 @@ struct ZSPrimitiveToSparseGrid : INode {
         bool needInit = get_input2<bool>("initialize");
         bool needNormalize = get_input2<bool>("normalize");
         bool needActivate = get_input2<bool>("activateBlock");
+        bool multigrid = get_input2<bool>("activateMultiGrid");
 
         auto tag = src_tag(zsSPG, attrTag);
 
@@ -268,7 +271,7 @@ struct ZSPrimitiveToSparseGrid : INode {
             for (auto &&parObjPtr : parObjPtrs) {
                 match([&](auto knlTag) {
                     constexpr auto knt = decltype(knlTag)::value;
-                    activate_block<knt>(cudaPol, parObjPtr, zsSPG.get(), num_pars);
+                    activate_block<knt>(cudaPol, parObjPtr, zsSPG.get(), num_pars, multigrid);
                 })(knl);
             }
         }
@@ -365,7 +368,8 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                          {"bool", "staggered", "0"},
                                          {"bool", "initialize", "1"},
                                          {"bool", "normalize", "1"},
-                                         {"bool", "activateBlock", "0"}},
+                                         {"bool", "activateBlock", "0"},
+                                         {"bool", "activateMultiGrid", "0"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */

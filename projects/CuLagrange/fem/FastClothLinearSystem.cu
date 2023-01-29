@@ -381,6 +381,8 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     // GRAD, HESS, P
+    if constexpr (s_enableProfile)
+        timer.tick();
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
 #if 1
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
@@ -439,10 +441,14 @@ void FastClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy& pol)
         } 
     }); 
 #endif 
+    if constexpr (s_enableProfile) {
+        timer.tock();
+        dynamicsTime[0] += timer.elapsed();
+    }
 }
 
 template <typename Model>
-typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typename FastClothSystem::tiles_t &vtemp,
+typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typename FastClothSystem::tiles_t &vtemp, typename FastClothSystem::tiles_t &seInds, 
                                        typename FastClothSystem::PrimitiveHandle &primHandle, const Model &model,
                                        typename FastClothSystem::T dt, zs::Vector<typename FastClothSystem::T> &energy) {
     using namespace zs;
@@ -452,6 +458,7 @@ typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typen
     using T = typename FastClothSystem::T;
 
     auto &eles = primHandle.getEles();
+    auto &edges = primHandle.getSurfEdges();
     const zs::SmallString tag = "yn";
     energy.setVal(0); 
     if (primHandle.category == ZenoParticles::curve) {
@@ -480,6 +487,26 @@ typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typen
         if (primHandle.isBoundary())
             return 0;
         // elasticity
+#if s_useMassSpring
+#if 1
+        pol(range(edges.size()), 
+            [seInds = proxy<space>({}, seInds), vtemp = proxy<space>({}, vtemp), 
+            energy = proxy<space>(energy), model = model, n = edges.size(),
+            vOffset = primHandle.vOffset, seoffset = primHandle.seOffset] __device__ (int ei) mutable {
+            int sei = ei + seoffset; 
+            auto inds = seInds.template pack<2>("inds", sei).template reinterpret_bits<int>();
+            T E; 
+            auto m = 0.5f * (vtemp("ws", inds[0]) + vtemp("ws", inds[1])); 
+            auto v0 = vtemp.pack(dim_c<3>, "yn", inds[0]); 
+            auto v1 = vtemp.pack(dim_c<3>, "yn", inds[1]); 
+            auto restL = seInds("restLen", sei); 
+            // auto restL = 4.2f; 
+            E = 0.5f * m * model.mu * zs::sqr((v0 - v1).norm() - restL); 
+            reduce_to(ei, n, E, energy[0]);
+        }); 
+        return energy.getVal() * dt * dt; 
+#endif 
+#else 
         pol(range(eles.size()),
             [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp), energy = proxy<space>(energy), tag, model = model,
              vOffset = primHandle.vOffset, n = eles.size()] __device__(int ei) mutable {
@@ -504,6 +531,7 @@ typename FastClothSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typen
                 reduce_to(ei, n, E, energy[0]);
             });
         return energy.getVal() * dt * dt;
+#endif 
     } else if (primHandle.category == ZenoParticles::tet) {
         pol(zs::range(eles.size()),
             [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles), energy = proxy<space>(energy), model, tag,
@@ -539,7 +567,7 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
         if (primHandle.isBoundary())
             continue; 
         match([&](auto &elasticModel) {
-            elasticE += elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, temp); 
+            elasticE += elasticityEnergy(pol, vtemp, seInds, primHandle, elasticModel, dt, temp); 
         })(primHandle.getModels().getElasticModel());
     }
 

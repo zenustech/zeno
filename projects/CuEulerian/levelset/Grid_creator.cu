@@ -230,6 +230,103 @@ ZENDEFNODE(ZSGridVoxelSize, {/* inputs: */
                              /* category: */
                              {"Eulerian"}});
 
+struct ZSGridAppendAttribute : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto nchns = get_input2<int>("ChannelNumber");
+
+        auto &spg = zs_grid->spg;
+        auto pol = zs::cuda_exec();
+
+        if (!spg.hasProperty(attrTag)) {
+            spg.append_channels(pol, {{attrTag, nchns}});
+        } else {
+            int m_nchns = spg.getPropertySize(attrTag);
+            if (m_nchns != nchns)
+                throw std::runtime_error(
+                    fmt::format("the SparseGrid already has [{}] with [{}] channels!", attrTag, m_nchns));
+        }
+
+        set_output("SparseGrid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
+                                   {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                   /* outputs: */
+                                   {"SparseGrid"},
+                                   /* params: */
+                                   {},
+                                   /* category: */
+                                   {"Eulerian"}});
+
+struct ZSGridReduction : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto op = get_input2<std::string>("Operation");
+
+        auto &spg = zs_grid->spg;
+        auto block_cnt = spg.numBlocks();
+
+        auto tag = src_tag(zs_grid, attrTag);
+        auto nchns = spg.getPropertySize(tag);
+        bool isVec3 = nchns == 3 ? true : false;
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        size_t cell_cnt = block_cnt * spg.block_size;
+        zs::Vector<float> res{spg.get_allocator(), count_warps(cell_cnt)};
+        zs::memset(zs::mem_device, res.data(), 0, sizeof(float) * count_warps(cell_cnt));
+
+        // maximum velocity
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), res = zs::proxy<space>(res), cell_cnt, isVec3, op = zs::SmallString{op},
+             tagOffset = spg.getPropertyOffset(tag)] __device__(int blockno, int cellno) mutable {
+                float val = 0;
+                if (isVec3) {
+                    float u = spgv.value(tagOffset + 0, blockno, cellno);
+                    float v = spgv.value(tagOffset + 1, blockno, cellno);
+                    float w = spgv.value(tagOffset + 2, blockno, cellno);
+
+                    val = zs::sqrt(u * u + v * v + w * w);
+                } else {
+                    val = spgv.value(tagOffset, blockno, cellno);
+                }
+
+                size_t cellno_glb = blockno * spgv.block_size + cellno;
+
+                if (op == "max")
+                    reduce_max(cellno_glb, cell_cnt, val, res[cellno_glb / 32]);
+                else if (op == "min")
+                    reduce_min(cellno_glb, cell_cnt, val, res[cellno_glb / 32]);
+                else if (op == "average")
+                    reduce_add(cellno_glb, cell_cnt, val, res[cellno_glb / 32]);
+            });
+
+        float val_rdc;
+        if (op == "max")
+            val_rdc = reduce(pol, res, thrust::maximum<float>{});
+        else if (op == "min")
+            val_rdc = reduce(pol, res, thrust::minimum<float>{});
+        else if (op == "average")
+            val_rdc = reduce(pol, res, thrust::plus<float>{}) / cell_cnt;
+
+        set_output("Value", std::make_shared<NumericObject>(val_rdc));
+    }
+};
+
+ZENDEFNODE(ZSGridReduction, {/* inputs: */
+                             {"SparseGrid", {"string", "Attribute", ""}, {"enum max min average", "Operation", "max"}},
+                             /* outputs: */
+                             {"Value"},
+                             /* params: */
+                             {},
+                             /* category: */
+                             {"Eulerian"}});
+
 struct ZSMakeDenseSDF : INode {
     void apply() override {
         float dx = get_input2<float>("dx");

@@ -1090,15 +1090,9 @@ struct ToZSSurfaceMesh : INode {
                 float bendingStrength = 0.f;
                 if (has_input<DictObject>("params")) {
                     auto params = get_input<DictObject>("params");
-                    const auto get_arg = [params = params->getLiterial<zeno::NumericValue>()](const char *const tag,
-                                                                                              auto type) {
-                        using T = typename RM_CVREF_T(type)::type;
-                        std::optional<T> ret{};
-                        if (auto it = params.find(tag); it != params.end())
-                            ret = std::get<T>(it->second);
-                        return ret;
-                    };
-                    bendingStrength = get_arg("bending_stiffness", zs::wrapt<float>{}).value_or(0.f);
+                    auto ps = params->getLiterial<zeno::NumericValue>();
+                    if (auto it = ps.find("bending_stiffness"); it != ps.end())
+                        bendingStrength = std::get<float>(it->second);
                 }
 
                 auto &bendingEdges = (*zstris)[ZenoParticles::s_bendingEdgeTag];

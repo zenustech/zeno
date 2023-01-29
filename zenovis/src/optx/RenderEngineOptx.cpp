@@ -388,8 +388,8 @@ struct GraphicsManager {
                 auto p0 = prim_in->verts[prim_in->tris[0][0]];
                 auto p1 = prim_in->verts[prim_in->tris[0][1]];
                 auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p1;
-                auto e2 = p2 - p1;
+                auto e1 = p0 - p2;
+                auto e2 = p1 - p2;
                 auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
                 auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
                 glm::vec3 g_nor;
@@ -407,6 +407,14 @@ struct GraphicsManager {
                 prim->verts[2] = e2;
                 prim->verts[3] = nor;
                 prim->verts[4] = clr;
+
+                std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
+                std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
+                std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
+                std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
+                std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
+                std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
                 xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
                                         prim->verts[3].data(), prim->verts[4].data());
@@ -427,11 +435,12 @@ struct GraphicsManager {
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
             }
         }

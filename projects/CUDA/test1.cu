@@ -1,6 +1,7 @@
 // #include "zensim/container/Vector.hpp"
 // #include "zensim/geometry/VdbLevelSet.h"
 #include "Structures.hpp"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/math/DihedralAngle.hpp"
@@ -82,6 +83,97 @@ struct ZSCUMathTest : INode {
         auto e = (m_X[1] - m_X[0]).norm(exec_seq);
         auto h = (n1.norm(exec_seq) + n2.norm(exec_seq)) / 2 / (e * 3);
         fmt::print("rest angle is: {}, e: {}, h: {}\n", ra, e, h);
+
+        using T = zs::vec<float, 3, 3>;
+        const zs::SparseMatrix<T, true> spmat{100, 100};
+        auto spv = proxy<execspace_e::host>(spmat);
+        fmt::print("default spmat(0, 1): {}\n", spv(0, 1).extent);
+
+        constexpr int N = 7;
+        zs::Vector<int> nidx{N + 1};
+        nidx[0] = 0; //
+        nidx[1] = 1; //
+        nidx[2] = 4;
+        nidx[3] = 5;
+        nidx[4] = 7; //
+        nidx[5] = 9; //
+        nidx[6] = 10;
+        nidx[7] = 12; //
+        zs::Vector<int> nlist{12};
+        nlist[0] = 1; //
+        nlist[1] = 0; //
+        nlist[2] = 2;
+        nlist[3] = 5;
+        nlist[4] = 1; //
+        nlist[5] = 4; //
+        nlist[6] = 6;
+        nlist[7] = 3; //
+        nlist[8] = 6;
+        nlist[9] = 1;  //
+        nlist[10] = 3; //
+        nlist[11] = 4;
+        zs::Vector<int> nstat{N};
+        nstat.reset(0);
+
+        auto pol = zs::omp_exec();
+        auto representative = [&nstat](const int idx) -> int {
+            int curr = nstat[idx];
+            if (curr != idx) {
+                int next, prev = idx;
+                while (curr > (next = nstat[curr])) {
+                    nstat[prev] = next;
+                    prev = curr;
+                    curr = next;
+                }
+            }
+            return curr;
+        };
+
+        // init
+        pol(range(N), [&](int v) {
+            const int beg = nidx[v];
+            const int end = nidx[v + 1];
+            int m = v;
+            int i = beg;
+            while ((m == v) && (i < end)) {
+                m = std::min(m, nlist[i]);
+                i++;
+            }
+            nstat[v] = m;
+        });
+        // union find
+        pol(range(N), [&](int v) {
+            int vstat = representative(v);
+            auto beg = nidx[v];
+            auto end = nidx[v + 1];
+            for (int i = beg; i < end; i++) {
+                const int nli = nlist[i];
+                if (v > nli) {
+                    int ostat = representative(nli);
+                    bool repeat;
+                    do {
+                        repeat = false;
+                        if (vstat != ostat) {
+                            int ret;
+                            if (vstat < ostat) {
+                                if ((ret = atomic_cas(exec_omp, &nstat[ostat], ostat, vstat)) != ostat) {
+                                    ostat = ret;
+                                    repeat = true;
+                                }
+                            } else {
+                                if ((ret = atomic_cas(exec_omp, &nstat[vstat], vstat, ostat)) != vstat) {
+                                    vstat = ret;
+                                    repeat = true;
+                                }
+                            }
+                        }
+                    } while (repeat);
+                }
+            }
+        });
+
+        for (int i = 0; i != N; ++i)
+            fmt::print("stat[{}]: {}\n", i, nstat[i]);
         getchar();
     }
 };

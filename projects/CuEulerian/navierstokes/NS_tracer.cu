@@ -21,7 +21,7 @@ namespace zeno {
 
 struct ZSTracerAdvectDiffuse : INode {
     void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, float diffuse, float dt, std::string scheme,
-                 float speedScale, ZenoSparseGrid *NSGrid) {
+                 float speedScale, zeno::vec3f wind, ZenoSparseGrid *NSGrid) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -33,106 +33,305 @@ struct ZSTracerAdvectDiffuse : INode {
         if (scheme == "Semi-Lagrangian") {
             // Semi-Lagrangian advection (1st order)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
-                 trcSrcTag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
+
+            update_cur(NSGrid, tag);
+        } else if (scheme == "MacCormack") {
+            // MacCormack scheme
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
+                 trcDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
+
+                    spgv(trcDstTag, blockno, cellno) = trc_sl;
+                });
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag), trcSrcTag = zs::SmallString{"tmp"},
+                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+                    auto wcoord = spgv.indexToWorld(icoord);
+
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
+                    float trc_sl = spgv.wSample(trcSrcTag, wcoord + u_adv * dt);
+
+                    float trc_mc =
+                        spgv.value(trcSrcTag, blockno, cellno) + (spgv.value(trcTag, blockno, cellno) - trc_sl) / 2.f;
+
+                    // clamp
+                    auto icoord_src = spgv.worldToIndex(wcoord - u_adv * dt);
+                    auto arena = spgv.iArena(icoord_src);
+                    auto sl_mi = arena.minimum(trcTag);
+                    auto sl_ma = arena.maximum(trcTag);
+                    if (trc_mc > sl_ma || trc_mc < sl_mi) {
+                        trc_mc = arena.isample(trcTag, 0, spgv._background);
+                    }
+
+                    spgv(trcDstTag, blockno, cellno) = trc_mc;
                 });
 
             update_cur(NSGrid, tag);
         } else if (scheme == "BFECC") {
             // Back and Forth Error Compensation and Correction (BFECC)
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
-                 trcSrcTag = src_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcSrcTag = src_tag(NSGrid, tag),
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord - u_adv * dt);
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
-                 trcTag = src_tag(NSGrid, tag), trcSrcTag = dst_tag(NSGrid, tag),
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag), trcSrcTag = dst_tag(NSGrid, tag),
                  trcDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
                     float trc_sl = spgv.wSample(trcSrcTag, wcoord + u_adv * dt);
                     float trc_n = spgv.value(trcTag, blockno, cellno);
 
                     spgv(trcDstTag, blockno, cellno) = trc_n + (trc_n - trc_sl) / 2.f;
                 });
             pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, vSrcTag = src_tag(NSGrid, "v"),
-                 trcTag = src_tag(NSGrid, tag), trcSrcTag = zs::SmallString{"tmp"},
+                [spgv = zs::proxy<space>(spg), dx, dt, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                 vSrcTag = src_tag(NSGrid, "v"), trcTag = src_tag(NSGrid, tag), trcSrcTag = zs::SmallString{"tmp"},
                  trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
                     auto wcoord = spgv.indexToWorld(icoord);
 
-                    auto u_adv = spgv.iStaggeredPack(vSrcTag, icoord) * speedScale;
-                    auto wcoord_src = wcoord - u_adv * dt;
+                    auto u_adv = (spgv.iStaggeredPack(vSrcTag, icoord) + wind) * speedScale;
+                    auto icoord_src = spgv.worldToIndex(wcoord - u_adv * dt);
+                    auto arena = spgv.iArena(icoord_src);
 
-                    float trc_sl = spgv.wSample(trcSrcTag, wcoord_src);
+                    float trc_sl = arena.isample(trcSrcTag, 0, spgv._background);
 
                     // clamp
-                    auto arena = spgv.wArena(wcoord_src);
                     auto sl_mi = arena.minimum(trcTag);
                     auto sl_ma = arena.maximum(trcTag);
                     if (trc_sl > sl_ma || trc_sl < sl_mi) {
-                        trc_sl = spgv.wSample(trcTag, wcoord_src);
+                        trc_sl = arena.isample(trcTag, 0, spgv._background);
                     }
 
                     spgv(trcDstTag, blockno, cellno) = trc_sl;
                 });
 
             update_cur(NSGrid, tag);
-        } else if (scheme == "Finite-Volume") {
-            // Finite Volume Method (FVM)
-            // numrtical flux of tracer
-            pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, speedScale, tag = src_tag(NSGrid, tag),
-                 vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                    auto icoord = spgv.iCoord(blockno, cellno);
+        } else if (scheme == "Stencil") {
+            {
+                // shared memory
+                using value_type = typename RM_CVREF_T(spg)::value_type;
+                constexpr int side_length = RM_CVREF_T(spg)::side_length;
+                constexpr int arena_size = (side_length + 3) * (side_length + 3) * (side_length + 3);
+                constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
+                constexpr std::size_t tpb = 4;
+                constexpr std::size_t cuda_block_size = bucket_size * tpb;
+                pol.shmem(arena_size * sizeof(value_type) * tpb);
 
-                    const int stcl = 2; // stencil point in each side
-                    float trc[3][2 * stcl];
+                // Finite Volume Method (FVM)
+                // numrtical flux of tracer
+                pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
+                    [spgv = zs::proxy<space>(spg), dx, speedScale, wind = zs::vec<float, 3>::from_array(wind),
+                     ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{}, blockCnt = block_cnt,
+                     tagOffset = spg.getPropertyOffset(src_tag(NSGrid, tag)),
+                     vSrcOffset = spg.getPropertyOffset(src_tag(NSGrid, "v"))] __device__(value_type * shmem, int bid,
+                                                                                          int tid) mutable {
+                        using vec3i = zs::vec<int, 3>;
+                        using spg_t = RM_CVREF_T(spgv);
+                        constexpr int side_length = spg_t::side_length;
+                        constexpr int side_area = side_length * side_length;
+                        constexpr int halo_side_length = side_length + 3;
+                        constexpr int arena_size = halo_side_length * halo_side_length * halo_side_length;
 
-                    // | i - 2 | i - 1 | i | i + 1 |
-                    for (int i = -stcl; i < stcl; ++i) {
-                        trc[0][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(i, 0, 0));
-                        trc[1][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, i, 0));
-                        trc[2][i + stcl] = spgv.value(tag, icoord + zs::vec<int, 3>(0, 0, i));
-                    }
+                        constexpr int block_size = spg_t::block_size;
+                        constexpr int tile_size = decltype(ts_c)::value;
 
-                    float u_adv[3];
-                    for (int ch = 0; ch < 3; ++ch)
-                        u_adv[ch] = spgv.value(vSrcTag, ch, icoord) * speedScale;
+                        auto halo_index = [](int i, int j, int k) {
+                            return k * (halo_side_length * halo_side_length) + j * halo_side_length + i;
+                        };
 
-                    // approximate value at i - 1/2
-                    float flux[3];
-                    for (int ch = 0; ch < 3; ++ch) {
-                        // convection flux
-                        if (u_adv[ch] < 0)
-                            flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
-                        else
-                            flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
-                    }
+                        auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
+                        auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
+                        if (blockno >= blockCnt)
+                            return;
 
-                    for (int ch = 0; ch < 3; ++ch) {
-                        spgv("tmp", ch, blockno, cellno) = flux[ch];
-                    }
-                });
+                        shmem += (tid / tile_size) * arena_size;
+                        auto bcoord = spgv._table._activeKeys[blockno];
+
+                        auto block = spgv.block(blockno);
+
+                        // load halo
+                        for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                            auto localCoord = spg_t::local_offset_to_coord(cid);
+                            auto idx = halo_index(localCoord[0] + 2, localCoord[1] + 2, localCoord[2] + 2);
+                            shmem[idx] = block(tagOffset, cid);
+                        }
+
+                        // back
+                        int bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, -side_length});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, j + 2, 0)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, j, side_length - 2}));
+                                shmem[halo_index(i + 2, j + 2, 1)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, j, side_length - 1}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, j + 2, 0)] = 0;
+                                shmem[halo_index(i + 2, j + 2, 1)] = 0;
+                            }
+                        // front
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, side_length});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, j + 2, halo_side_length - 1)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, j + 2, halo_side_length - 1)] = 0;
+                            }
+
+                        // bottom
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, -side_length, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, 0, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, side_length - 2, j}));
+                                shmem[halo_index(i + 2, 1, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, side_length - 1, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, 0, j + 2)] = 0;
+                                shmem[halo_index(i + 2, 1, j + 2)] = 0;
+                            }
+                        // up
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{0, side_length, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, halo_side_length - 1, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(i + 2, halo_side_length - 1, j + 2)] = 0;
+                            }
+
+                        // left
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{-side_length, 0, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(0, i + 2, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{side_length - 2, i, j}));
+                                shmem[halo_index(1, i + 2, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{side_length - 1, i, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(0, i + 2, j + 2)] = 0;
+                                shmem[halo_index(1, i + 2, j + 2)] = 0;
+                            }
+                        // right
+                        bno = spgv._table.tile_query(tile, bcoord + vec3i{side_length, 0, 0});
+                        if (bno >= 0) {
+                            auto block = spgv.block(bno);
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(halo_side_length - 1, i + 2, j + 2)] =
+                                    block(tagOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                            }
+                        } else
+                            for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                                int i = id / side_length;
+                                int j = id % side_length;
+                                shmem[halo_index(halo_side_length - 1, i + 2, j + 2)] = 0;
+                            }
+
+                        tile.sync();
+
+                        for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
+                            auto ccoord = spgv.local_offset_to_coord(cellno);
+                            ccoord += 2;
+
+                            const int stcl = 2; // stencil point in each side
+                            float trc[3][2 * stcl];
+
+                            // | i - 2 | i - 1 | i | i + 1 |
+                            for (int i = -stcl; i < stcl; ++i) {
+                                trc[0][i + stcl] = shmem[halo_index(ccoord[0] + i, ccoord[1], ccoord[2])];
+                                trc[1][i + stcl] = shmem[halo_index(ccoord[0], ccoord[1] + i, ccoord[2])];
+                                trc[2][i + stcl] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] + i)];
+                            }
+
+                            float u_adv[3];
+                            for (int ch = 0; ch < 3; ++ch)
+                                u_adv[ch] = (block(vSrcOffset + ch, cellno) + wind[ch]) * speedScale;
+
+                            // approximate value at i - 1/2
+                            float flux[3];
+                            for (int ch = 0; ch < 3; ++ch) {
+                                // convection flux
+                                if (u_adv[ch] < 0)
+                                    flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][1], trc[ch][2], trc[ch][3]);
+                                else
+                                    flux[ch] = u_adv[ch] * scheme::TVD_MUSCL3(trc[ch][2], trc[ch][1], trc[ch][0]);
+                            }
+
+                            for (int ch = 0; ch < 3; ++ch) {
+                                spgv("tmp", ch, blockno, cellno) = flux[ch];
+                            }
+                        }
+                    });
+                pol.shmem(0);
+            }
 
             // time integration of tracer
             pol(zs::Collapse{block_cnt, spg.block_size},
@@ -145,7 +344,7 @@ struct ZSTracerAdvectDiffuse : INode {
                         zs::vec<int, 3> offset{0, 0, 0};
                         offset[ch] = 1;
 
-                        flux[ch][0] = spgv.value("tmp", ch, icoord);
+                        flux[ch][0] = spgv.value("tmp", ch, blockno, cellno);
                         flux[ch][1] = spgv.value("tmp", ch, icoord + offset);
                     }
 
@@ -162,29 +361,177 @@ struct ZSTracerAdvectDiffuse : INode {
         }
 
         if (diffuse > 0) {
+            // shared memory
+            using value_type = typename RM_CVREF_T(spg)::value_type;
+            constexpr int side_length = RM_CVREF_T(spg)::side_length;
+            constexpr int arena_size = (side_length + 2) * (side_length + 2) * (side_length + 2);
+            constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
+            constexpr std::size_t tpb = 4;
+            constexpr std::size_t cuda_block_size = bucket_size * tpb;
+            pol.shmem(arena_size * sizeof(value_type) * tpb);
+
             // diffusion
-            pol(zs::Collapse{block_cnt, spg.block_size},
-                [spgv = zs::proxy<space>(spg), dx, dt, diffuse, trcSrcTag = src_tag(NSGrid, tag),
-                 trcDstTag = dst_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
-                    auto icoord = spgv.iCoord(blockno, cellno);
+            pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, diffuse, ts_c = zs::wrapv<bucket_size>{},
+                 tpb_c = zs::wrapv<tpb>{}, blockCnt = block_cnt,
+                 trcSrcOffset = spg.getPropertyOffset(src_tag(NSGrid, tag)),
+                 trcDstOffset = spg.getPropertyOffset(dst_tag(NSGrid, tag))] __device__(value_type * shmem, int bid,
+                                                                                        int tid) mutable {
+                    // load halo
+                    using vec3i = zs::vec<int, 3>;
+                    using spg_t = RM_CVREF_T(spgv);
+                    constexpr int side_length = spg_t::side_length;
+                    constexpr int side_area = side_length * side_length;
+                    constexpr int halo_side_length = side_length + 2;
+                    constexpr int arena_size = halo_side_length * halo_side_length * halo_side_length;
 
-                    const int stcl = 1; // stencil point in each side
-                    float trc_x[2 * stcl + 1], trc_y[2 * stcl + 1], trc_z[2 * stcl + 1];
+                    constexpr int block_size = spg_t::block_size;
+                    constexpr int tile_size = decltype(ts_c)::value;
 
-                    for (int i = -stcl; i <= stcl; ++i) {
-                        trc_x[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(i, 0, 0));
-                        trc_y[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(0, i, 0));
-                        trc_z[i + stcl] = spgv.value(trcSrcTag, icoord + zs::vec<int, 3>(0, 0, i));
+                    auto halo_index = [](int i, int j, int k) {
+                        return k * (halo_side_length * halo_side_length) + j * halo_side_length + i;
+                    };
+
+                    auto tile = zs::cg::tiled_partition<tile_size>(zs::cg::this_thread_block());
+                    auto blockno = bid * RM_CVREF_T(tpb_c)::value + tid / tile_size;
+                    if (blockno >= blockCnt)
+                        return;
+
+                    shmem += (tid / tile_size) * arena_size;
+                    auto bcoord = spgv._table._activeKeys[blockno];
+
+                    auto block = spgv.block(blockno);
+                    for (int cid = tile.thread_rank(); cid < block_size; cid += tile_size) {
+                        auto localCoord = spg_t::local_offset_to_coord(cid);
+                        auto idx = halo_index(localCoord[0] + 1, localCoord[1] + 1, localCoord[2] + 1);
+                        shmem[idx] = block(trcSrcOffset, cid);
                     }
 
-                    float trc_xx = scheme::central_diff_2nd(trc_x[0], trc_x[1], trc_x[2], dx);
-                    float trc_yy = scheme::central_diff_2nd(trc_y[0], trc_y[1], trc_y[2], dx);
-                    float trc_zz = scheme::central_diff_2nd(trc_z[0], trc_z[1], trc_z[2], dx);
+                    // back
+                    int bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, -side_length});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, j + 1, 0)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{i, j, side_length - 1}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, j + 1, 0)] = 0;
+                        }
+                    // front
+                    bno = spgv._table.tile_query(tile, bcoord + vec3i{0, 0, side_length});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{i, j, 0}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, j + 1, halo_side_length - 1)] = 0;
+                        }
 
-                    float diff_term = diffuse * (trc_xx + trc_yy + trc_zz);
+                    // bottom
+                    bno = spgv._table.tile_query(tile, bcoord + vec3i{0, -side_length, 0});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, 0, j + 1)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{i, side_length - 1, j}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, 0, j + 1)] = 0;
+                        }
+                    // up
+                    bno = spgv._table.tile_query(tile, bcoord + vec3i{0, side_length, 0});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{i, 0, j}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(i + 1, halo_side_length - 1, j + 1)] = 0;
+                        }
 
-                    spgv(trcDstTag, blockno, cellno) = trc_x[1] + diff_term * dt;
+                    // left
+                    bno = spgv._table.tile_query(tile, bcoord + vec3i{-side_length, 0, 0});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(0, i + 1, j + 1)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{side_length - 1, i, j}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(0, i + 1, j + 1)] = 0;
+                        }
+                    // right
+                    bno = spgv._table.tile_query(tile, bcoord + vec3i{side_length, 0, 0});
+                    if (bno >= 0) {
+                        auto block = spgv.block(bno);
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] =
+                                block(trcSrcOffset, spg_t::local_coord_to_offset(vec3i{0, i, j}));
+                        }
+                    } else
+                        for (int id = tile.thread_rank(); id < side_area; id += tile_size) {
+                            int i = id / side_length;
+                            int j = id % side_length;
+                            shmem[halo_index(halo_side_length - 1, i + 1, j + 1)] = 0;
+                        }
+
+                    tile.sync();
+
+                    for (int cellno = tile.thread_rank(); cellno < block_size; cellno += tile_size) {
+                        auto ccoord = spgv.local_offset_to_coord(cellno);
+                        ccoord += 1;
+
+                        float trc_x[2], trc_y[2], trc_z[2];
+                        float trc_self = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2])];
+                        trc_x[0] = shmem[halo_index(ccoord[0] - 1, ccoord[1], ccoord[2])];
+                        trc_x[1] = shmem[halo_index(ccoord[0] + 1, ccoord[1], ccoord[2])];
+                        trc_y[0] = shmem[halo_index(ccoord[0], ccoord[1] - 1, ccoord[2])];
+                        trc_y[1] = shmem[halo_index(ccoord[0], ccoord[1] + 1, ccoord[2])];
+                        trc_z[0] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] - 1)];
+                        trc_z[1] = shmem[halo_index(ccoord[0], ccoord[1], ccoord[2] + 1)];
+
+                        float trc_xx = scheme::central_diff_2nd(trc_x[0], trc_self, trc_x[1], dx);
+                        float trc_yy = scheme::central_diff_2nd(trc_y[0], trc_self, trc_y[1], dx);
+                        float trc_zz = scheme::central_diff_2nd(trc_z[0], trc_self, trc_z[1], dx);
+
+                        float diff_term = diffuse * (trc_xx + trc_yy + trc_zz);
+
+                        spgv(trcDstOffset, blockno, cellno) = trc_self + diff_term * dt;
+                    }
                 });
+            pol.shmem(0);
+
             update_cur(NSGrid, tag);
         }
     }
@@ -229,24 +576,19 @@ struct ZSTracerAdvectDiffuse : INode {
         auto diffuse = get_input2<float>("Diffusion");
         auto dt = get_input2<float>("dt");
         auto scheme = get_input2<std::string>("Scheme");
+        auto wind = get_input2<zeno::vec3f>("WindVelocity");
 
         auto pol = zs::cuda_exec();
         ///
         if (get_input2<bool>("Density")) {
-            compute(pol, "rho", diffuse, dt, scheme, 1.f, NSGrid.get());
-
-            auto clampBelow = get_input2<float>("ClampDensityBelow");
-            clampDensity(pol, "rho", clampBelow, NSGrid.get());
+            compute(pol, "rho", diffuse, dt, scheme, 1.f, wind, NSGrid.get());
         }
         if (get_input2<bool>("Temperature")) {
-            compute(pol, "T", diffuse, dt, scheme, 1.f, NSGrid.get());
-
-            auto coolingRate = get_input2<float>("CoolingRate");
-            coolingTemp(pol, "T", coolingRate, dt, NSGrid.get());
+            compute(pol, "T", diffuse, dt, scheme, 1.f, wind, NSGrid.get());
         }
         if (get_input2<bool>("Fuel")) {
             auto speedScale = get_input2<float>("FuelSpeedScale");
-            compute(pol, "fuel", diffuse, dt, scheme, speedScale, NSGrid.get());
+            compute(pol, "fuel", diffuse, dt, scheme, speedScale, wind, NSGrid.get());
         }
 
         set_output("NSGrid", NSGrid);
@@ -259,11 +601,10 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                     {"bool", "Density", "1"},
                                     {"bool", "Temperature", "1"},
                                     {"bool", "Fuel", "0"},
-                                    {"enum Finite-Volume Semi-Lagrangian BFECC", "Scheme", "Finite-Volume"},
-                                    {"float", "ClampDensityBelow", "0.01"},
-                                    {"float", "CoolingRate", "0.0"},
+                                    {"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"},
                                     {"float", "FuelSpeedScale", "0.05"},
-                                    {"float", "Diffusion", "0.0"}},
+                                    {"float", "Diffusion", "0.0"},
+                                    {"vec3f", "WindVelocity", "0, 0, 0"}},
                                    /* outputs: */
                                    {"NSGrid"},
                                    /* params: */
@@ -403,7 +744,7 @@ struct ZSVolumeCombustion : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto dt = get_input2<float>("dt");
-        auto ignitionT = get_input2<float>("ignitionTemperature");
+        auto ignitionT = get_input2<float>("IgnitionTemperature");
         auto burnSpeed = get_input2<float>("BurnSpeed");
         auto rhoEmitAmount = get_input2<float>("DensityEmitAmount");
         auto TEmitAmount = get_input2<float>("TemperatureEmitAmount");
@@ -451,7 +792,7 @@ struct ZSVolumeCombustion : INode {
 ZENDEFNODE(ZSVolumeCombustion, {/* inputs: */
                                 {"NSGrid",
                                  "dt",
-                                 {"float", "ignitionTemperature", "0.8"},
+                                 {"float", "IgnitionTemperature", "0.8"},
                                  {"float", "BurnSpeed", "0.5"},
                                  {"float", "DensityEmitAmount", "0.5"},
                                  {"float", "TemperatureEmitAmount", "0.5"},
