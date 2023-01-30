@@ -77,6 +77,22 @@ void ZenoWelcomePage::initRecentFiles()
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
     QStringList lst = settings.childKeys();
+    qSort(lst.begin(), lst.end(), [](const QString &s1, const QString &s2) { 
+         static QRegExp rx("File (\\d+)");
+        int num1 = 0;
+        if (rx.indexIn(s1) != -1) {
+             QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num1 = caps[1].toInt();
+        }
+        int num2 = 0;
+        if (rx.indexIn(s2) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num2 = caps[1].toInt();
+        }
+        return num1 < num2;
+    });
 
     static const int nLimit = 4;
 
