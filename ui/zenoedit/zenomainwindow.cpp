@@ -1029,12 +1029,27 @@ void ZenoMainWindow::save()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
-    IGraphsModel *pModel = pGraphsMgm->currentModel();
-    if (pModel) {
-        QString currFilePath = pModel->filePath();
-        if (currFilePath.isEmpty())
-            return saveAs();
-        saveFile(currFilePath);
+    IGraphsModel* pModel = pGraphsMgm->currentModel();
+    zenoio::ZSG_VERSION ver = pModel->ioVersion();
+    if (zenoio::VER_2 == ver)
+    {
+        QMessageBox msgBox(QMessageBox::Information, "", QString::fromLocal8Bit("当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式"));
+        msgBox.exec();
+        bool ret = saveAs();
+        if (ret) {
+            pModel->setIOVersion(zenoio::VER_2_5);
+        }
+    }
+    else
+    {
+        if (pModel)
+        {
+            QString currFilePath = pModel->filePath();
+            if (currFilePath.isEmpty())
+                saveAs();
+            else
+                saveFile(currFilePath);
+        }
     }
 }
 
@@ -1117,12 +1132,13 @@ void ZenoMainWindow::clearErrorMark()
     }
 }
 
-void ZenoMainWindow::saveAs() {
+bool ZenoMainWindow::saveAs() {
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
-        saveFile(path);
+        return saveFile(path);
     }
+    return false;
 }
 
 QString ZenoMainWindow::getOpenFileByDialog() {

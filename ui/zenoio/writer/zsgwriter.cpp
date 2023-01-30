@@ -82,7 +82,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
         _dumpDescriptors(descs, writer);
 
         writer.Key("version");
-        writer.String("v2");
+        writer.String("v2.5");  //distinguish the new version ui from the stable zeno2.
     }
 
     strJson = QString::fromUtf8(s.GetString());

@@ -456,6 +456,11 @@ void ModelAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_IN
         bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);
 }
 
+void ModelAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
+{
+    m_pModel->setIOVersion(versio);
+}
+
 void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")

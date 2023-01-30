@@ -21,6 +21,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_stack(new QUndoStack(this))
     , m_apiLevel(0)
     , m_bIOProcessing(false)
+    , m_version(zenoio::VER_2_5)
 {
     m_selection = new QItemSelectionModel(this);
 
@@ -1381,6 +1382,15 @@ bool GraphsModel::addExecuteCommand(QUndoCommand* pCommand)
     return 1;
 }
 
+void GraphsModel::setIOVersion(zenoio::ZSG_VERSION ver)
+{
+    m_version = ver;
+}
+
+zenoio::ZSG_VERSION GraphsModel::ioVersion() const
+{
+    return m_version;
+}
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {

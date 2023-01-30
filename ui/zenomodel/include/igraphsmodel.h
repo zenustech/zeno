@@ -5,6 +5,7 @@
 #include "common.h"
 #include "modeldata.h"
 #include "modelrole.h"
+#include <zenoio/include/common.h>
 
 class LinkModel;
 class ViewParamModel;
@@ -106,6 +107,8 @@ public:
 	virtual int undoRedo_updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual QModelIndex indexFromPath(const QString& path) = 0;
 	virtual bool addExecuteCommand(QUndoCommand* pCommand) = 0;
+	virtual void setIOVersion(zenoio::ZSG_VERSION ver) = 0;
+	virtual zenoio::ZSG_VERSION ioVersion() const = 0;
 
 signals:
 	void clearLayout2();

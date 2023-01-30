@@ -131,6 +131,8 @@ public:
         const QString& comment = "") override;
     int undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
     bool addExecuteCommand(QUndoCommand* pCommand) override;
+    void setIOVersion(zenoio::ZSG_VERSION ver) override;
+    zenoio::ZSG_VERSION ioVersion() const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -182,6 +184,7 @@ private:
     int m_apiLevel;
     bool m_dirty;
     bool m_bIOProcessing;
+    zenoio::ZSG_VERSION m_version;
 
     friend class ApiLevelScope;
 };

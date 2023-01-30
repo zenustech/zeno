@@ -119,7 +119,7 @@ public slots:
     bool saveFile(QString filePath);
     bool saveQuit();
     void save();
-    void saveAs();
+    bool saveAs();
     void onMaximumTriggered();
     void onMenuActionTriggered(bool bTriggered);
     void onSplitDock(bool);

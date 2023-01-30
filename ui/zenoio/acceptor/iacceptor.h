@@ -4,6 +4,7 @@
 #include <rapidjson/document.h>
 #include "common.h"
 #include <zenomodel/include/modeldata.h>
+#include <zenoio/include/common.h>
 
 class IGraphsModel;
 
@@ -76,6 +77,7 @@ public:
         const QVector<QPair<QPointF, QPointF>>& hdls) = 0;
     virtual QObject* currGraphObj() = 0;
     virtual void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) = 0;
+    virtual void setIOVersion(zenoio::ZSG_VERSION version) = 0;
     virtual ~IAcceptor() = default;
 };
 

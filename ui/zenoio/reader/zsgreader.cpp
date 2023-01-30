@@ -96,6 +96,15 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     {
         _parseViews(doc["views"], pAcceptor);
     }
+    if (doc.HasMember("version"))
+    {
+        ZASSERT_EXIT(doc["version"].IsString(), false);
+        QString ver = doc["version"].GetString();
+        if (ver == "v2")
+            pAcceptor->setIOVersion(zenoio::VER_2);
+        else
+            pAcceptor->setIOVersion(zenoio::VER_2_5);
+    }
     return true;
 }
 

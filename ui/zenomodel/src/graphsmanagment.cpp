@@ -117,6 +117,9 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 
     m_model->setFilePath(filePath);
     m_model->clearDirty();
+
+    QFileInfo info(filePath);
+    emit fileSaved(info.fileName());
     return true;
 }
 

@@ -199,10 +199,16 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     connect(pGraphsMgm, &GraphsManagment::fileClosed, [=]() {
         lblFileName->clear();
     });
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, [=](QString fn) {
+        lblFileName->setText(fn);
+    });
+
     connect(pGraphsMgm, &GraphsManagment::dirtyChanged, [=](bool isDirty) {
         QString name = lblFileName->text();
         if (isDirty) {
             if (!name.endsWith("*")) {
+                if (name.isEmpty())
+                    name = "newFile";
                 name.append("*");
                 lblFileName->setText(name);
             }

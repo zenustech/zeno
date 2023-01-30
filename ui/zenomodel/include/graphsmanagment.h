@@ -32,6 +32,7 @@ signals:
     void modelDataChanged();
     void fileOpened(QString);
     void fileClosed();
+    void fileSaved(QString);
     void dirtyChanged(bool);
 
 private slots:
