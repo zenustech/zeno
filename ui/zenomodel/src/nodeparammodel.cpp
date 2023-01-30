@@ -478,7 +478,7 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
         {
             return pItem->m_customData[role];
         }
-        break;
+        return QVariant();
     }
     default:
         return ViewParamModel::data(index, role);
@@ -887,11 +887,6 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             {
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.defaultValue = deflVal;
-                if (desc.inputs[sockName].info.control != pItem->m_ctrl)
-                {
-					desc.inputs[sockName].info.control = pItem->m_ctrl;
-                    isUpdate = true;
-				}
                 QVariantMap ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
                 if (desc.inputs[sockName].info.ctrlProps != ctrlProp)
                 {
@@ -906,6 +901,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             }
             m_pGraphsModel->updateSubgDesc(subgName, desc);
             //no need to update all subgraph node because it causes disturbance.
+            //update all subgraph when ctrl properties changed
             if (isUpdate) 
 			{
                 QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
@@ -913,8 +909,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                     // update socket for current subgraph node.
                     NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                     QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
-                    nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
-                    nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_VPARAM_CTRL_PROPERTIES);
+                    nodeParams->setData(paramIdx, pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES], ROLE_VPARAM_CTRL_PROPERTIES);
                 }
 			}
         }
