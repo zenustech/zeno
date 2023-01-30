@@ -358,7 +358,7 @@ struct LightNode : INode {
 
             // Plane Indices
             tris.emplace_back(zeno::vec3i(0, 3, 1));
-            tris.emplace_back(zeno::vec3i(2, 3, 0));
+            tris.emplace_back(zeno::vec3i(3, 0, 2));
 
         }else if(shape == "Disk"){
             int divisions = 13;
@@ -388,8 +388,8 @@ struct LightNode : INode {
 
         if(inverdir){
             for(int i=0;i<prim->tris.size(); i++){
-                int tmp = prim->tris[i][2];
-                prim->tris[i][2] = prim->tris[i][0];
+                int tmp = prim->tris[i][1];
+                prim->tris[i][1] = prim->tris[i][0];
                 prim->tris[i][0] = tmp;
             }
         }

@@ -10,6 +10,7 @@
 #include "zitemfactory.h"
 #include "zenogvhelper.h"
 #include <zenomodel/include/command.h>
+#include <zeno/utils/scope_exit.h>
 
 class ZDictPanel;
 
@@ -64,6 +65,8 @@ public:
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
             IGraphsModel* pGraphsModel = panel->graphsModel();
             const QString& dictkeypath = panel->dictlistSocket().data(ROLE_OBJPATH).toString();
+            pGraphsModel->beginTransaction("remove dict socket");
+            zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
             pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(false, pGraphsModel, dictkeypath, m_sockKeyIdx.row()));
         });
 

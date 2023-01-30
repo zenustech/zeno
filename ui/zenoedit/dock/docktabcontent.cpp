@@ -137,7 +137,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
-    QStringList items = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%" };
+    QStringList items = {"25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%", "400%", "500%"};
     QVariant props = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
@@ -153,6 +153,8 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
     QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbZoom->setEditable(false);
+    cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
@@ -164,13 +166,17 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
 
     pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
 
+    ZTextLabel* lblFileName = new ZTextLabel;
+    lblFileName->setFont(QFont("Segoe UI Semibold", 12));
+    lblFileName->setTextColor(QColor(255, 255, 255, 255 * 0.7));
+
     pToolLayout->addWidget(pSubnetMgr);
     pToolLayout->addWidget(pFold);
     pToolLayout->addWidget(pUnfold);
     pToolLayout->addWidget(pSnapGrid);
     pToolLayout->addWidget(pBlackboard);
     pToolLayout->addWidget(pFullPanel);
-    pToolLayout->addStretch();
+    pToolLayout->addWidget(lblFileName, 0, Qt::AlignCenter);
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
     pToolLayout->addWidget(pSettings);
@@ -184,6 +190,29 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     //add the seperator line
     ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
     pVLayout->addWidget(pLine);
+
+    auto pGraphsMgm = zenoApp->graphsManagment();
+    connect(pGraphsMgm, &GraphsManagment::fileOpened, [=](QString fn) {
+        QFileInfo info(fn);
+        lblFileName->setText(info.fileName());
+    });
+    connect(pGraphsMgm, &GraphsManagment::fileClosed, [=]() {
+        lblFileName->clear();
+    });
+    connect(pGraphsMgm, &GraphsManagment::dirtyChanged, [=](bool isDirty) {
+        QString name = lblFileName->text();
+        if (isDirty) {
+            if (!name.endsWith("*")) {
+                name.append("*");
+                lblFileName->setText(name);
+            }
+        } else {
+            if (name.endsWith("*")) {
+                name.remove("*");
+                lblFileName->setText(name);
+            }
+        }
+    });
 
     connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
     { 

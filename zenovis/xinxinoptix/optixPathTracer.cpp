@@ -1570,8 +1570,11 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
-void update_hdr_sky(float sky_rot, float sky_strength) {
+void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
     state.params.sky_rot = sky_rot;
+    state.params.sky_rot_x = sky_rot3d[0];
+    state.params.sky_rot_y = sky_rot3d[1];
+    state.params.sky_rot_z = sky_rot3d[2];
     state.params.sky_strength = sky_strength;
 }
 
@@ -2456,9 +2459,10 @@ void UpdateInst()
             auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
 
             zeno::vec3f t0 = {instTrs.direct[3 * i + 0], instTrs.direct[3 * i + 1], instTrs.direct[3 * i + 2]};
+            zeno::vec3f t1 = {instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]};
             t0 = normalizeSafe(t0);
-            zeno::vec3f t1, t2;
-            zeno::pixarONB(t0, t1, t2);
+            zeno::vec3f t2;
+            zeno::guidedPixarONB(t0, t1, t2);
             glm::mat4x4 rotateMat(1);
             if (instTrs.onbType == "XYZ")
             {
@@ -2533,7 +2537,7 @@ void UpdateInst()
                 rotateMat[2][2] = t1[2];
             }
 
-            auto scaleMat = glm::scale(glm::vec3(instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]));
+            auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
         }
     }

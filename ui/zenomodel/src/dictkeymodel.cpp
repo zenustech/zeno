@@ -224,7 +224,7 @@ bool DictKeyModel::removeRows(int row, int count, const QModelIndex& parent)
     beginRemoveRows(parent, row, row + count - 1);
     //remove link first.
     QPersistentModelIndex linkIdx = m_items[row].link;
-    m_pGraphs->removeLink(linkIdx);
+    m_pGraphs->removeLink(linkIdx, true);
     m_items.removeAt(row);
     endRemoveRows();
     return true;
@@ -239,10 +239,18 @@ bool DictKeyModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int 
                   const QModelIndex &destinationParent, int destinationChild)
 {
     //only support simple move up/move down, so the actual movement is swaping the two elements.
-    beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild);
-    _DictItem dstItem = m_items[destinationChild];
-    m_items[destinationChild] = m_items[sourceRow];
-    m_items[sourceRow] = dstItem;
+    if (sourceParent != destinationParent || count != 1 || sourceRow == destinationChild)
+        return false;
+
+    bool bret = false;
+    if (sourceRow < destinationChild)
+        bret = beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild + 1);
+    else
+        bret = beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild);
+    if (!bret)
+        return bret;
+
+    m_items.move(sourceRow, destinationChild);
     endMoveRows();
     return true;
 }

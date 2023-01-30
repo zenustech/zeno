@@ -216,7 +216,8 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
     rho = 0.1;
 #endif
 #if !s_useNewtonSolver
-    K = 72 * 3; 
+    K = 72; // 72; 72 * 10
+    IDyn = 6;  
 #else 
     K = 72 * 3; 
     IDyn = 1; 
@@ -262,8 +263,10 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
-    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
+    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
+#if !s_debugRemoveHashTable
     eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 25};
+#endif 
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -280,6 +283,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             });
         }
         const auto &edges = primHandle.getSurfEdges();
+#if !s_debugRemoveHashTable
         Vector<int> tmpAdjVerts{vtemp.get_allocator(), estNumCps};
         auto adjVerts = tmpAdjVerts;
         Vector<int> adjVertsOff{vtemp.get_allocator(), vtemp.size()};
@@ -287,14 +291,27 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         Vector<int> adjLen{vtemp.get_allocator(), 1};
         adjLen.setVal(0);
         adjVertsDeg.reset(0);
+#endif 
         constexpr int intHalfLen = sizeof(int) * 4;
         pol(Collapse(edges.size()),
             [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts),
+             seoffset = primHandle.seOffset, 
+#if !s_debugRemoveHashTable
+             eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts),
              adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg),
+#endif 
+             verts = proxy<space>({}, verts), 
              intHalfLen] __device__(int i) mutable {
-                auto edge = (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset);
+                auto inds = edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c); 
+                auto edge = inds + (int)voffset;
                 seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+                auto v0 = verts.pack(dim_c<3>, "x", inds[0]); 
+                auto v1 = verts.pack(dim_c<3>, "x", inds[1]); 
+#if s_useMassSpring
+                seInds("restLen", seoffset + i) = (v0 - v1).norm();
+                printf("restL: %f\n", (v0 - v1).norm());  
+#endif 
+#if !s_debugRemoveHashTable 
                 auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
                 tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1];
                 atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
@@ -304,7 +321,9 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 if (auto no = eTab.insert(edge); no < 0) {
                     printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]);
                 }
+#endif  
             });
+#if !s_debugRemoveHashTable
         auto aN = adjLen.getVal();
         tmpAdjVerts.resize(aN);
         adjVerts.resize(aN);
@@ -325,7 +344,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                     }
                 }
             });
-
+#endif 
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
@@ -335,7 +354,19 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             });
     }
 
-    /// @brief initialize vtemp & spatial accel
+    /// @brief initialize xt for moving boundaries 
+    for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
+        auto &verts = primHandle.getVerts();
+        // initialize BC info
+        // predict pos, initialize augmented lagrangian, constrain weights
+        pol(Collapse(verts.size()), [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+            auto x = verts.pack<3>("x", i);
+            vtemp.tuple<3>("xt", voffset + i) = x;
+        });
+    }
     reinitialize(pol, dt);
 
     /// @brief setup collision solver parameters
@@ -359,6 +390,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auxTime[i] = 0;
             dynamicsTime[i] = 0;
             collisionTime[i] = 0;
+            auxCnt[i] = 0; 
             dynamicsCnt[i] = 0;
             collisionCnt[i] = 0;
         }
@@ -377,7 +409,6 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             vtemp("ws", voffset + i) = verts("m", i);
             vtemp.tuple<3>("yn", voffset + i) = x;
-            vtemp.tuple<3>("xt", voffset + i) = x;
             vtemp.tuple<3>("vn", voffset + i) = v;
         });
     }
@@ -396,7 +427,9 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
-
+#if s_useFrontLine
+    frontManageRequired = true;
+#endif 
         /// spatial accel initialization
 #define init_front(sInds, front)                                                                           \
     {                                                                                                      \
@@ -425,9 +458,12 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         svBvh.build(pol, bvs);
-
+#if s_useFrontLine
+        init_front(svInds, selfSvFront);
+#endif 
         if constexpr (s_enableProfile) {
             timer.tock();
+            auxCnt[0]++; 
             auxTime[0] += timer.elapsed();
         }
         if constexpr (s_testSh) {
@@ -440,6 +476,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             if constexpr (s_enableProfile) {
                 timer.tock();
+                auxCnt[2]++; 
                 auxTime[2] += timer.elapsed();
             }
         }
@@ -453,6 +490,9 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         bouSvBvh.build(pol, bvs);
+#if s_useFrontLine
+        init_front(svInds, boundarySvFront);
+#endif 
 
         if constexpr (s_enableProfile) {
             timer.tock();
@@ -531,6 +571,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
                         // linear solver
                         {"dir", 3},
+                        {"gridDir", 3}, 
                         {"grad", 3},
 #if !s_useGDDiagHess
                         {"P", 9},
@@ -620,6 +661,8 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
+            continue;
+        if (primHandle.isBoundary())
             continue;
         auto &verts = primHandle.getVerts();
         // update velocity and positions

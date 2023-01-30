@@ -73,54 +73,11 @@ namespace zenomodel
                 }
             }
 
+            PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
+            CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+
             writer.Key("control");
-            {
-                JsonObjBatch _scope(writer);
-
-                PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
-                QString typeDesc = UiHelper::getControlDesc(ctrl);
-
-                writer.Key("name");
-                writer.String(typeDesc.toUtf8());
-
-                if (!bCoreParam)
-                {
-                    writer.Key("value");
-                    const QVariant& value = pItem->data(ROLE_PARAM_VALUE);
-                    const QString& coreType = pItem->data(ROLE_PARAM_TYPE).toString();
-                    JsonHelper::AddVariant(value, coreType, writer, true);
-                }
-
-                if (ctrl == CONTROL_ENUM)
-                {
-                    CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-                    writer.Key("items");
-                    writer.StartArray();
-                    if (pros.find("items") != pros.end())
-                    {
-                        QStringList items = pros["items"].toStringList();
-                        for (QString item : items)
-                        {
-                            writer.String(item.toUtf8());
-                        }
-                    }
-                    writer.EndArray();
-                }
-                else if (ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HSPINBOX ||
-                    ctrl == CONTROL_HSLIDER)
-                {
-                    CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-
-                    writer.Key("step");
-                    writer.Int(pros["step"].toInt());
-
-                    writer.Key("min");
-                    writer.Int(pros["min"].toInt());
-
-                    writer.Key("max");
-                    writer.Int(pros["max"].toInt());
-                }
-            }
+            JsonHelper::dumpControl(ctrl, pros, writer);
 
             //disable drag!!!
             writer.Key("uuid");

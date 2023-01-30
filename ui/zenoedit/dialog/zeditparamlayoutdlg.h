@@ -57,14 +57,7 @@ private slots:
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 private:
-    void applySubgraphNode();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
-    void updateSubgParamControl(
-            IGraphsModel* pGraphsModel,
-            const QString& subgName,
-            bool bSubInput,
-            const QString& paramName,
-            PARAM_CONTROL ctrl);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
 

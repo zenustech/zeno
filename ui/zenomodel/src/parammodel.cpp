@@ -23,13 +23,6 @@ IParamModel::IParamModel(
     , m_bRetryLinkOp(false)
 {
     Q_ASSERT(m_model);
-
-    if (m_model->IsSubGraphNode(nodeIdx))
-    {
-        GlobalControlMgr &mgr = GlobalControlMgr::instance();
-        connect(this, &IParamModel::rowsInserted, &mgr, &GlobalControlMgr::onCoreParamsInserted);
-        connect(this, &IParamModel::rowsAboutToBeRemoved, &mgr, &GlobalControlMgr::onCoreParamsAboutToBeRemoved);
-    }
 }
 
 IParamModel::~IParamModel()
@@ -401,11 +394,6 @@ bool IParamModel::setData(const QModelIndex& index, const QVariant& value, int r
             m_items.remove(oldName);
             m_items.insert(newName, newItem);
 
-            if (m_model->IsSubGraphNode(m_nodeIdx))
-            {
-                const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                GlobalControlMgr::instance().onParamRename(nodeCls, m_class, oldName, newName);
-            }
             break;
         }
         case ROLE_PARAM_TYPE:
@@ -501,8 +489,6 @@ void IParamModel::onSubIOEdited(const QVariant& oldValue, const _ItemInfo& item)
             const QString& newType = item.pConst.toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             const QVariant& newValue = UiHelper::initDefaultValue(newType);
-
-            GlobalControlMgr::instance().onParamUpdated(subgName, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, newCtrl);
 
             const QModelIndex& idx_defl = index("defl");
             

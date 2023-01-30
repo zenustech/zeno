@@ -999,14 +999,26 @@ struct CreateSphere : zeno::INode {
             for (auto row = 0; row < rows; row++) {
                 for (auto column = 0; column < columns; column++) {
                     auto quad_index = row * columns + column;
-                    auto v0 = (columns + 1) * row + column;
-                    auto v1 = (columns + 1) * row + column + 1;
-                    auto v2 = (columns + 1) * (row + 1) + column;
-                    auto v3 = (columns + 1) * (row + 1) + column + 1;
-                    loops[quad_index * 4 + 0] = v0;
-                    loops[quad_index * 4 + 1] = v2;
-                    loops[quad_index * 4 + 2] = v3;
-                    loops[quad_index * 4 + 3] = v1;
+                    if (column == columns - 1) {
+                        auto v0 = (columns + 1) * row + column;
+                        auto v1 = (columns + 1) * row;
+                        auto v2 = (columns + 1) * (row + 1) + column;
+                        auto v3 = (columns + 1) * (row + 1);
+                        loops[quad_index * 4 + 0] = v0;
+                        loops[quad_index * 4 + 1] = v2;
+                        loops[quad_index * 4 + 2] = v3;
+                        loops[quad_index * 4 + 3] = v1;
+                    }
+                    else {
+                        auto v0 = (columns + 1) * row + column;
+                        auto v1 = (columns + 1) * row + column + 1;
+                        auto v2 = (columns + 1) * (row + 1) + column;
+                        auto v3 = (columns + 1) * (row + 1) + column + 1;
+                        loops[quad_index * 4 + 0] = v0;
+                        loops[quad_index * 4 + 1] = v2;
+                        loops[quad_index * 4 + 2] = v3;
+                        loops[quad_index * 4 + 3] = v1;
+                    }
                 }
             }
             prim->uvs.resize(verts.size());

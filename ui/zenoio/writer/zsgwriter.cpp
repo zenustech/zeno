@@ -201,39 +201,7 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         AddVariant(deflVal, sockType, writer, true);
 
         writer.Key("control");
-        QString controlDesc = UiHelper::getControlDesc(socket.control);
-        writer.String(controlDesc.toUtf8());
-
-        if (socket.control == CONTROL_ENUM)
-        {
-            writer.Key("control-items");
-            writer.StartArray();
-            if (socket.ctrlProps.find("items") != socket.ctrlProps.end())
-            {
-                QStringList items = socket.ctrlProps["items"].toStringList();
-                for (QString item : items)
-                {
-                    writer.String(item.toUtf8());
-                }
-            }
-            writer.EndArray();
-        }
-        if (socket.control == CONTROL_SPINBOX_SLIDER ||
-            socket.control == CONTROL_HSPINBOX ||
-            socket.control == CONTROL_HSLIDER)
-        {
-            writer.Key("control-slider");
-            JsonObjBatch _scope(writer);
-
-            writer.Key("step");
-            writer.Int(socket.ctrlProps["step"].toInt());
-
-            writer.Key("min");
-            writer.Int(socket.ctrlProps["min"].toInt());
-
-            writer.Key("max");
-            writer.Int(socket.ctrlProps["max"].toInt());
-        }
+        JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
     }
 
     writer.EndObject();
@@ -431,54 +399,16 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
 void ZsgWriter::dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer) 
 {
     writer.StartObject();
-    writer.Key("default-value");
-    QVariant deflVal = info.defaultValue;
-    const QString &sockType = info.typeDesc;
-    bool bValid = UiHelper::validateVariant(deflVal, sockType);
-    if (!bValid)
-        deflVal = QVariant();
-    AddVariant(deflVal, sockType, writer, true);
 
-	writer.Key("value");
-    QVariant value = info.value;
-    bValid = UiHelper::validateVariant(value, sockType);
-    if (!bValid)
-        value = QVariant();
-    AddVariant(value, sockType, writer, true);
+    writer.Key("value");
+    AddVariant(info.value, info.typeDesc, writer, true);
 
     writer.Key("control");
-    QString controlDesc = UiHelper::getControlDesc(info.control);
-    writer.String(controlDesc.toUtf8());
+    JsonHelper::dumpControl(info.control, info.controlProps, writer);
 
-	writer.Key("typeDesc");
+    writer.Key("type");
     writer.String(info.typeDesc.toUtf8());
 
-	QVariantMap map = info.controlProps.toMap();
-	if (info.control == CONTROL_ENUM) {
-        writer.Key("control-items");
-        writer.StartArray();
-        if (map.find("items") != map.end()) {
-            QStringList items = map["items"].toStringList();
-            for (QString item : items) {
-                writer.String(item.toUtf8());
-            }
-        }
-        writer.EndArray();
-    }
-    if (info.control == CONTROL_SPINBOX_SLIDER || info.control == CONTROL_HSPINBOX ||
-        info.control == CONTROL_HSLIDER) {
-        writer.Key("control-slider");
-        JsonObjBatch _scope(writer);
-
-        writer.Key("step");
-        writer.Int(map["step"].toInt());
-
-        writer.Key("min");
-        writer.Int(map["min"].toInt());
-
-        writer.Key("max");
-        writer.Int(map["max"].toInt());
-    }
     writer.EndObject();
 }
 

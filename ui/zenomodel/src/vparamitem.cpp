@@ -399,6 +399,7 @@ void VParamItem::cloneFrom(VParamItem* pOther)
     m_name = pOther->m_name;
     m_type = pOther->m_type;
     m_ctrl = pOther->m_ctrl;
+    m_value = pOther->m_value;
 
     vType = pOther->vType;
     m_tempInfo = pOther->m_tempInfo;

@@ -23,12 +23,6 @@ NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QMode
     initUI();
     connect(this, &NodeParamModel::modelAboutToBeReset, this, &NodeParamModel::onModelAboutToBeReset);
     connect(this, &NodeParamModel::rowsAboutToBeRemoved, this, &NodeParamModel::onRowsAboutToBeRemoved);
-    if (!m_bTempModel && m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
-    {
-        GlobalControlMgr &mgr = GlobalControlMgr::instance();
-        connect(this, &NodeParamModel::rowsInserted, &mgr, &GlobalControlMgr::onCoreParamsInserted);
-        connect(this, &NodeParamModel::rowsAboutToBeRemoved, &mgr, &GlobalControlMgr::onCoreParamsAboutToBeRemoved);
-    }
 }
 
 NodeParamModel::~NodeParamModel()
@@ -142,7 +136,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.typeDesc = param->m_type;
         paramInfo.name = name;
         paramInfo.control = param->m_ctrl;
-        paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
+        paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
         params.insert(name, paramInfo);
     }
     return true;
@@ -199,11 +193,8 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         pItem->m_value = inSocket.info.defaultValue;
         pItem->m_type = inSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)inSocket.info.sockProp;
-
-        // init control
-        const QString &nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-
         pItem->m_ctrl = inSocket.info.control;
+
         QVariant ctrlProps = inSocket.info.ctrlProps;
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
 
@@ -481,6 +472,7 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
         return PARAM_UNKNOWN;
     }
     case ROLE_VPARAM_LINK_MODEL:
+    case ROLE_VPARAM_CTRL_PROPERTIES:
     {
         if (pItem->m_customData.find(role) != pItem->m_customData.end())
         {
@@ -614,20 +606,6 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
                 return false;
 
             pItem->setData(newName, role);
-            if (!m_bTempModel && m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && pItem->vType == VPARAM_PARAM)
-            {
-                VParamItem* parentItem = static_cast<VParamItem*>(pItem->parent());
-                PARAM_CLASS cls = PARAM_UNKNOWN;
-                if (parentItem->m_name == iotags::params::node_inputs)
-                    cls = PARAM_INPUT;
-                else if (parentItem->m_name == iotags::params::node_params)
-                    cls = PARAM_PARAM;
-                else if (parentItem->m_name == iotags::params::node_outputs)
-                    cls = PARAM_OUTPUT;
-
-                const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                GlobalControlMgr::instance().onParamRename(nodeCls, cls, oldName, newName);
-            }
             break;
         }
         case ROLE_PARAM_TYPE:
@@ -831,8 +809,6 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             const QVariant& newValue = UiHelper::initDefaultValue(newType);
 
-            GlobalControlMgr::instance().onParamUpdated(subgName, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, newCtrl);
-
             const QModelIndex& idx_defl = deflItem->index();
             setData(idx_defl, newType, ROLE_PARAM_TYPE);
             setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
@@ -875,14 +851,16 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 
             NODE_DESC desc;
             bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
-            ZASSERT_EXIT(ret);
+            ZASSERT_EXIT(ret && newName != oldName);
             if (bInput)
             {
+                desc.inputs[newName] = desc.inputs[oldName];
                 desc.inputs[newName].info.name = newName;
                 desc.inputs.remove(oldName);
             }
             else
             {
+                desc.outputs[newName] = desc.outputs[oldName];
                 desc.outputs[newName].info.name = newName;
                 desc.outputs.remove(oldName);
             }

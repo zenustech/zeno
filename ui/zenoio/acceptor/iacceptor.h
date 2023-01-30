@@ -58,7 +58,7 @@ public:
             bool bCollasped
     ) = 0;
 
-	virtual void setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock,const QString &control, const QVariant &ctrlProperties) = 0;
+	virtual void setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) = 0;
 
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;

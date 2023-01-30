@@ -25,6 +25,7 @@ struct WriteAlembic : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     virtual void apply() override {
+        bool flipFrontBack = get_param<int>("flipFrontBack");
         int frameid;
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
@@ -62,6 +63,12 @@ struct WriteAlembic : INode {
                     for (auto i = 0; i < size; i++) {
                         vertex_index_per_face.push_back(prim->loops[start + i]);
                     }
+                    auto base = vertex_index_per_face.size() - size;
+                    if (flipFrontBack) {
+                        for (int j = 0; j < (size / 2); j++) {
+                            std::swap(vertex_index_per_face[base + j], vertex_index_per_face[base + size - 1 - j]);
+                        }
+                    }
                     vertex_count_per_face.push_back(size);
                 }
                 if (prim->loops.has_attr("uvs")) {
@@ -74,6 +81,12 @@ struct WriteAlembic : INode {
                         for (auto i = 0; i < size; i++) {
                             auto uv_index = prim->loops.attr<int>("uvs")[start + i];
                             uv_indices.push_back(uv_index);
+                        }
+                        auto base = uv_indices.size() - size;
+                        if (flipFrontBack) {
+                            for (int j = 0; j < (size / 2); j++) {
+                                std::swap(uv_indices[base + j], uv_indices[base + size - 1 - j]);
+                            }
                         }
                     }
                     // UVs and Normals use GeomParams, which can be written or read
@@ -101,8 +114,14 @@ struct WriteAlembic : INode {
             else {
                 for (auto i = 0; i < prim->tris.size(); i++) {
                     vertex_index_per_face.push_back(prim->tris[i][0]);
-                    vertex_index_per_face.push_back(prim->tris[i][1]);
-                    vertex_index_per_face.push_back(prim->tris[i][2]);
+                    if (flipFrontBack) {
+                        vertex_index_per_face.push_back(prim->tris[i][2]);
+                        vertex_index_per_face.push_back(prim->tris[i][1]);
+                    }
+                    else {
+                        vertex_index_per_face.push_back(prim->tris[i][1]);
+                        vertex_index_per_face.push_back(prim->tris[i][2]);
+                    }
                 }
                 vertex_count_per_face.resize(prim->tris.size(), 3);
                 if (prim->tris.has_attr("uv0")) {
@@ -113,8 +132,14 @@ struct WriteAlembic : INode {
                     auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                        uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                        uv_data.emplace_back(uv2[i][0], uv2[i][1]);
+                        if (flipFrontBack) {
+                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
+                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
+                        }
+                        else {
+                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
+                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
+                        }
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
@@ -155,6 +180,7 @@ ZENDEFNODE(WriteAlembic, {
         {"writepath", "path", ""},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
+        {"bool", "flipFrontBack", "1"},
     },
     {"alembic"},
 });

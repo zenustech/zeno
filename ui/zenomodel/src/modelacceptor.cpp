@@ -231,7 +231,7 @@ void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool b
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    m_currentGraph->setParamValue(bInput ? PARAM_INPUT : PARAM_OUTPUT, idx, keyName, QVariant(), "", SOCKPROP_EDITABLE);
+    m_currentGraph->setParamValue(bInput ? PARAM_INPUT : PARAM_OUTPUT, idx, keyName, QVariant(), "", CONTROL_NONE, SOCKPROP_EDITABLE);
 }
 
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
@@ -253,9 +253,10 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         PARAM_INFO param;
         param.name = descParam.name;
         param.control = descParam.control;
+        param.controlProps = descParam.controlProps;
         param.typeDesc = descParam.typeDesc;
         param.defaultValue = descParam.defaultValue;
-        param.value = param.defaultValue;
+        param.value = descParam.value;
         params.insert(param.name, param);
     }
 
@@ -264,6 +265,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         INPUT_SOCKET input;
         input.info.nodeid = id;
         input.info.control = descInput.info.control;
+        input.info.ctrlProps = descInput.info.ctrlProps;
         input.info.type = descInput.info.type;
         input.info.name = descInput.info.name;
         input.info.defaultValue = descInput.info.defaultValue;
@@ -275,6 +277,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         OUTPUT_SOCKET output;
         output.info.nodeid = id;
         output.info.control = descOutput.info.control;
+        output.info.ctrlProps = descOutput.info.ctrlProps;
         output.info.type = descOutput.info.type;
         output.info.name = descOutput.info.name;
         outputs[output.info.name] = output;
@@ -397,7 +400,7 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     keyModel->setCollasped(bCollasped);
 }
 
-void ModelAcceptor::setControlAndProperties(const QString &nodeCls, const QString &inNode, const QString &inSock, const QString &control, const QVariant &ctrlProperties) 
+void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) 
 {
     if (!m_currentGraph)
         return;
@@ -410,12 +413,8 @@ void ModelAcceptor::setControlAndProperties(const QString &nodeCls, const QStrin
     if (sockIdx.isValid()) {
         QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
         ZASSERT_EXIT(pModel);
-        if (!control.isNull()) {
-            pModel->setData(sockIdx, UiHelper::getControlByDesc(control), ROLE_PARAM_CTRL);
-        }
-        if (ctrlProperties.isValid()) {
-            pModel->setData(sockIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
-		}
+        pModel->setData(sockIdx, control, ROLE_PARAM_CTRL);
+        pModel->setData(sockIdx, ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
     } else {
          zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
     }
@@ -473,7 +472,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
         QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
         deflVal = UiHelper::parseVarByType(type, deflVal, nullptr);
         PARAM_CONTROL control = UiHelper::getControlByType(type);
-        m_currentGraph->setParamValue(PARAM_PARAM, idx, "defl", deflVal, type);
+        m_currentGraph->setParamValue(PARAM_PARAM, idx, "defl", deflVal, type, control);
     }
 }
 
@@ -572,24 +571,25 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
 
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
 
-	if (noCls != "SubInput")
+    if (noCls != "SubInput")
         return;
-	 //update desc.
+
+     //update desc.
     QString sockName;
     PARAM_CONTROL newCtrl;
     QVariant ctrlProps;
-	for (auto paramInfo : params)
-	{
+    for (auto paramInfo : params)
+    {
         if (paramInfo.name == "name") 
-		{
+        {
             sockName = paramInfo.value.toString();
         }
         else if (paramInfo.name == "defl") 
-		{
+        {
             newCtrl = paramInfo.control;
             ctrlProps = paramInfo.controlProps;
         }
-	}
+    }
     NODE_DESC desc;
     QString subGraphName = m_currentGraph->name();
     bool ret = m_pModel->getDescriptor(subGraphName, desc);
@@ -597,6 +597,8 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
     ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
     desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
     desc.inputs[sockName].info.control = newCtrl;
+
+    //no control info stored on desc in zsg, have to reset control by SubInput/SubOutput
     m_pModel->updateSubgDesc(subGraphName, desc);
 }
 

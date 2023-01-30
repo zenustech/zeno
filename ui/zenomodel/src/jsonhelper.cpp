@@ -51,6 +51,88 @@ namespace JsonHelper
         writer.EndArray();
     }
 
+    bool importControl(const rapidjson::Value& controlObj, PARAM_CONTROL& ctrl, QVariant& props)
+    {
+        if (!controlObj.IsObject())
+            return false;
+
+        if (!controlObj.HasMember("name"))
+            return false;
+
+        const rapidjson::Value& nameObj = controlObj["name"];
+        ZASSERT_EXIT(nameObj.IsString(), false);
+
+        const QString& ctrlName = nameObj.GetString();
+        ctrl = UiHelper::getControlByDesc(ctrlName);
+
+        QVariantMap ctrlProps;
+        for (const auto& keyObj : controlObj.GetObject())
+        {
+            const QString& key = keyObj.name.GetString();
+            const rapidjson::Value& value = keyObj.value;
+            if (key == "name")
+                continue;
+
+            QVariant varItem = UiHelper::parseJson(value);
+            ctrlProps.insert(key, varItem);
+        }
+        props = ctrlProps;
+        return true;
+    }
+
+    void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer)
+    {
+        writer.StartObject();
+
+        writer.Key("name");
+        QString controlDesc = UiHelper::getControlDesc(ctrl);
+        writer.String(controlDesc.toUtf8());
+
+        QVariantMap ctrlProps = props.toMap();
+        for (QString keyName : ctrlProps.keys()) {
+            writer.Key(keyName.toUtf8());
+            JsonHelper::WriteVariant(ctrlProps[keyName], writer);
+        }
+
+        writer.EndObject();
+    }
+
+    void WriteVariant(const QVariant& value, RAPIDJSON_WRITER& writer)
+    {
+        QVariant::Type varType = value.type();
+        if (varType == QVariant::Double)
+        {
+            writer.Double(value.toDouble());
+        }
+        else if (varType == QMetaType::Float)
+        {
+            writer.Double(value.toFloat());
+        }
+        else if (varType == QVariant::Int)
+        {
+            writer.Int(value.toInt());
+        }
+        else if (varType == QVariant::String)
+        {
+            auto s = value.toString().toStdString();
+            writer.String(s.data(), s.size());
+        }
+        else if (varType == QVariant::Bool)
+        {
+            writer.Bool(value.toBool());
+        }
+        else if (varType == QVariant::StringList)
+        {
+            writer.StartArray();
+            auto lst = value.toStringList();
+            for (auto item : lst)
+            {
+                writer.String(item.toUtf8());
+            }
+            writer.EndArray();
+        }
+    }
+
     void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
     {
         QVariant::Type varType = value.type();

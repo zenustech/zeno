@@ -40,6 +40,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 
 signals:
     void scrollControlAdded(ZenoParamWidget*);
@@ -62,7 +63,8 @@ private slots:
     void onNodePosChanged();
 
 private:
-    void onSocketAbsorted(const QPointF mousePos);
+    void onSocketAbsorted(const QPointF& mousePos);
+    void detectNearestSocket(const QPointF& mousePos);
     void viewAddLink(const QModelIndex& linkIdx);
     void viewRemoveLink(const QModelIndex& linkIdx);
     void onTempLinkClosed();
@@ -77,6 +79,7 @@ private:
     QMap<QString, ZenoFullLink*> m_links;
     QList<ZenoParamWidget*> m_scrollControls;  //resolve conflict scroll event with graphicsview.
     ZenoTempLink* m_tempLink;
+    ZenoSocketItem* m_hoverSocket;
 };
 
 #endif

@@ -286,10 +286,18 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
     };
 
+    const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith, ctrlProps);
+    if (CONTROL_ENUM == ctrl)
+    {
+        QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);
+        ZenoParamWidget* pWidgetItem = qobject_cast<ZenoParamWidget*>(pItem);
+        if (pWidgetItem)
+            scene->addScrollControl(pWidgetItem);
+    }
     return pControl;
 }
 
@@ -873,6 +881,13 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith, ctrlProps);
+    if (CONTROL_ENUM == ctrl)
+    {
+        QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);
+        ZenoParamWidget* pWidgetItem = qobject_cast<ZenoParamWidget*>(pItem);
+        if (pWidgetItem)
+            scene->addScrollControl(pWidgetItem);
+    }
     return pControl;
 }
 
@@ -1132,8 +1147,13 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         // for temp support to show handler via transform node
         else if (name.contains("TransformPrimitive"))
         {
-            auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
-            viewport->changeTransformOperation(nodeId());
+            auto displayWid = zenoApp->getMainWindow()->getDisplayWidget();
+            if (displayWid)
+            {
+                auto viewport = displayWid->getViewportWidget();
+                if (viewport)
+                    viewport->changeTransformOperation(nodeId());
+            }
         }
     }
 }

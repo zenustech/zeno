@@ -83,6 +83,11 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     update();
 }
 
+ZenoSocketItem::SOCK_STATUS ZenoSocketItem::sockStatus() const
+{
+    return m_status;
+}
+
 void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
     m_bgClr = QColor("#5FD2FF");
@@ -115,12 +120,22 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    QPen pen(m_bgClr, 4);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    QColor bgClr = m_bgClr;
+    if (m_status == STATUS_TRY_CONN)
+    {
+        bgClr = QColor("#5FD2FF");
+    }
+    else
+    {
+        bgClr = QColor("#1992D7");
+    }
+
+    QPen pen(bgClr, 4);
     pen.setJoinStyle(Qt::RoundJoin);
 
-    QColor innerBgclr(m_bgClr.red(), m_bgClr.green(), m_bgClr.blue(), 120);
-
-    painter->setRenderHint(QPainter::Antialiasing, true);
+    QColor innerBgclr(bgClr.red(), bgClr.green(), bgClr.blue(), 120);
 
     static const int startAngle = 0;
     static const int spanAngle = 360;
@@ -129,7 +144,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 
     if (bDrawBg)
     {
-        painter->setBrush(m_bgClr);
+        painter->setBrush(bgClr);
     }
     else
     {
@@ -159,7 +174,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
             painter->drawPath(path);
 
             QRectF rc(QPointF(0, 0), QPointF(halfpw, m_size.height()));
-            painter->fillRect(rc, bDrawBg ? m_bgClr : innerBgclr);
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
         }
         else
         {
@@ -178,7 +193,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
             painter->drawPath(path);
 
             QRectF rc(QPointF(m_size.width(), 0), QPointF(m_size.width() - halfpw, m_size.height()));
-            painter->fillRect(rc, bDrawBg ? m_bgClr : innerBgclr);
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
         }
     }
     else

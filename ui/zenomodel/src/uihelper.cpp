@@ -1592,3 +1592,9 @@ void UiHelper::getAllParamsIndex(
     }
 }
 
+QVector<qreal> UiHelper::scaleFactors()
+{
+    static QVector<qreal> lst({.25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
+    return lst;
+}
+

@@ -254,19 +254,20 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
         exist = true;
         return m_socket->center();
     }
-
-    if (m_panel->isVisible())
+    if (ZenoSocketItem* pSocketItem = m_panel->socketItemByIdx(sockIdx))
     {
-        if (ZenoSocketItem* pSocketItem = m_panel->socketItemByIdx(sockIdx))
+        if (m_panel->isVisible())
         {
-            exist = true; 
+            exist = true;
             return pSocketItem->center();
         }
+        else
+        {
+            ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem*>(m_text);
+            exist = true;
+            return m_socket->center();
+        }
     }
-    else
-    {
-        ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem *>(m_text);
-        exist = true;
-        return m_socket->center();
-    }
+    exist = false;
+    return QPointF();
 }

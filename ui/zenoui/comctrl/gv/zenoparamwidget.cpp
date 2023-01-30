@@ -5,6 +5,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
+#include "../view/zcomboboxitemdelegate.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -445,7 +446,7 @@ void ZenoGvComboBox::paintEvent(QPaintEvent *e)
 ZenoParamComboBox::ZenoParamComboBox(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new ZComboBox(false);
+    m_combobox = new ZComboBox(true);
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
     setWidget(m_combobox);
@@ -459,12 +460,13 @@ ZenoParamComboBox::ZenoParamComboBox(QGraphicsItem* parent)
 ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new ZComboBox(false);
+    m_combobox = new ZComboBox(true);
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
+    m_combobox->setItemDelegate(new ZComboBoxItemDelegate2(m_combobox));
     m_combobox->setEditable(true);
 
+#if 0
     ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
     pLineEdit->setTextMargins(param.margins);
     pLineEdit->setPalette(param.palette);
@@ -473,6 +475,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     pLineEdit->setProperty("cssClass", "proppanel");
     pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     m_combobox->setLineEdit(pLineEdit);
+#endif
 
     setWidget(m_combobox);
 
