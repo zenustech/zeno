@@ -8,9 +8,6 @@ target_sources(zenovis PRIVATE
 
   volume/optixVolume.cpp
   volume/optixVolume.h
-
-#   volume/*.cpp
-#   volume/*.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
@@ -32,14 +29,20 @@ target_sources(zenovis PRIVATE
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 
-target_include_directories(zenovis PRIVATE nanovdb)
+if (ZENO_SYSTEM_OPENVDB)
+    message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
+else() # ../../projects/zenvdb/openvdb/nanovdb
+    get_filename_component(NANOVDB_DIR ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
+    message(${NANOVDB_DIR})
+endif()
+
 target_include_directories(zenovis PRIVATE volume)
+# target_include_directories(zenovis PRIVATE nanovdb)
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
 
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
-
 
 target_include_directories(zenovis PRIVATE SDK)
 target_include_directories(zenovis PRIVATE SDK/sutil)
@@ -55,7 +58,6 @@ if (NOT DEFINED CUDAToolkit_BIN_DIR)
     message(FATAL_ERROR "CUDAToolkit_BIN_DIR not defined")
 endif()
 set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
-
 
 set(FILE_LIST
     ${OPTIX_PATH}/include/@optix.h
@@ -83,15 +85,14 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
 
-    # ${CMAKE_CURRENT_SOURCE_DIR}/volume/@volume_cuda.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/NanoVDB.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Ray.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/HDDA.h
-    # ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/Stencils.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanovdb/@nanovdb/util/SampleFromVoxels.h
+    ${NANOVDB_DIR}/@nanovdb/NanoVDB.h
+    ${NANOVDB_DIR}/@nanovdb/util/Ray.h
+    ${NANOVDB_DIR}/@nanovdb/util/HDDA.h
+    # ${NANOVDB_DIR}/@nanovdb/util/Stencils.h
+    ${NANOVDB_DIR}/@nanovdb/util/SampleFromVoxels.h
     )
 
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
