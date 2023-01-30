@@ -22,6 +22,7 @@ protected:
 signals:
     void addClicked();
     void layoutBtnClicked();
+    void tabClosed(int i);
 
 private:
     void initStyleSheet();

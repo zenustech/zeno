@@ -24,6 +24,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
 
     connect(pTabbar, &ZAddTabBar::tabCloseRequested, this, [=](int index) {
         removeTab(index);
+        emit tabClosed(index);
     });
 
     setDocumentMode(true);

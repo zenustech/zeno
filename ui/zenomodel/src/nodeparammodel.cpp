@@ -670,7 +670,8 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
 
 void NodeParamModel::clearLinks(VParamItem* pItem)
 {
-    for (const QPersistentModelIndex& linkIdx : pItem->m_links)
+    PARAM_LINKS links = pItem->m_links;
+    for (const QPersistentModelIndex& linkIdx : links)
     {
         m_pGraphsModel->removeLink(linkIdx, true);
     }

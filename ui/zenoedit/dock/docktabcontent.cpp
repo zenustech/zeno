@@ -10,6 +10,7 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
 #include <zenoui/comctrl/zwidgetfactory.h>
@@ -137,7 +138,13 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
-    QStringList items = {"25%", "50%", "75%", "100%", "125%", "150%", "200%", "300%", "400%", "500%"};
+    QStringList items;
+    QVector<qreal> factors = UiHelper::scaleFactors();
+    for (qreal factor : factors) {
+        int per = factor * 100;
+        QString sPer = QString("%1%").arg(per);
+        items.append(sPer);
+    }
     QVariant props = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
