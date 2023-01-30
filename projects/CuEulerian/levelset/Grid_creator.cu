@@ -93,6 +93,7 @@ struct ZSSparseGridToVDB : INode {
         auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
         auto attr = get_input2<std::string>("Attribute");
         auto VDBGridClass = get_input2<std::string>("VDBGridClass");
+        auto VDBGridName = get_input2<std::string>("VDBGridName");
 
         if (attr.empty())
             attr = "sdf";
@@ -106,7 +107,7 @@ struct ZSSparseGridToVDB : INode {
         }
 
         if (num_ch == 3) {
-            auto vdb_ = zs::convert_sparse_grid_to_float3grid(spg, attrTag);
+            auto vdb_ = zs::convert_sparse_grid_to_float3grid(spg, attrTag, VDBGridName);
             auto vdb_grid = std::make_shared<VDBFloat3Grid>();
             vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
 
@@ -120,7 +121,7 @@ struct ZSSparseGridToVDB : INode {
             else if (VDBGridClass == "FOG_VOLUME")
                 gridClass = 2;
 
-            auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg, attrTag, gridClass);
+            auto vdb_ = zs::convert_sparse_grid_to_floatgrid(spg, attrTag, gridClass, VDBGridName);
 
             auto vdb_grid = std::make_shared<VDBFloatGrid>();
             vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
@@ -133,7 +134,8 @@ struct ZSSparseGridToVDB : INode {
 ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
                                {"SparseGrid",
                                 {"string", "Attribute", ""},
-                                {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
+                                {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"},
+                                {"string", "VDBGridName", "SparseGrid"}},
                                /* outputs: */
                                {"VDB"},
                                /* params: */
