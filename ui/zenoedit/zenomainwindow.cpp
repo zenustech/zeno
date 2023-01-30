@@ -854,14 +854,13 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     if (keys.isEmpty()) {
         idx = 0;
     } else {
-        QString fn = keys[keys.length() - 1];
-        static QRegExp rx("File (\\d+)");
-        if (rx.indexIn(fn) != -1) {
-            QStringList caps = rx.capturedTexts();
-            if (caps.length() == 2)
-                idx = caps[1].toInt();
-        } else {
-            //todo
+        for (QString key : keys) {
+            static QRegExp rx("File (\\d+)");
+            if (rx.indexIn(key) != -1) {
+                QStringList caps = rx.capturedTexts();
+                if (caps.length() == 2 && idx < caps[1].toInt())
+                    idx = caps[1].toInt();
+            }
         }
     }
 
