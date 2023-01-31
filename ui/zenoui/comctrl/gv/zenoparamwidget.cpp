@@ -269,7 +269,9 @@ void ZenoParamPathEdit::setPath(const QString& path)
 ZenoParamCheckBox::ZenoParamCheckBox(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    m_pCheckbox = new ZCheckBoxBar;
+    m_pCheckbox = new ZCheckBox;
+    m_pCheckbox->setText("");
+    m_pCheckbox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setWidget(m_pCheckbox);
     connect(m_pCheckbox, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
 }
@@ -282,6 +284,12 @@ Qt::CheckState ZenoParamCheckBox::checkState() const
 void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 {
     m_pCheckbox->setCheckState(state);
+}
+
+QSizeF ZenoParamCheckBox::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+    QSizeF sz = ZenoParamWidget::sizeHint(which, constraint);
+    return sz;
 }
 
 

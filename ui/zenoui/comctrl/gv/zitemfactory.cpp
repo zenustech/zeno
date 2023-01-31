@@ -108,9 +108,10 @@ namespace zenoui
             case CONTROL_BOOL:
             {
                 ZenoParamCheckBox* pCheckbox = new ZenoParamCheckBox;
-                pCheckbox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
-                pCheckbox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pCheckbox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
+                pCheckbox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
                 pCheckbox->setData(GVKEY_TYPE, type);
+                pCheckbox->setData(GVKEY_ALIGNMENT, Qt::AlignLeft);
 
                 bool isChecked = value.toBool();
                 pCheckbox->setCheckState(isChecked ? Qt::Checked : Qt::Unchecked);

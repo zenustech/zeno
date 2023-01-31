@@ -86,7 +86,12 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
 {
     removeItem(m_control);
     m_control = pControl;
-    addItem(m_control, Qt::AlignRight);
+
+    Qt::Alignment align = (Qt::Alignment)pControl->data(GVKEY_ALIGNMENT).toInt();
+    if (align == Qt::AlignLeft)
+        addItem(m_control, Qt::AlignLeft | Qt::AlignVCenter);
+    else
+        addItem(m_control, Qt::AlignRight);
 }
 
 QGraphicsItem* ZSocketLayout::control() const

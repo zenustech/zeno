@@ -10,6 +10,7 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
+#include <zenoui/comctrl/zcheckbox.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/znumslider.h>
 #include <zenoui/comctrl/zspinboxslider.h>
@@ -117,11 +118,14 @@ public:
     Qt::CheckState checkState() const;
     void setCheckState(Qt::CheckState state);
 
+protected:
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+
 Q_SIGNALS:
     void stateChanged(int);
 
 private:
-    ZCheckBoxBar* m_pCheckbox;
+    ZCheckBox* m_pCheckbox;
 };
 
 

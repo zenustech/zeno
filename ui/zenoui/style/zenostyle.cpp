@@ -325,6 +325,11 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         case QStyle::PM_DockWidgetSeparatorExtent: {
             return dpiScaled(3);
         }
+        case QStyle::PM_CheckBoxLabelSpacing: {
+            if (qobject_cast<const ZCheckBox *>(widget))
+                return 0;
+            return base::pixelMetric(m, option, widget);
+        }
     }
     return base::pixelMetric(m, option, widget);
 }

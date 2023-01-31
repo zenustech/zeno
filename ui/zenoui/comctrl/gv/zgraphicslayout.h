@@ -27,6 +27,7 @@ enum CUSTOM_DATA_KEY
     GVKEY_PARENT_LAYOUT,
     GVKEY_TYPE,         //socket/param type.
     GVKEY_CONTROL,      //control widget type, see PARAM_CONTROL.
+    GVKEY_ALIGNMENT,
 };
 
 struct SizeInfo
