@@ -221,17 +221,10 @@ struct FrameBufferPicker : IPicker {
     };
 
     explicit FrameBufferPicker(Scene* s) : scene(s) {
-        // generate buffers
-        generate_buffers();
-
         // generate draw buffer
         vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
         ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         vao = make_unique<VAO>();
-
-        // unbind fbo & texture
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
-        fbo->unbind();
 
         // prepare shaders
         obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
@@ -272,12 +265,16 @@ struct FrameBufferPicker : IPicker {
 
         // check fbo
         if(!fbo->complete()) printf("fbo error\n");
+
+        // unbind fbo & texture
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
+        fbo->unbind();
     }
 
     void destroy_buffers() {
-        if (fbo->fbo) CHECK_GL(glDeleteFramebuffers(1, &fbo->fbo));
-        if (picking_texture->tex) CHECK_GL(glDeleteTextures(1, &picking_texture->tex));
-        if (depth_texture->tex) CHECK_GL(glDeleteTextures(1, &depth_texture->tex));
+        fbo.reset();
+        picking_texture.reset();
+        depth_texture.reset();
     }
 
     virtual void draw() override {
@@ -435,7 +432,6 @@ struct FrameBufferPicker : IPicker {
 
     virtual string getPicked(int x, int y) override {
         // re-generate buffers for possible window resize
-        destroy_buffers();
         generate_buffers();
 
         // draw framebuffer
@@ -483,12 +479,13 @@ struct FrameBufferPicker : IPicker {
             result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
         }
 
+        destroy_buffers();
+
         return result;
     }
 
     virtual string getPicked(int x0, int y0, int x1, int y1) override {
         // re-generate buffers for possible window resize
-        destroy_buffers();
         generate_buffers();
 
         // draw framebuffer
@@ -556,6 +553,8 @@ struct FrameBufferPicker : IPicker {
                 }
             }
         }
+        destroy_buffers();
+
         return result;
     }
 
