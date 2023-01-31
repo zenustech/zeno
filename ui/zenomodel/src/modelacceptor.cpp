@@ -299,13 +299,12 @@ void ModelAcceptor::setInputSocket(
         const rapidjson::Value& defaultValue
 )
 {
-    QModelIndex outIdx = m_currentGraph->index(outNode);
-    //if (!outIdx.isValid())
-    //    return;
-    QModelIndex outSockIdx = m_currentGraph->nodeParamIndex(outIdx, PARAM_OUTPUT, outSock);
-    //ZASSERT_EXIT(outSockIdx.isValid());
-    const QString &objPath = outSockIdx.data(ROLE_OBJPATH).toString();
-    setInputSocket2(nodeCls, inNode, inSock, objPath, "", defaultValue);
+    const QString &subgName = m_currentGraph->name();
+    QString outLinkPath;
+    if (!outNode.isEmpty() && !outSock.isEmpty()) {
+        outLinkPath = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
+    }
+    setInputSocket2(nodeCls, inNode, inSock, outLinkPath, "", defaultValue);
 }
 
 void ModelAcceptor::setInputSocket2(
