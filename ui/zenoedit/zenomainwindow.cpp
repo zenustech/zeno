@@ -67,6 +67,11 @@ void ZenoMainWindow::init()
     initLive();
     initDocks();
 
+    addToolBar(Qt::LeftToolBarArea, new FakeToolbar(false));
+    addToolBar(Qt::RightToolBarArea, new FakeToolbar(false));
+    addToolBar(Qt::BottomToolBarArea, new FakeToolbar(true));
+    addToolBar(Qt::TopToolBarArea, new FakeToolbar(true));
+
     QPalette pal = palette();
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
@@ -482,6 +487,7 @@ void ZenoMainWindow::initDocks()
     logDock->hide();*/
 
 	loadDockLayout(g_latest_layout, false);
+
     initTimelineDock();
 }
 

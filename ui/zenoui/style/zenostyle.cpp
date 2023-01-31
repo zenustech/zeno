@@ -123,7 +123,7 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
                 painter->fillRect(r, QColor("#4B9EF4"));
             }
             else {
-                painter->setPen(QColor("#121416"));
+                painter->setPen(QColor("#000000"));
                 painter->fillRect(r, QColor("#191D21"));
             }
 
@@ -323,7 +323,10 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         *  actually, when there is not specific style selector, the qt will choose base style for the result.*/
         case QStyle::PM_DockWidgetHandleExtent:
         case QStyle::PM_DockWidgetSeparatorExtent: {
-            return dpiScaled(3);
+            return dpiScaled(4);
+        }
+        case QStyle::PM_DockWidgetFrameWidth: {
+            return base::pixelMetric(m, option, widget);
         }
         case QStyle::PM_CheckBoxLabelSpacing: {
             if (qobject_cast<const ZCheckBox *>(widget))
