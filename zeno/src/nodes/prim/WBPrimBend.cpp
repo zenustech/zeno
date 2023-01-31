@@ -571,6 +571,15 @@ struct VisVec3Attribute : INode {
         auto primVis = std::make_shared<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
         primVis->lines.resize(prim->size());
+        for (auto key : prim->attr_keys()) {
+            if (key != "pos")
+                std::visit(
+                    [&primVis, key](auto &&ref) {
+                        using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                        primVis->add_attr<T>(key);
+                    },
+                    prim->attr(key));
+        }
         auto& visColor = primVis->verts.add_attr<vec3f>("clr");
         auto& visPos = primVis->verts;
 
@@ -580,6 +589,21 @@ struct VisVec3Attribute : INode {
             int i = iPrim * 2;
             visPos[i] = pos[iPrim];
             visColor[i] = color;
+            for (auto key : prim->attr_keys()) {
+                if (key != "pos")
+                    std::visit(
+                        [i, iPrim](auto &&dst, auto &&src) {
+                            using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
+                            using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                            if constexpr (std::is_same_v<DstT, SrcT>) {
+                                dst[i] = src[iPrim];
+                                dst[i + 1] = src[iPrim];
+                            } else {
+                                throw std::runtime_error("the same attr of both primitives are of different types.");
+                            }
+                        },
+                        primVis->attr(key), prim->attr(key));
+            }
             ++i;
             auto a = attr[iPrim];
             if (useNormalize) a = normalize(a);
