@@ -77,8 +77,26 @@ __device__ __host__ float ZSPerlinNoise1::grad(int hash, float x, float y, float
     }
 }
 
+// Hashing function (used for fast on-device pseudorandom numbers for randomness in noise)
+__device__ __host__ unsigned int ZSPerlinNoise1::hash(unsigned int seed) {
+    seed = (seed + 0x7ed55d16) + (seed << 12);
+    seed = (seed ^ 0xc761c23c) ^ (seed >> 19);
+    seed = (seed + 0x165667b1) + (seed << 5);
+    seed = (seed + 0xd3a2646c) ^ (seed << 9);
+    seed = (seed + 0xfd7046c5) + (seed << 3);
+    seed = (seed ^ 0xb55a4f09) ^ (seed >> 16);
+
+    return seed;
+}
+
+// Random value for perlin/simplex noise [0, 255]
+__device__ __host__ unsigned char ZSPerlinNoise1::permutation(int p) {
+    return (unsigned char)hash(p & 255);
+}
+
 __device__ __host__ float ZSPerlinNoise1::perlin(float x, float y, float z) {
-    constexpr unsigned char permutation[] = {
+#if 0
+    constexpr unsigned char hash[] = {
         151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233, 7,   225, 140, 36,  103, 30,  69,  142,
         8,   99,  37,  240, 21,  10,  23,  190, 6,   148, 247, 120, 234, 75,  0,   26,  197, 62,  94,  252, 219, 203,
         117, 35,  11,  32,  57,  177, 33,  88,  237, 149, 56,  87,  174, 20,  125, 136, 171, 168, 68,  175, 74,  165,
@@ -92,8 +110,8 @@ __device__ __host__ float ZSPerlinNoise1::perlin(float x, float y, float z) {
         181, 199, 106, 157, 184, 84,  204, 176, 115, 121, 50,  45,  127, 4,   150, 254, 138, 236, 205, 93,  222, 114,
         67,  29,  24,  72,  243, 141, 128, 195, 78,  66,  215, 61,  156, 180,
     };
-    auto hash = [&](unsigned int val) { return permutation[val & 255]; };
-
+    auto permutation = [&](unsigned int val) { return hash[val & 255]; };
+#endif
     auto fract = [](float val) { return val - zs::floor(val); };
 
     x = fract(x / 256.f) * 256.f;
@@ -108,14 +126,14 @@ __device__ __host__ float ZSPerlinNoise1::perlin(float x, float y, float z) {
     float u = fade(xf);
     float v = fade(yf);
     float w = fade(zf);
-    int aaa = hash(hash(hash(xi) + yi) + zi);
-    int aba = hash(hash(hash(xi) + inc(yi)) + zi);
-    int aab = hash(hash(hash(xi) + yi) + inc(zi));
-    int abb = hash(hash(hash(xi) + inc(yi)) + inc(zi));
-    int baa = hash(hash(hash(inc(xi)) + yi) + zi);
-    int bba = hash(hash(hash(inc(xi)) + inc(yi)) + zi);
-    int bab = hash(hash(hash(inc(xi)) + yi) + inc(zi));
-    int bbb = hash(hash(hash(inc(xi)) + inc(yi)) + inc(zi));
+    int aaa = permutation(permutation(permutation(xi) + yi) + zi);
+    int aba = permutation(permutation(permutation(xi) + inc(yi)) + zi);
+    int aab = permutation(permutation(permutation(xi) + yi) + inc(zi));
+    int abb = permutation(permutation(permutation(xi) + inc(yi)) + inc(zi));
+    int baa = permutation(permutation(permutation(inc(xi)) + yi) + zi);
+    int bba = permutation(permutation(permutation(inc(xi)) + inc(yi)) + zi);
+    int bab = permutation(permutation(permutation(inc(xi)) + yi) + inc(zi));
+    int bbb = permutation(permutation(permutation(inc(xi)) + inc(yi)) + inc(zi));
     float x1 = zs::linear_interop(u, grad(aaa, xf, yf, zf), grad(baa, xf - 1, yf, zf));
     float x2 = zs::linear_interop(u, grad(aba, xf, yf - 1, zf), grad(bba, xf - 1, yf - 1, zf));
     float y1 = zs::linear_interop(v, x1, x2);
@@ -126,7 +144,8 @@ __device__ __host__ float ZSPerlinNoise1::perlin(float x, float y, float z) {
 }
 
 __device__ __host__ float ZSPerlinNoise1::simplex(float x, float y, float z) {
-    constexpr unsigned char permutation[] = {
+#if 0
+    constexpr unsigned char hash[] = {
         151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233, 7,   225, 140, 36,  103, 30,  69,  142,
         8,   99,  37,  240, 21,  10,  23,  190, 6,   148, 247, 120, 234, 75,  0,   26,  197, 62,  94,  252, 219, 203,
         117, 35,  11,  32,  57,  177, 33,  88,  237, 149, 56,  87,  174, 20,  125, 136, 171, 168, 68,  175, 74,  165,
@@ -140,8 +159,8 @@ __device__ __host__ float ZSPerlinNoise1::simplex(float x, float y, float z) {
         181, 199, 106, 157, 184, 84,  204, 176, 115, 121, 50,  45,  127, 4,   150, 254, 138, 236, 205, 93,  222, 114,
         67,  29,  24,  72,  243, 141, 128, 195, 78,  66,  215, 61,  156, 180,
     };
-    auto hash = [&](unsigned int val) { return permutation[val & 255]; };
-
+    auto permutation = [&](unsigned int val) { return hash[val & 255]; };
+#endif
     float n0, n1, n2, n3; // Noise contributions from the four corners
 
     // Skewing/Unskewing factors for 3D
@@ -228,10 +247,10 @@ __device__ __host__ float ZSPerlinNoise1::simplex(float x, float y, float z) {
     float z3 = z0 - 1.0f + 3.0f * G3;
 
     // Work out the hashed gradient indices of the four simplex corners
-    int gi0 = hash(i + hash(j + hash(k)));
-    int gi1 = hash(i + i1 + hash(j + j1 + hash(k + k1)));
-    int gi2 = hash(i + i2 + hash(j + j2 + hash(k + k2)));
-    int gi3 = hash(i + 1 + hash(j + 1 + hash(k + 1)));
+    int gi0 = permutation(i + permutation(j + permutation(k)));
+    int gi1 = permutation(i + i1 + permutation(j + j1 + permutation(k + k1)));
+    int gi2 = permutation(i + i2 + permutation(j + j2 + permutation(k + k2)));
+    int gi3 = permutation(i + 1 + permutation(j + 1 + permutation(k + 1)));
 
     // Calculate the contribution from the four corners
     float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
