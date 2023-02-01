@@ -985,6 +985,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
+    emit pNode->nodePosChangedSignal();
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

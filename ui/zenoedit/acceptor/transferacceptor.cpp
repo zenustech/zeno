@@ -420,8 +420,10 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA &data = m_nodes[id];
-
-    //todO
+    PARAMS_INFO paramsNotDesc;
+    paramsNotDesc["blackboard"].name = "blackboard";
+    paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
+    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(paramsNotDesc);
 }
 
 void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
