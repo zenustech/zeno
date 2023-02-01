@@ -199,18 +199,18 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     pVLayout->addWidget(pLine);
 
     auto pGraphsMgm = zenoApp->graphsManagment();
-    connect(pGraphsMgm, &GraphsManagment::fileOpened, [=](QString fn) {
+    connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
         lblFileName->setText(info.fileName());
     });
-    connect(pGraphsMgm, &GraphsManagment::fileClosed, [=]() {
+    connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() {
         lblFileName->clear();
     });
-    connect(pGraphsMgm, &GraphsManagment::fileSaved, [=](QString fn) {
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
         lblFileName->setText(fn);
     });
 
-    connect(pGraphsMgm, &GraphsManagment::dirtyChanged, [=](bool isDirty) {
+    connect(pGraphsMgm, &GraphsManagment::dirtyChanged, this, [=](bool isDirty) {
         QString name = lblFileName->text();
         if (isDirty) {
             if (!name.endsWith("*")) {
