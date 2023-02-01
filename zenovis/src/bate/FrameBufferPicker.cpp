@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <random>
+#include <algorithm>
 
 namespace zenovis {
 namespace {
@@ -180,7 +181,7 @@ static void load_buffer_to_image(unsigned int* ids, int w, int h, const std::str
 // framebuffer picker referring to https://doc.yonyoucloud.com/doc/wiki/project/modern-opengl-tutorial/tutorial29.html
 struct FrameBufferPicker : IPicker {
     Scene* scene;
-    vector<string> prim_set;
+    string focus_prim_name;
 
     unique_ptr<FBO> fbo;
     unique_ptr<Texture> picking_texture;
@@ -220,6 +221,24 @@ struct FrameBufferPicker : IPicker {
     };
 
     explicit FrameBufferPicker(Scene* s) : scene(s) {
+        // generate draw buffer
+        vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
+        ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        vao = make_unique<VAO>();
+
+        // prepare shaders
+        obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
+        vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
+        prim_shader = scene->shaderMan->compile_program(obj_vert_code, prim_frag_code);
+        empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
+        empty_and_offset_shader = scene->shaderMan->compile_program(obj_vert_code, empty_and_offset_frag_code);
+    }
+
+    ~FrameBufferPicker() {
+        destroy_buffers();
+    }
+
+    void generate_buffers() {
         // generate framebuffer
         fbo = make_unique<FBO>();
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
@@ -247,27 +266,15 @@ struct FrameBufferPicker : IPicker {
         // check fbo
         if(!fbo->complete()) printf("fbo error\n");
 
-        // generate draw buffer
-        vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
-        ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-        vao = make_unique<VAO>();
-
         // unbind fbo & texture
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
         fbo->unbind();
-
-        // prepare shaders
-        obj_shader = scene->shaderMan->compile_program(obj_vert_code, obj_frag_code);
-        vert_shader = scene->shaderMan->compile_program(vert_vert_code, vert_frag_code);
-        prim_shader = scene->shaderMan->compile_program(obj_vert_code, prim_frag_code);
-        empty_shader = scene->shaderMan->compile_program(obj_vert_code, empty_frag_code);
-        empty_and_offset_shader = scene->shaderMan->compile_program(obj_vert_code, empty_and_offset_frag_code);
     }
 
-    ~FrameBufferPicker() {
-        if (fbo->fbo) CHECK_GL(glDeleteFramebuffers(1, &fbo->fbo));
-        if (picking_texture->tex) CHECK_GL(glDeleteTextures(1, &picking_texture->tex));
-        if (depth_texture->tex) CHECK_GL(glDeleteTextures(1, &depth_texture->tex));
+    void destroy_buffers() {
+        fbo.reset();
+        picking_texture.reset();
+        depth_texture.reset();
     }
 
     virtual void draw() override {
@@ -276,36 +283,24 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // construct prim set
-        vector<std::pair<string, PrimitiveObject*>> prims;
+        vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
         auto prims_shared = scene->objectsMan->pairsShared();
-        for (const auto& prim_name : prim_set) {
-            PrimitiveObject* prim = nullptr;
-            auto optional_prim = scene->objectsMan->get(prim_name);
-            if (optional_prim.has_value())
-                prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_name).value());
-            else {
-                auto node_id = prim_name.substr(0, prim_name.find_first_of(':'));
-                for (const auto& [n, p] : scene->objectsMan->pairsShared()) {
-                    if (n.find(node_id) != std::string::npos) {
-                        prim = dynamic_cast<PrimitiveObject*>(p.get());
-                        break;
-                    }
-                }
+        if (!focus_prim_name.empty()) {
+            std::shared_ptr<zeno::IObject> focus_prim;
+            for (const auto& [k, v] : prims_shared) {
+                if (focus_prim_name == k)
+                    focus_prim = v;
             }
-            if (prim) prims.emplace_back(std::make_pair(prim_name, prim));
+            if (focus_prim) prims.emplace_back(focus_prim_name, focus_prim);
         }
-        if (prims.empty()) {
-            for (const auto& [prim_name, prim] : prims_shared) {
-                auto p = dynamic_cast<PrimitiveObject*>(prim.get());
-                if (p) prims.emplace_back(std::make_pair(prim_name, p));
-            }
-        }
+        else
+            prims = std::move(prims_shared);
 
         // shading primitive objects
         for (unsigned int id = 0; id < prims.size(); id++) {
             auto it = prims.begin() + id;
-            auto prim = it->second;
-            if (prim->has_attr("pos")) {
+            auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
+            if (prim && prim->has_attr("pos")) {
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
                 auto vertex_count = prim->size();
@@ -436,7 +431,13 @@ struct FrameBufferPicker : IPicker {
     }
 
     virtual string getPicked(int x, int y) override {
+        // re-generate buffers for possible window resize
+        generate_buffers();
+
+        // draw framebuffer
         draw();
+
+        // check fbo
         if (!fbo->complete()) return "";
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
@@ -478,11 +479,19 @@ struct FrameBufferPicker : IPicker {
             result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
         }
 
+        destroy_buffers();
+
         return result;
     }
 
     virtual string getPicked(int x0, int y0, int x1, int y1) override {
+        // re-generate buffers for possible window resize
+        generate_buffers();
+
+        // draw framebuffer
         draw();
+
+        // check fbo
         if (!fbo->complete()) return "";
 
         // prepare fbo
@@ -544,12 +553,13 @@ struct FrameBufferPicker : IPicker {
                 }
             }
         }
+        destroy_buffers();
+
         return result;
     }
 
-    virtual void setPrimSet(const std::vector<std::string>& prims) override {
-        prim_set.clear();
-        prim_set.assign(prims.begin(), prims.end());
+    virtual void focus(const std::string& prim_name) override {
+        focus_prim_name = prim_name;
     }
 };
 
