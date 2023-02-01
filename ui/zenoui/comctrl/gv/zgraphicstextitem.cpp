@@ -385,7 +385,7 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 
 void ZEditableTextItem::initUI()
 {
-    setDefaultTextColor(QColor(188, 188, 188));
+    setDefaultTextColor(QColor("#C3D2DF"));
     QFont font("HarmonyOS Sans Bold", 11);
     //font.setBold(true);
     setFont(font);
@@ -396,7 +396,7 @@ void ZEditableTextItem::initUI()
 
     QTextFrame *frame = document()->rootFrame();
     QTextFrameFormat format = frame->frameFormat();
-    format.setBackground(QColor(37, 37, 37));
+    format.setBackground(QColor("#191D21"));
     frame->setFrameFormat(format);
 
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);

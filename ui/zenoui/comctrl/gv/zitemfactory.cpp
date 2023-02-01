@@ -9,6 +9,11 @@
 #include "../dialog/curvemap/zcurvemapeditor.h"
 #include "variantptr.h"
 #include "zassert.h"
+#include "zgraphicstextitem.h"
+
+
+/*tmp macro*/
+//#define ENABLE_WIDGET_LINEEDIT
 
 
 namespace zenoui
@@ -88,10 +93,9 @@ namespace zenoui
             case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
-                ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(
-                    UiHelper::variantToString(value),
-                    ctrl,
-                    m_nodeParams.lineEditParam);
+                const QString text = UiHelper::variantToString(value);
+#ifdef ENABLE_WIDGET_LINEEDIT
+                ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(text, ctrl, m_nodeParams.lineEditParam);
                 pLineEdit->setValidator(validateForSockets(ctrl));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
                 pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
@@ -103,6 +107,18 @@ namespace zenoui
                     cbFunc(newValue);
                     });
                 pItemWidget = pLineEdit;
+#else
+                ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+
+                QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
+                    // be careful about the dynamic type.
+                    const QVariant &newValue = UiHelper::parseStringByType(pLineEdit->toPlainText(), type);
+                    cbFunc(newValue);
+                });
+                pItemWidget = pLineEdit;
+#endif
                 break;
             }
             case CONTROL_BOOL:

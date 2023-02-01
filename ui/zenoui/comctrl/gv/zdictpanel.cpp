@@ -141,7 +141,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
 {
     int radius = ZenoStyle::dpiScaled(0);
     setRadius(radius, radius, radius, radius);
-    QColor clr(26, 29, 34);
+    QColor clr("#24282E");
     setColors(false, clr, clr, clr);
     setBorder(0, QColor());
 
