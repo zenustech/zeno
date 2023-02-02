@@ -374,7 +374,11 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
         int idx = factors.indexOf(zoomFactor);
-        ZASSERT_EXIT(idx != -1);
+        if (idx == -1)
+        {
+            gentle_zoom(1.0);
+            return;
+        }
         if (event->angleDelta().y() > 0)
             idx++;
         else if (event->angleDelta().y() < 0)
