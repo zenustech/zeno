@@ -123,10 +123,12 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         {
             PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
             BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            if (info.items.contains(id))
+            if (info.items.contains(id) && qobject_cast<BlackboardNode2*>(node))
             {
-                inNode->setPos(inNode->index().data(ROLE_OBJPOS).toPointF());
-                inNode->setParentItem(node);
+                BlackboardNode2 *pGroupNode = qobject_cast<BlackboardNode2 *>(node);
+                if (pGroupNode)
+                    pGroupNode->appendChildItem(inNode);
+                inNode->setGroupNode(pGroupNode);
             }
         }
     }
@@ -472,6 +474,13 @@ void ZenoSubGraphScene::copy()
         }
         newNode[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
 
+        //clear child items
+        PARAMS_INFO params = newNode[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+        info.items.clear();
+        params["blackboard"].value = QVariant::fromValue(info);
+        newNode[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(params);
+
         newNodes.insert(newId, newNode);
 
         old2new.insert(oldId, newId);
@@ -628,7 +637,7 @@ void ZenoSubGraphScene::onNodePosChanged()
         BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(zenoNode);
         if (blackboardNode) 
         {
-            if (blackboardNode->childItems().contains(zenoNode)) 
+            if (blackboardNode->getChildItems().contains(zenoNode)) 
             {
                 if (currBlackboardNode) 
                 {
@@ -964,7 +973,14 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         if (qobject_cast<BlackboardNode2 *>(pNode)) 
         {
             BlackboardNode2 *pBlackboard = qobject_cast<BlackboardNode2 *>(pNode);
-            pBlackboard->removeChildItems();
+            for (auto item : pBlackboard->getChildItems()) {
+                item->setGroupNode(nullptr);
+                emit item->nodePosChangedSignal();
+            }
+        }
+        BlackboardNode2 *pGroup = pNode->getGroupNode();
+        if (pGroup) {
+            pGroup->removeChildItem(pNode);
         }
         removeItem(pNode);
         delete pNode;
@@ -985,7 +1001,6 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
-    emit pNode->nodePosChangedSignal();
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

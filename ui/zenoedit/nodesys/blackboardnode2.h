@@ -12,7 +12,10 @@ class BlackboardNode2 : public ZenoNode {
     void onZoomed() override;
     QRectF boundingRect() const override;
     void onUpdateParamsNotDesc() override;
-    void removeChildItems();
+    void appendChildItem(ZenoNode *item);
+    void updateChildItemsPos();
+    QVector<ZenoNode *> getChildItems();
+    void removeChildItem(ZenoNode *pNode);
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
     ZLayoutBackground *initHeaderWidget(IGraphsModel*) override;
@@ -22,19 +25,15 @@ class BlackboardNode2 : public ZenoNode {
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
   private:
     bool isDragArea(QPointF pos);
     void updateBlackboard();
-    void initUI();
-    void updateView(bool isEditing);
     void updateClidItem(bool isAdd, const QString nodeId);
   private:
     bool m_bDragging;
-    ZenoParamLineEdit *m_pTitle;
-    ZenoParamBlackboard *m_pTextEdit;
-    QGraphicsLinearLayout *m_mainLayout;
-    ZenoSpacerItem *m_pMainSpaceItem;
+    QVector<ZenoNode *> m_childItems;
 };
 
 

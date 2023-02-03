@@ -29,6 +29,7 @@
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"
+#include "blackboardnode2.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -46,6 +47,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_inputsLayout(nullptr)
     , m_paramsLayout(nullptr)
     , m_outputsLayout(nullptr)
+    , m_groupNode(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -122,10 +124,6 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     mainLayout->setSpacing(0);
     setLayout(mainLayout);
 
-    if (type == BLACKBOARD_NODE) {
-        setZValue(ZVALUE_BLACKBOARD);
-    }
-
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
     const QString &id = m_index.data(ROLE_OBJID).toString();
     setPos(pos);
@@ -139,6 +137,10 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     setFlag(ItemSendsScenePositionChanges);
 
     updateWhole();
+
+    if (type == BLACKBOARD_NODE) {
+        setZValue(ZVALUE_BLACKBOARD);
+    }
 
     m_border->setZValue(ZVALUE_NODE_BORDER);
     m_border->hide();
@@ -1024,7 +1026,7 @@ QPointF ZenoNode::nodePos() const
 
 void ZenoNode::updateNodePos(const QPointF &pos)
 {
-    QPointF oldPos = index().data(ROLE_OBJPOS).toPointF();
+    QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
     if (oldPos == pos)
         return;
     STATUS_UPDATE_INFO info;
@@ -1034,6 +1036,7 @@ void ZenoNode::updateNodePos(const QPointF &pos)
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
     pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
+    m_bMoving = false;
 }
 
 void ZenoNode::onUpdateParamsNotDesc()
@@ -1052,6 +1055,16 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
+}
+
+void ZenoNode::setGroupNode(BlackboardNode2 *pNode) 
+{
+    m_groupNode = pNode;
+}
+
+BlackboardNode2 *ZenoNode::getGroupNode() 
+{
+    return m_groupNode;
 }
 
 bool ZenoNode::sceneEventFilter(QGraphicsItem *watched, QEvent *event) {
