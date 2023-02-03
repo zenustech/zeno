@@ -1031,32 +1031,26 @@ void DisplayWidget::onKill()
 void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select) {
     // tmp code for Primitive Filter Node interaction
     if (nodes.size() > 1) return;
-    auto inputs = nodes[0].data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto input_edges = inputs["prim"].info.links;
-    if (input_edges.empty()) return;
-
     auto node_id = nodes[0].data(ROLE_OBJNAME).toString();
     if (node_id == "PrimitiveAttrPicker") {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto& picker = zeno::Picker::GetInstance();
         if (select) {
-            // save current picking context
+            // check input nodes
             auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
             if (input_nodes.size() != 1) return;
-            // get object id
-            QString outputNode = UiHelper::getSockNode(input_edges[0].outSockPath);
-            auto target_node_id = outputNode;
-            string obj_name;
-            for (const auto& [name, obj] : scene->objectsMan->pairsShared()) {
-                if (name.find(target_node_id.toStdString()) != string::npos) {
-                    obj_name = name; break;
-                }
+            // find prim in object manager
+            auto input_node_id = input_nodes[0].get_node_id();
+            string prim_name;
+            for (const auto &[k, v] : scene->objectsMan->pairsShared()) {
+                if (k.find(input_node_id.toStdString()) != string::npos)
+                    prim_name = k;
             }
             if (prim_name.empty())
                 return;
 
             zeno::NodeLocation node_location(nodes[0], subgIdx);
-            // update picking context
+            // set callback to picker
             auto callback =
                 [node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
                 std::string picked_elems_str;
