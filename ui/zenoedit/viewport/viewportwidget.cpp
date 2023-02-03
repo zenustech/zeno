@@ -916,22 +916,22 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
-        QString presets, path, filename;
-        bool bRecordOnRun = false;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA, bRecordOnRun);
-        //validation.
-
         VideoRecInfo recInfo;
-        recInfo.record_path = path;
-        recInfo.frameRange = {frameStart, frameEnd};
-        recInfo.res = {(float)width, (float)height};
-        recInfo.bitrate = bitrate;
-        recInfo.fps = fps;
-        recInfo.videoname = filename;
-        recInfo.numOptix = numOptix;
-        recInfo.numMSAA = numMSAA;
-        recInfo.bRecordRun = bRecordOnRun;
+        dlg.getInfo(
+                recInfo.frameRange.first,
+                recInfo.frameRange.second,
+                recInfo.fps,
+                recInfo.bitrate,
+                recInfo.res[0],
+                recInfo.res[1],
+                recInfo.record_path,
+                recInfo.videoname,
+                recInfo.numOptix,
+                recInfo.numMSAA,
+                recInfo.bRecordRun,
+                recInfo.bExportVideo
+            );
+        //validation.
 
         m_recordMgr.setRecordInfo(recInfo);
 

@@ -65,6 +65,10 @@ void RecordVideoMgr::finishRecord()
 {
     if (m_timer)
         m_timer->stop();
+    if (!m_recordInfo.bExportVideo) {
+        emit recordFinished();
+        return;
+    }
     //Zenovis::GetInstance().blockSignals(false);
     {
         QString dir_path = m_recordInfo.record_path + "/P/";
