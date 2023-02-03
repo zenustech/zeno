@@ -49,6 +49,7 @@ public:
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     DisplayWidget *getDisplayWidget();
+    ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
 
     QLineEdit* selected = nullptr;

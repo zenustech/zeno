@@ -295,7 +295,12 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
-        zenoApp->getMainWindow()->editor()->activateTab(subgraph_name, "", obj_node_name);
+        ZenoMainWindow* pWin = zenoApp->getMainWindow();
+        if (pWin) {
+            ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+            if (pEditor)
+                pEditor->activateTab(subgraph_name, "", obj_node_name);
+        }
     }
 }
 //void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
