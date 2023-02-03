@@ -105,8 +105,17 @@ public:
     ZEditableTextItem(QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+
 private:
-    void initUI();
+    void initUI(const QString& text);
+
+    bool m_bFocusIn;
 };
 
 class ZenoSocketItem;
