@@ -38,8 +38,6 @@ CameraControl::CameraControl(QWidget* parent)
     , m_aperture(0.1f)
     , m_focalPlaneDistance(2.0f)
 {
-    transformer = std::make_unique<zeno::FakeTransformer>();
-    picker = std::make_unique<zeno::Picker>();
     updatePerspective();
 }
 
@@ -57,17 +55,35 @@ void CameraControl::setDisPlane(float disPlane){
 
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (scene->camera->m_need_sync) {
+        m_center = {
+            scene->camera->m_zxx_in.cx,
+            scene->camera->m_zxx_in.cy,
+            scene->camera->m_zxx_in.cz
+        };
+        m_theta = scene->camera->m_zxx_in.theta;
+        m_phi = scene->camera->m_zxx_in.phi;
+        m_radius = scene->camera->m_zxx_in.radius;
+        m_fov = scene->camera->m_fov;
+        m_aperture = scene->camera->m_aperture;
+        m_focalPlaneDistance = scene->camera->focalPlaneDistance;
+        scene->camera->m_need_sync = false;
+    }
     if (event->buttons() & Qt::MiddleButton) {
         m_lastPos = event->pos();
     }
     else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto front = scene->camera->m_lodfront;
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
-        if (!scene->selected.empty() && transformer->isTransformMode() && transformer->clickedAnyHandler(realPos(), dir, front)) {
-            transformer->startTransform();
+        auto dir = screenToWorldRay(event->x() / res().x(),
+                                    event->y() / res().y());
+        auto& transformer = zeno::FakeTransformer::GetInstance();
+        if (!scene->selected.empty() &&
+            transformer.isTransformMode() &&
+            transformer.clickedAnyHandler(realPos(), dir, front)) {
+            transformer.startTransform();
         }
     }
 }
@@ -124,34 +140,37 @@ void CameraControl::lookTo(int dir) {
 }
 
 void CameraControl::clearTransformer() {
-    transformer->clear();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.clear();
 }
 
 void CameraControl::changeTransformOperation(const QString& node) {
-    auto opt = transformer->getTransOpt();
-    transformer->clear();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    auto opt = transformer.getTransOpt();
+    transformer.clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     for (auto const &[key, _] : scene->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
-            transformer->addObject(key);
+            transformer.addObject(key);
         }
     }
-    transformer->setTransOpt(opt);
-    transformer->changeTransOpt();
+    transformer.setTransOpt(opt);
+    transformer.changeTransOpt();
     zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::changeTransformOperation(int mode) {
+    auto& transformer = zeno::FakeTransformer::GetInstance();
     switch (mode) {
     case 0:
-        transformer->toTranslate();
+        transformer.toTranslate();
         break;
     case 1:
-        transformer->toRotate();
+        transformer.toRotate();
         break;
     case 2:
-        transformer->toScale();
+        transformer.toScale();
         break;
     default:
         break;
@@ -160,25 +179,15 @@ void CameraControl::changeTransformOperation(int mode) {
 }
 
 void CameraControl::changeTransformCoordSys() {
-    transformer->changeCoordSys();
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.changeCoordSys();
     zenoApp->getMainWindow()->updateViewport();
 }
 
 void CameraControl::resizeTransformHandler(int dir) {
-    transformer->resizeHandler(dir);
+    auto& transformer = zeno::FakeTransformer::GetInstance();
+    transformer.resizeHandler(dir);
     zenoApp->getMainWindow()->updateViewport();
-}
-
-void CameraControl::setPickTarget(const std::string &prim_name) {
-    picker->setTarget(prim_name);
-}
-
-void CameraControl::bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name) {
-    picker->bindNode(node, subgraph, sock_name);
-}
-
-void CameraControl::unbindNodeFromPicker() {
-    picker->unbindNode();
 }
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
@@ -216,7 +225,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
         m_lastPos = QPointF(xpos, ypos);
     }
     else if (event->buttons() & Qt::LeftButton) {
-        if (transformer->isTransforming()) {
+        auto& transformer = zeno::FakeTransformer::GetInstance();
+        if (transformer.isTransforming()) {
             auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
             auto camera_pos = realPos();
             auto x = event->x() * 1.0f;
@@ -225,7 +235,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
             y = 1 - (2 * y / res().y());
             auto mouse_pos = glm::vec2(x, y);
             auto vp = scene->camera->m_proj * scene->camera->m_view;
-            transformer->transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
+            transformer.transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
@@ -278,44 +288,17 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
     }
 }
 
+void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
+    auto pos = event->pos();
+    auto picked_prim = zeno::Picker::GetInstance().just_pick_prim(pos.x(), pos.y());
+    if (!picked_prim.empty()) {
+        auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
+        auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
+        auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+        zenoApp->getMainWindow()->editor()->activateTab(subgraph_name, "", obj_node_name);
+    }
+}
 //void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
-//    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-//    auto cam_pos = realPos();
-//
-//    float x = (float)event->x() / m_res.x();
-//    float y = (float)event->y() / m_res.y();
-//    auto rdir = screenToWorldRay(x, y);
-//    float min_t = std::numeric_limits<float>::max();
-//    std::string name;
-//    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-//        zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
-//        zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
-//        zeno::vec3f bmin, bmax;
-//        if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
-//            if (auto ret = zeno::ray_box_intersect(bmin, bmax, ro, rd)) {
-//                float t = *ret;
-//                if (t < min_t) {
-//                    min_t = t;
-//                    name = key;
-//                }
-//            }
-//        }
-//    }
-//    if (!name.empty()) {
-//        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-//        auto obj_name = QString(name.c_str());
-//        QString subgraph_name, node_id;
-//        auto graph_editor = zenoApp->getMainWindow()->editor();
-//        node_id = QString(name.substr(0, name.find_first_of(':')).c_str());
-//        auto search_result = pModel->search(node_id, SEARCH_NODEID);
-//        auto subgraph_index = search_result[0].subgIdx;
-//        subgraph_name = subgraph_index.data(ROLE_OBJNAME).toString();
-//        graph_editor->activateTab(subgraph_name, "", node_id);
-//    }
-//    else
-//        scene->selected.clear();
-//}
-
 void CameraControl::setKeyFrame()
 {
     //todo
@@ -405,15 +388,16 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //}
 
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        qDebug() << scene->select_mode;
+        auto& picker = zeno::Picker::GetInstance();
+        auto& transformer = zeno::FakeTransformer::GetInstance();
 
-        if (transformer->isTransforming()) {
+        if (transformer.isTransforming()) {
             bool moved = false;
             if (m_boundRectStartPos != event->pos()) {
                 // create/modify transform primitive node
                 moved = true;
             }
-            transformer->endTransform(moved);
+            transformer.endTransform(moved);
         }
         else {
             auto cam_pos = realPos();
@@ -422,42 +406,34 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
             if (!shift_pressed) {
                 scene->selected.clear();
-                transformer->clear();
+                transformer.clear();
             }
+
+            auto onPrimSelected = []() {
+                auto scene = Zenovis::GetInstance().getSession()->get_scene();
+                ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+                mainWin->onPrimitiveSelected(scene->selected);
+            };
 
             QPoint releasePos = event->pos();
             if (m_boundRectStartPos == releasePos) {
-                float x = (float)event->x() / m_res.x();
-                float y = (float)event->y() / m_res.y();
-                auto rdir = screenToWorldRay(x, y);
-                // pick with ray
-//                picker->pickWithRay(cam_pos, rdir,
-//                    [this](string obj) -> void{this->transformer->addObject(obj);},
-//                    [this](string obj) -> void{this->transformer->removeObject(obj);});
-                // pick with framebuffer
-                picker->pickWithFrameBuffer(releasePos.x(), releasePos.y(),
-                    [this](string obj) -> void{this->transformer->addObject(obj);},
-                    [this](string obj) -> void{this->transformer->removeObject(obj);});
+                picker.pick(releasePos.x(), releasePos.y());
+                picker.sync_to_scene();
+                if (scene->select_mode == zenovis::PICK_OBJECT)
+                    onPrimSelected();
+                transformer.clear();
+                transformer.addObject(picker.get_picked_prims());
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)releasePos.x());
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)releasePos.x());
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)releasePos.y());
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)releasePos.y());
-                auto left_up = screenToWorldRay(min_x / m_res.x(), min_y / m_res.y());
-                auto left_down = screenToWorldRay(min_x / m_res.x(), max_y / m_res.y());
-                auto right_up = screenToWorldRay(max_x / m_res.x(), min_y / m_res.y());
-                auto right_down = screenToWorldRay(max_x / m_res.x(), max_y / m_res.y());
-                // pick with ray
-//                picker->pickWithRay(cam_pos, left_up, left_down, right_up, right_down,
-//                    [this](string obj) -> void{this->transformer->addObject(obj);},
-//                    [this](string obj) -> void{this->transformer->removeObject(obj);});
                 int x0 = m_boundRectStartPos.x();
                 int y0 = m_boundRectStartPos.y();
                 int x1 = releasePos.x();
                 int y1 = releasePos.y();
-                picker->pickWithFrameBuffer(x0, y0, x1, y1,
-                    [this](string obj) -> void{this->transformer->addObject(obj);},
-                    [this](string obj) -> void{this->transformer->removeObject(obj);});
+                picker.pick(x0, y0, x1, y1);
+                picker.sync_to_scene();
+                if (scene->select_mode == zenovis::PICK_OBJECT)
+                    onPrimSelected();
+                transformer.clear();
+                transformer.addObject(picker.get_picked_prims());
             }
     }
     }
@@ -607,12 +583,12 @@ void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     update();
 }
 
+void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
+    _base::mouseReleaseEvent(event);
+    m_camera->fakeMouseDoubleClickEvent(event);
+    update();
+}
 //void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
-//    _base::mouseReleaseEvent(event);
-//    m_camera->fakeMouseDoubleClickEvent(event);
-//    update();
-//}
-
 void ViewportWidget::cameraLookTo(int dir) {
      m_camera->lookTo(dir);
 }
@@ -634,24 +610,11 @@ void ViewportWidget::changeTransformCoordSys() {
     m_camera->changeTransformCoordSys();
 }
 
-void ViewportWidget::setPickTarget(const string& prim_name) {
-    m_camera->setPickTarget(prim_name);
-}
-
-void ViewportWidget::bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name) {
-    m_camera->bindNodeToPicker(node, subgraph, sock_name);
-}
-
-void ViewportWidget::unbindNodeFromPicker() {
-    m_camera->unbindNodeFromPicker();
-}
-
 void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setAperture(aperture);
     m_camera->setDisPlane(disPlane);
     updatePerspective();
 }
-
 
 DisplayWidget::DisplayWidget(QWidget* parent)
     : QWidget(parent)
@@ -1075,11 +1038,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
     auto node_id = nodes[0].data(ROLE_OBJNAME).toString();
     if (node_id == "PrimitiveAttrPicker") {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        zeno::PickingContext picking_context;
+        auto& picker = zeno::Picker::GetInstance();
         if (select) {
             // save current picking context
-            picking_context.saveContext();
-
+            auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
+            if (input_nodes.size() != 1) return;
             // get object id
             QString outputNode = UiHelper::getSockNode(input_edges[0].outSockPath);
             auto target_node_id = outputNode;
@@ -1089,33 +1052,46 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
                     obj_name = name; break;
                 }
             }
+            if (prim_name.empty())
+                return;
 
+            zeno::NodeLocation node_location(nodes[0], subgIdx);
             // update picking context
-            auto mode = inputs["mode"].info.defaultValue.value<QString>();
-            if (mode == "triangle") scene->select_mode = zenovis::PICK_MESH;
-            else if (mode == "line") scene->select_mode = zenovis::PICK_LINE;
+            auto callback =
+                [node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
+                std::string picked_elems_str;
+                auto &picked_prim_elems = picked_elems[prim_name];
+                for (auto elem : picked_prim_elems)
+                    picked_elems_str += std::to_string(elem) + ",";
+                zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+            };
+            picker.set_picked_elems_callback(callback);
+            // ----- enter node context
+            picker.save_context();
+            // read selected mode
+            auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
+            if (select_mode_str == "triangle") scene->select_mode = zenovis::PICK_MESH;
+            else if (select_mode_str == "line") scene->select_mode = zenovis::PICK_LINE;
             else scene->select_mode = zenovis::PICK_VERTEX;
-
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-            auto params = nodes[0].data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-            PARAM_INFO info = params.value("selected");
-
-            auto node_selected = info.value.toString();
-            if (!node_selected.isEmpty()) {
-                auto elements = node_selected.split(',');
-                for (const auto &e : elements) {
-                    scene->selected_elements[obj_name].insert(e.toInt());
-                }
+            // read selected elements
+            string node_context;
+            auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+            if (!node_selected_str.empty()) {
+                auto node_selected_qstr = QString(node_selected_str.c_str());
+                auto elements = node_selected_qstr.split(',');
+                for (auto& e : elements)
+                    if (e.size() > 0) node_context += prim_name + ":" + e.toStdString() + " ";
+                picker.load_from_str(node_context, scene->select_mode);
             }
-            zenoApp->getMainWindow()->updateViewport();
-
-            m_view->setPickTarget(obj_name);
-            m_view->bindNodeToPicker(nodes[0], subgIdx, "selected");
+            picker.sync_to_scene();
+            picker.focus(prim_name);
         }
         else {
-            picking_context.loadContext();
-            m_view->unbindNodeFromPicker();
-            zenoApp->getMainWindow()->updateViewport();
+            picker.load_context();
+            picker.sync_to_scene();
+            picker.focus("");
+            picker.set_picked_elems_callback({});
         }
+        zenoApp->getMainWindow()->updateViewport();
     }
 }

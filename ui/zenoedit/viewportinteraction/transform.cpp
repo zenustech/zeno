@@ -1,4 +1,4 @@
-#include "viewporttransform.h"
+#include "transform.h"
 
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
@@ -22,21 +22,6 @@ FakeTransformer::FakeTransformer()
       , m_status(false)
       , m_operation(NONE)
       , m_handler_scale(1.f) {}
-
-FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
-    : m_objects_center(0.0f)
-      , m_trans(0.0f)
-      , m_scale(1.0f)
-      , m_rotate({0, 0, 0, 1})
-      , m_last_trans(0.0f)
-      , m_last_scale(1.0f)
-      , m_last_rotate({0, 0, 0, 1})
-      , m_status(false)
-      , m_operation(NONE)
-      , m_handler_scale(1.f)
-{
-    addObject(names);
-}
 
 void FakeTransformer::addObject(const std::string& name) {
     if (name.empty()) return;
@@ -145,14 +130,6 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
     return m_operation_mode != zenovis::INTERACT_NONE;
 }
 
-/**
- * apply transform to all objects
- * @param camera_pos
- * @param mouse_pos
- * @param start_dir
- * @param end_dir
- * @param front
- */
 void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D ray_dir, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -278,6 +255,93 @@ void FakeTransformer::startTransform() {
     markObjectsInteractive();
 }
 
+void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
+                                             const std::string& obj_name) {
+    auto& node_sync = NodeSyncMgr::GetInstance();
+
+    auto out_sock = node_sync.getPrimSockName(node_location);
+    auto new_node_location = node_sync.generateNewNode(node_location,
+                                                       "TransformPrimitive",
+                                                       out_sock,
+                                                       "prim");
+
+    auto user_data = m_objects[obj_name]->userData();
+
+    auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
+    QVector<double> translate = {
+        translate_vec3[0],
+        translate_vec3[1],
+        translate_vec3[2]
+    };
+    node_sync.updateNodeInputVec(new_node_location.value(),
+                                 "translation",
+                                 translate);
+
+    auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
+    QVector<double> scaling = {
+        scaling_vec3[0],
+        scaling_vec3[1],
+        scaling_vec3[2]
+    };
+    node_sync.updateNodeInputVec(new_node_location.value(),
+                                 "scaling",
+                                 scaling);
+
+    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
+    QVector<double> rotate = {
+        rotate_vec4[0],
+        rotate_vec4[1],
+        rotate_vec4[2],
+        rotate_vec4[3]
+    };
+    node_sync.updateNodeInputVec(new_node_location.value(),
+                                 "quatRotation",
+                                 rotate);
+
+    // make node not visible
+    node_sync.updateNodeVisibility(node_location);
+    // make new node visible
+    node_sync.updateNodeVisibility(new_node_location.value());
+}
+
+
+void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
+                                          const std::string& obj_name) {
+    auto& node_sync = NodeSyncMgr::GetInstance();
+
+    auto user_data = m_objects[obj_name]->userData();
+    auto translate_data = user_data.getLiterial<zeno::vec3f>("_translate");
+    QVector<double> translate = {
+        translate_data[0],
+        translate_data[1],
+        translate_data[2]
+    };
+    node_sync.updateNodeInputVec(node_location,
+                                 "translation",
+                                 translate);
+    // update scaling
+    auto scaling_data = user_data.getLiterial<zeno::vec3f>("_scale");
+    QVector<double> scaling = {
+        scaling_data[0],
+        scaling_data[1],
+        scaling_data[2]
+    };
+    node_sync.updateNodeInputVec(node_location,
+                                 "scaling",
+                                 scaling);
+    // update rotate
+    auto rotate_data = user_data.getLiterial<zeno::vec4f>("_rotate");
+    QVector<double> rotate = {
+        rotate_data[0],
+        rotate_data[1],
+        rotate_data[2],
+        rotate_data[3]
+    };
+    node_sync.updateNodeInputVec(node_location,
+                                 "quatRotation",
+                                 rotate);
+}
+
 void FakeTransformer::endTransform(bool moved) {
     if (moved) {
         // write transform info to objects' user data
@@ -308,29 +372,27 @@ void FakeTransformer::endTransform(bool moved) {
         }
 
         // sync to node system
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         for (auto &[obj_name, obj] : m_objects) {
-            QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
-            auto search_result = pModel->search(node_id, SEARCH_NODEID);
-            if (search_result.empty()) break;
-            auto subgraph_index = search_result[0].subgIdx;
-            auto node_index = search_result[0].targetIdx;
-            auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (node_id.contains("TransformPrimitive")  &&
-                inputs["translation"].info.links.empty() &&
-                inputs["quatRotation"].info.links.empty() &&
-                inputs["scaling"].info.links.empty()) {
-                syncToTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
+            auto& node_sync = NodeSyncMgr::GetInstance();
+            auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
+            auto& prim_node = prim_node_location->node;
+            if (node_sync.checkNodeType(prim_node, "TransformPrimitive") &&
+                // prim comes from a exist TransformPrimitive node
+                node_sync.checkNodeInputHasValue(prim_node, "translation") &&
+                node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
+                node_sync.checkNodeInputHasValue(prim_node, "scaling")) {
+                syncToTransformNode(prim_node_location.value(), obj_name);
             }
             else {
-                auto linked_transform_node_index =
-                    linkedToVisibleTransformNode(node_id, node_index, pModel).value<QModelIndex>();
-                if (linked_transform_node_index.isValid()) {
-                    auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
-                    syncToTransformNode(linked_transform_node_id, obj_name, pModel, linked_transform_node_index, subgraph_index);
-                }
+                // prim comes from another type node
+                auto linked_transform_node =
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "TransformPrimitive");
+                if (linked_transform_node.has_value())
+                    // prim links to a exist TransformPrimitive node
+                    syncToTransformNode(linked_transform_node.value(), obj_name);
                 else
-                    createNewTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
+                    // prim doesn't link to a exist TransformPrimitive node
+                    createNewTransformNode(prim_node_location.value(), obj_name);
             }
         }
     }
@@ -525,152 +587,9 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     doTransform();
 }
 
-void FakeTransformer::createNewTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel,
-                                             QModelIndex& node_index, QModelIndex& subgraph_index, bool change_visibility) {
-    auto pos = node_index.data(ROLE_OBJPOS).toPointF();
-    pos.setX(pos.x() + 10);
-    auto new_node_id = NodesMgr::createNewNode(pModel, subgraph_index, "TransformPrimitive", pos);
-    QString subgraphName = subgraph_index.data(ROLE_OBJNAME).toString();
-    QString node_name = node_id.section('-', 1);
-    QString out_sock = getNodePrimSockName(node_name.toStdString());
-
-    const QString &newInSock = UiHelper::constructObjPath(subgraphName, new_node_id, "[node]/inputs/", "prim");
-    const QString &newOutSock = UiHelper::constructObjPath(subgraphName, node_id, "[node]/outputs/", out_sock);
-
-    EdgeInfo edge(newOutSock, newInSock);
-    pModel->addLink(edge);
-
-    auto user_data = m_objects[obj_name]->userData();
-
-    auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
-    QVector<double> translate = {
-        translate_vec3[0],
-        translate_vec3[1],
-        translate_vec3[2]
-    };
-    PARAM_UPDATE_INFO translate_info = {
-        "translation",
-        QVariant::fromValue(QVector<double>{0, 0, 0}),
-        QVariant::fromValue(translate)
-    };
-    pModel->updateSocketDefl(new_node_id, translate_info, subgraph_index, true);
-
-    auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
-    QVector<double> scaling = {
-        scaling_vec3[0],
-        scaling_vec3[1],
-        scaling_vec3[2]
-    };
-    PARAM_UPDATE_INFO scaling_info = {
-        "scaling",
-        QVariant::fromValue(QVector<double>{1, 1, 1}),
-        QVariant::fromValue(scaling)
-    };
-    pModel->updateSocketDefl(new_node_id, scaling_info, subgraph_index, true);
-    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
-    QVector<double> rotate = {
-        rotate_vec4[0],
-        rotate_vec4[1],
-        rotate_vec4[2],
-        rotate_vec4[3]
-    };
-    PARAM_UPDATE_INFO rotate_info = {
-        "quatRotation",
-        QVariant::fromValue(QVector<double>{0, 0, 0, 1}),
-        QVariant::fromValue(rotate)
-    };
-    pModel->updateSocketDefl(new_node_id, rotate_info, subgraph_index, true);
-
-    if (1) {
-        // make node not visible
-        int old_option = node_index.data(ROLE_OPTIONS).toInt();
-        int new_option = old_option;
-        new_option ^= OPT_VIEW;
-        STATUS_UPDATE_INFO status_info = {old_option, new_option, ROLE_OPTIONS};
-        pModel->updateNodeStatus(node_id, status_info, subgraph_index, true);
-
-        // make new node visible
-        old_option = 0;
-        new_option = 0 | OPT_VIEW;
-        status_info.oldValue = old_option;
-        status_info.newValue = new_option;
-        pModel->updateNodeStatus(new_node_id, status_info, subgraph_index, true);
-    }
-}
-
-QVariant FakeTransformer::linkedToVisibleTransformNode(QString& node_id, QModelIndex& node_index, IGraphsModel* pModel) {
-    auto output_sockets = node_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    QString node_name = node_id.section("-", 1);
-    std::string out_sock = getNodePrimSockName(node_name.toStdString());
-    auto linked_edges = output_sockets[out_sock.c_str()].info.links;
-    for (const auto& linked_edge : linked_edges)
-    {
-        QString inputNode = UiHelper::getSockNode(linked_edge.inSockPath);
-        const QString &next_node_id = inputNode;
-        if (next_node_id.contains("TransformPrimitive")) {
-            auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
-            if (search_result.empty()) return {};
-            auto linked_node_index = search_result[0].targetIdx;
-            auto option = linked_node_index.data(ROLE_OPTIONS).toInt();
-            if (option & OPT_VIEW) {
-                return QVariant::fromValue(linked_node_index);
-            }
-        }
-    }
-    return {};
-}
-
-void FakeTransformer::syncToTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel,
-                         QModelIndex& node_index, QModelIndex& subgraph_index) {
-    auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto user_data = m_objects[obj_name]->userData();
-    auto translate_old = inputs["translation"].info.defaultValue.value<UI_VECTYPE>();;
-    auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
-    QVector<double> translate_new = {
-        translate_vec3[0],
-        translate_vec3[1],
-        translate_vec3[2]
-    };
-    PARAM_UPDATE_INFO translate_info = {
-        "translation",
-        QVariant::fromValue(translate_old),
-        QVariant::fromValue(translate_new)
-    };
-    pModel->updateSocketDefl(node_id, translate_info, subgraph_index, true);
-    // update scaling
-    auto scaling_old = inputs["scaling"].info.defaultValue.value<UI_VECTYPE>();
-    auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
-    QVector<double> scaling_new = {
-        scaling_vec3[0],
-        scaling_vec3[1],
-        scaling_vec3[2]
-    };
-    PARAM_UPDATE_INFO scaling_info = {
-        "scaling",
-        QVariant::fromValue(scaling_old),
-        QVariant::fromValue(scaling_new)
-    };
-    pModel->updateSocketDefl(node_id, scaling_info, subgraph_index, true);
-    // update rotate
-    auto rotate_old = inputs["quatRotation"].info.defaultValue.value<UI_VECTYPE>();
-    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
-    QVector<double> rotate_new = {
-        rotate_vec4[0],
-        rotate_vec4[1],
-        rotate_vec4[2],
-        rotate_vec4[3]
-    };
-    PARAM_UPDATE_INFO rotate_info = {
-        "quatRotation",
-        QVariant::fromValue(rotate_old),
-        QVariant::fromValue(rotate_new)
-    };
-    pModel->updateSocketDefl(node_id, rotate_info, subgraph_index, true);
-}
-
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
-    m_objects_center = {0, 0, 0};
+    glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
 
@@ -693,7 +612,10 @@ void FakeTransformer::doTransform() {
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
-        auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
+        auto transform_matrix = translate_matrix *
+                                rotate_matrix *
+                                scale_matrix *
+                                inv_pre_transform;
 
         if (obj->has_attr("pos")) {
             // transform pos
@@ -722,24 +644,15 @@ void FakeTransformer::doTransform() {
             user_data.setLiterial("_bboxMin", bmin);
             user_data.setLiterial("_bboxMax", bmax);
         }
-        m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
+        new_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
     m_last_trans = m_trans;
     m_last_rotate = m_rotate;
     m_last_scale = m_scale;
 
-    m_objects_center /= m_objects.size();
+    new_objects_center /= m_objects.size();
+    m_objects_center = new_objects_center;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
-}
-
-const char* FakeTransformer::getNodePrimSockName(std::string node_name) {
-    if (table.empty()) {
-        table["TransformPrimitive"] = "outPrim";
-        table["BindMaterial"] = "object";
-    }
-    if (table.find(node_name) == table.end())
-        return "prim";
-    return table[node_name].c_str();
 }
 
 }
