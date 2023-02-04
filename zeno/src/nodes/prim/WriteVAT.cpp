@@ -12,6 +12,20 @@ using zeno::vec3f;
 
 namespace zeno {
 
+static void write_vec3f(std::ofstream &file, zeno::vec3f vec) {
+    file.write((char*)&vec[0], sizeof(float));
+    file.write((char*)&vec[1], sizeof(float));
+    file.write((char*)&vec[2], sizeof(float));
+}
+
+static zeno::vec3f read_vec3f(std::ifstream &file) {
+    zeno::vec3f vec;
+    file.read((char*)&vec[0], sizeof (float));
+    file.read((char*)&vec[1], sizeof (float));
+    file.read((char*)&vec[2], sizeof (float));
+    return vec;
+}
+
 static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     std::ofstream file(path, std::ios::out | std::ios::binary);
     int height = v.size();
@@ -21,10 +35,7 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
         int width = v[i].size();
         file.write((char*)&width, sizeof(int));
         for (auto j = 0; j < width; j++) {
-            auto vec = v[i][j];
-            file.write((char*)&vec[0], sizeof(float));
-            file.write((char*)&vec[1], sizeof(float));
-            file.write((char*)&vec[2], sizeof(float));
+            write_vec3f(file, v[i][j]);
         }
         zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
     }
@@ -46,11 +57,7 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
 
         v[i].resize(width);
         for (auto j = 0; j < width; j++) {
-            zeno::vec3f vec;
-            file.read((char*)&vec[0], sizeof (float));
-            file.read((char*)&vec[1], sizeof (float));
-            file.read((char*)&vec[2], sizeof (float));
-            v[i][j] = vec;
+            v[i][j] = read_vec3f(file);
         }
         zeno::log_info("VAT: read frame {} done ({} face vec)!", i, width);
     }
