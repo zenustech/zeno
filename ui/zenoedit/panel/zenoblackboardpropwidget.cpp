@@ -11,7 +11,10 @@
 ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, const QPersistentModelIndex &subIndex, QWidget *parent)
     : QWidget(parent), 
     m_idx(index), 
-    m_subgIdx(subIndex) 
+    m_subgIdx(subIndex),
+    m_pColor(nullptr), 
+    m_pTextEdit(nullptr), 
+    m_pTitle(nullptr)
 {
     QGridLayout *pGroupLayout = new QGridLayout(this);
     pGroupLayout->setContentsMargins(10, 15, 0, 15);
@@ -37,8 +40,12 @@ void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const 
     if (role == ROLE_PARAMS_NO_DESC) {
         PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        m_pTextEdit->setText(info.content);
-        m_pTitle->setText(info.title);
+        if (m_pTextEdit)
+            m_pTextEdit->setText(info.content);
+        if (m_pTitle)
+            m_pTitle->setText(info.title);
+        if (m_pColor)
+            m_pColor->setStyleSheet(QString("background-color:%1; border:0;").arg(info.background.name()));
     }
 
 }
@@ -77,11 +84,13 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
     };
     QWidget *pControl = zenoui::createWidget(value, ctrl, UiHelper::getControlDesc(ctrl), cbSet, QVariant()); 
-    if (desc == "title" && dynamic_cast<ZLineEdit*>(pControl)) {
-        m_pTitle = dynamic_cast<ZLineEdit *>(pControl);
-    } else if (desc == "content" && dynamic_cast<ZTextEdit *>(pControl)) {
-        m_pTextEdit = dynamic_cast<ZTextEdit *>(pControl);
-    } 
+    if (desc == "title") {
+        m_pTitle = qobject_cast<ZLineEdit *>(pControl);
+    } else if (desc == "content") {
+        m_pTextEdit = qobject_cast<ZTextEdit *>(pControl);
+    } else if (desc == "background") {
+        m_pColor = qobject_cast<QPushButton*>(pControl);
+    }
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 }

@@ -22,5 +22,6 @@ class ZenoBlackboardPropWidget : public QWidget
     QPersistentModelIndex m_idx;
     ZLineEdit *m_pTitle;
     ZTextEdit *m_pTextEdit;
+    QPushButton* m_pColor;
 };
 #endif
