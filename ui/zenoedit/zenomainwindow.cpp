@@ -77,6 +77,8 @@ void ZenoMainWindow::init()
     setAutoFillBackground(true);
     setPalette(pal);
 
+    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
+
     m_ui->statusbar->showMessage(tr("Status Bar"));
 }
 
@@ -115,6 +117,8 @@ void ZenoMainWindow::initMenu()
     actionGroup->addAction(m_ui->actionOptix);
 
     m_ui->menubar->setProperty("cssClass", "mainWin");
+    //qt bug: qss font is not valid on menubar.
+    //m_ui->menubar->setFont(QFont("Alibaba PuHuiTi", 14));
 
     //check user saved layout.
     loadSavedLayout();

@@ -279,5 +279,7 @@
     <file>icons/parameter_key-frame_not-confirm.svg</file>
     <file>icons/moveUp.svg</file>
     <file>icons/moveUp-on.svg</file>
+    <file>icons/zeno-logo.svg</file>
+    <file>icons/zeno-logo.png</file>
 </qresource>
 </RCC>
