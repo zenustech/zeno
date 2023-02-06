@@ -47,6 +47,16 @@ static void write_normalized_vec3f(std::ofstream &file, vec3f vec, vec3f _min, v
     file.write((char*)&_2, sizeof(int16_t));
 }
 
+static int align_to(int count, int align) {
+    int remainder = count % align;
+    if (remainder == 0) {
+        return count;
+    }
+    else {
+        return count + (align - remainder);
+    }
+}
+
 static zeno::vec3f read_normalized_vec3f(std::ifstream &file, vec3f _min, vec3f _max) {
     int16_t _0;
     int16_t _1;
@@ -77,23 +87,27 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     write_vec3f(file, bbox.first);
     write_vec3f(file, bbox.second);
 
-    int height = v.size();
-    file.write((char*)&height, sizeof(int));
+    int frames = v.size();
+    file.write((char*)&frames, sizeof(int));
     int maxWidth = 0;
-    for (auto i = 0; i < height; i++) {
+    for (auto i = 0; i < frames; i++) {
         int width = v[i].size();
         maxWidth = std::max(maxWidth, width);
     }
     file.write((char*)&maxWidth, sizeof(int));
+    int maxWidthAlign = align_to(maxWidth, 8192);
+    int height = frames * (maxWidthAlign / 8192);
+    file.write((char*)&height, sizeof(int));
 
-    for (auto i = 0; i < height; i++) {
+    for (auto i = 0; i < frames; i++) {
         int width = v[i].size();
         file.write((char*)&width, sizeof(int));
     }
 
-    for (auto i = 0; i < height; i++) {
+    for (auto i = 0; i < frames; i++) {
         int width = v[i].size();
-        for (auto j = 0; j < width; j++) {
+        v[i].resize(maxWidthAlign);
+        for (auto j = 0; j < maxWidthAlign; j++) {
             write_normalized_vec3f(file, v[i][j], bbox.first, bbox.second);
         }
         zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
@@ -106,27 +120,32 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
     auto _min = read_vec3f(file);
     auto _max = read_vec3f(file);
 
-    int height = 0;
-    file.read((char*)&height, sizeof (int));
-    v.resize(height);
-    zeno::log_info("VAT: frames {}", height);
+    int frames = 0;
+    file.read((char*)&frames, sizeof (int));
+    v.resize(frames);
+    zeno::log_info("VAT: frames {}", frames);
     int maxWidth = 0;
     file.read((char *) &maxWidth, sizeof(int));
+    int maxWidthAlign = align_to(maxWidth, 8192);
+    int height = 0;
+    file.read((char *) &height, sizeof(int));
+    zeno::log_info("VAT: height {}", height);
 
     std::vector<int> widths = {};
-    for (auto i = 0; i < height; i++) {
+    for (auto i = 0; i < frames; i++) {
         int width = 0;
         file.read((char *) &width, sizeof(int));
         widths.push_back(width);
     }
 
-    for (auto i = 0; i < height; i++) {
+    for (auto i = 0; i < frames; i++) {
         int width = widths[i];
 
-        v[i].resize(width);
-        for (auto j = 0; j < width; j++) {
+        v[i].resize(maxWidthAlign);
+        for (auto j = 0; j < maxWidthAlign; j++) {
             v[i][j] = read_normalized_vec3f(file, _min, _max);
         }
+        v[i].resize(width);
         zeno::log_info("VAT: read frame {} done ({} face vec)!", i, width);
     }
     return v;
