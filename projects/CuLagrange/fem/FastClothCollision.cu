@@ -124,6 +124,126 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
     std::tie(npp, ne) = getConstraintCnt();
 }
 
+void FastClothSystem::lightCD(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    zs::CppTimer timer;
+    if (enableContact) {
+        ncPP.setVal(0);
+        if (enableContactSelf) {
+            bvs.resize(svInds.size());
+            retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0, bvs);
+            // auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0);
+
+            /// bvh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
+            svBvh.refit(pol, bvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxCnt[0]++; 
+                auxTime[0] += timer.elapsed();
+            }
+
+            /// sh
+            if constexpr (s_testSh) {
+                if constexpr (s_enableProfile)
+                    timer.tick();
+
+                svSh.build(pol, L, bvs);
+
+                if constexpr (s_enableProfile) {
+                    timer.tock();
+                    auxCnt[2]++; 
+                    auxTime[2] += timer.elapsed();
+                }
+            }
+
+            /// @note all cloth edge lower-bound constraints inheritly included
+            lightFindCollisionConstraints(pol, dHat, false);
+        }
+        if (hasBoundary()) {
+            bvs.resize(coPoints->size());
+            retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset, bvs);
+            // auto pBvs = retrieve_bounding_volumes(pol, vtemp, tag, *coPoints, zs::wrapv<1>{}, coOffset);
+
+            /// bvh
+            if constexpr (s_enableProfile)
+                timer.tick();
+
+            bouSvBvh.refit(pol, bvs);
+
+            if constexpr (s_enableProfile) {
+                timer.tock();
+                auxCnt[0]++; 
+                auxTime[0] += timer.elapsed();
+            }
+
+            /// sh
+            if constexpr (s_testSh) {
+                if constexpr (s_enableProfile)
+                    timer.tick();
+
+                bouSvSh.build(pol, L, bvs);
+
+                if constexpr (s_enableProfile) {
+                    timer.tock();
+                    auxCnt[2]++; 
+                    auxTime[2] += timer.elapsed();
+                }
+            }
+            lightFindCollisionConstraints(pol, dHat, true);
+        }
+        frontManageRequired = false; 
+    }
+    ncpp = ncPP.getVal(); 
+}
+
+void FastClothSystem::lightFilterConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag)
+{
+    using namespace zs; 
+    constexpr auto space = execspace_e::cuda;
+
+    nPP.setVal(0); 
+    pol(range(ncpp), 
+        [vtemp = proxy<space>({}, vtemp), nPP = proxy<space>(nPP), cPP = proxy<space>(cPP), 
+        PP = proxy<space>(PP), dHat2 = dHat * dHat, tag] __device__ (int i) mutable {
+            auto pp = cPP[i]; 
+            auto v0 = vtemp.pack(dim_c<3>, tag, pp[0]); 
+            auto v1 = vtemp.pack(dim_c<3>, tag, pp[1]); 
+            auto dist = (v0 - v1).l2NormSqr(); 
+            if (dist < dHat2)
+            {
+                int no = atomic_add(exec_cuda, &nPP[0], 1); 
+                PP[no] = pp;    
+            }
+    });  
+    npp = nPP.getVal(); 
+    /// @note check upper-bound constraints for cloth edges
+    nE.setVal(0);
+    for (auto &primHandle : prims) {
+        if (primHandle.isBoundary())
+            continue;
+        auto &ses = primHandle.getSurfEdges();
+        pol(Collapse{ses.size()},
+            [ses = proxy<space>({}, ses), vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), nE = proxy<space>(nE),
+             threshold = L * L - epsSlack, vOffset = primHandle.vOffset, tag] __device__(int sei) mutable {
+                const auto vij = ses.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c) + vOffset;
+                const auto &vi = vij[0];
+                const auto &vj = vij[1];
+                auto pi = vtemp.pack(dim_c<3>, tag, vi);
+                auto pj = vtemp.pack(dim_c<3>, tag, vj);
+                if (auto d2 = dist2_pp(pi, pj); d2 >= threshold) {
+                    auto no = atomic_add(exec_cuda, &nE[0], 1);
+                    E[no] = vij;
+                }
+            });
+    }
+}
+
 #define PROFILE_CD 0
 
 void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary) {
@@ -405,6 +525,68 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
     pol.profile(false);
 }
 
+void FastClothSystem::lightFindCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    zs::CppTimer timer; 
+    pol.profile(PROFILE_CD);
+
+#if !s_testSh
+    /// pt
+    if constexpr (s_enableProfile)
+        timer.tick();
+
+    const auto &svbvh = withBoundary ? bouSvBvh : svBvh;
+    // test front-line 
+    auto &svfront = withBoundary ? boundarySvFront : selfSvFront;
+    pol(Collapse{svfront.size()},
+        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+#if !s_debugRemoveHashTable
+         eTab = proxy<space>(eTab), 
+#endif 
+         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), front = proxy<space>(svfront),
+         PP = proxy<space>(cPP), nPP = proxy<space>(ncPP), dHat2 = dHat * dHat, thickness = dHat,
+         voffset = withBoundary ? coOffset : 0, frontManageRequired = frontManageRequired, 
+         withBoundary] __device__(int i) mutable {
+            auto vi = front.prim(i);
+            vi = reinterpret_bits<int>(svInds("inds", vi));
+            auto pi = vtemp.pack(dim_c<3>, "xn", vi);
+            auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
+            auto f = [&](int svI) {
+                // if (exclTris[stI]) return;
+                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                if (!withBoundary && vi >= vj)
+                    return;
+                auto pj = vtemp.pack(dim_c<3>, "xn", vj);
+                // edge or not
+                // TODO: use query 
+#if !s_debugRemoveHashTable 
+                if (eTab.single_query(ivec2 {vi, vj}) >= 0 || eTab.single_query(ivec2 {vj, vi}) >= 0)
+                    return; 
+#endif 
+                if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                    PP[no] = pair_t{vi, vj};
+                }
+            };
+            if (frontManageRequired)
+                bvh.iter_neighbors(bv, i, front, f);
+            else
+                bvh.iter_neighbors(bv, front.node(i), f);
+        });
+    if (frontManageRequired)
+        svfront.reorder(pol);
+
+    if constexpr (s_enableProfile) {
+        timer.tock();
+        auxCnt[1]++; 
+        auxTime[1] += timer.elapsed();
+    }
+#endif
+    pol.profile(false);
+}
+
 bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -426,6 +608,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
                 vtemp("xn", d, i) = xinit(d); // soft phase optimization starts from xinit
             }
         });
+        pol.sync(false); 
         for (int l = 0; l != ISoft; ++l) {
             timer.tick(); 
             softPhase(pol);
@@ -433,7 +616,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
             collisionCnt[5]++; 
             collisionTime[5] += timer.elapsed(); 
         }
-
+        pol.sync(true); 
         ///
         /// @brief check whether constraints satisfied
         ///
@@ -460,9 +643,10 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
     });
+    auto E0 = constraintEnergy(pol);
     for (int l = 0; l != IHard; ++l) {
         /// @note "xk" will be used for backtracking in hardphase
-        hardPhase(pol);
+        E0 = hardPhase(pol, E0);
     }
 
     return constraintSatisfied(pol, false);
@@ -471,8 +655,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    zs::CppTimer timer; 
-    T descentStepsize = 0.2f; 
+    T descentStepsize = 0.2f;
     /// @note shape matching
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
@@ -525,7 +708,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
 }
-void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
+typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol, typename FastClothSystem::T E0) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// @note shape matching (reset included)
@@ -701,17 +884,14 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
     });
     /// @brief compute appropriate step size that does not violates constraints
     auto alpha = (T)0.1;
-    /// @note vertex displacement constraint. ref 4.2.2, item 3
-    auto displacement = infNorm(pol); // "dir"
-    // if (auto v = std::sqrt((B + Btight) * (B + Btight) - B * B) / displacement; v < alpha)
-    //     alpha = v;
 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
     });
-    auto E0 = constraintEnergy(pol); // "xn"
+#if !s_hardPhaseSilent    
     auto c1m = armijoParam * dot(pol, "dir", "dir");
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
+#endif 
     do {
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
@@ -778,7 +958,7 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
                 }
             });
         }
-#endif 
+#endif         
 
         /// @brief backtracking if discrete constraints violated
         if (temp.getVal() == 1) {
@@ -787,24 +967,26 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
                 throw std::runtime_error("stepsize too tiny in hard phase collision solve"); 
             }
             alpha /= 2.0f;
+#if !s_hardPhaseSilent
             fmt::print("\t[back-tracing] alpha: {} constraint not satisfied\n", alpha); 
+#endif
             continue;
         }
+#if !s_hardPhaseSilent
         fmt::print("[back-tracing] acceptable alpha: {}\n", alpha); 
+#endif 
 
         ///
         /// @note objective decreases adequately. ref 4.2.2, item 2
         ///
         auto E = constraintEnergy(pol);
-        break;  // debug: remove energy linesearch
-        if (E <= E0 + alpha * c1m)
-        {
-            fmt::print("\t[back-tracing] alpha: {} line search finished!\n", alpha);
-            break;
-        }
-        alpha /= 2;
+        if (E <= E0)
+            return E;
+        alpha /= 2; 
     } while (true);
+#if !s_hardPhaseSilent
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);
+#endif 
 }
 
 bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps) {

@@ -13,8 +13,9 @@
 
 namespace zeno {
 
-inline typename UnifiedIPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename UnifiedIPCSystem::dtiles_t &vertData,
-                                     const zs::SmallString tag = "dir") {
+inline typename UnifiedIPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol,
+                                            typename UnifiedIPCSystem::dtiles_t &vertData,
+                                            const zs::SmallString tag = "dir") {
     using namespace zs;
     using T = typename UnifiedIPCSystem::T;
     constexpr auto space = execspace_e::cuda;
@@ -805,7 +806,7 @@ void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
     });
 }
 void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
-                             const zs::SmallString dstTag) {
+                                    const zs::SmallString dstTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // precondition
@@ -825,7 +826,8 @@ void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, std::true_type
         cgtemp(dstOffset + d, vi) = sum;
     });
 }
-void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag) {
+void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag,
+                                    const zs::SmallString dstTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // precondition
@@ -835,7 +837,7 @@ void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::Smal
 }
 
 void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
-                         const zs::SmallString bTag) {
+                                const zs::SmallString bTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     constexpr auto execTag = wrapv<space>{};
@@ -1790,8 +1792,9 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
 
 template <typename Model>
 typename UnifiedIPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typename UnifiedIPCSystem::dtiles_t &vtemp,
-                                       typename UnifiedIPCSystem::PrimitiveHandle &primHandle, const Model &model,
-                                       typename UnifiedIPCSystem::T dt, zs::Vector<typename UnifiedIPCSystem::T> &es) {
+                                              typename UnifiedIPCSystem::PrimitiveHandle &primHandle,
+                                              const Model &model, typename UnifiedIPCSystem::T dt,
+                                              zs::Vector<typename UnifiedIPCSystem::T> &es) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     using mat3 = typename UnifiedIPCSystem::mat3;
@@ -1900,7 +1903,7 @@ typename UnifiedIPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, type
 }
 
 typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag,
-                                        bool includeAugLagEnergy) {
+                                                      bool includeAugLagEnergy) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     Vector<T> &es = temp;
@@ -2711,13 +2714,13 @@ struct StepUnifiedIPCSystem : INode {
 };
 
 ZENDEFNODE(StepUnifiedIPCSystem, {{
-                               "ZSIPCSystem",
-                               {"int", "num_substeps", "1"},
-                               {"float", "dt", "0.01"},
-                           },
-                           {"ZSIPCSystem"},
-                           {},
-                           {"FEM"}});
+                                      "ZSIPCSystem",
+                                      {"int", "num_substeps", "1"},
+                                      {"float", "dt", "0.01"},
+                                  },
+                                  {"ZSIPCSystem"},
+                                  {},
+                                  {"FEM"}});
 
 struct UnifiedIPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
@@ -2729,7 +2732,8 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
     using bvh_t = typename UnifiedIPCSystem::bvh_t;
     using bv_t = typename UnifiedIPCSystem::bv_t;
 #endif
-    template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
+    template <typename VecT>
+    static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
         using namespace zs;
         const auto &mi = bv._min;
         const auto &ma = bv._max;
@@ -2872,8 +2876,8 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
                 })(ls.template getView<execspace_e::cuda>());
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                 match([&](auto fieldPair) {
-                    auto &fvSrc = std::get<0>(fieldPair);
-                    auto &fvDst = std::get<1>(fieldPair);
+                    auto &fvSrc = zs::get<0>(fieldPair);
+                    auto &fvDst = zs::get<1>(fieldPair);
                     A->pushBoundarySprings(
                         bindStrings(cudaPol, vtemp, numVerts,
                                     TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
@@ -2889,16 +2893,16 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 };
 
 ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
-                                       "ZSIPCSystem",
-                                       "ZSLevelSet",
-                                       {"bool", "hard_constraint", "1"},
-                                       {"float", "dist_cap", "0"},
-                                       {"float", "rest_length", "0.1"},
-                                       {"float", "strength", "0"},
-                                   },
-                                   {"ZSIPCSystem"},
-                                   {},
-                                   {"FEM"}});
+                                              "ZSIPCSystem",
+                                              "ZSLevelSet",
+                                              {"bool", "hard_constraint", "1"},
+                                              {"float", "dist_cap", "0"},
+                                              {"float", "rest_length", "0.1"},
+                                              {"float", "strength", "0"},
+                                          },
+                                          {"ZSIPCSystem"},
+                                          {},
+                                          {"FEM"}});
 
 struct UnifiedIPCSystemForceField : INode {
     template <typename VelSplsViewT>
@@ -2973,8 +2977,8 @@ struct UnifiedIPCSystemForceField : INode {
                     })(ls.template getView<execspace_e::cuda>());
                 } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                     match([&](auto fieldPair) {
-                        auto &fvSrc = std::get<0>(fieldPair);
-                        auto &fvDst = std::get<1>(fieldPair);
+                        auto &fvSrc = zs::get<0>(fieldPair);
+                        auto &fvDst = zs::get<1>(fieldPair);
                         computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset,
                                      TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
                                                             ls._alpha},

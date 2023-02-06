@@ -15,12 +15,14 @@
 #define s_useGDDiagHess 1 // for GD solver 
 #define s_useLineSearch 1
 #define s_debugOutput 0
-#define s_useHardPhase 0
+#define s_useHardPhase 1
 #define s_clothShearingCoeff 0.01f
 #define s_silentMode 1
+#define s_hardPhaseSilent 1
 #define s_useFrontLine 1
 #define s_useMassSpring 0
 #define s_debugRemoveHashTable 1
+#define s_testLightCache 1
 namespace zeno {
 
 /// for cell-based collision detection
@@ -173,12 +175,15 @@ struct FastClothSystem : IObject {
 
     /// collision
     void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag = "xinit");
+    void lightCD(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag = "xinit");
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
+    void lightFindCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary); // light version to be tested 
+    void lightFilterConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag); 
     /// @note given "xinit", computes x^{k+1}
     void initialStepping(zs::CudaExecutionPolicy &pol);
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
-    void hardPhase(zs::CudaExecutionPolicy &pol);
+    T hardPhase(zs::CudaExecutionPolicy &pol, T E0);
     bool constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps = true);
     T constraintEnergy(zs::CudaExecutionPolicy &pol);
     // void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
@@ -305,7 +310,11 @@ struct FastClothSystem : IObject {
     // collision constraints (edge / non-edge)
     zs::Vector<pair_t> PP, E;
     zs::Vector<int> nPP, nE;
+    // for light cache to be tested 
+    zs::Vector<pair_t> cPP, cE; 
+    zs::Vector<int> ncPP, ncE; 
     int npp, ne;
+    int ncpp, nce; 
     tiles_t tempPP, tempE;
 #if !s_debugRemoveHashTable
     etab_t eTab; // global surface edge hash table
@@ -343,6 +352,7 @@ struct FastClothSystem : IObject {
     int auxCnt[10]; 
     int dynamicsCnt[10];
     int collisionCnt[10];
+    float initInterpolationTime; 
     static constexpr bool s_enableProfile = true;
 #define s_testSh false
 };

@@ -493,6 +493,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     constexpr auto space = execspace_e::cuda;
     /// y0, x0
     // y0, x0
+    timer.tick(); 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), dt = dt, coOffset = coOffset] ZS_LAMBDA(int i) mutable {
         auto yt = vtemp.pack(dim_c<3>, "yn", i);
         auto vt = vtemp.pack(dim_c<3>, "vn", i);
@@ -564,6 +565,8 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple(dim_c<3>, "gridDir", pi) = dir;
         });
     }
+    timer.tock(); 
+    initInterpolationTime = timer.elapsed(); 
     {
         const auto ratio = (T)1 / (T)IInit;
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), ratio] ZS_LAMBDA(int i) mutable {
@@ -618,7 +621,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
                 });
-                findConstraints(pol, dHat, "xinit");
                 success = collisionStep(pol, true);
             }
             if (!success)
@@ -657,7 +659,12 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
     int maxIters = K * IDyn; 
     int k = 0; 
+#if s_testLightCache
+    lightCD(pol, dHat * 2.25f); 
+    // lightFilterConstraints(pol, dHat, "xinit"); 
+#else 
     findConstraints(pol, dHat); 
+#endif 
     /// optimizer
     zs::CppTimer timer; 
     for (int iters = 0; iters < maxIters; ++iters, ++k) {
@@ -799,7 +806,11 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         }
 
         // x^{k+1}
+#if s_testLightCache
+        lightFilterConstraints(pol, dHat, "xinit"); 
+#else 
         findConstraints(pol, dHat); // DWX: paper 4.3.2; do only once in the future
+#endif 
 
         if constexpr (s_enableProfile) {
             timer.tock();
@@ -818,22 +829,12 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if constexpr (s_enableProfile) {
             timer.tick();
         }
-#if 0 
-        // TODO: check paper 
-        for (int r = 0; r != R; ++r) {
 
-            if constexpr (s_enableProfile) {
-                collisionCnt[0]++;
-            }
-
-            if (success = collisionStep(pol, false); success)
-                break;
-        }
-#else 
+        // TODO: add reduction parameter (check whether constraints are statisfied per R iterations)
         success = collisionStep(pol, false); 
         collisionCnt[0]++; 
         collisionCnt[1]++; 
-#endif 
+
         if constexpr (s_enableProfile) {
             timer.tock();
             collisionTime[0] += timer.elapsed();
@@ -851,7 +852,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 collisionCnt[3]++;
             }
 
-            findConstraints(pol, dHat, "xinit");
 
             if constexpr (s_enableProfile) {
                 timer.tock();
@@ -939,13 +939,13 @@ struct StepClothSystem : INode {
                 fmt::format("total time: {} ({}, {}, {}, {}, {}); dynamics time [{}]: ({}: [grad_hess] {}, [cgsolve] {});"
                             " dynamics-including-linesearch[{}]: {}; collision time [{}, {}, {}; "
                             "{}; {}; {}]: ({}(total): "
-                            "{}(soft-phase-total), {}(hard), {}(findConstraints); {}(constraintSatisfied); {}(soft-phase-iters). aux time: (bvh build/cd) [{}, {}({})], (sh build/cd) [{}, {}]\n",
+                            "{}(soft-phase-total), {}(hard), {}(findConstraints); {}(constraintSatisfied); {}(soft-phase-iters). aux time: (bvh build/cd) [{}, {}({})], (sh build/cd) [{}, {}], initInterpolationTime: {}\n",
                             profileTime[0], profileTime[1], profileTime[2], profileTime[3], profileTime[4], profileTime[5], 
                             A->dynamicsCnt[0], A->dynamicsTime[0], A->dynamicsTime[1], A->dynamicsTime[2], 
                             A->dynamicsCnt[3], A->dynamicsTime[3], 
                             A->collisionCnt[0], A->collisionCnt[1], A->collisionCnt[2], A->collisionCnt[3], A->collisionCnt[4], A->collisionCnt[5], 
                             A->collisionTime[0], A->collisionTime[1], A->collisionTime[2], A->collisionTime[3], A->collisionTime[4], A->collisionTime[5], 
-                            A->auxTime[0], A->auxTime[1], A->auxCnt[1], A->auxTime[2], A->auxTime[3]);
+                            A->auxTime[0], A->auxTime[1], A->auxCnt[1], A->auxTime[2], A->auxTime[3], A->initInterpolationTime);
             zeno::log_warn(str);
             ZS_WARN(str);
         }

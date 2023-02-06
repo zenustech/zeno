@@ -4,6 +4,7 @@
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/math/DihedralAngle.hpp"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/memory/Allocator.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
@@ -82,6 +83,97 @@ struct ZSCUMathTest : INode {
         auto e = (m_X[1] - m_X[0]).norm(exec_seq);
         auto h = (n1.norm(exec_seq) + n2.norm(exec_seq)) / 2 / (e * 3);
         fmt::print("rest angle is: {}, e: {}, h: {}\n", ra, e, h);
+
+        using T = zs::vec<float, 3, 3>;
+        const zs::SparseMatrix<T, true> spmat{100, 100};
+        auto spv = proxy<execspace_e::host>(spmat);
+        fmt::print("default spmat(0, 1): {}\n", spv(0, 1).extent);
+
+        constexpr int N = 7;
+        zs::Vector<int> nidx{N + 1};
+        nidx[0] = 0; //
+        nidx[1] = 1; //
+        nidx[2] = 4;
+        nidx[3] = 5;
+        nidx[4] = 7; //
+        nidx[5] = 9; //
+        nidx[6] = 10;
+        nidx[7] = 12; //
+        zs::Vector<int> nlist{12};
+        nlist[0] = 1; //
+        nlist[1] = 0; //
+        nlist[2] = 2;
+        nlist[3] = 5;
+        nlist[4] = 1; //
+        nlist[5] = 4; //
+        nlist[6] = 6;
+        nlist[7] = 3; //
+        nlist[8] = 6;
+        nlist[9] = 1;  //
+        nlist[10] = 3; //
+        nlist[11] = 4;
+        zs::Vector<int> nstat{N};
+        nstat.reset(0);
+
+        auto pol = zs::omp_exec();
+        auto representative = [&nstat](const int idx) -> int {
+            int curr = nstat[idx];
+            if (curr != idx) {
+                int next, prev = idx;
+                while (curr > (next = nstat[curr])) {
+                    nstat[prev] = next;
+                    prev = curr;
+                    curr = next;
+                }
+            }
+            return curr;
+        };
+
+        // init
+        pol(range(N), [&](int v) {
+            const int beg = nidx[v];
+            const int end = nidx[v + 1];
+            int m = v;
+            int i = beg;
+            while ((m == v) && (i < end)) {
+                m = std::min(m, nlist[i]);
+                i++;
+            }
+            nstat[v] = m;
+        });
+        // union find
+        pol(range(N), [&](int v) {
+            int vstat = representative(v);
+            auto beg = nidx[v];
+            auto end = nidx[v + 1];
+            for (int i = beg; i < end; i++) {
+                const int nli = nlist[i];
+                if (v > nli) {
+                    int ostat = representative(nli);
+                    bool repeat;
+                    do {
+                        repeat = false;
+                        if (vstat != ostat) {
+                            int ret;
+                            if (vstat < ostat) {
+                                if ((ret = atomic_cas(exec_omp, &nstat[ostat], ostat, vstat)) != ostat) {
+                                    ostat = ret;
+                                    repeat = true;
+                                }
+                            } else {
+                                if ((ret = atomic_cas(exec_omp, &nstat[vstat], vstat, ostat)) != vstat) {
+                                    vstat = ret;
+                                    repeat = true;
+                                }
+                            }
+                        }
+                    } while (repeat);
+                }
+            }
+        });
+
+        for (int i = 0; i != N; ++i)
+            fmt::print("stat[{}]: {}\n", i, nstat[i]);
         getchar();
     }
 };
@@ -92,6 +184,48 @@ ZENDEFNODE(ZSCUMathTest, {
                              {},
                              {"ZPCTest"},
                          });
+
+struct ZSTestIterator : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}}, 100};
+        auto ompExec = omp_exec();
+        ompExec(range(100), [&, tv = proxy<space>({}, tv)](int i) mutable {
+            tv(0, i) = i;
+            tv("id", i) = reinterpret_bits<zs::f32>(i + 1);
+            tv.tuple(dim_c<3>, "v", i) = zs::vec<float, 3>{-i, i, i * i};
+        });
+        puts("print by proxies");
+        seq_exec()(range(10), [&, tv = proxy<space>({}, tv)](int i) {
+            fmt::print("tv[{}]: w[{}], v[{}, {}, {}], id[{}]\n", i, tv("w", i), tv("v", 0, i), tv("v", 1, i),
+                       tv("v", 2, i), tv.pack(dim_c<1>, "id", i).reinterpret_bits(int_c)[0]);
+        });
+        puts("print \"w\" by default iterators");
+        auto bg = tv.begin(0);
+        auto ed = tv.end(0);
+#if 1
+        auto idIter = tv.begin(1, int_c);
+        ompExec(range(10),
+                [bg = bg, idIter = idIter](int i) mutable { fmt::print("tv[{}]: {}, id {}\n", i, bg[i], idIter[i]); });
+        {
+            std::string str;
+            char ch;
+            int num;
+            auto [a, b, c] = zs::make_tuple("sb", 'a', 2);
+            zs::tie(str, ch, num) = zs::make_tuple("SB", 'A', 4);
+            fmt::print("<a, b, c>: ({}, {}, {}) ({}, {}, {})\n", a, b, c, str, ch, num);
+        }
+#endif
+    }
+};
+
+ZENDEFNODE(ZSTestIterator, {
+                               {},
+                               {},
+                               {},
+                               {"ZPCTest"},
+                           });
 
 struct ZSTestExtraction : INode {
     void apply() override {

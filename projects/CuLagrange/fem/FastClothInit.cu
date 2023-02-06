@@ -217,7 +217,7 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #endif
 #if !s_useNewtonSolver
     K = 72; // 72; 72 * 10
-    IDyn = 6;  
+    IDyn = 2;  
 #else 
     K = 72 * 3; 
     IDyn = 1; 
@@ -523,7 +523,9 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
                                  T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
+      cPP{estNumCps * 20, zs::memsrc_e::um, 0}, 
       nPP{zsprims[0]->getParticles().get_allocator(), 1},
+      ncPP{zsprims[0]->getParticles().get_allocator(), 1},
       tempPP{{{"softG", 6}, {"hardG", 6}}, estNumCps, zs::memsrc_e::um, 0}, E{estNumCps, zs::memsrc_e::um, 0},
       nE{zsprims[0]->getParticles().get_allocator(), 1}, tempE{{{"softG", 6}, {"hardG", 6}},
                                                                estNumCps,
