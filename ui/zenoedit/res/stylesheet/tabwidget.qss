@@ -11,7 +11,8 @@ QTabBar {
     background-color: #22252C;
     border-bottom: 1px solid rgb(24, 29, 33);
     border-right: 0px;
-    font: 14px 'Segoe UI Bold';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
 }
 
 QTabBar::tab {
@@ -67,7 +68,8 @@ QTabBar[cssClass = "graphicsediter"]::tab {
     background: #2D3239;
     color: #737B85;
     border-right: 1px solid rgb(24, 29, 33);
-    font: 14px 'Segoe UI';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
 }
 
 QTabBar[cssClass = "graphicsediter"]::tab:first {

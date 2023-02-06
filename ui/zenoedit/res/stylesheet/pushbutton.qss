@@ -3,7 +3,8 @@ QPushButton[cssClass="grayButton"]
     border-width: 0px;
     border-radius: 0px;
 	background-color: rgb(71,71,71);
-	font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(168, 163, 160);
 }
 
@@ -22,7 +23,8 @@ QPushButton[cssClass="blueStyle"]
     border-width: 0px;
     border-radius: 0px;
 	background-color: #4284F4;
-	font: 14px 'Segoe UI Semibold';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(208, 208, 208);
 }
 
@@ -41,7 +43,8 @@ QPushButton[cssClass="dictkeypanel"]
     border-width: 2px;
     border-radius: 2px;
 	background-color: rgb(72, 78, 90);
-	font: 14px 'Segoe UI Bold';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgb(147, 159, 172);
 }
 
@@ -57,7 +60,8 @@ QPushButton[cssClass="welcomepage"]
     border-radius: 0px;
     border-color: rgba(133,130,128,1);
 	background-color: transparent;
-	font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(156, 156, 156);
 }
 
@@ -76,7 +80,8 @@ QPushButton[cssClass="shadowButton"]
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 3px;
 	background-color: #2B2B2B;
-	font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: #8A8A8C;
 }
 
@@ -172,7 +177,8 @@ QPushButton[cssClass="curve-preset"]
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 3px;
 	background-color: #2B2B2B;
-	font: 12px 'HarmonyOS Sans';
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: #8A8A8C;
 }
 
@@ -191,7 +197,8 @@ QPushButton[cssClass="timeline"]
 	border: 1px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: #8A8A8C;
 }
 
@@ -222,7 +229,8 @@ QPushButton#btnRun
 	border: 1px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: #8A8A8C;
 }
 
@@ -241,7 +249,8 @@ QPushButton#btnKill
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgb(145,47,48);
 }
 
@@ -260,7 +269,8 @@ QPushButton#btnAlways
    	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 4px;
 	   background-color: #2B2B2B;
-	   font: bold 14px 'HarmonyOS Sans';
+	   font: 14px 'Alibaba PuHuiTi';
+	   font-weight: bold;
 	   color: #8A8A8C;
 }
 
@@ -278,7 +288,8 @@ QPushButton#btnSimpleRender
    	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 4px;
 	   background-color: #2B2B2B;
-	   font: bold 14px 'HarmonyOS Sans';
+	   font: 14px 'Alibaba PuHuiTi';
+	   font-weight: bold;
 	   color: #8A8A8C;
 }
 
@@ -292,7 +303,8 @@ QPushButton[cssClass="proppanel"]
     border-width: 0px;
     border-radius: 0px;
 	background-color: #5A616D;
-	font: 14px 'Segoe UI';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: #FFFFFF;
 }
 
@@ -310,6 +322,7 @@ QPushButton[cssClass="color_button"]
 	border: 0.5px solid rgba(0,0,0,1);
 	border-radius: 2px;
 	background-color: #2B2B2B;
-	font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: #8A8A8C;
 }

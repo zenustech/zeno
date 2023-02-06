@@ -3,7 +3,8 @@ QLineEdit[cssClass="dark"] {
     padding: 0 4px;
     background: #252525;
     selection-background-color: #4B9EF4;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
     color: rgba(255,255,255,0.40);
 }
 
@@ -18,7 +19,8 @@ QLineEdit[cssClass="searchEditor"]
     padding: 0 4px;
     background: rgb(28, 28, 28);
     selection-background-color: #4B9EF4;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
     color: rgba(255,255,255,0.40);
 }
 
@@ -34,7 +36,8 @@ QLineEdit[cssClass="proppanel"]
     padding: 0 4px;
     background: rgb(28, 28, 28);
     selection-background-color: #4B9EF4;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
     color: rgba(255,255,255,0.40);
 }
 
@@ -50,7 +53,8 @@ QLineEdit[cssClass="zenonode"]
     padding: 0 4px;
     background: rgb(36,37,36);
     selection-background-color: #4B9EF4;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
     color: rgba(255,255,255,0.40);
 }
 
@@ -63,7 +67,8 @@ QLineEdit[cssClass="FCurve-lineedit"] {
     border: 1px solid #252525;
     background-color: rgb(23, 23, 26);
     selection-background-color: #4B9EF4;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
     color: #CCCCCC;
 }
 
@@ -76,7 +81,8 @@ QLineEdit[cssClass="zeno2_2_lineedit"] {
     background-color: #191D21;
     selection-background-color: #4B9EF4;
     color: #C3D2DF;
-    font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
@@ -99,7 +105,8 @@ QPlainTextEdit[cssClass="logpanel"]
     color: #A3B1C0; 
     background-color: rgb(24,29,33); 
     border: 1px solid rgb(18,20,22);
-    font:12px 'HarmonyOS Sans';
+	font: 12px 'Alibaba PuHuiTi';
+    font-weight: 500;
 }
 
 QLineEdit[cssClass = "blackboard_title"]

@@ -180,8 +180,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor(226, 226, 226));
-    QFont font2("HarmonyOS Sans Bold", 16);
-    font2.setBold(true);
+    QFont font2("Alibaba PuHuiTi", 16);
+    font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
     m_NameItem->updateBoundingRect();
 

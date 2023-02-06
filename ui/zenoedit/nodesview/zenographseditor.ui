@@ -145,7 +145,8 @@ font: 12pt 'Segoe UI Bold';</string>
 {
 	background-color: transparent;
 	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
+	font: 12pt 'Alibaba PuHuiTi';
+    font-weight: bold;
 }</string>
               </property>
               <property name="frameShape">

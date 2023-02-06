@@ -343,7 +343,9 @@ ZSocketGroupItem::ZSocketGroupItem(
     , m_socket(nullptr)
 {
     setBrush(QColor(188, 188, 188));
-    QFont font("Segoe UI Semibold", 14);
+
+    QFont font("Alibaba PuHuiTi", 14);
+    font.setWeight(QFont::Medium);
     setFont(font);
     updateBoundingRect();
 
@@ -478,8 +480,8 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font("HarmonyOS Sans Bold", ZenoStyle::dpiScaled(11));
-    font.setBold(true);
+    QFont font("Alibaba PuHuiTi", 11);
+    font.setWeight(QFont::Bold);
     setFont(font);
 
     setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
