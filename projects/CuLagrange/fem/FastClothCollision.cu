@@ -608,6 +608,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
                 vtemp("xn", d, i) = xinit(d); // soft phase optimization starts from xinit
             }
         });
+        pol.sync(false); 
         for (int l = 0; l != ISoft; ++l) {
             timer.tick(); 
             softPhase(pol);
@@ -615,7 +616,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
             collisionCnt[5]++; 
             collisionTime[5] += timer.elapsed(); 
         }
-
+        pol.sync(true); 
         ///
         /// @brief check whether constraints satisfied
         ///
