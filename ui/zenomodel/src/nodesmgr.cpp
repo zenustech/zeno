@@ -151,6 +151,7 @@ PARAMS_INFO NodesMgr::initParamsNotDesc(const QString& name)
         blackboard.content = tr("content");
         blackboard.title = tr("title");
         blackboard.background = QColor(60, 70, 69);
+        blackboard.sz = QSize(500, 500);
         paramsNotDesc["blackboard"].name = "blackboard";
         paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }
