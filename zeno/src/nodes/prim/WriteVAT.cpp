@@ -79,10 +79,20 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
 
     int height = v.size();
     file.write((char*)&height, sizeof(int));
+    int maxWidth = 0;
+    for (auto i = 0; i < height; i++) {
+        int width = v[i].size();
+        maxWidth = std::max(maxWidth, width);
+    }
+    file.write((char*)&maxWidth, sizeof(int));
 
     for (auto i = 0; i < height; i++) {
         int width = v[i].size();
         file.write((char*)&width, sizeof(int));
+    }
+
+    for (auto i = 0; i < height; i++) {
+        int width = v[i].size();
         for (auto j = 0; j < width; j++) {
             write_normalized_vec3f(file, v[i][j], bbox.first, bbox.second);
         }
@@ -100,10 +110,18 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
     file.read((char*)&height, sizeof (int));
     v.resize(height);
     zeno::log_info("VAT: frames {}", height);
+    int maxWidth = 0;
+    file.read((char *) &maxWidth, sizeof(int));
 
+    std::vector<int> widths = {};
     for (auto i = 0; i < height; i++) {
         int width = 0;
-        file.read((char*)&width, sizeof (int));
+        file.read((char *) &width, sizeof(int));
+        widths.push_back(width);
+    }
+
+    for (auto i = 0; i < height; i++) {
+        int width = widths[i];
 
         v[i].resize(width);
         for (auto j = 0; j < width; j++) {
