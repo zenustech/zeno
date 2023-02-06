@@ -1,10 +1,10 @@
 // #include "zensim/container/Vector.hpp"
 // #include "zensim/geometry/VdbLevelSet.h"
 #include "Structures.hpp"
-#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/math/DihedralAngle.hpp"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/memory/Allocator.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
@@ -184,6 +184,48 @@ ZENDEFNODE(ZSCUMathTest, {
                              {},
                              {"ZPCTest"},
                          });
+
+struct ZSTestIterator : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}}, 100};
+        auto ompExec = omp_exec();
+        ompExec(range(100), [&, tv = proxy<space>({}, tv)](int i) mutable {
+            tv(0, i) = i;
+            tv("id", i) = reinterpret_bits<zs::f32>(i + 1);
+            tv.tuple(dim_c<3>, "v", i) = zs::vec<float, 3>{-i, i, i * i};
+        });
+        puts("print by proxies");
+        seq_exec()(range(10), [&, tv = proxy<space>({}, tv)](int i) {
+            fmt::print("tv[{}]: w[{}], v[{}, {}, {}], id[{}]\n", i, tv("w", i), tv("v", 0, i), tv("v", 1, i),
+                       tv("v", 2, i), tv.pack(dim_c<1>, "id", i).reinterpret_bits(int_c)[0]);
+        });
+        puts("print \"w\" by default iterators");
+        auto bg = tv.begin(0);
+        auto ed = tv.end(0);
+#if 1
+        auto idIter = tv.begin(1, int_c);
+        ompExec(range(10),
+                [bg = bg, idIter = idIter](int i) mutable { fmt::print("tv[{}]: {}, id {}\n", i, bg[i], idIter[i]); });
+        {
+            std::string str;
+            char ch;
+            int num;
+            auto [a, b, c] = zs::make_tuple("sb", 'a', 2);
+            zs::tie(str, ch, num) = zs::make_tuple("SB", 'A', 4);
+            fmt::print("<a, b, c>: ({}, {}, {}) ({}, {}, {})\n", a, b, c, str, ch, num);
+        }
+#endif
+    }
+};
+
+ZENDEFNODE(ZSTestIterator, {
+                               {},
+                               {},
+                               {},
+                               {"ZPCTest"},
+                           });
 
 struct ZSTestExtraction : INode {
     void apply() override {
