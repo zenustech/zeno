@@ -1,13 +1,15 @@
 import os
-import shutil
 import sys
+import oss2
+import json
 import shlex
+import shutil
 import psutil
 import signal
 import codecs
 import datetime
 import subprocess
-from flask import Flask
+from flask import Flask, request
 
 PRINT_CONSOLE = False
 
@@ -20,9 +22,13 @@ MISSING_COPY = [
     "C:/Windows/System32/libomp140.x86_64.dll"
 ]
 
+BUILD_TARGET = "zenoedit.exe"
+
 BUILD_DST = "O:/Zeno/LL/Release"
 
 ZENO_SOURCE = "C:/src/zeno"
+
+CONFIG_FILE = "C:/src/config.json"
 
 VCPKG_CMAKE = "C:/DEV_PROJECT/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
@@ -97,6 +103,7 @@ def allcommand():
            "<h3>{restart}</h3>" \
            "<h3>{copy}</h3>" \
            "<h3>{cmake}</h3>" \
+           "<h3>{check}</h3>" \
         .format(update="update: Update zeno source",
                 clean="clean: Clean build directory",
                 start="start: Generate project and start building",
@@ -104,7 +111,8 @@ def allcommand():
                 stop="stop: Stop current task",
                 restart="restart: Stop then start",
                 copy="copy: Copy build to NAS:Zeno/LL/Release",
-                cmake="cmake: Generate cmake project"
+                cmake="cmake: Generate cmake project",
+                check="Check Status"
                 )
 
 
@@ -117,6 +125,17 @@ def cmake():
         return "<h1>CMake Process Running</h1>"
 
 
+@app.route('/check')
+def check():
+    c = int(request.args.get("mode", 1))
+    if c == 0:
+        check_oss()
+        return "<h1>Checked OSS</h1>"
+    if c == 1:
+        sta = check_repo()
+        return "{}".format(sta)
+
+
 @app.route('/update')
 def update():
     update_cmd()
@@ -125,8 +144,10 @@ def update():
 
 @app.route('/copy')
 def copy():
-    copy_cmd()
-    return "<h1>Copied</h1>"
+    if copy_cmd():
+        return "<h1>Copied</h1>"
+    else:
+        return "<h1>Copied With Errors</h1>"
 
 
 @app.route('/clean')
@@ -141,11 +162,16 @@ def clean():
 @app.route('/start')
 def start():
     if process is None:
-        update_cmd()
+        update_repo = int(request.args.get("update", 1))
+        print("Start: Update", update_repo)
+        if update_repo == 1:
+            update_cmd()
         if run_cmd(CMAKE_OPTIONS):
             if run_cmd(BUILD_COMMAND):
-                copy_cmd()
-                return '<h1>Start Build Finished</h1>'
+                if copy_cmd():
+                    return '<h1>Start Build Finished</h1>'
+                else:
+                    return '<h1>Start Build Finished With Errors</h1>'
             else:
                 return '<h1>Start Build Failed</h1>'
         else:
@@ -158,15 +184,36 @@ def start():
 @app.route('/build')
 def build():
     if process is None:
-        update_cmd()
+        update_repo = request.args.get("update", 1)
+        if update_repo == 1:
+            update_cmd()
         if run_cmd(BUILD_COMMAND):
-            copy_cmd()
-            return '<h1>Build Finished</h1>'
+            if copy_cmd():
+                return '<h1>Build Finished</h1>'
+            else:
+                return '<h1>Build Finished With Errors</h1>'
         else:
             return '<h1>Build Failed</h1>'
     else:
         return "<h1> Building</h1>" \
                "{}".format(get_log())
+
+
+@app.route('/restart')
+def restart():
+    stop_cmd()
+    if request.args.get("update", 1) == 1:
+        update_cmd()
+    if run_cmd(CMAKE_OPTIONS):
+        if run_cmd(BUILD_COMMAND):
+            if copy_cmd():
+                return "<h1>Restart Build Finished</h1>"
+            else:
+                return "<h1>Restart Build Finished With Errors</h1>"
+        else:
+            return "<h1>Restart Build Failed</h1>"
+    else:
+        return "<h1>Restart CMake Failed</h1>"
 
 
 @app.route('/stop')
@@ -177,20 +224,6 @@ def stop():
         return "<h1>Stopped</h1>"
     else:
         return "<h1>Not Started</h1>"
-
-
-@app.route('/restart')
-def restart():
-    stop_cmd()
-    update_cmd()
-    if run_cmd(CMAKE_OPTIONS):
-        if run_cmd(BUILD_COMMAND):
-            copy_cmd()
-            return "<h1>Restart Build Finished</h1>"
-        else:
-            return "<h1>Restart Build Failed</h1>"
-    else:
-        return "<h1>Restart CMake Failed</h1>"
 
 
 def get_log():
@@ -237,6 +270,13 @@ def stop_cmd():
 
 def run_cmd(cmd):
     print("Build Options ", cmd)
+
+    if cmd == BUILD_COMMAND:
+        target_path = "{zeno_source}/build/bin/{build_target}".format(zeno_source=ZENO_SOURCE, build_target=BUILD_TARGET)
+        print("Remove Old Build Target", target_path, "Exists", os.path.exists(target_path))
+        if os.path.exists(target_path):
+            os.remove(target_path)
+
     global process
 
     success = False
@@ -291,13 +331,115 @@ def clean_cmd():
 
 def copy_cmd():
     time_str = datetime.datetime.now().strftime("%Y-%m%d-%H%M%S")
+    sub_dir_name = "zeno-{time_str}".format(time_str=time_str)
     src = "{zeno_source}/build/bin".format(zeno_source=ZENO_SOURCE)
-    dst = "{build_dst}/{sub_dir}".format(build_dst=BUILD_DST, sub_dir="zeno-{time_str}".format(time_str=time_str))
-    if os.path.exists(src):
+    dst = "{build_dst}/{sub_dir}".format(build_dst=BUILD_DST, sub_dir=sub_dir_name)
+    pak = "{zeno_source}/build/{sub_dir}.zip".format(zeno_source=ZENO_SOURCE, sub_dir=sub_dir_name)
+    target_path = "{}/{}".format(src, BUILD_TARGET)
+
+    if os.path.exists(target_path):
         print("Copy src: ", src, " --> dst: ", dst)
         shutil.copytree(src, dst)
-    for fc in MISSING_COPY:
-        shutil.copy2(fc, dst)
+        for fc in MISSING_COPY:
+            shutil.copy2(fc, dst)
+
+        pak_command = "7z a {dst} {src}".format(dst=pak, src=src)
+        print("Pack src: ", src, " --> dst: ", pak, " - Command: ", pak_command)
+        os.system(pak_command)
+        upload_cmd(sub_dir_name+".zip", pak)
+        os.remove(pak)
+
+        return True
+    else:
+        print("ERROR: The build target", target_path, "doesn't exixts")
+        return False
+
+
+def get_oss():
+    f = open(CONFIG_FILE)
+
+    config_data = json.load(f)
+    access_id = config_data["access_id"]
+    access_key = config_data["access_key"]
+    bucket_name = config_data["bucket_name"]
+
+    print("OSS Config access_id", access_id)
+    print("OSS Config access_key", access_key)
+    print("OSS Config bucket_name", bucket_name)
+
+    oss = ConnectOss(access_id, access_key, bucket_name)
+
+    return oss
+
+
+def check_oss():
+    oss = get_oss()
+    bucket_list = oss.get_bucket_list()
+    print("========== Check ==========")
+    print("Oss BucketList", bucket_list)
+    print("Oss Files", oss.get_all_file("download/daily-build"))
+    print("===========================")
+
+
+def check_repo():
+    ru = os.popen("git -C {zeno_source} remote update".format(zeno_source=ZENO_SOURCE)).read().strip()
+    gs = os.popen("git -C {zeno_source} status".format(zeno_source=ZENO_SOURCE)).read().strip()
+    key1 = "Your branch is up to date"
+
+    if gs.count(key1) > 0:
+        return 0
+    else:
+        print("Remote Update:", ru)
+        print("Repo Status:", gs)
+        print("Found Key:", gs.count(key1))
+        return 1
+
+
+def upload_cmd(name, path):
+    oss = get_oss()
+    remote_path = "download/daily-build/{}".format(name)
+    print("Upload Oss, RemotePath ", remote_path)
+    print("Upload Oss, LocalPath ", path)
+    oss.upload_file(remote_path, path)
+
+
+class ConnectOss(object):
+    def __init__(self, access_id, access_key, bucket_name):
+        self.auth = oss2.Auth(access_id, access_key)
+        self.endpoint = 'https://oss-cn-shenzhen.aliyuncs.com'
+        self.bucket = oss2.Bucket(self.auth, self.endpoint, bucket_name=bucket_name)
+
+    def get_bucket_list(self):
+        """list all bucket_name under current endpoint"""
+        service = oss2.Service(self.auth, self.endpoint)
+        bucket_list = [b.name for b in oss2.BucketIterator(service)]
+        return bucket_list
+
+    def get_all_file(self, prefix):
+        """get all file by specific prefix"""
+        files = []
+        for i in oss2.ObjectIterator(self.bucket, prefix=prefix):
+            print("file", i.key)
+            files.append(i.key)
+        return files
+
+    def read_file(self, path):
+        try:
+            file_info = self.bucket.get_object(path).read()
+            return file_info
+        except Exception as e:
+            print(e, 'File does not exists')
+
+    def download_file(self, path, save_path):
+        result = self.bucket.get_object_to_file(path, save_path)
+        if result.status == 200:
+            print('Download Complete')
+
+    def upload_file(self, path, local_path):
+        result = self.bucket.put_object_from_file(path, local_path)
+        if result.status == 200:
+            print('Upload Success')
+
 
 def main():
     app.run(host="0.0.0.0")
