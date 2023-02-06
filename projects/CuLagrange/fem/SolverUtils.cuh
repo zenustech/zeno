@@ -120,7 +120,7 @@ inline void retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp,
     ret.resize(eles.size());
     pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              xTag, voffset] ZS_LAMBDA(int ei) mutable {
-        auto ind = reinterpret_bits<int>(eles("inds", ei)) + voffset;
+        auto ind = eles("inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, ind);
         pts[ei] = x0;
     });
@@ -138,7 +138,7 @@ inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVe
     pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
@@ -159,7 +159,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
     pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
@@ -183,7 +183,7 @@ inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVe
                                  verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
                                  codim_v = wrapv<codim>{}, xTag, dirTag, stepSize, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = verts.pack(dim_c<3>, xTag, inds[0]);
         auto dir0 = vtemp.pack(dim_c<3>, dirTag, inds[0]);
         bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};
@@ -211,7 +211,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, 
                                  verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
                                  codim_v = wrapv<codim>{}, xTag, dirTag, stepSize, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = verts.pack(dim_c<3>, xTag, inds[0]);
         auto dir0 = vtemp.pack(dim_c<3>, dirTag, inds[0]);
         bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};

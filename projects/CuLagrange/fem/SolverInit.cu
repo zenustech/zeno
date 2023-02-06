@@ -96,7 +96,7 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfEdgeLength(zs::Cuda
     Vector<T> edgeLengths{edges.get_allocator(), edges.size()};
     pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
                                  edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
-        auto inds = edges.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>();
+        auto inds = edges.pack(dim_c<2>, "inds", ei, int_c);
         edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths) / edges.size();
@@ -115,7 +115,7 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfArea(zs::CudaExecut
     Vector<T> surfAreas{tris.get_allocator(), tris.size()};
     pol(Collapse{surfAreas.size()}, [tris = proxy<space>({}, tris), verts = proxy<space>({}, verts),
                                      surfAreas = proxy<space>(surfAreas)] ZS_LAMBDA(int ei) mutable {
-        auto inds = tris.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>();
+        auto inds = tris.pack(dim_c<3>, "inds", ei, int_c);
         surfAreas[ei] = (verts.pack<3>("x0", inds[1]) - verts.pack<3>("x0", inds[0]))
                             .cross(verts.pack<3>("x0", inds[2]) - verts.pack<3>("x0", inds[0]))
                             .norm() /
@@ -260,25 +260,21 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
             pol(Collapse(tris.size()),
                 [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris), voffset = primHandle.vOffset,
                  sfoffset = primHandle.sfOffset] __device__(int i) mutable {
-                    stInds.template tuple<3>("inds", sfoffset + i) =
-                        (tris.pack(dim_c<3>, "inds", i).template reinterpret_bits<int>() + (int)voffset)
-                            .template reinterpret_bits<float>();
+                    stInds.tuple(dim_c<3>, "inds", sfoffset + i, int_c) =
+                        tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset;
                 });
         }
         auto &edges = primHandle.getSurfEdges();
-        pol(Collapse(edges.size()),
-            [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset] __device__(int i) mutable {
-                seInds.template tuple<2>("inds", seoffset + i) =
-                    (edges.pack(dim_c<2>, "inds", i).template reinterpret_bits<int>() + (int)voffset)
-                        .template reinterpret_bits<float>();
-            });
+        pol(Collapse(edges.size()), [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges),
+                                     voffset = primHandle.vOffset,
+                                     seoffset = primHandle.seOffset] __device__(int i) mutable {
+            seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edges.pack(dim_c<2>, "inds", i, int_c) + (int)voffset;
+        });
         auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
              svoffset = primHandle.svOffset] __device__(int i) mutable {
-                svInds("inds", svoffset + i) =
-                    reinterpret_bits<float>(reinterpret_bits<int>(points("inds", i)) + (int)voffset);
+                svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
     // initialize vtemp & spatial accel
@@ -637,7 +633,7 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
             const auto &eles = primHandle.getEles();
             pol(Collapse(eles.size()),
                 [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c);
                     /// @note inds[1] here must point to a boundary primitive
                     /// @note retrieve motion from associated boundary vert
                     auto deltaX = vtemp.pack(dim_c<3>, "BCtarget", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);

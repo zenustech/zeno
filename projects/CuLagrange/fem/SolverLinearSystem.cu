@@ -80,7 +80,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian,
                  n = primHandle.getEles().size()] __device__(int ei) mutable {
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
                     int BCorder[2];
                     for (int i = 0; i != 2; ++i) {
                         BCorder[i] = vtemp("BCorder", inds[i]);
@@ -141,7 +141,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
                     auto IB = eles.template pack<2, 2>("IB", ei);
-                    auto inds = eles.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
                     auto vole = eles("vol", ei);
                     vec3 xs[3] = {vtemp.pack(dim_c<3>, "xn", inds[0]), vtemp.pack(dim_c<3>, "xn", inds[1]),
                                   vtemp.pack(dim_c<3>, "xn", inds[2])};
@@ -267,7 +267,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                  eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
                     auto IB = eles.pack(dim_c<3, 3>, "IB", ei);
-                    auto inds = eles.pack(dim_c<4>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
                     auto vole = eles("vol", ei);
                     vec3 xs[4] = {vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
                                   vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
@@ -348,7 +348,7 @@ void IPCSystem::computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
         cudaPol(range(btemp.size()), [bedges = proxy<space>({}, bedges), btemp = proxy<space>(btemp),
                                       vtemp = proxy<space>({}, vtemp), dt2 = dt * dt, projectDBC = projectDBC,
                                       vOffset = primHandle.vOffset, includeHessian] __device__(int i) mutable {
-            auto stcl = bedges.pack(dim_c<4>, "inds", i).reinterpret_bits(int_c) + vOffset;
+            auto stcl = bedges.pack(dim_c<4>, "inds", i, int_c) + vOffset;
 
             int BCorder[4];
             for (int i = 0; i != 4; ++i) {
@@ -406,7 +406,7 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
             [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp), svs = proxy<space>({}, svs),
              gn = s_groundNormal, dHat2 = dHat * dHat, kappa = kappa, projectDBC = projectDBC, includeHessian,
              svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                const auto vi = reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                const auto vi = svs("inds", svi, int_c) + svOffset;
                 auto x = vtemp.pack<3>("xn", vi);
                 auto dist = gn.dot(x);
                 auto dist2 = dist * dist;
@@ -443,7 +443,7 @@ void IPCSystem::computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy
                                         svs = proxy<space>({}, svs), epsvh = epsv * dt, gn = s_groundNormal,
                                         fricMu = fricMu, projectDBC = projectDBC, includeHessian,
                                         svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                    const auto vi = svs("inds", svi, int_c) + svOffset;
                     auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
                     auto fn = svtemp("fn", svi);
                     if (fn == 0) {
@@ -521,7 +521,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess2 = proxy<space>(hess2),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                     auto He = etemp.pack(dim_c<6, 6>, "He", ei);
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
                     hess2.hess[offset + ei] = He;
                     hess2.inds[offset + ei] = inds;
                 });
@@ -533,7 +533,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess3 = proxy<space>(hess3),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                     auto He = etemp.pack(dim_c<9, 9>, "He", ei);
-                    auto inds = eles.pack(dim_c<3>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
                     hess3.hess[offset + ei] = He;
                     hess3.inds[offset + ei] = inds;
                 });
@@ -543,7 +543,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess4 = proxy<space>(hess4),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                     auto He = etemp.pack(dim_c<12, 12>, "He", ei);
-                    auto inds = eles.pack(dim_c<4>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
                     hess4.hess[offset + ei] = He;
                     hess4.inds[offset + ei] = inds;
                 });
@@ -556,7 +556,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 [btemp = proxy<space>(btemp), bedges = proxy<space>({}, bedges), hess4 = proxy<space>(hess4),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                     auto H = btemp.pack(dim_c<12, 12>, 0, ei);
-                    auto inds = bedges.pack(dim_c<4>, "inds", ei).reinterpret_bits(int_c) + vOffset;
+                    auto inds = bedges.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
                     hess4.hess[offset + ei] = H;
                     hess4.inds[offset + ei] = inds;
                 });
@@ -571,7 +571,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
                 [etemp = proxy<space>({}, primHandle.etemp), eles = proxy<space>({}, eles), hess2 = proxy<space>(hess2),
                  vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                     auto He = etemp.pack(dim_c<6, 6>, "He", ei);
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).template reinterpret_bits<int>() + vOffset;
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
                     hess2.hess[offset + ei] = He;
                     hess2.inds[offset + ei] = inds;
                 });
@@ -709,7 +709,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(svs.size()),
                 [svtemp = proxy<space>({}, primHandle.svtemp), svs = proxy<space>({}, svs),
                  svOffset = primHandle.svOffset, hess1 = proxy<space>(hess1), execTag] __device__(int svi) mutable {
-                    const auto vi = reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                    const auto vi = svs("inds", svi, int_c) + svOffset;
                     auto pbHess = svtemp.pack(dim_c<3, 3>, "H", svi);
                     for (int i = 0; i != 3; ++i)
                         for (int j = 0; j != 3; ++j)
