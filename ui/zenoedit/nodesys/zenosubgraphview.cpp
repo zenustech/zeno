@@ -476,7 +476,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
-    painter->fillRect(rect, QColor(18, 22, 25));
+    painter->fillRect(rect, QColor("#13191f"));
 
     static const bool bDrawGrid = false;
     if (bDrawGrid)

@@ -56,7 +56,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 {
     painter->save();
     QPen pen;
-    pen.setColor(QColor(isSelected() ? 0xFA6400 : 0x808080));
+    pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));
     pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
