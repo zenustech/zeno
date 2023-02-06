@@ -642,9 +642,10 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
     });
+    auto E0 = constraintEnergy(pol);
     for (int l = 0; l != IHard; ++l) {
         /// @note "xk" will be used for backtracking in hardphase
-        hardPhase(pol);
+        E0 = hardPhase(pol, E0);
     }
 
     return constraintSatisfied(pol, false);
@@ -653,8 +654,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    zs::CppTimer timer; 
-    T descentStepsize = 0.2f; 
+    T descentStepsize = 0.2f;
     /// @note shape matching
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
@@ -707,7 +707,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
 }
-void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
+typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol, typename FastClothSystem::T E0) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// @note shape matching (reset included)
@@ -883,17 +883,14 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
     });
     /// @brief compute appropriate step size that does not violates constraints
     auto alpha = (T)0.1;
-    /// @note vertex displacement constraint. ref 4.2.2, item 3
-    auto displacement = infNorm(pol); // "dir"
-    // if (auto v = std::sqrt((B + Btight) * (B + Btight) - B * B) / displacement; v < alpha)
-    //     alpha = v;
 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
     });
-    auto E0 = constraintEnergy(pol); // "xn"
+#if !s_hardPhaseSilent    
     auto c1m = armijoParam * dot(pol, "dir", "dir");
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
+#endif 
     do {
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
@@ -960,7 +957,7 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
                 }
             });
         }
-#endif 
+#endif         
 
         /// @brief backtracking if discrete constraints violated
         if (temp.getVal() == 1) {
@@ -969,24 +966,26 @@ void FastClothSystem::hardPhase(zs::CudaExecutionPolicy &pol) {
                 throw std::runtime_error("stepsize too tiny in hard phase collision solve"); 
             }
             alpha /= 2.0f;
+#if !s_hardPhaseSilent
             fmt::print("\t[back-tracing] alpha: {} constraint not satisfied\n", alpha); 
+#endif
             continue;
         }
+#if !s_hardPhaseSilent
         fmt::print("[back-tracing] acceptable alpha: {}\n", alpha); 
+#endif 
 
         ///
         /// @note objective decreases adequately. ref 4.2.2, item 2
         ///
         auto E = constraintEnergy(pol);
-        break;  // debug: remove energy linesearch
-        if (E <= E0 + alpha * c1m)
-        {
-            fmt::print("\t[back-tracing] alpha: {} line search finished!\n", alpha);
-            break;
-        }
-        alpha /= 2;
+        if (E <= E0)
+            return E;
+        alpha /= 2; 
     } while (true);
+#if !s_hardPhaseSilent
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);
+#endif 
 }
 
 bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps) {

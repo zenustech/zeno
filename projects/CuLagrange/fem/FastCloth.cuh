@@ -15,9 +15,10 @@
 #define s_useGDDiagHess 1 // for GD solver 
 #define s_useLineSearch 1
 #define s_debugOutput 0
-#define s_useHardPhase 0
+#define s_useHardPhase 1
 #define s_clothShearingCoeff 0.01f
 #define s_silentMode 1
+#define s_hardPhaseSilent 1
 #define s_useFrontLine 1
 #define s_useMassSpring 0
 #define s_debugRemoveHashTable 1
@@ -182,7 +183,7 @@ struct FastClothSystem : IObject {
     void initialStepping(zs::CudaExecutionPolicy &pol);
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
-    void hardPhase(zs::CudaExecutionPolicy &pol);
+    T hardPhase(zs::CudaExecutionPolicy &pol, T E0);
     bool constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps = true);
     T constraintEnergy(zs::CudaExecutionPolicy &pol);
     // void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);

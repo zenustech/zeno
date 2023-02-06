@@ -621,7 +621,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
                 });
-                (pol, dHat, "xinit");
                 success = collisionStep(pol, true);
             }
             if (!success)
@@ -661,7 +660,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     int maxIters = K * IDyn; 
     int k = 0; 
 #if s_testLightCache
-    lightCD(pol, dHat + 7.0f); 
+    lightCD(pol, dHat * 2.25f); 
     // lightFilterConstraints(pol, dHat, "xinit"); 
 #else 
     findConstraints(pol, dHat); 
@@ -830,22 +829,12 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if constexpr (s_enableProfile) {
             timer.tick();
         }
-#if 0 
-        // TODO: check paper 
-        for (int r = 0; r != R; ++r) {
 
-            if constexpr (s_enableProfile) {
-                collisionCnt[0]++;
-            }
-
-            if (success = collisionStep(pol, false); success)
-                break;
-        }
-#else 
+        // TODO: add reduction parameter (check whether constraints are statisfied per R iterations)
         success = collisionStep(pol, false); 
         collisionCnt[0]++; 
         collisionCnt[1]++; 
-#endif 
+
         if constexpr (s_enableProfile) {
             timer.tock();
             collisionTime[0] += timer.elapsed();
@@ -863,7 +852,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 collisionCnt[3]++;
             }
 
-            findConstraints(pol, dHat, "xinit");
 
             if constexpr (s_enableProfile) {
                 timer.tock();
