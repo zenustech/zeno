@@ -189,12 +189,14 @@ struct ZSTestIterator : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
-        TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}}, 100};
+        TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}, {"var", 1}}, 100};
         auto ompExec = omp_exec();
+        // initialize
         ompExec(range(100), [&, tv = proxy<space>({}, tv)](int i) mutable {
             tv(0, i) = i;
             tv("id", i) = reinterpret_bits<zs::f32>(i + 1);
             tv.tuple(dim_c<3>, "v", i) = zs::vec<float, 3>{-i, i, i * i};
+            tv("var", i, int_c) = ((i * i) << (sizeof(int) / 2 * 8)) | i;
         });
         puts("print by proxies");
         seq_exec()(range(10), [&, tv = proxy<space>({}, tv)](int i) {
@@ -202,12 +204,19 @@ struct ZSTestIterator : INode {
                        tv("v", 2, i), tv.pack(dim_c<1>, "id", i).reinterpret_bits(int_c)[0]);
         });
         puts("print \"w\" by default iterators");
-        auto bg = tv.begin(0);
-        auto ed = tv.end(0);
+        // auto bg = tv.begin(0);
+        // auto ed = tv.end(0);
+        auto [bg, ed] = range(tv, 0);
+        auto viter = std::begin(range(tv, "v", dim_c<3>, float_c));
+        auto i0Iter = tv.begin("var", 0, dim_c<1>, wrapt<i16>{});
+        auto i1Iter = tv.begin("var", 1, dim_c<1>, wrapt<i16>{});
+        using TV = zs::vec<float, 3>;
 #if 1
-        auto idIter = tv.begin(1, int_c);
-        ompExec(range(10),
-                [bg = bg, idIter = idIter](int i) mutable { fmt::print("tv[{}]: {}, id {}\n", i, bg[i], idIter[i]); });
+        auto idIter = tv.begin(1, dim_c<1>, int_c);
+        ompExec(range(10), [bg = bg, idIter = idIter, viter = viter, i0Iter = i0Iter, i1Iter = i1Iter](int i) mutable {
+            fmt::print("tv[{}]: {}, id {}, v [{}, {}, {}], split [{}, {}]\n", i, bg[i], idIter[i], viter[i][0],
+                       viter[i][1], viter[i][2], i0Iter[i], i1Iter[i]);
+        });
         {
             std::string str;
             char ch;
