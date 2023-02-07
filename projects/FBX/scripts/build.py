@@ -339,9 +339,9 @@ def copy_cmd():
 
     if os.path.exists(target_path):
         print("Copy src: ", src, " --> dst: ", dst)
-        shutil.copytree(src, dst)
         for fc in MISSING_COPY:
-            shutil.copy2(fc, dst)
+            shutil.copy2(fc, src)
+        shutil.copytree(src, dst)
 
         pak_command = "7z a {dst} {src}".format(dst=pak, src=src)
         print("Pack src: ", src, " --> dst: ", pak, " - Command: ", pak_command)
