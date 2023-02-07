@@ -53,7 +53,7 @@ public:
     QString nodeId() const;
     QString nodeName() const;
     QPointF nodePos() const;
-    void updateNodePos(const QPointF &pos);
+    void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();
 
     void setMoving(bool isMoving);

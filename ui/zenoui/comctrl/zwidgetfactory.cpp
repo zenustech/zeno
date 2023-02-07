@@ -132,7 +132,7 @@ namespace zenoui
                 palette.setColor(QPalette::Window, value.value<QColor>());
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(pBtn->palette().window().color(), nullptr, "", QColorDialog::ShowAlphaChannel);
+                    QColor color = QColorDialog::getColor(pBtn->palette().window().color());
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));

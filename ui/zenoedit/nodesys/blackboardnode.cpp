@@ -86,7 +86,7 @@ void BlackboardNode::updateBlackboard()
     info.sz = this->size();
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
-    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
+    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
 }
 
 ZLayoutBackground* BlackboardNode::initHeaderWidget(IGraphsModel*)

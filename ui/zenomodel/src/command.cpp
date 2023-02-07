@@ -122,12 +122,12 @@ UpdateBlackboardCommand::UpdateBlackboardCommand(
 
 void UpdateBlackboardCommand::redo()
 {
-    m_pModel->updateBlackboard(m_nodeid, m_newInfo, m_subgIdx, false);
+    m_pModel->updateBlackboard(m_nodeid, QVariant::fromValue(m_newInfo), m_subgIdx, false);
 }
 
 void UpdateBlackboardCommand::undo()
 {
-    m_pModel->updateBlackboard(m_nodeid, m_oldInfo, m_subgIdx, false);
+    m_pModel->updateBlackboard(m_nodeid, QVariant::fromValue(m_oldInfo), m_subgIdx, false);
 }
 
 

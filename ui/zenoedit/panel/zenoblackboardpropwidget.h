@@ -20,7 +20,7 @@ class ZenoBlackboardPropWidget : public QWidget
   private:
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;
-    ZLineEdit *m_pTitle;
-    ZTextEdit *m_pTextEdit;
+    ZTextEdit *m_pTitle;
+    //ZTextEdit *m_pTextEdit;
 };
 #endif

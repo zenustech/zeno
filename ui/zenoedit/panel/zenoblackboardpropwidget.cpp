@@ -21,8 +21,8 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     insertRow("background", PARAM_CONTROL::CONTROL_COLOR_NORMAL, info.background, 0, pGroupLayout);
-    insertRow("title", PARAM_CONTROL::CONTROL_STRING, info.title, 1, pGroupLayout);
-    insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
+    insertRow("title", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.title, 1, pGroupLayout);
+    //insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     connect(pModel, SIGNAL(_dataChanged(const QModelIndex &, const QModelIndex &, int)), this,SLOT(onDataChanged(const QModelIndex &, const QModelIndex &, int)));
 }
@@ -37,7 +37,7 @@ void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const 
     if (role == ROLE_PARAMS_NO_DESC) {
         PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        m_pTextEdit->setText(info.content);
+        //m_pTextEdit->setText(info.content);
         m_pTitle->setText(info.title);
     }
 
@@ -65,23 +65,24 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         if (desc == "title") {
             info.title = newValue.value<QString>();
-        } else if (desc == "content") {
+        } /*else if (desc == "content") {
             info.content = newValue.value<QString>();
-        } else if (desc == "background") {
+        } */else if (desc == "background") {
             info.background = newValue.value<QColor>();
         }
-        pModel->updateBlackboard(m_idx.data(ROLE_OBJID).toString(), info, m_subgIdx, true);
+        pModel->updateBlackboard(m_idx.data(ROLE_OBJID).toString(), QVariant::fromValue(info), m_subgIdx, true);
     };
 
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
     };
     QWidget *pControl = zenoui::createWidget(value, ctrl, UiHelper::getControlDesc(ctrl), cbSet, QVariant()); 
-    if (desc == "title" && dynamic_cast<ZLineEdit*>(pControl)) {
-        m_pTitle = dynamic_cast<ZLineEdit *>(pControl);
-    } else if (desc == "content" && dynamic_cast<ZTextEdit *>(pControl)) {
+    pControl->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    if (desc == "title" && dynamic_cast<ZTextEdit *>(pControl)) {
+        m_pTitle = dynamic_cast<ZTextEdit *>(pControl);
+    }/* else if (desc == "content" && dynamic_cast<ZTextEdit *>(pControl)) {
         m_pTextEdit = dynamic_cast<ZTextEdit *>(pControl);
-    } 
+    } */
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 }

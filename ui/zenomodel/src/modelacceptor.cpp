@@ -684,7 +684,7 @@ void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blac
 
     QModelIndex idx = m_currentGraph->index(id);
     ZASSERT_EXIT(idx.isValid());
-    m_pModel->updateBlackboard(id, blackboard, m_pModel->indexBySubModel(m_currentGraph), false);
+    m_pModel->updateBlackboard(id, QVariant::fromValue(blackboard), m_pModel->indexBySubModel(m_currentGraph), false);
 }
 
 void ModelAcceptor::setLegacyCurve(

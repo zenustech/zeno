@@ -1398,7 +1398,7 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
     ModelSetData(nodeIdx, info.newValue, info.role);
 }
 
-void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& newInfo, const QModelIndex& subgIdx, bool enableTransaction)
+void GraphsModel::updateBlackboard(const QString &id, const QVariant &newInfo, const QModelIndex &subgIdx, bool enableTransaction) 
 {
     SubGraphModel *pSubg = subGraph(subgIdx.row());
     const QModelIndex& idx = pSubg->index(id);
@@ -1406,17 +1406,31 @@ void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& new
 
     if (enableTransaction)
     {
-        PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-        BLACKBOARD_INFO oldInfo = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        UpdateBlackboardCommand *pCmd = new UpdateBlackboardCommand(id, newInfo, oldInfo, this, subgIdx);
-        m_stack->push(pCmd);
+        if (newInfo.canConvert<BLACKBOARD_INFO>()) 
+        {
+            PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+            BLACKBOARD_INFO oldInfo = params["blackboard"].value.value<BLACKBOARD_INFO>();
+            UpdateBlackboardCommand *pCmd = new UpdateBlackboardCommand(id, newInfo.value<BLACKBOARD_INFO>(), oldInfo, this, subgIdx);
+            m_stack->push(pCmd);
+        } 
+        else if (newInfo.canConvert<STATUS_UPDATE_INFO>()) 
+        {
+            updateNodeStatus(id, newInfo.value<STATUS_UPDATE_INFO>(), subgIdx, enableTransaction);
+        }
     }
     else
     {
-        PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-        params["blackboard"].name = "blackboard";
-        params["blackboard"].value = QVariant::fromValue(newInfo);
-        pSubg->setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
+        if (newInfo.canConvert<BLACKBOARD_INFO>()) 
+        {
+            PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+            params["blackboard"].name = "blackboard";
+            params["blackboard"].value = QVariant::fromValue(newInfo);
+            pSubg->setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
+        } 
+        else if (newInfo.canConvert<STATUS_UPDATE_INFO>()) 
+        {
+            pSubg->setData(idx, newInfo.value<STATUS_UPDATE_INFO>().newValue, ROLE_OBJPOS);
+        }
     }
 }
 

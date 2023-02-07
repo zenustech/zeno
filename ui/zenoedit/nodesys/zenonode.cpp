@@ -1024,7 +1024,7 @@ QPointF ZenoNode::nodePos() const
     return m_index.data(ROLE_OBJPOS).toPointF();
 }
 
-void ZenoNode::updateNodePos(const QPointF &pos)
+void ZenoNode::updateNodePos(const QPointF &pos, bool enableTransaction) 
 {
     QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
     if (oldPos == pos)
@@ -1035,7 +1035,7 @@ void ZenoNode::updateNodePos(const QPointF &pos)
     info.oldValue = oldPos;
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
+    pGraphsModel->updateBlackboard(nodeId(), QVariant::fromValue(info), m_subGpIndex, enableTransaction);
     m_bMoving = false;
 }
 
@@ -1198,9 +1198,13 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
             emit inSocketPosChanged();
             emit outSocketPosChanged();
-            emit nodePosChangedSignal();
+            //emit nodePosChangedSignal();
 
             m_lastMovig = QPointF();
+
+            if (m_groupNode) {
+                m_groupNode->updateChildRelativePos(this);
+            }
         }
     }
 }
