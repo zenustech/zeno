@@ -132,7 +132,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 BlackboardNode2 *pGroupNode = qobject_cast<BlackboardNode2 *>(node);
                 if (pGroupNode)
                     pGroupNode->appendChildItem(inNode);
-                inNode->setGroupNode(pGroupNode);
+                else
+                    inNode->setGroupNode(pGroupNode);
             }
         }
     }
@@ -244,6 +245,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 	    QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
         m_nodes[id]->setPos(pos);
+        m_nodes[id]->nodePosChangedSignal();
 	}
     if (role == ROLE_OPTIONS)
     {
@@ -650,14 +652,14 @@ void ZenoSubGraphScene::onNodePosChanged()
         BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(zenoNode);
         if (blackboardNode) 
         {
-            if (blackboardNode->getChildItems().contains(zenoNode)) 
-            {
-                if (currBlackboardNode) 
-                {
-                    emit currBlackboardNode->nodePosChangedSignal();
-                }
-                continue;
-            }
+            //if (blackboardNode->getChildItems().contains(zenoNode)) 
+            //{
+            //    if (currBlackboardNode) 
+            //    {
+            //        emit currBlackboardNode->nodePosChangedSignal();
+            //    }
+            //    continue;
+            //}
             if (currBlackboardNode) 
             {
                 currBlackboardNode->nodePosChanged(senderNode);
@@ -1000,8 +1002,11 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         {
             BlackboardNode2 *pBlackboard = qobject_cast<BlackboardNode2 *>(pNode);
             for (auto item : pBlackboard->getChildItems()) {
-                item->setGroupNode(nullptr);
-                emit item->nodePosChangedSignal();
+                BlackboardNode2 *pNewGroup = pBlackboard->getGroupNode();
+                if (pNewGroup)
+                    pNewGroup->appendChildItem(item);
+                else
+                    item->setGroupNode(pNewGroup);
             }
         }
         BlackboardNode2 *pGroup = pNode->getGroupNode();
