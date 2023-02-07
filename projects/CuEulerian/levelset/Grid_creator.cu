@@ -54,7 +54,7 @@ ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
                                {"float", "Dx", "1.0"},
                                {"float", "background", "0"},
                                {"enum scalar vector3", "type", "scalar"},
-                               {"enum cell-centered vertex-centered", "structure", "cell-centered "}},
+                               {"enum cell-centered vertex-centered", "structure", "cell-centered"}},
                               /* outputs: */
                               {"Grid"},
                               /* params: */

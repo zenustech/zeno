@@ -276,7 +276,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -294,7 +293,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -310,7 +308,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -340,7 +337,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -356,7 +352,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = dst_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -373,7 +368,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
