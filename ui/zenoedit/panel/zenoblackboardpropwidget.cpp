@@ -82,7 +82,7 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
     };
     QWidget *pControl = zenoui::createWidget(value, ctrl, UiHelper::getControlDesc(ctrl), cbSet, QVariant()); 
     if (desc == "title") {
-        m_pTitle = qobject_cast<ZLineEdit *>(pControl);
+        m_pTitle = qobject_cast<ZTextEdit *>(pControl);
     } else if (desc == "background") {
         m_pColor = qobject_cast<QPushButton*>(pControl);
     }
