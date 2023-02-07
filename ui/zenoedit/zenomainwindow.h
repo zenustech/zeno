@@ -162,9 +162,8 @@ private:
     QString uniqueDockObjName(DOCK_TYPE type);
     void setActionProperty();
     void screenShoot();
-    void setActionIcon(QAction *action);
-    PANEL_TYPE title2Type(const QString &title);
-    void initCustomLayoutAction(const QStringList &list, bool isDefault = false);
+    void setActionIcon(QAction* action);
+    void initCustomLayoutAction(const QStringList& list, bool isDefault = false);
     void loadDockLayout(QString name, bool isDefault = false);
     QJsonObject readDefaultLayout();
 

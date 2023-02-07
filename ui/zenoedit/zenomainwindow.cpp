@@ -355,30 +355,13 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
         root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
-            PANEL_TYPE type = title2Type(tab);
+            PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
             if (type != PANEL_EMPTY)
             {
                 pLeft->onAddTab(type);
             }
         }
     }
-}
-
-PANEL_TYPE ZenoMainWindow::title2Type(const QString &title) 
-{
-    PANEL_TYPE type = PANEL_EMPTY;
-    if (title == "Parameter") {
-        type = PANEL_NODE_PARAMS;
-    } else if (title == "View") {
-        type = PANEL_VIEW;
-    } else if (title == "Editor") {
-        type = PANEL_EDITOR;
-    } else if (title == "Data") {
-        type = PANEL_NODE_DATA;
-    } else if (title == "Logger") {
-        type = PANEL_LOG;
-    }
-    return type;
 }
 
 void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) 
@@ -1189,15 +1172,15 @@ void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelInd
 
 void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
         dock->onPrimitiveSelected(primids);
     }
 }
 
 void ZenoMainWindow::updateLightList() {
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
         dock->newFrameUpdate();
     }
 }
