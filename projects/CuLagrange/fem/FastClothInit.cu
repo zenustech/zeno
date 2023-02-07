@@ -2,8 +2,8 @@
 #include "Structures.hpp"
 #include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include <fstream>
 #include <zeno/types/ListObject.h>
-#include <fstream> 
 
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                                  \
     ([this](const std::string_view str) {                                             \
@@ -217,11 +217,11 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 #endif
 #if !s_useNewtonSolver
     K = 72; // 72; 72 * 10
-    IDyn = 2;  
-#else 
-    K = 72 * 3; 
-    IDyn = 1; 
-#endif 
+    IDyn = 2;
+#else
+    K = 72 * 3;
+    IDyn = 1;
+#endif
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
 }
@@ -249,24 +249,12 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     // exclBouSes = Vector<u8>{vtemp.get_allocator(), nBouSes};
     // exclBouSts = Vector<u8>{vtemp.get_allocator(), nBouSts};
 
-    /// @brief bvtt front default initialization for constraint collection
-    auto deduce_node_cnt = [](std::size_t numLeaves) {
-        if (numLeaves <= 2)
-            return numLeaves;
-        return numLeaves * 2 - 1;
-    };
-    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    if (hasBoundary()) {
-        boundarySvFront =
-            bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    }
-
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
 #if !s_debugRemoveHashTable
     eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 25};
-#endif 
+#endif
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -291,38 +279,36 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         Vector<int> adjLen{vtemp.get_allocator(), 1};
         adjLen.setVal(0);
         adjVertsDeg.reset(0);
-#endif 
+#endif
         constexpr int intHalfLen = sizeof(int) * 4;
-        pol(Collapse(edges.size()),
-            [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset, 
+        pol(Collapse(edges.size()), [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges),
+                                     voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
 #if !s_debugRemoveHashTable
-             eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts),
-             adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg),
-#endif 
-             verts = proxy<space>({}, verts), 
-             intHalfLen] __device__(int i) mutable {
-                auto inds = edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c); 
-                auto edge = inds + (int)voffset;
-                seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
-                auto v0 = verts.pack(dim_c<3>, "x", inds[0]); 
-                auto v1 = verts.pack(dim_c<3>, "x", inds[1]); 
+                                     eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts),
+                                     adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg),
+#endif
+                                     verts = proxy<space>({}, verts), intHalfLen] __device__(int i) mutable {
+            auto inds = edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c);
+            auto edge = inds + (int)voffset;
+            seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+            auto v0 = verts.pack(dim_c<3>, "x", inds[0]);
+            auto v1 = verts.pack(dim_c<3>, "x", inds[1]);
 #if s_useMassSpring
-                seInds("restLen", seoffset + i) = (v0 - v1).norm();
-                printf("restL: %f\n", (v0 - v1).norm());  
-#endif 
-#if !s_debugRemoveHashTable 
-                auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
-                tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1];
-                atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
-                adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
-                tmpAdjVerts[adjNo] = (edge[1] << intHalfLen) + edge[0];
-                atomic_add(exec_cuda, &adjVertsDeg[edge[1]], 1);
-                if (auto no = eTab.insert(edge); no < 0) {
-                    printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]);
-                }
-#endif  
-            });
+            seInds("restLen", seoffset + i) = (v0 - v1).norm();
+            printf("restL: %f\n", (v0 - v1).norm());
+#endif
+#if !s_debugRemoveHashTable
+            auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+            tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1];
+            atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
+            adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+            tmpAdjVerts[adjNo] = (edge[1] << intHalfLen) + edge[0];
+            atomic_add(exec_cuda, &adjVertsDeg[edge[1]], 1);
+            if (auto no = eTab.insert(edge); no < 0) {
+                printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]);
+            }
+#endif
+        });
 #if !s_debugRemoveHashTable
         auto aN = adjLen.getVal();
         tmpAdjVerts.resize(aN);
@@ -344,7 +330,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                     }
                 }
             });
-#endif 
+#endif
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
@@ -354,7 +340,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             });
     }
 
-    /// @brief initialize xt for moving boundaries 
+    /// @brief initialize xt for moving boundaries
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
             continue;
@@ -390,7 +376,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auxTime[i] = 0;
             dynamicsTime[i] = 0;
             collisionTime[i] = 0;
-            auxCnt[i] = 0; 
+            auxCnt[i] = 0;
             dynamicsCnt[i] = 0;
             collisionCnt[i] = 0;
         }
@@ -427,27 +413,6 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     vtemp.tuple<3>("vn", coOffset + i) = v;
                 });
         }
-#if s_useFrontLine
-    frontManageRequired = true;
-#endif 
-        /// spatial accel initialization
-#define init_front(sInds, front)                                                                           \
-    {                                                                                                      \
-        auto numNodes = front.numNodes();                                                                  \
-        if (numNodes <= 2) {                                                                               \
-            front.reserve(sInds.size() * numNodes);                                                        \
-            front.setCounter(sInds.size() * numNodes);                                                     \
-            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
-                for (int j = 0; j != numNodes; ++j)                                                        \
-                    front.assign(i *numNodes + j, i, j);                                                   \
-            });                                                                                            \
-        } else {                                                                                           \
-            front.reserve(sInds.size());                                                                   \
-            front.setCounter(sInds.size());                                                                \
-            pol(Collapse{sInds.size()},                                                                    \
-                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });        \
-        }                                                                                                  \
-    }
 
     {
         bvs.resize(svInds.size());
@@ -458,12 +423,9 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         svBvh.build(pol, bvs);
-#if s_useFrontLine
-        init_front(svInds, selfSvFront);
-#endif 
         if constexpr (s_enableProfile) {
             timer.tock();
-            auxCnt[0]++; 
+            auxCnt[0]++;
             auxTime[0] += timer.elapsed();
         }
         if constexpr (s_testSh) {
@@ -476,7 +438,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             if constexpr (s_enableProfile) {
                 timer.tock();
-                auxCnt[2]++; 
+                auxCnt[2]++;
                 auxTime[2] += timer.elapsed();
             }
         }
@@ -490,9 +452,6 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             timer.tick();
 
         bouSvBvh.build(pol, bvs);
-#if s_useFrontLine
-        init_front(svInds, boundarySvFront);
-#endif 
 
         if constexpr (s_enableProfile) {
             timer.tock();
@@ -523,8 +482,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
                                  T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
-      cPP{estNumCps * 20, zs::memsrc_e::um, 0}, 
-      nPP{zsprims[0]->getParticles().get_allocator(), 1},
+      cPP{estNumCps * 20, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles().get_allocator(), 1},
       ncPP{zsprims[0]->getParticles().get_allocator(), 1},
       tempPP{{{"softG", 6}, {"hardG", 6}}, estNumCps, zs::memsrc_e::um, 0}, E{estNumCps, zs::memsrc_e::um, 0},
       nE{zsprims[0]->getParticles().get_allocator(), 1}, tempE{{{"softG", 6}, {"hardG", 6}},
@@ -560,10 +518,10 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
-                        {"xtmp", 3}, 
+                        {"xtmp", 3},
                         {"yn0", 3},
                         {"yk", 3},
-                        {"ytmp", 3}, 
+                        {"ytmp", 3},
 #if s_useChebyshevAcc
                         {"yn-1", 3},
                         {"yn-2", 3},
@@ -573,7 +531,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
                         // linear solver
                         {"dir", 3},
-                        {"gridDir", 3}, 
+                        {"gridDir", 3},
                         {"grad", 3},
 #if !s_useGDDiagHess
                         {"P", 9},
@@ -686,12 +644,11 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
             });
 }
 
-void FastClothSystem::writeFile(std::string filename, std::string info)
-{
-    std::ofstream outFile; 
-    outFile.open(filename, std::ios::app); 
-    outFile << info; 
-    outFile.close(); 
+void FastClothSystem::writeFile(std::string filename, std::string info) {
+    std::ofstream outFile;
+    outFile.open(filename, std::ios::app);
+    outFile << info;
+    outFile.close();
 }
 
 struct MakeClothSystem : INode {
