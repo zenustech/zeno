@@ -456,12 +456,17 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
 
     //todo: parameterized.
-    param.nameFont = QFont("HarmonyOS Sans", 13);
+    QFont font("Alibaba PuHuiTi", 13);
+
+    param.nameFont = font;
     param.nameFont.setBold(true);
-    param.socketFont = QFont("HarmonyOS Sans", 11);
-    param.socketFont.setBold(true);
-    param.paramFont = QFont("HarmonyOS Sans", 13);
-    param.paramFont.setBold(true);
+
+    font.setPointSize(11);
+    font.setWeight(QFont::DemiBold);
+    param.socketFont = font;
+
+    font.setPointSize(13);
+    param.paramFont = font;
 
     QColor clr(226, 226, 226);
     //clr.setAlphaF(0.4);

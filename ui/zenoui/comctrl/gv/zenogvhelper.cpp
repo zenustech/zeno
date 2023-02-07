@@ -117,6 +117,15 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             }
             break;
         }
+        case QGraphicsTextItem::Type:
+        {
+            QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
+            if (ctrl == CONTROL_FLOAT)
+                pItem->setPlainText(QString::number(value.toFloat()));
+            else
+                pItem->setPlainText(value.toString());
+            break;
+        }
         case QGraphicsWidget::Type:
         {
         }

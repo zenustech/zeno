@@ -2,7 +2,8 @@ QSpinBox {
     border: 0.5px solid rgba(0,0,0,1);
 	background: #17171A;
 	color: #FFFFFF;
-	font: 10px "HarmonyOS Sans";
+	font: 10px 'Alibaba PuHuiTi';
+    font-weight: 500;
     padding-right: 0px;
 }
 
@@ -31,7 +32,8 @@ QSpinBox[cssClass = "control"]
     background: #191D21;
     height: 28px;
     color: #C3D2DF;
-    font: 14px 'Segoe UI';
+	font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
 }
                     
 QSpinBox[cssClass = "control"]::down-button  

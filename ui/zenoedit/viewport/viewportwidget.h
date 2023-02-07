@@ -6,9 +6,10 @@
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
 #include "common.h"
-#include "viewporttransform.h"
-#include "viewportpicker.h"
 #include "recordvideomgr.h"
+
+#include <viewportinteraction/transform.h>
+#include <viewportinteraction/picker.h>
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -29,7 +30,7 @@ public:
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
-    // void fakeMouseDoubleClickEvent(QMouseEvent* event);
+     void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
@@ -40,9 +41,6 @@ public:
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
     void resizeTransformHandler(int dir);
-    void setPickTarget(const string& prim_name);
-    void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
-    void unbindNodeFromPicker();
 
 private:
     bool m_mmb_pressed;
@@ -59,8 +57,6 @@ private:
     QVector2D m_res;
 
     QSet<int> m_pressedKeys;
-    std::unique_ptr<zeno::FakeTransformer> transformer;
-    std::unique_ptr<zeno::Picker> picker;
 };
 
 class ViewportWidget : public QGLWidget
@@ -94,7 +90,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
-    // void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;

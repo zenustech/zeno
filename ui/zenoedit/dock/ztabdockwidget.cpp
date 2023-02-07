@@ -15,6 +15,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenomodel/include/modelrole.h>
+#include <zenovis/ObjectsManager.h>
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -116,6 +117,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             return new ZenoSpreadsheet;
         }
+        case PANEL_LIGHT:
+        {
+            return new ZenoLights;
+        }
         case PANEL_LOG:
         {
             return new ZPlainLogPanel;
@@ -133,6 +138,7 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
     case PANEL_NODE_PARAMS: return tr("Parameter");
     case PANEL_NODE_DATA:   return tr("Data");
     case PANEL_LOG:         return tr("Logger");
+    case PANEL_LIGHT:       return tr("Light");
     default:
         return "";
     }
@@ -141,35 +147,25 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
 PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
 {
     PANEL_TYPE type = PANEL_EMPTY;
-    if (title == tr("Parameter")) {
+    if (title == tr("Parameter") || title == "Parameter") {
         type = PANEL_NODE_PARAMS;
     }
-    else if (title == tr("View")) {
+    else if (title == tr("View") || title == "View") {
         type = PANEL_VIEW;
     }
-    else if (title == tr("Editor")) {
+    else if (title == tr("Editor") || title == "Editor") {
         type = PANEL_EDITOR;
     }
-    else if (title == tr("Data")) {
+    else if (title == tr("Data") || title == "Data") {
         type = PANEL_NODE_DATA;
     }
-    else if (title == tr("Logger")) {
+    else if (title == tr("Logger") || title == "Logger") {
         type = PANEL_LOG;
     }
-    return type;
-}
-
-QString ZTabDockWidget::type2TabName(PANEL_TYPE type)
-{
-    switch (type)
-    {
-    case PANEL_NODE_PARAMS: return tr("Parameter");
-    case PANEL_VIEW:        return tr("View");
-    case PANEL_EDITOR:      return tr("Editor");
-    case PANEL_NODE_DATA:   return tr("Data");
-    case PANEL_LOG:         return tr("Logger");
-    default: return "";
+    else if (title == tr("Light")|| title == "Light") {
+        type = PANEL_LIGHT;
     }
+    return type;
 }
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -181,12 +177,54 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         {
             prop->onNodesSelected(subgIdx, nodes, select);
         }
+        else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
+        {
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            if (select)
+            {
+                const QModelIndex &idx = nodes[0];
+                QString nodeId = idx.data(ROLE_OBJID).toString();
+                auto *scene = Zenovis::GetInstance().getSession()->get_scene();
+                scene->selected.clear();
+                std::string nodeid = nodeId.toStdString();
+                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                    if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                        scene->selected.insert(key);
+                    }
+                }
+                onPrimitiveSelected(scene->selected);
+            }
+        }
     }
 }
 
 void ZTabDockWidget::onPrimitiveSelected(const std::unordered_set<std::string>& primids)
 {
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(i);
+        if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
+        {
+            if (primids.size() == 1) {
+                panel->setPrim(*primids.begin());
+            }
+            else {
+                panel->clear();
+            }
+        }
+    }
+}
 
+void ZTabDockWidget::newFrameUpdate()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(i);
+        if (ZenoLights* panel = qobject_cast<ZenoLights*>(wid))
+        {
+            panel->updateLights();
+        }
+    }
 }
 
 void ZTabDockWidget::onUpdateViewport(const QString& action)
@@ -358,7 +396,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger") };
+    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -374,6 +412,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 2: m_debugPanel = PANEL_EDITOR; break;
                 case 3: m_debugPanel = PANEL_NODE_DATA; break;
                 case 4: m_debugPanel = PANEL_LOG; break;
+                case 5: m_debugPanel = PANEL_LIGHT; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }
@@ -390,7 +429,7 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type)
 
     QWidget *wid = createTabWidget(type);
     if (wid) {
-        QString name = type2TabName(type);
+        QString name = type2Title(type);
         int idx = m_tabWidget->addTab(wid, name);
         m_debugPanel = type;
         m_tabWidget->setCurrentIndex(idx);

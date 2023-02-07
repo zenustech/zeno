@@ -77,6 +77,8 @@ void ZenoMainWindow::init()
     setAutoFillBackground(true);
     setPalette(pal);
 
+    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
+
     m_ui->statusbar->showMessage(tr("Status Bar"));
 }
 
@@ -115,6 +117,11 @@ void ZenoMainWindow::initMenu()
     actionGroup->addAction(m_ui->actionOptix);
 
     m_ui->menubar->setProperty("cssClass", "mainWin");
+    //qt bug: qss font is not valid on menubar.
+    QFont font("Alibaba PuHuiTi", 12);
+    font.setWeight(QFont::Medium);
+    QString wtf = font.styleName();
+    m_ui->menubar->setFont(font);
 
     //check user saved layout.
     loadSavedLayout();
@@ -348,30 +355,13 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
         root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
-            PANEL_TYPE type = title2Type(tab);
+            PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
             if (type != PANEL_EMPTY)
             {
                 pLeft->onAddTab(type);
             }
         }
     }
-}
-
-PANEL_TYPE ZenoMainWindow::title2Type(const QString &title) 
-{
-    PANEL_TYPE type = PANEL_EMPTY;
-    if (title == "Parameter") {
-        type = PANEL_NODE_PARAMS;
-    } else if (title == "View") {
-        type = PANEL_VIEW;
-    } else if (title == "Editor") {
-        type = PANEL_EDITOR;
-    } else if (title == "Data") {
-        type = PANEL_NODE_DATA;
-    } else if (title == "Logger") {
-        type = PANEL_LOG;
-    }
-    return type;
 }
 
 void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) 
@@ -618,6 +608,18 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         dock->onUpdateViewport(action);
     }
+}
+
+ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
+{
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto dock : docks2)
+    {
+        ZenoGraphsEditor* pEditor = dock->getAnyEditor();
+        if (pEditor)
+            return pEditor;
+    }
+    return nullptr;
 }
 
 DisplayWidget* ZenoMainWindow::getDisplayWidget()
@@ -1170,15 +1172,15 @@ void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelInd
 
 void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
         dock->onPrimitiveSelected(primids);
     }
 }
 
 void ZenoMainWindow::updateLightList() {
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
         dock->newFrameUpdate();
     }
 }

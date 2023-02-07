@@ -27,7 +27,7 @@ class SubGraphModel : public QAbstractItemModel
         NODE_TYPE type;
         QPointF viewpos;
         int options;
-        PARAMS_INFO paramInfo;
+        PARAMS_INFO paramNotDesc;
 
         PanelParamModel* panelParams;
         NodeParamModel* nodeParams;
