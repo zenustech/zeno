@@ -15,41 +15,51 @@
 namespace zeno {
 struct ZSRenormalizeSDF : INode {
     void apply() override {
+        auto sdfGrid = get_input<ZenoSparseGrid>("Grid");
+        auto sdfTag = get_input2<std::string>("SDFAttrName");
         int nIter = get_input2<int>("iterations");
-        auto sdfGrid = get_input<ZenoSparseGrid>("SDF");
 
-        auto &sdf = sdfGrid->spg;
-        auto block_cnt = sdf.numBlocks();
+        auto &spg = sdfGrid->spg;
+        auto block_cnt = spg.numBlocks();
 
-        ZenoSparseGrid::spg_t sdf_tmp{{{"sdf", 1}}, 1, zs::memsrc_e::device, 0};
-        // topo copy
-        sdf_tmp._table = sdf._table;
-        sdf_tmp._transform = sdf._transform;
-        sdf_tmp._background = sdf._background;
-        sdf_tmp._grid.resize(sdf.numBlocks() * sdf.block_size);
+        if (!spg.hasProperty(sdfTag))
+            throw std::runtime_error(fmt::format("the SDFAttribute [{}] does not exist!", sdfTag));
+
+        auto dx = spg.voxelSize()[0];
+        auto dt = 0.5 * dx;
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        for (int iter = 0; iter < nIter; ++iter) {
-            pol(zs::range(block_cnt * sdf.block_size),
-                [sdfv = zs::proxy<space>(sdf), sdf_tmpv = zs::proxy<space>(sdf_tmp)] __device__(int cellno) mutable {
-                    auto icoord = sdfv.iCoord(cellno);
-                    auto dx = sdfv.voxelSize()[0];
-                    auto dt = 0.5 * dx;
+        spg.append_channels(pol, {{"tmp", 3}});
 
-                    float ls_this = sdfv.value("sdf", cellno / sdfv.block_size, cellno % sdfv.block_size);
+        zs::SmallString tagSrc, tagDst;
+        for (int iter = 0; iter < nIter; ++iter) {
+            if (iter % 2 == 0) {
+                tagSrc = sdfTag;
+                tagDst = "tmp";
+            } else {
+                tagSrc = "tmp";
+                tagDst = sdfTag;
+            }
+
+            pol(zs::Collapse{spg.numBlocks(), spg.block_size},
+                [spgv = zs::proxy<space>(spg), dx, dt, tagSrcOffset = spg.getPropertyOffset(tagSrc),
+                 tagDstOffset = spg.getPropertyOffset(tagDst)] __device__(int blockno, int cellno) mutable {
+                    auto icoord = spgv.iCoord(blockno, cellno);
+
+                    float ls_this = spgv.value(tagSrcOffset, blockno, cellno);
                     float ls_x[5], ls_y[5], ls_z[5];
                     for (int i = -2; i <= 2; ++i) {
                         // stencil with nuemann boundary condition
-                        ls_x[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0))
-                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(i, 0, 0))
+                        ls_x[i + 2] = spgv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0))
+                                          ? spgv.value(tagSrcOffset, icoord + zs::vec<int, 3>(i, 0, 0))
                                           : ls_this;
-                        ls_y[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0))
-                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, i, 0))
+                        ls_y[i + 2] = spgv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0))
+                                          ? spgv.value(tagSrcOffset, icoord + zs::vec<int, 3>(0, i, 0))
                                           : ls_this;
-                        ls_z[i + 2] = sdfv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i))
-                                          ? sdfv.value("sdf", icoord + zs::vec<int, 3>(0, 0, i))
+                        ls_z[i + 2] = spgv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i))
+                                          ? spgv.value(tagSrcOffset, icoord + zs::vec<int, 3>(0, 0, i))
                                           : ls_this;
                     }
 
@@ -95,19 +105,26 @@ struct ZSRenormalizeSDF : INode {
                     float S0 = ls_x[2] / zs::sqrt(ls_x[2] * ls_x[2] + (lx_sq + ly_sq + lz_sq) * dx * dx);
                     float df = -S0 * (zs::sqrt(lx_sq + ly_sq + lz_sq) - 1.0);
 
-                    sdf_tmpv("sdf", cellno / sdfv.block_size, cellno % sdfv.block_size) = ls_this + df * dt;
+                    spgv(tagDstOffset, blockno, cellno) = ls_this + df * dt;
                 });
-            std::swap(sdf, sdf_tmp);
         }
 
-        set_output("SDF", sdfGrid);
+        if (tagSrc == "tmp") {
+            pol(zs::Collapse{spg.numBlocks(), spg.block_size},
+                [spgv = zs::proxy<space>(spg), tagSrcOffset = spg.getPropertyOffset("tmp"),
+                 tagDstOffset = spg.getPropertyOffset(sdfTag)] __device__(int blockno, int cellno) mutable {
+                    spgv(tagDstOffset, blockno, cellno) = spgv.value(tagSrcOffset, blockno, cellno);
+                });
+        }
+
+        set_output("Grid", sdfGrid);
     }
 };
 
 ZENDEFNODE(ZSRenormalizeSDF, {/* inputs: */
-                              {"SDF", {"int", "iterations", "10"}},
+                              {"Grid", {"string", "SDFAttrName", "sdf"}, {"int", "iterations", "10"}},
                               /* outputs: */
-                              {"SDF"},
+                              {"Grid"},
                               /* params: */
                               {},
                               /* category: */

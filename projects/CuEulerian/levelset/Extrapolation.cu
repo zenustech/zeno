@@ -50,12 +50,19 @@ struct ZSGridExtrapolateAttr : INode {
                 auto icoord = spgv.iCoord(blockno, cellno);
 
                 // To do: shared memory and Neumann condition
+                float sdf_this = spgv.value(sdfOffset, blockno, cellno);
                 float sdf_x[2], sdf_y[2], sdf_z[2];
                 for (int i = -1; i <= 1; i += 2) {
                     int arrid = (i + 1) >> 1;
-                    sdf_x[arrid] = spgv.value(sdfOffset, icoord + zs::vec<int, 3>(i, 0, 0));
-                    sdf_y[arrid] = spgv.value(sdfOffset, icoord + zs::vec<int, 3>(0, i, 0));
-                    sdf_z[arrid] = spgv.value(sdfOffset, icoord + zs::vec<int, 3>(0, 0, i));
+                    sdf_x[arrid] = spgv.hasVoxel(icoord + zs::vec<int, 3>(i, 0, 0))
+                                       ? spgv.value(sdfOffset, icoord + zs::vec<int, 3>(i, 0, 0))
+                                       : sdf_this;
+                    sdf_y[arrid] = spgv.hasVoxel(icoord + zs::vec<int, 3>(0, i, 0))
+                                       ? spgv.value(sdfOffset, icoord + zs::vec<int, 3>(0, i, 0))
+                                       : sdf_this;
+                    sdf_z[arrid] = spgv.hasVoxel(icoord + zs::vec<int, 3>(0, 0, i))
+                                       ? spgv.value(sdfOffset, icoord + zs::vec<int, 3>(0, 0, i))
+                                       : sdf_this;
                 }
 
                 zs::vec<float, 3> normal;
