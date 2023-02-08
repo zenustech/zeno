@@ -477,6 +477,13 @@ void GraphsModel::initDescriptors()
     desc.categories.push_back("layout");
     m_nodesDesc.insert(desc.name, desc);
     registerCate(desc);
+
+    //add Group
+    NODE_DESC groupDesc;
+    groupDesc.name = "Group";
+    groupDesc.categories.push_back("layout");
+    m_nodesDesc.insert(groupDesc.name, groupDesc);
+    registerCate(groupDesc);
 }
 
 NODE_DESC GraphsModel::getSubgraphDesc(SubGraphModel* pModel)

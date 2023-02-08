@@ -69,7 +69,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         ident = nameMangling(graphIdPrefix, ident);
         const QString& name = idx.data(ROLE_OBJNAME).toString();
         //temp: need a node type or flag to mark this case.
-        if (name == "Blackboard") {
+        if (name == "Blackboard" || name == "Group") {
             continue;
         }
 

@@ -1,5 +1,5 @@
-#ifndef __BLACKBOARD_NODE2_H__
-#define __BLACKBOARD_NODE2_H__
+#ifndef __GROUP_NODE_H__
+#define __GROUP_NODE_H__
 
 #include "zenonode.h"
 
@@ -28,11 +28,11 @@ class GroupTextItem : public QGraphicsWidget {
 };
 
 
-class BlackboardNode2 : public ZenoNode {
+class GroupNode : public ZenoNode {
     Q_OBJECT
   public:
-    BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
-    ~BlackboardNode2();
+    GroupNode(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
+    ~GroupNode();
     bool nodePosChanged(ZenoNode *);
     void onZoomed() override;
     QRectF boundingRect() const override;

@@ -1,4 +1,4 @@
-#include "blackboardnode2.h"
+#include "groupnode.h"
 #include "util/log.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -55,10 +55,10 @@ void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
     if (fontMetrics.width(text) > boundingRect().width()) {
         text = fontMetrics.elidedText(text, Qt::ElideRight, boundingRect().width());
     }
-    painter->drawText(QPointF(0, ZenoStyle::dpiScaled(10 / editor_factor)), text);
+    painter->drawText(this->boundingRect(), text);
 }
 
-BlackboardNode2::BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *parent)
+GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent), 
     m_bDragging(false),
     m_bSelecting(false),
@@ -85,10 +85,10 @@ BlackboardNode2::BlackboardNode2(const NodeUtilParam &params, QGraphicsItem *par
     onZoomed();
 }
 
-BlackboardNode2::~BlackboardNode2() {
+GroupNode::~GroupNode() {
 }
 
-void BlackboardNode2::updateClidItem(bool isAdd, const QString nodeId)
+void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
 {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
@@ -105,11 +105,11 @@ void BlackboardNode2::updateClidItem(bool isAdd, const QString nodeId)
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), false);
 }
 
-bool BlackboardNode2::nodePosChanged(ZenoNode *item) 
+bool GroupNode::nodePosChanged(ZenoNode *item) 
 {
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && !m_childItems.contains(item)) {
 
-        BlackboardNode2 *pParentItem = item->getGroupNode();
+        GroupNode *pParentItem = item->getGroupNode();
         if (pParentItem && pParentItem->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!pParentItem->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
             return false;
@@ -120,7 +120,7 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item)
         appendChildItem(item);
         return true;
     } else if ((!this->sceneBoundingRect().contains(item->sceneBoundingRect())) && m_childItems.contains(item)) {
-        BlackboardNode2 *pGroupNode = this->getGroupNode();
+        GroupNode *pGroupNode = this->getGroupNode();
         while (pGroupNode) {
             bool isUpdate = pGroupNode->nodePosChanged(item);
             if (!isUpdate) {
@@ -141,7 +141,7 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item)
     return false;
 }
 
-void BlackboardNode2::onZoomed() 
+void GroupNode::onZoomed() 
 {
     int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
     QFont font("HarmonyOS Sans", fontSize);
@@ -153,11 +153,13 @@ void BlackboardNode2::onZoomed()
     m_pTextItem->setPos(pos);
 }
 
-QRectF BlackboardNode2::boundingRect() const {
-    return ZenoNode::boundingRect();
+QRectF GroupNode::boundingRect() const {
+    QRectF rect = ZenoNode::boundingRect();
+    rect.adjust(0, rect.y() - m_pTextItem->boundingRect().height(), 0, 0);
+    return rect;
 }
 
-void BlackboardNode2::onUpdateParamsNotDesc() 
+void GroupNode::onUpdateParamsNotDesc() 
 {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
@@ -168,7 +170,7 @@ void BlackboardNode2::onUpdateParamsNotDesc()
     setSvgData(blackboard.background.name());
 }
 
-void BlackboardNode2::appendChildItem(ZenoNode *item)
+void GroupNode::appendChildItem(ZenoNode *item)
 {
     m_childItems << item;
     item->setGroupNode(this);
@@ -180,16 +182,16 @@ void BlackboardNode2::appendChildItem(ZenoNode *item)
     m_itemRelativePosMap[item->nodeId()] = pos;
 }
 
-void BlackboardNode2::updateChildItemsPos()
+void GroupNode::updateChildItemsPos()
 {
     for (auto item : m_childItems) {
         if (!item) {
             continue;
         }
         int type = item->index().data(ROLE_NODETYPE).toInt();
-        if (type == BLACKBOARD_NODE) 
+        if (type == GROUP_NODE) 
         {
-            BlackboardNode2 *pNode = dynamic_cast<BlackboardNode2 *>(item);
+            GroupNode *pNode = dynamic_cast<GroupNode *>(item);
             if (pNode) {
                 pNode->updateChildItemsPos();
             }
@@ -198,12 +200,12 @@ void BlackboardNode2::updateChildItemsPos()
     }
 }
 
-QVector<ZenoNode *> BlackboardNode2::getChildItems() 
+QVector<ZenoNode *> GroupNode::getChildItems() 
 {
     return m_childItems;
 }
 
-void BlackboardNode2::removeChildItem(ZenoNode *pNode) 
+void GroupNode::removeChildItem(ZenoNode *pNode) 
 {
     if (m_childItems.contains(pNode)) {
         m_childItems.removeOne(pNode);
@@ -212,14 +214,14 @@ void BlackboardNode2::removeChildItem(ZenoNode *pNode)
     }
 }
 
-void BlackboardNode2::updateChildRelativePos(const ZenoNode *item) 
+void GroupNode::updateChildRelativePos(const ZenoNode *item) 
 {
     if (m_itemRelativePosMap.contains(item->nodeId())) {
         m_itemRelativePosMap[item->nodeId()] = mapFromItem(item, 0, 0);
     }
 }
 
-ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
+ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     if (blackboard.sz.isValid()) {
@@ -234,12 +236,12 @@ ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
     return new ZLayoutBackground(this);
 }
 
-ZLayoutBackground *BlackboardNode2::initHeaderWidget(IGraphsModel*)
+ZLayoutBackground *GroupNode::initHeaderWidget(IGraphsModel*)
 {
     return new ZLayoutBackground(this);    
 }
 
-void BlackboardNode2::mousePressEvent(QGraphicsSceneMouseEvent *event) 
+void GroupNode::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
     QPointF pos = event->pos();
     if (isDragArea(pos)) {
@@ -255,7 +257,7 @@ void BlackboardNode2::mousePressEvent(QGraphicsSceneMouseEvent *event)
     ZenoNode::mousePressEvent(event);
 }
 
-void BlackboardNode2::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         qreal ptop, pbottom, pleft, pright;
         QRectF rect = this->geometry();
@@ -303,7 +305,7 @@ void BlackboardNode2::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     }
 }
 
-void BlackboardNode2::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         m_bDragging = false;
         updateBlackboard();
@@ -320,12 +322,12 @@ void BlackboardNode2::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     }
 }
 
-void BlackboardNode2::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
+void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
     isDragArea(event->pos());
     ZenoNode::hoverMoveEvent(event);
 }
 
-bool BlackboardNode2::isDragArea(QPointF pos) {
+bool GroupNode::isDragArea(QPointF pos) {
     QRectF rect = boundingRect();
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
@@ -358,7 +360,7 @@ bool BlackboardNode2::isDragArea(QPointF pos) {
     return (resizeDir != nodir);
 }
 
-void BlackboardNode2::updateBlackboard() {
+void GroupNode::updateBlackboard() {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     info.sz = this->size();
@@ -367,14 +369,13 @@ void BlackboardNode2::updateBlackboard() {
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
 }
 
-void BlackboardNode2::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     
     //draw background
     QFontMetrics fm(this->font());
-    int y = 0/*m_pTextItem->boundingRect().bottom()*/;
-    QRectF rect = QRectF(0, y, this->boundingRect().width(), this->boundingRect().height() - y);
+    QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height() - m_pTextItem->boundingRect().height());
     QColor background = blackboard.background.isValid() ? blackboard.background : QColor(0, 100, 168);
     if (!index().data(ROLE_COLLASPED).toBool())
     {
@@ -399,7 +400,7 @@ void BlackboardNode2::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
     ZenoNode::paint(painter, option, widget);
 }
 
-QVariant BlackboardNode2::itemChange(GraphicsItemChange change, const QVariant &value) {
+QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value) {
     if (change == QGraphicsItem::ItemPositionHasChanged) {
         for (auto item : m_childItems) {
             if (!item || !m_itemRelativePosMap.contains(item->nodeId())) {
@@ -412,7 +413,7 @@ QVariant BlackboardNode2::itemChange(GraphicsItemChange change, const QVariant &
     return ZenoNode::itemChange(change, value);
 }
 
-QRectF BlackboardNode2::getSelectArea()
+QRectF GroupNode::getSelectArea()
 {
     int x = (m_beginPos.x() < m_endPos.x()) ? m_beginPos.x() : m_endPos.x();
     int y = (m_beginPos.y() < m_endPos.y()) ? m_beginPos.y() : m_endPos.y();
@@ -421,7 +422,7 @@ QRectF BlackboardNode2::getSelectArea()
     return QRectF(x, y, w, h);
 }
 
-void BlackboardNode2::setSvgData(QString color) 
+void GroupNode::setSvgData(QString color) 
 {
     QFile file(":/icons/nodeEditor_group_scale-adjustor.svg");
     file.open(QIODevice::ReadOnly);

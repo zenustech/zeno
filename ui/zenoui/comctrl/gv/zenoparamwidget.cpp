@@ -696,7 +696,7 @@ void ZenoParamBlackboard::foucusInEdit()
 void ZenoParamBlackboard::updateStyleSheet(int fontSize) 
 {
     m_pTextEdit->setStyleSheet(
-        ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgba(0, 0, 0, 0); color: rgb(111, 111, 111); "
+        ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgb(0, 0, 0); color: rgb(111, 111, 111); "
                                          "padding:16px 5px 5px 5px; font:%1pt \" HarmonyOS Sans \";}")
                                      .arg(fontSize)));
 }

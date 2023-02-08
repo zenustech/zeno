@@ -44,6 +44,10 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
     {
         return BLACKBOARD_NODE;
     }
+    else if (name == "Group")
+    {
+        return GROUP_NODE;
+    }
     else if (name == "SubInput")
     {
         return SUBINPUT_NODE;
@@ -145,7 +149,7 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
 PARAMS_INFO NodesMgr::initParamsNotDesc(const QString& name)
 {
     PARAMS_INFO paramsNotDesc;
-    if (name == "Blackboard")
+    if (name == "Blackboard" || name == "Group")
     {
         BLACKBOARD_INFO blackboard;
         blackboard.content = tr("content");
