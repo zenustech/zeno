@@ -2,6 +2,7 @@
 // #include "zensim/geometry/VdbLevelSet.h"
 #include "Structures.hpp"
 #include "zensim/cuda/Cuda.h"
+#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/math/DihedralAngle.hpp"
 #include "zensim/math/matrix/SparseMatrix.hpp"
@@ -88,6 +89,39 @@ struct ZSCUMathTest : INode {
         const zs::SparseMatrix<T, true> spmat{100, 100};
         auto spv = proxy<execspace_e::host>(spmat);
         fmt::print("default spmat(0, 1): {}\n", spv(0, 1).extent);
+
+        /// csr
+        {
+            zs::SparseMatrix<int, true> spmat{7, 7, memsrc_e::um, 0};
+            zs::Vector<int> is{6}, js{6}, vs{6};
+            is[0] = 0;
+            js[0] = 1;
+            is[1] = 1;
+            js[1] = 2;
+            is[2] = 1;
+            js[2] = 5;
+            is[3] = 3;
+            js[3] = 4;
+            is[4] = 3;
+            js[4] = 6;
+            is[5] = 4;
+            js[5] = 6;
+            for (auto &v : vs)
+                v = 1;
+
+            is = is.clone({memsrc_e::um, 0});
+            js = js.clone({memsrc_e::um, 0});
+            vs = vs.clone({memsrc_e::um, 0});
+            spmat.build(zs::cuda_exec(), 7, 7, range(is), range(js), range(vs));
+            fmt::print("row major csr:\n");
+            for (int i = 0; i < 7; ++i) {
+                auto bg = spmat._ptrs[i];
+                fmt::print("row [{}] offset [{}]: ", i, bg);
+                for (; bg != spmat._ptrs[i + 1]; ++bg)
+                    fmt::print("<{}, {}>  ", spmat._inds[bg], spmat._vals[bg]);
+                fmt::print("\n");
+            }
+        }
 
         constexpr int N = 7;
         zs::Vector<int> nidx{N + 1};
