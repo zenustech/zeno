@@ -20,7 +20,7 @@
 #define s_silentMode 1
 #define s_hardPhaseSilent 1
 #define s_useMassSpring 0
-#define s_debugRemoveHashTable 1
+#define s_debugRemoveHashTable 0
 #define s_testLightCache 1
 namespace zeno {
 
