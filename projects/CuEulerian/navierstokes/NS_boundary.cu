@@ -1,4 +1,5 @@
 #include "Structures.hpp"
+#include "Utils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/profile/CppTimers.hpp"
@@ -19,31 +20,34 @@ namespace zeno {
 struct ZSNSNaiveSolidWall : INode {
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
-        auto SolidSDF = get_input<ZenoSparseGrid>("SolidSDF");
-        auto SolidVel = get_input<ZenoSparseGrid>("SolidVel");
+        auto SolidSDFPtrs = RETRIEVE_OBJECT_PTRS(ZenoSparseGrid, "SolidSDF");
+        auto SolidVelPtrs = RETRIEVE_OBJECT_PTRS(ZenoSparseGrid, "SolidVel");
 
-        auto &sdf = SolidSDF->spg;
-        auto &vel = SolidVel->spg;
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
-             vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
-                auto wcoord = spgv.wCoord(blockno, cellno);
-                auto solid_sdf = sdfv.wSample("sdf", wcoord);
+        for (auto &&[SolidSDF, SolidVel] : zs::zip(SolidSDFPtrs, SolidVelPtrs)) {
+            auto &sdf = SolidSDF->spg;
+            auto &vel = SolidVel->spg;
 
-                if (solid_sdf < 0) {
-                    auto vel_s = velv.wStaggeredPack("v", wcoord);
-                    auto block = spgv.block(blockno);
-                    block.template tuple<3>(vSrcTag, cellno) = vel_s;
-                }
+            pol(zs::Collapse{block_cnt, spg.block_size},
+                [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
+                 vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                    auto wcoord = spgv.wCoord(blockno, cellno);
+                    auto solid_sdf = sdfv.wSample("sdf", wcoord);
 
-                spgv("sdf", blockno, cellno) = solid_sdf;
-            });
+                    if (solid_sdf < 0) {
+                        auto vel_s = velv.wStaggeredPack("v", wcoord);
+                        auto block = spgv.block(blockno);
+                        block.template tuple<3>(vSrcTag, cellno) = vel_s;
+                    }
+
+                    spgv("sdf", blockno, cellno) = solid_sdf;
+                });
+        }
 
         set_output("NSGrid", NSGrid);
     }
