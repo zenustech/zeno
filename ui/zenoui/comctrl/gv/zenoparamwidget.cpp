@@ -534,6 +534,7 @@ ZenoParamPushButton::ZenoParamPushButton(QGraphicsItem* parent)
 {
     m_pBtn = new QPushButton;
     m_pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn->setCursor(Qt::PointingHandCursor);
     setWidget(m_pBtn);
     connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
 }
@@ -545,6 +546,7 @@ ZenoParamPushButton::ZenoParamPushButton(const QString& name, const QString& qss
     m_pBtn = new QPushButton(name);
     m_pBtn->setProperty("cssClass", qssName);
     m_pBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_pBtn->setCursor(Qt::PointingHandCursor);
     setWidget(m_pBtn);
     connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
 }
@@ -556,6 +558,7 @@ ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePo
 {
     m_pBtn = new QPushButton(name);
     m_pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn->setCursor(Qt::PointingHandCursor);
     if (hor == QSizePolicy::Fixed)
         m_pBtn->setFixedWidth(width);
     m_pBtn->setSizePolicy(hor, QSizePolicy::Preferred);

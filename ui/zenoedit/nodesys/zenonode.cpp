@@ -179,7 +179,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     pNameLayout->setContentsMargin(margin, margin, margin, margin);
 
     m_NameItem = new ZSimpleTextItem(name);
-    m_NameItem->setBrush(QColor(226, 226, 226));
+    m_NameItem->setBrush(QColor("#FFFFFF"));
     QFont font2("Alibaba PuHuiTi", 16);
     font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
@@ -896,7 +896,8 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded)
 {
     ZenoSocketItem* pSocket = getSocketItem(paramIdx);
-    ZASSERT_EXIT(pSocket);
+    if (pSocket == nullptr)
+        return;
 
     QModelIndex idx = pSocket->paramIndex();
     // the removal of links from socket is executed before the removal of link itself.

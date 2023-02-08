@@ -125,7 +125,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     }
     else
     {
-        bgClr = QColor("#1992D7");
+        bgClr = QColor("#4B9EF4");
     }
 
     QPen pen(bgClr, 4);

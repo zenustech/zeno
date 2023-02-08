@@ -1,11 +1,13 @@
 QPushButton[cssClass="grayButton"]
 {
-    border-width: 0px;
-    border-radius: 0px;
-	background-color: rgb(71,71,71);
+	border-style: outset;
+    border-width: 2px;
+    border-radius: 1px;
+	border-color: #000000;
+	background-color: #343A42;
 	font: 14px 'Alibaba PuHuiTi';
 	font-weight: 500;
-	color: rgb(168, 163, 160);
+	color: #737B85;
 }
 
 QPushButton[cssClass="grayButton"]:hover
@@ -40,12 +42,13 @@ QPushButton[cssClass="dictkeypanel"]
 	padding-right: 48px;
 	padding-bottom: 2.5px;
 
-    border-width: 2px;
-    border-radius: 2px;
-	background-color: rgb(72, 78, 90);
+    border-width: 0px;
+    border-radius: 5px;
+	border-style: outset;
+	background-color: #5A616D;
 	font: 14px 'Alibaba PuHuiTi';
 	font-weight: bold;
-	color: rgb(147, 159, 172);
+	color: #A3B1C0;
 }
 
 QPushButton[cssClass="dictkeypanel"]:hover

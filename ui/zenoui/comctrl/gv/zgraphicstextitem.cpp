@@ -342,8 +342,8 @@ ZSocketGroupItem::ZSocketGroupItem(
     , m_viewSockIdx(viewSockIdx)
     , m_socket(nullptr)
 {
-    setBrush(QColor(188, 188, 188));
-
+    setBrush(QColor("#C3D2DF"));
+    //QFont font("Segoe UI Bold", 14);
     QFont font("Alibaba PuHuiTi", 14);
     font.setWeight(QFont::Medium);
     setFont(font);
@@ -401,22 +401,15 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 void ZEditableTextItem::initUI(const QString& text)
 {
     setDefaultTextColor(QColor("#C3D2DF"));
-    QFont font("HarmonyOS Sans Bold", 11);
-    //font.setBold(true);
+    setCursor(Qt::IBeamCursor);
+
+    QFont font("Alibaba PuHuiTi", 11);
+    font.setWeight(QFont::Medium);
     setFont(font);
 
     setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
     setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(128, 32)));
     setTextInteractionFlags(Qt::TextEditorInteraction);
-
-    QTextFrame *frame = document()->rootFrame();
-    QTextFrameFormat format = frame->frameFormat();
-    format.setBackground(QColor("#191D21"));
-    //frame->setFrameFormat(format);
-
-    QTextFrameFormat blockForatmat;
-    QTextCursor cursor = this->textCursor();
-    //cursor.insertFrame(blockForatmat);
 
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
