@@ -263,6 +263,138 @@ ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
                                    /* category: */
                                    {"Eulerian"}});
 
+struct ZSCombineSparseGrid : INode {
+    template <int OpId>
+    void CSG(zs::CudaExecutionPolicy &pol, ZenoSparseGrid::spg_t &spgA, ZenoSparseGrid::spg_t &spgB, bool AisBigger,
+             zs::SmallString sdfTag) {
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        pol(zs::Collapse(spgA.numBlocks(), spgA.block_size),
+            [sdfv = zs::proxy<space>(spgA), smallerv = zs::proxy<space>(spgB), AisBigger,
+             sdfTag] __device__(int blockno, int cellno) mutable {
+                auto wcoord = sdfv.wCoord(blockno, cellno);
+
+                float sdf_this = sdfv.value(sdfTag, blockno, cellno);
+                float sdf_ref = smallerv.wSample(sdfTag, wcoord);
+
+                float sdf_csg = sdf_this;
+                if constexpr (OpId == 0)
+                    sdf_csg = zs::min(sdf_this, sdf_ref);
+                else if constexpr (OpId == 1)
+                    sdf_csg = zs::max(sdf_this, sdf_ref);
+                else if constexpr (OpId == 2) {
+                    if (AisBigger)
+                        sdf_csg = zs::max(sdf_this, -sdf_ref);
+                    else
+                        sdf_csg = zs::max(sdf_ref, -sdf_this);
+                }
+
+                sdfv(sdfTag, blockno, cellno) = sdf_csg;
+            });
+    }
+
+    void apply() override {
+        auto GridA = get_input<ZenoSparseGrid>("GridA");
+        auto GridB = get_input<ZenoSparseGrid>("GridB");
+        auto tag = get_input2<std::string>("SDFAttribute");
+        auto op = get_input2<std::string>("OpType");
+
+        auto &spgA = GridA->getSparseGrid();
+        auto &spgB = GridB->getSparseGrid();
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if (get_input2<bool>("WriteBack")) {
+            auto &sdf = spgA;
+            auto &smaller = spgB;
+
+            size_t prevNumBlocks = sdf.numBlocks();
+            sdf.resizePartition(pol, spgA.numBlocks() + spgB.numBlocks());
+
+            pol(zs::range(smaller.numBlocks()),
+                [sdfv = zs::proxy<space>(sdf), smallerv = zs::proxy<space>(smaller)] __device__(std::size_t i) mutable {
+                    auto bcoord = smallerv._table._activeKeys[i];
+                    sdfv._table.insert(bcoord);
+                });
+
+            size_t curNumBlocks = sdf.numBlocks();
+            sdf.resizeGrid(curNumBlocks);
+
+            pol(zs::Collapse(curNumBlocks - prevNumBlocks, sdf.block_size),
+                [sdfv = zs::proxy<space>(sdf), sdfOffset = sdf.getPropertyOffset(tag),
+                 prevNumBlocks] __device__(int blockno, int cellno) mutable {
+                    int bo = blockno + prevNumBlocks;
+                    sdfv(sdfOffset, bo, cellno) = sdfv._background;
+                });
+
+            if (op == "CSGUnion")
+                CSG<0>(pol, sdf, smaller, true, tag);
+            else if (op == "CSGIntersection")
+                CSG<1>(pol, sdf, smaller, true, tag);
+            else if (op == "CSGSubtract")
+                CSG<2>(pol, sdf, smaller, true, tag);
+
+            set_output("Grid", GridA);
+        } else {
+            ZenoSparseGrid::spg_t sdf{{{tag, 1}}, 0, zs::memsrc_e::device, 0};
+            // topo copy
+            bool AisBigger = spgA.numBlocks() >= spgB.numBlocks();
+            auto &bigger = AisBigger ? spgA : spgB;
+            auto &smaller = AisBigger ? spgB : spgA;
+
+            sdf._table = bigger._table;
+            sdf._transform = bigger._transform;
+            sdf._background = bigger._background;
+            sdf._grid = bigger._grid;
+
+            size_t prevNumBlocks = sdf.numBlocks();
+            sdf.resizePartition(pol, spgA.numBlocks() + spgB.numBlocks());
+
+            pol(zs::range(smaller.numBlocks()),
+                [sdfv = zs::proxy<space>(sdf), smallerv = zs::proxy<space>(smaller)] __device__(std::size_t i) mutable {
+                    auto bcoord = smallerv._table._activeKeys[i];
+                    sdfv._table.insert(bcoord);
+                });
+
+            size_t curNumBlocks = sdf.numBlocks();
+            sdf.resizeGrid(curNumBlocks);
+
+            pol(zs::Collapse(curNumBlocks - prevNumBlocks, sdf.block_size),
+                [sdfv = zs::proxy<space>(sdf), sdfOffset = sdf.getPropertyOffset(tag),
+                 prevNumBlocks] __device__(int blockno, int cellno) mutable {
+                    int bo = blockno + prevNumBlocks;
+                    sdfv(sdfOffset, bo, cellno) = sdfv._background;
+                });
+
+            if (op == "CSGUnion")
+                CSG<0>(pol, sdf, smaller, AisBigger, tag);
+            else if (op == "CSGIntersection")
+                CSG<1>(pol, sdf, smaller, AisBigger, tag);
+            else if (op == "CSGSubtract")
+                CSG<2>(pol, sdf, smaller, AisBigger, tag);
+
+            auto zsSPG = std::make_shared<ZenoSparseGrid>();
+            zsSPG->spg = std::move(sdf);
+
+            set_output("Grid", zsSPG);
+        }
+    }
+};
+
+ZENDEFNODE(ZSCombineSparseGrid, {/* inputs: */
+                                 {"GridA",
+                                  "GridB",
+                                  {"string", "SDFAttribute", "sdf"},
+                                  {"enum CSGUnion CSGIntersection CSGSubtract", "OpType", "CSGUnion"},
+                                  {"bool", "WriteBack", "0"}},
+                                 /* outputs: */
+                                 {"Grid"},
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {"Eulerian"}});
+
 struct ZSGridReduction : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
