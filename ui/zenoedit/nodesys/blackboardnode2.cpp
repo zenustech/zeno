@@ -9,6 +9,7 @@
 #include <zenoui/comctrl/gv/zitemfactory.h>
 #include <zenoui/render/common_id.h>
 #include "zenosubgraphscene.h"
+#include <QtSvg/QSvgRenderer>
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -46,7 +47,8 @@ void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    painter->setPen(QPen("#FFF"));       
+    QColor color = this->palette().color(QPalette::WindowText);
+    painter->setPen(QPen(color));    
     painter->setFont(font());
     QFontMetrics fontMetrics(font());
     QString text = m_text;
@@ -131,8 +133,8 @@ bool BlackboardNode2::nodePosChanged(ZenoNode *item)
         updateClidItem(false, item->nodeId());
     } else if (m_childItems.contains(item)) {
         updateChildRelativePos(item);
-        if (m_itemRelativeMap.contains(item->nodeId())) {
-            QPointF pos = m_itemRelativeMap[item->nodeId()];
+        if (m_itemRelativePosMap.contains(item->nodeId())) {
+            QPointF pos = m_itemRelativePosMap[item->nodeId()];
             item->updateNodePos(mapToScene(pos), false);
         }
     }
@@ -143,6 +145,7 @@ void BlackboardNode2::onZoomed()
 {
     int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
     QFont font("HarmonyOS Sans", fontSize);
+    font.setBold(true);
     QFontMetrics fontMetrics(font);
     m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height()));
     m_pTextItem->setFont(font);
@@ -159,6 +162,10 @@ void BlackboardNode2::onUpdateParamsNotDesc()
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     m_pTextItem->setText(blackboard.title);
+    QPalette palette = m_pTextItem->palette();
+    palette.setColor(QPalette::WindowText, blackboard.background);
+    m_pTextItem->setPalette(palette);
+    setSvgData(blackboard.background.name());
 }
 
 void BlackboardNode2::appendChildItem(ZenoNode *item)
@@ -170,7 +177,7 @@ void BlackboardNode2::appendChildItem(ZenoNode *item)
     }
     updateClidItem(true, item->nodeId());
     QPointF pos = mapFromItem(item, 0, 0);
-    m_itemRelativeMap[item->nodeId()] = pos;
+    m_itemRelativePosMap[item->nodeId()] = pos;
 }
 
 void BlackboardNode2::updateChildItemsPos()
@@ -201,14 +208,14 @@ void BlackboardNode2::removeChildItem(ZenoNode *pNode)
     if (m_childItems.contains(pNode)) {
         m_childItems.removeOne(pNode);
         pNode->setGroupNode(nullptr);
-        m_itemRelativeMap.remove(pNode->nodeId());
+        m_itemRelativePosMap.remove(pNode->nodeId());
     }
 }
 
 void BlackboardNode2::updateChildRelativePos(const ZenoNode *item) 
 {
-    if (m_itemRelativeMap.contains(item->nodeId())) {
-        m_itemRelativeMap[item->nodeId()] = mapFromItem(item, 0, 0);
+    if (m_itemRelativePosMap.contains(item->nodeId())) {
+        m_itemRelativePosMap[item->nodeId()] = mapFromItem(item, 0, 0);
     }
 }
 
@@ -219,7 +226,11 @@ ZLayoutBackground *BlackboardNode2::initBodyWidget(ZenoSubGraphScene *pScene) {
         resize(blackboard.sz);
         m_pTextItem->resize(QSize(boundingRect().width(), m_pTextItem->boundingRect().height()));
     }
+    QPalette palette = m_pTextItem->palette();
+    palette.setColor(QPalette::WindowText, blackboard.background);
+    m_pTextItem->setPalette(palette);
     m_pTextItem->setText(blackboard.title);
+    setSvgData(blackboard.background.name());
     return new ZLayoutBackground(this);
 }
 
@@ -382,16 +393,19 @@ void BlackboardNode2::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
         QRectF selectArea = getSelectArea();
         painter->fillRect(selectArea, background);
     }
+    qreal width = ZenoStyle::dpiScaled(16);
+    QSvgRenderer svgRender(m_svgByte);
+    svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
     ZenoNode::paint(painter, option, widget);
 }
 
 QVariant BlackboardNode2::itemChange(GraphicsItemChange change, const QVariant &value) {
     if (change == QGraphicsItem::ItemPositionHasChanged) {
         for (auto item : m_childItems) {
-            if (!item || !m_itemRelativeMap.contains(item->nodeId())) {
+            if (!item || !m_itemRelativePosMap.contains(item->nodeId())) {
                 continue;
             }
-            QPointF pos = mapToScene(m_itemRelativeMap[item->nodeId()]);
+            QPointF pos = mapToScene(m_itemRelativePosMap[item->nodeId()]);
             item->setPos(pos);
         }
     }
@@ -405,4 +419,12 @@ QRectF BlackboardNode2::getSelectArea()
     int w = qAbs(m_beginPos.x() - m_endPos.x()) + 1;
     int h = qAbs(m_beginPos.y() - m_endPos.y()) + 1;
     return QRectF(x, y, w, h);
+}
+
+void BlackboardNode2::setSvgData(QString color) 
+{
+    QFile file(":/icons/nodeEditor_group_scale-adjustor.svg");
+    file.open(QIODevice::ReadOnly);
+    m_svgByte = file.readAll();
+    m_svgByte.replace("#D8D8D8", color.toStdString().c_str());
 }

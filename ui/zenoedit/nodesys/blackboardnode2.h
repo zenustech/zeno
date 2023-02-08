@@ -57,6 +57,7 @@ class BlackboardNode2 : public ZenoNode {
     void updateBlackboard();
     void updateClidItem(bool isAdd, const QString nodeId);
     QRectF getSelectArea();
+    void setSvgData(QString color);
     enum {
     	nodir,
     	top = 0x01,
@@ -75,7 +76,8 @@ class BlackboardNode2 : public ZenoNode {
     QPointF m_beginPos;
     QPointF m_endPos;
     GroupTextItem *m_pTextItem;
-    QMap<QString, QPointF> m_itemRelativeMap;
+    QMap<QString, QPointF> m_itemRelativePosMap;
+    QByteArray m_svgByte;
 };
 
 
