@@ -33,11 +33,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", help="Host Address, e.g. {}".format(DEFAULT_HOST),
                         type=str, default=DEFAULT_HOST)
+    parser.add_argument("--mode", nargs="+",
+                        help='Run Mode, 1-daily build, 2-commit build',
+                        required=True)
     args = parser.parse_args()
     print("Args: Host", args.host)
-
-    run1(args.host, "start", 86400)
-    run2(args.host, "check?mode=1", 60)
+    print("Args: Mode", args.mode)
+    for m in args.mode:
+        if int(m) == 1:
+            run1(args.host, "start", 86400)
+        if int(m) == 2:
+            run2(args.host, "check?mode=1", 60)
     print("Run")
 
 
