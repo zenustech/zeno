@@ -81,6 +81,7 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
     };
     QWidget *pControl = zenoui::createWidget(value, ctrl, UiHelper::getControlDesc(ctrl), cbSet, QVariant()); 
+    pControl->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
     if (desc == "title") {
         m_pTitle = qobject_cast<ZTextEdit *>(pControl);
     } else if (desc == "background") {

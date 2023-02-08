@@ -11,6 +11,7 @@ public:
     ~BlackboardNode();
     QRectF boundingRect() const override;
     void onUpdateParamsNotDesc() override;
+    void onZoomed(){};
 
 protected:
     ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene) override;

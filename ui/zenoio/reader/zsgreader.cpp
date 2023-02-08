@@ -245,7 +245,6 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
         blackboard.content = blackBoardValue.HasMember("content") ? blackBoardValue["content"].GetString() : "";
-        blackboard.background =  QColor(blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645");
 
         if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
             qreal w = blackBoardValue["width"].GetFloat();
@@ -254,6 +253,22 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         }
         if (blackBoardValue.HasMember("params")) {
             //todo
+        }
+
+        pAcceptor->setBlackboard(nodeid, blackboard);
+    }
+    else if (name == "Group") 
+    {
+        BLACKBOARD_INFO blackboard;
+        const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
+
+        blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
+        blackboard.background = QColor(blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645");
+
+        if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
+            qreal w = blackBoardValue["width"].GetFloat();
+            qreal h = blackBoardValue["height"].GetFloat();
+            blackboard.sz = QSizeF(w, h);
         }
         if (blackBoardValue.HasMember("items")) {
             auto item_keys = blackBoardValue["items"].GetArray();

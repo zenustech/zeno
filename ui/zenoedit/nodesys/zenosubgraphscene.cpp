@@ -25,7 +25,7 @@
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/vparamitem.h>
 #include <zenomodel/include/command.h>
-#include "nodesys/blackboardnode2.h"
+#include "nodesys/groupnode.h"
 #include <zenoui/style/zenostyle.h>
 
 #include "zenomainwindow.h"
@@ -79,7 +79,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
-        if (pNode->nodeName() == "Blackboard") 
+        if (pNode->nodeName() == "Group") 
         {
             blackboardVect << pNode;
         }
@@ -127,9 +127,9 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         {
             PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
             BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            if (info.items.contains(id) && qobject_cast<BlackboardNode2*>(node))
+            if (info.items.contains(id) && qobject_cast<GroupNode*>(node))
             {
-                BlackboardNode2 *pGroupNode = qobject_cast<BlackboardNode2 *>(node);
+                GroupNode *pGroupNode = qobject_cast<GroupNode *>(node);
                 if (pGroupNode)
                     pGroupNode->appendChildItem(inNode);
                 else
@@ -201,7 +201,11 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
     else if (descName == "Blackboard")
     {
-        return new BlackboardNode2(params);
+        return new BlackboardNode(params);
+    }
+    else if (descName == "Group")
+    {
+        return new GroupNode(params);
     }
     else if (descName == "CameraNode")
     {
@@ -641,7 +645,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 void ZenoSubGraphScene::onNodePosChanged() 
 {
     ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
-    BlackboardNode2 *blackboardNode = dynamic_cast<BlackboardNode2 *>(senderNode);
+    GroupNode *blackboardNode = dynamic_cast<GroupNode *>(senderNode);
     for (auto pair : m_nodes) 
     {
         ZenoNode *zenoNode = pair.second;
@@ -649,7 +653,7 @@ void ZenoSubGraphScene::onNodePosChanged()
         {
             continue;
         }
-        BlackboardNode2 *currBlackboardNode = dynamic_cast<BlackboardNode2 *>(zenoNode);
+        GroupNode *currBlackboardNode = dynamic_cast<GroupNode *>(zenoNode);
         if (blackboardNode) 
         {
             //if (blackboardNode->getChildItems().contains(zenoNode)) 
@@ -998,18 +1002,18 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         QString id = idx.data(ROLE_OBJID).toString();
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         ZenoNode* pNode = m_nodes[id];
-        if (qobject_cast<BlackboardNode2 *>(pNode)) 
+        if (qobject_cast<GroupNode *>(pNode)) 
         {
-            BlackboardNode2 *pBlackboard = qobject_cast<BlackboardNode2 *>(pNode);
+            GroupNode *pBlackboard = qobject_cast<GroupNode *>(pNode);
             for (auto item : pBlackboard->getChildItems()) {
-                BlackboardNode2 *pNewGroup = pBlackboard->getGroupNode();
+                GroupNode *pNewGroup = pBlackboard->getGroupNode();
                 if (pNewGroup)
                     pNewGroup->appendChildItem(item);
                 else
                     item->setGroupNode(pNewGroup);
             }
         }
-        BlackboardNode2 *pGroup = pNode->getGroupNode();
+        GroupNode *pGroup = pNode->getGroupNode();
         if (pGroup) {
             pGroup->removeChildItem(pNode);
         }

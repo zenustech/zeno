@@ -17,7 +17,7 @@
 
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
-class BlackboardNode2;
+class GroupNode;
 
 class ZenoNode : public ZLayoutBackground
 {
@@ -60,8 +60,8 @@ public:
     bool isMoving();
 
     virtual void onZoomed();
-    void setGroupNode(BlackboardNode2 *pNode);
-    BlackboardNode2 *getGroupNode();
+    void setGroupNode(GroupNode *pNode);
+    GroupNode *getGroupNode();
 
 signals:
     void socketClicked(ZenoSocketItem*);
@@ -157,7 +157,7 @@ private:
     // when zoom out the view, the view of node will be displayed as text with large size font.
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.
     static const bool bEnableZoomPreview = false;
-    BlackboardNode2 *m_groupNode;
+    GroupNode *m_groupNode;
 };
 
 #endif

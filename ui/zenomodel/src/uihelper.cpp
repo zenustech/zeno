@@ -856,6 +856,10 @@ NODE_TYPE UiHelper::nodeType(const QString& name)
     {
         return BLACKBOARD_NODE;
     }
+    else if (name == "Group")
+    {
+        return GROUP_NODE;
+    }
     else if (name == "SubInput")
     {
         return SUBINPUT_NODE;

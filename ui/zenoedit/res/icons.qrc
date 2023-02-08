@@ -279,5 +279,6 @@
     <file>icons/moveUp-on.svg</file>
     <file>icons/zeno-logo.svg</file>
     <file>icons/zeno-logo.png</file>
+    <file>icons/nodeEditor_group_scale-adjustor.svg</file>
 </qresource>
 </RCC>

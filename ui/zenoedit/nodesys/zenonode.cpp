@@ -29,7 +29,7 @@
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"
-#include "blackboardnode2.h"
+#include "groupnode.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -138,7 +138,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     updateWhole();
 
-    if (type == BLACKBOARD_NODE) {
+    if (type == BLACKBOARD_NODE || type == GROUP_NODE) {
         setZValue(ZVALUE_BLACKBOARD);
     }
 
@@ -1064,12 +1064,12 @@ void ZenoNode::onZoomed()
     m_pStatusWidgets->onZoomed();
 }
 
-void ZenoNode::setGroupNode(BlackboardNode2 *pNode) 
+void ZenoNode::setGroupNode(GroupNode *pNode) 
 {
     m_groupNode = pNode;
 }
 
-BlackboardNode2 *ZenoNode::getGroupNode() 
+GroupNode *ZenoNode::getGroupNode() 
 {
     return m_groupNode;
 }
