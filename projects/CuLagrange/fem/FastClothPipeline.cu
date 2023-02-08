@@ -668,6 +668,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     /// optimizer
     zs::CppTimer timer; 
     for (int iters = 0; iters < maxIters; ++iters, ++k) {
+        pol.sync(true);
         bool converged = false; 
 
         if constexpr (s_enableProfile)
@@ -686,11 +687,12 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
             fmt::print(fg(fmt::color::alice_blue), "iteration {} cons residual: {}\n", iters, cr);
 #endif            
         }
+        pol.sync(false); 
 #if s_useNewtonSolver 
         newtonDynamicsStep(pol); 
 #else 
         gdDynamicsStep(pol); 
-#endif 
+#endif  
         // CHECK PN CONDITION
         // T res = infNorm(pol) / dt;
         // T cons_res = boundaryConstraintResidual(pol);
@@ -712,6 +714,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if (k % 30 == 0)
             fmt::print("\t\tdynamics iteration: {}, alpha: {}\n", k, alpha); 
 #if s_debugOutput
+        pol.sync(true);
         T gradNorm = l2Norm(pol, "grad"); 
         T dirNorm = l2Norm(pol, "dir"); 
         writeFile(fmt::format("../zeno_out/optimization_data/{}.csv", frameCnt), 
@@ -719,6 +722,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 #endif 
         if (!converged && iters % 8 == 0)
         {
+            pol.sync(true);
             T E = dynamicsEnergy(pol);      
             if (firstStepping || (!std::isnan(E) && E <= lastEnergy + limits<T>::epsilon() * 10.0f))
             {
@@ -795,7 +799,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
 
         if (!converged && (k % IDyn != 0))
             continue; 
-        
+   
         /// start collision solver
         ///
         initialStepping(pol);
@@ -806,6 +810,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         }
 
         // x^{k+1}
+        pol.sync(true);
 #if s_testLightCache
         lightFilterConstraints(pol, dHat, "xinit"); 
 #else 
@@ -880,6 +885,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         if (converged)
             break; 
     }
+    pol.sync(true); 
 
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         auto xk = vtemp.pack(dim_c<3>, "xn", i);
