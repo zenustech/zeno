@@ -5,7 +5,8 @@ QMenu {
 }
 
 QMenu::item {
-    font: 14px "Segoe UI";
+    font: 16px "Alibaba PuHuiTi";
+    font-weight: 400;
     padding: 4px 85px 4px 34px;
     color: #8A939E;
 }
@@ -49,10 +50,10 @@ QMenuBar[cssClass="mainWin"] {
 }
 
 QMenuBar::item {
+    font: 14px "Alibaba PuHuiTi";
     padding: 4px 10px 4px 10px;
     background: transparent;
     color: #737B85;
-    font: 12px "Segoe UI";
 }
 
 QMenuBar::item:selected {

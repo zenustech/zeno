@@ -109,7 +109,7 @@ namespace zenoui
                 pItemWidget = pLineEdit;
 #else
                 ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {

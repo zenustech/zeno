@@ -56,7 +56,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 {
     painter->save();
     QPen pen;
-    pen.setColor(QColor(isSelected() ? 0xFA6400 : 0x808080));
+    pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));
     pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
@@ -75,12 +75,10 @@ ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF f
     , m_nodeId(nodeId)
     , m_adsortedSocket(nullptr)
 {
-    m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
 }
 
 ZenoTempLink::~ZenoTempLink()
 {
-    //m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
 }
 
 QPointF ZenoTempLink::getSrcPos() const
@@ -142,10 +140,17 @@ ZenoSocketItem* ZenoTempLink::getFixedSocket() const
 void ZenoTempLink::setAdsortedSocket(ZenoSocketItem* pSocket)
 {
     if (m_adsortedSocket)
-        m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
+    {
+        QModelIndex idx = m_adsortedSocket->paramIndex();
+        PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        if (links.isEmpty() || (links.size() == 1 && links[0] == m_oldLink))
+            m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
+    }
     m_adsortedSocket = pSocket;
     if (m_adsortedSocket)
+    {
         m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
+    }
 }
 
 int ZenoTempLink::type() const

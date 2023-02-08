@@ -180,8 +180,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor(226, 226, 226));
-    QFont font2("HarmonyOS Sans Bold", 16);
-    font2.setBold(true);
+    QFont font2("Alibaba PuHuiTi", 16);
+    font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
     m_NameItem->updateBoundingRect();
 
@@ -893,19 +893,26 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     return pControl;
 }
 
-void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded)
+void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded)
 {
-    ZSocketLayout *pSocketLayout = getSocketLayout(bInput, sockName);
-    if (!pSocketLayout)
-        return;
+    ZenoSocketItem* pSocket = getSocketItem(paramIdx);
+    ZASSERT_EXIT(pSocket);
 
-    ZenoSocketItem *pSocket = pSocketLayout->socketItem();
-    //pSocket->toggle(bAdded);
-    pSocket->setSockStatus(bAdded ? ZenoSocketItem::STATUS_CONNECTED : ZenoSocketItem::STATUS_NOCONN);
+    QModelIndex idx = pSocket->paramIndex();
+    // the removal of links from socket is executed before the removal of link itself.
+    PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+    if (bAdded) {
+        pSocket->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+    } else {
+        if (links.isEmpty())
+            pSocket->setSockStatus(ZenoSocketItem::STATUS_NOCONN);
+    }
 
     if (bInput)
     {
-        if (pSocketLayout->control())
+        QString sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
+        ZSocketLayout* pSocketLayout = getSocketLayout(bInput, sockName);
+        if (pSocketLayout && pSocketLayout->control())
         {
             pSocketLayout->control()->setVisible(!bAdded);
             updateWhole();

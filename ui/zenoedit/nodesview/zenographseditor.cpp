@@ -32,6 +32,14 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     initUI();
     initModel();
     initSignals();
+
+    auto graphsMgm = zenoApp->graphsManagment();
+    if (graphsMgm) {
+        IGraphsModel* pModel = graphsMgm->currentModel();
+        if (pModel) {
+            resetModel(pModel);
+        }
+    }
 }
 
 ZenoGraphsEditor::~ZenoGraphsEditor()

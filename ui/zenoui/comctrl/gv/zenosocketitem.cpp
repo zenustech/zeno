@@ -14,7 +14,7 @@ ZenoSocketItem::ZenoSocketItem(
     , m_viewSockIdx(viewSockIdx)
     , m_status(STATUS_UNKNOWN)
     , m_size(sz)
-    , m_bgClr(QColor("#1992D7"))
+    , m_bHovered(false)
 {
     PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
@@ -64,20 +64,16 @@ QString ZenoSocketItem::nodeIdent() const
     return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_OBJID).toString() : "";
 }
 
+void ZenoSocketItem::setHovered(bool bHovered)
+{
+    m_bHovered = bHovered;
+    update();
+}
+
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
 {
     if (m_status == status)
         return;
-
-    if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
-    {
-        if (m_viewSockIdx.isValid())
-        {
-            PARAM_LINKS links = m_viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (!links.isEmpty())
-                status = STATUS_CONNECTED;
-        }
-    }
 
     m_status = status;
     update();
@@ -90,8 +86,8 @@ ZenoSocketItem::SOCK_STATUS ZenoSocketItem::sockStatus() const
 
 void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
-    m_bgClr = QColor("#5FD2FF");
     _base::hoverEnterEvent(event);
+    setHovered(true);
 }
 
 void ZenoSocketItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
@@ -101,8 +97,8 @@ void ZenoSocketItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    m_bgClr = QColor("#1992D7");
     _base::hoverLeaveEvent(event);
+    setHovered(false);
 }
 
 void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -122,8 +118,8 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 {
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    QColor bgClr = m_bgClr;
-    if (m_status == STATUS_TRY_CONN)
+    QColor bgClr;
+    if (m_bHovered)
     {
         bgClr = QColor("#5FD2FF");
     }

@@ -18,6 +18,7 @@ enum PANEL_TYPE
     PANEL_NODE_PARAMS,
     PANEL_NODE_DATA,
     PANEL_LOG,
+    PANEL_LIGHT,
 };
 
 class ZTabDockWidget : public QDockWidget
@@ -37,9 +38,9 @@ public:
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
     void onRunFinished();
+    void newFrameUpdate();
 
     static PANEL_TYPE title2Type(const QString &title);
-    static QString type2TabName(PANEL_TYPE type);
 
 public slots:
     /*timeline*/

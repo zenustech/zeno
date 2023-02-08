@@ -343,7 +343,9 @@ ZSocketGroupItem::ZSocketGroupItem(
     , m_socket(nullptr)
 {
     setBrush(QColor(188, 188, 188));
-    QFont font("Segoe UI Semibold", 14);
+
+    QFont font("Alibaba PuHuiTi", 14);
+    font.setWeight(QFont::Medium);
     setFont(font);
     updateBoundingRect();
 
@@ -367,23 +369,36 @@ QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant&
 
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)
+    , m_bFocusIn(false)
 {
     _base::setText(text);
-    initUI();
+    initUI(text);
 }
 
 ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent) 
     : _base(parent)
+    , m_bFocusIn(false)
 {
-    initUI();
+    initUI("");
 }
 
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    painter->setBrush(QColor("#191D21"));
+    qreal width = 2;
+    QPen pen(QColor(75, 158, 244), width);
+    QRectF rc = boundingRect();
+    if (m_bFocusIn) {
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+        painter->drawRect(rc);
+    } else {
+        painter->fillRect(rc, QColor("#191D21"));
+    }
     _base::paint(painter, option, widget);
 }
 
-void ZEditableTextItem::initUI()
+void ZEditableTextItem::initUI(const QString& text)
 {
     setDefaultTextColor(QColor("#C3D2DF"));
     QFont font("HarmonyOS Sans Bold", 11);
@@ -397,12 +412,44 @@ void ZEditableTextItem::initUI()
     QTextFrame *frame = document()->rootFrame();
     QTextFrameFormat format = frame->frameFormat();
     format.setBackground(QColor("#191D21"));
-    frame->setFrameFormat(format);
+    //frame->setFrameFormat(format);
+
+    QTextFrameFormat blockForatmat;
+    QTextCursor cursor = this->textCursor();
+    //cursor.insertFrame(blockForatmat);
 
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 }
 
+void ZEditableTextItem::focusInEvent(QFocusEvent* event)
+{
+    _base::focusInEvent(event);
+    m_bFocusIn = true;
+    update();
+}
+
+void ZEditableTextItem::focusOutEvent(QFocusEvent* event)
+{
+    _base::focusOutEvent(event);
+    m_bFocusIn = false;
+    update();
+}
+
+void ZEditableTextItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mousePressEvent(event);
+}
+
+void ZEditableTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseMoveEvent(event);
+}
+
+void ZEditableTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseReleaseEvent(event);
+}
 
 
 ZSocketEditableItem::ZSocketEditableItem(
@@ -433,8 +480,8 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font("HarmonyOS Sans Bold", ZenoStyle::dpiScaled(11));
-    font.setBold(true);
+    QFont font("Alibaba PuHuiTi", 11);
+    font.setWeight(QFont::Bold);
     setFont(font);
 
     setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));

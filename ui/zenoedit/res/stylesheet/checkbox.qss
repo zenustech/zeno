@@ -14,7 +14,8 @@ QCheckBox::indicator:checked
 
 QCheckBox[cssClass = "curve-timeline"] {
     spacing: 8px;
-	font: 14px 'HarmonyOS Sans';
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgba(255, 255, 255, 0.7);
 }
 

@@ -1,68 +1,78 @@
 QLabel[cssClass="proppanel"]
 {
-	font: 16px "Segoe UI Semibold";
+	font: 16px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgba(255, 255, 255, 0.7);
 }
 
 QLabel[cssClass="proppanel-nodename"]
 {
-	font: bold 15px "HarmonyOS Sans";
+	font: 15px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgba(255, 255, 255, 0.5);
 }
 
 QLabel[cssClass="proppanel-sectionname"]
 {
-	font: bold 12px "HarmonyOS Sans";
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgba(187, 206, 220, 1.0);
 }
 
 QLabel[cssClass="proppanel-itemname"]
 {
-	font: bold 14px "HarmonyOS Sans";
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: bold;
 	color: rgba(255, 255, 255, 0.7);
 }
 
 QLabel[cssClass="numslider"]
 {
-	font: 14px "HarmonyOS Sans";
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	padding: 15px;
 	text-align: center;
 }
 
 QLabel[cssClass = "welcomepage_name"]
 { 
-	font: 36px "HarmonyOS Sans";
+	font: 36px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(255, 255, 255);
 }
 
 QLabel[cssClass = "welcomepage_label"]
 { 
-	font: 14px "HarmonyOS Sans";
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(255, 255, 255);
 }
 
 QLabel[cssClass = "welcomepage"]
 {
-	font: 14px "HarmonyOS Sans";
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(133, 130, 128);
 }
 
 ZCurveMapEditor QLabel
 {
-	font: 14px "HarmonyOS Sans";
+	font: 14px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: rgb(133, 130, 128);
 }
 
 QLabel[cssClass="rgb"]
 {
 	padding: 0px;
-	font: 12px "HarmonyOS Sans";
+	font: 12px 'Alibaba PuHuiTi';
 	color: #9D9DA3;
 }
 
 QLabel[cssClass="color_label"]
 {
-	font: 12px "HarmonyOS Sans";
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: 500;
 	color: #8A8A8C;
 }
 

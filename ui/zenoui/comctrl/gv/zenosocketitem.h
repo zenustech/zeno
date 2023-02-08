@@ -31,6 +31,7 @@ public:
     bool isInputSocket() const;
     QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
+    void setHovered(bool bHovered);
     SOCK_STATUS sockStatus() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
@@ -47,11 +48,11 @@ protected:
 private:
     SOCK_STATUS m_status;
     const QPersistentModelIndex m_viewSockIdx;
-    bool m_bInput;
-    bool m_bInnerSock;
     QSizeF m_size;
     int m_margin;
-    QColor m_bgClr;
+    bool m_bInput;
+    bool m_bInnerSock;
+    bool m_bHovered;
 };
 
 #endif

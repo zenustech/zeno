@@ -164,7 +164,11 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     m_tabWidget->setDocumentMode(true);
     m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(false);
-    m_tabWidget->setFont(QFont("Segoe UI Bold", 10));  //bug in qss font setting.
+
+    QFont font("Alibaba PuHuiTi", 10);
+    font.setWeight(QFont::Medium);
+
+    m_tabWidget->setFont(font); //bug in qss font setting.
     m_tabWidget->tabBar()->setDrawBase(false);
 
     for (int i = 0; i < pRoot->rowCount(); i++)
@@ -308,7 +312,11 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
-    pLabel->setFont(QFont("Segoe UI Semibold", 12));
+
+    QFont font("Alibaba PuHuiTi", 12);
+    font.setWeight(QFont::Medium);
+    pLabel->setFont(font);
+
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
     //pLabel->setProperty("cssClass", "proppanel");

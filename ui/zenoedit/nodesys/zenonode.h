@@ -78,7 +78,7 @@ public slots:
     void onCollaspeUpdated(bool);
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
-    void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
+    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded);
     void onNameUpdated(const QString& newName);
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
