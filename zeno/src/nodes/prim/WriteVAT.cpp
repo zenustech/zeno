@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/log.h>
 #include "zeno/para/parallel_reduce.h"
@@ -154,6 +155,7 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
 struct WriteCustomVAT : INode {
     std::vector<std::shared_ptr<PrimitiveObject>> prims;
     virtual void apply() override {
+        std::string path = get_param<std::string>("path");
         int frameid;
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
@@ -166,7 +168,8 @@ struct WriteCustomVAT : INode {
         if (frameid == frameStart) {
             prims.resize(frameCount);
         }
-        auto prim = std::dynamic_pointer_cast<PrimitiveObject>(get_input<PrimitiveObject>("prim")->clone());
+        auto raw_prim = get_input<PrimitiveObject>("prim");
+        auto prim = std::dynamic_pointer_cast<PrimitiveObject>(raw_prim->clone());
         if (frameStart <= frameid && frameid <= frameEnd) {
             prims[frameid - frameStart] = prim;
         }
@@ -185,8 +188,49 @@ struct WriteCustomVAT : INode {
             }
             std::string path = get_param<std::string>("path");
             write_vat(v, path);
+            {
+                std::string obj_path = path + ".obj";
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                {
+                    auto & f = v.front();
+                    prim->verts.resize(f.size());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        prim->verts[i] = f[i];
+                    }
+                    prim->tris.resize(f.size() / 3);
+                    for (auto i = 0; i < prim->tris.size(); i++) {
+                        prim->tris[i][0] = 3 * i + 0;
+                        prim->tris[i][1] = 3 * i + 1;
+                        prim->tris[i][2] = 3 * i + 2;
+                    }
+                }
+                {
+                    int total_frame = v.size();
+                    int one_prim_line = align_to(v[0].size(), 8192) / 8192;
+                    int total_lines = total_frame * one_prim_line;
+                    zeno::log_info("total_frame: {}", total_frame);
+                    zeno::log_info("one_prim_line: {}", one_prim_line);
+                    zeno::log_info("total_lines: {}", total_lines);
+                    std::ofstream fout(obj_path);
+                    for (auto const &[x, y, z]: prim->verts) {
+                        fout << zeno::format("v {} {} {}\n", x, y, z);
+                    }
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        auto index = (float(i) + 0.5f) / 8192.f;
+                        auto u = index - zeno::floor(index);
+                        auto v = (zeno::floor(index) + 0.5f) / float(total_lines);
+
+                        fout << zeno::format("vt {} {}\n", u, v);
+                    }
+
+                    for (auto const &[x, y, z]: prim->tris) {
+                        fout << zeno::format("f {}/{} {}/{} {}/{}\n", x + 1, x + 1, y + 1, y + 1, z + 1, z + 1);
+                    }
+                }
+            }
             zeno::log_info("VAT: save success!");
         }
+        set_output("prim", raw_prim);
     }
 };
 
@@ -195,7 +239,9 @@ ZENDEFNODE(WriteCustomVAT, {
         {"prim"},
         {"frameid"},
     },
-    {},
+    {
+        {"prim"},
+    },
     {
         {"writepath", "path", ""},
         {"int", "frameStart", "0"},
