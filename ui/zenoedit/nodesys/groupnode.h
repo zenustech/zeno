@@ -11,9 +11,9 @@ class GroupTextItem : public QGraphicsWidget {
     void setText(const QString &text);
 
   signals:
-    void updatePosSignal();
-    void posChangedSignal(const QPointF &pos);
-    void mousePressSignal();
+    void mousePressSignal(QGraphicsSceneMouseEvent *event);
+    void mouseMoveSignal(QGraphicsSceneMouseEvent *event);
+    void mouseReleaseSignal(QGraphicsSceneMouseEvent *event);
 
   protected: 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -22,9 +22,7 @@ class GroupTextItem : public QGraphicsWidget {
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
   private:
-    bool m_bMoving;
     QString m_text;
-    QPointF m_beginPos;
 };
 
 

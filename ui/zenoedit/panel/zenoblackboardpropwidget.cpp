@@ -34,7 +34,7 @@ ZenoBlackboardPropWidget::~ZenoBlackboardPropWidget()
 }
 
 void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const QModelIndex &idx, int role) {
-    if (subGpIdx != m_subgIdx)
+    if (m_idx != idx)
         return;
     if (role == ROLE_PARAMS_NO_DESC) {
         PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
