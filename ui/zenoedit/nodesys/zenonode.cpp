@@ -1210,8 +1210,14 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
             m_lastMovig = QPointF();
 
-            if (m_groupNode) {
-                m_groupNode->updateChildRelativePos(this);
+            //other selected items also need update model data
+            for (QGraphicsItem *item : this->scene()->selectedItems()) {
+                if (item == this || !dynamic_cast<ZenoNode*>(item))
+                    continue;
+                ZenoNode *pNode = dynamic_cast<ZenoNode *>(item);
+                info.newValue = pNode->scenePos();
+                info.oldValue = pNode->index().data(ROLE_OBJPOS);
+                pGraphsModel->updateNodeStatus(pNode->nodeId(), info, m_subGpIndex, false);
             }
         }
     }

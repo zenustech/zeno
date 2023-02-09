@@ -15,8 +15,7 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 GroupTextItem::GroupTextItem(QGraphicsItem *parent) : 
-    QGraphicsWidget(parent), 
-    m_bMoving(false)
+    QGraphicsWidget(parent)
 {
     setFlags(ItemIsSelectable);    
 }
@@ -30,20 +29,14 @@ void GroupTextItem::setText(const QString &text) {
 
 void GroupTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
-    QGraphicsWidget::mousePressEvent(event);
-    emit mousePressSignal();
-    m_beginPos = event->pos();
+    emit mousePressSignal(event);
 }
 void GroupTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) 
 {
-    m_bMoving = true;
-    emit posChangedSignal(event->pos() - m_beginPos);
+    emit mouseMoveSignal(event);
 }
 void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-    if (m_bMoving) {
-        emit updatePosSignal();
-        m_bMoving = false;
-    }
+        emit mouseReleaseSignal(event);
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -69,16 +62,14 @@ GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     setAutoFillBackground(false);
     setAcceptHoverEvents(true);
     m_pTextItem = new GroupTextItem(this);    
-    connect(m_pTextItem, &GroupTextItem::posChangedSignal, this, [=](const QPointF &pos) {
-        QPointF newPos = scenePos() + pos;
-        setPos(newPos);
+    connect(m_pTextItem, &GroupTextItem::mouseMoveSignal, this, [=](QGraphicsSceneMouseEvent *event) {
+        ZenoNode::mouseMoveEvent(event);
     });
-    connect(m_pTextItem, &GroupTextItem::updatePosSignal, this, [=]() { 
-        updateNodePos(scenePos());
-        updateChildItemsPos();
+    connect(m_pTextItem, &GroupTextItem::mouseReleaseSignal, this, [=](QGraphicsSceneMouseEvent *event) { 
+        ZenoNode::mouseReleaseEvent(event);
     });
-    connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=]() {
-        setSelected(true);
+    connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=](QGraphicsSceneMouseEvent *event) {
+        ZenoNode::mousePressEvent(event);
     });
     m_pTextItem->show();
     m_pTextItem->setZValue(0);
