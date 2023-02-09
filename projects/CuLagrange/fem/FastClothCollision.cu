@@ -224,9 +224,9 @@ void FastClothSystem::lightFilterConstraints(zs::CudaExecutionPolicy &pol, T dHa
             continue;
         auto &ses = primHandle.getSurfEdges();
         pol(Collapse{ses.size()},
-            [ses = proxy<space>({}, ses), vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), nE = proxy<space>(nE),
+            [ses = view<space>({}, ses), vtemp = view<space>({}, vtemp), E = view<space>(E), nE = view<space>(nE),
              threshold = L * L - epsSlack, vOffset = primHandle.vOffset, tag] __device__(int sei) mutable {
-                const auto vij = ses.pack(dim_c<2>, "inds", sei).reinterpret_bits(int_c) + vOffset;
+                const auto vij = ses.pack(dim_c<2>, "inds", sei, int_c) + vOffset;
                 const auto &vi = vij[0];
                 const auto &vj = vij[1];
                 auto pi = vtemp.pack(dim_c<3>, tag, vi);
@@ -262,12 +262,12 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), PP = proxy<space>(PP), nPP = proxy<space>(nPP),
          dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
          withBoundary] __device__(int i) mutable {
-            auto vi = reinterpret_bits<int>(svInds("inds", i));
+            auto vi = svInds("inds", i, int_c);
             auto pi = vtemp.pack(dim_c<3>, "xn", vi);
             auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
 #if 1
             auto f = [&](int svI) {
-                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                auto vj = eles("inds", svI, int_c) + voffset;
                 if ((!withBoundary) && (vi >= vj))
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
@@ -299,7 +299,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                         if (overlaps(lbvh.getNodeBV(node), bv)) {
                             int svI = lbvh._auxIndices[node];
                             {
-                                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                                auto vj = eles("inds", svI, int_c) + voffset;
                                 if ((!withBoundary) && (vi >= vj))
                                     goto NEXT;
                                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
@@ -340,11 +340,11 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
          eTab = proxy<space>(eTab), vtemp = proxy<space>({}, vtemp), sh = proxy<space>(sh), PP = proxy<space>(PP),
          nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
          withBoundary] __device__(int i) mutable {
-            auto vi = reinterpret_bits<int>(svInds("inds", i));
+            auto vi = svInds("inds", i, int_c);
             auto pi = vtemp.pack(dim_c<3>, "xn", vi);
             auto bv = bv_t{get_bounding_box(pi - thickness, pi + thickness)};
             auto f = [&](int svI) {
-                auto vj = reinterpret_bits<int>(eles("inds", svI)) + voffset;
+                auto vj = eles("inds", svI, int_c) + voffset;
                 if ((!withBoundary) && (vi >= vj))
                     return;
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
@@ -755,7 +755,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
                             printf("linesearch t: %f, et.l2NormSqr: %f, threshold: %f, pp: %d, %d, last: %f, de2: %f\n",
                                    (float)t, (float)(et.l2NormSqr()), (float)threshold, pp[0], pp[1],
                                    (float)ek.l2NormSqr(), (float)de2);
-#endif 
+#endif
                             mark[0] = 1;
                             return;
                         }
@@ -767,7 +767,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
 #if !s_hardPhaseSilent
                     printf("linesearch discrete pp, d2: %f, pp: %d, %d, dir: %f, %f \n", (float)d2, pp[0], pp[1],
                            (float)dir0, (float)dir1);
-#endif 
+#endif
                     mark[0] = 1;
                 }
             });
@@ -787,8 +787,8 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
                         auto dir1 = vtemp.pack(dim_c<3>, "dir", e[1]).l2NormSqr();
                         auto dk2 = dist2_pp(xk0, xk1);
 #if !s_hardPhaseSilent
-                    printf("linesearch ee, ee: %d, %d, d2: %f, dir: %f, %f, dk2: %f, threshold: %f\n", 
-                        e[0], e[1], (float)d2, (float)dir0, (float)dir1, (float)dk2, (float)threshold);
+                        printf("linesearch ee, ee: %d, %d, d2: %f, dir: %f, %f, dk2: %f, threshold: %f\n", e[0], e[1],
+                               (float)d2, (float)dir0, (float)dir1, (float)dk2, (float)threshold);
 #endif
                         mark[0] = 1;
                     }
@@ -818,14 +818,13 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
         if (E <= E0 + limits<T>::epsilon() * 10.0f)
             return E;
         alpha /= 2;
-        if (alpha < 1e-3)
-        {
+        if (alpha < 1e-3) {
             fmt::print("hard-phase linesearch early exit\n");
-            return E;  
-        } 
-#else 
-        return 0; 
-#endif 
+            return E;
+        }
+#else
+        return 0;
+#endif
     } while (true);
 #if !s_hardPhaseSilent
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);

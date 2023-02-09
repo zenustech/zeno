@@ -100,7 +100,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::maximumSurfEdgeLen
     auto &edgeLengths = temp;
     pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
                                  edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
-        auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+        auto inds = edges.pack(dim_c<2>, "inds", ei, int_c);
         edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("xt", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
@@ -154,7 +154,7 @@ typename FastClothSystem::T FastClothSystem::maximumSurfEdgeLength(zs::CudaExecu
         pol(Collapse{edges.size()},
             [edges = proxy<space>({}, edges), verts = proxy<space>({}, vtemp), edgeLengths = proxy<space>(edgeLengths),
              coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
-                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c) + coOffset;
+                auto inds = edges.pack(dim_c<2>, "inds", ei, int_c) + coOffset;
                 edgeLengths[ei] = (verts.pack<3>("yn", inds[0]) - verts.pack<3>("yn", inds[1])).norm();
             });
         if (auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>()); tmp > maxEdgeLength)
@@ -256,12 +256,12 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
             auto &tris = primHandle.getSurfTris();
-            pol(Collapse(tris.size()), [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris),
-                                        voffset = primHandle.vOffset,
-                                        sfoffset = primHandle.sfOffset] __device__(int i) mutable {
-                stInds.tuple(dim_c<3>, "inds", sfoffset + i) =
-                    (tris.pack(dim_c<3>, "inds", i).reinterpret_bits(int_c) + (int)voffset).reinterpret_bits(float_c);
-            });
+            pol(Collapse(tris.size()),
+                [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris), voffset = primHandle.vOffset,
+                 sfoffset = primHandle.sfOffset] __device__(int i) mutable {
+                    stInds.tuple(dim_c<3>, "inds", sfoffset + i, int_c) =
+                        (tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset);
+                });
         }
         const auto &edges = primHandle.getSurfEdges();
 #if !s_debugRemoveHashTable
@@ -281,9 +281,9 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                                      adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg),
 #endif
                                      verts = proxy<space>({}, verts), intHalfLen] __device__(int i) mutable {
-            auto inds = edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c);
+            auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
-            seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
+            seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
             auto v0 = verts.pack(dim_c<3>, "x", inds[0]);
             auto v1 = verts.pack(dim_c<3>, "x", inds[1]);
 #if s_useMassSpring
@@ -328,8 +328,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
              svoffset = primHandle.svOffset] __device__(int i) mutable {
-                svInds("inds", svoffset + i) =
-                    reinterpret_bits<float>(reinterpret_bits<int>(points("inds", i)) + (int)voffset);
+                svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
 
@@ -473,7 +472,8 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
 FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints,
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
-                                 T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity, int K, int IDyn)
+                                 T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity, int K,
+                                 int IDyn)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       cPP{estNumCps * 20, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles().get_allocator(), 1},
       ncPP{zsprims[0]->getParticles().get_allocator(), 1},
@@ -486,7 +486,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
       temp{estNumCps, zs::memsrc_e::um, 0},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
-      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K {K}, IDyn {IDyn} {
+      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K{K}, IDyn{IDyn} {
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::curve) {
@@ -587,7 +587,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
             const auto &eles = primHandle.getEles();
             pol(Collapse(eles.size()),
                 [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c);
                     // retrieve motion from the associated boundary vert
                     auto deltaX = vtemp.pack(dim_c<3>, "ytilde", inds[1]) - vtemp.pack(dim_c<3>, "yhat", inds[1]);
                     auto yn = vtemp.pack(dim_c<3>, "yn", inds[0]);
@@ -683,8 +683,8 @@ struct MakeClothSystem : INode {
         auto input_cg_cap = get_input2<int>("cg_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
         auto dt = get_input2<float>("dt");
-        auto K = get_input2<int>("K"); 
-        auto IDyn = get_input2<int>("IDyn"); 
+        auto K = get_input2<int>("K");
+        auto IDyn = get_input2<int>("IDyn");
 
         auto A = std::make_shared<FastClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, dt,
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
@@ -696,24 +696,22 @@ struct MakeClothSystem : INode {
     }
 };
 
-ZENDEFNODE(MakeClothSystem, {{
-                                 "ZSParticles",
-                                 "ZSBoundaryPrimitives",
-                                 {"int", "est_num_cps", "1000000"},
-                                 {"bool", "with_contact", "1"},
-                                 {"bool", "contact_with_ee", "1"},
-                                 {"bool", "contact_with_self", "1"},
-                                 {"float", "dt", "0.01"},
-                                 {"float", "dHat", "0.001"},
-                                 {"float", "aug_coeff", "1e2"},
-                                 {"float", "pn_rel", "0.01"},
-                                 {"float", "cg_rel", "0.001"},
-                                 {"int", "pn_iter_cap", "1000"},
-                                 {"int", "cg_iter_cap", "1000"},
-                                 {"float", "gravity", "-9.8"},
-                                 {"int", "K", "72"}, 
-                                 {"int", "IDyn", "2"}
-                             },
+ZENDEFNODE(MakeClothSystem, {{"ZSParticles",
+                              "ZSBoundaryPrimitives",
+                              {"int", "est_num_cps", "1000000"},
+                              {"bool", "with_contact", "1"},
+                              {"bool", "contact_with_ee", "1"},
+                              {"bool", "contact_with_self", "1"},
+                              {"float", "dt", "0.01"},
+                              {"float", "dHat", "0.001"},
+                              {"float", "aug_coeff", "1e2"},
+                              {"float", "pn_rel", "0.01"},
+                              {"float", "cg_rel", "0.001"},
+                              {"int", "pn_iter_cap", "1000"},
+                              {"int", "cg_iter_cap", "1000"},
+                              {"float", "gravity", "-9.8"},
+                              {"int", "K", "72"},
+                              {"int", "IDyn", "2"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});
