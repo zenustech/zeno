@@ -55,7 +55,7 @@ void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
     if (fontMetrics.width(text) > boundingRect().width()) {
         text = fontMetrics.elidedText(text, Qt::ElideRight, boundingRect().width());
     }
-    painter->drawText(this->boundingRect(), text);
+    painter->drawText(this->boundingRect(), Qt::AlignVCenter, text);
 }
 
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -144,10 +144,10 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 void GroupNode::onZoomed() 
 {
     int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
-    QFont font("HarmonyOS Sans", fontSize);
+    QFont font("Alibaba PuHuiTi", fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);
-    m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height()));
+    m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height() + ZenoStyle::dpiScaled(10)));
     m_pTextItem->setFont(font);
     QPointF pos = QPointF(0, -m_pTextItem->boundingRect().height());
     m_pTextItem->setPos(pos);
@@ -298,7 +298,9 @@ void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
         QRectF selectArea = getSelectArea();
         QRectF rect = mapRectToScene(selectArea);
         for (auto item : m_childItems) {
-            item->setSelected(rect.contains(item->pos()));
+            QRectF itemRect(item->scenePos(), item->boundingRect().size());
+            QRectF interRect = rect.intersected(itemRect);
+            item->setSelected(interRect.isValid());
         }
         update();
         return;
