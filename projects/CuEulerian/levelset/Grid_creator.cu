@@ -14,6 +14,7 @@
 #include <zeno/VDBGrid.h>
 
 #include "../utils.cuh"
+#include "zeno/utils/log.h"
 
 namespace zeno {
 
@@ -394,6 +395,88 @@ ZENDEFNODE(ZSCombineSparseGrid, {/* inputs: */
                                  {},
                                  /* category: */
                                  {"Eulerian"}});
+
+struct ZSGridTopoUnion : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("Grid");
+        auto zs_topo = get_input<ZenoSparseGrid>("TopologyGrid");
+
+        auto &spgA = zs_grid->spg;
+        auto &spgB = zs_topo->spg;
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        size_t prevNumBlocks = spgA.numBlocks();
+        spgA.resizePartition(pol, spgA.numBlocks() + spgB.numBlocks());
+
+        pol(zs::range(spgB.numBlocks()),
+            [spgAv = zs::proxy<space>(spgA), spgBv = zs::proxy<space>(spgB)] __device__(std::size_t i) mutable {
+                auto bcoord = spgBv._table._activeKeys[i];
+                spgAv._table.insert(bcoord);
+            });
+
+        size_t curNumBlocks = spgA.numBlocks();
+        spgA.resizeGrid(curNumBlocks);
+
+        size_t newNbs = curNumBlocks - prevNumBlocks;
+        zs::memset(zs::mem_device, (void *)spgA._grid.tileOffset(prevNumBlocks), 0,
+                   (std::size_t)newNbs * spgA._grid.tileBytes());
+
+        if (get_input2<bool>("multigrid")) {
+            /// @brief adjust multigrid accordingly
+            // grid
+            auto &spg1 = zs_grid->spg1;
+            spg1.resize(pol, curNumBlocks);
+            auto &spg2 = zs_grid->spg2;
+            spg2.resize(pol, curNumBlocks);
+            auto &spg3 = zs_grid->spg3;
+            spg3.resize(pol, curNumBlocks);
+            // table
+            {
+                const auto &table = spgA._table;
+                auto &table1 = spg1._table;
+                auto &table2 = spg2._table;
+                auto &table3 = spg3._table;
+                table1.reset(true);
+                table1._cnt.setVal(curNumBlocks);
+                table2.reset(true);
+                table2._cnt.setVal(curNumBlocks);
+                table3.reset(true);
+                table3._cnt.setVal(curNumBlocks);
+
+                table1._buildSuccess.setVal(1);
+                table2._buildSuccess.setVal(1);
+                table3._buildSuccess.setVal(1);
+                pol(zs::range(curNumBlocks),
+                    [table = zs::proxy<space>(table), tab1 = zs::proxy<space>(table1), tab2 = zs::proxy<space>(table2),
+                     tab3 = zs::proxy<space>(table3)] __device__(std::size_t i) mutable {
+                        auto bcoord = table._activeKeys[i];
+                        tab1.insert(bcoord / 2, i, true);
+                        tab2.insert(bcoord / 4, i, true);
+                        tab3.insert(bcoord / 8, i, true);
+                    });
+
+                int tag1 = table1._buildSuccess.getVal();
+                int tag2 = table2._buildSuccess.getVal();
+                int tag3 = table3._buildSuccess.getVal();
+                if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                    zeno::log_error("check TopoUnion multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
+            }
+        }
+
+        set_output("Grid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSGridTopoUnion, {/* inputs: */
+                             {"Grid", "TopologyGrid", {"bool", "multigrid", "0"}},
+                             /* outputs: */
+                             {"Grid"},
+                             /* params: */
+                             {},
+                             /* category: */
+                             {"Eulerian"}});
 
 struct ZSGridReduction : INode {
     void apply() override {
