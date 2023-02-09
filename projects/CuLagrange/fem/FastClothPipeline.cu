@@ -660,7 +660,7 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     int maxIters = K * IDyn; 
     int k = 0; 
 #if s_testLightCache
-    lightCD(pol, dHat * 2.25f); 
+    lightCD(pol, dHat * 3.5f); 
     // lightFilterConstraints(pol, dHat, "xinit"); 
 #else 
     findConstraints(pol, dHat); 
@@ -730,8 +730,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                     vtemp.tuple(dim_c<3>, "ytmp", i) = vtemp.pack(dim_c<3>, "yn", i); 
                     vtemp.tuple(dim_c<3>, "xtmp", i) = vtemp.pack(dim_c<3>, "xn", i); 
                 });
-                // fmt::print("\tfinal dynamics linesearch alpha: {}, E: {}, E0: {}, E1: {}, E2: {}, iters: {}, k: {}, maxIters: {}\n", 
-                //     alpha, E, lastEnergy, E1, E2, iters, k, maxIters);   
                 lastEnergy = E; 
                 firstStepping = false; 
             } else {
@@ -740,8 +738,6 @@ void FastClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                     vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xtmp", i); 
                     // TODO: when to calculate E: before or after calculating "xn"?
                 });
-                // fmt::print("\t\t\trollback dynamics linesearch alpha: {}, new alpha: {}, E: {}, E0: {}, iters: {}, k: {}, maxIters: {}\n", 
-                //     alpha, alpha * alphaDecrease, E, lastEnergy, iters, k, maxIters);   
                 alpha *= alphaDecrease; 
                 maxIters -= (iters - 8);                  
                 iters = -1;

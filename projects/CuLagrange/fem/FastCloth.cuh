@@ -22,6 +22,7 @@
 #define s_useMassSpring 0
 #define s_debugRemoveHashTable 0
 #define s_testLightCache 1
+#define s_hardPhaseLinesearch 0
 namespace zeno {
 
 /// for cell-based collision detection
@@ -163,7 +164,7 @@ struct FastClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
-                    int PNCap, int CGCap, T dHat, T gravity);
+                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn);
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -263,7 +264,7 @@ struct FastClothSystem : IObject {
     /// @brief positive slack constant, used in proximity search
     /// @note sufficiently large enough to 1) faciliate convergence, 2) address missing pair issue
     /// @note sufficiently small enough to 1) reduce proximity search cost, 2) reduce early repulsion artifacts
-    T epsSlack = 21.75; // (B + Btight) * (B + Btight) + epsSlack + epsSlack < L^2
+    T epsSlack = 30; //21.75; // (B + Btight) * (B + Btight) + epsSlack + epsSlack < L^2
     // 42.25 + 72
     /// @brief hard phase constraint coefficients
     // constexpr T a0 = 0;

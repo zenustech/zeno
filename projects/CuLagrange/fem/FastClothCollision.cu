@@ -751,9 +751,11 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
                     if (t > 0 && t < 1) {
                         auto et = t * dir + ek;
                         if (et.l2NormSqr() < B2) {
+#if !s_hardPhaseSilent
                             printf("linesearch t: %f, et.l2NormSqr: %f, threshold: %f, pp: %d, %d, last: %f, de2: %f\n",
                                    (float)t, (float)(et.l2NormSqr()), (float)threshold, pp[0], pp[1],
                                    (float)ek.l2NormSqr(), (float)de2);
+#endif 
                             mark[0] = 1;
                             return;
                         }
@@ -762,8 +764,10 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
                 if (auto d2 = dist2_pp(x0, x1); d2 < threshold) {
                     auto dir0 = vtemp.pack(dim_c<3>, "dir", pp[0]).l2NormSqr();
                     auto dir1 = vtemp.pack(dim_c<3>, "dir", pp[1]).l2NormSqr();
+#if !s_hardPhaseSilent
                     printf("linesearch discrete pp, d2: %f, pp: %d, %d, dir: %f, %f \n", (float)d2, pp[0], pp[1],
                            (float)dir0, (float)dir1);
+#endif 
                     mark[0] = 1;
                 }
             });
@@ -782,7 +786,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
                         auto dir0 = vtemp.pack(dim_c<3>, "dir", e[0]).l2NormSqr();
                         auto dir1 = vtemp.pack(dim_c<3>, "dir", e[1]).l2NormSqr();
                         auto dk2 = dist2_pp(xk0, xk1);
-#if 0
+#if !s_hardPhaseSilent
                     printf("linesearch ee, ee: %d, %d, d2: %f, dir: %f, %f, dk2: %f, threshold: %f\n", 
                         e[0], e[1], (float)d2, (float)dir0, (float)dir1, (float)dk2, (float)threshold);
 #endif
@@ -806,14 +810,22 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
 #if !s_hardPhaseSilent
         fmt::print("[back-tracing] acceptable alpha: {}\n", alpha);
 #endif
-
         ///
         /// @note objective decreases adequately. ref 4.2.2, item 2
         ///
+#if s_hardPhaseLinesearch
         auto E = constraintEnergy(pol);
-        if (E <= E0)
+        if (E <= E0 + limits<T>::epsilon() * 10.0f)
             return E;
         alpha /= 2;
+        if (alpha < 1e-3)
+        {
+            fmt::print("hard-phase linesearch early exit\n");
+            return E;  
+        } 
+#else 
+        return 0; 
+#endif 
     } while (true);
 #if !s_hardPhaseSilent
     fmt::print(fg(fmt::color::antique_white), "alpha_l^hard: {}\n", alpha);
