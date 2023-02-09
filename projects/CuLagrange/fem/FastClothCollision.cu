@@ -15,7 +15,7 @@ void FastClothSystem::initialStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// @brief Xinit
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
+    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), D = D] ZS_LAMBDA(int i) mutable {
         auto xk = vtemp.pack(dim_c<3>, "xn", i);
         auto ykp1 = vtemp.pack(dim_c<3>, "yn", i);
         auto diff = ykp1 - xk;
@@ -107,7 +107,7 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
             continue;
         auto &ses = primHandle.getSurfEdges();
         pol(Collapse{ses.size()},
-            [ses = proxy<space>({}, ses), vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), nE = proxy<space>(nE),
+            [ses = view<space>({}, ses), vtemp = view<space>({}, vtemp), E = view<space>(E), nE = view<space>(nE),
              threshold = L * L - epsSlack, vOffset = primHandle.vOffset, tag] __device__(int sei) mutable {
                 const auto vij = ses.pack(dim_c<2>, "inds", sei, int_c) + vOffset;
                 const auto &vi = vij[0];
@@ -205,8 +205,8 @@ void FastClothSystem::lightFilterConstraints(zs::CudaExecutionPolicy &pol, T dHa
     constexpr auto space = execspace_e::cuda;
 
     nPP.setVal(0);
-    pol(range(ncpp), [vtemp = proxy<space>({}, vtemp), nPP = proxy<space>(nPP), cPP = proxy<space>(cPP),
-                      PP = proxy<space>(PP), dHat2 = dHat * dHat, tag] __device__(int i) mutable {
+    pol(range(ncpp), [vtemp = view<space>({}, vtemp), nPP = view<space>(nPP), cPP = view<space>(cPP),
+                      PP = view<space>(PP), dHat2 = dHat * dHat, tag] __device__(int i) mutable {
         auto pp = cPP[i];
         auto v0 = vtemp.pack(dim_c<3>, tag, pp[0]);
         auto v1 = vtemp.pack(dim_c<3>, tag, pp[1]);
@@ -255,11 +255,11 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
 
     const auto &svbvh = withBoundary ? bouSvBvh : svBvh;
     pol(Collapse{svInds.size()},
-        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+        [svInds = view<space>({}, svInds), eles = view<space>({}, withBoundary ? *coPoints : svInds),
 #if !s_debugRemoveHashTable
-         eTab = proxy<space>(eTab),
+         eTab = view<space>(eTab),
 #endif
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), PP = proxy<space>(PP), nPP = proxy<space>(nPP),
+         vtemp = view<space>({}, vtemp), bvh = view<space>(svbvh), PP = view<space>(PP), nPP = view<space>(nPP),
          dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
          withBoundary] __device__(int i) mutable {
             auto vi = svInds("inds", i, int_c);
@@ -336,9 +336,9 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
         timer.tick();
     const auto &sh = withBoundary ? bouSvSh : svSh;
     pol(Collapse{svInds.size()},
-        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
-         eTab = proxy<space>(eTab), vtemp = proxy<space>({}, vtemp), sh = proxy<space>(sh), PP = proxy<space>(PP),
-         nPP = proxy<space>(nPP), dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
+        [svInds = view<space>({}, svInds), eles = view<space>({}, withBoundary ? *coPoints : svInds),
+         eTab = view<space>(eTab), vtemp = view<space>({}, vtemp), sh = view<space>(sh), PP = view<space>(PP),
+         nPP = view<space>(nPP), dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
          withBoundary] __device__(int i) mutable {
             auto vi = svInds("inds", i, int_c);
             auto pi = vtemp.pack(dim_c<3>, "xn", vi);
@@ -380,11 +380,11 @@ void FastClothSystem::lightFindCollisionConstraints(zs::CudaExecutionPolicy &pol
 
     const auto &svbvh = withBoundary ? bouSvBvh : svBvh;
     pol(Collapse{svInds.size()},
-        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coPoints : svInds),
+        [svInds = view<space>({}, svInds), eles = view<space>({}, withBoundary ? *coPoints : svInds),
 #if !s_debugRemoveHashTable
-         eTab = proxy<space>(eTab),
+         eTab = view<space>(eTab),
 #endif
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(svbvh), PP = proxy<space>(cPP), nPP = proxy<space>(ncPP),
+         vtemp = view<space>({}, vtemp), bvh = view<space>(svbvh), PP = view<space>(cPP), nPP = view<space>(ncPP),
          dHat2 = dHat * dHat, thickness = dHat, voffset = withBoundary ? coOffset : 0,
          withBoundary] __device__(int i) mutable {
             auto vi = svInds("inds", i, int_c);
@@ -432,7 +432,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
         ///
         /// @brief soft phase for constraints
         ///
-        pol(range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+        pol(range(numDofs), [vtemp = view<space>({}, vtemp)] __device__(int i) mutable {
             auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
 #pragma unroll 3
             for (int d = 0; d < 3; ++d) {
@@ -470,7 +470,7 @@ bool FastClothSystem::collisionStep(zs::CudaExecutionPolicy &pol, bool enableHar
     fmt::print(fg(fmt::color::light_golden_rod_yellow), "entering hard phase.\n");
 #endif
     /// @note start from collision-free state x^k
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xk", i);
     });
     auto E0 = constraintEnergy(pol);
@@ -487,7 +487,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
 
     T descentStepsize = 0.2f;
     /// @note shape matching
-    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+    pol(range(coOffset), [vtemp = view<space>({}, vtemp)] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
@@ -496,7 +496,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
     /// @note constraints
-    pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), rho = rho,
+    pol(range(npp), [vtemp = view<space>({}, vtemp), PP = view<space>(PP), rho = rho,
                      dHat2 = dHat * dHat] __device__(int i) mutable {
         auto pp = PP[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
@@ -513,7 +513,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
         }
     });
 
-    pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), rho = rho,
+    pol(range(ne), [vtemp = view<space>({}, vtemp), E = view<space>(E), rho = rho,
                     maxLen2 = L * L - epsSlack] __device__(int i) mutable {
         auto e = E[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]);
@@ -530,7 +530,7 @@ void FastClothSystem::softPhase(zs::CudaExecutionPolicy &pol) {
             atomic_add(exec_cuda, &vtemp("dir", d, e[1]), grad0(d));
         }
     });
-    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), descentStepsize] __device__(int i) mutable {
+    pol(range(coOffset), [vtemp = view<space>({}, vtemp), descentStepsize] __device__(int i) mutable {
         auto dir = vtemp.pack(dim_c<3>, "dir", i);
 #pragma unroll 3
         for (int d = 0; d < 3; ++d) {
@@ -542,7 +542,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     /// @note shape matching (reset included)
-    pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset] __device__(int i) mutable {
+    pol(range(numDofs), [vtemp = view<space>({}, vtemp), coOffset = coOffset] __device__(int i) mutable {
         auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
         auto xn = vtemp.pack(dim_c<3>, "xn", i);
 #pragma unroll 3
@@ -551,7 +551,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
     });
     /// @note constraints
     pol(range(npp),
-        [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mu = mu, Btot2 = (B + Btight) * (B + Btight),
+        [vtemp = view<space>({}, vtemp), PP = view<space>(PP), mu = mu, Btot2 = (B + Btight) * (B + Btight),
          eps = epsSlack, dHat2 = dHat * dHat, a2 = a2, a3 = a3, coOffset = coOffset] __device__(int i) mutable {
             auto pp = PP[i];
             auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
@@ -631,7 +631,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
         }
 #endif
         });
-    pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mu = mu, L2 = L * L, eps = epsSlack,
+    pol(range(ne), [vtemp = view<space>({}, vtemp), E = view<space>(E), mu = mu, L2 = L * L, eps = epsSlack,
                     maxLen2 = L * L - epsSlack, a2 = a2, a3 = a3, coOffset = coOffset] __device__(int i) mutable {
         auto e = E[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]);
@@ -715,7 +715,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
     /// @brief compute appropriate step size that does not violates constraints
     auto alpha = (T)0.1;
 
-    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
     });
 #if !s_hardPhaseSilent
@@ -723,7 +723,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
 #endif
     do {
-        pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
+        pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
 
@@ -733,7 +733,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
         temp.setVal(0);
         auto B2 = B * B;
         pol(range(npp),
-            [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mark = proxy<space>(temp),
+            [vtemp = view<space>({}, vtemp), PP = view<space>(PP), mark = view<space>(temp),
              threshold = (B + Btight) * (B + Btight) + epsCond,
              B2 = B2 + epsCond] __device__(int i) mutable { // no constraints margin here according to paper 4.2.2
                 auto pp = PP[i];
@@ -774,7 +774,7 @@ typename FastClothSystem::T FastClothSystem::hardPhase(zs::CudaExecutionPolicy &
 #if 1
         if (temp.getVal() == 0) {
             pol(range(ne),
-                [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mark = proxy<space>(temp),
+                [vtemp = view<space>({}, vtemp), E = view<space>(E), mark = view<space>(temp),
                  threshold =
                      L * L - epsCond] __device__(int i) mutable { // no constraints margin here according to paper 4.2.2
                     auto e = E[i];
@@ -845,7 +845,7 @@ bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol, bool has
         B2 += epsCond;
         threshold += epsCond;
     }
-    pol(range(npp), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), mark = proxy<space>(temp), threshold, B2,
+    pol(range(npp), [vtemp = view<space>({}, vtemp), PP = view<space>(PP), mark = view<space>(temp), threshold, B2,
                      hasEps] __device__(int i) mutable { // epsCond: paper 4.2.2
         auto pp = PP[i];
         auto x0 = vtemp.pack(dim_c<3>, "xn", pp[0]);
@@ -878,7 +878,7 @@ bool FastClothSystem::constraintSatisfied(zs::CudaExecutionPolicy &pol, bool has
     if (hasEps)
         threshold -= epsCond;
     if (temp.getVal() == 0) {
-        pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), mark = proxy<space>(temp),
+        pol(range(ne), [vtemp = view<space>({}, vtemp), E = view<space>(E), mark = view<space>(temp),
                         threshold] __device__(int i) mutable { // epsCond: paper 4.2.2
             auto e = E[i];
             auto x0 = vtemp.pack(dim_c<3>, "xn", e[0]);
@@ -902,13 +902,13 @@ typename FastClothSystem::T FastClothSystem::constraintEnergy(zs::CudaExecutionP
     constexpr auto space = execspace_e::cuda;
     temp.setVal(0);
     pol(range(numDofs),
-        [vtemp = proxy<space>({}, vtemp), energy = proxy<space>(temp), n = numDofs] __device__(int i) mutable {
+        [vtemp = view<space>({}, vtemp), energy = view<space>(temp), n = numDofs] __device__(int i) mutable {
             auto xinit = vtemp.pack(dim_c<3>, "xinit", i);
             auto xn = vtemp.pack(dim_c<3>, "xn", i);
             reduce_to(i, n, (xinit - xn).l2NormSqr(), energy[0]);
         });
     pol(range(npp),
-        [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), energy = proxy<space>(temp), n = npp, mu = mu,
+        [vtemp = view<space>({}, vtemp), PP = view<space>(PP), energy = view<space>(temp), n = npp, mu = mu,
          Btot2 = (B + Btight) * (B + Btight), eps = epsSlack, a3 = a3, a2 = a2] __device__(int i) mutable {
             auto pp = PP[i];
             zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
@@ -923,7 +923,7 @@ typename FastClothSystem::T FastClothSystem::constraintEnergy(zs::CudaExecutionP
             T E = -mu * zs::log(f);
             reduce_to(i, n, E, energy[0]);
         });
-    pol(range(ne), [vtemp = proxy<space>({}, vtemp), E = proxy<space>(E), energy = proxy<space>(temp), n = ne, mu = mu,
+    pol(range(ne), [vtemp = view<space>({}, vtemp), E = view<space>(E), energy = view<space>(temp), n = ne, mu = mu,
                     L2 = L * L, eps = epsSlack, a3 = a3, a2 = a2] __device__(int i) mutable {
         auto e = E[i];
         zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", e[0]), vtemp.pack(dim_c<3>, "xn", e[1])};
@@ -948,7 +948,7 @@ void FastClothSystem::computeConstraintGradients(zs::CudaExecutionPolicy &pol) {
     auto [npp, ne] = getConstraintCnt();
     fmt::print("dcd broad phase [pp, edge constraints]: {}, {}", npp, ne);
     pol(range(npp),
-        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), rho = rho, mu = mu,
+        [vtemp = view<space>({}, vtemp), tempPP = view<space>({}, tempPP), PP = view<space>(PP), rho = rho, mu = mu,
          Btot2 = (B + Btight) * (B + Btight), eps = epsSlack] __device__(int i) mutable {
             auto pp = PP[i];
             zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
@@ -1021,7 +1021,7 @@ void FastClothSystem::computeConstraintGradients(zs::CudaExecutionPolicy &pol) {
             }
         });
 
-    pol(range(ne), [vtemp = proxy<space>({}, vtemp), tempE = proxy<space>({}, tempE), E = proxy<space>(E), rho = rho,
+    pol(range(ne), [vtemp = view<space>({}, vtemp), tempE = view<space>({}, tempE), E = view<space>(E), rho = rho,
                     mu = mu, L2 = L * L, eps = epsSlack] __device__(int i) mutable {
         auto e = E[i];
         zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", e[0]), vtemp.pack(dim_c<3>, "xn", e[1])};

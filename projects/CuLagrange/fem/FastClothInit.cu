@@ -98,8 +98,8 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::maximumSurfEdgeLen
     auto &edges = getSurfEdges();
     temp.resize(edges.size());
     auto &edgeLengths = temp;
-    pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
-                                 edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
+    pol(Collapse{edges.size()}, [edges = view<space>({}, edges), verts = view<space>({}, verts),
+                                 edgeLengths = view<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
         auto inds = edges.pack(dim_c<2>, "inds", ei, int_c);
         edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("xt", inds[1])).norm();
     });
@@ -113,7 +113,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::averageNodalMass(z
         return zsprimPtr->readMeta(s_meanMassTag, zs::wrapt<T>{});
     auto &verts = getVerts();
     Vector<T> masses{verts.get_allocator(), verts.size()};
-    pol(Collapse{verts.size()}, [verts = proxy<space>({}, verts), masses = proxy<space>(masses)] ZS_LAMBDA(
+    pol(Collapse{verts.size()}, [verts = view<space>({}, verts), masses = view<space>(masses)] ZS_LAMBDA(
                                     int vi) mutable { masses[vi] = verts("m", vi); });
     auto tmp = reduce(pol, masses) / masses.size();
     zsprimPtr->setMeta(s_meanMassTag, tmp);
@@ -126,7 +126,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::totalVolume(zs::Cu
         return zsprimPtr->readMeta(s_totalVolumeTag, zs::wrapt<T>{});
     auto &eles = getEles();
     Vector<T> vols{eles.get_allocator(), eles.size()};
-    pol(Collapse{eles.size()}, [eles = proxy<space>({}, eles), vols = proxy<space>(vols)] ZS_LAMBDA(int ei) mutable {
+    pol(Collapse{eles.size()}, [eles = view<space>({}, eles), vols = view<space>(vols)] ZS_LAMBDA(int ei) mutable {
         vols[ei] = eles("vol", ei);
     });
     auto tmp = reduce(pol, vols);
@@ -152,7 +152,7 @@ typename FastClothSystem::T FastClothSystem::maximumSurfEdgeLength(zs::CudaExecu
         temp.resize(edges.size());
         auto &edgeLengths = temp;
         pol(Collapse{edges.size()},
-            [edges = proxy<space>({}, edges), verts = proxy<space>({}, vtemp), edgeLengths = proxy<space>(edgeLengths),
+            [edges = view<space>({}, edges), verts = view<space>({}, vtemp), edgeLengths = view<space>(edgeLengths),
              coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
                 auto inds = edges.pack(dim_c<2>, "inds", ei, int_c) + coOffset;
                 edgeLengths[ei] = (verts.pack<3>("yn", inds[0]) - verts.pack<3>("yn", inds[1])).norm();
@@ -257,7 +257,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         if (primHandle.category != ZenoParticles::category_e::curve) {
             auto &tris = primHandle.getSurfTris();
             pol(Collapse(tris.size()),
-                [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris), voffset = primHandle.vOffset,
+                [stInds = view<space>({}, stInds), tris = view<space>({}, tris), voffset = primHandle.vOffset,
                  sfoffset = primHandle.sfOffset] __device__(int i) mutable {
                     stInds.tuple(dim_c<3>, "inds", sfoffset + i, int_c) =
                         (tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset);
@@ -274,13 +274,13 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         adjVertsDeg.reset(0);
 #endif
         constexpr int intHalfLen = sizeof(int) * 4;
-        pol(Collapse(edges.size()), [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges),
+        pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
 #if !s_debugRemoveHashTable
-                                     eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts),
-                                     adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg),
+                                     eTab = view<space>(eTab), tmpAdjVerts = view<space>(tmpAdjVerts),
+                                     adjLen = view<space>(adjLen), adjVertsDeg = view<space>(adjVertsDeg),
 #endif
-                                     verts = proxy<space>({}, verts), intHalfLen] __device__(int i) mutable {
+                                     verts = view<space>({}, verts), intHalfLen] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
@@ -309,7 +309,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         radix_sort(pol, tmpAdjVerts.begin(), tmpAdjVerts.end(), adjVerts.begin());
         exclusive_scan(pol, adjVertsDeg.begin(), adjVertsDeg.end(), adjVertsOff.begin());
         pol(range(vtemp.size()),
-            [adjVerts = proxy<space>(adjVerts), adjVertsOff = proxy<space>(adjVertsOff), eTab = proxy<space>(eTab),
+            [adjVerts = view<space>(adjVerts), adjVertsOff = view<space>(adjVertsOff), eTab = view<space>(eTab),
              vN = vtemp.size(), aN, intHalfLen] __device__(int vi) mutable {
                 int idxSt = adjVertsOff[vi];
                 int idxEnd = vi < vN - 1 ? adjVertsOff[vi + 1] : aN;
@@ -326,7 +326,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
 #endif
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
-            [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
+            [svInds = view<space>({}, svInds), points = view<space>({}, points), voffset = primHandle.vOffset,
              svoffset = primHandle.svOffset] __device__(int i) mutable {
                 svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
@@ -339,7 +339,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         auto &verts = primHandle.getVerts();
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
-        pol(Collapse(verts.size()), [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
                                      voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
             auto x = verts.pack<3>("x", i);
             vtemp.tuple<3>("xt", voffset + i) = x;
@@ -380,7 +380,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         auto &verts = primHandle.getVerts();
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
-        pol(Collapse(verts.size()), [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
                                      voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
             auto x = verts.pack<3>("x", i);
             auto v = verts.pack<3>("v", i);
@@ -393,7 +393,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     if (hasBoundary())
         if (auto coSize = coVerts->size(); coSize) {
             pol(Collapse(coSize),
-                [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts), coOffset = coOffset, dt = dt,
+                [vtemp = view<space>({}, vtemp), coverts = view<space>({}, *coVerts), coOffset = coOffset, dt = dt,
                  augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
                     auto x = coverts.pack<3>("x", i);
                     auto v = coverts.pack<3>("v", i);
@@ -565,7 +565,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     curRatio += ratio;
 
     projectDBC = false;
-    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
+    pol(Collapse(coOffset), [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         auto yn = vtemp.pack(dim_c<3>, "yn", vi);
         vtemp.tuple(dim_c<3>, "yhat", vi) = yn;
         auto newX = yn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
@@ -573,7 +573,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     });
     if (hasBoundary())
         if (auto coSize = coVerts->size(); coSize)
-            pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
+            pol(Collapse(coSize), [vtemp = view<space>({}, vtemp), coverts = view<space>({}, *coVerts),
                                    coOffset = coOffset, dt = dt] __device__(int i) mutable {
                 auto yn = vtemp.pack(dim_c<3>, "yn", coOffset + i);
                 vtemp.tuple(dim_c<3>, "yhat", coOffset + i) = yn;
@@ -586,7 +586,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
         if (primHandle.category == ZenoParticles::category_e::tracker) {
             const auto &eles = primHandle.getEles();
             pol(Collapse(eles.size()),
-                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
+                [vtemp = view<space>({}, vtemp), eles = view<space>({}, eles)] __device__(int ei) mutable {
                     auto inds = eles.pack(dim_c<2>, "inds", ei, int_c);
                     // retrieve motion from the associated boundary vert
                     auto deltaX = vtemp.pack(dim_c<3>, "ytilde", inds[1]) - vtemp.pack(dim_c<3>, "yhat", inds[1]);
@@ -600,7 +600,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
 void FastClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
         auto newX = vtemp.pack<3>("yn", vi);
         auto dv = (newX - vtemp.pack<3>("ytilde", vi)) / dt;
         auto vn = vtemp.pack<3>("vn", vi);
@@ -620,7 +620,7 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
         auto &verts = primHandle.getVerts();
         // update velocity and positions
         pol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
+            [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
              asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
                 verts.tuple<3>("x", vi) = vtemp.pack<3>("yn", vOffset + vi);
                 if (!asBoundary)
@@ -629,7 +629,7 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
     }
     if (hasBoundary())
         pol(Collapse(coVerts->size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<tiles_t *>(coVerts)),
+            [vtemp = view<space>({}, vtemp), verts = view<space>({}, *const_cast<tiles_t *>(coVerts)),
              coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
                 verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "yn", coOffset + vi);
                 // no need to update v here. positions are moved accordingly
