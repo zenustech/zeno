@@ -372,6 +372,7 @@ void GroupNode::updateBlackboard() {
 }
 
 void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+    ZenoNode::paint(painter, option, widget);
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     
@@ -399,7 +400,6 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     qreal width = ZenoStyle::dpiScaled(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
-    ZenoNode::paint(painter, option, widget);
 }
 
 QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value) {
