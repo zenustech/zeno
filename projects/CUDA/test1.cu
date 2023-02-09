@@ -4,6 +4,7 @@
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/memory/MemOps.hpp"
+#include "zensim/graph/ConnectedComponents.hpp"
 #include "zensim/math/DihedralAngle.hpp"
 #include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/memory/Allocator.h"
@@ -118,9 +119,26 @@ struct ZSCUMathTest : INode {
                 auto bg = spmat._ptrs[i];
                 fmt::print("row [{}] offset [{}]: ", i, bg);
                 for (; bg != spmat._ptrs[i + 1]; ++bg)
-                    fmt::print("<{}, {}>  ", spmat._inds[bg], spmat._vals[bg]);
+                    fmt::print("<{}>  ", spmat._inds[bg] /*, spmat._vals[bg]*/);
                 fmt::print("\n");
             }
+
+            // alternative build
+            spmat.build(zs::cuda_exec(), 7, 7, range(is), range(js), true_c);
+            fmt::print("row major csr (sym, pure topo):\n");
+            for (int i = 0; i < 7; ++i) {
+                auto bg = spmat._ptrs[i];
+                fmt::print("row [{}] offset [{}]: ", i, bg);
+                for (; bg != spmat._ptrs[i + 1]; ++bg)
+                    fmt::print("<{}>  ", spmat._inds[bg] /*, spmat._vals[bg]*/);
+                fmt::print("\n");
+            }
+
+            zs::Vector<int> fas{7, memsrc_e::um, 0};
+            union_find(zs::cuda_exec(), spmat, range(fas));
+
+            for (int i = 0; i != 7; ++i)
+                fmt::print("check first stat[{}]: {}\n", i, fas[i]);
         }
 
         constexpr int N = 7;
@@ -208,6 +226,7 @@ struct ZSCUMathTest : INode {
 
         for (int i = 0; i != N; ++i)
             fmt::print("stat[{}]: {}\n", i, nstat[i]);
+
         getchar();
     }
 };
