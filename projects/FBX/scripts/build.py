@@ -11,6 +11,10 @@ import datetime
 import subprocess
 from flask import Flask, request
 
+# os.name
+#  nt - Windows
+#  posix - Linux
+
 PRINT_CONSOLE = False
 
 MISSING_COPY = [
@@ -20,17 +24,17 @@ MISSING_COPY = [
     "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/bin/nvrtc64_120_0.dll",
     "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/bin/nvrtc-builtins64_120.dll",
     "C:/Windows/System32/libomp140.x86_64.dll"
-]
+] if os.name == "nt" else []
 
-BUILD_TARGET = "zenoedit.exe"
+BUILD_TARGET = "zenoedit.exe" if os.name == "nt" else "zenoedit"
 
-BUILD_DST = "O:/Zeno/LL/Release"
+BUILD_DST = "O:/Zeno/LL/Release" if os.name == "nt" else "/mnt/data/Zeno/LL/Release"
 
-ZENO_SOURCE = "C:/src/zeno"
+ZENO_SOURCE = "C:/src/zeno" if os.name == "nt" else "/opt/src/zeno"
 
-CONFIG_FILE = "C:/src/config.json"
+CONFIG_FILE = "C:/src/config.json" if os.name == "nt" else "/opt/src/config.json"
 
-VCPKG_CMAKE = "C:/DEV_PROJECT/vcpkg/scripts/buildsystems/vcpkg.cmake"
+VCPKG_CMAKE = "C:/DEV_PROJECT/vcpkg/scripts/buildsystems/vcpkg.cmake" if os.name == "nt" else "/home/zenus/work/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
 SIMPLE_OPTIONS = \
     'cmake ' \
@@ -280,7 +284,7 @@ def run_cmd(cmd):
     global process
 
     success = False
-    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
 
     dir_name = os.path.dirname(LOG_FILE)
     if not os.path.exists(dir_name):
@@ -331,17 +335,18 @@ def clean_cmd():
 
 def copy_cmd():
     time_str = datetime.datetime.now().strftime("%Y-%m%d-%H%M%S")
-    sub_dir_name = "zeno-{time_str}".format(time_str=time_str)
+    sub_dir_name = "zeno-{time_str}-{os_name}".format(time_str=time_str, os_name=os.name)
     src = "{zeno_source}/build/bin".format(zeno_source=ZENO_SOURCE)
     dst = "{build_dst}/{sub_dir}".format(build_dst=BUILD_DST, sub_dir=sub_dir_name)
     pak = "{zeno_source}/build/{sub_dir}.zip".format(zeno_source=ZENO_SOURCE, sub_dir=sub_dir_name)
     target_path = "{}/{}".format(src, BUILD_TARGET)
 
     if os.path.exists(target_path):
-        print("Copy src: ", src, " --> dst: ", dst)
+        print("Copy src: ", src, " --> dst: ", dst, "exixts", os.path.exists(BUILD_DST))
         for fc in MISSING_COPY:
             shutil.copy2(fc, src)
-        shutil.copytree(src, dst)
+        if os.path.exists(BUILD_DST):
+            shutil.copytree(src, dst)
 
         pak_command = "7z a {dst} {src}".format(dst=pak, src=src)
         print("Pack src: ", src, " --> dst: ", pak, " - Command: ", pak_command)
@@ -356,20 +361,24 @@ def copy_cmd():
 
 
 def get_oss():
-    f = open(CONFIG_FILE)
+    if os.path.exists(CONFIG_FILE):
+        f = open(CONFIG_FILE)
 
-    config_data = json.load(f)
-    access_id = config_data["access_id"]
-    access_key = config_data["access_key"]
-    bucket_name = config_data["bucket_name"]
+        config_data = json.load(f)
+        access_id = config_data["access_id"]
+        access_key = config_data["access_key"]
+        bucket_name = config_data["bucket_name"]
 
-    print("OSS Config access_id", access_id)
-    print("OSS Config access_key", access_key)
-    print("OSS Config bucket_name", bucket_name)
+        print("OSS Config access_id", access_id)
+        print("OSS Config access_key", access_key)
+        print("OSS Config bucket_name", bucket_name)
 
-    oss = ConnectOss(access_id, access_key, bucket_name)
+        oss = ConnectOss(access_id, access_key, bucket_name)
 
-    return oss
+        return oss
+    else:
+        print("ERROR: The config file {} doesn't exists".format(CONFIG_FILE))
+        return None
 
 
 def check_oss():
@@ -397,7 +406,7 @@ def check_repo():
 
 def upload_cmd(name, path):
     oss = get_oss()
-    remote_path = "download/daily-build/{}".format(name)
+    remote_path = "download/daily-build/win/{}".format(name) if os.name == "nt" else "download/daily-build/linux/{}".format(name)
     print("Upload Oss, RemotePath ", remote_path)
     print("Upload Oss, LocalPath ", path)
     oss.upload_file(remote_path, path)
