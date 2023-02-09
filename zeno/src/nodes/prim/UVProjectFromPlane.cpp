@@ -11,6 +11,8 @@
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
 
+static const float eps = 0.0001f;
+
 namespace zeno {
 struct UVProjectFromPlane : zeno::INode {
     virtual void apply() override {
@@ -76,19 +78,19 @@ ZENDEFNODE(UVProjectFromPlane, {
 });
 
 static zeno::vec2i uvRepeat(vec3f uv, int w, int h) {
-    int iu = int(uv[0] * (w-1)) % w;
+    int iu = int(uv[0] * (w-eps)) % w;
     if (iu < 0) {
         iu += w;
     }
-    int iv = int(uv[1] * (h-1)) % h;
+    int iv = int(uv[1] * (h-eps)) % h;
     if (iv < 0) {
         iv += h;
     }
     return {iu, iv};
 }
 static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h) {
-    int iu = clamp(int(uv[0] * (w-1)), 0, (w-1));
-    int iv = clamp(int(uv[1] * (h-1)), 0, (h-1));
+    int iu = clamp(int(uv[0] * (w-eps)), 0, (w-1));
+    int iv = clamp(int(uv[1] * (h-eps)), 0, (h-1));
     return {iu, iv};
 }
 
