@@ -347,8 +347,10 @@ def copy_cmd():
             shutil.copy2(fc, src)
         if os.path.exists(BUILD_DST):
             shutil.copytree(src, dst)
-
-        pak_command = "7z a {dst} {src}".format(dst=pak, src=src)
+        
+        # -j = junk-paths -y = keep links  -r = dir
+        pak_command = "7z a {dst} {src}".format(dst=pak, src=src) if os.name == "nt" else "zip -rjy {dst} {src}".format(dst=pak, src=src)
+        
         print("Pack src: ", src, " --> dst: ", pak, " - Command: ", pak_command)
         os.system(pak_command)
         upload_cmd(sub_dir_name+".zip", pak)
