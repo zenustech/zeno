@@ -111,6 +111,7 @@ namespace zenoui
                 ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
                 pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.

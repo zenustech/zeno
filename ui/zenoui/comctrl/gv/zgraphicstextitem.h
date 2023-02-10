@@ -10,6 +10,7 @@ extern qreal editor_factor;		//temp: global editor zoom factor.
 
 #define DEBUG_TEXTITEM 1
 
+class ZGraphicsNumSliderItem;
 
 class ZGraphicsTextItem : public QGraphicsTextItem
 {
@@ -104,6 +105,8 @@ public:
     ZEditableTextItem(const QString& text, QGraphicsItem* parent = nullptr);
     ZEditableTextItem(QGraphicsItem* parent = nullptr);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void setValidator(const QValidator* pValidator);
+    void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
@@ -111,11 +114,16 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     void initUI(const QString& text);
+    QGraphicsView* _getFocusViewByCursor();
 
+    ZGraphicsNumSliderItem* m_pSlider;
     bool m_bFocusIn;
+    bool m_bShowSlider;
 };
 
 class ZenoSocketItem;

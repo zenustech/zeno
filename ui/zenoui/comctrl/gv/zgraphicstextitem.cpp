@@ -4,6 +4,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "zassert.h"
 #include <zenoui/style/zenostyle.h>
+#include "zgraphicsnumslideritem.h"
 
 
 qreal editor_factor = 1.0;
@@ -370,6 +371,8 @@ QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant&
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)
     , m_bFocusIn(false)
+    , m_bShowSlider(false)
+    , m_pSlider(nullptr)
 {
     _base::setText(text);
     initUI(text);
@@ -378,6 +381,8 @@ ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
 ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent) 
     : _base(parent)
     , m_bFocusIn(false)
+    , m_bShowSlider(false)
+    , m_pSlider(nullptr)
 {
     initUI("");
 }
@@ -388,7 +393,7 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     qreal width = 2;
     QPen pen(QColor(75, 158, 244), width);
     QRectF rc = boundingRect();
-    if (m_bFocusIn) {
+    if (m_bFocusIn || m_bShowSlider) {
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
         painter->drawRect(rc);
@@ -413,6 +418,107 @@ void ZEditableTextItem::initUI(const QString& text)
 
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+}
+
+QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
+{
+    QPointF cursorPos = this->cursor().pos();
+    const auto views = scene()->views();
+    Q_ASSERT(!views.isEmpty());
+    for (auto view : views)
+    {
+        QRect rc = view->viewport()->geometry();
+        QPoint tl = view->mapToGlobal(rc.topLeft());
+        QPoint br = view->mapToGlobal(rc.bottomRight());
+        rc = QRect(tl, br);
+        if (rc.contains(cursorPos.toPoint()))
+        {
+            return view;
+        }
+    }
+    return nullptr;
+}
+
+void ZEditableTextItem::setValidator(const QValidator* pValidator)
+{
+
+}
+
+void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
+{
+    if (!pScene)
+        return;
+
+    m_pSlider = new ZGraphicsNumSliderItem(steps, nullptr);
+    connect(m_pSlider, &ZGraphicsNumSliderItem::numSlided, this, [=](qreal val) {
+        bool bOk = false;
+        qreal num = this->toPlainText().toFloat(&bOk);
+        if (bOk) {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+            emit editingFinished();
+        }
+    });
+    connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
+        m_bShowSlider = false;
+        emit editingFinished();
+    });
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
+    pScene->addItem(m_pSlider);
+}
+
+void ZEditableTextItem::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Shift)
+    {
+        if (m_pSlider)
+        {
+            QPointF pos = this->sceneBoundingRect().center();
+            QSizeF sz = m_pSlider->boundingRect().size();
+
+            auto view =  _getFocusViewByCursor();
+            if (view)
+            {
+                // it's very difficult to get current viewport, so we get it by current cursor.
+                // but when we move the cursor out of the view, we can't get the current view.
+
+                static QRect screen = QApplication::desktop()->screenGeometry();
+                static const int _yOffset = ZenoStyle::dpiScaled(20);
+                QPointF cursorPos = this->cursor().pos();
+                QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
+                const QPointF sceneCursor = view->mapToScene(viewPoint);
+                QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
+                cursorPos = mapToScene(cursorPos);
+
+                pos.setX(sceneCursor.x());
+                pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
+            }
+            else
+            {
+                pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+            }
+
+            m_pSlider->setPos(pos);
+            m_pSlider->show();
+            m_bShowSlider = true;
+        }
+    }
+    return _base::keyPressEvent(event);
+}
+
+void ZEditableTextItem::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Shift)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+            m_bShowSlider = false;
+        }
+    }
+    return _base::keyReleaseEvent(event);
 }
 
 void ZEditableTextItem::focusInEvent(QFocusEvent* event)
