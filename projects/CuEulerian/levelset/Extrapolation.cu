@@ -394,7 +394,7 @@ struct ZSGridExtrapolateAttr : INode {
                             float sdf = spgv.value(sdfOffset, blockno, cellno);
                             if (isStaggered && bno_neig >= 0) {
                                 auto n_coord = m_coord;
-                                n_coord[ch] = (n_coord[ch] - 1 + side_length) % side_length;
+                                n_coord[ch] = (n_coord[ch] - 1) & (side_length - 1);
                                 int n_cellno = spg_t::local_coord_to_offset(n_coord);
 
                                 if (m_coord[ch] == 0) {
@@ -411,7 +411,7 @@ struct ZSGridExtrapolateAttr : INode {
                                     spgv._grid.pack(zs::dim_c<3>, "adv", blockno * spgv.block_size + cellno);
                                 if (isStaggered && bno_neig >= 0) {
                                     auto n_coord = m_coord;
-                                    n_coord[ch] = (n_coord[ch] - 1 + side_length) % side_length;
+                                    n_coord[ch] = (n_coord[ch] - 1) & (side_length - 1);
                                     int n_cellno = spg_t::local_coord_to_offset(n_coord);
 
                                     if (m_coord[ch] == 0) {
