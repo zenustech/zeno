@@ -12,8 +12,10 @@
 #include <nanovdb/util/GridHandle.h>
 #include <nanovdb/util/OpenToNanoVDB.h>
 
-#include <string>
+#include <glm/glm.hpp>
+
 #include <cmath>
+#include <string>
 
 struct GridWrapper {
 	nanovdb::GridHandle<> handle;
@@ -24,22 +26,22 @@ struct GridWrapper {
 struct VolumeWrapper
 {
 	GridWrapper grid_density;
-    // nanovdb::GridHandle<> handle_density;
-	// CUdeviceptr d_density = 0;
-
 	GridWrapper grid_temp;
-	// nanovdb::GridHandle<> handle_temp;
-	// CUdeviceptr d_temp = 0;
 
-	openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();  
+	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
+	glm::mat4 transform; 
+
+	std::vector<std::function<void()>> loadTasks;
 };
 
-bool loadVolume( VolumeWrapper& volume, const std::string& filename );
-void loadVDB( VolumeWrapper& volume, const std::string& path);
-void loadNVDB( VolumeWrapper& volume, const std::string& path);
+bool loadVolume( VolumeWrapper& volume, const std::string& path );
+void loadVolumeVDB( VolumeWrapper& volume, const std::string& path);
+void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path);
+void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gridname );
 
+void unloadGrid(GridWrapper& grid);
 void cleanupVolume( VolumeWrapper& volume );
-void createGrid( GridWrapper& grid, const std::string& path, const std::string& gridname );
+
 void getOptixTransform( const VolumeWrapper& volume, float transform[] );
 sutil::Aabb worldAabb( const VolumeWrapper& volume );
 

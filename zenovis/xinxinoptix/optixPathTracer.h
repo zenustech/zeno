@@ -14,6 +14,19 @@ enum RayType
     RAY_TYPE_COUNT
 };
 
+enum VisibilityMask {
+    NothingMask = 0u,
+    DefaultMatMask = 1u,
+    VolumeMatMask = 2u,
+    EverythingMask = 255u
+}; 
+
+enum RayLaunchSource {
+    DefaultMatSource = 0u,
+    VolumeEdgeSource = 1u,
+    VolumeEmptySource = 1u << 1,
+    VolumeScatterSource = 1u << 2
+};
 
 struct ParallelogramLight
 {
@@ -97,7 +110,7 @@ struct HitGroupData
     float opacityHDDA;
 
     void* density_grid; 
-    void* temperature_grid; 
+    void* temp_grid; 
     
     float density_max;
     float temperature_max;

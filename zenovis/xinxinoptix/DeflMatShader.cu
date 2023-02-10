@@ -393,14 +393,12 @@ extern "C" __global__ void __closesthit__radiance()
         ior = 1;
     }
 
-    if(prd->is_test_ray==true)
+    if(prd->test_distance==true)
     {
-        prd->t1 = optixGetRayTmax();
-        prd->volumeHitSurface = true;
+        prd->vol_t1 = optixGetRayTmax();
         return;
     }
-    prd->is_test_ray = false;
-    prd->volumeHitSurface = false;
+    prd->test_distance = false;
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
     if(isLight==1)

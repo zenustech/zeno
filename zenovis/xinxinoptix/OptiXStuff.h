@@ -118,11 +118,10 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     char log[2048];
     size_t sizeof_log = sizeof( log );
 
-
     size_t      inputSize = 0;
     //TODO: the file path problem
     bool is_success=false;
-    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success,nullptr, {"-std=c++17", "-default-device"});
+    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success, nullptr, {"-std=c++17", "-default-device"});
     if(is_success==false)
     {
         return false;
@@ -380,23 +379,51 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
     return texture;
 }
 
+inline void logInfoVRAM(std::string info) {
+    size_t free_byte, total_byte ;
+
+    auto cuda_status = cudaMemGetInfo( &free_byte, &total_byte ) ;
+
+        if ( cudaSuccess != cuda_status ){
+            printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+            exit(1);
+        }
+
+    double free_db = (double)free_byte ;
+    double total_db = (double)total_byte ;
+
+    double used_db = total_db - free_db ;
+
+    std::cout << " <<< " << info << " >>> " << std::endl;
+    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
+        used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+}
+
 inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb;
 inline std::map<std::string, uint> g_vdb_index;
 
-inline void preloadVDB(std::string& path, uint index, openvdb::math::Transform::Ptr transform) 
+inline void preloadVDB(std::string& path, uint index, glm::mat4& transform) 
 {
     zeno::log_debug("loading VDB :{}", path);
-    if (g_vdb.count(path)) {return;}
 
-    //auto volume = std::make_shared<VolumeWrapper>();
-    VolumeWrapper volume;
-    volume.transform = transform;
+    if (g_vdb.count(path)) {
 
-    auto succ = loadVolume(volume, path); 
+        if ((g_vdb[path]->transform) == transform) {
+            g_vdb_index[path] = index;
+            return;
+        } else {
+            cleanupVolume(*g_vdb[path]);
+        }
+    }
+
+    auto volume_ptr = std::make_shared<VolumeWrapper>();
+    volume_ptr->transform = transform;
     
-    if (!succ) return;
+    auto succ = loadVolume(*volume_ptr, path); 
+    
+    if (!succ) {return;}
 
-    g_vdb[path] = std::make_shared<VolumeWrapper>(std::move(volume));
+    g_vdb[path] = volume_ptr;
     g_vdb_index[path] = index;
 }
 

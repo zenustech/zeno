@@ -726,10 +726,10 @@ static void createSBT( PathTracerState& state )
             HitGroupRecord rec = {};
 
             if (OptixUtil::g_vdb.count(key_vdb) == 0) continue;
-            auto volumeWrapper = OptixUtil::g_vdb[key_vdb];
+            auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
 
             rec.data.density_grid = reinterpret_cast<void*>( volumeWrapper->grid_density.deviceptr );
-            rec.data.temperature_grid = reinterpret_cast<void*>( volumeWrapper->grid_temp.deviceptr );
+            rec.data.temp_grid = reinterpret_cast<void*>( volumeWrapper->grid_temp.deviceptr );
 
             rec.data.density_max = volumeWrapper->grid_density.max_value;
             rec.data.temperature_max = volumeWrapper->grid_temp.max_value;
@@ -737,8 +737,8 @@ static void createSBT( PathTracerState& state )
             rec.data.opacityHDDA = 0.25f;
             rec.data.colorVDB = make_float3(1, 1, 1);
 
-            rec.data.sigma_a = 0.1;
-            rec.data.sigma_s = 0.9;
+            rec.data.sigma_a = 1.0f;
+            rec.data.sigma_s = 1.0f;
             rec.data.greenstein = 0;
 
             OPTIX_CHECK(optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[j].m_radiance_hit_group, &rec ) );
@@ -785,7 +785,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         optix_instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
         optix_instance.instanceId        = static_cast<unsigned int>( optix_instances.size() );
         //optix_instance.sbtOffset         = 0;
-        optix_instance.visibilityMask    = 1;
+        optix_instance.visibilityMask    = DefaultMatMask;
         optix_instance.traversableHandle = mesh->gas_handle;
         memcpy( optix_instance.transform, mat4x4, sizeof( float ) * 12 );
 
@@ -806,7 +806,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
             optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
             optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
             optix_instance.sbtOffset = sbt_offset;
-            optix_instance.visibilityMask = 2; //VOLUME_OBJECT;
+            optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
             optix_instance.traversableHandle = list_volume_accel[i]->handle;
             getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
 
@@ -976,8 +976,6 @@ static void buildMeshAccel( PathTracerState& state )
     }
 }
 
-
-
 static void cleanupState( PathTracerState& state )
 {
     OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
@@ -1001,10 +999,17 @@ static void cleanupState( PathTracerState& state )
     for (auto& ele : list_volume_accel) {
         cleanupVolumeAccel(*ele);
     }
-
+    list_volume_accel.clear();
+    
     for (auto& ele : list_volume) {
         cleanupVolume(*ele);
     }
+    list_volume.clear();
+
+    for (auto const& [key, val] : OptixUtil::g_vdb) {
+        cleanupVolume(*val);
+    }
+    OptixUtil::g_vdb.clear();
 
         state.d_raygen_record.reset();
         state.d_miss_records.reset();
@@ -1125,14 +1130,40 @@ void optixinit( int argc, char* argv[] )
 
 void updateVolume() {
 
-    list_volume.clear();
-    list_volume_index.clear();
-    list_volume_accel.clear();
+    OptixUtil::logInfoVRAM("Before update Volume");
 
     for (auto const& [key, val] : OptixUtil::g_vdb) {
-        list_volume.push_back(val);
 
-        auto index = OptixUtil::g_vdb_index[key];
+        if (OptixUtil::g_vdb_index.count(key) > 0) {
+            // UPLOAD to GPU
+            for (auto& task : val->loadTasks) {
+                task();
+            } //val->uploadTasks.clear();
+        } else {      
+            cleanupVolume(*val); // Remove from GPU-RAM, but keep in SYS-RAM 
+        }
+    }
+
+    OptixUtil::logInfoVRAM("After update Volume");
+
+    list_volume.clear();
+    list_volume_index.clear();
+
+    for (uint i=0; i<list_volume_accel.size(); ++i) {
+        auto ele = list_volume_accel[i];
+        cleanupVolumeAccel(*ele);
+    }
+    list_volume_accel.clear();
+
+    OptixUtil::logInfoVRAM("Before Volume GAS");
+
+    for (auto const& [key, val] : OptixUtil::g_vdb_index)
+    {
+        if(OptixUtil::g_vdb.count(key) == 0) continue;
+
+        list_volume.push_back(OptixUtil::g_vdb[key]);
+
+        auto index = val;
         list_volume_index.push_back(index);
     }
 
@@ -1142,6 +1173,8 @@ void updateVolume() {
 
         list_volume_accel.push_back(std::make_shared<VolumeAccel>(std::move(accel)) );
     }
+
+    OptixUtil::logInfoVRAM("After Volume GAS");
 }
 
 //static std::string get_content(std::string const &path) {

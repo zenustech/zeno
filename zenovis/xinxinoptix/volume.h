@@ -9,7 +9,7 @@
 #include <math_constants.h>
 
 #ifdef __CUDACC_RTC__ 
-    #define _CPU_GPU_ __device__
+    #define _CPU_GPU_ __device__ __host__
 #else
     #define _CPU_GPU_ /* Nothing */
 #endif

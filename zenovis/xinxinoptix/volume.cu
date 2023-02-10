@@ -116,10 +116,7 @@ static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_
         auto BlackbodyTempScale = 100.f;
         auto BlackbodyIntensity = 100.f;
         
-        auto vol_absorption = 0.1f;
-        auto vol_scattering = 0.9f;
         auto vol_anisotropy = 0.0f;
-
     //GENERATED_END_MARK
 
     auto att_max_density = sbt_data->density_max;
@@ -149,7 +146,7 @@ static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_
 
         emission = fakeBlackBody(kelvin); // Normalized color;
         emission *= scale * BlackbodyIntensity;
-    }
+    } 
 
     VolumeOut output;
     output.density = density;
@@ -243,71 +240,77 @@ inline __device__ float transmittanceHDDA(
 extern "C" __global__ void __intersection__volume()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->volumeHitSurface==false)
+    //auto mask = optixGetRayVisibilityMask();
     {
         const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
-        const nanovdb::FloatGrid* grid = reinterpret_cast<const nanovdb::FloatGrid*>(
-            sbt_data->density_grid );
+        const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->density_grid );
         assert( grid );
 
         // compute intersection points with the volume's bounds in index (object) space.
-        const float3 ray_orig = optixGetObjectRayOrigin();
-        const float3 ray_dir  = optixGetObjectRayDirection();
+        const float3 ray_orig = optixGetWorldRayOrigin(); //optixGetObjectRayOrigin();
+        const float3 ray_dir  = optixGetWorldRayDirection(); //optixGetObjectRayDirection();
 
-        auto bbox = grid->indexBBox();
+        auto bbox = grid->worldBBox(); //grid->indexBBox();
         float t0 = optixGetRayTmin();
         float t1 = optixGetRayTmax();
+
         auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
             reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+        
+        //bbox.isInside(nanovdb::Coord(ray_orig.x, ray_orig.y, ray_orig.z));
     
         if( iRay.intersects( bbox, t0, t1 )) // t0 >= 0
         {
-            // report the exit point via payload
-            getPRD()->t1 = t1; //optixSetPayload_0( __float_as_uint( t1 ) );
             // report the entry-point as hit-point
             //auto kind = optixGetHitKind();
-            optixReportIntersection( fmaxf( t0, optixGetRayTmin() ), 0);
+            t0 = fmaxf(t0, optixGetRayTmin());
+            prd->vol_t0 = t0; prd->vol_t1 = t1;
+            prd->inside_volume = (t0 == 0);
+
+            optixReportIntersection( t0, 0);
         }
-    }
+    } 
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->is_test_ray==true)
+    if(prd->test_distance==true)
         return;
-    //prd->attenuation2 = prd->attenuation;
-    prd->radiance = make_float3(0,0,0);
+    
+    prd->countEmitted = false;
+    prd->radiance = make_float3(0);
 
+    prd->trace_tmin = 0;
+    
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
 
-    float t0 = optixGetRayTmax(); // world space
-    float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+    const float t0 = prd->vol_t0; // world space
+    float t1 = prd->vol_t1; // world space
 
     RadiancePRD testPRD;
-    testPRD.t1 = 1e17f;
-    testPRD.is_test_ray = true;
-    //prd->is_test_ray = true;
+    testPRD.vol_t1 = CUDART_INF_F;
+    testPRD.test_distance = true;
     traceRadianceMasked(
         params.handle,
         ray_orig,
         ray_dir,
-        0,
+        t0,
         t1,
-        1,
+        DefaultMatMask,
         &testPRD);
 
     bool surface_inside_volume = false;
-    if(testPRD.t1 < t1)
+    if(testPRD.vol_t1 < t1)
     {
-        t1 = testPRD.t1;
+        t1 = testPRD.vol_t1;
         surface_inside_volume = true;
     }
 
-    const float t_max = t1 - t0; // world space
+    const float t_max = max(0.f, t1 - t0); // world space
     float t_ele = 0;
 
     auto test_point = ray_orig; 
@@ -365,25 +368,40 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
 #else
 
-    int8_t level = 4;
     while(true) {
 
         auto prob = rnd(prd->seed);
-
         t_ele -= log(1 - prob) / (sigma_t * sbt_data->density_max);
 
         if (t_ele >= t_max) {
 
-            float t_tmp = t_max + surface_inside_volume? -1e-6 : 1e-6;
-            test_point = ray_orig + (t0+t_ele) * ray_dir;
-            break;
+            if (surface_inside_volume) { // Hit default material
+
+                prd->_mask_ = DefaultMatMask;
+                prd->trace_tmin = t0;
+
+                test_point = ray_orig;
+
+            } else { // Volume edge
+
+                prd->_mask_ = EverythingMask;
+                prd->trace_tmin = 1e-5;
+
+                test_point = ray_orig + t1 * ray_dir;
+            }
+
+            ray_orig = test_point;
+            prd->origin = ray_orig;
+            prd->direction = ray_dir;
+            
+            return;
         } // over shoot, outside of volume
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
 
         VolumeIn vol_in; vol_in.pos = test_point;
         VolumeOut vol_out = evalVolume(sbt_data->density_grid, 
-                                          sbt_data->temperature_grid, 
+                                          sbt_data->temp_grid, 
                                           nullptr, vol_in);
 
         v_density = vol_out.density;
@@ -398,12 +416,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
             scattering = make_float3(sigma_s / sigma_t);
             // scattering *= sbt_data->colorVDB;
-                //auto le = emitVDB(sbt_data, point_indexd);
                 float3 le = vol_out.emission;
                 emitting = le * scattering;
-            //scattering *= emitting;
-
-            ray_orig = test_point;
             ray_dir = new_dir;
             break;
 
@@ -412,16 +426,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
 #endif // _DELTA_TRACKING_
 
-    ray_orig = test_point;
+    prd->updateAttenuation(scattering);
 
-    prd->emission = emitting;
-    prd->attenuation *= scattering;
-    //prd->attenuation2 *= scattering;
+    ray_orig = test_point;
     prd->origin = ray_orig;
     prd->direction = ray_dir;
-
-    prd->radiance = make_float3(0.0f,0.0f,0.0f);
-    float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
+    
+    prd->emission = emitting;
+    prd->radiance = make_float3(0.0f);
+    float3 light_attenuation = make_float3(1.0f);
     float pl = rnd(prd->seed);
     float sum = 0.0f;
     for(int lidx=0;lidx<params.num_lights;lidx++)
@@ -436,9 +449,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
-
     }
-    if(rnd(prd->seed)<=0.5) {
+    
+    if(rnd(prd->seed)<=0.5f) {
         bool computed = false;
         float ppl = 0;
         for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
@@ -465,20 +478,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 float weight = 0.0f;
                 if (nDl > 0.0f && LnDl > 0.0f) {
 
-//                    RadiancePRD shadow_prd;
-//                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//                    traceOcclusion(params.handle, P, L,
-//                                   1e-5f,         // tmin
-//                                   Ldist - 1e-5f, // tmax,
-//                                   &shadow_prd);
-
-                    //light_attenuation = shadow_prd.shadowAttanuation;
-                    //if (fmaxf(light_attenuation) > 0.0f) {
-
                         weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
                                  (length(light.emission)+1e-6f);
-                    //}
                 }
                 prd->LP = test_point;
                 prd->Ldir = L;
@@ -505,21 +506,17 @@ extern "C" __global__ void __closesthit__radiance_volume()
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = 1;
         prd->Lweight = 1.0;
-//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//        traceOcclusion(params.handle, P, sun_dir,
-//                       1e-5f, // tmin
-//                       1e16f, // tmax,
-//                       &shadow_prd2);
+
         lbrdf = make_float3(1.0) ;
         prd->radiance = 2.0 * float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                        10, // be careful
                                        .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
     }
-    //prd->emission =  make_float3(0);
+
     prd->CH = 1.0;
-    prd->radiance *= v_density>0?1:0;
-    prd->depth += v_density>0?1:0;
+    prd->depth += v_density>0? 1:0;
+    prd->radiance *= v_density>0? 1:0; 
+
     return;
 }
 
@@ -535,8 +532,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
     RadiancePRD* prd = getPRD();
 
-    const float t0 = optixGetRayTmax();
-    const float t1 = prd->t1; //__uint_as_float( optixGetPayload_0() );
+    const float t0 = prd->vol_t0;
+    const float t1 = prd->vol_t1;
 
     const float t_max = t1 - t0; // world space
           float t_ele = 0;

@@ -88,6 +88,9 @@ extern "C" __global__ void __raygen__rg()
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;
+
+    const unsigned int image_index  = idx.y * params.width + idx.x;
+
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
@@ -128,49 +131,57 @@ extern "C" __global__ void __raygen__rg()
         prd.isSS = false;
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
-        prd.is_test_ray = false;
+        prd.test_distance = false;
+
+        VisibilityMask ray_mask = prd._mask_;
+
+        float tmin = prd.trace_tmin;
+
         for(;;)
         {
-            //prd.attenuation2 = prd.attenuation;
+            prd.vol_t0 = CUDART_INF_F; prd.vol_t1 = CUDART_INF_F;
 
-            traceRadiance(
-                    params.handle,
-                    ray_origin,
-                    ray_direction,
-                    1e-5f,  // tmin       // TODO: smarter offset
-                    prd.maxDistance,  // tmax
-                    &prd );
+            traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
+
+            tmin = prd.trace_tmin;
+            prd.trace_tmin = 1e-5;
+
+            ray_mask = prd._mask_; 
+            prd._mask_ = EverythingMask;
+
+            if (ray_mask != EverythingMask && ray_mask != NothingMask) {
+                //ray_origin = prd.origin;
+                //ray_direction = prd.direction;
+                continue;
+            }
             
             vec3 radiance = vec3(prd.radiance);
-            vec3 oldradiance = radiance;
+            const vec3 oldradiance = radiance;
             RadiancePRD shadow_prd;
-            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+            shadow_prd.shadowAttanuation = make_float3(1.0);
             shadow_prd.nonThinTransHit = prd.nonThinTransHit;
             traceOcclusion(params.handle, prd.LP, prd.Ldir,
                            1e-5f, // tmin
                            1e16f, // tmax,
                            &shadow_prd);
 
-            prd.attenuation2 = prd.attenuation;
-
             radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
+
             radiance = radiance + vec3(prd.emission);
+            prd.emission = make_float3(0);
             
             prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
             //result += prd.emitted;
             if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
-                //result += prd.emission * prd.attenuation2/(prd.prob2 + 1e-5);
+                //result += prd.radiance * prd.attenuation/(prd.prob2 + 1e-5);
             }
-
-            prd.emission = make_float3(0);
 
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
             if( prd.done ){
-                prd.attenuation2 = prd.attenuation;
                 break;
             }
             if(prd.depth>8){
@@ -186,34 +197,27 @@ extern "C" __global__ void __raygen__rg()
 
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            //prd.attenuation2 = prd.attenuation;
+
             // if(prd.passed == false)
             //     ++depth;        
             //}else{
                 //prd.passed = false;
             //}
         }
+        break;
     }
     while( --i );
 
-    const uint3    launch_index = optixGetLaunchIndex();
-    const unsigned int image_index  = launch_index.y * params.width + launch_index.x;
     float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
 
-    // params.frame_buffer[ image_index ] = make_color ( accum_color );
-    // return;
+    // params.frame_buffer[ image_index ] = make_color ( accum_color ); return;
 
     if( subframe_index > 0 )
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
-        //accum_color = lerp( accum_color_prev, accum_color, a );
-        
-        accum_color = (accum_color_prev * subframe_index + result)/(subframe_index+1);
+        accum_color = lerp( accum_color_prev, accum_color, a );
     }
-
-    // params.frame_buffer[ image_index ] = make_color ( accum_color );
-    // return;
 
     /*if (launch_index.x == 0) {*/
         /*printf("%p\n", params.accum_buffer);*/
@@ -239,6 +243,9 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
+
+    prd->vol_t0 = CUDART_INF_F; prd->vol_t1 = CUDART_INF_F;
+
     prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
@@ -266,10 +273,6 @@ extern "C" __global__ void __miss__radiance()
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 
-    if (prd->depth == 1) {
-        prd->attenuation = make_float3(0.0);
-    }
-
     if(length(prd->attenuation)<1e-7f){
         prd->done = true;
     }
@@ -281,6 +284,8 @@ extern "C" __global__ void __miss__occlusion()
     
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
+
+    setPayloadOcclusion( false );
 }
 
 extern "C" __global__ void __closesthit__occlusion()

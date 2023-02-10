@@ -28,6 +28,8 @@
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/document.h>
 
+#include <glm/gtx/euler_angles.hpp>
+
 namespace zenovis::optx {
 
 struct CppTimer {
@@ -683,13 +685,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             shader_tex_names.clear();
             shader_tex_names.push_back(std::vector<std::string>());
 
+            OptixUtil::g_vdb_index.clear();
+
             for (auto const &[key, obj]: graphicsMan->graphics) { 
                 
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
 
-                    openvdb::math::Mat4f transformMat = openvdb::math::Mat4f::identity();
-                    auto linearTransform = openvdb::math::Transform::createLinearTransform(transformMat);     
+                    glm::mat4 linear_transform(1.0f);
+                    //openvdb::math::Mat4f transformMat = openvdb::math::Mat4f::identity();
+                    //auto linearTransform = openvdb::math::Transform::createLinearTransform(transformMat);     
 
                     if (!mtldet->extensions.empty()) {
                     
@@ -698,8 +703,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                         if ( !d.IsNull() ) {
 
-                            glm::vec3 scale_vector, translate_vector;
-                            glm::vec4 rotate_vector;
+                            glm::vec3 scale_vector(1), translate_vector(0);
+                            glm::vec4 rotate_vector(1, 1, 1, 0);
                             
                             auto parsing = [&d](std::string key, auto &result) {
 
@@ -721,18 +726,24 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                             parsing("rotate", rotate_vector);
                             parsing("translate", translate_vector);
 
-                            linearTransform->postScale({ scale_vector.x, scale_vector.y, scale_vector.z });
-                            linearTransform->postRotate(rotate_vector.w , openvdb::math::X_AXIS);
-                            linearTransform->postTranslate({translate_vector.x, translate_vector.y, translate_vector.z});
+                            linear_transform = glm::translate(linear_transform, translate_vector);
 
-                                // transform = glm::scale(transform, scale_vector);
+                                glm::mat4 rotate_transform(1.0f); glm::vec3 rotate_axis = glm::vec3(rotate_vector);
+                                rotate_transform = glm::rotate(rotate_transform, glm::radians(rotate_vector.w), rotate_axis);
+                                float3 tmp_radians; glm::extractEulerAngleXYZ(rotate_transform, tmp_radians.x, tmp_radians.y, tmp_radians.z);
 
-                                // auto rotate_axis = glm::vec3(rotate_vector);
-                                // auto rotate_degree = rotate_vector.w;
-                                // transform = glm::rotate(transform, rotate_degree, rotate_axis);
-
-                                // transform = glm::translate(transform, translate_vector);
-
+                                // if (tmp_radians.x != 0) {
+                                //     linearTransform->preRotate(tmp_radians.x, openvdb::math::X_AXIS);
+                                // }
+                                // if (tmp_radians.y != 0) {
+                                //     linearTransform->preRotate(tmp_radians.y, openvdb::math::Y_AXIS);
+                                // }
+                                // if (tmp_radians.z != 0) {
+                                //     //linearTransform->preRotate(tmp_radians.z, openvdb::math::Z_AXIS);
+                                //     linearTransform->postRotate(tmp_radians.z, openvdb::math::Z_AXIS);
+                                // }
+                            
+                            linear_transform = glm::scale(linear_transform, scale_vector);
                         } // IsNull
                     }
 
@@ -747,7 +758,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                             if (found_vdb) 
                             {
-                                OptixUtil::preloadVDB(tex->path, shaders.size(), linearTransform); 
+                                OptixUtil::preloadVDB(tex->path, shaders.size(), linear_transform); 
                                 m_vdb = tex->path;
                                 break;
                             }
@@ -806,6 +817,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             
             xinxinoptix::updateVolume();
 
+
+        OptixUtil::logInfoVRAM("Before update Mesh");
+
             //zeno::log_debug("[zeno-optix] updating mesh");
             // timer.tick();
             if(staticNeedUpdate)
@@ -814,6 +828,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             // timer.tick();
             xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
             // timer.tock("done dynamic mesh update");
+        OptixUtil::logInfoVRAM("After update Mesh");
+
             xinxinoptix::optixupdateend();
             
             meshNeedUpdate = false;
