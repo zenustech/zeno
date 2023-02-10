@@ -118,11 +118,43 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
 // VAT format
 // bbox_min : (float, float, float)
 // bbox_max : (float, float, float)
-// frame count : int32_t
-// image width : int32_t
-// image height : int32_t
+// frame_count : int32_t
+// max_vertex_count : int32_t
+// image_height : int32_t (image_width always 8192, not save)
+// vertex_count_per_frame: frame_count * int32_t
 // data: (w * h) * (int16_t, int16_t, int16_t)
 
+struct VATTexture {
+    int frame_count;
+    int max_triangles_per_frame;
+    int height; // image width always is 8192
+    std::vector<int> triangle_per_frame;
+    std::vector<zeno::vec3f> data;
+};
+
+static VATTexture read_vat_texture(const std::string &path) {
+    VATTexture vat = {};
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    auto _min = read_vec3f(file);
+    auto _max = read_vec3f(file);
+
+    file.read((char*)&vat.frame_count, sizeof (int));
+    zeno::log_info("VAT: frames {}", vat.frame_count);
+    file.read((char *) &vat.max_triangles_per_frame, sizeof(int));
+    file.read((char *) &vat.height, sizeof(int));
+    zeno::log_info("VAT: height {}", vat.height);
+
+    vat.triangle_per_frame.resize(vat.frame_count);
+    for (auto i = 0; i < vat.frame_count; i++) {
+        file.read((char *) &vat.triangle_per_frame[i], sizeof(int));
+    }
+
+    vat.data.resize(int64_t (vat.height) * 8192);
+    for (int64_t i = 0; i < vat.height * 8192; i++) {
+        vat.data[i] = read_normalized_vec3f(file, _min, _max);
+    }
+    return vat;
+}
 static vector<vector<vec3f>> read_vat(const std::string &path) {
     vector<vector<vec3f>> v;
     std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -306,23 +338,16 @@ ZENDEFNODE(ReadCustomVAT, {
 struct ReadVATFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        auto data = read_vat(path);
-        int h = data.size();
-        int w = data[0].size();
+        auto vat = read_vat_texture(path);
         auto img = std::make_shared<PrimitiveObject>();
-        img->verts.resize(w * h * 3);
-        for (auto i = 0; i < h; i++) {
-            for (auto j = 0; j < w; j++) {
-                auto index = i * w + j;
-                img->verts[index] = data[i][j];
-            }
+        img->verts.resize(vat.height * 8192);
+        for (int64_t i = 0; i < vat.height * 8192; i++) {
+            img->verts[i] = vat.data[i];
         }
-        int maxWidth = data[0].size();
-        h = (maxWidth / 8192) * data.size();
-        w = 8192;
+
         img->userData().set2("isImage", 1);
-        img->userData().set2("w", w);
-        img->userData().set2("h", h);
+        img->userData().set2("w", 8192);
+        img->userData().set2("h", vat.height);
         set_output("image", img);
     }
 };
