@@ -729,7 +729,7 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
         for (const auto &paramObj : jsonParams.GetObject()) {
             const QString &name = paramObj.name.GetString();
             const rapidjson::Value &value = paramObj.value;
-            if (!value.IsObject())
+            if (!value.IsObject() || !value.HasMember("value")) //compatible old version
                 return false;
 
             PARAM_INFO paramData;

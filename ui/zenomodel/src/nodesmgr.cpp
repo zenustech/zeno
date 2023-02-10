@@ -82,8 +82,14 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
         INPUT_SOCKET& input = descInputs["curve"];
         if (input.info.control == CONTROL_CURVE)
         {
-            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-            input.info.defaultValue = QVariantPtr<CurveModel>::asVariant(pModel);
+            CURVES_MODEL curves;
+            QString ids[] = {"x", "y", "z"};
+            for (int i = 0; i < 3; i++) {
+                CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+                pModel->setId(ids[i]);
+                curves.insert(ids[i], QVariantPtr<CurveModel>::asVariant(pModel));
+            }
+            input.info.defaultValue = QVariant::fromValue(curves);
         }
     }
 }
@@ -115,8 +121,14 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
         PARAM_INFO& param = params["curve"];
         if (param.control == CONTROL_CURVE)
         {
-            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-            param.value = QVariantPtr<CurveModel>::asVariant(pModel);
+            CURVES_MODEL curves;
+            QString ids[] = {"x", "y", "z"};
+            for (int i = 0; i < 3; i++) {
+                CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+                pModel->setId(ids[i]);
+                curves.insert(ids[i], QVariantPtr<CurveModel>::asVariant(pModel));
+            }
+            param.value = QVariant::fromValue(curves);
         }
     }
     if (descName == "MakeHeatmap" && params.find("_RAMPS") == params.end())

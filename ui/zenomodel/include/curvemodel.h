@@ -38,6 +38,7 @@ public:
     bool isTimeline() const;
     void setTimeline(bool bTimeline);
     QString id() const;
+    void setId(QString id);
     std::string z_serialize() const;
     void z_deserialize(std::string_view s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
@@ -48,7 +49,7 @@ public:
     QPointF adjustCurrRightHdl(const QModelIndex& currIdx);
     QPair<QPointF, QPointF> adjustWhenLeftHdlChanged(const QModelIndex& currIdx, QPointF newPos);
     QPair<QPointF, QPointF> adjustWhenRightHdlChanged(const QModelIndex& currIdx, QPointF newPos);
-
+    
 signals:
     void rangeChanged(CURVE_RANGE);
 

@@ -10,7 +10,9 @@
 #include <zenomodel/include/nodeparammodel.h>
 #include <QUuid>
 #include "common_def.h"
+#include <zeno/funcs/ParseObjectFromUi.h>
 
+using namespace zeno::iotags;
 
 VarToggleScope::VarToggleScope(bool* pbVar)
     : m_pbVar(pbVar)
@@ -150,7 +152,7 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     }
     case CONTROL_CURVE:
     {
-        return (varType == QMetaType::VoidStar);
+        return (varType == QMetaType::VoidStar || varType == QMetaType::QVariantMap);
     }
     case CONTROL_VEC2_FLOAT:
     case CONTROL_VEC2_INT:
@@ -1243,7 +1245,7 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     }
     else if (descType == "curve")
     {
-        if (varType == QMetaType::VoidStar)
+        if (varType == QMetaType::VoidStar || varType == QMetaType::QVariantMap)
         {
             return var;
         }
@@ -1353,11 +1355,25 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         {
             return QVariant();
         }
-    }
-    else if (descType == "curve")
-    {
-        CurveModel *pModel = JsonHelper::_parseCurveModel(val, parentRef);
-        res = QVariantPtr<CurveModel>::asVariant(pModel);
+    } else if (descType == "curve") {
+        ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
+        QString type = val[key_objectType].GetString();
+        if (type != "curve") {
+            return QVariant();
+        }
+        CURVES_MODEL curves;
+        if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z")) { //compatible old version zsg file
+            CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
+            curves.insert("x", QVariantPtr<CurveModel>::asVariant(xModel));
+        } else {
+            for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
+                if (i->value.IsObject()) {
+                    CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
+                    curves.insert(i->name.GetString(), QVariantPtr<CurveModel>::asVariant(pModel));
+                }
+            }
+        }
+        res = QVariant::fromValue(curves);
     }
     else
     {
@@ -1421,8 +1437,24 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
     {
         if (type == "curve")
         {
-            CurveModel* pModel = JsonHelper::_parseCurveModel(val, parentRef);
-            return QVariantPtr<CurveModel>::asVariant(pModel);
+            ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
+            QString type = val[key_objectType].GetString();
+            if (type != "curve") {
+                return QVariant();
+            }
+            CURVES_MODEL curves;
+            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z")) { //compatible old version zsg file
+                CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
+                curves.insert("x", QVariantPtr<CurveModel>::asVariant(xModel));
+            } else {
+                for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
+                    if (i->value.IsObject()) {
+                        CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
+                        curves.insert(i->name.GetString(), QVariantPtr<CurveModel>::asVariant(pModel));
+                    }
+                }
+            }
+            return QVariant::fromValue(curves);
         }
     }
 

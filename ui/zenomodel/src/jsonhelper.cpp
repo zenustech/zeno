@@ -6,7 +6,6 @@
 #include "uihelper.h"
 #include "zassert.h"
 
-
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
 
@@ -193,11 +192,32 @@ namespace JsonHelper
                 // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
                 if (type == "curve")
                 {
-                    auto pModel = QVariantPtr<CurveModel>::asPtr(value);
-                    dumpCurveModel(pModel, writer);
+                    //auto pModel = QVariantPtr<CurveModel>::asPtr(value);
+                    //dumpCurveModel(pModel, writer);
                 }
                 else
                 {
+                    //todo: color custom type.
+                    writer.Null();
+                }
+            } else if (varType == QMetaType::QVariantMap)
+            {
+                if (type == "curve") {
+                    bool isSingleChannel = false;
+                    writer.StartObject();
+                    writer.Key(key_objectType);
+                    writer.String("curve");
+                    writer.Key(key_timeline);
+                    writer.Bool(true);
+                    CURVES_MODEL curves = value.value<CURVES_MODEL>();
+                    for (auto i : curves)
+                    {
+                        CurveModel *curve = QVariantPtr<CurveModel>::asPtr(i);
+                        writer.Key(curve->id().toUtf8());
+                        dumpCurveModel(curve, writer, isSingleChannel);
+                    }
+                    writer.EndObject();
+                } else {
                     //todo: color custom type.
                     writer.Null();
                 }
@@ -248,14 +268,8 @@ namespace JsonHelper
         writer.EndArray();
     }
 
-    CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef)
+    CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef)
     {
-        ZASSERT_EXIT(jsonCurve.HasMember(key_objectType), nullptr);
-        QString type = jsonCurve[key_objectType].GetString();
-        if (type != "curve") {
-            return nullptr;
-        }
-
         ZASSERT_EXIT(jsonCurve.HasMember(key_range), nullptr);
         const rapidjson::Value& rgObj = jsonCurve[key_range];
         ZASSERT_EXIT(rgObj.HasMember(key_xFrom) && rgObj.HasMember(key_xTo) && rgObj.HasMember(key_yFrom) && rgObj.HasMember(key_yTo), nullptr);
@@ -268,13 +282,14 @@ namespace JsonHelper
         rg.yTo = rgObj[key_yTo].GetDouble();
 
         //todo: id
-        CurveModel* pModel = new CurveModel("x", rg, parentRef);
+        CurveModel *pModel = new CurveModel(channel, rg, parentRef);
 
-        if (jsonCurve.HasMember(key_timeline) && jsonCurve[key_timeline].IsBool())
-        {
-            bool bTimeline = jsonCurve[key_timeline].GetBool();
-            pModel->setTimeline(bTimeline);
-        }
+        //if (jsonCurve.HasMember(key_timeline) && jsonCurve[key_timeline].IsBool())
+        //{
+        //    bool bTimeline = jsonCurve[key_timeline].GetBool();
+        //    pModel->setTimeline(bTimeline);
+        //}
+        pModel->setTimeline(true);
 
         ZASSERT_EXIT(jsonCurve.HasMember(key_nodes), nullptr);
         for (const rapidjson::Value& nodeObj : jsonCurve[key_nodes].GetArray())
@@ -328,7 +343,7 @@ namespace JsonHelper
         return pModel;
     }
 
-    void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)
+    void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer, bool singleChannel)
     {
         if (!pModel) {
             return;
@@ -350,11 +365,14 @@ namespace JsonHelper
             writer.Double(rg.yTo);
         }
 
-        writer.Key(key_objectType);
-        writer.String("curve");
+        if (singleChannel)
+        {
+            writer.Key(key_objectType);
+            writer.String("curve");
 
-        writer.Key(key_timeline);
-        writer.Bool(pModel->isTimeline());
+            writer.Key(key_timeline);
+            writer.Bool(true);
+        }
 
         writer.Key(key_nodes);
         {

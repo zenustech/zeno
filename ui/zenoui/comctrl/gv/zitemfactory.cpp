@@ -11,7 +11,6 @@
 #include "zassert.h"
 #include "zgraphicstextitem.h"
 
-
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
 
@@ -77,9 +76,8 @@ namespace zenoui
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,
-        Callback_EditFinished cbFunc,
+        CallbackCollection cbSet,
         QGraphicsScene* scene,
-        CALLBACK_SWITCH cbSwitch,
         const QVariant& controlProps
     )
     {
@@ -104,7 +102,7 @@ namespace zenoui
                 QObject::connect(pLineEdit, &ZenoParamLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     const QVariant& newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                     });
                 pItemWidget = pLineEdit;
 #else
@@ -117,7 +115,7 @@ namespace zenoui
                     // be careful about the dynamic type.
                     const QString textVal = pLineEdit->toPlainText();
                     const QVariant& newValue = UiHelper::parseStringByType(textVal, type);
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pLineEdit;
 #endif
@@ -136,7 +134,7 @@ namespace zenoui
 
                 QObject::connect(pCheckbox, &ZenoParamCheckBox::stateChanged, [=](int state) {
                     bool bChecked = (state == Qt::Checked);
-                    cbFunc(bChecked);
+                    cbSet.cbEditFinished(bChecked);
                 });
                 pItemWidget = pCheckbox;
                 break;
@@ -154,7 +152,7 @@ namespace zenoui
                 bool isRead = ctrl == CONTROL_READPATH;
 
                 QObject::connect(pPathEditor, &ZenoParamPathEdit::clicked, [=]() {
-                    cbSwitch(true);
+                    cbSet.cbSwitch(true);
                     QString path;
                     if (isRead) {
                         path = getOpenFileName(ZenoParamPathEdit::tr("File to Open"), "", ZenoParamPathEdit::tr("All Files(*);;"));
@@ -164,14 +162,14 @@ namespace zenoui
                     }
                     if (path.isEmpty())
                     {
-                        cbSwitch(false);
+                        cbSet.cbSwitch(false);
                         return;
                     }
                     pPathEditor->setPath(path);
-                    cbSwitch(false);
+                    cbSet.cbSwitch(false);
                 });
                 QObject::connect(pPathEditor, &ZenoParamPathEdit::pathValueChanged, [=](QString newPath) {
-                    cbFunc(newPath);
+                    cbSet.cbEditFinished(newPath);
                     });
                 pItemWidget = pPathEditor;
                 break;
@@ -188,7 +186,7 @@ namespace zenoui
 
                 QObject::connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, [=]() {
                     const QString& newValue = pMultiStrEdit->text();
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pMultiStrEdit;
                 break;
@@ -206,7 +204,7 @@ namespace zenoui
                     ZenoHeatMapEditor editor(grad);
                     editor.exec();
                     QLinearGradient newGrad = editor.colorRamps();
-                    cbFunc(QVariant::fromValue(newGrad));
+                    cbSet.cbEditFinished(QVariant::fromValue(newGrad));
                     });
                 pItemWidget = pEditBtn;
                 break;
@@ -251,7 +249,7 @@ namespace zenoui
                 QObject::connect(pVecEditor, &ZVecEditorItem::editingFinished, [=]() {
                     UI_VECTYPE vec = pVecEditor->vec();
                     const QVariant& newValue = QVariant::fromValue(vec);
-                    cbFunc(newValue);
+                    cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pVecEditor;
                 break;
@@ -283,7 +281,7 @@ namespace zenoui
                 }
                 QObject::connect(pComboBox, &ZenoParamComboBox::textActivated, [=](const QString& textValue) {
                     QString oldValue = pComboBox->text();
-                    cbFunc(textValue);
+                    cbSet.cbEditFinished(textValue);
                 });
                 pItemWidget = pComboBox;
                 break;
@@ -297,17 +295,18 @@ namespace zenoui
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
                     ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
+
                     // what if value changed? removed?
-                    CurveModel* pModel = QVariantPtr<CurveModel>::asPtr(value);
-                    ZASSERT_EXIT(pModel);
-                    pEditor->addCurve(pModel);
+                    CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
+                    for (CURVES_MODEL::Iterator it = curves.begin(); it != curves.end(); it++) {
+                        CurveModel* curve = QVariantPtr<CurveModel>::asPtr(it.value());
+                        pEditor->addCurve(curve);
+                    }
                     pEditor->show();
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        ZASSERT_EXIT(pEditor->curveCount() == 1);
-                        CurveModel* pCurveModel = pEditor->getCurve(0);
-                        const QVariant& newValue = QVariantPtr<CurveModel>::asVariant(pCurveModel);
-                        cbFunc(newValue);
+                        CURVES_MODEL& curves = pEditor->getModel();
+                        cbSet.cbEditFinished(QVariant::fromValue(curves));
                         });
                     });
                 pItemWidget = pEditBtn;
@@ -326,7 +325,7 @@ namespace zenoui
                 }
                 ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
                 QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
-					cbFunc(value);
+					cbSet.cbEditFinished(value);
 				});
                 pItemWidget = pSlider;
                 break;
@@ -336,7 +335,7 @@ namespace zenoui
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox;
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
-					cbFunc(value); 
+					cbSet.cbEditFinished(value); 
 				});
                 pItemWidget = pSpinBox;
                 break;
@@ -355,7 +354,7 @@ namespace zenoui
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
                 pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
-					cbFunc(value); 
+					cbSet.cbEditFinished(value); 
 				});
                 pItemWidget = pSlider;
                 break;

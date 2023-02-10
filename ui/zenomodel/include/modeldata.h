@@ -331,4 +331,7 @@ struct CURVE_DATA {
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)
 
+typedef QMap<QString, QVariant> CURVES_MODEL;
+Q_DECLARE_METATYPE(CURVES_MODEL)
+
 #endif

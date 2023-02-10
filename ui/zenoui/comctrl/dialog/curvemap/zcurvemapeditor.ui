@@ -104,6 +104,50 @@ QTreeView::item:selected:!active {
        </attribute>
       </widget>
      </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="1,1,1,1">
+       <item>
+        <widget class="QPushButton" name="btnAddCurve">
+         <property name="text">
+          <string>增加曲线</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnDelCurve">
+         <property name="text">
+          <string>删除曲线</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
     </layout>
    </item>
    <item>
@@ -140,7 +184,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_8">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Tangent    Left X</string>
@@ -160,7 +204,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_10">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Right X</string>
@@ -187,7 +231,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_9">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Tangent    Left Y</string>
@@ -207,7 +251,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_11">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Right Y</string>
@@ -229,7 +273,7 @@ QTreeView::item:selected:!active {
        <item row="0" column="2">
         <widget class="QLabel" name="label_3">
          <property name="styleSheet">
-          <string notr="true"></string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>Point X</string>
@@ -307,7 +351,7 @@ QTreeView::item:selected:!active {
        <item row="1" column="2">
         <widget class="QLabel" name="label_4">
          <property name="styleSheet">
-          <string notr="true"></string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>Point Y</string>
@@ -317,7 +361,7 @@ QTreeView::item:selected:!active {
        <item row="2" column="2">
         <widget class="QLabel" name="label_5">
          <property name="styleSheet">
-          <string notr="true"></string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>Handle type</string>
@@ -382,7 +426,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_6">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Frame</string>
@@ -428,7 +472,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_7">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Value</string>
@@ -461,7 +505,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>X Range</string>
@@ -570,7 +614,7 @@ QTreeView::item:selected:!active {
          <item>
           <widget class="QLabel" name="label_2">
            <property name="styleSheet">
-            <string notr="true"></string>
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Y Range</string>
@@ -703,7 +747,7 @@ QTreeView::item:selected:!active {
        <item row="2" column="0">
         <widget class="QCheckBox" name="cbIsTimeline">
          <property name="styleSheet">
-          <string notr="true"></string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>timeline</string>
