@@ -317,6 +317,9 @@ struct ReadVATFile : INode {
                 img->verts[index] = data[i][j];
             }
         }
+        int maxWidth = data[0].size();
+        h = (maxWidth / 8192) * data.size();
+        w = 8192;
         img->userData().set2("isImage", 1);
         img->userData().set2("w", w);
         img->userData().set2("h", h);
