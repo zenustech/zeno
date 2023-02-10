@@ -63,9 +63,9 @@ namespace JsonHelper
 	void WriteVariant(const QVariant& var, RAPIDJSON_WRITER& writer);
 	void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer);
     bool importControl(const rapidjson::Value& controlObj, PARAM_CONTROL& ctrl, QVariant& props);
-	CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
-	void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer);
-}
+	CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef);
+    void dumpCurveModel(const CurveModel *pModel, RAPIDJSON_WRITER &writer);
+    }
 
 
 

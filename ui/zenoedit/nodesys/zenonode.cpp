@@ -31,7 +31,6 @@
 #include "iotags.h"
 #include "groupnode.h"
 
-
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(parent)
     , m_renderParams(params)
@@ -288,11 +287,20 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
     };
 
+    auto cbGetIndexData = [=]() -> QVariant { 
+        return paramIdx.data(ROLE_PARAM_VALUE);
+    };
+
+    CallbackCollection cbSet;
+    cbSet.cbEditFinished = cbUpdateParam;
+    cbSet.cbSwitch = cbSwith;
+    cbSet.cbGetIndexData = cbGetIndexData;
+
     const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
-    QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbUpdateParam, scene, cbSwith, ctrlProps);
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbSet, scene, ctrlProps);
     if (CONTROL_ENUM == ctrl)
     {
         QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);
@@ -811,7 +819,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
     PARAM_CONTROL ctrl = (PARAM_CONTROL)viewparamIdx.data(ROLE_PARAM_CTRL).toInt();
     const QString& paramType = viewparamIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& value = viewparamIdx.data(ROLE_PARAM_VALUE);
-
+    
     if (ctrl == CONTROL_NONVISIBLE)
         return nullptr;
 
@@ -882,7 +890,16 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
-    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbUpdateSocketDefl, scene, cbSwith, ctrlProps);
+    auto cbGetIndexData = [=]() -> QVariant { 
+        return paramIdx.data(ROLE_PARAM_VALUE);
+    };
+
+    CallbackCollection cbSet;
+    cbSet.cbEditFinished = cbUpdateSocketDefl;
+    cbSet.cbSwitch = cbSwith;
+    cbSet.cbGetIndexData = cbGetIndexData;
+
+    QGraphicsItem *pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbSet, scene, ctrlProps);
     if (CONTROL_ENUM == ctrl)
     {
         QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);

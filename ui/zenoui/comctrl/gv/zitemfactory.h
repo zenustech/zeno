@@ -10,9 +10,8 @@ namespace zenoui
         const QVariant& value,
         PARAM_CONTROL ctrl,
         const QString& type,
-        Callback_EditFinished cbFunc,
+        CallbackCollection cbSet,
         QGraphicsScene* scene,
-        CALLBACK_SWITCH cbSwitch,
         const QVariant& controlProps
     );
 }

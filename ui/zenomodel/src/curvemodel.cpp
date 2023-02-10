@@ -111,6 +111,10 @@ QString CurveModel::id() const
     return m_id;
 }
 
+void CurveModel::setId(QString id) {
+    m_id = id;
+}
+
 bool CurveModel::isTimeline() const
 {
     return m_bTimeline;

@@ -26,6 +26,7 @@ public:
     void addCurve(CurveModel* model);
     int curveCount() const;
     CurveModel *getCurve(int i) const;
+    CURVES_MODEL getModel() const;
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);
@@ -37,6 +38,8 @@ public slots:
     void onLockBtnToggled(bool bToggle);
     void onRangeEdited();
     void onCbTimelineChanged(int);
+    void onAddCurveBtnClicked();
+    void onDelCurveBtnClicked();
 
 private:
 	void init();
