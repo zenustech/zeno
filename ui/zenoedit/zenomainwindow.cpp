@@ -624,10 +624,17 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
 
 DisplayWidget* ZenoMainWindow::getDisplayWidget()
 {
-    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    //if (view)
-    //    return view;
-    return nullptr;
+    DisplayWidget* pViewport = nullptr;
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
+    {
+        if (!pViewport)
+        {
+            pViewport = pDock->getUniqueViewport();
+            break;
+        }
+    }
+    return pViewport;
 }
 
 void ZenoMainWindow::onRunFinished()

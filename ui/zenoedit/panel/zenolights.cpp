@@ -426,13 +426,19 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(intensityEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
     connect(camApertureEdit, &QLineEdit::textChanged, this, [&](){
-        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
-            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        DisplayWidget* pDisplay = zenoApp->getMainWindow()->getDisplayWidget();
+        ZASSERT_EXIT(pDisplay);
+        ViewportWidget* pViewport = pDisplay->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        pViewport->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
         zenoApp->getMainWindow()->updateViewport();
     });
     connect(camDisPlaneEdit, &QLineEdit::textChanged, this, [&](){
-        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
-            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        DisplayWidget* pDisplay = zenoApp->getMainWindow()->getDisplayWidget();
+        ZASSERT_EXIT(pDisplay);
+        ViewportWidget* pViewport = pDisplay->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        pViewport->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
         zenoApp->getMainWindow()->updateViewport();
     });
 
