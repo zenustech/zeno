@@ -159,6 +159,10 @@ void GroupNode::onUpdateParamsNotDesc()
     palette.setColor(QPalette::WindowText, blackboard.background);
     m_pTextItem->setPalette(palette);
     setSvgData(blackboard.background.name());
+    if (blackboard.sz.isValid() && blackboard.sz != this->size()) {
+        resize(blackboard.sz);
+        emit nodePosChangedSignal();
+    }
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
