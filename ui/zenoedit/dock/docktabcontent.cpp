@@ -262,7 +262,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     });
 
     //cihou caofei:
-    pTreeView->setChecked(false);
+    pListView->setChecked(false);
     m_pEditor->onSubnetListPanel(false, ZenoGraphsEditor::Side_Subnet); 
 
     pVLayout->addWidget(m_pEditor);

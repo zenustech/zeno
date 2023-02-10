@@ -110,7 +110,7 @@ public:
     }
     void updateName(const QString& newKeyName)
     {
-        ZenoGvHelper::setValue(m_editText, CONTROL_STRING, newKeyName);
+        ZenoGvHelper::setValue(m_editText, CONTROL_STRING, newKeyName, nullptr);
     }
     void setEnable(bool bEnable)
     {
