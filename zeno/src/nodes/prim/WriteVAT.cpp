@@ -115,6 +115,14 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     }
 }
 
+// VAT format
+// bbox_min : (float, float, float)
+// bbox_max : (float, float, float)
+// frame count : int32_t
+// image width : int32_t
+// image height : int32_t
+// data: (w * h) * (int16_t, int16_t, int16_t)
+
 static vector<vector<vec3f>> read_vat(const std::string &path) {
     vector<vector<vec3f>> v;
     std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -146,7 +154,6 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
         for (auto j = 0; j < maxWidthAlign; j++) {
             v[i][j] = read_normalized_vec3f(file, _min, _max);
         }
-        v[i].resize(width);
         zeno::log_info("VAT: read frame {} done ({} face vec)!", i, width);
     }
     return v;
@@ -226,6 +233,7 @@ struct WriteCustomVAT : INode {
                     for (auto const &[x, y, z]: prim->tris) {
                         fout << zeno::format("f {}/{} {}/{} {}/{}\n", x + 1, x + 1, y + 1, y + 1, z + 1, z + 1);
                     }
+                    fout << std::flush;
                 }
             }
             zeno::log_info("VAT: save success!");
@@ -292,6 +300,38 @@ ZENDEFNODE(ReadCustomVAT, {
     {
         {"readpath", "path", ""},
     },
+    {"primitive"},
+});
+
+struct ReadVATFile : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto data = read_vat(path);
+        int h = data.size();
+        int w = data[0].size();
+        auto img = std::make_shared<PrimitiveObject>();
+        img->verts.resize(w * h * 3);
+        for (auto i = 0; i < h; i++) {
+            for (auto j = 0; j < w; j++) {
+                auto index = i * w + j;
+                img->verts[index] = data[i][j];
+            }
+        }
+        img->userData().set2("isImage", 1);
+        img->userData().set2("w", w);
+        img->userData().set2("h", h);
+        set_output("image", img);
+    }
+};
+
+ZENDEFNODE(ReadVATFile, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"PrimitiveObject", "image"},
+    },
+    {},
     {"primitive"},
 });
 
