@@ -6,7 +6,7 @@
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include <rapidjson/document.h>
-
+#include "../panel/zenolights.h"
 
 
 PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget* pWidget)
@@ -132,6 +132,9 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 }
                 else if (qobject_cast<ZPlainLogPanel*>(wid)) {
                     writer.String("Logger");
+                }
+                else if (qobject_cast<ZenoLights*>(wid)) {
+                    writer.String("Light");
                 }
             }
             writer.EndArray();
