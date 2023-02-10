@@ -444,6 +444,11 @@ void ZEditableTextItem::setValidator(const QValidator* pValidator)
 
 }
 
+QString ZEditableTextItem::text() const
+{
+    return toPlainText();
+}
+
 void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
 {
     if (!pScene)

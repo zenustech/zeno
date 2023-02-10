@@ -24,7 +24,7 @@ void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* 
     for (int i = 0; i < vec.size(); i++)
     {
         const QString& numText = QString::number(vec[i]);
-        ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, CONTROL_FLOAT, m_param);
+        ZEditableTextItem* pLineEdit = new ZEditableTextItem(numText);
 
         pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 32)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
