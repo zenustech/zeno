@@ -388,15 +388,24 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
     if (isDefault) 
 	{
         QJsonObject obj = readDefaultLayout();
-        for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++) 
-		{
-            if (it.key() == name) 
-			{
-                QJsonObject layout = it.value().toObject();
-                QJsonDocument doc(layout);
-                content = doc.toJson();
-                break;
+        if (!name.isEmpty()) 
+        {
+            for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++) 
+            {
+                if (it.key() == name) 
+                {
+                    QJsonObject layout = it.value().toObject();
+                    QJsonDocument doc(layout);
+                    content = doc.toJson();
+                    break;
+                }
             }
+        } 
+        else 
+        {
+            QJsonObject layout = obj.constBegin().value().toObject();
+            QJsonDocument doc(layout);
+            content = doc.toJson();
         }
     } 
 	else 
@@ -412,7 +421,7 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
         } 
 		else
 		{
-            loadDockLayout("Default", true);
+            loadDockLayout("", true);
             return;
         }
     }

@@ -40,6 +40,8 @@ class GroupNode : public ZenoNode {
     QVector<ZenoNode *> getChildItems();
     void removeChildItem(ZenoNode *pNode);
     void updateChildRelativePos(const ZenoNode *item);
+    void updateBlackboard();
+
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
     ZLayoutBackground *initHeaderWidget(IGraphsModel*) override;
@@ -52,9 +54,7 @@ class GroupNode : public ZenoNode {
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
   private:
     bool isDragArea(QPointF pos);
-    void updateBlackboard();
     void updateClidItem(bool isAdd, const QString nodeId);
-    QRectF getSelectArea();
     void setSvgData(QString color);
     enum {
     	nodir,
@@ -69,10 +69,7 @@ class GroupNode : public ZenoNode {
     } resizeDir;
   private:
     bool m_bDragging;
-    bool m_bSelecting;
     QVector<ZenoNode *> m_childItems;
-    QPointF m_beginPos;
-    QPointF m_endPos;
     GroupTextItem *m_pTextItem;
     QMap<QString, QPointF> m_itemRelativePosMap;
     QByteArray m_svgByte;
