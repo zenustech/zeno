@@ -55,7 +55,7 @@ void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
     }
 }
 
-void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVariant& value)
+void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVariant& value, QGraphicsScene* pScene)
 {
     if (!item)
         return;
@@ -97,7 +97,8 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
                 UI_VECTYPE vec = value.value<UI_VECTYPE>();
-                pEditor->setVec(vec);
+                bool bFloat = (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl || CONTROL_VEC2_FLOAT == ctrl);
+                pEditor->setVec(vec, bFloat, pScene);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
             {

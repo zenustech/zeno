@@ -21,10 +21,9 @@ signals:
 private:
     void initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene);
 
-    QVector<ZenoParamLineEdit*> m_editors;
+    QVector<ZEditableTextItem*> m_editors;
     LineEditParam m_param;
     bool m_bFloatVec;
 };
-
 
 #endif

@@ -473,13 +473,13 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
                 //set value on pControl.
                 const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
-                ZenoGvHelper::setValue(pControl, ctrl, deflValue);
+                ZenoGvHelper::setValue(pControl, ctrl, deflValue, pScene);
                 break;
             }
             case ROLE_PARAM_VALUE:
             {
                 const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
-                ZenoGvHelper::setValue(pControl, ctrl, deflValue);
+                ZenoGvHelper::setValue(pControl, ctrl, deflValue, pScene);
                 break;
             }
             case ROLE_VPARAM_CTRL_PROPERTIES: 
@@ -521,7 +521,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             case ROLE_PARAM_VALUE:
             {
                 const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
-                ZenoGvHelper::setValue(paramCtrl.param_control, ctrl, deflValue);
+                ZenoGvHelper::setValue(paramCtrl.param_control, ctrl, deflValue, pScene);
                 break;
             }
             case ROLE_VPARAM_CTRL_PROPERTIES: 

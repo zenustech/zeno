@@ -1,5 +1,5 @@
 {
-	"Default":{
+	"Default Layout 1":{
 		"orientation": "V",
 		"left": {
 			"widget": {
@@ -28,7 +28,7 @@
 			}
 		}
 	},
-	"Default_1":{
+	"Default Layout 2":{
 		"orientation": "V",
 		"left": {
 			"orientation": "H",
@@ -88,5 +88,99 @@
 				}
 			}
 		}
+	},
+	"Default Layout 3":{
+		"orientation": "H",
+		"left": {
+			"orientation": "V",
+			"left": {
+				"widget": {
+					"geometry": {
+						"x": 0.0020833334419876339,
+						"y": 0.03441494703292847,
+						"width": 0.5067708492279053,
+						"height": 0.6430678367614746
+					},
+					"tabs": [
+						"View"
+					]
+				}
+			},
+			"right": {
+				"widget": {
+					"geometry": {
+						"x": 0.0020833334419876339,
+						"y": 0.6814159154891968,
+						"width": 0.5067708492279053,
+						"height": 0.21632251143455506
+					},
+					"tabs": [
+						"Parameter",
+						"Data",
+						"Logger"
+					]
+				}
+			}
+		},
+		"right": {
+			"widget": {
+				"geometry": {
+					"x": 0.510937511920929,
+					"y": 0.03441494703292847,
+					"width": 0.4869791567325592,
+					"height": 0.8633235096931458
+				},
+				"tabs": [
+					"Editor"
+				]
+			}
+		}
+	},
+	"Default Layout 4":{
+		"orientation": "V",
+			"left": {
+				"orientation": "H",
+				"left": {
+					"widget": {
+						"geometry": {
+							"x": 0.0020833334419876339,
+							"y": 0.03441494703292847,
+							"width": 0.5927083492279053,
+							"height": 0.39036381244659426
+						},
+						"tabs": [
+							"View"
+						]
+					}
+				},
+				"right": {
+					"widget": {
+						"geometry": {
+							"x": 0.596875011920929,
+							"y": 0.03441494703292847,
+							"width": 0.4010416567325592,
+							"height": 0.39036381244659426
+						},
+						"tabs": [
+							"Logger",
+							"Parameter",
+							"Data"
+						]
+					}
+				}
+			},
+			"right": {
+				"widget": {
+					"geometry": {
+						"x": 0.0020833334419876339,
+						"y": 0.4287118911743164,
+						"width": 0.9958333373069763,
+						"height": 0.4690265357494354
+					},
+					"tabs": [
+						"Editor"
+					]
+				}
+			}
 	}
 }

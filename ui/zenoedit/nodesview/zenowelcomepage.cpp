@@ -56,16 +56,16 @@ void ZenoWelcomePage::initSignals()
 	connect(m_ui->btnOpen, SIGNAL(clicked()), this, SIGNAL(openRequest()));
 
     connect(m_ui->lblManual, &ZTextLabel::clicked, this, [=]() {
-        QDesktopServices::openUrl(QUrl("http://help.zenustech.com/"));
+        QDesktopServices::openUrl(QUrl("https://doc.zenustech.com/"));
     });
     connect(m_ui->lblVideos, &ZTextLabel::clicked, this, [=]() {
-        QDesktopServices::openUrl(QUrl("https://space.bilibili.com/263032155"));  //gei xiaopeng laoshi yinliu
+        QDesktopServices::openUrl(QUrl("https://zenustech.com/learn"));
     });
     connect(m_ui->lblOfficialWeb, &ZTextLabel::clicked, this, [=]() {
         QDesktopServices::openUrl(QUrl("https://zenustech.com/"));
     });
     connect(m_ui->lblForum, &ZTextLabel::clicked, this, [=]() {
-        QDesktopServices::openUrl(QUrl("https://github.com/zenustech/zeno/discussions"));
+        QDesktopServices::openUrl(QUrl("https://forums.zenustech.com/"));
     });
     connect(m_ui->lblGithub, &ZTextLabel::clicked, this, [=]() {
         QDesktopServices::openUrl(QUrl("https://github.com/zenustech/zeno"));
