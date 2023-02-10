@@ -54,9 +54,6 @@ void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent), 
     m_bDragging(false),
-    m_bSelecting(false),
-    m_beginPos(QPointF()),
-    m_endPos(QPointF()), 
     m_pTextItem(nullptr) 
 {
     setAutoFillBackground(false);
@@ -244,11 +241,6 @@ void GroupNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
     } else {
         m_bDragging = false;
     }
-    if (!m_bDragging)
-    {
-        m_beginPos = event->pos();
-    }
-    update();
     ZenoNode::mousePressEvent(event);
 }
 
@@ -287,19 +279,6 @@ void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
         m_pTextItem->resize(QSizeF(pright - pleft, m_pTextItem->boundingRect().height()));
         return;
     } 
-    else
-    {
-        m_endPos = event->pos();
-        QRectF selectArea = getSelectArea();
-        QRectF rect = mapRectToScene(selectArea);
-        for (auto item : m_childItems) {
-            QRectF itemRect(item->scenePos(), item->boundingRect().size());
-            QRectF interRect = rect.intersected(itemRect);
-            item->setSelected(interRect.isValid());
-        }
-        update();
-        return;
-    }
 }
 
 void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
@@ -309,14 +288,6 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
         emit nodePosChangedSignal();
         return;
     } 
-    else
-    {
-        if (!m_endPos.isNull())
-            setSelected(false);
-        m_beginPos = QPointF();
-        m_endPos = QPointF();
-        update();
-    }
 }
 
 void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
@@ -354,7 +325,9 @@ bool GroupNode::isDragArea(QPointF pos) {
         cursorShape = Qt::ArrowCursor;
     }
     setCursor(cursorShape);
-    return (resizeDir != nodir);
+    bool result = resizeDir != nodir;
+    setAcceptedMouseButtons(result ? Qt::LeftButton : Qt::NoButton);
+    return result;
 }
 
 void GroupNode::updateBlackboard() {
@@ -385,13 +358,6 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setPen(pen);
         painter->drawRect(rect);
     }
-
-    if (!m_beginPos.isNull() && !m_endPos.isNull() && m_beginPos != m_endPos) 
-    {
-        painter->setOpacity(0.5);
-        QRectF selectArea = getSelectArea();
-        painter->fillRect(selectArea, background);
-    }
     qreal width = ZenoStyle::dpiScaled(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
@@ -408,15 +374,6 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
         }
     }
     return ZenoNode::itemChange(change, value);
-}
-
-QRectF GroupNode::getSelectArea()
-{
-    int x = (m_beginPos.x() < m_endPos.x()) ? m_beginPos.x() : m_endPos.x();
-    int y = (m_beginPos.y() < m_endPos.y()) ? m_beginPos.y() : m_endPos.y();
-    int w = qAbs(m_beginPos.x() - m_endPos.x()) + 1;
-    int h = qAbs(m_beginPos.y() - m_endPos.y()) + 1;
-    return QRectF(x, y, w, h);
 }
 
 void GroupNode::setSvgData(QString color) 

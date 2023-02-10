@@ -55,7 +55,6 @@ class GroupNode : public ZenoNode {
   private:
     bool isDragArea(QPointF pos);
     void updateClidItem(bool isAdd, const QString nodeId);
-    QRectF getSelectArea();
     void setSvgData(QString color);
     enum {
     	nodir,
@@ -70,10 +69,7 @@ class GroupNode : public ZenoNode {
     } resizeDir;
   private:
     bool m_bDragging;
-    bool m_bSelecting;
     QVector<ZenoNode *> m_childItems;
-    QPointF m_beginPos;
-    QPointF m_endPos;
     GroupTextItem *m_pTextItem;
     QMap<QString, QPointF> m_itemRelativePosMap;
     QByteArray m_svgByte;
