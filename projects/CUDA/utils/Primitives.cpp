@@ -70,8 +70,8 @@ struct PrimitiveConnectedComponents : INode {
         using IV = zs::vec<int, 2>;
         zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
         std::vector<int> is, js;
-        auto buildTopo = [&](const auto &eles) {
-            pol(range(eles), [tab = view<space>(tab)](const auto &ele) mutable {
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
                 using eleT = RM_CVREF_T(ele);
                 constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
                 for (int i = 0; i < codim; ++i) {
