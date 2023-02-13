@@ -272,5 +272,63 @@ ZENDEFNODE(EndFrame, {
     {"fileio"},
 });*/
 
+struct StringToNumber : zeno::INode {
+
+    virtual void apply() override {
+        auto in_str = get_input2<std::string>("str");
+        auto type = get_input2<std::string>("type");
+        auto obj = std::make_unique<zeno::NumericObject>();
+        std::stringstream strStream(in_str);
+
+        float num_float = 0;
+        int num_int = 0;
+
+        if (type == "float") {
+            strStream >> num_float;
+        }
+        if (type == "int") {
+            strStream >> num_int;
+        }
+
+        if (strStream.bad()) {
+            throw zeno::makeError("[string format error]");
+        } else if (strStream.fail()) {
+            strStream.clear();
+            strStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            throw zeno::makeError("[string format error]");
+        } else {
+            if (type == "float") {
+                obj->set(num_float);
+            }
+            if (type == "int") {
+                obj->set(num_int);
+            }
+        }
+
+        set_output("num_str", std::move(obj));
+    }
+};
+
+ZENDEFNODE(StringToNumber, {{
+                                /* inputs: */
+                                {"enum float int", "type", "all"},
+                                {"string", "str", "0"},
+                            },
+
+                            {
+                                /* outputs: */
+                                "num_str",
+                            },
+
+                            {
+                                /* params: */
+
+                            },
+
+                            {
+                                /* category: */
+                                "string",
+                            }});
+
 }
 }
