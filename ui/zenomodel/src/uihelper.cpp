@@ -226,7 +226,7 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     }
     case CONTROL_FLOAT:
     {
-        return defaultValue.toDouble();
+        return defaultValue.toFloat();
     }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
