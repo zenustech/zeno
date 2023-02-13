@@ -123,11 +123,11 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
                 painter->fillRect(r, QColor("#4B9EF4"));
             }
             else {
-                painter->setPen(QColor("#000000"));
+                //painter->setPen(QColor("#000000"));
                 painter->fillRect(r, QColor("#191D21"));
             }
 
-            painter->drawRect(r.adjusted(0,0,-1,-1));
+            //painter->drawRect(r.adjusted(0,0,-1,-1));
             return;
         }
     }

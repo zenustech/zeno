@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>639</width>
-    <height>64</height>
+    <width>647</width>
+    <height>65</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -271,6 +271,22 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton
+{
+	border-style: outset;
+    border-width: 2px;
+    border-radius: 1px;
+	border-color: #000000;
+	background-color: #343A42;
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: 500;
+	color: #737B85;
+}</string>
+         </property>
          <property name="text">
           <string>SR</string>
          </property>
@@ -290,22 +306,65 @@
         </widget>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnRun" native="true">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
+        <widget class="QPushButton" name="btnRun">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton
+{
+	border-style: outset;
+    border-width: 2px;
+    border-radius: 1px;
+	border-color: #000000;
+	background-color: #343A42;
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: 500;
+	color: #737B85;
+}</string>
+         </property>
+         <property name="text">
+          <string>RUN</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="ZToolButton" name="btnKill" native="true">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
+        <widget class="QPushButton" name="btnKill">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton
+{
+	border-style: outset;
+    border-width: 2px;
+    border-radius: 1px;
+	border-color: #000000;
+	background-color: #343A42;
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: 500;
+	color: #C95449;
+}
+
+QPushButton:hover
+{
+	color: #C95449;
+}</string>
+         </property>
+         <property name="text">
+          <string>Kill</string>
          </property>
         </widget>
        </item>
