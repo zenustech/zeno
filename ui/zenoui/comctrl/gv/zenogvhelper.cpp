@@ -28,7 +28,7 @@ void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
         {
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
             pItem->setPos(sz.pos);
-            pItem->setData(GVKEY_BOUNDING, sz.minSize);
+            pItem->setData(GVKEY_SIZEHINT, sz.minSize);
             break;
         }
         case QGraphicsRectItem::Type:
@@ -49,7 +49,7 @@ void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
         {
             QGraphicsItem* pItem = qgraphicsitem_cast<QGraphicsItem*>(item);
             pItem->setPos(sz.pos);
-            pItem->setData(GVKEY_BOUNDING, sz.minSize);
+            pItem->setData(GVKEY_SIZEHINT, sz.minSize);
             break;
         }
     }

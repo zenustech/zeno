@@ -19,6 +19,8 @@ ZGraphicsTextItem::ZGraphicsTextItem(const QString& text, const QFont& font, con
     : QGraphicsTextItem(parent)
 {
     setText(text);
+    setFont(font);
+    setDefaultTextColor(color);
 }
 
 void ZGraphicsTextItem::setText(const QString& text)
