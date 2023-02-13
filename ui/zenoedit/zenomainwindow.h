@@ -70,6 +70,7 @@ public slots:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
 
 private:

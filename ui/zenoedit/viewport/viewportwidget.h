@@ -124,9 +124,12 @@ public:
     void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
+    void delayOptixRender();
 
 public slots:
+    void onOptixRender();
     void updateFrame(const QString& action = "");
+    void onDelayTimerOut();
     void onRun();
     void onRecord();
     void onKill();
@@ -146,11 +149,15 @@ private:
     ZTimeline* m_timeline;
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
+    QTimer* m_pOptixDelay; //use to delay optix timer;
+    QTimer* m_pOpitxTimer;
     QTimer* m_pTimer;
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
+    static const int m_optixFreq = 60;
+    static const int m_delayOptix = 1000;
 };
 
 #endif

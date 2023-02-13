@@ -705,8 +705,15 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     auto graphs = zenoApp->graphsManagment();
     connect(&*graphs, SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
-	m_pTimer = new QTimer(this);
+    m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    m_pOpitxTimer = new QTimer(this);
+    connect(m_pOpitxTimer, SIGNAL(timeout()), this, SLOT(onOptixRender()));
+
+    m_pOptixDelay = new QTimer(this);
+    m_pOptixDelay->setSingleShot(true);
+    connect(m_pOptixDelay, SIGNAL(timeout()), this, SLOT(onDelayTimerOut()));
 }
 
 DisplayWidget::~DisplayWidget()
@@ -760,9 +767,31 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     Zenovis::GetInstance().startPlay(bChecked);
 }
 
+void DisplayWidget::delayOptixRender()
+{
+    m_pOpitxTimer->stop();
+    m_pOptixDelay->start(m_delayOptix);
+}
+
+void DisplayWidget::onDelayTimerOut()
+{
+    if (isOptxRendering())
+        m_pOpitxTimer->start(m_optixFreq);
+}
+
+void DisplayWidget::onOptixRender()
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    if (mainWin && mainWin->inDlgEventLoop())
+        return;
+
+    m_view->update();
+}
+
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
 {
-    if (m_mainWin && m_mainWin->inDlgEventLoop())
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    if (mainWin && mainWin->inDlgEventLoop())
         return;
 
     if (action == "newFrame") {
@@ -771,14 +800,15 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
         return;
     } else if (action == "finishFrame") {
         bool bPlaying = Zenovis::GetInstance().isPlaying();
-        if (isOptxRendering() || bPlaying) {
+        if (bPlaying) {
             m_pTimer->start(m_updateFeq);
         }
     } else if (!action.isEmpty()) {
         if (action == "optx") {
-            m_pTimer->start(m_updateFeq);
+            m_pOpitxTimer->start(m_optixFreq);
         } else {
-            m_pTimer->stop();
+            m_pOpitxTimer->stop();
+            //to test: m_pTimer need to be stop?
         }
     }
     m_view->update();

@@ -464,6 +464,25 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event) {
     QMainWindow::closeEvent(event);
 }
 
+bool ZenoMainWindow::event(QEvent* event)
+{
+    QEvent::Type type = event->type();
+    switch (type)
+    {
+        case QEvent::MouseMove:
+        case QEvent::HoverMove:
+        case QEvent::KeyPress:
+        case QEvent::KeyRelease:
+        {
+            DisplayWidget* pView = getDisplayWidget();
+            if (pView)
+                pView->delayOptixRender();
+            break;
+        }
+    }
+    return QMainWindow::event(event);
+}
+
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
     float height = size().height();
