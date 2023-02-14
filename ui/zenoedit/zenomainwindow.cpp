@@ -33,6 +33,7 @@
 #include "viewport/recordvideomgr.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
+#include "dialog/zlayoutmangedlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -175,6 +176,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         saveDockLayout();
         break;
     }
+    case ACTION_LAYOUT_MANAGE: {
+        manageCustomLayout();
+        break;
+    }
     case ACTION_LANGUAGE: {
         onLangChanged(bTriggered);
         break;
@@ -227,6 +232,7 @@ void ZenoMainWindow::loadSavedLayout()
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
     lst = settings.childGroups();
+    settings.endGroup();
     if (!lst.isEmpty()) {
         initCustomLayoutAction(lst, false);
     }
@@ -364,21 +370,24 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
     }
 }
 
-void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) 
-{
-    if (!isDefault) {
-        m_ui->menuCustom_Layout->addSeparator();
-	}
+void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) {
+    QList<QAction *> actions;
     for (QString name : list) {
-		if (name == g_latest_layout)
-		{
-			continue;
-		}
+        if (name == g_latest_layout) {
+            continue;
+        }
         QAction *pCustomLayout_ = new QAction(name);
         connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
-			loadDockLayout(name, isDefault);
-		});
-        m_ui->menuCustom_Layout->addAction(pCustomLayout_);
+            loadDockLayout(name, isDefault); 
+            updateLatestLayout(name);
+        });
+        actions.append(pCustomLayout_);
+    }
+    if (isDefault) {
+        m_ui->menuWindow->insertActions(m_ui->actionSave_Layout, actions);
+        m_ui->menuWindow->insertSeparator(m_ui->actionSave_Layout);
+    } else {
+        m_ui->menuCustom_Layout->addActions(actions);
     }
 }
 
@@ -388,6 +397,7 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
     if (isDefault) 
 	{
         QJsonObject obj = readDefaultLayout();
+        bool isSuccess = false;
         if (!name.isEmpty()) 
         {
             for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++) 
@@ -397,11 +407,12 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
                     QJsonObject layout = it.value().toObject();
                     QJsonDocument doc(layout);
                     content = doc.toJson();
+                    isSuccess = true;
                     break;
                 }
             }
         } 
-        else 
+        if (!isSuccess) 
         {
             QJsonObject layout = obj.constBegin().value().toObject();
             QJsonDocument doc(layout);
@@ -421,7 +432,7 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
         } 
 		else
 		{
-            loadDockLayout("", true);
+            loadDockLayout(name, true);
             return;
         }
     }
@@ -453,8 +464,32 @@ QJsonObject ZenoMainWindow::readDefaultLayout()
     return QJsonObject();
 }
 
-void ZenoMainWindow::initDocks()
+void ZenoMainWindow::manageCustomLayout() 
 {
+    ZLayoutMangeDlg dlg(this);
+    connect(&dlg, &ZLayoutMangeDlg::layoutChangedSignal, this, [=]() {
+        m_ui->menuCustom_Layout->clear();
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+        settings.beginGroup("layout");
+        QStringList lst = settings.childGroups();
+        if (!lst.isEmpty()) {
+            initCustomLayoutAction(lst, false);
+        }
+    });
+    dlg.exec();
+}
+
+void ZenoMainWindow::updateLatestLayout(const QString &layout) 
+{
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    settings.beginGroup(g_latest_layout);
+    settings.setValue(g_latest_layout, layout);
+    settings.endGroup();
+    settings.endGroup();
+}
+
+void ZenoMainWindow::initDocks() {
     /*m_layoutRoot = std::make_shared<LayerOutNode>();
     m_layoutRoot->type = NT_ELEM;
 
@@ -485,7 +520,16 @@ void ZenoMainWindow::initDocks()
     //paramDock->hide();
     logDock->hide();*/
 
-	loadDockLayout(g_latest_layout, false);
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    settings.beginGroup(g_latest_layout);
+    QString name;
+    if (settings.allKeys().indexOf(g_latest_layout) != -1) {
+        name = settings.value(g_latest_layout).toString();
+    } 
+    settings.endGroup();
+    settings.endGroup();
+	loadDockLayout(name, false);
 
     initTimelineDock();
 }
@@ -956,6 +1000,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSee->setProperty("ActionType", ACTION_SEA);
     m_ui->actionNode_Camera->setProperty("ActionType", ACTION_NODE_CAMERA);
     m_ui->actionSave_Layout->setProperty("ActionType", ACTION_SAVE_LAYOUT);
+    m_ui->actionLayout_Manager->setProperty("ActionType", ACTION_LAYOUT_MANAGE);
     m_ui->actionEnglish_Chinese->setProperty("ActionType", ACTION_LANGUAGE);
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);

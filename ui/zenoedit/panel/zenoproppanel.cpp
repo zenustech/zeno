@@ -347,7 +347,7 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     pGroupWidget->setObjectName(groupName);
     pGroupWidget->setCollasped(bCollaspe);
     QGridLayout* pLayout = new QGridLayout;
-    pLayout->setContentsMargins(10, 15, 0, 15);
+    pLayout->setContentsMargins(10, 15, 10, 15);
     pLayout->setColumnStretch(1, 1);
     pLayout->setColumnStretch(2, 3);
     pLayout->setSpacing(10);
