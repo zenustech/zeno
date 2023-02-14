@@ -4,8 +4,6 @@
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
 #include <zeno/extra/GlobalState.h>
-#include <iostream>
-#include <fstream>
 
 namespace zeno {
 namespace {

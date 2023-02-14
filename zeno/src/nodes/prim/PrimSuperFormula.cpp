@@ -3,21 +3,18 @@
 //
 
 #include <zeno/zeno.h>
-#include <zeno/types/NumericObject.h>
-#include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
-#include <zeno/types/DictObject.h>
-
 #include <unordered_set>
 
 #include <random>
 #include <algorithm>
 
+namespace zeno {
 struct PrimSuperFormula : zeno::INode {
 
     virtual void apply() override {
-        auto outprim = std::make_shared<zeno::PrimitiveObject>(); //新生成的多边形物体
+        auto outprim = std::make_shared<zeno::PrimitiveObject>();
         auto hasLines = get_input2<bool>("hasLines");
         auto close = get_input2<bool>("close");
 
@@ -91,3 +88,4 @@ ZENDEFNODE(PrimSuperFormula, {{
                                   /* category: */
                                   "primitive",
                               }});
+}
