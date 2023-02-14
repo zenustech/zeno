@@ -60,7 +60,7 @@ struct PrimSuperFormula : zeno::INode {
 };
 ZENDEFNODE(PrimSuperFormula, {{
                                   /* inputs: */
-                                  {"int", "segments", "100"},
+                                  {"int", "segments", "1000"},
                                   {"float", "scale", "1.0"},
 
                                   {"float", "a", "1.0"},
