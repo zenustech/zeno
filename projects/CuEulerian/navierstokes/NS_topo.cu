@@ -127,12 +127,12 @@ ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
 
 struct ZSMaintainSparseGrid : INode {
     template <typename PredT>
-    void maintain(ZenoSparseGrid *nsgridPtr, zs::SmallString tag, PredT pred, int nlayers) {
+    void maintain(ZenoSparseGrid *zsgridPtr, zs::SmallString tag, PredT pred, int nlayers) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
         auto pol = cuda_exec();
-        auto &spg = nsgridPtr->getSparseGrid();
+        auto &spg = zsgridPtr->getSparseGrid();
 
         if (!spg._grid.hasProperty(tag))
             throw std::runtime_error(fmt::format("property [{}] not exist!", tag.asString()));
@@ -281,11 +281,11 @@ struct ZSMaintainSparseGrid : INode {
             /// @brief adjust multigrid accordingly
             // grid
             nbs = spg.numBlocks();
-            auto &spg1 = nsgridPtr->spg1;
+            auto &spg1 = zsgridPtr->spg1;
             spg1.resize(pol, nbs);
-            auto &spg2 = nsgridPtr->spg2;
+            auto &spg2 = zsgridPtr->spg2;
             spg2.resize(pol, nbs);
-            auto &spg3 = nsgridPtr->spg3;
+            auto &spg3 = zsgridPtr->spg3;
             spg3.resize(pol, nbs);
             // table
             {
@@ -321,7 +321,7 @@ struct ZSMaintainSparseGrid : INode {
     }
 
     void apply() override {
-        auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
+        auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto tag = get_input2<std::string>("Attribute");
         auto nlayers = get_input2<int>("layers");
         auto needRefit = get_input2<bool>("refit");
@@ -347,18 +347,18 @@ struct ZSMaintainSparseGrid : INode {
                 [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; },
                 nlayers);
 
-        set_output("NSGrid", zsSPG);
+        set_output("SparseGrid", zsSPG);
     }
 };
 
 ZENDEFNODE(ZSMaintainSparseGrid, {/* inputs: */
-                                  {"NSGrid",
+                                  {"SparseGrid",
                                    {"enum rho sdf", "Attribute", "rho"},
                                    {"bool", "refit", "1"},
                                    {"int", "layers", "2"},
                                    {"bool", "multigrid", "1"}},
                                   /* outputs: */
-                                  {"NSGrid"},
+                                  {"SparseGrid"},
                                   /* params: */
                                   {},
                                   /* category: */
