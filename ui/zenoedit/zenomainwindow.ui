@@ -113,6 +113,7 @@
     </widget>
     <addaction name="actionSave_Layout"/>
     <addaction name="menuCustom_Layout"/>
+    <addaction name="actionLayout_Manager"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -426,6 +427,11 @@ border-top: 1px solid black;</string>
   <action name="actionSet_ZENCACHE">
    <property name="text">
     <string>Set ZENCACHE</string>
+   </property>
+  </action>
+  <action name="actionLayout_Manager">
+   <property name="text">
+    <string>Layout Manage</string>
    </property>
   </action>
  </widget>

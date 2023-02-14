@@ -130,7 +130,7 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
                     writer.String("Data");
                 }
-                else if (qobject_cast<ZPlainLogPanel*>(wid)) {
+                else if (qobject_cast<DockContent_Log*>(wid)) {
                     writer.String("Logger");
                 }
                 else if (qobject_cast<ZenoLights*>(wid)) {

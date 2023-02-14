@@ -16,7 +16,7 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     m_pTitle(nullptr)
 {
     QGridLayout *pGroupLayout = new QGridLayout(this);
-    pGroupLayout->setContentsMargins(10, 15, 0, 15);
+    pGroupLayout->setContentsMargins(10, 15, 10, 15);
     pGroupLayout->setColumnStretch(1, 1);
     pGroupLayout->setColumnStretch(2, 3);
     pGroupLayout->setSpacing(10);

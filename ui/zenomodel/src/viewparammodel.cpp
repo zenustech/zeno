@@ -609,6 +609,7 @@ bool ViewParamModel::isDirty() const
 void ViewParamModel::markDirty()
 {
     m_bDirty = true;
+    m_model->markDirty();
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)

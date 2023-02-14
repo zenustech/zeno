@@ -103,6 +103,7 @@ public:
         ACTION_NODE_CAMERA,
         //Window
         ACTION_SAVE_LAYOUT,
+        ACTION_LAYOUT_MANAGE,
         //Help
         ACTION_LANGUAGE,
         //Others
@@ -146,7 +147,7 @@ protected:
     bool event(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
 
-private:
+  private:
     void init();
     void initMenu();
     void initLive();
@@ -166,6 +167,8 @@ private:
     void initCustomLayoutAction(const QStringList& list, bool isDefault = false);
     void loadDockLayout(QString name, bool isDefault = false);
     QJsonObject readDefaultLayout();
+    void manageCustomLayout();
+    void updateLatestLayout(const QString &layout);
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
