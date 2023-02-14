@@ -276,31 +276,16 @@ struct StringToNumber : zeno::INode {
         auto in_str = get_input2<std::string>("str");
         auto type = get_input2<std::string>("type");
         auto obj = std::make_unique<zeno::NumericObject>();
-        std::stringstream strStream(in_str);
-
-        float num_float = 0;
-        int num_int = 0;
-
         if (type == "float") {
-            strStream >> num_float;
+            float v = std::stof(in_str);
+            obj->set(v);
         }
-        if (type == "int") {
-            strStream >> num_int;
+        else if (type == "int") {
+            int v = std::stoi(in_str);
+            obj->set(v);
         }
-
-        if (strStream.bad()) {
-            throw zeno::makeError("[string format error]");
-        } else if (strStream.fail()) {
-            strStream.clear();
-            strStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            throw zeno::makeError("[string format error]");
-        } else {
-            if (type == "float") {
-                obj->set(num_float);
-            }
-            if (type == "int") {
-                obj->set(num_int);
-            }
+        else {
+            throw zeno::makeError("Unknown type");
         }
 
         set_output("num_str", std::move(obj));
