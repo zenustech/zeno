@@ -6,6 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
@@ -54,13 +55,15 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     if (auto marr = mesamp.getVelocities()) {
-        if (!read_done) {
-            log_info("[alembic] totally {} velocities", marr->size());
-        }
-        auto &parr = prim->attr<vec3f>("vel");
-        for (size_t i = 0; i < marr->size(); i++) {
-            auto const &val = (*marr)[i];
-            parr.emplace_back(val[0], val[1], val[2]);
+        if (marr->size() > 0) {
+            if (!read_done) {
+                log_info("[alembic] totally {} velocities", marr->size());
+            }
+            auto &parr = prim->attr<vec3f>("vel");
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                parr.emplace_back(val[0], val[1], val[2]);
+            }
         }
     }
     if (auto marr = mesamp.getFaceIndices()) {
@@ -206,6 +209,88 @@ static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm
     return samp.getMatrix();
 }
 
+static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, int frameid, bool read_done) {
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+
+    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    if (auto marr = mesamp.getPositions()) {
+        if (!read_done) {
+            log_info("[alembic] totally {} positions", marr->size());
+        }
+        auto &parr = prim->verts;
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr.emplace_back(val[0], val[1], val[2]);
+        }
+    }
+    if (auto marr = mesamp.getVelocities()) {
+        if (marr->size() > 0) {
+            if (!read_done) {
+                log_info("[alembic] totally {} velocities", marr->size());
+            }
+            auto &parr = prim->attr<vec3f>("vel");
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                parr.emplace_back(val[0], val[1], val[2]);
+            }
+        }
+    }
+    return prim;
+}
+
+static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, int frameid, bool read_done) {
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+
+    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    if (auto marr = mesamp.getPositions()) {
+        if (!read_done) {
+            log_info("[alembic] totally {} positions", marr->size());
+        }
+        auto &parr = prim->verts;
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr.emplace_back(val[0], val[1], val[2]);
+        }
+    }
+    if (auto marr = mesamp.getVelocities()) {
+        if (marr->size() > 0) {
+            if (!read_done) {
+                log_info("[alembic] totally {} velocities", marr->size());
+            }
+            auto &parr = prim->attr<vec3f>("vel");
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                parr.emplace_back(val[0], val[1], val[2]);
+            }
+        }
+    }
+    {
+        auto &parr = prim->lines;
+        auto numCurves = mesamp.getCurvesNumVertices()->size();
+        std::size_t offset = 0;
+        for (auto i = 0; i < numCurves; i++) {
+            auto count = mesamp.getCurvesNumVertices()->operator[](i);
+            for (auto j = 0; j < count-1; j++) {
+                parr.push_back(vec2i(offset + j, offset + j + 1));
+            }
+            offset += count;
+        }
+    }
+    return prim;
+}
+
 static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -227,6 +312,7 @@ static void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_info("[alembic] found a Xform [{}]", obj.getName());
@@ -241,6 +327,22 @@ static void traverseABC(
             Alembic::AbcGeom::ICamera cam(obj);
             auto &cam_sch = cam.getSchema();
             tree.camera_info = foundABCCamera(cam_sch, frameid);
+        } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found points [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::IPoints points(obj);
+            auto &points_sch = points.getSchema();
+            tree.prim = foundABCPoints(points_sch, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
+        } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
+            if (!read_done) {
+                log_info("[alembic] found curves [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::ICurves curves(obj);
+            auto &curves_sch = curves.getSchema();
+            tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
         }
     }
 

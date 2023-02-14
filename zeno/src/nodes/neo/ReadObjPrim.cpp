@@ -57,6 +57,9 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
+        auto nnit = nit + 1;
+        if (nit[-1] == '\r')
+            --nit;
 
         if (match(it, "v ")) {
             float x = takef(it);
@@ -86,7 +89,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             }
             prim->polys.emplace_back(beg, cnt);
 
-        } else if (match(it, "l")) {
+        } else if (match(it, "l ")) {
             int x = takeu(it) - 1;
             int y = takeu(it) - 1;
             prim->lines.emplace_back(x, y);
@@ -96,7 +99,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             //std::string_view o_name(it, nit - it);
 
         }
-        it = nit + 1;
+        it = nnit;
     }
 
     if (loop_uvs.size() == prim->loops.size()) {

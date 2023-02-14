@@ -494,6 +494,8 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
             QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
             ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
             pComboBox->setText(value);
+            if (scene)
+                scene->addScrollControl(pComboBox);
 
             connect(pComboBox, &ZenoParamComboBox::textActivated, this, [paramName, this](const QString& textValue) {
                 onParamEditFinished(paramName, textValue);
@@ -1284,6 +1286,22 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
             }
             bool bChecked = inSocket.info.defaultValue.toBool();
             pSocketCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
+            break;
+        }
+        case CONTROL_READPATH:
+        case CONTROL_WRITEPATH:
+        {
+            ZenoParamPathEdit *pPathEdit = qobject_cast<ZenoParamPathEdit*>(ctrl.socket_control);
+            if (!pPathEdit) {
+                //sock type has been changed to this control type
+                clearInSocketControl(inSocket.info.name);
+                pPathEdit = qobject_cast<ZenoParamPathEdit *>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pPathEdit);
+                pControlLayout->addItem(pPathEdit);
+                m_inSockets[inSocket.info.name].socket_control = pPathEdit;
+                bUpdateLayout = true;
+            }
+            pPathEdit->setPath(inSocket.info.defaultValue.toString());
             break;
         }
         case CONTROL_VEC:

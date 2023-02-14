@@ -213,4 +213,13 @@ struct CurveObject : IObjectClone<CurveObject> {
     }
 };
 
+struct BCurveObject : zeno::IObjectClone<BCurveObject> {
+    std::vector<zeno::vec3f> points;
+    float precision = 0.0;
+    std::vector<zeno::vec3f> bPoints;
+    std::string sampleTag = "";
+    std::string SampleAttr = "";
+
+};
+
 }

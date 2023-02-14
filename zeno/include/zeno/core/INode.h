@@ -77,7 +77,7 @@ protected:
     }
 
     template <class T>
-    T get_input2(std::string const &id) const {
+    auto get_input2(std::string const &id) const {
         return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + myname + "`");
     }
 

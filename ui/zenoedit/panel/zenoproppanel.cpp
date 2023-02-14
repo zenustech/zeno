@@ -188,6 +188,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->addItems(items);
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
 				pComboBox->setObjectName(paramName);
+				pComboBox->setEditable(true);
 				pComboBox->setProperty("control", param.control);
 				pComboBox->setCurrentText(param.value.toString());
 				pComboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);

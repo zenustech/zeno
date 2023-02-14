@@ -44,6 +44,8 @@ struct AttrVector {
     using iterator = typename BaseVector::iterator;
     using const_iterator = typename BaseVector::const_iterator;
 
+    inline static const std::string kpos = "pos"; 
+
     BaseVector values;
     std::map<std::string, AttrVectorVariant> attrs;
 
@@ -192,7 +194,6 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>, class F>
     void forall_attr(F &&f) const {
-        const std::string kpos = "pos";
         f(kpos, values);
         for (auto const &[key, arr]: attrs) {
             auto const &k = key;
@@ -207,7 +208,6 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>, class F>
     void forall_attr(F &&f) {
-        const std::string kpos = "pos";
         f(kpos, values);
         for (auto &[key, arr]: attrs) {
             auto const &k = key;

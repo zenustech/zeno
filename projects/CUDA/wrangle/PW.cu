@@ -117,14 +117,10 @@ struct ZSParticlesWrangler : zeno::INode {
 
         /// symbols
         auto def_sym = [&opts](std::string key, int dim) {
-            if (key == "x" || key == "v")
-                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
-                               "now on to keep "
-                               "consistent with cpu-side wrangles");
-            if (key == "pos")
-                key = "x";
-            else if (key == "vel")
-                key = "v";
+            if (key == "x")
+                opts.define_symbol("@pos", dim);
+            else if (key == "v")
+                opts.define_symbol("@vel", dim);
             opts.define_symbol('@' + key, dim);
         };
 
@@ -183,6 +179,14 @@ struct ZSParticlesWrangler : zeno::INode {
             auto unitBytes = sizeof(RM_CVREF_T(pars)::value_type);
             constexpr auto tileSize = RM_CVREF_T(pars)::lane_width;
 
+            auto transTag = [](std::string str) {
+                if (str == "pos")
+                    str = "x";
+                else if (str == "vel")
+                    str = "v";
+                return str;
+            };
+
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
@@ -191,13 +195,14 @@ struct ZSParticlesWrangler : zeno::INode {
                    name.c_str(), dimid, pars.getPropertyOffset(name.substr(1)),
                    pars.numChannels());
 #endif
-                haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
-                                                  (void *)pars.data(),
-                                                  (unsigned short)unitBytes,
-                                                  (unsigned short)tileSize,
-                                                  (unsigned short)pars.numChannels(),
-                                                  (unsigned short)(pars.getPropertyOffset(name.substr(1)) + dimid),
-                                                  (unsigned short)0};
+                haccessors[i] =
+                    zs::AccessorAoSoA{zs::aosoa_c,
+                                      (void *)pars.data(),
+                                      (unsigned short)unitBytes,
+                                      (unsigned short)tileSize,
+                                      (unsigned short)pars.numChannels(),
+                                      (unsigned short)(pars.getPropertyOffset(transTag(name.substr(1))) + dimid),
+                                      (unsigned short)0};
 
 #if 0
         auto t = haccessors[i];

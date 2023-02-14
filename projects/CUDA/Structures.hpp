@@ -2,9 +2,11 @@
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
+#include "zensim/container/SpatialHash.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseLevelSet.hpp"
+#include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -123,7 +125,9 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   static constexpr auto s_edgeTag = "edges";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
+  static constexpr auto s_bendingEdgeTag = "bendingEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
+  static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
   ZenoParticles() = default;
   ~ZenoParticles() = default;
@@ -364,11 +368,23 @@ struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
 };
 
 struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
+  enum element_e { point, curve, surface, tet };
   using lbvh_t = zs::LBvh<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return bvh; }
   const auto &get() const noexcept { return bvh; }
   lbvh_t bvh;
   zs::f32 thickness;
+  element_e et{point};
+};
+
+struct ZenoSpatialHash : IObjectClone<ZenoSpatialHash> {
+  enum element_e { point, curve, surface, tet };
+  using sh_t = zs::SpatialHash<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return sh; }
+  const auto &get() const noexcept { return sh; }
+  sh_t sh;
+  zs::f32 thickness;
+  element_e et{point};
 };
 
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
@@ -435,6 +451,66 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
 
   levelset_t levelset;
   std::string transferScheme;
+};
+
+struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
+  template <int level = 0> using grid_t = zs::SparseGrid<3, zs::f32, (8 >> level)>;
+  using spg_t = grid_t<0>;
+
+  auto &getSparseGrid() noexcept { return spg; }
+  const auto &getSparseGrid() const noexcept { return spg; }
+
+  template <typename T>
+  decltype(auto) setMeta(const std::string &tag, T &&val) {
+    return metas[tag] = FWD(val);
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
+    return std::any_cast<T>(metas.at(tag));
+  }
+  bool hasMeta(const std::string &tag) const {
+    if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+  /// @note -1 implies not a double buffer; 0/1 indicates the current double buffer index.
+  int checkDoubleBuffer(const std::string &attr) const {
+    auto metaTag = attr + "_cur";
+    if (hasMeta(metaTag)) 
+      return readMeta<int>(metaTag);
+    return -1;
+  }
+  bool isDoubleBufferAttrib(const std::string &attr) const {
+    if (attr.back() == '0' || attr.back() == '1')
+      return true;
+    else if (hasMeta(attr + "_cur"))
+      return true;
+    return false;
+  }
+
+  template <int level = 0>
+  auto &getLevel() {
+    if constexpr (level == 0)
+      return spg;
+    else if constexpr (level == 1)
+      return spg1;
+    else if constexpr (level == 2)
+      return spg2;
+    else if constexpr (level == 3)
+      return spg3;
+    else return spg;
+  }
+
+  spg_t spg;
+  std::map<std::string, std::any> metas;
+
+  grid_t<1> spg1;
+  grid_t<2> spg2;
+  grid_t<3> spg3;
 };
 
 struct ZenoBoundary : IObjectClone<ZenoBoundary> {

@@ -1,57 +1,10 @@
-#include "Utils.hpp"
 #include "Solver.cuh"
+#include "Utils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 
 namespace zeno {
-
-template <typename VecT, int N = VecT::template range_t<0>::value,
-          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
-__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const typename IPCSystem::mat3 BCbasis[N / 3],
-                                               const int BCorder[N / 3], const int BCfixed[], bool projectDBC) {
-    // hessian rotation: trans^T hess * trans
-    // left trans^T: multiplied on rows
-    // right trans: multiplied on cols
-    constexpr int NV = N / 3;
-    // rotate and project
-    for (int vi = 0; vi != NV; ++vi) {
-        int offsetI = vi * 3;
-        for (int vj = 0; vj != NV; ++vj) {
-            int offsetJ = vj * 3;
-            IPCSystem::mat3 tmp{};
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    tmp(i, j) = H(offsetI + i, offsetJ + j);
-            // rotate
-            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-            // project
-            if (projectDBC) {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi];
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj];
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            } else {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            }
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    H(offsetI + i, offsetJ + j) = tmp(i, j);
-        }
-    }
-    return;
-}
 
 void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                  bool includeHessian) {
@@ -93,16 +46,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(ppHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[2];
-            int BCorder[2];
-            int BCfixed[2];
-            for (int i = 0; i != 2; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pp[i]);
-                BCorder[i] = vtemp("BCorder", pp[i]);
-                BCfixed[i] = vtemp("BCfixed", pp[i]);
-            }
-            rotate_hessian(ppHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pp[0], pp[1]
             tempPP.tuple<36>("H", ppi) = ppHess;
             /// construct P
@@ -145,16 +88,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(peHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[3];
-            int BCorder[3];
-            int BCfixed[3];
-            for (int i = 0; i != 3; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pe[i]);
-                BCorder[i] = vtemp("BCorder", pe[i]);
-                BCfixed[i] = vtemp("BCfixed", pe[i]);
-            }
-            rotate_hessian(peHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pe[0], pe[1], pe[2]
             tempPE.tuple<81>("H", pei) = peHess;
             /// construct P
@@ -199,16 +132,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(ptHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pt[i]);
-                BCorder[i] = vtemp("BCorder", pt[i]);
-                BCfixed[i] = vtemp("BCfixed", pt[i]);
-            }
-            rotate_hessian(ptHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pt[0], pt[1], pt[2], pt[3]
             tempPT.tuple<144>("H", pti) = ptHess;
             /// construct P
@@ -253,16 +176,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(eeHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ee[i]);
-                BCorder[i] = vtemp("BCorder", ee[i]);
-                BCfixed[i] = vtemp("BCfixed", ee[i]);
-            }
-            rotate_hessian(eeHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempEE.tuple<144>("H", eei) = eeHess;
             /// construct P
@@ -330,16 +243,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(eemHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", eem[i]);
-                BCorder[i] = vtemp("BCorder", eem[i]);
-                BCfixed[i] = vtemp("BCfixed", eem[i]);
-            }
-            rotate_hessian(eemHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempEEM.tuple<144>("H", eemi) = eemHess;
             /// construct P
@@ -413,16 +316,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(ppmHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ppm[i]);
-                BCorder[i] = vtemp("BCorder", ppm[i]);
-                BCfixed[i] = vtemp("BCfixed", ppm[i]);
-            }
-            rotate_hessian(ppmHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempPPM.tuple<144>("H", ppmi) = ppmHess;
             /// construct P
@@ -507,16 +400,6 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, c
             make_pd(pemHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pem[i]);
-                BCorder[i] = vtemp("BCorder", pem[i]);
-                BCfixed[i] = vtemp("BCfixed", pem[i]);
-            }
-            rotate_hessian(pemHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempPEM.tuple<144>("H", pemi) = pemHess;
             /// construct P
@@ -586,16 +469,6 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[2];
-            int BCorder[2];
-            int BCfixed[2];
-            for (int i = 0; i != 2; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpp[i]);
-                BCorder[i] = vtemp("BCorder", fpp[i]);
-                BCfixed[i] = vtemp("BCfixed", fpp[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pp[0], pp[1]
             fricPP.tuple<36>("H", fppi) = hess;
             /// construct P
@@ -656,16 +529,6 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[3];
-            int BCorder[3];
-            int BCfixed[3];
-            for (int i = 0; i != 3; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpe[i]);
-                BCorder[i] = vtemp("BCorder", fpe[i]);
-                BCfixed[i] = vtemp("BCfixed", fpe[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pe[0], pe[1], pe[2]
             fricPE.tuple<81>("H", fpei) = hess;
             /// construct P
@@ -728,16 +591,6 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpt[i]);
-                BCorder[i] = vtemp("BCorder", fpt[i]);
-                BCfixed[i] = vtemp("BCfixed", fpt[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pt[0], pt[1], pt[2], pt[3]
             fricPT.tuple<144>("H", fpti) = hess;
             /// construct P
@@ -801,16 +654,6 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
                 }
             }
 
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fee[i]);
-                BCorder[i] = vtemp("BCorder", fee[i]);
-                BCfixed[i] = vtemp("BCfixed", fee[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             fricEE.tuple<144>("H", feei) = hess;
             /// construct P

@@ -2,22 +2,10 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/HeatmapObject.h>
 #include <sstream>
 
 namespace zeno {
-
-struct HeatmapObject : zeno::IObject {
-    std::vector<zeno::vec3f> colors;
-
-    zeno::vec3f interp(float x) const {
-        x = zeno::clamp(x, 0, 1) * colors.size();
-        int i = (int)zeno::floor(x);
-        i = zeno::clamp(i, 0, colors.size() - 2);
-        float f = x - i;
-        return (1 - f) * colors.at(i) + f * colors.at(i + 1);
-    }
-};
-
 struct MakeHeatmap : zeno::INode {
     virtual void apply() override {
         auto nres = get_param<int>("nres");
@@ -102,7 +90,50 @@ ZENDEFNODE(PrimitiveColorByHeatmap,
         }, /* params: */ {
         {"string", "attrName", "rho"},
         }, /* category: */ {
-        "visualize",
+        "deprecated",
         }});
+struct PrimSample1D : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto srcChannel = get_input2<std::string>("srcChannel");
+        auto dstChannel = get_input2<std::string>("dstChannel");
+        auto heatmap = get_input<HeatmapObject>("heatmap");
+        auto remapMin = get_input2<float>("remapMin");
+        auto remapMax = get_input2<float>("remapMax");
+        primSampleHeatmap(prim, srcChannel, dstChannel, heatmap, remapMin, remapMax);
 
+        set_output("outPrim", std::move(prim));
+    }
+};
+ZENDEFNODE(PrimSample1D, {
+    {
+        {"PrimitiveObject", "prim"},
+        {"heatmap"},
+        {"string", "srcChannel", "rho"},
+        {"string", "dstChannel", "clr"},
+        {"float", "remapMin", "0"},
+        {"float", "remapMax", "1"},
+    },
+    {
+        {"PrimitiveObject", "outPrim"}
+    },
+    {},
+    {"primitive"},
+});
+void primSampleHeatmap(
+        std::shared_ptr<PrimitiveObject> prim,
+        const std::string &srcChannel,
+        const std::string &dstChannel,
+        std::shared_ptr<HeatmapObject> heatmap,
+        float remapMin,
+        float remapMax
+) {
+    auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
+    auto &src = prim->attr<float>(srcChannel);
+#pragma omp parallel for //ideally this could be done in opengl
+    for (int i = 0; i < src.size(); i++) {
+        auto x = (src[i]-remapMin)/(remapMax-remapMin);
+        clr[i] = heatmap->interp(x);
+    }
+}
 }

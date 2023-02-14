@@ -375,7 +375,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         if (t_ele >= t_max) {
 
-            if (surface_inside_volume) { // Hit default material
+            if (surface_inside_volume) { // Hit other material
 
                 prd->_mask_ = DefaultMatMask;
                 prd->trace_tmin = t0;
@@ -434,6 +434,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
     
     prd->emission = emitting;
     prd->radiance = make_float3(0.0f);
+
+    if (v_density == 0) {
+        prd->CH = 0.0;
+        //prd->depth += 0;
+        prd->radiance = make_float3(0); 
+        prd->radiance += prd->emission;
+        return;
+    }
+
     float3 light_attenuation = make_float3(1.0f);
     float pl = rnd(prd->seed);
     float sum = 0.0f;
@@ -451,7 +460,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
             sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
     }
     
-    if(rnd(prd->seed)<=0.5f) {
+    if(rnd(prd->seed)<=0.0f) {
         bool computed = false;
         float ppl = 0;
         for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
@@ -478,8 +487,18 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 float weight = 0.0f;
                 if (nDl > 0.0f && LnDl > 0.0f) {
 
-                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
-                                 (length(light.emission)+1e-6f);
+                    RadiancePRD shadow_prd;
+                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+                    shadow_prd.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
+                    traceOcclusion(params.handle, test_point, L,
+                                   1e-5f,         // tmin
+                                   Ldist - 1e-5f, // tmax,
+                                   &shadow_prd);
+
+                    light_attenuation = shadow_prd.shadowAttanuation;
+
+                    weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
+                                (length(light.emission)+1e-6f);
                 }
                 prd->LP = test_point;
                 prd->Ldir = L;
@@ -488,7 +507,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
                 float3 lbrdf = make_float3(1.0) ;
 
-                prd->radiance = 2.0 * light.emission * lbrdf;
+                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
                 computed = true;
             }
         }
@@ -507,15 +526,27 @@ extern "C" __global__ void __closesthit__radiance_volume()
         prd->nonThinTransHit = 1;
         prd->Lweight = 1.0;
 
+        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+        shadow_prd2.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
+        traceOcclusion(params.handle, test_point, sun_dir,
+                       1e-5f, // tmin
+                       1e16f, // tmax,
+                       &shadow_prd2);
+
+        light_attenuation = shadow_prd2.shadowAttanuation;
+
         lbrdf = make_float3(1.0) ;
-        prd->radiance = 2.0 * float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+        prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * 
+                        float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                        10, // be careful
                                        .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
     }
 
+    prd->radiance = make_float3(0.0);
+
     prd->CH = 1.0;
-    prd->depth += v_density>0? 1:0;
-    prd->radiance *= v_density>0? 1:0; 
+    prd->depth += 1;
+    prd->radiance += prd->emission;
 
     return;
 }

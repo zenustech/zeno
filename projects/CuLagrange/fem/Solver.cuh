@@ -1,6 +1,7 @@
 #pragma once
 #include "SpatialAccel.cuh"
 #include "Structures.hpp"
+#include "zensim/container/Bcht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/container/Bvtt.hpp"
@@ -12,51 +13,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#if 1
+#include "SolverUtils.cuh"
+#endif
 
 namespace zeno {
-
-template <int n = 1> struct HessianPiece {
-    using HessT = zs::vec<float, n * 3, n * 3>;
-    using IndsT = zs::vec<int, n>;
-    zs::Vector<HessT> hess;
-    zs::Vector<IndsT> inds;
-    zs::Vector<int> cnt;
-    using allocator_t = typename zs::Vector<int>::allocator_type;
-    void init(const allocator_t &allocator, std::size_t size = 0) {
-        hess = zs::Vector<HessT>{allocator, size};
-        inds = zs::Vector<IndsT>{allocator, size};
-        cnt = zs::Vector<int>{allocator, 1};
-    }
-    int count() const {
-        return cnt.getVal();
-    }
-    int increaseCount(int inc) {
-        int v = cnt.getVal();
-        cnt.setVal(v + inc);
-        hess.resize((std::size_t)(v + inc));
-        inds.resize((std::size_t)(v + inc));
-        return v;
-    }
-    void reset(bool setZero = true, std::size_t count = 0) {
-        if (setZero)
-            hess.reset(0);
-        cnt.setVal(count);
-    }
-};
-template <typename HessianPieceT> struct HessianView {
-    static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
-    using HT = typename HessianPieceT::HessT;
-    using IT = typename HessianPieceT::IndsT;
-    zs::conditional_t<is_const_structure, const HT *, HT *> hess;
-    zs::conditional_t<is_const_structure, const IT *, IT *> inds;
-    zs::conditional_t<is_const_structure, const int *, int *> cnt;
-};
-template <zs::execspace_e space, int n> HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
-    return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
-}
-template <zs::execspace_e space, int n> HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
-    return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
-}
 
 struct IPCSystem : IObject {
     using T = double;
@@ -149,12 +110,16 @@ struct IPCSystem : IObject {
                 return true;
             return zsprimPtr->asBoundary;
         }
+        bool hasBendingConstraints() const noexcept {
+            return static_cast<bool>(bendingEdgesPtr);
+        }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
         std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
-        typename ZenoParticles::dtiles_t etemp;
+        std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
+        typename ZenoParticles::dtiles_t etemp, btemp; // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
@@ -164,7 +129,9 @@ struct IPCSystem : IObject {
     };
 
     bool hasBoundary() const noexcept {
-        return coVerts != nullptr;
+        if (coVerts != nullptr && coEdges != nullptr && coEles != nullptr)
+            return (coVerts->size() > 0) && (coEdges->size() > 0) && (coEles->size() > 0);
+        return false;
     }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
@@ -197,7 +164,7 @@ struct IPCSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// pipeline
-    void newtonKrylov(zs::CudaExecutionPolicy &pol);
+    bool newtonKrylov(zs::CudaExecutionPolicy &pol);
     // constraint
     void computeConstraints(zs::CudaExecutionPolicy &pol);
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
@@ -210,9 +177,12 @@ struct IPCSystem : IObject {
     auto getCollisionCnts() const {
         return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
     }
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
+    void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
-    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
+    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
     // linear system setup
@@ -221,13 +191,19 @@ struct IPCSystem : IObject {
                                           const zs::SmallString &gTag); // for kappaMin
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
+    void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                          bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                   bool includeHessian = true);
     // krylov solver
+    T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     void convertHessian(zs::CudaExecutionPolicy &pol);
+    void compactHessian(zs::CudaExecutionPolicy &pol);
+    void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);
@@ -236,6 +212,7 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
@@ -248,18 +225,21 @@ struct IPCSystem : IObject {
     bool enableGround = false;
     bool enableContact = true;
     bool enableMollification = true;
+    bool enableContactEE = true;
+    bool enableContactSelf = true;
     bool s_enableFriction = true;
     bool s_enableSelfFriction = true;
     vec3 s_groundNormal{0, 1, 0};
     T augLagCoeff = 1e4;
     T pnRel = 1e-2;
     T cgRel = 1e-2;
+    int fricIterCap = 2;
     int PNCap = 1000;
     int CGCap = 500;
     int CCDCap = 20000;
     T kappa0 = 1e4;
     T fricMu = 0;
-    T &boundaryKappa = kappa;
+    T boundaryKappa = 1;
     T xi = 0; // 1e-2; // 2e-3;
     T dHat = 0.0025;
     T epsv = 0.0;
@@ -326,9 +306,12 @@ struct IPCSystem : IObject {
     zs::Vector<pair4_t> FEE;
     zs::Vector<int> nFEE;
     dtiles_t fricEE;
+
+    zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
     zs::Vector<T> temp;
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
@@ -339,6 +322,9 @@ struct IPCSystem : IObject {
     HessianPiece<3> hess3;
     HessianPiece<4> hess4;
     tiles_t cgtemp;
+
+    // possibly accessed in compactHessian and cgsolve
+    CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
 
     // boundary contacts
     // auxiliary data (spatial acceleration)
@@ -355,5 +341,3 @@ struct IPCSystem : IObject {
 };
 
 } // namespace zeno
-
-#include "SolverUtils.cuh"

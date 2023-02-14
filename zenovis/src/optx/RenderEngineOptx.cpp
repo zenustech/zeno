@@ -11,6 +11,7 @@
 #include <zeno/types/CameraObject.h>
 #include <zenovis/ObjectsManager.h>
 #include <zeno/utils/UserData.h>
+#include <zeno/extra/TempNode.h>
 #include <zeno/utils/fileio.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
@@ -66,6 +67,7 @@ struct GraphicsManager {
             std::string extensions;
         };
         struct DetPrimitive {
+            std::shared_ptr<zeno::PrimitiveObject> primSp;
         };
 
     struct ZxxGraphic : zeno::disable_copy {
@@ -190,12 +192,57 @@ struct GraphicsManager {
         explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
-            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
+            if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                // vvv deepcopy to cihou following inplace ops vvv
+                auto prim_in_lslislSp = std::make_shared<zeno::PrimitiveObject>(*prim_in0);
+                // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
+                auto prim_in = prim_in_lslislSp.get();
+
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
                 
-                if(isRealTimeObject == 0 && isUniformCarrier == 0){
+                auto isInst = prim_in->userData().get2<int>("isInst", 0);
+                if (isInst == 1)
+                {
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    std::size_t numInsts = prim_in->verts.size();
+                    const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    if (!prim_in->has_attr("nrm"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("nrm");
+                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(),
+                                                                 zeno::vec3f(0,1,0));
+                    }
+                    
+                    const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
+                    auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
+                    
+                    if (!prim_in->has_attr("clr")) {
+                        prim_in->add_attr<zeno::vec3f>("clr");
+                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(),
+                                                                 zeno::vec3f(1, 1, 1));
+                    }
+                    const float *scale = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
+                    xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
+                }
+                else if (isRealTimeObject == 0 && isUniformCarrier == 0)
+                {
+        det = DetPrimitive{prim_in_lslislSp};
+        if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
+            // todo: zhxx, should comp normal after subd or before????
+            zeno::log_trace("computing subdiv {}", subdlevs);
+            (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
+                .set("prim", prim_in_lslislSp)
+                .set2<int>("levels", subdlevs)
+                .set2<std::string>("edgeCreaseAttr", "")
+                .set2<bool>("triangulate", false)
+                .set2<bool>("asQuadFaces", true)
+                .set2<bool>("hasLoopUVs", true)
+                .set2<bool>("delayTillIpc", false)
+                .call();  // will inplace subdiv prim
+            prim_in->userData().del("delayedSubdivLevels");
+        }
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
                         zeno::primTriangulateQuads(prim_in);
@@ -206,7 +253,7 @@ struct GraphicsManager {
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
                     if(prim_in->tris.size() && need_computeNormal)
                     {
-                        std::cout<<"computing normal\n";
+                        zeno::log_trace("computing normal");
                         zeno::primCalcNormal(prim_in,1);
                     }
                     computeTrianglesTangent(prim_in);
@@ -283,7 +330,6 @@ struct GraphicsManager {
                     }
                     //flatten here, keep the rest of codes unchanged.
 
-                    det = DetPrimitive{};
                     auto vs = (float const *)prim->verts.data();
                     std::map<std::string, std::pair<float const *, size_t>> vtab;
                     prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
@@ -293,7 +339,8 @@ struct GraphicsManager {
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
-                    xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
@@ -304,6 +351,7 @@ struct GraphicsManager {
 
         ~ZxxGraphic() {
             xinxinoptix::unload_object(key);
+            xinxinoptix::unload_inst(key);
         }
     };
 
@@ -350,8 +398,8 @@ struct GraphicsManager {
                 auto p0 = prim_in->verts[prim_in->tris[0][0]];
                 auto p1 = prim_in->verts[prim_in->tris[0][1]];
                 auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p1;
-                auto e2 = p2 - p1;
+                auto e1 = p0 - p2;
+                auto e2 = p1 - p2;
                 auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
                 auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
                 glm::vec3 g_nor;
@@ -370,6 +418,14 @@ struct GraphicsManager {
                 prim->verts[3] = nor;
                 prim->verts[4] = clr;
 
+                std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
+                std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
+                std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
+                std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
+                std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
+                std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+
                 xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
                                         prim->verts[3].data(), prim->verts[4].data());
             }
@@ -377,19 +433,24 @@ struct GraphicsManager {
                 sky_found = true;
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                float sunLightIntensity = prim_in->userData().get2<float>("sunLightIntensity");
+                float colorTemperatureMix = prim_in->userData().get2<float>("colorTemperatureMix");
+                float colorTemperature = prim_in->userData().get2<float>("colorTemperature");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
                 float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
             }
         }
@@ -424,10 +485,14 @@ struct GraphicsManager {
             if (ud.has("sunLightDir")) {
                 zeno::vec2f sunLightDir = ud.get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = ud.get2<float>("sunLightSoftness");
+                float sunLightIntensity = ud.get2<float>("sunLightIntensity");
+                float colorTemperatureMix = ud.get2<float>("colorTemperatureMix");
+                float colorTemperature = ud.get2<float>("colorTemperature");
                 zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
                 float timeStart = ud.get2<float>("timeStart");
                 float timeSpeed = ud.get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                                                   sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
         }
 
@@ -617,7 +682,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        //zeno::log_info("test Optx::draw()");
 
         bool sizeNeedUpdate = false;
         {
@@ -634,6 +698,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 camNeedUpdate = true;
             oldcamid = newcamid;
         }
+        if(scene->drawOptions->needRefresh){
+            camNeedUpdate = true;
+            scene->drawOptions->needRefresh = false;
+        }
+
+        //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
+        //          << " NeedRefresh " << scene->drawOptions->needRefresh << "\n";
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
@@ -817,8 +888,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             
             xinxinoptix::updateVolume();
 
-
-        OptixUtil::logInfoVRAM("Before update Mesh");
+    OptixUtil::logInfoVRAM("Before update Mesh");
 
             //zeno::log_debug("[zeno-optix] updating mesh");
             // timer.tick();
@@ -826,10 +896,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
             // timer.tock("done static mesh update");
             // timer.tick();
-            xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
+            xinxinoptix::UpdateDynamicMesh(mtlidlut);
             // timer.tock("done dynamic mesh update");
-        OptixUtil::logInfoVRAM("After update Mesh");
+    OptixUtil::logInfoVRAM("After update Mesh");
 
+            xinxinoptix::UpdateInst();
+            xinxinoptix::UpdateStaticInstMesh(mtlidlut);
+            xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
+            xinxinoptix::CopyInstMeshToGlobalMesh();
+            xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+            
             xinxinoptix::optixupdateend();
             
             meshNeedUpdate = false;
@@ -841,7 +917,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }

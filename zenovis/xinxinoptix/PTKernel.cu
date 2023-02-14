@@ -59,19 +59,6 @@ vec3 ACESFitted(vec3 color, float gamma)
     return color;
 }
 
-__device__
-inline float3 ACESTone(float3 color, float adapted_lum)
-{
-    const float A = 2.51f;
-    const float B = 0.03f;
-    const float C = 2.43f;
-    const float D = 0.59f;
-    const float E = 0.14f;
-
-    color *= adapted_lum;
-    return (color * (A * color + B)) / (color * (C * color + D) + E);
-}
-
 extern "C" __global__ void __raygen__rg()
 {
     const int    w   = params.width;
@@ -88,8 +75,6 @@ extern "C" __global__ void __raygen__rg()
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;
-
-    const unsigned int image_index  = idx.y * params.width + idx.x;
 
     do
     {
@@ -109,8 +94,7 @@ extern "C" __global__ void __raygen__rg()
         float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
 
-        RadiancePRD prd;
-        prd.emitted      = make_float3(0.f); 
+        RadiancePRD prd; 
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
@@ -133,14 +117,11 @@ extern "C" __global__ void __raygen__rg()
         prd.curMatIdx = 0;
         prd.test_distance = false;
 
-        VisibilityMask ray_mask = prd._mask_;
-
-        float tmin = prd.trace_tmin;
+        auto tmin = prd.trace_tmin;
+        auto ray_mask = prd._mask_;
 
         for(;;)
         {
-            prd.vol_t0 = CUDART_INF_F; prd.vol_t1 = CUDART_INF_F;
-
             traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
 
             tmin = prd.trace_tmin;
@@ -154,36 +135,38 @@ extern "C" __global__ void __raygen__rg()
                 //ray_direction = prd.direction;
                 continue;
             }
-            
-            vec3 radiance = vec3(prd.radiance);
-            const vec3 oldradiance = radiance;
-            RadiancePRD shadow_prd;
-            shadow_prd.shadowAttanuation = make_float3(1.0);
-            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
-            traceOcclusion(params.handle, prd.LP, prd.Ldir,
-                           1e-5f, // tmin
-                           1e16f, // tmax,
-                           &shadow_prd);
 
-            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
+//            vec3 radiance = vec3(prd.radiance);
+//            vec3 oldradiance = radiance;
+//            RadiancePRD shadow_prd;
+//            shadow_prd.depth = prd.depth;
+//            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
+//            traceOcclusion(params.handle, prd.LP, prd.Ldir,
+//                           1e-5f, // tmin
+//                           1e16f, // tmax,
+//                           &shadow_prd);
+//            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
+//            radiance = radiance + vec3(prd.emission);
 
-            radiance = radiance + vec3(prd.emission);
-            prd.emission = make_float3(0);
-            
-            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
+//            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
-            //result += prd.emitted;
+            //prd.radiance += prd.emission;
             if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
-                //result += prd.radiance * prd.attenuation/(prd.prob2 + 1e-5);
+                //result += prd.emission;// * prd.attenuation2;
             }
+            prd.radiance = make_float3(0);
+            prd.emission = make_float3(0);
 
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
-            if( prd.done ){
+
+            if( prd.done || params.simpleRender==true){
                 break;
             }
+
             if(prd.depth>8){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
@@ -197,20 +180,18 @@ extern "C" __global__ void __raygen__rg()
 
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-
             // if(prd.passed == false)
             //     ++depth;        
             //}else{
                 //prd.passed = false;
             //}
         }
-        break;
     }
     while( --i );
 
     float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
-
-    // params.frame_buffer[ image_index ] = make_color ( accum_color ); return;
+    const uint3    launch_index = optixGetLaunchIndex();
+    const unsigned int image_index  = launch_index.y * params.width + launch_index.x;
 
     if( subframe_index > 0 )
     {
@@ -226,16 +207,11 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
     float3 out_color = accum_color;
-
-    //out_color = ACESTone(out_color, 0.05);
     params.frame_buffer[ image_index ] = make_color ( out_color );
 }
 
 extern "C" __global__ void __miss__radiance()
 {
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
-
     vec3 sunLightDir = vec3(
             params.sunLightDirX,
             params.sunLightDirY,
@@ -243,9 +219,6 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-
-    prd->vol_t0 = CUDART_INF_F; prd->vol_t1 = CUDART_INF_F;
-
     prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
@@ -280,11 +253,6 @@ extern "C" __global__ void __miss__radiance()
 
 extern "C" __global__ void __miss__occlusion()
 {
-    auto *prd = getPRD();
-    
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
-
     setPayloadOcclusion( false );
 }
 

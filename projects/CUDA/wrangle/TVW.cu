@@ -122,14 +122,10 @@ struct ZSTileVectorWrangler : zeno::INode {
 
         /// symbols
         auto def_sym = [&opts](std::string key, int dim) {
-            if (key == "x" || key == "v")
-                zeno::log_warn("please use property/attribute name [pos] and [vel] instead of [x] and [v] from "
-                               "now on to keep "
-                               "consistent with cpu-side wrangles");
-            if (key == "pos")
-                key = "x";
-            else if (key == "vel")
-                key = "v";
+            if (key == "x")
+                opts.define_symbol("@pos", dim);
+            else if (key == "v")
+                opts.define_symbol("@vel", dim);
             opts.define_symbol('@' + key, dim);
         };
 
@@ -150,10 +146,10 @@ struct ZSTileVectorWrangler : zeno::INode {
                 else if (targetNo == 1 && !parObjPtr->elements.has_value())
                     continue;
             }
-            if (targetNo == 0) {
-                ;
+            if (targetNo == 0) { // verts
+                tvPtr = &parObjPtr->getParticles();
             } else if (targetNo == 1) {
-                ;
+                tvPtr = &parObjPtr->getQuadraturePoints();
             }
 
             auto props = tvPtr->getPropertyTags();
@@ -209,6 +205,14 @@ struct ZSTileVectorWrangler : zeno::INode {
             auto unitBytes = sizeof(RM_CVREF_T(*tvPtr)::value_type);
             constexpr auto tileSize = RM_CVREF_T(*tvPtr)::lane_width;
 
+            auto transTag = [](std::string str) {
+                if (str == "pos")
+                    str = "x";
+                else if (str == "vel")
+                    str = "v";
+                return str;
+            };
+
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
@@ -217,13 +221,14 @@ struct ZSTileVectorWrangler : zeno::INode {
                    name.c_str(), dimid, tvPtr->getPropertyOffset(name.substr(1)),
                    tvPtr->numChannels());
 #endif
-                haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
-                                                  (void *)tvPtr->data(),
-                                                  (unsigned short)unitBytes,
-                                                  (unsigned short)tileSize,
-                                                  (unsigned short)tvPtr->numChannels(),
-                                                  (unsigned short)(tvPtr->getPropertyOffset(name.substr(1)) + dimid),
-                                                  (unsigned short)0};
+                haccessors[i] =
+                    zs::AccessorAoSoA{zs::aosoa_c,
+                                      (void *)tvPtr->data(),
+                                      (unsigned short)unitBytes,
+                                      (unsigned short)tileSize,
+                                      (unsigned short)tvPtr->numChannels(),
+                                      (unsigned short)(tvPtr->getPropertyOffset(transTag(name.substr(1))) + dimid),
+                                      (unsigned short)0};
 
 #if 0
         auto t = haccessors[i];

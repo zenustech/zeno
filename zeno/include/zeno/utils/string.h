@@ -35,6 +35,28 @@ static bool starts_with(std::string const &line, std::string const &pattern) {
 	return line.find(pattern) == 0;
 }
 
+static bool ends_with(std::string const &line, std::string const &pattern, bool isCaseSensitive = true) {
+    if (line.size() < pattern.size()) {
+        false;
+    }
+    for (auto i = 0; i < pattern.size(); i++) {
+        if (isCaseSensitive) {
+            auto a = pattern[i];
+            auto b = line[line.size() - pattern.size() + i];
+            if (a != b) {
+                return false;
+            }
+        }
+        else {
+            auto a = std::tolower(pattern[i]);
+            auto b = std::tolower(line[line.size() - pattern.size() + i]);
+            if (a != b) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 static std::string trim_string(std::string str) {
 	while (str.size() != 0 && std::isspace(str[0])) {
 		str.erase(0, 1);

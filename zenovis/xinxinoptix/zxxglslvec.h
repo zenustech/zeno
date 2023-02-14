@@ -2,6 +2,13 @@
 
 #include <cuda/helpers.h>
 
+__forceinline__ __device__ float to_radians(float degrees) {
+    return degrees * M_PIf / 180.0f;
+}
+__forceinline__ __device__ float to_degrees(float radians) {
+    return radians * M_1_PIf * 180.0f;
+}
+
 struct vec4{
     float x, y, z, w;
     __forceinline__ __device__ vec4(const float4 &_v)
@@ -50,6 +57,15 @@ struct vec3{
     vec3() = default;
     __forceinline__ __device__ operator float3() const {
         return make_float3(x, y, z);
+    }
+    __forceinline__ __device__ vec3 rotX(float a) {
+        return vec3(x, cos(a) * y - sin(a) * z, sin(a) * y + cos(a) * z);
+    }
+    __forceinline__ __device__ vec3 rotY(float a) {
+        return vec3(cos(a) * x - sin(a) * z, y, cos(a) * z + sin(a) * x);
+    }
+    __forceinline__ __device__ vec3 rotZ(float a) {
+        return vec3(cos(a) * x - sin(a) * y, cos(a) * y + sin(a) * x, z);
     }
 };
 
@@ -947,6 +963,21 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
+struct mat4{
+    vec4 m0, m1, m2, m3;
+    __forceinline__ __device__ mat4(
+        float m00, float m01, float m02, float m03,
+        float m10, float m11, float m12, float m13,
+        float m20, float m21, float m22, float m23,
+        float m30, float m31, float m32, float m33)
+    {
+        m0 = vec4(m00, m01, m02, m03);
+        m1 = vec4(m10, m11, m12, m13);
+        m2 = vec4(m20, m21, m22, m23);
+        m3 = vec4(m30, m31, m32, m33);
+    }
+};
+
 struct mat3{
     vec3 m0, m1, m2;
     __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
@@ -955,11 +986,25 @@ struct mat3{
         m1 = vec3(m10, m11, m12);
         m2 = vec3(m20, m21, m22);
     }
+
+    explicit __forceinline__ __device__ mat3(const mat4& _v)
+    {
+        m0 = vec3(_v.m0);
+        m1 = vec3(_v.m1);
+        m2 = vec3(_v.m2);
+    }
 };
+
 __forceinline__ __device__ vec3 operator*(mat3 a, vec3 b)
 {
-    return vec3(dot(a.m0, b), dot(a.m1, b), dot(a.m2,b));
+    return vec3(dot(a.m0, b), dot(a.m1, b), dot(a.m2, b));
 }
+
+__forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
+{
+    return vec4(dot(a.m0, b), dot(a.m1, b), dot(a.m2, b), dot(a.m3, b));
+}
+
 //__forceinline__ __device__ float cudatoglsl(float a) {
     //return a;
 //}
