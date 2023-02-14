@@ -6,6 +6,7 @@
 
 ZVecEditorItem::ZVecEditorItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
     : _base(parent)
+    , m_bFloatVec(bFloat)
 {
     initUI(vec, bFloat, pScene);
 }

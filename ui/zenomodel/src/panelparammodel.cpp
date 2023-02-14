@@ -126,6 +126,7 @@ void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first,
         QList<QStandardItem*> lst = findItems(iotags::params::panel_params, Qt::MatchRecursive | Qt::MatchExactly);
         ZASSERT_EXIT(lst.size() == 1);
         VParamItem* pNewItem = static_cast<VParamItem*>(pNodeParam->clone());
+        pNewItem->mapCoreParam(pNodeParam->index());
         lst[0]->appendRow(pNewItem);
     }
     else if (parentName == iotags::params::node_outputs)
