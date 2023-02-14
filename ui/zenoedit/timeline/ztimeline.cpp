@@ -193,18 +193,12 @@ void ZTimeline::initButtons()
     m_ui->btnAlways->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnAlways->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
-    m_ui->btnRun->setButtonOptions(ZToolButton::Opt_HasText);
-    m_ui->btnRun->setText(tr("RUN"));
-    m_ui->btnRun->setFont(QFont("Segoe UI Bold", 10));
-    m_ui->btnRun->setMargins(QMargins(8, 6, 8, 6));
-    m_ui->btnRun->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    QFont font("Alibaba PuHuiTi", 10);
+    font.setWeight(QFont::DemiBold);
 
-    m_ui->btnKill->setButtonOptions(ZToolButton::Opt_HasText);
-    m_ui->btnKill->setText(tr("Kill"));
-    m_ui->btnKill->setFont(QFont("Segoe UI Bold", 10));
-    m_ui->btnKill->setTextClr(QColor("#C95449"), QColor("#C95449"), QColor("#C95449"), QColor("#C95449"));
-    m_ui->btnKill->setMargins(QMargins(8, 6, 8, 6));
-    m_ui->btnKill->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
+    m_ui->btnRun->setFont(font);
+    m_ui->btnKill->setFont(font);
 
     m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",

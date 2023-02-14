@@ -7,6 +7,7 @@
 
 class ZIconToolButton;
 class ZenoGraphsEditor;
+class ZTextLabel;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -15,8 +16,23 @@ public:
     ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn);
 };
 
+class DockToolbarWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit DockToolbarWidget(QWidget* parent = nullptr);
+    QWidget* widget() const;
+    virtual void initUI();
 
-class DockContent_Parameter : public QWidget
+protected:
+    virtual void initToolbar(QHBoxLayout* pToolLayout) = 0;
+    virtual QWidget *initWidget() = 0;
+    virtual void initConnections() = 0;
+
+    QWidget* m_pWidget;
+};
+
+class DockContent_Parameter : public DockToolbarWidget
 {
     Q_OBJECT
 public:
@@ -24,12 +40,18 @@ public:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
 
+protected:
+    void initToolbar(QHBoxLayout* pToolLayout) override;
+    QWidget* initWidget() override;
+    void initConnections() override;
+
 private:
     QLabel* m_plblName;
     QLineEdit* m_pLineEdit;
+    ZToolBarButton* m_pSettingBtn;
 };
 
-class DockContent_Editor : public QWidget
+class DockContent_Editor : public DockToolbarWidget
 {
     Q_OBJECT
 public:
@@ -37,8 +59,25 @@ public:
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     ZenoGraphsEditor* getEditor() const;
 
+protected:
+    void initToolbar(QHBoxLayout* pToolLayout) override;
+    QWidget* initWidget() override;
+    void initConnections() override;
+
 private:
     ZenoGraphsEditor* m_pEditor;
+    ZTextLabel* lblFileName;
+    ZToolBarButton *pListView;
+    ZToolBarButton *pTreeView;
+    ZToolBarButton *pSubnetMgr;
+    ZToolBarButton *pFold;
+    ZToolBarButton *pUnfold;
+    ZToolBarButton *pSnapGrid;
+    ZToolBarButton *pBlackboard;
+    ZToolBarButton *pFullPanel;
+    ZToolBarButton *pSearchBtn;
+    ZToolBarButton *pSettings;
+    QComboBox* cbZoom;
 };
 
 class DockContent_View : public QWidget
@@ -48,14 +87,21 @@ public:
     explicit DockContent_View(QWidget* parent = nullptr);
 };
 
-class DockContent_Log : public QWidget
+class DockContent_Log : public DockToolbarWidget
 {
     Q_OBJECT
 public:
     explicit DockContent_Log(QWidget* parent = nullptr);
 
-private:
+protected:
+    void initToolbar(QHBoxLayout* pToolLayout) override;
+    QWidget* initWidget() override;
+    void initConnections() override;
 
+private:
+    QStackedWidget* m_stack;
+    ZToolBarButton* m_pBtnFilterLog;
+    ZToolBarButton* m_pBtnPlainLog;
 };
 
 

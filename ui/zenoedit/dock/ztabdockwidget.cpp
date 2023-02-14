@@ -103,6 +103,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         case PANEL_NODE_PARAMS:
         {
             DockContent_Parameter* wid = new DockContent_Parameter;
+            wid->initUI();
             return wid;
         }
         case PANEL_VIEW:
@@ -111,7 +112,9 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_EDITOR:
         {
-            return new DockContent_Editor;
+            DockContent_Editor* wid = new DockContent_Editor;
+            wid->initUI();
+            return wid;
         }
         case PANEL_NODE_DATA:
         {
@@ -123,7 +126,9 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_LOG:
         {
-            return new ZPlainLogPanel;
+            DockContent_Log* wid = new DockContent_Log;
+            wid->initUI();
+            return wid;
         }
     }
     return nullptr;

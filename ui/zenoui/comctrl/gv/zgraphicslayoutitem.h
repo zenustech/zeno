@@ -74,7 +74,7 @@ public:
         if (QGraphicsProxyWidget::Type == T::type())
             return T::boundingRect();
 
-        QSizeF sizeHint = T::data(GVKEY_BOUNDING).toSizeF();
+        QSizeF sizeHint = T::data(GVKEY_SIZEHINT).toSizeF();
         QVariant varPolicy = T::data(GVKEY_SIZEPOLICY);
         QSizePolicy policy = varPolicy.value<QSizePolicy>();
         QRectF br = T::boundingRect();

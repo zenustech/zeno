@@ -115,7 +115,8 @@ namespace zenoui
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.
-                    const QVariant &newValue = UiHelper::parseStringByType(pLineEdit->toPlainText(), type);
+                    const QString textVal = pLineEdit->toPlainText();
+                    const QVariant& newValue = UiHelper::parseStringByType(textVal, type);
                     cbFunc(newValue);
                 });
                 pItemWidget = pLineEdit;

@@ -31,7 +31,7 @@ private slots:
 private:
     bool isDragArea(QPointF pos);
 
-    ZenoParamBlackboard* m_pTextEdit;
+    ZGraphicsTextItem* m_pContent;
     ZGraphicsTextItem* m_pTitle;
     bool m_bDragging;
 };

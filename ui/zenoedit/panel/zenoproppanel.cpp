@@ -544,7 +544,13 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 
             if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
             {
-                pLineEdit->setText(value.toString());
+                PARAM_CONTROL paramCtrl = (PARAM_CONTROL)param->data(ROLE_PARAM_CTRL).toInt();
+                QString literalNum;
+                if (paramCtrl == CONTROL_FLOAT)
+                    literalNum = QString::number(value.toFloat());
+                else
+                    literalNum = value.toString();
+                pLineEdit->setText(literalNum);
             }
             else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
             {

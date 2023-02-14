@@ -37,12 +37,52 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
 }
 
 
-DockContent_Parameter::DockContent_Parameter(QWidget* parent)
+DockToolbarWidget::DockToolbarWidget(QWidget* parent)
     : QWidget(parent)
+    , m_pWidget(nullptr)
 {
+}
+
+void DockToolbarWidget::initUI()
+{
+    QVBoxLayout *pLayout = new QVBoxLayout;
+    pLayout->setSpacing(0);
+    pLayout->setContentsMargins(0, 0, 0, 0);
+
+    QWidget *pToolbar = new QWidget;
+    pToolbar->setFixedHeight(ZenoStyle::dpiScaled(28));
+
     QHBoxLayout* pToolLayout = new QHBoxLayout;
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
         ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
+    pToolbar->setLayout(pToolLayout);
+
+    initToolbar(pToolLayout);
+    pLayout->addWidget(pToolbar);
+    pLayout->addWidget(new ZPlainLine(1, QColor("#000000"))); //add the seperator line
+    pLayout->addWidget(initWidget());
+
+    initConnections();
+
+    setLayout(pLayout);
+}
+
+QWidget* DockToolbarWidget::widget() const
+{
+    return m_pWidget;
+}
+
+
+
+DockContent_Parameter::DockContent_Parameter(QWidget* parent)
+    : DockToolbarWidget(parent)
+    , m_pSettingBtn(nullptr)
+{
+}
+
+void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
+{
+    //pToolLayout->setSpacing(9);
 
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
@@ -62,7 +102,7 @@ DockContent_Parameter::DockContent_Parameter(QWidget* parent)
 
     ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
-    ZToolBarButton* pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
+    m_pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
     pToolLayout->addWidget(pIcon);
     pToolLayout->addWidget(m_plblName);
@@ -70,19 +110,19 @@ DockContent_Parameter::DockContent_Parameter(QWidget* parent)
     pToolLayout->addStretch();
     pToolLayout->addWidget(pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
-    pToolLayout->addWidget(pSettingBtn);
-    pToolLayout->setSpacing(9);
+    pToolLayout->addWidget(m_pSettingBtn);
+}
 
-    QVBoxLayout* pVLayout = new QVBoxLayout;
-    pVLayout->addLayout(pToolLayout);
-    pVLayout->setContentsMargins(0, 0, 0, 0);
-    pVLayout->setSpacing(0);
+QWidget* DockContent_Parameter::initWidget()
+{
+    m_pWidget = new ZenoPropPanel;
+    return m_pWidget;
+}
 
-    ZenoPropPanel* prop = new ZenoPropPanel;
-    pVLayout->addWidget(prop);
-    setLayout(pVLayout);
-
-    connect(pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
+void DockContent_Parameter::initConnections()
+{
+    ZenoPropPanel* prop = qobject_cast<ZenoPropPanel*>(m_pWidget);
+    connect(m_pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
 }
 
 void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -114,29 +154,25 @@ void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::st
 
 
 DockContent_Editor::DockContent_Editor(QWidget* parent)
-    : QWidget(parent)
+    : DockToolbarWidget(parent)
     , m_pEditor(nullptr)
 {
-    QHBoxLayout* pToolLayout = new QHBoxLayout;
-    pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
-        ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
-    pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
+}
 
-    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
-    m_pEditor = new ZenoGraphsEditor(pMainWin);
+void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
+{
+    pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
+    pListView->setChecked(false);
 
-    ZToolBarButton* pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
-    pListView->setChecked(true);
-
-    ZToolBarButton* pTreeView = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
-    ZToolBarButton* pSubnetMgr = new ZToolBarButton(false, ":/icons/nodeEditor_subnetManager_unselected.svg", ":/icons/nodeEditor_subnetManager_selected.svg");
-    ZToolBarButton* pFold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeFold_unselected.svg", ":/icons/nodeEditor_nodeFold_selected.svg");
-    ZToolBarButton* pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
-    ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
-    ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
-    ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
-    ZToolBarButton* pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
-    ZToolBarButton* pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+    pTreeView = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    pSubnetMgr = new ZToolBarButton(false, ":/icons/nodeEditor_subnetManager_unselected.svg", ":/icons/nodeEditor_subnetManager_selected.svg");
+    pFold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeFold_unselected.svg", ":/icons/nodeEditor_nodeFold_selected.svg");
+    pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
+    pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
+    pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
+    pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
+    pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
+    pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -159,21 +195,16 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
-    QComboBox* cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     cbZoom->setEditable(false);
     cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-    connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
-        QString percent = QString::number(int(newFactor * 100));
-        percent += "%";
-        cbZoom->setCurrentText(percent);
-    });
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
 
     pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
 
-    ZTextLabel* lblFileName = new ZTextLabel;
+    lblFileName = new ZTextLabel;
     lblFileName->setFont(QFont("Segoe UI Semibold", 12));
     lblFileName->setTextColor(QColor(255, 255, 255, 255 * 0.7));
 
@@ -187,17 +218,19 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
     pToolLayout->addWidget(pSettings);
+}
 
-    QVBoxLayout* pVLayout = new QVBoxLayout;
-    pVLayout->setContentsMargins(0, 0, 0, 0);
-    pVLayout->setSpacing(0);
+QWidget* DockContent_Editor::initWidget()
+{
+    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+    m_pEditor = new ZenoGraphsEditor(pMainWin);
+    m_pWidget = m_pEditor;
+    m_pEditor->onSubnetListPanel(false, ZenoGraphsEditor::Side_Subnet);     //cihou caofei:
+    return m_pEditor;
+}
 
-    pVLayout->addLayout(pToolLayout);
-
-    //add the seperator line
-    ZPlainLine* pLine = new ZPlainLine(1, QColor("#000000"));
-    pVLayout->addWidget(pLine);
-
+void DockContent_Editor::initConnections()
+{
     auto pGraphsMgm = zenoApp->graphsManagment();
     connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
@@ -209,7 +242,6 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
         lblFileName->setText(fn);
     });
-
     connect(pGraphsMgm, &GraphsManagment::dirtyChanged, this, [=](bool isDirty) {
         QString name = lblFileName->text();
         if (isDirty) {
@@ -226,7 +258,6 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
             }
         }
     });
-
     connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
     { 
         m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Subnet); 
@@ -261,12 +292,11 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
         m_pEditor->onAction(&act);
     });
 
-    //cihou caofei:
-    pListView->setChecked(false);
-    m_pEditor->onSubnetListPanel(false, ZenoGraphsEditor::Side_Subnet); 
-
-    pVLayout->addWidget(m_pEditor);
-    setLayout(pVLayout);
+    connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
+        QString percent = QString::number(int(newFactor * 100));
+        percent += "%";
+        cbZoom->setCurrentText(percent);
+    });
 }
 
 ZenoGraphsEditor* DockContent_Editor::getEditor() const
@@ -291,23 +321,43 @@ DockContent_View::DockContent_View(QWidget* parent)
 
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
-    : QWidget(parent)
+    : DockToolbarWidget(parent)
+    , m_stack(nullptr)
 {
-    QHBoxLayout* pToolLayout = new QHBoxLayout;
-    pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
-        ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
-    pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
-
-    QVBoxLayout* pVLayout = new QVBoxLayout;
-    pVLayout->setContentsMargins(0, 0, 0, 0);
-    pVLayout->setSpacing(0);
-
-    pVLayout->addLayout(pToolLayout);
-    //add the seperator line
-    pVLayout->addWidget(new ZPlainLine(1, QColor("#000000")));
-
-    ZlogPanel* logPanel = new ZlogPanel;
-    pVLayout->addWidget(logPanel);
-    setLayout(pVLayout);
 }
 
+
+void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
+{
+    m_pBtnFilterLog = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
+    m_pBtnPlainLog = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_pBtnFilterLog->setChecked(true);
+    pToolLayout->addWidget(m_pBtnFilterLog);
+    pToolLayout->addWidget(m_pBtnPlainLog);
+    pToolLayout->addStretch();
+}
+
+QWidget* DockContent_Log::initWidget()
+{
+    m_stack = new QStackedWidget;
+    m_stack->addWidget(new ZlogPanel);
+    m_stack->addWidget(new ZPlainLogPanel);
+    m_stack->setCurrentIndex(0);
+
+    m_pWidget = m_stack;
+    return m_pWidget;
+}
+
+void DockContent_Log::initConnections()
+{
+    connect(m_pBtnFilterLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
+        BlockSignalScope scope(m_pBtnPlainLog);
+        m_pBtnPlainLog->setChecked(false);
+        m_stack->setCurrentIndex(0);
+    });
+    connect(m_pBtnPlainLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
+        BlockSignalScope scope(m_pBtnFilterLog);
+        m_pBtnFilterLog->setChecked(false);
+        m_stack->setCurrentIndex(1);
+    });
+}
