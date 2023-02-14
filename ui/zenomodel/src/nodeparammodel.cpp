@@ -666,6 +666,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
     default:
         return ViewParamModel::setData(index, value, role);
     }
+    return false;
 }
 
 void NodeParamModel::clearLinks(VParamItem* pItem)
