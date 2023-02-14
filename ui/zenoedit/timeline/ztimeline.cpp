@@ -69,8 +69,7 @@ void ZTimeline::initSignals()
         scene->drawOptions->needRefresh = true;
     });
     m_ui->btnAlways->setShortcut(QKeySequence("F1"));
-    m_ui->btnRun->setShortcut(QKeySequence("F2"));
-    m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
+
     //m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
     //m_ui->btnForward->setShortcut(QKeySequence("F3"));
     //m_ui->btnPlay->setShortcut(QKeySequence("F4"));
@@ -196,9 +195,16 @@ void ZTimeline::initButtons()
     QFont font("Alibaba PuHuiTi", 10);
     font.setWeight(QFont::DemiBold);
 
-    m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
+    //m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
+    m_ui->btnSimpleRender->setFont(font);
+
     m_ui->btnRun->setFont(font);
+    m_ui->btnRun->setText(tr("RUN"));
+    m_ui->btnRun->setShortcut(QKeySequence("F2"));
+
     m_ui->btnKill->setFont(font);
+    m_ui->btnKill->setText(tr("Kill"));
+    m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
 
     m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",

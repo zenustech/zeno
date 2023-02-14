@@ -327,6 +327,11 @@
 	font: 12px 'Alibaba PuHuiTi';
 	font-weight: 500;
 	color: #737B85;
+}
+
+QPushButton:hover
+{
+	color: #FFFFFF;
 }</string>
          </property>
          <property name="text">
@@ -360,7 +365,7 @@
 
 QPushButton:hover
 {
-	color: #C95449;
+	color: #FF675F;
 }</string>
          </property>
          <property name="text">

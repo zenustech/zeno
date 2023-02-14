@@ -600,6 +600,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         case ROLE_PARAM_NAME:
         {
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             const QString& oldName = pItem->m_name;
             const QString& newName = value.toString();
             if (oldName == newName)
@@ -611,6 +612,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         case ROLE_PARAM_TYPE:
         {
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             if (pItem->m_type == value.toString())
                 return false;
 
@@ -620,6 +622,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         case ROLE_PARAM_VALUE:
         {
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             QVariant oldValue = pItem->m_value;
             if (oldValue == value)
                 return false;
@@ -632,6 +635,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         case ROLE_REMOVELINK:
         {
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             if (pItem->vType != VPARAM_PARAM)
                 return false;
 
@@ -645,6 +649,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         }
         case ROLE_PARAM_CTRL: {
             VParamItem *pItem = static_cast<VParamItem *>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             QVariant oldValue = pItem->m_ctrl;
             if (oldValue == value)
                 return false;
@@ -655,6 +660,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         }
         case ROLE_VPARAM_CTRL_PROPERTIES: {
             VParamItem *pItem = static_cast<VParamItem *>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
             QVariant oldValue = pItem->m_customData[role];
             if (oldValue == value)
                 return false;
