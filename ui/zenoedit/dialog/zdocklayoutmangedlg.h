@@ -1,19 +1,18 @@
 #pragma once
 
 #include <QDialog>
-#include "ui_zlayoutMangedlg.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ZLayoutMangeDlgClass; };
 QT_END_NAMESPACE
 
-class ZLayoutMangeDlg : public QDialog
+class ZDockLayoutMangeDlg : public QDialog
 {
     Q_OBJECT
 
 public:
-    ZLayoutMangeDlg(QWidget *parent = nullptr);
-    ~ZLayoutMangeDlg();
+    ZDockLayoutMangeDlg(QWidget *parent = nullptr);
+    ~ZDockLayoutMangeDlg();
 signals:
     void layoutChangedSignal();
   private:

@@ -33,7 +33,8 @@
 #include "viewport/recordvideomgr.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
-#include "dialog/zlayoutmangedlg.h"
+#include "dialog/zdocklayoutmangedlg.h"
+
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -473,8 +474,8 @@ QJsonObject ZenoMainWindow::readDefaultLayout()
 
 void ZenoMainWindow::manageCustomLayout() 
 {
-    ZLayoutMangeDlg dlg(this);
-    connect(&dlg, &ZLayoutMangeDlg::layoutChangedSignal, this, [=]() {
+    ZDockLayoutMangeDlg dlg(this);
+    connect(&dlg, &ZDockLayoutMangeDlg::layoutChangedSignal, this, [=]() {
         m_ui->menuCustom_Layout->clear();
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");

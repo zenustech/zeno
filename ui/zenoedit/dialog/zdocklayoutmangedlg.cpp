@@ -1,10 +1,11 @@
-#include "zlayoutMangedlg.h"
+#include "ui_zdocklayoutmangedlg.h"
+#include "zdocklayoutmangedlg.h"
 #include <QSettings>
 #include "settings/zsettings.h"
 #include <QMessageBox>
 #include <QInputDialog>
 
-ZLayoutMangeDlg::ZLayoutMangeDlg(QWidget *parent)
+ZDockLayoutMangeDlg::ZDockLayoutMangeDlg(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::ZLayoutMangeDlgClass())
 {
@@ -12,11 +13,12 @@ ZLayoutMangeDlg::ZLayoutMangeDlg(QWidget *parent)
     initUI();
 }
 
-ZLayoutMangeDlg::~ZLayoutMangeDlg()
+ZDockLayoutMangeDlg::~ZDockLayoutMangeDlg()
 {
     delete ui;
 }
-void ZLayoutMangeDlg::initUI() {
+
+void ZDockLayoutMangeDlg::initUI() {
     setWindowTitle(tr("Layout Manage"));
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
