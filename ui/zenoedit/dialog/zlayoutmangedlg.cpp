@@ -35,7 +35,7 @@ void ZLayoutMangeDlg::initUI() {
     });
     connect(ui->m_deleteButton, &QPushButton::clicked, this, [=]() {
         QString key = ui->m_listWidget->currentItem()->data(Qt::DisplayRole).toString();
-        if (QMessageBox::question(this, tr("Delete"), tr("delete %1 layout?").arg(key)) == QMessageBox::No)
+        if (QMessageBox::question(this, tr("Delete"), tr("delete layout [%1]?").arg(key)) == QMessageBox::No)
             return;
 
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);

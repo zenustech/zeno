@@ -107,17 +107,18 @@ void ZenoMainWindow::initMenu()
     QVariant use_chinese = settings.value("use_chinese");
     m_ui->actionEnglish_Chinese->setChecked(use_chinese.isNull() || use_chinese.toBool());
 
+    QActionGroup *actionGroup = new QActionGroup(this);
+    actionGroup->addAction(m_ui->actionShading);
+    actionGroup->addAction(m_ui->actionSolid);
+    actionGroup->addAction(m_ui->actionOptix);
+    m_ui->actionSolid->setChecked(true);
+
     auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
     for (QAction* action : actions)
     {
         connect(action, SIGNAL(triggered(bool)), this, SLOT(onMenuActionTriggered(bool)));  
         setActionIcon(action);
     }
-
-    QActionGroup *actionGroup = new QActionGroup(this);
-    actionGroup->addAction(m_ui->actionShading);
-    actionGroup->addAction(m_ui->actionSolid);
-    actionGroup->addAction(m_ui->actionOptix);
 
     m_ui->menubar->setProperty("cssClass", "mainWin");
     //qt bug: qss font is not valid on menubar.
@@ -126,6 +127,10 @@ void ZenoMainWindow::initMenu()
     QString wtf = font.styleName();
     m_ui->menubar->setFont(font);
 
+    //default layout
+    QJsonObject obj = readDefaultLayout();
+    QStringList lst = obj.keys();
+    initCustomLayoutAction(lst, true);
     //check user saved layout.
     loadSavedLayout();
 }
@@ -226,14 +231,10 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
 
 void ZenoMainWindow::loadSavedLayout()
 {
-	//default layout
-    QJsonObject obj = readDefaultLayout();
-    QStringList lst = obj.keys();
-    initCustomLayoutAction(lst, true);
-	//custom layout
+    //custom layout
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
-    lst = settings.childGroups();
+    QStringList lst = settings.childGroups();
     settings.endGroup();
     if (!lst.isEmpty()) {
         initCustomLayoutAction(lst, false);

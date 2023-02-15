@@ -1049,8 +1049,8 @@
     </message>
     <message>
         <location filename="../../dialog/zlayoutmangedlg.cpp" line="38"/>
-        <source>delete %1 layout?</source>
-        <translation type="unfinished"></translation>
+        <source>delete layout [%1]?</source>
+        <translation type="unfinished">删除布局[%1]？</translation>
     </message>
     <message>
         <location filename="../../dialog/zlayoutmangedlg.cpp" line="50"/>
@@ -1607,12 +1607,12 @@
         <translation type="vanished">新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1216"/>
+        <location filename="../../zenomainwindow.cpp" line="1217"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1079"/>
+        <location filename="../../zenomainwindow.cpp" line="1080"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -1686,42 +1686,42 @@
         <translation type="unfinished">状态栏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="446"/>
+        <location filename="../../zenomainwindow.cpp" line="447"/>
         <source>layout format is invalid.</source>
         <translation type="unfinished">布局格式无效。</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="244"/>
+        <location filename="../../zenomainwindow.cpp" line="245"/>
         <source>Save Layout</source>
         <translation>保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="244"/>
+        <location filename="../../zenomainwindow.cpp" line="245"/>
         <source>layout name:</source>
         <translation>布局名称：</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="252"/>
+        <location filename="../../zenomainwindow.cpp" line="253"/>
         <source>alreday has same layout, override?</source>
         <translation type="unfinished">已具有相同的布局，是否覆盖？</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="286"/>
+        <location filename="../../zenomainwindow.cpp" line="287"/>
         <source>Language</source>
         <translation type="unfinished">语言</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1013"/>
+        <location filename="../../zenomainwindow.cpp" line="1014"/>
         <source>Path to Save</source>
         <translation type="unfinished">文件保存路径</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1014"/>
+        <location filename="../../zenomainwindow.cpp" line="1015"/>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
         <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1079"/>
+        <location filename="../../zenomainwindow.cpp" line="1080"/>
         <source>Save changes?</source>
         <translation type="unfinished">保存更改？</translation>
     </message>
@@ -1738,7 +1738,7 @@
         <translation type="vanished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="287"/>
+        <location filename="../../zenomainwindow.cpp" line="288"/>
         <source>Please restart Zeno to apply changes.</source>
         <translation>请重启Zeno以应用更改。</translation>
     </message>
