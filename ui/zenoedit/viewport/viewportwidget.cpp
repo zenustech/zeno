@@ -457,7 +457,9 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
     , m_pauseRenderDally(new QTimer)
+    , m_wheelEventDally(new QTimer)
     , simpleRenderChecked(false)
+    , m_bMovingCamera(false)
 {
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -480,6 +482,11 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         m_pauseRenderDally->stop();
         //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
     });
+
+    connect(m_wheelEventDally, &QTimer::timeout, [&](){
+        m_wheelEventDally->stop();
+        m_bMovingCamera = false;
+    });
 }
 
 void ViewportWidget::setSimpleRenderOption() {
@@ -494,6 +501,8 @@ void ViewportWidget::setSimpleRenderOption() {
 
 ViewportWidget::~ViewportWidget()
 {
+    delete m_pauseRenderDally;
+    delete m_wheelEventDally;
 }
 
 namespace {
@@ -552,6 +561,7 @@ void ViewportWidget::paintGL()
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
     if(event->button() == Qt::MidButton){
+        m_bMovingCamera = true;
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
@@ -561,6 +571,9 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    if(event->button() == Qt::MidButton){
+        m_bMovingCamera = true;
+    }
     setSimpleRenderOption();
 
     _base::mouseMoveEvent(event);
@@ -570,6 +583,8 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 
 void ViewportWidget::wheelEvent(QWheelEvent* event)
 {
+    m_bMovingCamera = true;
+    m_wheelEventDally->start(100);
     setSimpleRenderOption();
 
     _base::wheelEvent(event);
@@ -578,6 +593,9 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
 }
 
 void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+    if(event->button() == Qt::MidButton){
+        m_bMovingCamera = false;
+    }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();

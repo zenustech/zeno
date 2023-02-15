@@ -10,21 +10,20 @@ LiveTcpServer::LiveTcpServer(QObject *parent) :
     liveData.camLoadCount = 0;
     vertTmp = "";
     cameTmp = "";
-
+    clientSocket = new QTcpSocket(this);
     server = new QTcpServer(this);
 
     // whenever a user connects, it will emit signal
-    connect(server, SIGNAL(newConnection()),
-            this, SLOT(newConnection()));
-
+    connect(server, SIGNAL(newConnection()), this, SLOT(newConnection()));
     if(!server->listen(QHostAddress::Any, 5236))
-    {
-        std::cout << "Server could not start\n";
-    }
+        std::cout << "LiveTcp Server could not start\n";
     else
-    {
-        //std::cout << "Server started!\n";
-    }
+        std::cout << "LiveTcp Server Running On 5236.\n";
+}
+
+LiveTcpServer::~LiveTcpServer(){
+    delete clientSocket;
+    delete server;
 }
 
 void LiveTcpServer::newConnection()
@@ -71,4 +70,32 @@ void LiveTcpServer::onReadyRead() {
             }
         }
     }
+}
+
+TcpReceive LiveTcpServer::sendData(TcpSend s){
+    clientSocket->connectToHost(QString::fromStdString(s.host), s.port);
+    TcpReceive r;
+    if(clientSocket->waitForConnected(2000))
+    {
+        // send
+        clientSocket->write(QByteArray::fromStdString(s.data));
+        clientSocket->waitForBytesWritten(1000);
+        clientSocket->waitForReadyRead(2000);
+        std::cout << "\tConnected! " << s.host << ":" << s.port << " Reading: " << clientSocket->bytesAvailable() << "\n";
+
+        // receive
+        r.data = clientSocket->readAll().toStdString();
+        r.success = true;
+        clientSocket->close();
+    }
+    else
+    {
+        r.success = false;
+        std::cout << "Not connected! " << s.host << ":" << s.port << "\n";
+    }
+    return r;
+}
+
+LiveSignalsBridge::LiveSignalsBridge(QObject *parent) : QObject(parent) {
+
 }
