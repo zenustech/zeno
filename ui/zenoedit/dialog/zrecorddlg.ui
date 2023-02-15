@@ -160,6 +160,16 @@
      </item>
     </layout>
    </item>
+   <item row="12" column="0">
+    <widget class="QCheckBox" name="cbExportVideo">
+     <property name="text">
+      <string>export video</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
    <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
