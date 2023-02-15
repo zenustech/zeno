@@ -6,6 +6,8 @@
 LiveHttpServer::LiveHttpServer() {
     d_frame_mesh = json({});
 
+#ifdef ZENO_LIVESYNC
+
     CROW_ROUTE(app, "/hello")([&](){
         std::cout << "****** Client Num " << clients.size() << "\n";
         return "<h1>LiveHttpServer: Hello world - Zeno<h1>";
@@ -89,7 +91,10 @@ LiveHttpServer::LiveHttpServer() {
             std::cerr << e.what() << std::endl;
         }
     }).detach();
+
+#endif
 }
+
 int LiveHttpServer::frameMeshDataCount(int frame) {
     return d_frame_mesh.count(std::to_string(frame));
 }
