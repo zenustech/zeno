@@ -124,6 +124,10 @@ void ZenoMainWindow::initMenu()
     QString wtf = font.styleName();
     m_ui->menubar->setFont(font);
 
+    //default layout
+    QJsonObject obj = readDefaultLayout();
+    QStringList lst = obj.keys();
+    initCustomLayoutAction(lst, true);
     //check user saved layout.
     loadSavedLayout();
 }
@@ -224,14 +228,10 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
 
 void ZenoMainWindow::loadSavedLayout()
 {
-	//default layout
-    QJsonObject obj = readDefaultLayout();
-    QStringList lst = obj.keys();
-    initCustomLayoutAction(lst, true);
-	//custom layout
+    //custom layout
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
-    lst = settings.childGroups();
+    QStringList lst = settings.childGroups();
     settings.endGroup();
     if (!lst.isEmpty()) {
         initCustomLayoutAction(lst, false);
