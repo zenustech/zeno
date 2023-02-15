@@ -39,6 +39,7 @@ void TransferAcceptor::EndGraphs()
 
 bool TransferAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx)
 {
+    m_currSubgraph = subgIdx.data(ROLE_OBJNAME).toString();
     return true;
 }
 
