@@ -31,6 +31,7 @@ public:
 
     int count() const;
     QWidget* widget(int i) const;
+    QWidget* widget() const;
     DisplayWidget* getUniqueViewport() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void setCurrentWidget(PANEL_TYPE type);

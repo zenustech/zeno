@@ -23,7 +23,22 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     , m_tabWidget(new ZDockTabWidget)
 {
     setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    setWidget(m_tabWidget);
+
+    /*there is no way to control the docklayout of qt, so
+      we have to construct a widget to paint the border.
+     */
+    QWidget* pProxyWid = new QWidget;
+    QPalette pal = pProxyWid->palette();
+    pal.setColor(QPalette::Window, QColor("#000000"));
+    pProxyWid->setAutoFillBackground(true);
+    pProxyWid->setPalette(pal);
+
+    QVBoxLayout *pLayout = new QVBoxLayout;
+    pLayout->setContentsMargins(1, 1, 1, 1);
+    pLayout->addWidget(m_tabWidget);
+    pProxyWid->setLayout(pLayout);
+
+    setWidget(pProxyWid);
 
     connect(this, SIGNAL(maximizeTriggered()), mainWin, SLOT(onMaximumTriggered()));
     connect(this, SIGNAL(splitRequest(bool)), mainWin, SLOT(onSplitDock(bool)));
@@ -32,8 +47,8 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     setTitleBarWidget(new QWidget(this));
     connect(m_tabWidget, SIGNAL(addClicked()), this, SLOT(onAddTabClicked()));
     connect(m_tabWidget, SIGNAL(layoutBtnClicked()), this, SLOT(onDockOptionsClicked()));
-    connect(this, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)),
-        mainWin, SLOT(onDockLocationChanged(Qt::DockWidgetArea)));
+    //connect(this, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)),
+    //    mainWin, SLOT(onDockLocationChanged(Qt::DockWidgetArea)));
     connect(m_tabWidget, &ZDockTabWidget::tabClosed, this, [=]() {
         if (m_tabWidget->count() == 0) {
             this->close();
@@ -68,6 +83,11 @@ QWidget* ZTabDockWidget::widget(int i) const
         return nullptr;
 
     return m_tabWidget->widget(i);
+}
+
+QWidget* ZTabDockWidget::widget() const
+{
+    return m_tabWidget;
 }
 
 DisplayWidget* ZTabDockWidget::getUniqueViewport() const

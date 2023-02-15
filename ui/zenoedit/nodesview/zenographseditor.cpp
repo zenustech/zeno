@@ -599,7 +599,7 @@ void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
                 options |= OPT_VIEW;
             }
             else {
-                options ^= OPT_VIEW;
+                options &= (~OPT_VIEW);
             }
             info.role = ROLE_OPTIONS;
             info.newValue = options;
@@ -644,7 +644,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
     }
     else if (actionType == ZenoMainWindow::ACTION_OPEN_VIEW) 
     {
-        toggleViewForSelected(false);
+        toggleViewForSelected(true);
     }
     else if (actionType == ZenoMainWindow::ACTION_CLEAR_VIEW) 
     {
