@@ -108,6 +108,7 @@ public:
         ACTION_LAYOUT_MANAGE,
         //Help
         ACTION_LANGUAGE,
+        ACTION_SHORTCUTLIST,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_SET_NASLOC,

@@ -120,6 +120,7 @@
      <string>&amp;Help</string>
     </property>
     <addaction name="actionEnglish_Chinese"/>
+    <addaction name="actionShortcutList"/>
    </widget>
    <widget class="QMenu" name="menuOption">
     <property name="title">
@@ -435,6 +436,11 @@ border-top: 1px solid black;</string>
   <action name="actionLayout_Manager">
    <property name="text">
     <string>Layout Manage</string>
+   </property>
+  </action>
+  <action name="actionShortcutList">
+   <property name="text">
+    <string>Shortcut List</string>
    </property>
   </action>
  </widget>

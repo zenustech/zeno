@@ -191,6 +191,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         onLangChanged(bTriggered);
         break;
     }
+    case ACTION_SHORTCUTLIST: {
+        QDesktopServices::openUrl(QUrl("http://doc.zenustech.com/project-3/doc-135/"));
+        break;
+    }
     case ACTION_SCREEN_SHOOT: {
         screenShoot();
         break;
@@ -1010,6 +1014,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSave_Layout->setProperty("ActionType", ACTION_SAVE_LAYOUT);
     m_ui->actionLayout_Manager->setProperty("ActionType", ACTION_LAYOUT_MANAGE);
     m_ui->actionEnglish_Chinese->setProperty("ActionType", ACTION_LANGUAGE);
+    m_ui->actionShortcutList->setProperty("ActionType", ACTION_SHORTCUTLIST);
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
 
