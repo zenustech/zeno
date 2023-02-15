@@ -4,6 +4,7 @@
 LiveTcpServer::LiveTcpServer(QObject *parent) :
       QObject(parent)
 {
+#ifdef ZENO_LIVESYNC
     liveData.verSrc = "";
     liveData.camSrc = "";
     liveData.verLoadCount = 0;
@@ -19,11 +20,14 @@ LiveTcpServer::LiveTcpServer(QObject *parent) :
         std::cout << "LiveTcp Server could not start\n";
     else
         std::cout << "LiveTcp Server Running On 5236.\n";
+#endif
 }
 
 LiveTcpServer::~LiveTcpServer(){
+#ifdef ZENO_LIVESYNC
     delete clientSocket;
     delete server;
+#endif
 }
 
 void LiveTcpServer::newConnection()
