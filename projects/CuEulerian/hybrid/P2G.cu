@@ -229,7 +229,8 @@ struct ZSPrimitiveToSparseGrid : INode {
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec().device(0);
 
-        using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>>;
+        using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
+                                  wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;
         kt_t knl;
         if (kernel == "linear")
             knl = wrapv<kernel_e::linear>{};
@@ -237,6 +238,12 @@ struct ZSPrimitiveToSparseGrid : INode {
             knl = wrapv<kernel_e::quadratic>{};
         else if (kernel == "cubic")
             knl = wrapv<kernel_e::cubic>{};
+        else if (kernel == "delta2")
+            knl = wrapv<kernel_e::delta2>{};
+        else if (kernel == "delta3")
+            knl = wrapv<kernel_e::delta3>{};
+        else if (kernel == "delta4")
+            knl = wrapv<kernel_e::delta4>{};
         else
             throw std::runtime_error(fmt::format("Kernel function [{}] not found!", kernel));
 
@@ -364,7 +371,7 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                          {"string", "ParticleAttribute", ""},
                                          {"string", "GridAttribute"},
                                          {"enum replace-all replace-local accumulate", "OpType", "replace-all"},
-                                         {"enum linear quadratic cubic", "Kernel", "quadratic"},
+                                         {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
                                          {"bool", "staggered", "0"},
                                          {"bool", "initialize", "1"},
                                          {"bool", "normalize", "1"},
