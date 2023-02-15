@@ -711,6 +711,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
     {
         QSettings settings(zsCompanyName, zsEditor);
         bool bEnableCache = settings.value("zencache-enable").toBool();
+        bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
         QString cacheRootDir = settings.value("zencachedir").toString();
         int cacheNum = settings.value("zencachenum").toInt();
 
@@ -734,6 +735,9 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
             pathLineEdit->setText(dir);
         });
 
+        QCheckBox *pAutoDelCache = new QCheckBox;
+        pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
+
         QCheckBox* pCheckbox = new QCheckBox;
         pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
 
@@ -751,7 +755,9 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
         pLayout->addWidget(pSpinBox, 1, 1);
         pLayout->addWidget(new QLabel("cache root"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
-        pLayout->addWidget(pButtonBox, 3, 1);
+        pLayout->addWidget(new QLabel("auto remove"), 3, 0);
+        pLayout->addWidget(pAutoDelCache, 3, 1);
+        pLayout->addWidget(pButtonBox, 4, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
         connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
@@ -760,6 +766,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args)
         if (QDialog::Accepted == dlg.exec())
         {
             settings.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
+            settings.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
             settings.setValue("zencachedir", pathLineEdit->text());
             settings.setValue("zencachenum", pSpinBox->value());
         }

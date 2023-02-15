@@ -43,6 +43,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
+    , m_spCacheMgr(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -53,6 +54,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
         openFile(p);
     }
 //#endif
+    m_spCacheMgr = std::make_shared<ZCacheMgr>();
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -787,6 +789,11 @@ void ZenoMainWindow::onNewFile() {
 void ZenoMainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
+}
+
+std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
+{
+    return m_spCacheMgr;
 }
 
 void ZenoMainWindow::closeEvent(QCloseEvent *event)

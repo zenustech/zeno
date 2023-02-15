@@ -9,6 +9,9 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "settings/zsettings.h"
+#include "zenoapplication.h"
+#include "cache/zcachemgr.h"
+#include "zenomainwindow.h"
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -65,6 +68,7 @@ void ZTcpServer::startProc(const std::string& progJson)
 
     QSettings settings(zsCompanyName, zsEditor);
     bool bEnableCache = settings.value("zencache-enable").toBool();
+    bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
     QString finalPath;
     if (bEnableCache)
     {
@@ -72,19 +76,15 @@ void ZTcpServer::startProc(const std::string& progJson)
         QDir dirCacheRoot(cacheRootdir);
         if (!QFileInfo(cacheRootdir).isDir())
         {
-            //dirCacheRoot = QDir::temp();
-            QMessageBox::warning(nullptr, tr("ZenCache"), tr("To avoid disk space cost, please specifiy a valid path for zencache."));
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
 
-        QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-        bool ret = dirCacheRoot.mkdir(tempDirPath);
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        bool ret = mgr->initCacheDir(bAutoRemove, cacheRootdir);
         ZASSERT_EXIT(ret);
-
-        QDir dirTarget = dirCacheRoot;
-        dirTarget.cd(tempDirPath);
-        finalPath = dirTarget.path();
-
+        finalPath = mgr->cachePath();
         int cnum = settings.value("zencachenum").toInt();
         viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
     }

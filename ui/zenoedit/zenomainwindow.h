@@ -9,6 +9,7 @@
 #include "panel/zenolights.h"
 #include "common.h"
 #include "layout/winlayoutrw.h"
+#include "cache/zcachemgr.h"
 
 
 struct ZENO_RECORD_RUN_INITPARAM {
@@ -51,6 +52,7 @@ public:
     DisplayWidget *getDisplayWidget();
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
+    std::shared_ptr<ZCacheMgr> cacheMgr() const;
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
@@ -147,7 +149,7 @@ protected:
     bool event(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
 
-  private:
+private:
     void init();
     void initMenu();
     void initLive();
@@ -175,6 +177,8 @@ protected:
     bool m_bInDlgEventloop;
     int m_nResizeTimes;
     Ui::MainWindow* m_ui;
+
+    std::shared_ptr<ZCacheMgr> m_spCacheMgr;
 };
 
 #endif
