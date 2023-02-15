@@ -95,7 +95,7 @@ ZExpandableSection::ZExpandableSection(const QString& title, QWidget* parent)
 
 	setLayout(m_mainLayout);
 
-	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+	setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 }
 
 ZExpandableSection::~ZExpandableSection()
