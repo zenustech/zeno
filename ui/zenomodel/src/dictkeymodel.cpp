@@ -191,9 +191,8 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     {
         return m_bCollasped;
     }
-    default:
-        return QVariant();
     }
+    return QVariant();
 }
 
 bool DictKeyModel::insertRows(int row, int count, const QModelIndex& parent)
@@ -212,6 +211,7 @@ bool DictKeyModel::insertRows(int row, int count, const QModelIndex& parent)
     item.key = newKeyName;
     m_items.insert(row, item);
     endInsertRows();
+    return true;
 }
 
 bool DictKeyModel::insertColumns(int column, int count, const QModelIndex& parent)

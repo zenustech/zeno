@@ -97,6 +97,7 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
     default:
         return QVariant();
     }
+    return QVariant();
 }
 
 bool LinkModel::setData(const QModelIndex& index, const QVariant& value, int role)

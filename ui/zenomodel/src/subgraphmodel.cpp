@@ -387,6 +387,7 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         default:
             return QVariant();
     }
+    return QVariant();
 }
 
 bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int role)
