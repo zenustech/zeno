@@ -236,6 +236,7 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
 
 void ZenoMainWindow::loadSavedLayout()
 {
+    m_ui->menuCustom_Layout->clear();
     //custom layout
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("layout");
@@ -272,7 +273,6 @@ void ZenoMainWindow::saveDockLayout()
         settings.setValue("content", layoutInfo);
         settings.endGroup();
         settings.endGroup();
-        m_ui->menuCustom_Layout->clear();
         loadSavedLayout();
     }
 }
@@ -475,15 +475,7 @@ QJsonObject ZenoMainWindow::readDefaultLayout()
 void ZenoMainWindow::manageCustomLayout() 
 {
     ZDockLayoutMangeDlg dlg(this);
-    connect(&dlg, &ZDockLayoutMangeDlg::layoutChangedSignal, this, [=]() {
-        m_ui->menuCustom_Layout->clear();
-        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-        settings.beginGroup("layout");
-        QStringList lst = settings.childGroups();
-        if (!lst.isEmpty()) {
-            initCustomLayoutAction(lst, false);
-        }
-    });
+    connect(&dlg, &ZDockLayoutMangeDlg::layoutChangedSignal, this, &ZenoMainWindow::loadSavedLayout);
     dlg.exec();
 }
 

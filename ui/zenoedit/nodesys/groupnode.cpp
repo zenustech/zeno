@@ -247,16 +247,26 @@ void GroupNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         qreal ptop, pbottom, pleft, pright;
-        QRectF rect = this->geometry();
-        ptop = rect.top();
-        pbottom = rect.bottom();
-        pleft = rect.left();
-        pright = rect.right();
-        if (resizeDir & bottom) {
-            if (rect.height() == minimumHeight()) {
+        ptop = scenePos().y();
+        pbottom = scenePos().y() + size().height();
+        pleft = scenePos().x();
+        pright = scenePos().x() + size().width();
+        if (resizeDir & top) {
+            if (size().height() == minimumHeight()) {
+                ptop = min(event->scenePos().y(), ptop);
+            }
+            else if (size().height() == maximumHeight()) {
+                ptop = max(event->scenePos().y(), ptop);
+            }
+            else {
+                ptop = event->scenePos().y();
+            }
+        }
+        else if (resizeDir & bottom) {
+            if (size().height() == minimumHeight()) {
                 pbottom = max(event->scenePos().y(), ptop);
             }
-            else if (rect.height() == maximumHeight()) {
+            else if (size().height() == maximumHeight()) {
                 pbottom = min(event->scenePos().y(), ptop);
             }
             else {
@@ -264,18 +274,36 @@ void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
             }
         
         }
-        if (resizeDir & right) {
-            if (rect.width() == minimumWidth()) {
+        if (resizeDir & left) {
+            if (size().width() == minimumWidth()) {
+                pleft = min(event->scenePos().x(), pleft);
+            }
+            else if (size().width() == maximumWidth()) {
+                pleft = max(event->scenePos().x(), pleft);
+            }
+            else {
+                pleft = event->scenePos().x();
+            }
+        }
+        else if (resizeDir & right) {
+            if (size().width() == minimumWidth()) {
                 pright = max(event->scenePos().x(), pright);
             }
-            else if (rect.width() == maximumWidth()) {
+            else if (size().width() == maximumWidth()) {
                 pright = min(event->scenePos().x(), pright);
             }
             else {
                 pright = event->scenePos().x();
             }
         }
+
         resize(pright - pleft, pbottom - ptop);
+        if ((resizeDir & left) || (resizeDir & top)) {
+            setPos(pleft, ptop);
+            for (auto item : m_childItems) {
+                updateChildRelativePos(item);
+            }
+        }
         m_pTextItem->resize(QSizeF(pright - pleft, m_pTextItem->boundingRect().height()));
         return;
     } 
@@ -285,7 +313,7 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         m_bDragging = false;
         updateBlackboard();
-        emit nodePosChangedSignal();
+        updateNodePos(scenePos());
         return;
     } 
 }
@@ -299,13 +327,31 @@ bool GroupNode::isDragArea(QPointF pos) {
     QRectF rect = boundingRect();
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
-    int diffTop = pos.y() - rect.top() - 30;
+    int diffTop = pos.y() - rect.top() - m_pTextItem->boundingRect().height();
     int diffBottom = pos.y() - rect.bottom();
-    qreal width = 20;
+    qreal width = 50;
 
     Qt::CursorShape cursorShape;
-    if (abs(diffBottom) < width && diffBottom <= 0) {
-        if (diffRight > -width && diffRight <= 0) {
+    if (diffTop < width && diffTop >= 0) {
+        if (diffLeft < width && diffLeft >= 0) {
+            resizeDir = topLeft;
+            cursorShape = Qt::SizeFDiagCursor;
+        }
+        else if (diffRight > -width && diffRight <= 0) {
+            resizeDir = topRight;
+            cursorShape = Qt::SizeBDiagCursor;
+        }
+        else {
+            resizeDir = top;
+            cursorShape = Qt::SizeVerCursor;
+        }
+    }
+    else if (abs(diffBottom) < width && diffBottom <= 0) {
+        if (diffLeft < width && diffLeft >= 0) {
+                resizeDir = bottomLeft;
+                cursorShape = Qt::SizeBDiagCursor;
+        }
+        else if (diffRight > -width && diffRight <= 0) {
             resizeDir = bottomRight;
             cursorShape = Qt::SizeFDiagCursor;
 
@@ -314,8 +360,11 @@ bool GroupNode::isDragArea(QPointF pos) {
             resizeDir = bottom;
             cursorShape = Qt::SizeVerCursor;
         }
-
     }    
+    else if (abs(diffLeft) < width) {
+        resizeDir = left;
+        cursorShape = Qt::SizeHorCursor;
+    }
     else if (abs(diffRight) < width) {
         resizeDir = right;
         cursorShape = Qt::SizeHorCursor;
@@ -364,7 +413,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 }
 
 QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value) {
-    if (change == QGraphicsItem::ItemPositionHasChanged) {
+    if (change == QGraphicsItem::ItemPositionHasChanged && !m_bDragging) {
         for (auto item : m_childItems) {
             if (!item || !m_itemRelativePosMap.contains(item->nodeId())) {
                 continue;
