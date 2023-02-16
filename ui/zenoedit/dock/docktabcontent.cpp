@@ -191,7 +191,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         qreal scale = caps[1].toFloat() / 100.;
         QAction act("zoom");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_ZOOM);
-        m_pEditor->onAction(&act, {scale});
+        if (m_pEditor)
+            m_pEditor->onAction(&act, {scale});
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
@@ -290,6 +291,12 @@ void DockContent_Editor::initConnections()
         QAction act("CustomUI");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_CUSTOM_UI);
         m_pEditor->onAction(&act);
+    });
+    connect(pSnapGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        QAction act("SnapGrid");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_SNAPGRID);
+        if (m_pEditor)
+            m_pEditor->onAction(&act, QVariantList(), bChecked);
     });
 
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {

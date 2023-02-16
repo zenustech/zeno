@@ -23,6 +23,9 @@ public:
     void resetSlider();
     int value() const;
 
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
 signals:
     void playForward(bool bPlaying);
     void playForwardOneFrame();

@@ -114,7 +114,8 @@ public:
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,
         ACTION_ZOOM,
-        ACTION_SELECT_NODE
+        ACTION_SELECT_NODE,
+        ACTION_SNAPGRID,
     };
 
 public slots:

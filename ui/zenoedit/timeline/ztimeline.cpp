@@ -198,13 +198,11 @@ void ZTimeline::initButtons()
     //m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
     m_ui->btnSimpleRender->setFont(font);
 
-    m_ui->btnRun->setFont(font);
-    m_ui->btnRun->setText(tr("RUN"));
     m_ui->btnRun->setShortcut(QKeySequence("F2"));
+    m_ui->btnRun->setFont(font);
 
-    m_ui->btnKill->setFont(font);
-    m_ui->btnKill->setText(tr("Kill"));
     m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
+    m_ui->btnKill->setFont(font);
 
     m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",
@@ -291,4 +289,13 @@ void ZTimeline::resetSlider()
 int ZTimeline::value() const
 {
     return m_ui->timeliner->value();
+}
+
+void ZTimeline::paintEvent(QPaintEvent* event)
+{
+    QPainter painter(this);
+    QPen pen(QColor("#000000"), 1);
+    painter.setPen(pen);
+    painter.setBrush(QColor(45,50,57));
+    painter.drawRect(rect().adjusted(0, 0, -1, -1));
 }

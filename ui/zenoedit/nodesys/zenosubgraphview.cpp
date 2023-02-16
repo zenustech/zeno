@@ -478,7 +478,7 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
     //background color
     painter->fillRect(rect, QColor("#13191f"));
 
-    static const bool bDrawGrid = false;
+    static const bool bDrawGrid = true;
     if (bDrawGrid)
     {
         QTransform tf = transform();
@@ -499,10 +499,10 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
             innerLines.append(QLineF(rect.left(), y, rect.right(), y));
         }
 
-        if (scale >= 0.25)
+        if (scale >= 0.1)
         {
             QPen pen;
-            pen.setColor(QColor(56, 62, 71));
+            pen.setColor(QColor("#1F2933"));
             pen.setWidthF(pen.widthF() / scale);
             painter->setPen(pen);
             painter->drawLines(innerLines.data(), innerLines.size());

@@ -37,6 +37,7 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
     , m_hoverSocket(nullptr)
+    , m_bSnapGrid(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -407,6 +408,16 @@ void ZenoSubGraphScene::addScrollControl(ZenoParamWidget* pWidget)
         return;
     m_scrollControls.append(pWidget);
     emit scrollControlAdded(pWidget);
+}
+
+void ZenoSubGraphScene::setSnapGrid(bool bChecked)
+{
+    m_bSnapGrid = bChecked;
+}
+
+bool ZenoSubGraphScene::IsSnapGrid() const
+{
+    return m_bSnapGrid;
 }
 
 void ZenoSubGraphScene::undo()

@@ -2,100 +2,50 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 <context>
-    <name>ColorWidget</name>
-    <message>
-        <location filename="../../../zenodesign/zpropertiespanel.cpp" line="161"/>
-        <source>More Color</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DesignerMainWin</name>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="107"/>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="143"/>
         <source>Open</source>
-        <translation type="unfinished">打开</translation>
+        <translation type="obsolete">打开</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="121"/>
-        <source>node</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="124"/>
-        <source>mdiWin2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="136"/>
         <source>File</source>
-        <translation type="unfinished">文件</translation>
+        <translation type="obsolete">文件</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="138"/>
         <source>New</source>
-        <translation type="unfinished">新建</translation>
+        <translation type="obsolete">新建</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="148"/>
         <source>Save</source>
-        <translation type="unfinished">保存</translation>
+        <translation type="obsolete">保存</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="152"/>
-        <source>Quit</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="157"/>
         <source>Edit</source>
-        <translation type="unfinished">编辑</translation>
+        <translation type="obsolete">编辑</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="159"/>
         <source>Undo</source>
-        <translation type="unfinished">撤销</translation>
+        <translation type="obsolete">撤销</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="163"/>
         <source>Redo</source>
-        <translation type="unfinished">重做</translation>
+        <translation type="obsolete">重做</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="167"/>
         <source>Cut</source>
-        <translation type="unfinished">剪切</translation>
+        <translation type="obsolete">剪切</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="171"/>
         <source>Copy</source>
-        <translation type="unfinished">复制</translation>
+        <translation type="obsolete">复制</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="175"/>
         <source>Paste</source>
-        <translation type="unfinished">粘贴</translation>
+        <translation type="obsolete">粘贴</translation>
     </message>
     <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="180"/>
-        <source>Layout</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="182"/>
-        <source>Play</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="184"/>
-        <source>View</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenodesign/designermainwin.cpp" line="186"/>
         <source>Help</source>
-        <translation type="unfinished">帮助</translation>
+        <translation type="obsolete">帮助</translation>
     </message>
 </context>
 <context>
@@ -406,28 +356,15 @@
 <context>
     <name>ImageGroupBox</name>
     <message>
-        <location filename="../../../zenodesign/zpropertiespanel.cpp" line="112"/>
-        <location filename="../../../zenodesign/zpropertiespanel.cpp" line="123"/>
-        <location filename="../../../zenodesign/zpropertiespanel.cpp" line="134"/>
         <source>Select an image</source>
-        <translation>选择一张图片</translation>
+        <translation type="vanished">选择一张图片</translation>
     </message>
 </context>
 <context>
     <name>LayerTreeitemDelegate</name>
     <message>
-        <location filename="../../../zenodesign/layertreeitemdelegate.cpp" line="52"/>
-        <location filename="../../../zenodesign/layertreeitemdelegate.cpp" line="81"/>
         <source>Select an image</source>
-        <translation>选择一张图片</translation>
-    </message>
-</context>
-<context>
-    <name>LayerWidget</name>
-    <message>
-        <location filename="../../../zenodesign/layerwidget.cpp" line="64"/>
-        <source>Layer</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">选择一张图片</translation>
     </message>
 </context>
 <context>
@@ -528,219 +465,224 @@
         <translation type="unfinished">帮助</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="126"/>
+        <location filename="../../zenomainwindow.ui" line="127"/>
         <source>Option</source>
         <translation type="unfinished">选项</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="148"/>
+        <location filename="../../zenomainwindow.ui" line="149"/>
         <source>&amp;Undo</source>
         <translation type="unfinished">撤销</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="156"/>
+        <location filename="../../zenomainwindow.ui" line="157"/>
         <source>&amp;Redo</source>
         <translation type="unfinished">重做</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="164"/>
+        <location filename="../../zenomainwindow.ui" line="165"/>
         <source>Default layout</source>
         <translation type="unfinished">默认布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="169"/>
+        <location filename="../../zenomainwindow.ui" line="170"/>
         <source>&amp;New</source>
         <translation type="unfinished">&amp;新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="177"/>
+        <location filename="../../zenomainwindow.ui" line="178"/>
         <source>&amp;Open</source>
         <translation type="unfinished">打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="185"/>
+        <location filename="../../zenomainwindow.ui" line="186"/>
         <source>&amp;Save</source>
         <translation type="unfinished">保存</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="193"/>
+        <location filename="../../zenomainwindow.ui" line="194"/>
         <source>&amp;Save As</source>
         <translation type="unfinished">另存为</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="201"/>
+        <location filename="../../zenomainwindow.ui" line="202"/>
         <source>&amp;Import</source>
         <translation type="unfinished">导入</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="209"/>
+        <location filename="../../zenomainwindow.ui" line="210"/>
         <source>&amp;Close</source>
         <translation type="unfinished">关闭</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="214"/>
+        <location filename="../../zenomainwindow.ui" line="215"/>
         <source>&amp;Copy</source>
         <translation type="unfinished">复制</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="219"/>
+        <location filename="../../zenomainwindow.ui" line="220"/>
         <source>&amp;Paste</source>
         <translation type="unfinished">粘贴</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="224"/>
+        <location filename="../../zenomainwindow.ui" line="225"/>
         <source>Cu&amp;t</source>
         <translation type="unfinished">剪切</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="232"/>
+        <location filename="../../zenomainwindow.ui" line="233"/>
         <source>Smooth Shading</source>
         <translation type="unfinished">平滑渲染</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="243"/>
+        <location filename="../../zenomainwindow.ui" line="244"/>
         <source>Normal Check</source>
         <translation type="unfinished">法线检查</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="254"/>
+        <location filename="../../zenomainwindow.ui" line="255"/>
         <source>Wireframe</source>
         <translation type="unfinished">线框</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="268"/>
+        <location filename="../../zenomainwindow.ui" line="269"/>
         <source>Show Grid</source>
         <translation type="unfinished">显示网格</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="276"/>
+        <location filename="../../zenomainwindow.ui" line="277"/>
         <source>Background Color</source>
         <translation type="unfinished">背景颜色</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="284"/>
+        <location filename="../../zenomainwindow.ui" line="288"/>
         <source>Solid</source>
         <translation type="unfinished">实体</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="295"/>
+        <location filename="../../zenomainwindow.ui" line="299"/>
         <source>Shading</source>
         <translation type="unfinished">上色</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="309"/>
+        <location filename="../../zenomainwindow.ui" line="313"/>
         <source>Optix</source>
         <translation type="unfinished">光线追踪</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="317"/>
+        <location filename="../../zenomainwindow.ui" line="321"/>
         <source>BlackWhite</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="322"/>
+        <location filename="../../zenomainwindow.ui" line="326"/>
         <source>Creek</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="327"/>
+        <location filename="../../zenomainwindow.ui" line="331"/>
         <source>Day Light</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="332"/>
+        <location filename="../../zenomainwindow.ui" line="336"/>
         <source>Default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="337"/>
+        <location filename="../../zenomainwindow.ui" line="341"/>
         <source>FootballField</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="342"/>
+        <location filename="../../zenomainwindow.ui" line="346"/>
         <source>Forest</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="347"/>
+        <location filename="../../zenomainwindow.ui" line="351"/>
         <source>Lake</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="352"/>
+        <location filename="../../zenomainwindow.ui" line="356"/>
         <source>Sea</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="357"/>
+        <location filename="../../zenomainwindow.ui" line="361"/>
         <source>Node Camera</source>
         <translation type="unfinished">来自节点的摄像机</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="362"/>
+        <location filename="../../zenomainwindow.ui" line="366"/>
         <source>Save Layout</source>
         <translation type="unfinished">保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="367"/>
+        <location filename="../../zenomainwindow.ui" line="371"/>
         <source>Screenshoot</source>
         <translation type="unfinished">截屏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="375"/>
+        <location filename="../../zenomainwindow.ui" line="379"/>
         <source>Record Video</source>
         <translation type="unfinished">录制视频</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="386"/>
+        <location filename="../../zenomainwindow.ui" line="390"/>
         <source>English Chinese</source>
         <translation type="unfinished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="391"/>
+        <location filename="../../zenomainwindow.ui" line="395"/>
         <source>Graph</source>
         <translation type="unfinished">图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="399"/>
+        <location filename="../../zenomainwindow.ui" line="403"/>
         <source>Collaspe</source>
         <translation type="unfinished">折叠</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="404"/>
+        <location filename="../../zenomainwindow.ui" line="408"/>
         <source>Expand</source>
         <translation type="unfinished">展开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="409"/>
+        <location filename="../../zenomainwindow.ui" line="413"/>
         <source>Easy Subgraph</source>
         <translation type="unfinished">简易子图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="414"/>
+        <location filename="../../zenomainwindow.ui" line="418"/>
         <source>Open View</source>
         <translation type="unfinished">打开显示</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="419"/>
+        <location filename="../../zenomainwindow.ui" line="423"/>
         <source>Clear View</source>
         <translation type="unfinished">清除显示</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="424"/>
+        <location filename="../../zenomainwindow.ui" line="428"/>
         <source>Set NASLOC</source>
         <translation type="unfinished">设置NASLOC</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="429"/>
+        <location filename="../../zenomainwindow.ui" line="433"/>
         <source>Set ZENCACHE</source>
         <translation type="unfinished">设置ZENCACHE</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.ui" line="434"/>
+        <location filename="../../zenomainwindow.ui" line="438"/>
         <source>Layout Manage</source>
         <translation type="unfinished">布局管理</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.ui" line="443"/>
+        <source>Shortcut List</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -766,39 +708,12 @@
         <source>Please input the title of blackboard</source>
         <translation type="vanished">请输入黑板的标题</translation>
     </message>
-    <message>
-        <location filename="../../../zenomodel/src/nodesmgr.cpp" line="155"/>
-        <source>content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenomodel/src/nodesmgr.cpp" line="156"/>
-        <source>title</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>NodesWidget</name>
     <message>
-        <location filename="../../../zenodesign/nodeswidget.cpp" line="150"/>
         <source>Save As</source>
-        <translation>另存为</translation>
-    </message>
-</context>
-<context>
-    <name>PropertyPane</name>
-    <message>
-        <location filename="../../../zenodesign/propertypane.cpp" line="9"/>
-        <source>Inspector</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>QObject</name>
-    <message>
-        <location filename="../../util/ZenoNodeTranslator.cpp" line="29"/>
-        <source>position</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">另存为</translation>
     </message>
 </context>
 <context>
@@ -915,26 +830,18 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../timeline/ztimeline.ui" line="333"/>
+        <location filename="../../timeline/ztimeline.ui" line="338"/>
         <source>RUN</source>
-        <translation type="unfinished">运行</translation>
+        <translation>运行</translation>
     </message>
     <message>
-        <location filename="../../timeline/ztimeline.ui" line="367"/>
+        <location filename="../../timeline/ztimeline.ui" line="372"/>
         <source>Kill</source>
-        <translation type="unfinished">终止</translation>
+        <translation>终止</translation>
     </message>
     <message>
         <source>ALWAYS</source>
         <translation type="vanished">始终运行</translation>
-    </message>
-    <message>
-        <source>run</source>
-        <translation type="vanished">运行</translation>
-    </message>
-    <message>
-        <source>kill</source>
-        <translation type="vanished">终止</translation>
     </message>
     <message>
         <source>60 fpbs</source>
@@ -1002,6 +909,34 @@
     </message>
 </context>
 <context>
+    <name>ZDockLayoutMangeDlg</name>
+    <message>
+        <location filename="../../dialog/zdocklayoutmangedlg.cpp" line="22"/>
+        <source>Layout Manage</source>
+        <translation type="unfinished">布局管理</translation>
+    </message>
+    <message>
+        <location filename="../../dialog/zdocklayoutmangedlg.cpp" line="40"/>
+        <source>Delete</source>
+        <translation type="unfinished">删除</translation>
+    </message>
+    <message>
+        <location filename="../../dialog/zdocklayoutmangedlg.cpp" line="40"/>
+        <source>delete layout [%1]?</source>
+        <translation type="unfinished">删除布局[%1]？</translation>
+    </message>
+    <message>
+        <location filename="../../dialog/zdocklayoutmangedlg.cpp" line="52"/>
+        <source>Rename</source>
+        <translation type="unfinished">重命名</translation>
+    </message>
+    <message>
+        <location filename="../../dialog/zdocklayoutmangedlg.cpp" line="52"/>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+</context>
+<context>
     <name>ZEditParamLayoutDlg</name>
     <message>
         <location filename="../../dialog/zeditparamlayoutdlg.cpp" line="156"/>
@@ -1038,45 +973,40 @@
 <context>
     <name>ZLayoutMangeDlg</name>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.cpp" line="20"/>
         <source>Layout Manage</source>
-        <translation type="unfinished">布局管理</translation>
+        <translation type="obsolete">布局管理</translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.cpp" line="38"/>
         <source>Delete</source>
-        <translation type="unfinished">删除</translation>
+        <translation type="obsolete">删除</translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.cpp" line="38"/>
         <source>delete layout [%1]?</source>
-        <translation type="unfinished">删除布局[%1]？</translation>
+        <translation type="obsolete">删除布局[%1]？</translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.cpp" line="50"/>
         <source>Rename</source>
-        <translation type="unfinished">重命名</translation>
+        <translation type="obsolete">重命名</translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.cpp" line="50"/>
         <source>Name</source>
-        <translation type="unfinished">名称</translation>
+        <translation type="obsolete">名称</translation>
     </message>
 </context>
 <context>
     <name>ZLayoutMangeDlgClass</name>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.ui" line="14"/>
+        <location filename="../../dialog/zdocklayoutmangedlg.ui" line="14"/>
         <source>ZLayoutMangeDlg</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.ui" line="25"/>
+        <location filename="../../dialog/zdocklayoutmangedlg.ui" line="25"/>
         <source>Rename</source>
         <translation type="unfinished">重命名</translation>
     </message>
     <message>
-        <location filename="../../dialog/zlayoutmangedlg.ui" line="32"/>
+        <location filename="../../dialog/zdocklayoutmangedlg.ui" line="32"/>
         <source>Delete</source>
         <translation type="unfinished">删除</translation>
     </message>
@@ -1201,69 +1131,69 @@
 <context>
     <name>ZTabDockWidget</name>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="141"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="158"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="161"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="178"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>View</source>
         <translation type="unfinished">显示</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="142"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="161"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="162"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="181"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>Editor</source>
         <translation type="unfinished">编辑</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="143"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="155"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="163"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="175"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>Parameter</source>
         <translation type="unfinished">属性</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="144"/>
         <location filename="../../dock/ztabdockwidget.cpp" line="164"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="184"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>Data</source>
         <translation type="unfinished">数据</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="145"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="167"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="165"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="187"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>Logger</source>
         <translation type="unfinished">日志</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="146"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="170"/>
-        <location filename="../../dock/ztabdockwidget.cpp" line="404"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="166"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="190"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="424"/>
         <source>Light</source>
         <translation type="unfinished">灯光</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="320"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="340"/>
         <source>Split Left/Right</source>
         <translation type="unfinished">左右拆分</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="321"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="341"/>
         <source>Split Top/Bottom</source>
         <translation type="unfinished">上下拆分</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="322"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="342"/>
         <source>Maximize</source>
         <translation type="unfinished">最大化</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="323"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="343"/>
         <source>Float Window</source>
         <translation type="unfinished">浮动窗口</translation>
     </message>
     <message>
-        <location filename="../../dock/ztabdockwidget.cpp" line="324"/>
+        <location filename="../../dock/ztabdockwidget.cpp" line="344"/>
         <source>Close Layout</source>
         <translation type="unfinished">关闭布局</translation>
     </message>
@@ -1271,13 +1201,13 @@
 <context>
     <name>ZTcpServer</name>
     <message>
-        <location filename="../../launch/ztcpserver.cpp" line="76"/>
+        <location filename="../../launch/ztcpserver.cpp" line="79"/>
         <source>ZenCache</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../launch/ztcpserver.cpp" line="76"/>
-        <source>To avoid disk space cost, please specifiy a valid path for zencache.</source>
+        <location filename="../../launch/ztcpserver.cpp" line="79"/>
+        <source>The path of cache is invalid, please choose another path.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1607,12 +1537,12 @@
         <translation type="vanished">新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1217"/>
+        <location filename="../../zenomainwindow.cpp" line="1230"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1080"/>
+        <location filename="../../zenomainwindow.cpp" line="1093"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -1681,47 +1611,47 @@
         <translation type="vanished">日志</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="83"/>
+        <location filename="../../zenomainwindow.cpp" line="86"/>
         <source>Status Bar</source>
         <translation type="unfinished">状态栏</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="447"/>
+        <location filename="../../zenomainwindow.cpp" line="454"/>
         <source>layout format is invalid.</source>
         <translation type="unfinished">布局格式无效。</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="245"/>
+        <location filename="../../zenomainwindow.cpp" line="252"/>
         <source>Save Layout</source>
         <translation>保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="245"/>
+        <location filename="../../zenomainwindow.cpp" line="252"/>
         <source>layout name:</source>
         <translation>布局名称：</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="253"/>
+        <location filename="../../zenomainwindow.cpp" line="260"/>
         <source>alreday has same layout, override?</source>
         <translation type="unfinished">已具有相同的布局，是否覆盖？</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="287"/>
+        <location filename="../../zenomainwindow.cpp" line="294"/>
         <source>Language</source>
         <translation type="unfinished">语言</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1014"/>
+        <location filename="../../zenomainwindow.cpp" line="1027"/>
         <source>Path to Save</source>
         <translation type="unfinished">文件保存路径</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1015"/>
+        <location filename="../../zenomainwindow.cpp" line="1028"/>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
         <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="1080"/>
+        <location filename="../../zenomainwindow.cpp" line="1093"/>
         <source>Save changes?</source>
         <translation type="unfinished">保存更改？</translation>
     </message>
@@ -1738,7 +1668,7 @@
         <translation type="vanished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="288"/>
+        <location filename="../../zenomainwindow.cpp" line="295"/>
         <source>Please restart Zeno to apply changes.</source>
         <translation>请重启Zeno以应用更改。</translation>
     </message>
@@ -1792,171 +1722,92 @@
 <context>
     <name>ZenoPlayer</name>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="88"/>
         <source>File</source>
-        <translation type="unfinished">文件</translation>
+        <translation type="obsolete">文件</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="89"/>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="271"/>
         <source>Open</source>
-        <translation type="unfinished">打开</translation>
+        <translation type="obsolete">打开</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="91"/>
-        <source>Ctrl+O</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="95"/>
         <source>Display</source>
-        <translation type="unfinished">显示</translation>
+        <translation type="obsolete">显示</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="97"/>
         <source>Show Grid</source>
-        <translation type="unfinished">显示网格</translation>
+        <translation type="obsolete">显示网格</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="107"/>
         <source>Background Color</source>
-        <translation type="unfinished">背景颜色</translation>
+        <translation type="obsolete">背景颜色</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="121"/>
         <source>Smooth Shading</source>
-        <translation type="unfinished">平滑渲染</translation>
+        <translation type="obsolete">平滑渲染</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="130"/>
         <source>Normal Check</source>
-        <translation type="unfinished">法线检查</translation>
+        <translation type="obsolete">法线检查</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="139"/>
         <source>Wireframe</source>
-        <translation type="unfinished">线框</translation>
+        <translation type="obsolete">线框</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="149"/>
         <source>Solid</source>
-        <translation type="unfinished">实体</translation>
+        <translation type="obsolete">实体</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="156"/>
         <source>Shading</source>
-        <translation type="unfinished">上色</translation>
+        <translation type="obsolete">上色</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="164"/>
         <source>VXGI</source>
-        <translation type="unfinished">全局光照</translation>
+        <translation type="obsolete">全局光照</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="172"/>
         <source>Optix</source>
-        <translation type="unfinished">光线追踪</translation>
+        <translation type="obsolete">光线追踪</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="181"/>
         <source>Camera Keyframe</source>
-        <translation type="unfinished">摄像机关键帧</translation>
+        <translation type="obsolete">摄像机关键帧</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="186"/>
         <source>English / Chinese</source>
-        <translation type="unfinished">中英文切换</translation>
+        <translation type="obsolete">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="192"/>
         <source>Record</source>
-        <translation type="unfinished">导出</translation>
+        <translation type="obsolete">导出</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="194"/>
         <source>Screenshot</source>
-        <translation type="unfinished">截屏</translation>
+        <translation type="obsolete">截屏</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="199"/>
         <source>Path to Save</source>
-        <translation type="unfinished">文件保存路径</translation>
+        <translation type="obsolete">文件保存路径</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="200"/>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
-        <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
+        <translation type="obsolete">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="206"/>
         <source>Record Video</source>
-        <translation type="unfinished">录制视频</translation>
+        <translation type="obsolete">录制视频</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="207"/>
-        <source>Shift+F12</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="211"/>
         <source>EnvTex</source>
-        <translation type="unfinished">环境贴图</translation>
+        <translation type="obsolete">环境贴图</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="213"/>
-        <source>BlackWhite</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="219"/>
-        <source>Creek</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="225"/>
-        <source>Daylight</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="231"/>
-        <source>Default</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="237"/>
-        <source>Footballfield</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="243"/>
-        <source>Forest</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="249"/>
-        <source>Lake</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="255"/>
-        <source>Sea</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="271"/>
-        <source>Zensim Graph File (*.zsg)
-All Files (*)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="348"/>
         <source>Error</source>
-        <translation type="unfinished">错误</translation>
+        <translation type="obsolete">错误</translation>
     </message>
     <message>
-        <location filename="../../../zenoplayer/zenoplayer.cpp" line="348"/>
         <source>Open %1 error!</source>
-        <translation type="unfinished">打开%1错误！</translation>
+        <translation type="obsolete">打开%1错误！</translation>
     </message>
 </context>
 <context>

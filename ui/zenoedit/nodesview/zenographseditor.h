@@ -43,7 +43,7 @@ public slots:
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
     void onSubnetListPanel(bool bShow, SideBarItem item);
-    void onAction(QAction* pAction, const QVariantList& args = QVariantList());
+    void onAction(QAction* pAction, const QVariantList& args = QVariantList(), bool bChecked = false);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
 
 signals:

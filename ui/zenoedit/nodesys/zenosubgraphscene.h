@@ -33,6 +33,8 @@ public:
     QGraphicsItem* getNode(const QString& id);
     QList<ZenoParamWidget*> getScrollControls() const;
     void addScrollControl(ZenoParamWidget* pWidget);
+    void setSnapGrid(bool bChecked);
+    bool IsSnapGrid() const;
 
     // FIXME temp function for merge
     void selectObjViaNodes();
@@ -83,6 +85,7 @@ private:
     QList<ZenoParamWidget*> m_scrollControls;  //resolve conflict scroll event with graphicsview.
     ZenoTempLink* m_tempLink;
     ZenoSocketItem* m_hoverSocket;
+    bool m_bSnapGrid;
 };
 
 #endif
