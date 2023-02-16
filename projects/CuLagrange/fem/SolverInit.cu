@@ -279,6 +279,11 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     }
     // initialize vtemp & spatial accel
     reinitialize(pol, dt);
+
+    /// update grad pn residual tolerance
+    /// only compute once for targetGRes
+    targetGRes = pnRel * std::sqrt(boxDiagSize2);
+    zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 }
 
 IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t *coVerts,
@@ -330,6 +335,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
     if (hasBoundary())
         numDofs += coVerts->size();
     numBouDofs = numDofs - coOffset;
+    spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), numDofs, numDofs};
 
     fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
                svOffset, seOffset, sfOffset);
@@ -399,7 +405,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // including proximity pairs
         // do once
         // markSelfIntersectionPrimitives(cudaPol);
-        markSelfIntersectionPrimitives(cudaPol, zs::true_c);
+        // markSelfIntersectionPrimitives(cudaPol, zs::true_c);
     }
 
     // output adaptive setups
@@ -546,8 +552,6 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     }
 
     updateWholeBoundingBoxSize(pol);
-    /// update grad pn residual tolerance
-    targetGRes = pnRel * std::sqrt(boxDiagSize2);
 
     /// for faster linear solve
     hess1.init(vtemp.get_allocator(), numDofs);

@@ -307,6 +307,14 @@ void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
         findCollisionConstraintsImpl(pol, dHat, xi, true);
+
+        /// @note assume stBvh is already updated
+        if (!enableContactSelf) {
+            bvs.resize(stInds.size());
+            retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
+            stBvh.refit(pol, bvs);
+        }
+        findBoundaryCollisionConstraintsImpl(pol, dHat, xi);
     }
     auto [npt, nee] = getCollisionCnts();
 #if PROFILE_IPC
@@ -316,6 +324,94 @@ void IPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T
 #endif
 
     frontManageRequired = false;
+}
+void IPCSystem::findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    pol.profile(PROFILE_IPC);
+    /// pt
+    pol(Collapse{numBouDofs},
+        [eles = proxy<space>({}, stInds), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
+         PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE), nPE = proxy<space>(nPE),
+         PT = proxy<space>(PT), nPT = proxy<space>(nPT), csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT),
+         dHat2 = zs::sqr(dHat + xi), thickness = xi + dHat, coOffset = coOffset] __device__(int i) mutable {
+            auto vi = coOffset + i;
+            auto p = vtemp.pack(dim_c<3>, "xn", vi);
+            auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+            auto f = [&](int stI) {
+                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
+                // all affected by sticky boundary conditions
+                if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
+                    return;
+                // ccd
+                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+
+                switch (pt_distance_type(p, t0, t1, t2)) {
+                case 0: {
+                    if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                        PP[no] = pair_t{vi, tri[0]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 1: {
+                    if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                        PP[no] = pair_t{vi, tri[1]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 2: {
+                    if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                        PP[no] = pair_t{vi, tri[2]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 3: {
+                    if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                        PE[no] = pair3_t{vi, tri[0], tri[1]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 4: {
+                    if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                        PE[no] = pair3_t{vi, tri[1], tri[2]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 5: {
+                    if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                        PE[no] = pair3_t{vi, tri[2], tri[0]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                case 6: {
+                    if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPT[0], 1);
+                        PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    }
+                    break;
+                }
+                default: break;
+                }
+            };
+            bvh.iter_neighbors(bv, f);
+        });
+    pol.profile(false);
 }
 void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary) {
     using namespace zs;
@@ -1044,8 +1140,9 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
     using T = typename RM_CVREF_T(cgtemp)::value_type;
     // dx -> b
     pol(range(numDofs), [execTag, cgtemp = proxy<space>({}, cgtemp), bTag] ZS_LAMBDA(int vi) mutable {
-        cgtemp.template tuple<3>(bTag, vi) = vec3f::zeros();
+        cgtemp.tuple(dim_c<3>, bTag, vi) = vec3f::zeros();
     });
+#if 0
     // hess1
     pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
                              dxOffset = cgtemp.getPropertyOffset(dxTag),
@@ -1142,6 +1239,22 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
                 }
                 if (colid == 0)
                     atomic_add(execTag, &cgtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
+            });
+    }
+#endif
+
+    /// for validation only! remove soon
+    {
+        pol(range(spmat.outerSize()),
+            [execTag, hess4 = proxy<space>(hess4), cgtemp = proxy<space>({}, cgtemp),
+             dxOffset = cgtemp.getPropertyOffset(dxTag), bOffset = cgtemp.getPropertyOffset(bTag),
+             spmat = proxy<space>(spmat)] ZS_LAMBDA(int row) mutable {
+                auto bg = spmat._ptrs[row];
+                auto ed = spmat._ptrs[row + 1];
+                auto sum = vec3f::zeros();
+                for (; bg != ed; ++bg)
+                    sum += spmat._vals[bg] * cgtemp.pack(dim_c<3>, dxOffset, spmat._inds[bg]);
+                cgtemp.tuple(dim_c<3>, bOffset, row) = cgtemp.pack(dim_c<3>, bOffset, row) + sum;
             });
     }
 }
@@ -2872,7 +2985,7 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
     T E{E0};
     T c1m = 0;
     int lsIter = 0;
-    c1m = armijoParam * dot(cudaPol, "dir", "grad");
+    // c1m = -armijoParam * dot(cudaPol, "dir", "grad");
     fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
     do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] __device__(int i) mutable {
@@ -3010,7 +3123,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             else
                 vtemp.tuple<9>("P", i) = mat3::identity();
         });
-#if 0
+#if 1
         // prepare float edition
         convertHessian(pol);
         // CG SOLVE
@@ -3053,11 +3166,10 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             // A.intersectionFreeStepsize(cudaPol, xi, alpha);
             // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
             findCCDConstraints(pol, alpha, xi);
-            auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] = getCnts();
             intersectionFreeStepsize(pol, xi, alpha);
-            zeno::log_info("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha, ncspt, ncsee);
         }
         lineSearch(pol, alpha);
+        zeno::log_info("\tstepsize after line search: {}. \n", alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
@@ -3219,7 +3331,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
 #endif
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j}.template reinterpret_bits<float>();
+                    eles.tuple(dim_c<2>, "inds", no, int_c) = zs::vec<int, 2>{i, j};
                     eles("vol", no) = 1;
                     eles("k", no) = k;
                     eles("rl", no) = zs::min(dist / 4, rl);
