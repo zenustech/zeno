@@ -115,7 +115,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     }},
     {"jpg", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 80);
+        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 100);
     }},
     {"bmp", [&] {
         stbi_flip_vertically_on_write(true);

@@ -1,9 +1,13 @@
 #pragma once
+#if __CUDA_ARCH__ >= 800
+#include <cooperative_groups/reduce.h>
+#endif
 
 namespace zeno {
 
 /// credits: du wenxin
-template <typename T = float, typename Ti = int> struct CsrMatrix {
+template <typename T = float, typename Ti = int>
+struct CsrMatrix {
     using value_type = T;
     using index_type = std::make_signed_t<Ti>;
     using size_type = std::make_unsigned_t<Ti>;
@@ -17,7 +21,8 @@ template <typename T = float, typename Ti = int> struct CsrMatrix {
     zs::Vector<size_type> nnz{}; // non-zero entries per row
 };
 
-template <int n = 1> struct HessianPiece {
+template <int n = 1>
+struct HessianPiece {
     using HessT = zs::vec<float, n * 3, n * 3>;
     using IndsT = zs::vec<int, n>;
     zs::Vector<HessT> hess;
@@ -45,7 +50,8 @@ template <int n = 1> struct HessianPiece {
         cnt.setVal(count);
     }
 };
-template <typename HessianPieceT> struct HessianView {
+template <typename HessianPieceT>
+struct HessianView {
     static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
     using HT = typename HessianPieceT::HessT;
     using IT = typename HessianPieceT::IndsT;
@@ -53,10 +59,12 @@ template <typename HessianPieceT> struct HessianView {
     zs::conditional_t<is_const_structure, const IT *, IT *> inds;
     zs::conditional_t<is_const_structure, const int *, int *> cnt;
 };
-template <zs::execspace_e space, int n> inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
+template <zs::execspace_e space, int n>
+inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
     return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
-template <zs::execspace_e space, int n> inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
+template <zs::execspace_e space, int n>
+inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
     return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
 
@@ -75,7 +83,14 @@ constexpr auto warp_mask(int i, int n) noexcept {
     return zs::make_tuple(((unsigned)(1ull << k) - 1), k);
 }
 
-template <typename T> __forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst) {
+template <typename T>
+__forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst) {
+#if __CUDA_ARCH__ >= 800
+    auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+    auto ret = zs::cg::reduce(tile, val, zs::cg::plus<T>());
+    if (tile.thread_rank() == 0)
+        zs::atomic_add(zs::exec_cuda, &dst, ret);
+#else
     auto [mask, numValid] = warp_mask(i, n);
     __syncwarp(mask);
     auto locid = threadIdx.x & 31;
@@ -86,9 +101,11 @@ template <typename T> __forceinline__ __device__ void reduce_to(int i, int n, T 
     }
     if (locid == 0)
         zs::atomic_add(zs::exec_cuda, &dst, val);
+#endif
 }
 
-template <typename T> inline T computeHb(const T d2, const T dHat2) {
+template <typename T>
+inline T computeHb(const T d2, const T dHat2) {
     if (d2 >= dHat2)
         return 0;
     T t2 = d2 - dHat2;
@@ -96,22 +113,22 @@ template <typename T> inline T computeHb(const T d2, const T dHat2) {
 }
 
 template <typename TileVecT, typename VecT>
-inline void
-retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
-                          const typename ZenoParticles::particles_t &eles, int voffset, zs::Vector<VecT> &ret) {
+inline void retrieve_points(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                            const typename ZenoParticles::particles_t &eles, int voffset, zs::Vector<VecT> &ret) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     ret.resize(eles.size());
-    pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp), xTag, voffset] ZS_LAMBDA(int ei) mutable {
-        auto ind = reinterpret_bits<int>(eles("inds", ei)) + voffset;
+    pol(range(eles.size()), [eles = proxy<space>({}, eles), pts = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
+                             xTag, voffset] ZS_LAMBDA(int ei) mutable {
+        auto ind = eles("inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, ind);
         pts[ei] = x0;
     });
 }
 template <typename TileVecT, int codim = 3>
-inline void
-retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
-                          const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset, zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
+inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                                      const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset,
+                                      zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
     using namespace zs;
     using T = typename TileVecT::value_type;
     using bv_t = AABBBox<3, T>;
@@ -121,7 +138,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
     pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
@@ -142,7 +159,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
     pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
                              codim_v = wrapv<codim>{}, xTag, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
@@ -150,6 +167,34 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
         bvs[ei] = bv;
     });
     return ret;
+}
+template <typename TileVecT0, typename TileVecT1, int codim = 3>
+inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, const zs::SmallString &xTag,
+                                      const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>,
+                                      const TileVecT1 &vtemp, const zs::SmallString &dirTag, float stepSize,
+                                      int voffset, zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>> &ret) {
+    using namespace zs;
+    using T = typename TileVecT0::value_type;
+    using bv_t = AABBBox<3, T>;
+    static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+    constexpr auto space = execspace_e::cuda;
+    ret.resize(eles.size());
+    pol(zs::range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret),
+                                 verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+                                 codim_v = wrapv<codim>{}, xTag, dirTag, stepSize, voffset] ZS_LAMBDA(int ei) mutable {
+        constexpr int dim = RM_CVREF_T(codim_v)::value;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
+        auto x0 = verts.pack(dim_c<3>, xTag, inds[0]);
+        auto dir0 = vtemp.pack(dim_c<3>, dirTag, inds[0]);
+        bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};
+        for (int d = 1; d != dim; ++d) {
+            auto x = verts.pack(dim_c<3>, xTag, inds[d]);
+            auto dir = vtemp.pack(dim_c<3>, dirTag, inds[d]);
+            merge(bv, x);
+            merge(bv, x + stepSize * dir);
+        }
+        bvs[ei] = bv;
+    });
 }
 template <typename TileVecT0, typename TileVecT1, int codim = 3>
 inline zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>>
@@ -166,7 +211,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, 
                                  verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
                                  codim_v = wrapv<codim>{}, xTag, dirTag, stepSize, voffset] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = RM_CVREF_T(codim_v)::value;
-        auto inds = eles.pack(dim_c<dim>, "inds", ei).reinterpret_bits(int_c) + voffset;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
         auto x0 = verts.pack(dim_c<3>, xTag, inds[0]);
         auto dir0 = vtemp.pack(dim_c<3>, dirTag, inds[0]);
         bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};
@@ -224,6 +269,103 @@ inline T dot(zs::CudaExecutionPolicy &cudaPol, zs::TileVector<T, 32, AllocatorT>
         reduce_to(pi, n, v, res[pi / 32]);
     });
     return reduce(cudaPol, res, thrust::plus<T>{});
+}
+
+template <typename VecT, typename VecTM, int N = VecT::template range_t<0>::value,
+          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value, VecTM::dim == 2,
+                            VecTM::template range_t<0>::value == 3, VecTM::template range_t<1>::value == 3> = 0>
+__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const VecTM BCbasis[N / 3],
+                                               const int BCorder[N / 3], const int BCfixed[], bool projectDBC) {
+    // hessian rotation: trans^T hess * trans
+    // left trans^T: multiplied on rows
+    // right trans: multiplied on cols
+    constexpr int NV = N / 3;
+    // rotate and project
+    for (int vi = 0; vi != NV; ++vi) {
+        int offsetI = vi * 3;
+        for (int vj = 0; vj != NV; ++vj) {
+            int offsetJ = vj * 3;
+            VecTM tmp{};
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    tmp(i, j) = H(offsetI + i, offsetJ + j);
+            // rotate
+            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+            // project
+            if (projectDBC) {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi];
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj];
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            } else {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            }
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    H(offsetI + i, offsetJ + j) = tmp(i, j);
+        }
+    }
+    return;
+}
+
+template <typename VecT, int N = VecT::template range_t<0>::value,
+          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
+__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const int BCorder[], const int BCfixed[],
+                                               bool projectDBC) {
+    // hessian rotation: trans^T hess * trans
+    // left trans^T: multiplied on rows
+    // right trans: multiplied on cols
+    constexpr int NV = N / 3;
+    using T = typename VecT::value_type;
+    // rotate and project
+    for (int vi = 0; vi != NV; ++vi) {
+        int offsetI = vi * 3;
+        for (int vj = 0; vj != NV; ++vj) {
+            int offsetJ = vj * 3;
+            using mat3 = zs::vec<T, 3, 3>;
+            mat3 tmp{};
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    tmp(i, j) = H(offsetI + i, offsetJ + j);
+            // rotate
+            // tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+            // project
+            if (projectDBC) {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi];
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj];
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            } else {
+                for (int i = 0; i != 3; ++i) {
+                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
+                    for (int j = 0; j != 3; ++j) {
+                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
+                        if (clearRow || clearCol)
+                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
+                    }
+                }
+            }
+            for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                    H(offsetI + i, offsetJ + j) = tmp(i, j);
+        }
+    }
+    return;
 }
 
 } // namespace zeno

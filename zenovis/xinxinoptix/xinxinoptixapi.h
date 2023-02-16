@@ -8,7 +8,7 @@
 namespace xinxinoptix {
 
 void optixcleanup();
-void optixrender(int fbo = 0, int samples = 1);
+void optixrender(int fbo = 0, int samples = 1, bool simpleRender = false);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
@@ -34,7 +34,7 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
 void unload_light();
 void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed,
                            float sunLightIntensity, float colorTemperatureMix, float colorTemperature);
-void update_hdr_sky(float sky_rot, float sky_strength);
+void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength);
 void using_hdr_sky(bool enable);
 void optixUpdateUniforms(std::vector<float4> & inConstants);
 }

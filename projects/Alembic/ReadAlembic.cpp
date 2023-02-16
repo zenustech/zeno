@@ -6,6 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
@@ -268,7 +269,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             if (!read_done) {
                 log_info("[alembic] totally {} velocities", marr->size());
             }
-            auto &parr = prim->attr<vec3f>("vel");
+            auto &parr = prim->add_attr<vec3f>("vel");
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
                 parr.emplace_back(val[0], val[1], val[2]);
@@ -311,6 +312,7 @@ static void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_info("[alembic] found a Xform [{}]", obj.getName());
@@ -332,6 +334,7 @@ static void traverseABC(
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
                 log_info("[alembic] found curves [{}]", obj.getName());
@@ -339,6 +342,7 @@ static void traverseABC(
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim->userData().set2("name", obj.getName());
         }
     }
 

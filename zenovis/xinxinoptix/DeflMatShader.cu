@@ -454,7 +454,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sssParam = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
-
+    if(params.simpleRender==true)
+        opacity = 0;
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -724,8 +726,7 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
-    if(prd->depth>=2)
-        roughness = clamp(roughness, 0.5,0.99);
+
 
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
@@ -746,6 +747,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto sssColor = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     prd->opacity = opacity;
     if(prd->isSS == true) {
         basecolor = vec3(1.0f);
@@ -761,7 +763,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->passed = true;
         prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
         prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -779,9 +781,9 @@ extern "C" __global__ void __closesthit__radiance()
 //        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
 //        float3 L     = normalize(P - optixGetWorldRayOrigin());
 //        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist * dist);
+//        float weight = LnDl * A / (M_PIf * dist);
 //        prd->radiance = attrs.clr * weight;
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -791,7 +793,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
         prd->passed = true;
         prd->radiance = make_float3(0.0f);
-        prd->origin = P;
+        prd->origin = P + 1e-5 * ray_dir;
         prd->direction = ray_dir;
         return;
     }
@@ -882,7 +884,7 @@ extern "C" __global__ void __closesthit__radiance()
             prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
-            prd->origin = P;
+            prd->origin = P + 1e-5 * ray_dir;
             prd->direction = ray_dir;
             prd->prob *= 1;
             prd->countEmitted = false;
@@ -892,6 +894,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
+    prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
     if(flag == DisneyBSDF::transmissionEvent) {
@@ -977,7 +980,7 @@ extern "C" __global__ void __closesthit__radiance()
             float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
             float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist );
 
     }
     if(prd->depth>=3)
@@ -1009,19 +1012,19 @@ extern "C" __global__ void __closesthit__radiance()
                 float weight = 0.0f;
                 if (nDl > 0.0f && LnDl > 0.0f) {
 
-//                    RadiancePRD shadow_prd;
-//                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//                    traceOcclusion(params.handle, P, L,
-//                                   1e-5f,         // tmin
-//                                   Ldist - 1e-5f, // tmax,
-//                                   &shadow_prd);
+                    RadiancePRD shadow_prd;
+                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+                    traceOcclusion(params.handle, P, L,
+                                   1e-5f,         // tmin
+                                   Ldist - 1e-5f, // tmax,
+                                   &shadow_prd);
 
-                    //light_attenuation = shadow_prd.shadowAttanuation;
+                    light_attenuation = shadow_prd.shadowAttanuation;
                     //if (fmaxf(light_attenuation) > 0.0f) {
 
-                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
-                                 (length(light.emission)+1e-6f);
+                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist  * Ldist) /
+                                 (length(light.emission)+1e-6f) ;
                     //}
                 }
                 prd->LP = P;
@@ -1035,7 +1038,7 @@ extern "C" __global__ void __closesthit__radiance()
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
                     dot(N, L));
 
-                prd->radiance = 2.0 * light.emission * lbrdf;
+                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
                 computed = true;
             }
         }
@@ -1053,22 +1056,27 @@ extern "C" __global__ void __closesthit__radiance()
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
         prd->Lweight = 1.0;
-//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//        traceOcclusion(params.handle, P, sun_dir,
-//                       1e-5f, // tmin
-//                       1e16f, // tmax,
-//                       &shadow_prd2);
+        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+        traceOcclusion(params.handle, P, sun_dir,
+                       1e-5f, // tmin
+                       1e16f, // tmax,
+                       &shadow_prd2);
         lbrdf = DisneyBSDF::EvaluateDisney(
             basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
-        prd->radiance = params.sunLightIntensity * 2.0 * float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                       10, // be careful
-                                       .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
+        light_attenuation = shadow_prd2.shadowAttanuation;
+        //if (fmaxf(light_attenuation) > 0.0f) {
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *
+                            float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+                                          10, // be careful
+                                          .45, 15., 1.030725 * 0.3, params.elapsedTime)) *
+                            lbrdf;
+        //}
     }
-    prd->emission =  float3(mats.emission);
+    prd->radiance +=  float3(mats.emission);
     prd->CH = 1.0;
 }
 

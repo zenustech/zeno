@@ -6,54 +6,6 @@
 
 namespace zeno {
 
-template <typename VecT, int N = VecT::template range_t<0>::value,
-          zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
-__forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H,
-                                               const typename UnifiedIPCSystem::mat3 BCbasis[N / 3],
-                                               const int BCorder[N / 3], const int BCfixed[], bool projectDBC) {
-    // hessian rotation: trans^T hess * trans
-    // left trans^T: multiplied on rows
-    // right trans: multiplied on cols
-    constexpr int NV = N / 3;
-    // rotate and project
-    for (int vi = 0; vi != NV; ++vi) {
-        int offsetI = vi * 3;
-        for (int vj = 0; vj != NV; ++vj) {
-            int offsetJ = vj * 3;
-            UnifiedIPCSystem::mat3 tmp{};
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    tmp(i, j) = H(offsetI + i, offsetJ + j);
-            // rotate
-            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-            // project
-            if (projectDBC) {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi];
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj];
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            } else {
-                for (int i = 0; i != 3; ++i) {
-                    bool clearRow = i < BCorder[vi] && BCfixed[vi] == 1;
-                    for (int j = 0; j != 3; ++j) {
-                        bool clearCol = j < BCorder[vj] && BCfixed[vj] == 1;
-                        if (clearRow || clearCol)
-                            tmp(i, j) = (vi == vj && i == j ? 1 : 0);
-                    }
-                }
-            }
-            for (int i = 0; i != 3; ++i)
-                for (int j = 0; j != 3; ++j)
-                    H(offsetI + i, offsetJ + j) = tmp(i, j);
-        }
-    }
-    return;
-}
-
 void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                         bool includeHessian) {
     using namespace zs;

@@ -125,6 +125,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   static constexpr auto s_edgeTag = "edges";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
+  static constexpr auto s_bendingEdgeTag = "bendingEdges";
   static constexpr auto s_surfVertTag = "surfVerts";
   static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
 
@@ -473,6 +474,20 @@ struct ZenoSparseGrid : IObjectClone<ZenoSparseGrid> {
   }
   bool hasMeta(const std::string &tag) const {
     if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
+  /// @note -1 implies not a double buffer; 0/1 indicates the current double buffer index.
+  int checkDoubleBuffer(const std::string &attr) const {
+    auto metaTag = attr + "_cur";
+    if (hasMeta(metaTag)) 
+      return readMeta<int>(metaTag);
+    return -1;
+  }
+  bool isDoubleBufferAttrib(const std::string &attr) const {
+    if (attr.back() == '0' || attr.back() == '1')
+      return true;
+    else if (hasMeta(attr + "_cur"))
       return true;
     return false;
   }

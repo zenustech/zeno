@@ -25,6 +25,8 @@ struct Camera {
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
+    bool m_need_sync = false;
+
     struct ZxxHappyLookParam {
         float cx = 0;
         float cy = 0;
@@ -36,7 +38,9 @@ struct Camera {
         bool ortho_mode = false;
         float aperture = 0;
         float focalPlaneDistance = 0;
-    } m_zxx;
+    };
+    struct ZxxHappyLookParam m_zxx;
+    struct ZxxHappyLookParam m_zxx_in;
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;

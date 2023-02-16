@@ -37,6 +37,16 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     QDir dir(m_recordInfo.record_path);
     ZASSERT_EXIT(dir.exists());
     dir.mkdir("P");
+    // remove old image
+    {
+        QString dir_path = m_recordInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        for (auto i = 0; i < fileList.size(); i++) {
+            qDir.remove(fileList.at(i));
+        }
+    }
 
     if (m_recordInfo.bRecordRun)
     {
@@ -55,7 +65,23 @@ void RecordVideoMgr::finishRecord()
 {
     if (m_timer)
         m_timer->stop();
+    if (!m_recordInfo.bExportVideo) {
+        emit recordFinished();
+        return;
+    }
     //Zenovis::GetInstance().blockSignals(false);
+    {
+        QString dir_path = m_recordInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        fileList.sort();
+        for (auto i = 0; i < fileList.size(); i++) {
+            auto new_name = dir_path + zeno::format("{:07d}.jpg", i).c_str();
+            auto old_name = dir_path + fileList.at(i);
+            QFile::rename(old_name,new_name);
+        }
+    }
     QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
     QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
 

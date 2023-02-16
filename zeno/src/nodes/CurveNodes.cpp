@@ -57,10 +57,20 @@ struct EvalCurveOnPrimAttr : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto curve = get_input<CurveObject>("curve");
         auto attrName = get_input2<std::string>("attrName");
-        prim->attr_visit(attrName, [&curve](auto &arr) {
-            parallel_for_each(arr.begin(), arr.end(), [&] (auto &val) {
-                val = curve->eval(val);
-            });
+        auto dstName = get_input2<std::string>("dstName");
+        prim->attr_visit(attrName, [&](auto &arr) {
+            if (dstName.empty() || dstName == attrName) {
+                parallel_for_each(arr.begin(), arr.end(), [&] (auto &val) {
+                    val = curve->eval(val);
+                });
+            }
+            else {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto& dstAttr = prim->add_attr<T>(dstName);
+                parallel_for(arr.size(), [&] (auto i) {
+                    dstAttr[i] = curve->eval(arr[i]);
+                });
+            }
         });
         set_output("prim", prim);
     }
@@ -70,6 +80,7 @@ ZENO_DEFNODE(EvalCurveOnPrimAttr)({
     {
         {"prim"},
         {"string", "attrName", "tmp"},
+        {"string", "dstName", ""},
         {"curve", "curve"},
     },
     {

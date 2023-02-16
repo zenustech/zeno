@@ -3,7 +3,6 @@
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "launch/livetcpserver.h"
 #include "dock/zenodockwidget.h"
 #include "panel/zenolights.h"
 #include "common.h"
@@ -28,6 +27,9 @@ struct ZENO_RECORD_RUN_INITPARAM {
 class ZenoDockWidget;
 class DisplayWidget;
 class ZenoGraphsEditor;
+class LiveTcpServer;
+class LiveHttpServer;
+class LiveSignalsBridge;
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -40,9 +42,12 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void resetTimeline(TIMELINE_INFO info);
+    void doFrameUpdate(int frame);
 
     ZenoLights* lightPanel = nullptr;
-    LiveTcpServer liveTcpServer;
+    LiveTcpServer* liveTcpServer;
+    LiveHttpServer* liveHttpServer;
+    LiveSignalsBridge* liveSignalsBridge;
 
 public slots:
     void openFileDialog();
