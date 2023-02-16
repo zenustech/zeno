@@ -1005,6 +1005,11 @@ void readFBXFile(
 
     if(readOption.generate){
         scene = importer.ReadFile(fbx_path, 0);
+        if(scene == nullptr){
+            std::cout << "Read empty fbx scene\n";
+            return;
+        }
+
         mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
