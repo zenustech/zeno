@@ -74,7 +74,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
 
     auto linked_edges = this_outputs[sockName].info.links;
     for (const auto& linked_edge : linked_edges) {
-        auto next_node_id = UiHelper::getSockName(linked_edge.inSockPath);
+        auto next_node_id = UiHelper::getSockNode(linked_edge.inSockPath);
         if (next_node_id.contains(node_type.c_str())) {
             auto search_result = m_graph_model->search(next_node_id,
                                                        SEARCH_NODEID);
