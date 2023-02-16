@@ -406,9 +406,11 @@ class _MemSpanWrapper:
             ctypes.c_int: np.int32,
         }
         dtype = _dtypeLut[self._type]
-        arr = np.ascontiguousarray(np.empty(myshape, dtype))
+        arr = np.empty(myshape, dtype)
+        arr = np.ascontiguousarray(arr)
         assert sizeinbytes == arr.size * arr.dtype.itemsize
         ctypes.memmove(arr.ctypes.data, self._ptr, sizeinbytes)
+        return arr
 
     def from_numpy(self, arr, np=None):
         if np is None:
@@ -419,7 +421,7 @@ class _MemSpanWrapper:
             myshape = (self._len,)
         sizeinbytes = self._dim * self._len * ctypes.sizeof(self._type)
         if tuple(arr.shape) != myshape:
-            raise ValueError('arrar shape mismatch {} != {}', tuple(arr.shape), myshape)
+            raise ValueError('array shape mismatch {} != {}', tuple(arr.shape), myshape)
         _dtypeLut = {
             ctypes.c_float: np.float32,
             ctypes.c_int: np.int32,
