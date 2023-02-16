@@ -732,6 +732,81 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
             }
         });
     }
+
+    /// for validation only! remove soon
+    {
+        //
+        auto numTriplets = numDofs + hess2.count() * 4 + hess3.count() * 9 + hess4.count() * 16;
+        zs::Vector<int> is{vtemp.get_allocator(), numTriplets}, js{vtemp.get_allocator(), numTriplets};
+        zs::Vector<mat3f> vs{vtemp.get_allocator(), numTriplets};
+
+        pol(range(numDofs), [is = proxy<space>(is), js = proxy<space>(js), vs = proxy<space>(vs),
+                             hess1 = proxy<space>(hess1)] __device__(int i) mutable {
+            is[i] = i;
+            js[i] = i;
+            vs[i] = hess1.hess[i];
+        });
+        RM_CVREF_T(numTriplets) offset = numDofs;
+        pol(range(hess2.count()), [is = proxy<space>(is), js = proxy<space>(js), vs = proxy<space>(vs),
+                                   hess2 = proxy<space>(hess2), offset] __device__(int i) mutable {
+            auto dst = offset + i * 4;
+
+            auto inds = hess2.inds[i];
+            auto mat = hess2.hess[i];
+            for (int r = 0; r != 2; ++r)
+                for (int c = 0; c != 2; ++c) {
+                    is[dst] = inds[r];
+                    js[dst] = inds[c];
+                    auto m = mat3f::zeros();
+                    for (int a = 0; a != 3; ++a)
+                        for (int b = 0; b != 3; ++b)
+                            m(a, b) = mat(r * 3 + a, c * 3 + b);
+                    vs[dst++] = m;
+                }
+        });
+        offset += hess2.count() * 4;
+
+        pol(range(hess3.count()), [is = proxy<space>(is), js = proxy<space>(js), vs = proxy<space>(vs),
+                                   hess3 = proxy<space>(hess3), offset] __device__(int i) mutable {
+            auto dst = offset + i * 9;
+
+            auto inds = hess3.inds[i];
+            auto mat = hess3.hess[i];
+            for (int r = 0; r != 3; ++r)
+                for (int c = 0; c != 3; ++c) {
+                    is[dst] = inds[r];
+                    js[dst] = inds[c];
+                    auto m = mat3f::zeros();
+                    for (int a = 0; a != 3; ++a)
+                        for (int b = 0; b != 3; ++b)
+                            m(a, b) = mat(r * 3 + a, c * 3 + b);
+                    vs[dst++] = m;
+                }
+        });
+        offset += hess3.count() * 9;
+
+        pol(range(hess4.count()), [is = proxy<space>(is), js = proxy<space>(js), vs = proxy<space>(vs),
+                                   hess4 = proxy<space>(hess4), offset] __device__(int i) mutable {
+            auto dst = offset + i * 16;
+
+            auto inds = hess4.inds[i];
+            auto mat = hess4.hess[i];
+            for (int r = 0; r != 4; ++r)
+                for (int c = 0; c != 4; ++c) {
+                    is[dst] = inds[r];
+                    js[dst] = inds[c];
+                    auto m = mat3f::zeros();
+                    for (int a = 0; a != 3; ++a)
+                        for (int b = 0; b != 3; ++b)
+                            m(a, b) = mat(r * 3 + a, c * 3 + b);
+                    vs[dst++] = m;
+                }
+        });
+
+        puts("begin spmat build");
+        spmat.build(pol, numDofs, numDofs, is, js, vs);
+        puts("end spmat build");
+    }
 }
 
 void IPCSystem::compactHessian(zs::CudaExecutionPolicy &pol) {
