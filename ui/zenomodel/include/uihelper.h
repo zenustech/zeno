@@ -41,7 +41,7 @@ public:
     static PARAM_CONTROL getControlByType(const QString& type);
     static CONTROL_INFO getControlByType(const QString &nodeCls, PARAM_CLASS cls, const QString &socketName,const QString &socketType);    
     static QString getTypeByControl(PARAM_CONTROL ctrl);
-    static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramCls, QString& paramPath);
+    static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramPath);
     static QStringList getControlLists(const QString& type);
     static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);
@@ -51,6 +51,7 @@ public:
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
+    static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);
     static QString getSockNode(const QString& sockPath);
     static QString getSockName(const QString& sockPath);
     static QString getSockSubgraph(const QString& sockPath);

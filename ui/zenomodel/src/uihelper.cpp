@@ -619,26 +619,28 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
 void UiHelper::getSocketInfo(const QString& objPath,
                              QString& subgName,
                              QString& nodeIdent,
-                             QString& paramCls,
-                             QString& sockName)
+                             QString& paramPath)
 {
     //see GraphsModel::indexFromPath
     QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
     //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
-    if (lst.size() >= 4)
+    if (lst.size() >= 3)
     {
         subgName = lst[0];
         nodeIdent = lst[1];
-        paramCls = lst[2];
-        QString paramPath = lst[3];
-        lst = paramPath.split("/", QtSkipEmptyParts);
-        sockName = lst.last();
+        paramPath = lst[2];
     }
 }
 
 QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName)
 {
     QStringList seq = {subgraph, node, group + sockName};
+    return seq.join(cPathSeperator);
+}
+
+QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath)
+{
+    QStringList seq = {subgraph, node, paramPath};
     return seq.join(cPathSeperator);
 }
 

@@ -426,6 +426,7 @@ QVariant NodeParamModel::getValue(PARAM_CLASS cls, const QString& name) const
 
 QModelIndex NodeParamModel::getParam(PARAM_CLASS cls, const QString& name) const
 {
+    //todo: inner dict key.
     if (PARAM_INPUT == cls)
     {
         if (VParamItem* pItem = m_inputs->getItem(name))

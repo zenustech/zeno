@@ -1122,9 +1122,9 @@ void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &
         {
             for (EdgeInfo link : inSock.info.links)
             {
-                QString inNode, inSock, outNode, outSock, paramCls, _subgName;
-                UiHelper::getSocketInfo(link.inSockPath, _subgName, inNode, paramCls, inSock);
-                UiHelper::getSocketInfo(link.outSockPath, _subgName, outNode, paramCls, outSock);
+                QString inNode, inSockPath, outNode, outSockPath, _subgName;
+                UiHelper::getSocketInfo(link.inSockPath, _subgName, inNode, inSockPath);
+                UiHelper::getSocketInfo(link.outSockPath, _subgName, outNode, outSockPath);
 
                 if (oldNodes.find(inNode) != oldNodes.end() && oldNodes.find(outNode) != oldNodes.end())
                 {
@@ -1132,14 +1132,12 @@ void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &
                     newOutNode = old2New[outNode];
                     newInNode = old2New[inNode];
 
-                    QModelIndex newOutNodeIdx = dstGraph->index(newOutNode);
-                    QModelIndex newInNodeIdx = dstGraph->index(newInNode);
-
-                    NodeParamModel* outParams = QVariantPtr<NodeParamModel>::asPtr(newOutNodeIdx.data(ROLE_NODE_PARAMS));
-                    NodeParamModel* inParams = QVariantPtr<NodeParamModel>::asPtr(newInNodeIdx.data(ROLE_NODE_PARAMS));
-
-                    const QModelIndex& newOutSockIdx = outParams->getParam(PARAM_OUTPUT, outSock);
-                    const QModelIndex& newInSockIdx = inParams->getParam(PARAM_INPUT, inSock);
+                    //construct a new path for sock.
+                    QString toSubgName = toSubg.data(ROLE_OBJNAME).toString();
+                    QString newOutPath = UiHelper::constructObjPath(toSubgName, newOutNode, outSockPath);
+                    QString newInPath = UiHelper::constructObjPath(toSubgName, newInNode, inSockPath);
+                    const QModelIndex& newOutSockIdx = indexFromPath(newOutPath);
+                    const QModelIndex& newInSockIdx = indexFromPath(newInPath);
 
                     addLink(newOutSockIdx, newInSockIdx, enableTrans);
                 }
