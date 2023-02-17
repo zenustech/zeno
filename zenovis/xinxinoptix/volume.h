@@ -4,7 +4,6 @@
 #include <cuda/random.h>
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
-
 #include "zxxglslvec.h"
 #include <math_constants.h>
 
@@ -14,6 +13,8 @@
     #define _CPU_GPU_ /* Nothing */
 #endif
 
+#define _FLT_EPL_ 1.19209290e-7F
+
 #define _DELTA_TRACKING_ true
 
 namespace pbrt {
@@ -22,11 +23,11 @@ __device__
 inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
     
 //    if (abs(a.x) > abs(a.y))
-//        b = float3(-a.z, 0, a.x) /
-//              sqrt(max(FLT_EPSILON, a.x * a.x + a.z * a.z));
+//        b = float3{-a.z, 0, a.x} /
+//              sqrt(max(_FLT_EPL_, a.x * a.x + a.z * a.z));
 //    else
-//        b = float3(0, a.z, -a.y) /
-//              sqrt(max(FLT_EPSILON, a.y * a.y + a.z * a.z));
+//        b = float3{0, a.z, -a.y} /
+//              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
     
     if (abs(a.x) > abs(a.y))
         b = float3{-a.z, 0, a.x};

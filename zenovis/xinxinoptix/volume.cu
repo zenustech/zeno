@@ -26,8 +26,8 @@ inline __device__ float _LERP_(float t, float s1, float s2)
 template <typename Acc>
 inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
 
-        // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, false>;
-        // float d = Sampler(acc)(test_point_indexd);
+        using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, true>;
+        return Sampler(acc)(point_indexd);
 
         //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
         //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
@@ -73,31 +73,6 @@ struct VolumeOut {
     vec3 emission;
 };
 
-// static __inlin__ __device__ VolMatOutput evalVolumeMat(
-// _CUDA_TEXTURE_OBJECT_LIST_32,
-// float4* uniforms,
-// MatInput const &attrs
-// )
-// {
-//     auto att_pos = attrs.pos;
-//     auto att_clr = attrs.clr;
-//     auto att_uv = attrs.uv;
-//     auto att_nrm = attrs.nrm;
-//     auto att_tang = attrs.tang;
-    
-//     //VOLUME_GENERATED_BEGIN
-//     float mat_density = 0;
-//     float mat_temperature = 0;
-//     vec3  mat_emission = vec3(0,0,0);
-//     vec3  mat_scatter = vec3(1,1,1);
-//     vec3  mat_absorb = vec3(1,1,1);
-//     //VOLUME_GENERATED_END
-
-//     VolMatOutput v;
-//     v.density = mat_density;
-//     v.temperature = 
-// }
-
 #define USING_VDB 1
 
 static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_ptr, float4* uniforms, VolumeIn const &attrs) {
@@ -129,15 +104,18 @@ static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_
 
     auto pos_indexd = density_grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(att_pos));
 
-    using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, false>;
-    float density = Sampler(density_acc)(pos_indexd);
+    // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, false>;
+    // float density = Sampler(density_acc)(pos_indexd);
+
+    float density = linearSampling(density_acc, pos_indexd);
+
     float temp = CUDART_INF_F;
     float3 emission {};
 
     if (temp_ptr != nullptr) {
         const auto* temp_grid = reinterpret_cast<const nanovdb::FloatGrid*>(temp_ptr);
         const auto& temp_acc = temp_grid->tree().getAccessor();
-        temp = Sampler(temp_acc)(pos_indexd);
+        temp = linearSampling(temp_acc, pos_indexd);
 
         float scale = temp / att_max_temp;
         scale = powf(scale, 4);
@@ -151,8 +129,8 @@ static __inline__ __device__ VolumeOut evalVolume(void* density_ptr, void* temp_
     VolumeOut output;
     output.density = density;
     output.temp = temp;
-    output.anisotropy = vol_anisotropy;
 
+    output.anisotropy = clamp(vol_anisotropy, -0.99, 0.99);;
     output.emission = emission;
 
     return output;
@@ -408,11 +386,17 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         if (rnd(prd->seed) < v_density/sbt_data->density_max) {
 
-            pbrt::HenyeyGreenstein hg { vol_out.anisotropy }; 
-            
             float3 new_dir; 
-            float2 uu = {rnd(prd->seed), rnd(prd->seed)};
-            auto pdf = hg.Sample_p(ray_dir, new_dir, uu);
+
+            if (abs(vol_out.anisotropy) > _FLT_EPL_) {
+
+                pbrt::HenyeyGreenstein hg { vol_out.anisotropy }; 
+                
+                float2 uu = {rnd(prd->seed), rnd(prd->seed)};
+                auto pdf = hg.Sample_p(ray_dir, new_dir, uu);
+            } else {
+                new_dir = normalize(make_float3(rnd(prd->seed), rnd(prd->seed), rnd(prd->seed)));
+            }
 
             scattering = make_float3(sigma_s / sigma_t);
             // scattering *= sbt_data->colorVDB;
@@ -446,101 +430,101 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float3 light_attenuation = make_float3(1.0f);
     float pl = rnd(prd->seed);
     float sum = 0.0f;
-    for(int lidx=0;lidx<params.num_lights;lidx++)
-    {
-            ParallelogramLight light = params.lights[lidx];
-            float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+    // for(int lidx=0;lidx<params.num_lights;lidx++)
+    // {
+    //         ParallelogramLight light = params.lights[lidx];
+    //         float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
 
-            // Calculate properties of light sample (for area based pdf)
-            float Ldist = length(light_pos - test_point);
-            float3 L = normalize(light_pos - test_point);
-            float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
-            float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
-            float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
-    }
+    //         // Calculate properties of light sample (for area based pdf)
+    //         float Ldist = length(light_pos - test_point);
+    //         float3 L = normalize(light_pos - test_point);
+    //         float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
+    //         float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
+    //         float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+    //         sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+    // }
     
-    if(rnd(prd->seed)<=0.0f) {
-        bool computed = false;
-        float ppl = 0;
-        for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
-            ParallelogramLight light = params.lights[lidx];
-            float2 z = sobolRnd2(prd->seed);
-            const float z1 = z.x;
-            const float z2 = z.y;
-            float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
-            float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+    // if(rnd(prd->seed)<=0.5f) {
+    //     bool computed = false;
+    //     float ppl = 0;
+    //     for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
+    //         ParallelogramLight light = params.lights[lidx];
+    //         float2 z = sobolRnd2(prd->seed);
+    //         const float z1 = z.x;
+    //         const float z2 = z.y;
+    //         float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+    //         float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
-            // Calculate properties of light sample (for area based pdf)
-            float tLdist = length(light_tpos - test_point);
-            float3 tL = normalize(light_tpos - test_point);
-            float tnDl = 1.0f; //clamp(dot(N, tL), 0.0f, 1.0f);
-            float tLnDl = clamp(-dot(light.normal, tL), 0.000001f, 1.0f);
-            float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-            ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
-            if (ppl > pl) {
-                float Ldist = length(light_pos - test_point) + 1e-6;
-                float3 L = normalize(light_pos - test_point);
-                float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
-                float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
-                float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-                float weight = 0.0f;
-                if (nDl > 0.0f && LnDl > 0.0f) {
+    //         // Calculate properties of light sample (for area based pdf)
+    //         float tLdist = length(light_tpos - test_point);
+    //         float3 tL = normalize(light_tpos - test_point);
+    //         float tnDl = 1.0f; //clamp(dot(N, tL), 0.0f, 1.0f);
+    //         float tLnDl = clamp(-dot(light.normal, tL), 0.000001f, 1.0f);
+    //         float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+    //         ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
+    //         if (ppl > pl) {
+    //             float Ldist = length(light_pos - test_point) + 1e-6;
+    //             float3 L = normalize(light_pos - test_point);
+    //             float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
+    //             float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
+    //             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+    //             float weight = 0.0f;
+    //             if (nDl > 0.0f && LnDl > 0.0f) {
 
-                    RadiancePRD shadow_prd;
-                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-                    shadow_prd.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
-                    traceOcclusion(params.handle, test_point, L,
-                                   1e-5f,         // tmin
-                                   Ldist - 1e-5f, // tmax,
-                                   &shadow_prd);
+    //                 RadiancePRD shadow_prd;
+    //                 shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    //                 shadow_prd.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
+    //                 traceOcclusion(params.handle, test_point, L,
+    //                                1e-5f,         // tmin
+    //                                Ldist - 1e-5f, // tmax,
+    //                                &shadow_prd);
 
-                    light_attenuation = shadow_prd.shadowAttanuation;
+    //                 light_attenuation = shadow_prd.shadowAttanuation;
 
-                    weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
-                                (length(light.emission)+1e-6f);
-                }
-                prd->LP = test_point;
-                prd->Ldir = L;
-                prd->nonThinTransHit = 1;
-                prd->Lweight = weight;
+    //                 weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
+    //                             (length(light.emission)+1e-6f);
+    //             }
+    //             prd->LP = test_point;
+    //             prd->Ldir = L;
+    //             prd->nonThinTransHit = 1;
+    //             prd->Lweight = weight;
 
-                float3 lbrdf = make_float3(1.0) ;
+    //             float3 lbrdf = make_float3(1.0) ;
 
-                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
-                computed = true;
-            }
-        }
-    } else {
-        RadiancePRD shadow_prd2;
-        float3 lbrdf;
-        vec3 env_dir;
-        bool inside = false;
+    //             prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
+    //             computed = true;
+    //         }
+    //     }
+    // } else {
+    //     RadiancePRD shadow_prd2;
+    //     float3 lbrdf;
+    //     vec3 env_dir;
+    //     bool inside = false;
 
-        vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
-        auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
-        sun_dir = normalize(sun_dir);
-        prd->LP = test_point;
-        prd->Ldir = sun_dir;
-        prd->nonThinTransHit = 1;
-        prd->Lweight = 1.0;
+    //     vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
+    //     auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
+    //                                                params.sunSoftness * 0.2); //perturb the sun to have some softness
+    //     sun_dir = normalize(sun_dir);
+    //     prd->LP = test_point;
+    //     prd->Ldir = sun_dir;
+    //     prd->nonThinTransHit = 1;
+    //     prd->Lweight = 1.0;
 
-        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-        shadow_prd2.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
-        traceOcclusion(params.handle, test_point, sun_dir,
-                       1e-5f, // tmin
-                       1e16f, // tmax,
-                       &shadow_prd2);
+    //     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    //     shadow_prd2.nonThinTransHit = true; //(thin == false && specTrans > 0) ? 1 : 0;
+    //     traceOcclusion(params.handle, test_point, sun_dir,
+    //                    1e-5f, // tmin
+    //                    1e16f, // tmax,
+    //                    &shadow_prd2);
 
-        light_attenuation = shadow_prd2.shadowAttanuation;
+    //     light_attenuation = shadow_prd2.shadowAttanuation;
 
-        lbrdf = make_float3(1.0) ;
-        prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * 
-                        float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                       10, // be careful
-                                       .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
-    }
+    //     lbrdf = make_float3(1.0) ;
+    //     prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * 
+    //                     float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+    //                                    10, // be careful
+    //                                    .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
+    // }
 
     prd->radiance = make_float3(0.0);
 

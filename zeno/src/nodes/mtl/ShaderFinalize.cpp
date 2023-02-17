@@ -133,8 +133,6 @@ struct ShaderFinalize : INode {
         });
         auto commonCode = em.getCommonCode();
 
-        auto x = get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1)));
-
         float vol_absorption = get_input2<float>("vol_absorption");
         float vol_scattering = get_input2<float>("vol_scattering");
 
@@ -152,17 +150,8 @@ struct ShaderFinalize : INode {
             auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
             for (const auto tex: tex2dList)
             {
-                // if ( tex->userData().has("transfrom") ) {
-                //     auto ele = tex->userData().get2<float>("transfrom");
-                //     std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << std::endl;
-                //     std::cout << ele << std::endl;
-                // }
-
                 auto texId = mtl->tex2Ds.size();
 			    mtl->tex2Ds.push_back(tex);
-
-                //auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
-                //mtl->common.insert(0, texCode);
             }
 
             auto texCode = "uniform sampler2D zenotex[32]; \n";
@@ -232,9 +221,9 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "BlackbodyTempScale", "1"},
         {"float", "BlackbodyIntensity", "1"},
 
-        {"float", "vol_absorption", "0.1"},
-        {"float", "vol_scattering", "0.1"},
-        {"float", "vol_anisotropy", "0.0"}
+        {"float", "vol_absorption", "1"},
+        {"float", "vol_scattering", "1"},
+        {"float", "vol_anisotropy", "0"}
     },
     {
         {"MaterialObject", "mtl"},

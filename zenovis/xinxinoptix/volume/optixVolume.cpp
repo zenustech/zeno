@@ -102,15 +102,13 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
     auto new_matrix = volume.transform;
 
-    glm::f64mat4 test;
-
-    auto old_matrix = [&]() -> glm::mat4 {
+    auto old_matrix = [&]() -> glm::f64mat4 {
 
         auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
-        glm::mat4 result;
+        glm::f64mat4 result;
         for (uint i=0; i<16; ++i) {
             auto ele = *(tmp[0]+i);
-            result[i/4][i%4] = float(ele);
+            result[i/4][i%4] = ele;
         }
         return result;
     }();
@@ -121,41 +119,20 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     auto new_transform = //openvdb::math::Transform::Ptr(linearTransform);
         baseGrid->transform().copy(); //.createLinearTransform();
 
-    //scale_ *= _scale;
-    //translation_ += _translation;
-
     new_matrix = new_matrix * old_matrix;
-
-    //new_transform->preScale(openvdb::math::Vec3(scale_.x, scale_.y, scale_.z));
-    //new_transform->preTranslate(openvdb::math::Vec3(translation_.x, translation_.y, translation_.z));
 
     auto test_mat = new_transform->baseMap()->getAffineMap()->getMat4();
 
     for (uint i=0; i<16; ++i) {
-        *(test_mat[0]+i) = double(new_matrix[i/4][i%4]);
+        *(test_mat[0]+i) = new_matrix[i/4][i%4];
     }
 
-    openvdb::math::Transform::Ptr test_transform =
-    openvdb::math::Transform::createLinearTransform(test_mat);
+    openvdb::math::Transform::Ptr test_transform = openvdb::math::Transform::createLinearTransform(test_mat);
 
     baseGrid->setTransform(test_transform);
     if (tempGrid != nullptr) {
         tempGrid->setTransform(test_transform);
     }
-
-    glm::vec3 _scale;
-    glm::quat _rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(old_matrix, _scale, _rotation, _translation, _skew, _perspective);
-
-    glm::vec3 scale_;
-    glm::quat rotation_;
-    glm::vec3 translation_;
-    glm::vec3 skew_;
-    glm::vec4 perspective_;
-    glm::decompose(new_matrix, scale_, rotation_, translation_, skew_, perspective_);
 
     auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
 

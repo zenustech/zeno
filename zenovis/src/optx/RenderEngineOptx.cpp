@@ -1,5 +1,3 @@
-#include <string>
-#include <string_view>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
@@ -26,10 +24,11 @@
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/document.h>
+#include <string>
+#include <string_view>
 
-#include <glm/gtx/euler_angles.hpp>
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
 
 namespace zenovis::optx {
 
@@ -392,31 +391,19 @@ struct GraphicsManager {
                 //zeno::log_info("processing light key {}", key.c_str());
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
-                prim->verts.resize(5);
-
                 auto p0 = prim_in->verts[prim_in->tris[0][0]];
                 auto p1 = prim_in->verts[prim_in->tris[0][1]];
                 auto p2 = prim_in->verts[prim_in->tris[0][2]];
                 auto e1 = p0 - p2;
                 auto e2 = p1 - p2;
-                auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
-                auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
-                glm::vec3 g_nor;
 
-                g_nor = glm::normalize(glm::cross(g_e1, g_e2));
-                auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
+                auto nor = zeno::normalize(zeno::cross(e1, e2));
                 zeno::vec3f clr;
                 if (prim_in->verts.has_attr("clr")) {
                     clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
                 } else {
                     clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                 }
-                prim->verts[0] = p1;
-                prim->verts[1] = e1;
-                prim->verts[2] = e2;
-                prim->verts[3] = nor;
-                prim->verts[4] = clr;
 
                 std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
                 std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
@@ -426,8 +413,8 @@ struct GraphicsManager {
                 std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
-                                        prim->verts[3].data(), prim->verts[4].data());
+                xinxinoptix::load_light(key, p1.data(), e1.data(), e2.data(),
+                                        nor.data(), clr.data());
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
@@ -763,9 +750,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
 
-                    glm::mat4 linear_transform(1.0f);
-                    //openvdb::math::Mat4f transformMat = openvdb::math::Mat4f::identity();
-                    //auto linearTransform = openvdb::math::Transform::createLinearTransform(transformMat);     
+                    glm::f64mat4 linear_transform(1.0);  
 
                     if (!mtldet->extensions.empty()) {
                     
@@ -774,8 +759,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                         if ( !d.IsNull() ) {
 
-                            glm::vec3 scale_vector(1), translate_vector(0);
-                            glm::vec4 rotate_vector(1, 1, 1, 0);
+                            glm::f64vec3 scale_vector(1), translate_vector(0);
+                            glm::f64vec4 rotate_vector(1, 1, 1, 0);
                             
                             auto parsing = [&d](std::string key, auto &result) {
 
@@ -797,24 +782,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                             parsing("rotate", rotate_vector);
                             parsing("translate", translate_vector);
 
-                            linear_transform = glm::translate(linear_transform, translate_vector);
+                            if (translate_vector != glm::f64vec3(0)) {
+                                linear_transform = glm::translate(linear_transform, translate_vector);
+                            }
 
-                                glm::mat4 rotate_transform(1.0f); glm::vec3 rotate_axis = glm::vec3(rotate_vector);
-                                rotate_transform = glm::rotate(rotate_transform, glm::radians(rotate_vector.w), rotate_axis);
-                                float3 tmp_radians; glm::extractEulerAngleXYZ(rotate_transform, tmp_radians.x, tmp_radians.y, tmp_radians.z);
+                            glm::f64vec3 rotate_axis = glm::f64vec3(rotate_vector);
+                            if (rotate_vector.w != 0.0 && rotate_axis != glm::f64vec3(1, 1, 1)) {
+                                linear_transform = glm::rotate(linear_transform, glm::radians(rotate_vector.w), rotate_axis);
+                            }
 
-                                // if (tmp_radians.x != 0) {
-                                //     linearTransform->preRotate(tmp_radians.x, openvdb::math::X_AXIS);
-                                // }
-                                // if (tmp_radians.y != 0) {
-                                //     linearTransform->preRotate(tmp_radians.y, openvdb::math::Y_AXIS);
-                                // }
-                                // if (tmp_radians.z != 0) {
-                                //     //linearTransform->preRotate(tmp_radians.z, openvdb::math::Z_AXIS);
-                                //     linearTransform->postRotate(tmp_radians.z, openvdb::math::Z_AXIS);
-                                // }
-                            
-                            linear_transform = glm::scale(linear_transform, scale_vector);
+                            if (scale_vector != glm::f64vec3(1)) {
+                                linear_transform = glm::scale(linear_transform, scale_vector);
+                            }
                         } // IsNull
                     }
 
@@ -889,7 +868,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::updateVolume();
 
     OptixUtil::logInfoVRAM("Before update Mesh");
-
             //zeno::log_debug("[zeno-optix] updating mesh");
             // timer.tick();
             if(staticNeedUpdate)
@@ -907,6 +885,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
             
             xinxinoptix::optixupdateend();
+            
+            
             
             meshNeedUpdate = false;
             matNeedUpdate = false;

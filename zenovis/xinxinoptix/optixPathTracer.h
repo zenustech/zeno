@@ -48,8 +48,6 @@ struct CameraInfo
     float aperture;
 };
 
-const unsigned int common_object_mask = 1;
-const unsigned int volume_object_mask = 2;
 
 struct Params
 {

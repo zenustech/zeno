@@ -91,8 +91,18 @@ extern "C" __global__ void __raygen__rg()
         float r0 = r01.x * 2.0f* M_PIf;
         float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
+
         float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
+        if(length(ray_direction)==0){
+            printf("%f, %f, %f\n",ray_direction.x, ray_direction.y, ray_direction.z);
+        }
+        float3 eye_shake     = r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up); // Camera local space
+
+        //ray_origin           = cam.eye + eye_shake;
+        //ray_direction        = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
+
+        //ray_direction = normalize(ray_direction);
 
         RadiancePRD prd; 
         prd.emission     = make_float3(0.f);
@@ -154,7 +164,7 @@ extern "C" __global__ void __raygen__rg()
             //prd.radiance += prd.emission;
             if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
-                //result += prd.emission;// * prd.attenuation2;
+                //result += prd.radiance;
             }
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
@@ -164,6 +174,11 @@ extern "C" __global__ void __raygen__rg()
             }
 
             if( prd.done || params.simpleRender==true){
+                //result = make_float3(prd.seed/float(1000000000));
+                // if (prd.depth > 0) { 
+                //     result = hdrSky(prd.direction);
+                //     result *= prd.attenuation2;                
+                // }
                 break;
             }
 
@@ -237,6 +252,7 @@ extern "C" __global__ void __miss__radiance()
         prd->done      = true;
         return;
     }
+
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();

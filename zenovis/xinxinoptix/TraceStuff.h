@@ -4,7 +4,7 @@
 #include "optixPathTracer.h"
 #include "zxxglslvec.h"
 
-#define _FLT_EPSILON_ 1.19209290e-7F
+#define _FLT_EPL_ 1.19209290e-7F
 
 #define _FLT_MAX_ 3.40282347e+38F
 #define _FLT_MIN_ 1.17549435e-38F
@@ -32,7 +32,6 @@ enum medium{
 struct RadiancePRD
 {
     // TODO: move some state directly into payload registers?
-    float3       emitted;
     float3       radiance;
     float3       emission;
     float3       attenuation;

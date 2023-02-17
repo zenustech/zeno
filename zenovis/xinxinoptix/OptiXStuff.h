@@ -73,12 +73,10 @@ inline void createContext()
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
     pipeline_compile_options = {};
-    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.usesMotionBlur        = false;
-//    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
-//    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.numPayloadValues      = 2;
-    pipeline_compile_options.numAttributeValues    = 0;
+    pipeline_compile_options.numAttributeValues    = 2;
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
@@ -118,8 +116,8 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 
 
     char log[2048];
@@ -197,8 +195,8 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        desc.miss.module            = _module;
-        desc.miss.entryFunctionName = "__miss__occlusion";
+        desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
+        desc.miss.entryFunctionName = nullptr;
         sizeof_log                  = sizeof( log );
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
@@ -409,7 +407,7 @@ inline void logInfoVRAM(std::string info) {
 inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb;
 inline std::map<std::string, uint> g_vdb_index;
 
-inline void preloadVDB(std::string& path, uint index, glm::mat4& transform) 
+inline void preloadVDB(std::string& path, uint index, glm::f64mat4& transform) 
 {
     zeno::log_debug("loading VDB :{}", path);
 
@@ -592,21 +590,19 @@ inline std::vector<rtMatShader> rtMaterialShaders;//just have an arry of shaders
 inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
-    pipeline_link_options.maxTraceDepth            = 4;
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+    pipeline_link_options.maxTraceDepth            = 2;
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
-    
     for(int i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;
     }
-
     char   log[2048];
     size_t sizeof_log = sizeof( log );
 
@@ -636,10 +632,9 @@ inline void createPipeline()
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_occlusion_hit_group, &stack_sizes ) );
     }
-
-    uint32_t max_trace_depth = 4;
+    uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;
-    uint32_t max_dc_depth = 4;
+    uint32_t max_dc_depth = 0;
     uint32_t direct_callable_stack_size_from_traversal;
     uint32_t direct_callable_stack_size_from_state;
     uint32_t continuation_stack_size;
@@ -661,7 +656,6 @@ inline void createPipeline()
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
-                
     delete[]program_groups;
 
 }

@@ -29,7 +29,7 @@ struct VolumeWrapper
 	GridWrapper grid_temp;
 
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
-	glm::mat4 transform; 
+	glm::f64mat4 transform; 
 
 	std::vector<std::function<void()>> loadTasks;
 };

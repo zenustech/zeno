@@ -235,7 +235,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
-    
     }
     else
     {
@@ -277,6 +276,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 optixIgnoreIntersection();
             }
         }
+
+
 
         prd->shadowAttanuation = vec3(1e-6f);
         optixTerminateRay();
@@ -393,8 +394,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
 
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
-    //float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
-
+    
     float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     vec3 bn0(an0);
     bn0 = meshMat3x3 * bn0;
@@ -686,7 +686,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
     float pl = rnd(prd->seed);
-    //int lidx = GetLightIndex(pl, params.lights, params.num_lights);
+    int lidx = GetLightIndex(pl, params.lights, params.num_lights);
     float sum = 0.0f;
     for(int lidx=0;lidx<params.num_lights;lidx++)
     {
@@ -797,4 +797,9 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->radiance +=  float3(mats.emission);
     prd->CH = 1.0;
+}
+
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
 }
