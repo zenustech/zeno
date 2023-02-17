@@ -75,8 +75,8 @@ public:
 
     //TransferAcceptor
     QMap<QString, NODE_DATA> nodes() const;
+    QList<EdgeInfo> links() const;
     void getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
-    void reAllocIdents();
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
 
 private:

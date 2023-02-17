@@ -623,7 +623,8 @@ void UiHelper::getSocketInfo(const QString& objPath,
 {
     //see GraphsModel::indexFromPath
     QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
-    //format like: [subgraph-name]:[node-ident]:[node-param|panel-param|core-param]:[param-layer-path]
+    //format like: [subgraph-name]:[node-ident]:[node|panel]/[param-layer-path]/[dict-key]
+    //example: main:xxxxx-wrangle:[node]inputs/params/key1
     if (lst.size() >= 3)
     {
         subgName = lst[0];
@@ -652,6 +653,14 @@ QString UiHelper::getSockNode(const QString& sockPath)
     return "";
 }
 
+QString UiHelper::getParamPath(const QString& sockPath)
+{
+    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    if (lst.size() > 2)
+        return lst[2];
+    return "";
+}
+
 QString UiHelper::getSockName(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
@@ -660,8 +669,15 @@ QString UiHelper::getSockName(const QString& sockPath)
         lst = lst[2].split("/", QtSkipEmptyParts);
         if (!lst.isEmpty())
         {
-            //todo: dict-key case
-            return lst.last();
+            //format: main:xxxxx-wrangle:[node]inputs/params/key1
+            if (lst.size() == 4)
+            {
+                return lst[2] + "/" + lst[3];
+            }
+            else
+            {
+                return lst.last();
+            }
         }
     }
     return "";
@@ -1604,3 +1620,146 @@ QVector<qreal> UiHelper::scaleFactors()
     return lst;
 }
 
+QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeIndice,
+                                                  const QModelIndexList &linkIndice)
+{
+    NODES_DATA nodes;
+    QList<EdgeInfo> links;
+
+    QSet<QString> existedNodes;
+    for (auto idx : nodeIndice)
+    {
+        existedNodes.insert(idx.data(ROLE_OBJID).toString());
+    }
+
+    for (auto idx : linkIndice)
+    {
+        QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+        QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
+        QString outPath = outSockIdx.data(ROLE_OBJPATH).toString();
+        QString inPath = inSockIdx.data(ROLE_OBJPATH).toString();
+        QString outId = idx.data(ROLE_OUTNODE).toString();
+        QString inId = idx.data(ROLE_INNODE).toString();
+
+        if (existedNodes.find(outId) != existedNodes.end() &&
+            existedNodes.find(inId) != existedNodes.end())
+        {
+            links.append(EdgeInfo(outPath, inPath));
+        }
+    }
+
+    for (auto idx : nodeIndice)
+    {
+        NODE_DATA node = idx.data(ROLE_OBJDATA).value<NODE_DATA>();
+        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET& inSocket : inputs)
+        {
+            QList<EdgeInfo> existLinks;
+            for (EdgeInfo edge : inSocket.info.links)
+            {
+                if (links.indexOf(edge) != -1)
+                {
+                    existLinks.append(edge);
+                }
+            }
+            inSocket.info.links = existLinks;
+
+            for (DICTKEY_INFO& keyItem : inSocket.info.dictpanel.keys)
+            {
+                if (links.indexOf(keyItem.link) == -1)
+                {
+                    keyItem.link = EdgeInfo();
+                }
+            }
+        }
+
+        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        for (OUTPUT_SOCKET& outSocket : outputs)
+        {
+            QList<EdgeInfo> existLinks;
+            for (EdgeInfo edge : outSocket.info.links)
+            {
+                if (links.indexOf(edge) != -1)
+                {
+                    existLinks.append(edge);
+                }
+            }
+            outSocket.info.links = existLinks;
+        }
+
+        node[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+        const QString& oldId = node[ROLE_OBJID].toString();
+        nodes.insert(oldId, node);
+    }
+
+    return QPair<NODES_DATA, LINKS_DATA>(nodes, links);
+}
+
+void UiHelper::reAllocIdents2(const QString& targetSubgraph,
+                              const NODES_DATA& inNodes,
+                              const LINKS_DATA& inLinks,
+                              NODES_DATA& outNodes,
+                              LINKS_DATA& outLinks)
+{
+    QMap<QString, QString> old2new;
+    for (QString key : inNodes.keys())
+    {
+        const NODE_DATA data = inNodes[key];
+        const QString& oldId = data[ROLE_OBJID].toString();
+        const QString& name = data[ROLE_OBJNAME].toString();
+        const QString& newId = UiHelper::generateUuid(name);
+        NODE_DATA newData = data;
+        newData[ROLE_OBJID] = newId;
+        outNodes.insert(newId, newData);
+        old2new.insert(oldId, newId);
+    }
+    //replace all the old-id in newNodes, and clear cached links.
+    for (QString newId : outNodes.keys())
+    {
+        NODE_DATA& data = outNodes[newId];
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET inputSocket : inputs)
+        {
+            inputSocket.info.nodeid = newId;
+            inputSocket.info.links.clear();
+            for (DICTKEY_INFO& key : inputSocket.info.dictpanel.keys)
+            {
+                key.link = EdgeInfo();
+            }
+        }
+
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        for (OUTPUT_SOCKET outputSocket : outputs)
+        {
+            outputSocket.info.nodeid = newId;
+            outputSocket.info.links.clear();
+            for (DICTKEY_INFO& key : outputSocket.info.dictpanel.keys)
+            {
+                key.link = EdgeInfo();
+            }
+        }
+
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+    }
+
+    for (const EdgeInfo& link : inLinks)
+    {
+        QString outputNode = UiHelper::getSockNode(link.outSockPath);
+        QString outParamPath = UiHelper::getParamPath(link.outSockPath);
+        QString inputNode = UiHelper::getSockNode(link.inSockPath);
+        QString inParamPath = UiHelper::getParamPath(link.inSockPath);
+
+        ZASSERT_EXIT(old2new.find(inputNode) != old2new.end() &&
+                     old2new.find(outputNode) != old2new.end());
+        QString newInputNode = old2new[inputNode];
+        QString newOutputNode = old2new[outputNode];
+
+        const QString& newInSock = UiHelper::constructObjPath(targetSubgraph, newInputNode, inParamPath);
+        const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
+
+        outLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+}

@@ -201,7 +201,7 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         m_inputs->appendRow(pItem);
 
         //if current item is a dict socket, init dict sockets after new item insered, and then get the valid index to init dict model.
-        initDictSocket(pItem);
+        initDictSocket(pItem, inSocket.info);
     }
 }
 
@@ -237,7 +237,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
         m_outputs->appendRow(pItem);
-        initDictSocket(pItem);
+        initDictSocket(pItem, outSocket.info);
     }
 }
 
@@ -330,7 +330,7 @@ void NodeParamModel::setAddParam(
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
             m_inputs->appendRow(pItem);
-            initDictSocket(pItem);
+            initDictSocket(pItem, SOCKET_INFO());
         }
         else
         {
@@ -379,7 +379,7 @@ void NodeParamModel::setAddParam(
             pItem->m_ctrl = ctrl;
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
             m_outputs->appendRow(pItem);
-            initDictSocket(pItem);
+            initDictSocket(pItem, SOCKET_INFO());
         }
         else
         {
@@ -686,7 +686,7 @@ void NodeParamModel::clearLinks(VParamItem* pItem)
     pItem->m_links.clear();
 }
 
-void NodeParamModel::initDictSocket(VParamItem* pItem)
+void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socketInfo)
 {
     if (!pItem || pItem->vType != VPARAM_PARAM)
         return;
@@ -719,6 +719,13 @@ void NodeParamModel::initDictSocket(VParamItem* pItem)
     if (pItem->m_sockProp == SOCKPROP_DICTLIST_PANEL)
     {
         DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
+        for (int r = 0; r < socketInfo.dictpanel.keys.size(); r++)
+        {
+            const DICTKEY_INFO& keyInfo = socketInfo.dictpanel.keys[r];
+            pDictModel->insertRow(r);
+            QModelIndex newIdx = pDictModel->index(r, 0);
+            pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+        }
         pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
     }
 }

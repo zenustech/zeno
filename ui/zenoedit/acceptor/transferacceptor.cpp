@@ -201,7 +201,16 @@ void TransferAcceptor::setDictPanelProperty(
         bool bCollasped
     )
 {
+    ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
+    NODE_DATA& data = m_nodes[ident];
 
+    //standard inputs desc by latest descriptors.
+    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    if (inputs.find(sockName) != inputs.end())
+    {
+        inputs[sockName].info.dictpanel.bCollasped = bCollasped;
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
 }
 
 void TransferAcceptor::addInnerDictKey(
@@ -212,9 +221,29 @@ void TransferAcceptor::addInnerDictKey(
         const QString& link
     )
 {
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
 
+    //standard inputs desc by latest descriptors.
+    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+    if (inputs.find(inSock) != inputs.end())
+    {
+        INPUT_SOCKET& inSocket = inputs[inSock];
+        DICTKEY_INFO item;
+        item.key = keyName;
+
+        QString newKeyPath = "[node]/inputs/" + inSock + "/" + keyName;
+        QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
+        QString outSockPath = link;
+        EdgeInfo edge(outSockPath, inSockPath);
+
+        item.link = edge;
+        inSocket.info.dictpanel.keys.append(item);
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        if (!item.link.inSockPath.isEmpty() && !item.link.outSockPath.isEmpty())
+            m_links.append(item.link);
+    }
 }
-
 
 void TransferAcceptor::setInputSocket2(
                 const QString& nodeCls,
@@ -484,6 +513,11 @@ QMap<QString, NODE_DATA> TransferAcceptor::nodes() const
     return m_nodes;
 }
 
+QList<EdgeInfo> TransferAcceptor::links() const
+{
+    return m_links;
+}
+
 void TransferAcceptor::getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links)
 {
     nodes = m_nodes;
@@ -492,65 +526,4 @@ void TransferAcceptor::getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeIn
 
 void TransferAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
 {
-}
-
-void TransferAcceptor::reAllocIdents()
-{
-    QMap<QString, QString> old2new;
-    QMap<QString, NODE_DATA> newNodes;
-    for (QString key : m_nodes.keys())
-    {
-        const NODE_DATA data = m_nodes[key];
-        const QString& oldId = data[ROLE_OBJID].toString();
-        const QString& name = data[ROLE_OBJNAME].toString();
-        const QString& newId = UiHelper::generateUuid(name);
-        NODE_DATA newData = data;
-        newData[ROLE_OBJID] = newId;
-        newNodes.insert(newId, newData);
-        old2new.insert(oldId, newId);
-    }
-    //replace all the old-id in newNodes.
-    for (QString newId : newNodes.keys())
-    {
-        NODE_DATA& data = newNodes[newId];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET inputSocket : inputs)
-        {
-            inputSocket.info.nodeid = newId;
-        }
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET outputSocket : outputs)
-        {
-            outputSocket.info.nodeid = newId;
-        }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    }
-
-    for (EdgeInfo& link : m_links)
-    {
-        QString outputNode = UiHelper::getSockNode(link.outSockPath);
-        QString outputSock = UiHelper::getSockName(link.outSockPath);
-        QString inputNode = UiHelper::getSockNode(link.inSockPath);
-        QString inputSock = UiHelper::getSockName(link.inSockPath);
-
-        ZASSERT_EXIT(old2new.find(inputNode) != old2new.end() &&
-                    old2new.find(outputNode) != old2new.end());
-
-        QString newInputNode = old2new[inputNode];
-        QString newOutputNode = old2new[outputNode];
-
-        const QString& newInSock =
-            UiHelper::constructObjPath(m_currSubgraph, newInputNode, "[node]/inputs/", inputSock);
-        const QString& newOutSock =
-            UiHelper::constructObjPath(m_currSubgraph, newOutputNode, "[node]/outputs/", outputSock);
-
-        link.inSockPath = newInSock;
-        link.outSockPath = newOutSock;
-    }
-
-    m_nodes.clear();
-    m_nodes = newNodes;
 }

@@ -300,6 +300,7 @@ struct LINK_UPDATE_INFO {
 };
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
+typedef QList<EdgeInfo> LINKS_DATA;
 
 struct CURVE_RANGE {
     qreal xFrom;

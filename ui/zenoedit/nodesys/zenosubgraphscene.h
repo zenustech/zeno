@@ -27,6 +27,7 @@ public:
     QRectF nodesBoundingRect() const;
     QModelIndex subGraphIndex() const;
     QModelIndexList selectNodesIndice() const;
+    QModelIndexList selectLinkIndice() const;
     void select(const QString& id);
     void markError(const QString& nodeid);
     void clearMark();

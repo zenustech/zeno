@@ -297,6 +297,7 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
     {
         case ROLE_OBJID:    return item.objid;
         case ROLE_OBJNAME:  return item.objCls;
+        case ROLE_OBJDATA:  return QVariant::fromValue(nodeData(index));
         case ROLE_NODETYPE: return item.type;
         case ROLE_INPUTS:
         {

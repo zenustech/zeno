@@ -54,6 +54,7 @@ public:
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);
     static QString getSockNode(const QString& sockPath);
     static QString getSockName(const QString& sockPath);
+    static QString getParamPath(const QString& sockPath);
     static QString getSockSubgraph(const QString& sockPath);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
@@ -61,11 +62,9 @@ public:
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
     static NODE_TYPE nodeType(const QString& name);
 
-    //todo: place at other helper.
     static int getMaxObjId(const QList<QString>& lst);
     static QString getUniqueName(const QList<QString>& existNames, const QString& prefix, bool bWithBrackets = true);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
-    static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
     static QString nthSerialNumName(QString name);
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
 
@@ -86,6 +85,14 @@ public:
                                   QModelIndexList& outputs,
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
+
+    static QPair<NODES_DATA, LINKS_DATA> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
+    static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
+    static void reAllocIdents2(const QString& targetSubgraph,
+                               const NODES_DATA& inNodes,
+                               const LINKS_DATA& inLinks,
+                               NODES_DATA& outNodes,
+                               LINKS_DATA& outLinks);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
