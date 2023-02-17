@@ -414,6 +414,11 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
             QPointF pos = mapToScene(m_itemRelativePosMap[item->nodeId()]);
             item->setPos(pos);
         }
+    } 
+    else if (change == QGraphicsItem::ItemPositionChange) 
+    {
+        setMoving(true);
+        return value;
     }
     return ZenoNode::itemChange(change, value);
 }
