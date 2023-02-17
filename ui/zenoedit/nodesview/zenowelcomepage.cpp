@@ -98,8 +98,10 @@ void ZenoWelcomePage::initRecentFiles()
 
     for (int i = lst.size() - 1; i >= 0; i--)
     {
-        if (lst.size() - 1 - i > nLimit)
-            break;
+        if (lst.size() - 1 - i > nLimit) {
+            settings.remove(lst[i]);
+            continue;
+        }
 
         const QString& key = lst[i];
         const QString& path = settings.value(key).toString();
