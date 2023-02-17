@@ -117,8 +117,12 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
                         ZASSERT_EXIT(keyIdx.isValid());
-                        const QModelIndex& linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-                        initLink(linkIdx);
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                        {
+                            const QModelIndex& linkIdx = links[0];
+                            initLink(linkIdx);
+                        }
                     }
                 }
             }
@@ -794,8 +798,11 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
-                        QPersistentModelIndex _linkIdx  = keyIdx.data(ROLE_LINK_IDX).toPersistentModelIndex();
-                        pGraphsModel->removeLink(_linkIdx, true);
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        for (QPersistentModelIndex _linkIdx : links)
+                        {
+                            pGraphsModel->removeLink(_linkIdx, true);
+                        }
                     }
                 }
                 else

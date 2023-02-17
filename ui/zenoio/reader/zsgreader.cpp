@@ -447,7 +447,7 @@ void ZsgReader::_parseDictPanel(
             {
                 link = QString::fromLocal8Bit(inputObj["link"].GetString());
             }
-            pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
+            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
             if (bInput)
             {
                 QString sockGrp = inSock + "/" + keyName;   //dict key io specific.

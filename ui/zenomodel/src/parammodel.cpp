@@ -79,16 +79,20 @@ void IParamModel::exportDictkeys(DictKeyModel *pModel, DICTPANEL_INFO& panel)
         DICTKEY_INFO keyInfo;
         keyInfo.key = key;
 
-        QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-        if (linkIdx.isValid())
+        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        for (auto linkIdx : links)
         {
-            QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
-            QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
-            ZASSERT_EXIT(insock.isValid() && outsock.isValid());
+            if (linkIdx.isValid())
+            {
+                QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+                ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
-            EdgeInfo link = exportLink(linkIdx);
-            keyInfo.link = link;
+                EdgeInfo link = exportLink(linkIdx);
+                keyInfo.link = link;
+            }
         }
+
         panel.keys.append(keyInfo);
         keyNames.push_back(key);
     }
@@ -774,9 +778,13 @@ void IParamModel::onKeyItemAboutToBeRemoved(const QModelIndex& parent, int first
 
     const QModelIndex& idxObj = pTblModel->index(first, 1);
     const QString& objId = idxObj.data().toString();
-    QModelIndex linkIdx = idxObj.data(ROLE_LINK_IDX).toModelIndex();
 
     m_bRetryLinkOp = true;
     zeno::scope_exit sp([this](){ m_bRetryLinkOp = false; });
-    m_model->removeLink(linkIdx, true);
+
+    PARAM_LINKS links = idxObj.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+    for (auto linkIdx : links)
+    {
+        m_model->removeLink(linkIdx, true);
+    }
 }
