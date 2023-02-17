@@ -325,53 +325,46 @@ void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
 
 bool GroupNode::isDragArea(QPointF pos) {
     QRectF rect = boundingRect();
+    rect.adjust(0, m_pTextItem->boundingRect().height(), 0, 0);
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
-    int diffTop = pos.y() - rect.top() - m_pTextItem->boundingRect().height();
+    int diffTop = pos.y() - rect.top() ;
     int diffBottom = pos.y() - rect.bottom();
     qreal width = 50;
 
-    Qt::CursorShape cursorShape;
-    if (diffTop < width && diffTop >= 0) {
-        if (diffLeft < width && diffLeft >= 0) {
-            resizeDir = topLeft;
-            cursorShape = Qt::SizeFDiagCursor;
-        }
-        else if (diffRight > -width && diffRight <= 0) {
-            resizeDir = topRight;
-            cursorShape = Qt::SizeBDiagCursor;
-        }
-        else {
-            resizeDir = top;
-            cursorShape = Qt::SizeVerCursor;
-        }
-    }
-    else if (abs(diffBottom) < width && diffBottom <= 0) {
-        if (diffLeft < width && diffLeft >= 0) {
+    Qt::CursorShape cursorShape(Qt::ArrowCursor);
+    resizeDir = nodir;
+    if (rect.contains(pos)) {
+        if (diffTop < width && diffTop >= 0) {
+            if (diffLeft < width && diffLeft >= 0) {
+                resizeDir = topLeft;
+                cursorShape = Qt::SizeFDiagCursor;
+            } else if (diffRight > -width && diffRight <= 0) {
+                resizeDir = topRight;
+                cursorShape = Qt::SizeBDiagCursor;
+            } else {
+                resizeDir = top;
+                cursorShape = Qt::SizeVerCursor;
+            }
+        } else if (abs(diffBottom) < width && diffBottom <= 0) {
+            if (diffLeft < width && diffLeft >= 0) {
                 resizeDir = bottomLeft;
                 cursorShape = Qt::SizeBDiagCursor;
-        }
-        else if (diffRight > -width && diffRight <= 0) {
-            resizeDir = bottomRight;
-            cursorShape = Qt::SizeFDiagCursor;
+            } else if (diffRight > -width && diffRight <= 0) {
+                resizeDir = bottomRight;
+                cursorShape = Qt::SizeFDiagCursor;
 
+            } else {
+                resizeDir = bottom;
+                cursorShape = Qt::SizeVerCursor;
+            }
+        } else if (abs(diffLeft) < width) {
+            resizeDir = left;
+            cursorShape = Qt::SizeHorCursor;
+        } else if (abs(diffRight) < width) {
+            resizeDir = right;
+            cursorShape = Qt::SizeHorCursor;
         }
-        else {
-            resizeDir = bottom;
-            cursorShape = Qt::SizeVerCursor;
-        }
-    }    
-    else if (abs(diffLeft) < width) {
-        resizeDir = left;
-        cursorShape = Qt::SizeHorCursor;
-    }
-    else if (abs(diffRight) < width) {
-        resizeDir = right;
-        cursorShape = Qt::SizeHorCursor;
-    }
-    else {
-        resizeDir = nodir;
-        cursorShape = Qt::ArrowCursor;
     }
     setCursor(cursorShape);
     bool result = resizeDir != nodir;
