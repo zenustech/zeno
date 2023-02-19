@@ -1,7 +1,9 @@
 #include "unrealclient.h"
+#include "launch/unreal/model/transform.h"
+#include "msgpack.h"
 
 UnrealLiveLinkTcpClient::UnrealLiveLinkTcpClient(QObject* parent, QTcpSocket* inTcpSocket)
-    : UnrealLiveLinkClient(parent),
+    : IUnrealLiveLinkClient(parent),
       m_socket(inTcpSocket)
 {
 }
@@ -30,8 +32,11 @@ void UnrealLiveLinkTcpClient::onSocketReceiveData() {
         return;
     }
 
+    // TODO: darc read data to buffer and then handle it in new thread
     QByteArray byteArray = m_socket->readAll();
     qint64 size = byteArray.size();
-    m_socket->write(byteArray);
+    Translation translation { 1.4131, M_PI, 1.f };
+    auto data = msgpack::pack(translation);
+    m_socket->write(reinterpret_cast<const char *>(data.data()), data.size());
 }
 #pragma endregion tcp_socket_events

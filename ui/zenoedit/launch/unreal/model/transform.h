@@ -3,12 +3,12 @@
 
 #include <type_traits>
 
-struct TestModel {
-    int8_t a;
+struct Translation {
+    float_t x, y, z;
 
     template <class T>
     void pack(T &pack) {
-        pack(a);
+        pack(x, y, z);
     }
 };
 

@@ -4,22 +4,22 @@
 #include <QObject>
 #include <QTcpSocket>
 
-class UnrealLiveLinkClient : public QObject {
+class IUnrealLiveLinkClient : public QObject {
     Q_OBJECT
 
 public:
-    explicit UnrealLiveLinkClient(QObject* parent) : QObject(parent) {}
-    ~UnrealLiveLinkClient() override = default;
+    explicit IUnrealLiveLinkClient(QObject* parent) : QObject(parent) {}
+    ~IUnrealLiveLinkClient() override = default;
 
 public:
     virtual void init() = 0;
     virtual void cleanupSocket() = 0;
 
 signals:
-    void invalid(UnrealLiveLinkClient* who);
+    void invalid(IUnrealLiveLinkClient * who);
 };
 
-class UnrealLiveLinkTcpClient : public UnrealLiveLinkClient {
+class UnrealLiveLinkTcpClient : public IUnrealLiveLinkClient {
     Q_OBJECT
 
 public:

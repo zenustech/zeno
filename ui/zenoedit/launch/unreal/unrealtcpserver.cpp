@@ -51,15 +51,15 @@ void UnrealTcpServer::onNewConnection() {
     m_currentSocket = m_server->nextPendingConnection();
 
     // create a client instance for socket
-    UnrealLiveLinkClient* newClient = new UnrealLiveLinkTcpClient(this, m_currentSocket);
+    IUnrealLiveLinkClient * newClient = new UnrealLiveLinkTcpClient(this, m_currentSocket);
     m_clients.push_back(newClient);
-    connect(newClient, SIGNAL(invalid(UnrealLiveLinkClient*)), this, SLOT(onClientInvalided(UnrealLiveLinkClient*)));
+    connect(newClient, SIGNAL(invalid(IUnrealLiveLinkClient *)), this, SLOT(onClientInvalided(IUnrealLiveLinkClient *)));
     newClient->init();
 
     m_currentSocket = nullptr;
 }
 
-void UnrealTcpServer::onClientInvalided(UnrealLiveLinkClient* who) {
+void UnrealTcpServer::onClientInvalided(IUnrealLiveLinkClient * who) {
     if (nullptr != who) who->cleanupSocket();
     m_clients.erase(std::remove_if(m_clients.begin(), m_clients.end(), [who](const auto v){
         return v == who;

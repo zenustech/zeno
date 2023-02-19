@@ -44,7 +44,7 @@ private slots:
     /**
      * when client emit invalid, cleanup it
      */
-    void onClientInvalided(UnrealLiveLinkClient* who);
+    void onClientInvalided(IUnrealLiveLinkClient * who);
 
 private:
     // just running in event loop, it doesn't need to ensure thread safe
@@ -58,7 +58,7 @@ private:
     // client lists
     // maintain instance of client here
     // client would destroy after emit invalid() from themselves
-    std::vector<UnrealLiveLinkClient*> m_clients;
+    std::vector<IUnrealLiveLinkClient *> m_clients;
 
 private:
 };
