@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <vector>
+#include "unrealclient.h"
 
 class UnrealTcpServer final : public QObject {
     Q_OBJECT
@@ -40,15 +42,9 @@ private slots:
     void onNewConnection();
 
     /**
-     * when socket disconnect
-     * we set it back to nullptr
+     * when client emit invalid, cleanup it
      */
-     void onCurrentConnectionClosed();
-
-     /**
-      * when socket has new data
-      */
-      void onCurrentConnectionReceiveData();
+    void onClientInvalided(UnrealLiveLinkClient* who);
 
 private:
     // just running in event loop, it doesn't need to ensure thread safe
@@ -58,6 +54,11 @@ private:
     QTcpServer* m_server = nullptr;
     // current handling socket, will be closed if there is new incoming connection.
     QTcpSocket* m_currentSocket = nullptr;
+
+    // client lists
+    // maintain instance of client here
+    // client would destroy after emit invalid() from themselves
+    std::vector<UnrealLiveLinkClient*> m_clients;
 
 private:
     void cleanUpSocket();

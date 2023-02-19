@@ -60,29 +60,21 @@ void UnrealTcpServer::onNewConnection() {
     // keep socket of the connection
     m_currentSocket = m_server->nextPendingConnection();
 
-    if (nullptr != m_currentSocket) {
-        connect(m_currentSocket, SIGNAL(disconnected()), this, SLOT(onCurrentConnectionClosed()));
-        connect(m_currentSocket, SIGNAL(readyRead()), this, SLOT(onCurrentConnectionReceiveData()));
-    }
+    // create a client instance for socket
+    UnrealLiveLinkClient* newClient = new UnrealLiveLinkTcpClient(this, m_currentSocket);
+    m_clients.push_back(newClient);
+    connect(newClient, SIGNAL(invalid(UnrealLiveLinkClient*)), this, SLOT(onClientInvalided(UnrealLiveLinkClient*)));
+    newClient->init();
+
+    m_currentSocket = nullptr;
 }
 
-void UnrealTcpServer::onCurrentConnectionClosed() {
-    const QTcpSocket* tmp = m_currentSocket;
-    cleanUpSocket();
-    disconnect(tmp, SIGNAL(disconnected()), this, SLOT(onCurrentConnectionClosed()));
-    disconnect(tmp, SIGNAL(readyRead()), this, SLOT(onCurrentConnectionReceiveData()));
+void UnrealTcpServer::onClientInvalided(UnrealLiveLinkClient* who) {
+    if (nullptr != who) who->cleanupSocket();
+    m_clients.erase(std::remove_if(m_clients.begin(), m_clients.end(), [who](const auto v){
+        return v == who;
+    }), m_clients.end());
+    who->deleteLater();
 }
 
-void UnrealTcpServer::onCurrentConnectionReceiveData() {
-    if (nullptr == m_currentSocket || !m_currentSocket->isReadable()) {
-        return;
-    }
-
-    QByteArray byteArray = m_currentSocket->readAll();
-    qint64 size = byteArray.size();
-
-    TestModel model { 1 };
-    auto data = msgpack::pack(model);
-    m_currentSocket->write(reinterpret_cast<const char *>(data.data()), data.size());
-}
 #pragma endregion signal_handler
