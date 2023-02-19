@@ -12,6 +12,4 @@ struct TestModel {
     }
 };
 
-ADD_TYPE_ID_FOR_TYPE(TestModel);
-
 #endif //ZENO_TRANSFORM_H
