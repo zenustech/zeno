@@ -22,14 +22,6 @@ UnrealTcpServer& UnrealTcpServer::getStaticClass() {
     return sUnrealTcpServer;
 }
 
-void UnrealTcpServer::cleanUpSocket() {
-    if (nullptr == m_currentSocket) return;
-    if (m_currentSocket->isOpen()) m_currentSocket->close();
-
-    m_currentSocket = nullptr;
-    // TODO: darc clear buffers
-}
-
 void UnrealTcpServer::start(const QHostAddress& inAddress, int32_t inPort) {
     m_server = new QTcpServer(this);
     if (!m_server->listen(inAddress, inPort)) {
@@ -54,8 +46,6 @@ void UnrealTcpServer::onNewConnection() {
         shutdown();
         return;
     }
-
-    cleanUpSocket();
 
     // keep socket of the connection
     m_currentSocket = m_server->nextPendingConnection();

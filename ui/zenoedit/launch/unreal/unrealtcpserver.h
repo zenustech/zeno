@@ -61,7 +61,6 @@ private:
     std::vector<UnrealLiveLinkClient*> m_clients;
 
 private:
-    void cleanUpSocket();
 };
 
 #endif // ZENO_UNREALTCPSERVER_H
