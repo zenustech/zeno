@@ -53,7 +53,7 @@ void UnrealTcpServer::onNewConnection() {
     // create a client instance for socket
     IUnrealLiveLinkClient * newClient = new UnrealLiveLinkTcpClient(this, m_currentSocket);
     m_clients.push_back(newClient);
-    connect(newClient, SIGNAL(invalid(IUnrealLiveLinkClient *)), this, SLOT(onClientInvalided(IUnrealLiveLinkClient *)));
+    connect(newClient, SIGNAL(invalid(IUnrealLiveLinkClient*)), this, SLOT(onClientInvalided(IUnrealLiveLinkClient*)));
     newClient->init();
 
     m_currentSocket = nullptr;
