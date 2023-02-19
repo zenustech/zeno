@@ -1,6 +1,8 @@
 
 #include "unrealtcpserver.h"
+#include "launch/unreal/model/transform.h"
 #include <zeno/utils/log.h>
+#include "msgpack.h"
 
 UnrealTcpServer::UnrealTcpServer(QObject* parent)
     : QObject(parent) {
@@ -78,5 +80,9 @@ void UnrealTcpServer::onCurrentConnectionReceiveData() {
 
     QByteArray byteArray = m_currentSocket->readAll();
     qint64 size = byteArray.size();
+
+    TestModel model { 1 };
+    auto data = msgpack::pack(model);
+    m_currentSocket->write(reinterpret_cast<const char *>(data.data()), data.size());
 }
 #pragma endregion signal_handler
