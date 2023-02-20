@@ -34,6 +34,7 @@ protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void scrollContentsBy(int dx, int dy) override;
+    void showEvent(QShowEvent *event) override;
 
 public slots:
     void redo();

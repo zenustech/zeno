@@ -314,6 +314,17 @@ void _ZenoSubGraphView::scrollContentsBy(int dx, int dy)
         QGraphicsView::scrollContentsBy(dx, dy);
 }
 
+void _ZenoSubGraphView::showEvent(QShowEvent *event) 
+{
+    qreal factor_i_want = transform().m11();
+    if (factor_i_want != editor_factor) 
+    {
+        editor_factor = factor_i_want;
+        emit zoomed(factor_i_want);
+    }
+    _base::showEvent(event);
+}
+
 void _ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::MidButton)

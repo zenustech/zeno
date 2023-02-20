@@ -400,6 +400,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
         }
 
         ZenoSubGraphView* pView = new ZenoSubGraphView;
+        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
         pView->initScene(pScene);
 
         idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
@@ -410,9 +412,6 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
         else
             tabIcon = ":/icons/subnet-general.svg";
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
-
-        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
-        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
 
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
             QStringList L = newPath.split("/", QtSkipEmptyParts);
