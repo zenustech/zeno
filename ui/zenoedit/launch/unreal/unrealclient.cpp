@@ -13,11 +13,13 @@ UnrealLiveLinkTcpClient::~UnrealLiveLinkTcpClient() = default;
 void UnrealLiveLinkTcpClient::init() {
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(onSocketClosed()));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(onSocketReceiveData()));
+    connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
 }
 
 void UnrealLiveLinkTcpClient::cleanupSocket() {
     disconnect(m_socket, SIGNAL(disconnected()), this, SLOT(onSocketClosed()));
     disconnect(m_socket, SIGNAL(readyRead()), this, SLOT(onSocketReceiveData()));
+    disconnect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
     m_socket->deleteLater();
 }
 
@@ -38,5 +40,11 @@ void UnrealLiveLinkTcpClient::onSocketReceiveData() {
     Translation translation { 1.4131, M_PI, 1.f };
     auto data = msgpack::pack(translation);
     m_socket->write(reinterpret_cast<const char *>(data.data()), data.size());
+}
+
+void UnrealLiveLinkTcpClient::onError(QAbstractSocket::SocketError error) {
+    using E = QAbstractSocket::SocketError;
+
+    Q_UNUSED(error);
 }
 #pragma endregion tcp_socket_events

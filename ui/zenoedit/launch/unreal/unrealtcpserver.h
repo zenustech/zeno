@@ -2,10 +2,13 @@
 #define ZENO_UNREALTCPSERVER_H
 
 #include <QObject>
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QHostAddress>
 #include <vector>
 #include "unrealclient.h"
+
+class QThread;
+class QTcpServer;
+class QTcpSocket;
 
 class UnrealTcpServer final : public QObject {
     Q_OBJECT
@@ -29,7 +32,7 @@ public slots:
      * @param inAddress clients from which internet interface are allowed
      * @param inPort binding port, default 23343
      */
-    void start(const QHostAddress& inAddress = QHostAddress::LocalHost, int32_t inPort = 23343);
+    void start(QThread* qThread = nullptr, const QHostAddress& inAddress = QHostAddress::LocalHost, int32_t inPort = 23343);
     /**
      * shutdown and release server instance
      */
@@ -55,6 +58,10 @@ private:
     // current handling socket, will be closed if there is new incoming connection.
     QTcpSocket* m_currentSocket = nullptr;
 
+    // the thread tcp server is running on
+    // if running in main event loop, it would be nullptr
+    QThread* m_currentThread = nullptr;
+
     // client lists
     // maintain instance of client here
     // client would destroy after emit invalid() from themselves
@@ -62,5 +69,9 @@ private:
 
 private:
 };
+
+namespace zeno {
+    void startUnrealTcpServer(const QHostAddress& inAddress = QHostAddress::LocalHost, int32_t inPort = 23343);
+}
 
 #endif // ZENO_UNREALTCPSERVER_H

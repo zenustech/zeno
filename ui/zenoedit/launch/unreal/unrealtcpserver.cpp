@@ -2,6 +2,9 @@
 #include "unrealtcpserver.h"
 #include "launch/unreal/model/transform.h"
 #include <zeno/utils/log.h>
+#include <QThread>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include "msgpack.h"
 
 UnrealTcpServer::UnrealTcpServer(QObject* parent)
@@ -22,16 +25,32 @@ UnrealTcpServer& UnrealTcpServer::getStaticClass() {
     return sUnrealTcpServer;
 }
 
-void UnrealTcpServer::start(const QHostAddress& inAddress, int32_t inPort) {
-    m_server = new QTcpServer(this);
-    if (!m_server->listen(inAddress, inPort)) {
-        zeno::log_error("failed to bind unreal bridge server at '{}:{}'", inAddress.toString().toStdString(), inPort);
+void UnrealTcpServer::start(QThread* qThread, const QHostAddress& inAddress, int32_t inPort) {
+    if (isRunning()) return;
+
+    auto startServer = [inAddress, inPort, this] {
+      m_server = new QTcpServer(this);
+      if (!m_server->listen(inAddress, inPort)) {
+          zeno::log_error("failed to bind unreal bridge server at '{}:{}'", inAddress.toString().toStdString(), inPort);
+      }
+
+      connect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+    };
+
+    if (nullptr != qThread) {
+        moveToThread(qThread);
+        m_currentThread = qThread;
+        connect(m_currentThread, &QThread::started, this, startServer, Qt::QueuedConnection);
+    } else {
+        startServer();
     }
 
-    connect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 }
 
 void UnrealTcpServer::shutdown() {
+    if (nullptr != m_currentThread) {
+        disconnect(m_currentThread, SIGNAL(started(QPrivateSignal)));
+    }
     if (nullptr != m_server) {
         disconnect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
     }
@@ -68,3 +87,9 @@ void UnrealTcpServer::onClientInvalided(IUnrealLiveLinkClient * who) {
 }
 
 #pragma endregion signal_handler
+
+void zeno::startUnrealTcpServer(const QHostAddress &inAddress, int32_t inPort) {
+    auto* pThread = new QThread;
+    UnrealTcpServer::getStaticClass().start(pThread, inAddress, inPort);
+    pThread->start(QThread::HighPriority);
+}

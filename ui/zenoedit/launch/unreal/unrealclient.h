@@ -34,10 +34,13 @@ public:
 private slots:
     void onSocketClosed();
     void onSocketReceiveData();
+    void onError(QAbstractSocket::SocketError error);
 
 private:
     QTcpSocket* m_socket;
 
 };
+
+// TODO: darc support LocalSocket for unix-like OS
 
 #endif //ZENO_UNREALCLIENT_H
