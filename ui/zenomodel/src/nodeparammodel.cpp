@@ -764,7 +764,8 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
                 ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
                 EdgeInfo link = exportLink(linkIdx);
-                keyInfo.link = link;
+                if (link.isValid())
+                    keyInfo.links.append(link);
             }
         }
 

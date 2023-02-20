@@ -125,13 +125,18 @@ struct EdgeInfo
             return 0;
         }
     }
+
+    bool isValid() const {
+        return !inSockPath.isEmpty() && !outSockPath.isEmpty();
+    }
+
 };
 Q_DECLARE_METATYPE(EdgeInfo)
 
 struct DICTKEY_INFO
 {
     QString key;
-    EdgeInfo link;
+    QList<EdgeInfo> links;
 };
 
 struct DICTPANEL_INFO

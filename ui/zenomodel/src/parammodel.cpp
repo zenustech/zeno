@@ -89,7 +89,7 @@ void IParamModel::exportDictkeys(DictKeyModel *pModel, DICTPANEL_INFO& panel)
                 ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
                 EdgeInfo link = exportLink(linkIdx);
-                keyInfo.link = link;
+                keyInfo.links.append(link);
             }
         }
 

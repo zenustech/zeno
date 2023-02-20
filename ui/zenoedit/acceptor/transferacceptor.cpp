@@ -216,7 +216,7 @@ void TransferAcceptor::setDictPanelProperty(
 void TransferAcceptor::addInnerDictKey(
         bool bInput,
         const QString& inNode,
-        const QString& inSock,
+        const QString& sockName,
         const QString& keyName,
         const QString& link
     )
@@ -226,22 +226,36 @@ void TransferAcceptor::addInnerDictKey(
 
     //standard inputs desc by latest descriptors.
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    if (inputs.find(inSock) != inputs.end())
+    if (inputs.find(sockName) != inputs.end())
     {
-        INPUT_SOCKET& inSocket = inputs[inSock];
+        INPUT_SOCKET& inSocket = inputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
 
-        QString newKeyPath = "[node]/inputs/" + inSock + "/" + keyName;
+        QString newKeyPath = "[node]/inputs/" + sockName + "/" + keyName;
         QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
         QString outSockPath = link;
         EdgeInfo edge(outSockPath, inSockPath);
-
-        item.link = edge;
+        if (edge.isValid())
+        {
+            item.links.append(edge);
+            m_links.append(edge);
+        }
         inSocket.info.dictpanel.keys.append(item);
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        if (!item.link.inSockPath.isEmpty() && !item.link.outSockPath.isEmpty())
-            m_links.append(item.link);
+    }
+
+    OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+    if (outputs.find(sockName) != outputs.end())
+    {
+        OUTPUT_SOCKET& outSocket = outputs[sockName];
+        DICTKEY_INFO item;
+        item.key = keyName;
+
+        QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
+        outSocket.info.dictpanel.keys.append(item);
+        //no need to import link here.
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 }
 

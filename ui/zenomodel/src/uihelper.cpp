@@ -1654,21 +1654,30 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
         INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
         for (INPUT_SOCKET& inSocket : inputs)
         {
-            QList<EdgeInfo> existLinks;
-            for (EdgeInfo edge : inSocket.info.links)
+            for (QList<EdgeInfo>::iterator it = inSocket.info.links.begin(); it != inSocket.info.links.end(); )
             {
-                if (links.indexOf(edge) != -1)
+                if (links.indexOf(*it) == -1)
                 {
-                    existLinks.append(edge);
+                    it = inSocket.info.links.erase(it);
+                }
+                else
+                {
+                    it++;
                 }
             }
-            inSocket.info.links = existLinks;
 
             for (DICTKEY_INFO& keyItem : inSocket.info.dictpanel.keys)
             {
-                if (links.indexOf(keyItem.link) == -1)
+                for (QList<EdgeInfo>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
                 {
-                    keyItem.link = EdgeInfo();
+                    if (links.indexOf(*it) == -1)
+                    {
+                        it = keyItem.links.erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
                 }
             }
         }
@@ -1676,15 +1685,33 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
         OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         for (OUTPUT_SOCKET& outSocket : outputs)
         {
-            QList<EdgeInfo> existLinks;
-            for (EdgeInfo edge : outSocket.info.links)
+            for (QList<EdgeInfo>::iterator it = outSocket.info.links.begin();
+                 it != outSocket.info.links.end();)
             {
-                if (links.indexOf(edge) != -1)
+                if (links.indexOf(*it) == -1)
                 {
-                    existLinks.append(edge);
+                    it = outSocket.info.links.erase(it);
+                }
+                else
+                {
+                    it++;
                 }
             }
-            outSocket.info.links = existLinks;
+
+            for (DICTKEY_INFO& keyItem : outSocket.info.dictpanel.keys)
+            {
+                for (QList<EdgeInfo>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
+                {
+                    if (links.indexOf(*it) == -1)
+                    {
+                        it = keyItem.links.erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
+                }
+            }
         }
 
         node[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -1726,7 +1753,7 @@ void UiHelper::reAllocIdents2(const QString& targetSubgraph,
             inputSocket.info.links.clear();
             for (DICTKEY_INFO& key : inputSocket.info.dictpanel.keys)
             {
-                key.link = EdgeInfo();
+                key.links.clear();
             }
         }
 
@@ -1737,7 +1764,7 @@ void UiHelper::reAllocIdents2(const QString& targetSubgraph,
             outputSocket.info.links.clear();
             for (DICTKEY_INFO& key : outputSocket.info.dictpanel.keys)
             {
-                key.link = EdgeInfo();
+                key.links.clear();
             }
         }
 

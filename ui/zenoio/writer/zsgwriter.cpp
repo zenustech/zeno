@@ -162,7 +162,7 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                 if (bInput) //no need to export link on output key sockets.
                 {
                     writer.Key("link");
-                    QString otherLinkSock = bInput ? info.link.outSockPath : info.link.inSockPath;
+                    QString otherLinkSock = info.links.isEmpty() ? "" : info.links[0].outSockPath;
                     if (otherLinkSock.isEmpty())
                         writer.Null();
                     else
