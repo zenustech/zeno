@@ -11,6 +11,10 @@
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
 
+#define TINYEXR_IMPLEMENTATION
+#include "tinyexr.h"
+#include "zeno/utils/string.h"
+
 static const float eps = 0.0001f;
 
 namespace zeno {
@@ -236,9 +240,50 @@ std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
     img->userData().set2("h", h);
     return img;
 }
+
+std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
+    int nx, ny, nc = 4;
+    float* rgba;
+    const char* err;
+    int ret = LoadEXR(&rgba, &nx, &ny, path.c_str(), &err);
+    if (ret != 0) {
+        zeno::log_error("load exr: {}", err);
+        throw std::runtime_error(zeno::format("load exr: {}", err));
+    }
+    nx = std::max(nx, 1);
+    ny = std::max(ny, 1);
+//    for (auto i = 0; i < ny / 2; i++) {
+//        for (auto x = 0; x < nx * 4; x++) {
+//            auto index1 = i * (nx * 4) + x;
+//            auto index2 = (ny - 1 - i) * (nx * 4) + x;
+//            std::swap(rgba[index1], rgba[index2]);
+//        }
+//    }
+
+    auto img = std::make_shared<PrimitiveObject>();
+    img->verts.resize(nx * ny);
+
+    auto &alpha = img->verts.add_attr<float>("alpha");
+    for (int i = 0; i < nx * ny; i++) {
+        img->verts[i] = {rgba[i*4+0], rgba[i*4+1], rgba[i*4+2]};
+        alpha[i] = rgba[i*4+3];
+    }
+//
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", nx);
+    img->userData().set2("h", ny);
+    return img;
+}
+
 struct ReadImageFile : INode {
     virtual void apply() override {
-        set_output("image", readImageFile(get_input2<std::string>("path")));
+        auto path = get_input2<std::string>("path");
+        if (zeno::ends_with(path, ".exr", false)) {
+            set_output("image", readExrFile(path));
+        }
+        else {
+            set_output("image", readImageFile(path));
+        }
     }
 };
 ZENDEFNODE(ReadImageFile, {
