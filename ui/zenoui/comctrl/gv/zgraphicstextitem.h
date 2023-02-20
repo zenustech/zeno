@@ -118,12 +118,19 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
 
+private slots:
+    void onContentsChanged();
+
 private:
     void initUI(const QString& text);
     QGraphicsView* _getFocusViewByCursor();
 
+    QString m_acceptableText;
+
     ZGraphicsNumSliderItem* m_pSlider;
+    QPointer<QValidator> m_validator;
     bool m_bFocusIn;
+    bool m_bValidating;
     bool m_bShowSlider;
 };
 

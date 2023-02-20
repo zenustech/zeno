@@ -216,7 +216,14 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
             return val;
         }
         else {
-            //type dismatch.
+            //type dismatch, try to convert to float.
+            //disable it now because the sync problem is complicated and trivival.
+            //float fVal = defaultValue.toFloat(&bOk);
+            //if (bOk)
+            //{
+            //    val = fVal;
+            //    return val;
+            //}
             return defaultValue;
         }
     }

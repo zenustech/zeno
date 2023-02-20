@@ -5,6 +5,7 @@
 #include "zassert.h"
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
+#include <zeno/utils/scope_exit.h>
 
 
 qreal editor_factor = 1.0;
@@ -375,6 +376,7 @@ ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     , m_bFocusIn(false)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
+    , m_bValidating(false)
 {
     _base::setText(text);
     initUI(text);
@@ -385,6 +387,7 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
     , m_bFocusIn(false)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
+    , m_bValidating(false)
 {
     initUI("");
 }
@@ -420,6 +423,11 @@ void ZEditableTextItem::initUI(const QString& text)
 
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+
+    m_acceptableText = text;
+
+    QTextDocument *pDoc = this->document();
+    connect(pDoc, SIGNAL(contentsChanged()), this, SLOT(onContentsChanged()));
 }
 
 QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
@@ -441,9 +449,33 @@ QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
     return nullptr;
 }
 
+void ZEditableTextItem::onContentsChanged()
+{
+    if (m_bValidating)
+        return;
+
+    m_bValidating = true;
+    zeno::scope_exit sp([=]() { m_bValidating = false; });
+
+    QString editText = document()->toPlainText();
+    if (m_validator)
+    {
+        int iVal = 0;
+        QValidator::State ret = m_validator->validate(editText, iVal);
+        if (ret == QValidator::Invalid)
+        {
+            setText(m_acceptableText);
+        }
+        else {
+            m_acceptableText = editText;
+        }
+        iVal = 0;
+    }
+}
+
 void ZEditableTextItem::setValidator(const QValidator* pValidator)
 {
-
+    m_validator = const_cast<QValidator*>(pValidator);
 }
 
 QString ZEditableTextItem::text() const
