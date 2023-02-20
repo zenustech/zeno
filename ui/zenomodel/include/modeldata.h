@@ -125,13 +125,18 @@ struct EdgeInfo
             return 0;
         }
     }
+
+    bool isValid() const {
+        return !inSockPath.isEmpty() && !outSockPath.isEmpty();
+    }
+
 };
 Q_DECLARE_METATYPE(EdgeInfo)
 
 struct DICTKEY_INFO
 {
     QString key;
-    EdgeInfo link;
+    QList<EdgeInfo> links;
 };
 
 struct DICTPANEL_INFO
@@ -300,6 +305,7 @@ struct LINK_UPDATE_INFO {
 };
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
+typedef QList<EdgeInfo> LINKS_DATA;
 
 struct CURVE_RANGE {
     qreal xFrom;

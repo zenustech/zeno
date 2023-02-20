@@ -146,33 +146,37 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
                         QString keyName = keyIdx.data(ROLE_PARAM_NAME).toString();
-                        const QModelIndex& link = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-                        if (link.isValid())
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        ZASSERT_EXIT(links.size() <= 1);
+                        for (QModelIndex link : links)
                         {
-                            if (!bDict)
+                            if (link.isValid())
                             {
-                                //obj number sequence resolve for MakeList.
-                                keyName = QString("obj%1").arg(idxWithLink);
-                            }
-                            const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
-                            const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                            const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
+                                if (!bDict)
+                                {
+                                    //obj number sequence resolve for MakeList.
+                                    keyName = QString("obj%1").arg(idxWithLink);
+                                }
+                                const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                                const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                                const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
 
-                            QString newOutId, outSock;
-                            // may the output socket is a key socket from a dict param.
-                            resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
+                                QString newOutId, outSock;
+                                // may the output socket is a key socket from a dict param.
+                                resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
 
-                            if (mockDictList.isEmpty())
-                            {
-                                //create dict or list as a middle node to connect each other.
-                                QString _tmpNode = bDict ? "MakeDict" : "MakeList";
-                                mockDictList = UiHelper::generateUuid(_tmpNode);
-                                mockDictList = nameMangling(graphIdPrefix, mockDictList);
-                                AddStringList({"addNode", _tmpNode, mockDictList}, writer);
+                                if (mockDictList.isEmpty())
+                                {
+                                    //create dict or list as a middle node to connect each other.
+                                    QString _tmpNode = bDict ? "MakeDict" : "MakeList";
+                                    mockDictList = UiHelper::generateUuid(_tmpNode);
+                                    mockDictList = nameMangling(graphIdPrefix, mockDictList);
+                                    AddStringList({"addNode", _tmpNode, mockDictList}, writer);
+                                }
+                                // add link from outside node to the mock dict/list.
+                                AddStringList({"bindNodeInput", mockDictList, keyName, newOutId, outSock}, writer);
+                                idxWithLink++;
                             }
-                            // add link from outside node to the mock dict/list.
-                            AddStringList({"bindNodeInput", mockDictList, keyName, newOutId, outSock}, writer);
-                            idxWithLink++;
                         }
                     }
                     if (!mockDictList.isEmpty())

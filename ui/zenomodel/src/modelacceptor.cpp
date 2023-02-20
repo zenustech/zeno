@@ -437,7 +437,15 @@ void ModelAcceptor::addInnerDictKey(
     int n = keyModel->rowCount();
     keyModel->insertRow(n);
     const QModelIndex& newKeyIdx = keyModel->index(n, 0);
+    ZASSERT_EXIT(newKeyIdx.isValid());
     keyModel->setData(newKeyIdx, keyName, ROLE_PARAM_NAME);
+
+    if (bInput && !link.isEmpty())
+    {
+        QString keySockPath = newKeyIdx.data(ROLE_OBJPATH).toString();
+        EdgeInfo fullLink(link, keySockPath);
+        m_subgLinks.append(fullLink);
+    }
 }
 
 void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)

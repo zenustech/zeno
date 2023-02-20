@@ -332,10 +332,14 @@ namespace zenoui
                             QModelIndex selIdx = lst[0];
                             if (selIdx.column() == 1)
                             {
-                                QModelIndex linkIdx = selIdx.data(ROLE_LINK_IDX).toModelIndex();
-                                QModelIndex outNodeIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-                                if (cbSet.cbNodeSelected)
-                                    cbSet.cbNodeSelected(outNodeIdx);
+                                PARAM_LINKS links = selIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                                if (!links.isEmpty())
+                                {
+                                    QModelIndex linkIdx = links[0];
+                                    QModelIndex outNodeIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
+                                    if (cbSet.cbNodeSelected)
+                                        cbSet.cbNodeSelected(outNodeIdx);
+                                }
                             }
                         }
                     });

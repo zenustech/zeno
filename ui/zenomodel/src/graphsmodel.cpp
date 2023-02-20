@@ -1041,121 +1041,19 @@ void GraphsModel::importNodes(
     }
 }
 
-void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos, bool enableTrans)
+QModelIndex GraphsModel::extractSubGraph(
+                    const QModelIndexList& nodesIndice,
+                    const QModelIndexList& links,
+                    const QModelIndex& fromSubgIdx,
+                    const QString& toSubg,
+                    bool enableTrans)
 {
-    if (!fromSubg.isValid() || srcNodes.isEmpty() || !toSubg.isValid())
-        return;
-
-    if (enableTrans)
-        beginTransaction("copy paste");
-
-    SubGraphModel* srcGraph = subGraph(fromSubg.row());
-    ZASSERT_EXIT(srcGraph);
-
-    SubGraphModel* dstGraph = subGraph(toSubg.row());
-    ZASSERT_EXIT(dstGraph);
-
-    QMap<QString, QString> old2New, new2old;
-
-    QMap<QString, NODE_DATA> oldNodes;
-    for (QModelIndex idx : srcNodes)
-    {
-        NODE_DATA old = srcGraph->nodeData(idx);
-        oldNodes.insert(old[ROLE_OBJID].toString(), old);
-    }
-    QPointF offset = pos - (*oldNodes.begin())[ROLE_OBJPOS].toPointF();
-
-    QMap<QString, NODE_DATA> newNodes;
-    for (NODE_DATA old : oldNodes)
-    {
-        NODE_DATA newNode = old;
-        const INPUT_SOCKETS inputs = newNode[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        INPUT_SOCKETS newInputs = inputs;
-        const OUTPUT_SOCKETS outputs = newNode[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        OUTPUT_SOCKETS newOutputs = outputs;
-
-        for (INPUT_SOCKET& inSocket : newInputs)
-        {
-            inSocket.info.links.clear();
-        }
-        newNode[ROLE_INPUTS] = QVariant::fromValue(newInputs);
-
-        for (OUTPUT_SOCKET& outSocket : newOutputs)
-        {
-            outSocket.info.links.clear();
-        }
-        newNode[ROLE_OUTPUTS] = QVariant::fromValue(newOutputs);
-
-        QString nodeName = old[ROLE_OBJNAME].toString();
-        const QString& oldId = old[ROLE_OBJID].toString();
-        const QString& newId = UiHelper::generateUuid(nodeName);
-
-        newNode[ROLE_OBJPOS] = old[ROLE_OBJPOS].toPointF() + offset;
-        newNode[ROLE_OBJID] = newId;
-
-        newNodes.insert(newId, newNode);
-
-        old2New.insert(oldId, newId);
-        new2old.insert(newId, oldId);
-    }
-
-    QList<NODE_DATA> lstNodes;
-    for (NODE_DATA data : newNodes)
-        lstNodes.append(data);
-    appendNodes(lstNodes, toSubg, enableTrans);
-
-    //reconstruct topology for new node.
-    for (NODE_DATA newNode : newNodes)
-    {
-        const QString& newId = newNode[ROLE_OBJID].toString();
-        const QString& oldId = new2old[newId];
-
-        const NODE_DATA& oldData = oldNodes[oldId];
-
-        const INPUT_SOCKETS &oldInputs = oldData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        const OUTPUT_SOCKETS &oldOutputs = oldData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-
-        INPUT_SOCKETS inputs = newNode[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        OUTPUT_SOCKETS outputs = newNode[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-
-        for (INPUT_SOCKET inSock : oldInputs)
-        {
-            for (EdgeInfo link : inSock.info.links)
-            {
-                QString inNode, inSockPath, outNode, outSockPath, _subgName;
-                UiHelper::getSocketInfo(link.inSockPath, _subgName, inNode, inSockPath);
-                UiHelper::getSocketInfo(link.outSockPath, _subgName, outNode, outSockPath);
-
-                if (oldNodes.find(inNode) != oldNodes.end() && oldNodes.find(outNode) != oldNodes.end())
-                {
-                    QString newOutNode, newInNode;
-                    newOutNode = old2New[outNode];
-                    newInNode = old2New[inNode];
-
-                    //construct a new path for sock.
-                    QString toSubgName = toSubg.data(ROLE_OBJNAME).toString();
-                    QString newOutPath = UiHelper::constructObjPath(toSubgName, newOutNode, outSockPath);
-                    QString newInPath = UiHelper::constructObjPath(toSubgName, newInNode, inSockPath);
-                    const QModelIndex& newOutSockIdx = indexFromPath(newOutPath);
-                    const QModelIndex& newInSockIdx = indexFromPath(newInPath);
-
-                    addLink(newOutSockIdx, newInSockIdx, enableTrans);
-                }
-            }
-        }
-    }
-    if (enableTrans)
-        endTransaction();
-}
-
-QModelIndex GraphsModel::extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubgIdx, const QString& toSubg, bool enableTrans)
-{
-    if (nodes.isEmpty() || !fromSubgIdx.isValid() || toSubg.isEmpty() || subGraph(toSubg))
+    if (nodesIndice.isEmpty() || !fromSubgIdx.isValid() || toSubg.isEmpty() || subGraph(toSubg))
     {
         return QModelIndex();
     }
 
-    enableTrans = true;    //dangerous to trans...
+    enableTrans = true;
     if (enableTrans)
         beginTransaction("extract a new graph");
 
@@ -1164,11 +1062,17 @@ QModelIndex GraphsModel::extractSubGraph(const QModelIndexList& nodes, const QMo
     QModelIndex toSubgIdx = index(toSubg);
 
     //copy nodes to new subg.
-    copyPaste(fromSubgIdx, nodes, toSubgIdx, QPointF(0, 0), enableTrans);
+    QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(nodesIndice, links);
+    QMap<QString, NODE_DATA> newNodes;
+    QList<EdgeInfo> newLinks;
+    UiHelper::reAllocIdents2(toSubg, datas.first, datas.second, newNodes, newLinks);
+
+    //paste nodes on new subgraph.
+    importNodes(newNodes, newLinks, QPointF(0, 0), toSubgIdx, true);
 
     //remove nodes from old subg.
     QStringList ids;
-    for (QModelIndex idx : nodes)
+    for (QModelIndex idx : nodesIndice)
         ids.push_back(idx.data(ROLE_OBJID).toString());
     for (QString id : ids)
         removeNode(id, fromSubgIdx, enableTrans);

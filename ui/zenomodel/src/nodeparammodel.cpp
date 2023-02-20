@@ -118,6 +118,13 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.info.sockProp = param->m_sockProp;
         outSocket.info.links = exportLinks(param->m_links);
 
+        if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
+        {
+            DictKeyModel* pModel = QVariantPtr<DictKeyModel>::asPtr(param->m_customData[ROLE_VPARAM_LINK_MODEL]);
+            ZASSERT_EXIT(pModel, false);
+            exportDictkeys(pModel, outSocket.info.dictpanel);
+        }
+
         outputs.insert(name, outSocket);
     }
     return true;
@@ -201,7 +208,7 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
         m_inputs->appendRow(pItem);
 
         //if current item is a dict socket, init dict sockets after new item insered, and then get the valid index to init dict model.
-        initDictSocket(pItem);
+        initDictSocket(pItem, inSocket.info);
     }
 }
 
@@ -237,7 +244,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
         m_outputs->appendRow(pItem);
-        initDictSocket(pItem);
+        initDictSocket(pItem, outSocket.info);
     }
 }
 
@@ -330,7 +337,7 @@ void NodeParamModel::setAddParam(
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
             m_inputs->appendRow(pItem);
-            initDictSocket(pItem);
+            initDictSocket(pItem, SOCKET_INFO());
         }
         else
         {
@@ -379,7 +386,7 @@ void NodeParamModel::setAddParam(
             pItem->m_ctrl = ctrl;
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
             m_outputs->appendRow(pItem);
-            initDictSocket(pItem);
+            initDictSocket(pItem, SOCKET_INFO());
         }
         else
         {
@@ -686,7 +693,7 @@ void NodeParamModel::clearLinks(VParamItem* pItem)
     pItem->m_links.clear();
 }
 
-void NodeParamModel::initDictSocket(VParamItem* pItem)
+void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socketInfo)
 {
     if (!pItem || pItem->vType != VPARAM_PARAM)
         return;
@@ -719,6 +726,13 @@ void NodeParamModel::initDictSocket(VParamItem* pItem)
     if (pItem->m_sockProp == SOCKPROP_DICTLIST_PANEL)
     {
         DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
+        for (int r = 0; r < socketInfo.dictpanel.keys.size(); r++)
+        {
+            const DICTKEY_INFO& keyInfo = socketInfo.dictpanel.keys[r];
+            pDictModel->insertRow(r);
+            QModelIndex newIdx = pDictModel->index(r, 0);
+            pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+        }
         pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
     }
 }
@@ -740,16 +754,21 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
         DICTKEY_INFO keyInfo;
         keyInfo.key = key;
 
-        QModelIndex linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-        if (linkIdx.isValid())
+        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        for (auto linkIdx : links)
         {
-            QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
-            QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
-            ZASSERT_EXIT(insock.isValid() && outsock.isValid());
+            if (linkIdx.isValid())
+            {
+                QModelIndex outsock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+                ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
-            EdgeInfo link = exportLink(linkIdx);
-            keyInfo.link = link;
+                EdgeInfo link = exportLink(linkIdx);
+                if (link.isValid())
+                    keyInfo.links.append(link);
+            }
         }
+
         panel.keys.append(keyInfo);
         keyNames.push_back(key);
     }

@@ -682,12 +682,13 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         {
             ZenoSubGraphScene* pScene = pView->scene();
             QModelIndexList nodes = pScene->selectNodesIndice();
+            QModelIndexList links = pScene->selectLinkIndice();
             bool bOk = false;
             QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:") , QLineEdit::Normal, "subgraph name", &bOk);
             if (bOk)
             {
                 QModelIndex fromSubgIdx = pView->scene()->subGraphIndex();
-                QModelIndex toSubgIdx = m_model->extractSubGraph(nodes, fromSubgIdx, newSubgName, true);
+                QModelIndex toSubgIdx = m_model->extractSubGraph(nodes, links, fromSubgIdx, newSubgName, true);
                 if (toSubgIdx.isValid())
                 {
                     activateTab(toSubgIdx.data(ROLE_OBJNAME).toString());

@@ -98,7 +98,7 @@ public:
     void updateBlackboard(const QString &id, const QVariant &blackboard, const QModelIndex &subgIdx,
                           bool enableTransaction) override;
 
-    QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
+    QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
@@ -159,8 +159,6 @@ private:
     bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
     bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
 
-    void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
-                   bool enableTrans = false);
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;
     void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);

@@ -117,8 +117,12 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
                         ZASSERT_EXIT(keyIdx.isValid());
-                        const QModelIndex& linkIdx = keyIdx.data(ROLE_LINK_IDX).toModelIndex();
-                        initLink(linkIdx);
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                        {
+                            const QModelIndex& linkIdx = links[0];
+                            initLink(linkIdx);
+                        }
                     }
                 }
             }
@@ -446,124 +450,32 @@ QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
     return nodesIndice;
 }
 
+QModelIndexList ZenoSubGraphScene::selectLinkIndice() const
+{
+    QModelIndexList linkIndice;
+    QList<QGraphicsItem*> selItems = selectedItems();
+    for (auto item : selItems)
+    {
+        if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
+        {
+            const QPersistentModelIndex& idx = pLink->linkInfo();
+            linkIndice.append(idx);
+        }
+    }
+    return linkIndice;
+}
+
 void ZenoSubGraphScene::copy()
 {
     QList<QGraphicsItem*> selItems = this->selectedItems();
     if (selItems.isEmpty())
         return;
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pModel);
-
     //first record all nodes.
-    QModelIndexList selNodes, selLinks;
-    for (auto item : selItems)
-    {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
-        {
-            selNodes.append(pNode->index());
-        }
-        else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
-        {
-            selLinks.append(pLink->linkInfo());
-        }
-    }
-
-    QMap<QString, NODE_DATA> oldNodes, newNodes;
-    QMap<QString, QString> old2new, new2old;
-
-    for (QModelIndex idx : selNodes)
-    {
-        NODE_DATA old = pModel->itemData(idx, m_subgIdx);
-        const QString& oldId = old[ROLE_OBJID].toString();
-        oldNodes.insert(oldId, old);
-
-        NODE_DATA newNode = old;
-        const QString& nodeName = old[ROLE_OBJNAME].toString();
-        const QString& newId = UiHelper::generateUuid(nodeName);
-        newNode[ROLE_OBJID] = newId;
-        newNode[ROLE_OBJPOS] = old[ROLE_OBJPOS];
-
-        //clear all link info in socket.
-        INPUT_SOCKETS inputs = newNode[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inSocket : inputs)
-        {
-            inSocket.info.links.clear();
-            inSocket.info.nodeid = newId;
-        }
-        newNode[ROLE_INPUTS] = QVariant::fromValue(inputs);
-
-        OUTPUT_SOCKETS outputs = newNode[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET& outSocket : outputs)
-        {
-            outSocket.info.links.clear();
-            outSocket.info.nodeid = newId;
-        }
-        newNode[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
-        //clear child items
-        PARAMS_INFO params = newNode[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
-        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        info.items.clear();
-        params["blackboard"].value = QVariant::fromValue(info);
-        newNode[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(params);
-
-        newNodes.insert(newId, newNode);
-
-        old2new.insert(oldId, newId);
-        new2old.insert(newId, oldId);
-    }
-
-    QStandardItemModel tempLinkModel;
-    //copy all link.
-    for (QModelIndex idx : selLinks)
-    {
-        const QString& outNode = idx.data(ROLE_OUTNODE).toString();
-        const QString& outSock = idx.data(ROLE_OUTSOCK).toString();
-        const QString& inNode = idx.data(ROLE_INNODE).toString();
-        const QString& inSock = idx.data(ROLE_INSOCK).toString();
-
-        if (oldNodes.find(outNode) != oldNodes.end() &&
-            oldNodes.find(inNode) != oldNodes.end())
-        {
-            const QString& newOutNode = old2new[outNode];
-            const QString& newInNode = old2new[inNode];
-            NODE_DATA& inData = newNodes[newInNode];
-            NODE_DATA& outData = newNodes[newOutNode];
-            INPUT_SOCKETS inputs = inData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-            OUTPUT_SOCKETS outputs = outData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-
-            ZASSERT_EXIT(inputs.find(inSock) != inputs.end());
-            ZASSERT_EXIT(outputs.find(outSock) != outputs.end());
-            INPUT_SOCKET& inputSocket = inputs[inSock];
-            OUTPUT_SOCKET& outputSocket = outputs[outSock];
-
-            //construct new link.
-            QStandardItem* pItem = new QStandardItem;
-            pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
-            pItem->setData(newInNode, ROLE_INNODE);
-            pItem->setData(inSock, ROLE_INSOCK);
-            pItem->setData(newOutNode, ROLE_OUTNODE);
-            pItem->setData(outSock, ROLE_OUTSOCK);
-            tempLinkModel.appendRow(pItem);
-            QModelIndex linkIdx = tempLinkModel.indexFromItem(pItem);
-            QPersistentModelIndex persistIdx(linkIdx);
-
-            QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-
-            const QString& outSockPath = UiHelper::constructObjPath(subgName, newOutNode, "[node]/outputs/", outSock);
-            const QString& inSockPath = UiHelper::constructObjPath(subgName, newInNode, "[node]/inputs/", inSock);
-            EdgeInfo newEdge(outSockPath, inSockPath);
-
-            inputSocket.info.links.append(newEdge);
-            outputSocket.info.links.append(newEdge);
-
-            inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
-            outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-        }
-    }
-
-    ZsgWriter::getInstance().dumpToClipboard(newNodes);
+    QModelIndexList selNodes = selectNodesIndice();
+    QModelIndexList selLinks = selectLinkIndice();
+    QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(selNodes, selLinks);
+    ZsgWriter::getInstance().dumpToClipboard(datas.first);
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
@@ -575,15 +487,16 @@ void ZenoSubGraphScene::paste(QPointF pos)
         const QString& strJson = pMimeData->text();
         TransferAcceptor acceptor(pGraphsModel);
         ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
-        acceptor.reAllocIdents();
 
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;
-        acceptor.getDumpData(nodes, links);
+        QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        UiHelper::reAllocIdents2(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
+
         //todo: ret value for api.
         pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
 
-        //mark selection for all nodes and links.
+        //mark selection for all nodes.
         clearSelection();
         for (QString ident : nodes.keys())
         {
@@ -885,8 +798,11 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
-                        QPersistentModelIndex _linkIdx  = keyIdx.data(ROLE_LINK_IDX).toPersistentModelIndex();
-                        pGraphsModel->removeLink(_linkIdx, true);
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        for (QPersistentModelIndex _linkIdx : links)
+                        {
+                            pGraphsModel->removeLink(_linkIdx, true);
+                        }
                     }
                 }
                 else

@@ -77,17 +77,18 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
         case ROLE_ADDLINK:
         {
-            _DictItem &item = m_items[index.row()];
+            _DictItem& item = m_items[index.row()];
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             ZASSERT_EXIT(linkIdx.isValid(), false);
-            item.link = linkIdx;
+            item.links.append(linkIdx);
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
         case ROLE_REMOVELINK:
         {
-            _DictItem &item = m_items[index.row()];
-            item.link = QModelIndex();
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            _DictItem& item = m_items[index.row()];
+            item.links.removeAll(linkIdx);
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
@@ -113,15 +114,23 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
         else if (index.column() == 1) {
             //todo: check input or output, then return by linkIdx.
             PARAM_CLASS cls = (PARAM_CLASS)this->data(index, ROLE_PARAM_CLASS).toInt();
-            if (cls == PARAM_INNER_INPUT) {
-                QModelIndex outNodeIdx = item.link.data(ROLE_OUTNODE_IDX).toModelIndex();
-                QString displayInfo = outNodeIdx.data(ROLE_OBJNAME).toString();
-                return displayInfo;
+            if (cls == PARAM_INNER_INPUT)
+            {
+                if (!item.links.isEmpty() && item.links[0].isValid())
+                {
+                    QModelIndex outNodeIdx = item.links[0].data(ROLE_OUTNODE_IDX).toModelIndex();
+                    QString displayInfo = outNodeIdx.data(ROLE_OBJNAME).toString();
+                    return displayInfo;
+                }
             }
-            else if (cls == PARAM_INNER_OUTPUT) {
-                QModelIndex inNodeIdx = item.link.data(ROLE_INNODE_IDX).toModelIndex();
-                QString displayInfo = inNodeIdx.data(ROLE_OBJNAME).toString();
-                return displayInfo;
+            else if (cls == PARAM_INNER_OUTPUT)
+            {
+                if (!item.links.isEmpty() && item.links[0].isValid())
+                {
+                    QModelIndex inNodeIdx = item.links[0].data(ROLE_INNODE_IDX).toModelIndex();
+                    QString displayInfo = inNodeIdx.data(ROLE_OBJNAME).toString();
+                    return displayInfo;
+                }
             }
             return "";
         }
@@ -134,12 +143,8 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_SOCKPROP:   return SOCKPROP_EDITABLE;
     case ROLE_PARAM_LINKS:
         {
-            const _DictItem &item = m_items[index.row()];
-            PARAM_LINKS links;
-            QModelIndex linkIdx = item.link;
-            if (linkIdx.isValid())
-                links.append(linkIdx);
-            return QVariant::fromValue(links);
+            const _DictItem& item = m_items[index.row()];
+            return QVariant::fromValue(item.links);
         }
     case ROLE_PARAM_NAME:
     case ROLE_VPARAM_NAME:
@@ -156,14 +161,8 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_OUTSOCK_IDX:
     {
         //todo: output case
-        QModelIndex linkIdx = data(index, ROLE_LINK_IDX).toModelIndex();
-        return linkIdx.data(role);
-    }
-    case ROLE_LINK_IDX:
-    {
         const _DictItem& item = m_items[index.row()];
-        QModelIndex linkIdx = item.link;
-        return linkIdx;
+        return item.links[0].data(role);
     }
     case ROLE_OBJID:
     case ROLE_NODE_IDX:
@@ -222,9 +221,11 @@ bool DictKeyModel::insertColumns(int column, int count, const QModelIndex& paren
 bool DictKeyModel::removeRows(int row, int count, const QModelIndex& parent)
 {
     beginRemoveRows(parent, row, row + count - 1);
-    //remove link first.
-    QPersistentModelIndex linkIdx = m_items[row].link;
-    m_pGraphs->removeLink(linkIdx, true);
+    //remove links first.
+    for (auto linkIdx : m_items[row].links)
+    {
+        m_pGraphs->removeLink(linkIdx, true);
+    }
     m_items.removeAt(row);
     endRemoveRows();
     return true;

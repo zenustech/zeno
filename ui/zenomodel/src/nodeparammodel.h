@@ -58,7 +58,7 @@ private:
     void clearLinks(VParamItem* pItem);
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-    void initDictSocket(VParamItem* pItem);
+    void initDictSocket(VParamItem* pItem, const SOCKET_INFO& inSocket);
     void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
 
     IGraphsModel* m_pGraphsModel;

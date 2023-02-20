@@ -347,9 +347,9 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         const auto& inputObj = inObj.value;
         if (inputObj.IsArray())
         {
-            //legacy case, like [xxx-node, xxx-socket, defl]
+            //legacy io format, like [xxx-node, xxx-socket, defl]
             const auto& arr = inputObj.GetArray();
-            //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
+            ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
             int n = arr.Size();
@@ -397,6 +397,7 @@ void ZsgReader::_parseSocket(
     QString link;
     if (sockObj.HasMember("link") && sockObj["link"].IsString())
         link = QString::fromUtf8(sockObj["link"].GetString());
+
     if (sockObj.HasMember("default-value"))
     {
         pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
@@ -447,12 +448,7 @@ void ZsgReader::_parseDictPanel(
             {
                 link = QString::fromLocal8Bit(inputObj["link"].GetString());
             }
-            pAcceptor->addInnerDictKey(true, id, inSock, keyName, link);
-            if (bInput)
-            {
-                QString sockGrp = inSock + "/" + keyName;   //dict key io specific.
-                pAcceptor->setInputSocket2(nodeName, id, sockGrp, link, "editable", rapidjson::Value());
-            }
+            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
         }
     }
 }

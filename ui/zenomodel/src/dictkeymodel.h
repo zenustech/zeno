@@ -8,7 +8,7 @@ class IGraphsModel;
 struct _DictItem
 {
     QString key;
-    QPersistentModelIndex link;
+    QList<QPersistentModelIndex> links;
 };
 
 class DictKeyModel : public QAbstractItemModel

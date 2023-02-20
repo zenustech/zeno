@@ -48,7 +48,7 @@ public:
 	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
-	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
+	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
 
 	/*
