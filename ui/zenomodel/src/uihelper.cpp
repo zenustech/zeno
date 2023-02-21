@@ -13,6 +13,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 
 using namespace zeno::iotags;
+using namespace zeno::iotags::curve;
 
 VarToggleScope::VarToggleScope(bool* pbVar)
     : m_pbVar(pbVar)
@@ -1369,7 +1370,7 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();
         }
         CURVES_MODEL curves;
-        if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z")) { //compatible old version zsg file
+        if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
             CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
             curves.insert("x", xModel);
         } else {
@@ -1450,7 +1451,7 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
                 return QVariant();
             }
             CURVES_MODEL curves;
-            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z")) { //compatible old version zsg file
+            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
                 CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
                 curves.insert("x", xModel);
             } else {

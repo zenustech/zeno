@@ -242,12 +242,18 @@ void ZCurveMapEditor::onAddCurveBtnClicked() {
         if (pRootItem->child(0, 0) == NULL || pRootItem->child(0, 0)->data(Qt::DisplayRole) != "x")
         {
             newCurve->setId("x");
+            newCurve->setData(newCurve->index(0, 0), QVariant::fromValue(QPointF(0, 0)), ROLE_NODEPOS);
+            newCurve->setData(newCurve->index(1, 0), QVariant::fromValue(QPointF(1, 1)), ROLE_NODEPOS);
             addCurve(newCurve);
         } else if (pRootItem->child(1, 0) == NULL || pRootItem->child(1, 0)->data(Qt::DisplayRole) != "y")
         {
+            newCurve->setData(newCurve->index(0, 0), QVariant::fromValue(QPointF(0, 0.5)), ROLE_NODEPOS);
+            newCurve->setData(newCurve->index(1, 0), QVariant::fromValue(QPointF(1, 0.5)), ROLE_NODEPOS);
             newCurve->setId("y");
             addCurve(newCurve);
         } else {
+            newCurve->setData(newCurve->index(0, 0), QVariant::fromValue(QPointF(0, 1)), ROLE_NODEPOS);
+            newCurve->setData(newCurve->index(1, 0), QVariant::fromValue(QPointF(1, 0)), ROLE_NODEPOS);
             newCurve->setId("z");
             addCurve(newCurve);
         }
