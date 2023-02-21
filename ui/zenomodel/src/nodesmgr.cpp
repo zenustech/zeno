@@ -86,6 +86,8 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
             QString ids[] = {"x", "y", "z"};
             for (int i = 0; i < 3; i++) {
                 CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+                pModel->setData(pModel->index(0, 0), QVariant::fromValue(QPointF(0, i * 0.5)), ROLE_NODEPOS);
+                pModel->setData(pModel->index(1, 0), QVariant::fromValue(QPointF(1, 1 - i * 0.5)), ROLE_NODEPOS);
                 pModel->setId(ids[i]);
                 curves.insert(ids[i], pModel);
             }
@@ -125,6 +127,8 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
             QString ids[] = {"x", "y", "z"};
             for (int i = 0; i < 3; i++) {
                 CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+                pModel->setData(pModel->index(0, 0), QVariant::fromValue(QPointF(0, i*0.5)), ROLE_NODEPOS);
+                pModel->setData(pModel->index(1, 0), QVariant::fromValue(QPointF(1, 1-i*0.5)), ROLE_NODEPOS);
                 pModel->setId(ids[i]);
                 curves.insert(ids[i], pModel);
             }
