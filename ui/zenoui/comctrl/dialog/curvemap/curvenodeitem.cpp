@@ -34,21 +34,13 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 	, m_other(nullptr)
 	, m_bNotify(true)
 {
-    CurveGrid *pGrid = m_node->grid();
-
-    m_line = new QGraphicsLineItem(pGrid);
+	m_line = new QGraphicsLineItem(this);
 	m_line->setPen(QPen(QColor(255, 255, 255), 2));
-
-	QPointF center = pNode->boundingRect().center();
 
 	QPointF pos = offset;
 	setPos(pos);
 
-	QPointF wtf = this->scenePos();
-	QPointF hdlPosInGrid = pGrid->mapFromScene(wtf);
-    QPointF nodePosInGrid = pNode->pos();
-
-    m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
+    m_line->setLine(calculateLinePos());
     m_line->setZValue(10);
     m_line->hide();
 
@@ -104,9 +96,7 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
-		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
-		QPointF nodePosInGrid = m_node->pos();
-		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
+		m_line->setLine(calculateLinePos());
         if (m_bNotify)
         {
             CurveModel* pModel = m_node->curves()->model();
@@ -124,9 +114,7 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 	}
 	else if (change == QGraphicsItem::ItemScenePositionHasChanged)
 	{
-		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
-		QPointF nodePosInGrid = m_node->pos();
-		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
+		m_line->setLine(calculateLinePos());
 	}
 	else if (change == QGraphicsItem::ItemSelectedChange)
 	{
@@ -200,6 +188,17 @@ void CurveHandlerItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     m_bMouseTriggered = true;
 	_base::mouseReleaseEvent(event);
     m_bMouseTriggered = false;
+}
+
+QLineF CurveHandlerItem::calculateLinePos() 
+{
+	// o----------->o
+	// ^            ^
+	// p1          p2
+	// p1 refers to point(0, 0) in this coordinate
+	// p2 refers to m_node pos, but need to trans to this coordinate
+    auto nodePos = mapFromScene(m_node->scenePos());
+    return QLineF(QPointF(0, 0), nodePos);
 }
 
 QRectF CurveHandlerItem::boundingRect(void) const
