@@ -113,6 +113,11 @@ namespace zenoui
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
+                if (ctrl == CONTROL_INT)
+                {
+                    pLineEdit->setValidator(new QIntValidator(pLineEdit));
+                }
+
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     const QString textVal = pLineEdit->toPlainText();
