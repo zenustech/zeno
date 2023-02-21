@@ -16,6 +16,7 @@
 
 #include "../scheme.hpp"
 #include "../utils.cuh"
+#include "Noise.cuh"
 
 namespace zeno {
 
@@ -613,8 +614,8 @@ ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                    {"Eulerian"}});
 
 struct ZSTracerEmission : INode {
-    void compute(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF,
-                 bool fromObj) {
+    void tracerEmit(zs::CudaExecutionPolicy &pol, zs::SmallString tag, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF,
+                    bool fromObj, float trcAmount, bool addNoise, float noiseAmpPercent, float swirlSize) {
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -626,19 +627,66 @@ struct ZSTracerEmission : INode {
         auto dx = spg.voxelSize()[0];
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx, fromObj,
-             tag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), dx, fromObj, trcAmount, addNoise,
+             noiseAmpPercent, swirlSize, tag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
                 auto wcoord = spgv.wCoord(blockno, cellno);
                 auto emit_sdf = sdfv.wSample("sdf", wcoord);
 
-                if (emit_sdf <= 1.5f * dx) {
-                    // fix me: naive emission
-                    spgv(tag, blockno, cellno) = 1.f;
+                if (emit_sdf < 1.1f * dx) {
+                    float trcEmitAmount = trcAmount;
+                    if (addNoise) {
+                        auto pp = (1.f / swirlSize) * wcoord;
+                        float fbm = 0, scale = 1;
+                        for (int i = 0; i < 3; ++i, pp *= 2.f, scale *= 0.5) {
+                            float pln = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]);
+                            fbm += scale * pln;
+                        }
+                        trcEmitAmount += noiseAmpPercent * trcAmount * fbm;
+                    }
+                    spgv(tag, blockno, cellno) = trcEmitAmount;
                 }
 
                 if (fromObj) {
-                    if (spgv.value("mark", blockno, cellno) > 0.5f)
-                        spgv(tag, blockno, cellno) = 1.f;
+                    if (spgv.value("mark", blockno, cellno) > 0.5f) {
+                        float trcEmitAmount = trcAmount;
+                        if (addNoise) {
+                            auto pp = (1.f / swirlSize) * wcoord;
+                            float fbm = 0, scale = 1;
+                            for (int i = 0; i < 3; ++i, pp *= 2.f, scale *= 0.5) {
+                                float pln = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]);
+                                fbm += scale * pln;
+                            }
+                            trcEmitAmount += noiseAmpPercent * trcAmount * fbm;
+                        }
+                        spgv(tag, blockno, cellno) = trcEmitAmount;
+                    }
+                }
+            });
+    }
+
+    void velocityEmit(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, ZenoSparseGrid *EmitSDF,
+                      ZenoSparseGrid *EmitVel) {
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = NSGrid->spg;
+        auto &sdf = EmitSDF->spg;
+        auto &vel = EmitVel->spg;
+
+        auto block_cnt = spg.numBlocks();
+
+        auto dx = spg.voxelSize()[0];
+
+        pol(zs::Collapse{block_cnt, spg.block_size},
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel), dx,
+             vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                auto wcoord = spgv.wCoord(blockno, cellno);
+                auto solid_sdf = sdfv.wSample("sdf", wcoord);
+
+                if (solid_sdf < 1.1f * dx) {
+                    auto vel_s = velv.wStaggeredPack("v", wcoord);
+                    auto block = spgv.block(blockno);
+                    block.template tuple<3>(vSrcTag, cellno) = vel_s;
                 }
             });
     }
@@ -647,6 +695,9 @@ struct ZSTracerEmission : INode {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto EmitSDF = get_input<ZenoSparseGrid>("EmitterSDF");
         auto fromObj = get_input2<bool>("fromObjBoundary");
+        auto addNoise = get_input2<bool>("AddNoise");
+        auto noiseAmpPercent = get_input2<float>("NoiseAmpPercent");
+        auto swirlSize = get_input2<float>("SwirlSize");
 
         if (!NSGrid->getSparseGrid().hasProperty("mark")) {
             fromObj = false;
@@ -654,12 +705,25 @@ struct ZSTracerEmission : INode {
 
         auto pol = zs::cuda_exec();
 
-        if (get_input2<bool>("Density"))
-            compute(pol, "rho", NSGrid.get(), EmitSDF.get(), fromObj);
-        if (get_input2<bool>("Temperature"))
-            compute(pol, "T", NSGrid.get(), EmitSDF.get(), fromObj);
-        if (get_input2<bool>("Fuel"))
-            compute(pol, "fuel", NSGrid.get(), EmitSDF.get(), fromObj);
+        if (get_input2<bool>("Density")) {
+            auto rhoAmount = get_input2<float>("DensityAmount");
+            tracerEmit(pol, "rho", NSGrid.get(), EmitSDF.get(), fromObj, rhoAmount, addNoise, noiseAmpPercent,
+                       swirlSize);
+        }
+        if (get_input2<bool>("Temperature")) {
+            auto TAmount = get_input2<float>("TemperatureAmount");
+            tracerEmit(pol, "T", NSGrid.get(), EmitSDF.get(), fromObj, TAmount, addNoise, noiseAmpPercent, swirlSize);
+        }
+        if (get_input2<bool>("Fuel")) {
+            auto fuelAmount = get_input2<float>("FuelAmount");
+            tracerEmit(pol, "fuel", NSGrid.get(), EmitSDF.get(), fromObj, fuelAmount, addNoise, noiseAmpPercent,
+                       swirlSize);
+        }
+
+        if (get_input2<bool>("hasEmitterVel") && has_input<ZenoSparseGrid>("EmitterVel")) {
+            auto EmitVel = get_input<ZenoSparseGrid>("EmitterVel");
+            velocityEmit(pol, NSGrid.get(), EmitSDF.get(), EmitVel.get());
+        }
 
         set_output("NSGrid", NSGrid);
     }
@@ -668,10 +732,18 @@ struct ZSTracerEmission : INode {
 ZENDEFNODE(ZSTracerEmission, {/* inputs: */
                               {"NSGrid",
                                "EmitterSDF",
+                               {"bool", "hasEmitterVel", "0"},
+                               "EmitterVel",
+                               {"bool", "fromObjBoundary", "0"},
                                {"bool", "Density", "1"},
+                               {"float", "DensityAmount", "1.0"},
                                {"bool", "Temperature", "1"},
+                               {"float", "TemperatureAmount", "1.0"},
                                {"bool", "Fuel", "0"},
-                               {"bool", "fromObjBoundary", "0"}},
+                               {"float", "FuelAmount", "1.0"},
+                               {"bool", "AddNoise", "0"},
+                               {"float", "NoiseAmpPercent", "0.2"},
+                               {"float", "SwirlSize", "0.05"}},
                               /* outputs: */
                               {"NSGrid"},
                               /* params: */

@@ -1,10 +1,12 @@
 // #include "zensim/container/Vector.hpp"
 // #include "zensim/geometry/VdbLevelSet.h"
 #include "Structures.hpp"
-#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/cuda/Cuda.h"
+#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/memory/MemOps.hpp"
+#include "zensim/graph/ConnectedComponents.hpp"
 #include "zensim/math/DihedralAngle.hpp"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/memory/Allocator.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
@@ -88,6 +90,56 @@ struct ZSCUMathTest : INode {
         const zs::SparseMatrix<T, true> spmat{100, 100};
         auto spv = proxy<execspace_e::host>(spmat);
         fmt::print("default spmat(0, 1): {}\n", spv(0, 1).extent);
+
+        /// csr
+        {
+            zs::SparseMatrix<int, true> spmat{7, 7, memsrc_e::um, 0};
+            zs::Vector<int> is{6}, js{6}, vs{6};
+            is[0] = 0;
+            js[0] = 1;
+            is[1] = 1;
+            js[1] = 2;
+            is[2] = 1;
+            js[2] = 5;
+            is[3] = 3;
+            js[3] = 4;
+            is[4] = 3;
+            js[4] = 6;
+            is[5] = 4;
+            js[5] = 6;
+            for (auto &v : vs)
+                v = 1;
+
+            is = is.clone({memsrc_e::um, 0});
+            js = js.clone({memsrc_e::um, 0});
+            vs = vs.clone({memsrc_e::um, 0});
+            spmat.build(zs::cuda_exec(), 7, 7, range(is), range(js), range(vs));
+            fmt::print("row major csr:\n");
+            for (int i = 0; i < 7; ++i) {
+                auto bg = spmat._ptrs[i];
+                fmt::print("row [{}] offset [{}]: ", i, bg);
+                for (; bg != spmat._ptrs[i + 1]; ++bg)
+                    fmt::print("<{}>  ", spmat._inds[bg] /*, spmat._vals[bg]*/);
+                fmt::print("\n");
+            }
+
+            // alternative build
+            spmat.build(zs::cuda_exec(), 7, 7, range(is), range(js), true_c);
+            fmt::print("row major csr (sym, pure topo):\n");
+            for (int i = 0; i < 7; ++i) {
+                auto bg = spmat._ptrs[i];
+                fmt::print("row [{}] offset [{}]: ", i, bg);
+                for (; bg != spmat._ptrs[i + 1]; ++bg)
+                    fmt::print("<{}>  ", spmat._inds[bg] /*, spmat._vals[bg]*/);
+                fmt::print("\n");
+            }
+
+            zs::Vector<int> fas{7, memsrc_e::um, 0};
+            union_find(zs::cuda_exec(), spmat, range(fas));
+
+            for (int i = 0; i != 7; ++i)
+                fmt::print("check first stat[{}]: {}\n", i, fas[i]);
+        }
 
         constexpr int N = 7;
         zs::Vector<int> nidx{N + 1};
@@ -174,6 +226,7 @@ struct ZSCUMathTest : INode {
 
         for (int i = 0; i != N; ++i)
             fmt::print("stat[{}]: {}\n", i, nstat[i]);
+
         getchar();
     }
 };
@@ -184,6 +237,57 @@ ZENDEFNODE(ZSCUMathTest, {
                              {},
                              {"ZPCTest"},
                          });
+
+struct ZSTestIterator : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}, {"var", 1}}, 100};
+        auto ompExec = omp_exec();
+        // initialize
+        ompExec(range(100), [&, tv = proxy<space>({}, tv)](int i) mutable {
+            tv(0, i) = i;
+            tv("id", i) = reinterpret_bits<zs::f32>(i + 1);
+            tv.tuple(dim_c<3>, "v", i) = zs::vec<float, 3>{-i, i, i * i};
+            tv("var", i, int_c) = ((i * i) << (sizeof(int) / 2 * 8)) | i;
+        });
+        puts("print by proxies");
+        seq_exec()(range(10), [&, tv = proxy<space>({}, tv)](int i) {
+            fmt::print("tv[{}]: w[{}], v[{}, {}, {}], id[{}]\n", i, tv("w", i), tv("v", 0, i), tv("v", 1, i),
+                       tv("v", 2, i), tv.pack(dim_c<1>, "id", i).reinterpret_bits(int_c)[0]);
+        });
+        puts("print \"w\" by default iterators");
+        // auto bg = tv.begin(0);
+        // auto ed = tv.end(0);
+        auto [bg, ed] = range(tv, 0);
+        auto viter = std::begin(range(tv, "v", dim_c<3>, float_c));
+        auto i0Iter = tv.begin("var", 0, dim_c<1>, wrapt<i16>{});
+        auto i1Iter = tv.begin("var", 1, dim_c<1>, wrapt<i16>{});
+        using TV = zs::vec<float, 3>;
+#if 1
+        auto idIter = tv.begin(1, dim_c<1>, int_c);
+        ompExec(range(10), [bg = bg, idIter = idIter, viter = viter, i0Iter = i0Iter, i1Iter = i1Iter](int i) mutable {
+            fmt::print("tv[{}]: {}, id {}, v [{}, {}, {}], split [{}, {}]\n", i, bg[i], idIter[i], viter[i][0],
+                       viter[i][1], viter[i][2], i0Iter[i], i1Iter[i]);
+        });
+        {
+            std::string str;
+            char ch;
+            int num;
+            auto [a, b, c] = zs::make_tuple("sb", 'a', 2);
+            zs::tie(str, ch, num) = zs::make_tuple("SB", 'A', 4);
+            fmt::print("<a, b, c>: ({}, {}, {}) ({}, {}, {})\n", a, b, c, str, ch, num);
+        }
+#endif
+    }
+};
+
+ZENDEFNODE(ZSTestIterator, {
+                               {},
+                               {},
+                               {},
+                               {"ZPCTest"},
+                           });
 
 struct ZSTestExtraction : INode {
     void apply() override {

@@ -88,19 +88,19 @@ struct SetVDBGridName : zeno::INode {
     }
 };
 
-static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>(
-    "SetVDBGridName", {/* inputs: */ {}, /* outputs: */
-                    {
-                        "grid",
-                    },
-                    /* params: */
-                    {
-                        //{"float", "dx", "0.08"},
-                        {"string", "name", "density"},
-                    },
-                    /* category: */
-                    {
-                        "openvdb",
-                    }});
-
+static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridName", {/* inputs: */ {
+                                                                                         "grid",
+                                                                                     }, /* outputs: */
+                                                                                     {
+                                                                                         "grid",
+                                                                                     },
+                                                                                     /* params: */
+                                                                                     {
+                                                                                         //{"float", "dx", "0.08"},
+                                                                                         {"string", "name", "density"},
+                                                                                     },
+                                                                                     /* category: */
+                                                                                     {
+                                                                                         "openvdb",
+                                                                                     }});
 }

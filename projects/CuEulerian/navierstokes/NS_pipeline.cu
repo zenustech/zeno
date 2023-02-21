@@ -105,54 +105,58 @@ ZENDEFNODE(ZSVDBToNavierStokesGrid, {/* inputs: */
                                      /* category: */
                                      {"Eulerian"}});
 
-struct ZSNSAssignAttribute : INode {
+struct ZSGridAssignAttribute : INode {
     void apply() override {
-        auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto ZSGrid = get_input<ZenoSparseGrid>("Grid");
         auto SrcGrid = get_input<ZenoSparseGrid>("SourceGrid");
-        auto tag = get_input2<std::string>("Attribute");
+        auto attrTag = get_input2<std::string>("Attribute");
         auto isStaggered = get_input2<bool>("Staggered");
 
-        auto &spg = NSGrid->spg;
+        auto &spg = ZSGrid->spg;
         auto &src = SrcGrid->spg;
         auto block_cnt = spg.numBlocks();
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        auto num_ch = src.getPropertySize(tag);
-        if (num_ch != spg.getPropertySize(src_tag(NSGrid, tag))) {
-            throw std::runtime_error(fmt::format("The channel number of [{}] doesn't match!", tag));
+        auto tag = src_tag(ZSGrid, attrTag);
+        int nchns = src.getPropertySize(src_tag(SrcGrid, attrTag));
+        if (!spg.hasProperty(tag)) {
+            spg.append_channels(pol, {{tag, nchns}});
+        } else {
+            if (nchns != spg.getPropertySize(tag)) {
+                throw std::runtime_error(fmt::format("The channel number of [{}] doesn't match!", attrTag));
+            }
         }
 
         pol(zs::Collapse{block_cnt, spg.block_size},
-            [spgv = zs::proxy<space>(spg), srcv = zs::proxy<space>(src), num_ch, isStaggered,
-             srcTag = src_tag(SrcGrid, tag),
-             dstTag = src_tag(NSGrid, tag)] __device__(int blockno, int cellno) mutable {
+            [spgv = zs::proxy<space>(spg), srcv = zs::proxy<space>(src), nchns, isStaggered,
+             srcTag = src_tag(SrcGrid, attrTag), dstTag = tag] __device__(int blockno, int cellno) mutable {
                 if (isStaggered) {
-                    for (int ch = 0; ch < num_ch; ++ch) {
+                    for (int ch = 0; ch < nchns; ++ch) {
                         auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
                         spgv(dstTag, ch, blockno, cellno) = srcv.wStaggeredSample(srcTag, ch, wcoord_face);
                     }
                 } else {
-                    for (int ch = 0; ch < num_ch; ++ch) {
+                    for (int ch = 0; ch < nchns; ++ch) {
                         auto wcoord = spgv.wCoord(blockno, cellno);
                         spgv(dstTag, ch, blockno, cellno) = srcv.wSample(srcTag, ch, wcoord);
                     }
                 }
             });
 
-        set_output("NSGrid", NSGrid);
+        set_output("Grid", ZSGrid);
     }
 };
 
-ZENDEFNODE(ZSNSAssignAttribute, {/* inputs: */
-                                 {"NSGrid", "SourceGrid", {"string", "Attribute", ""}, {"bool", "Staggered", "0"}},
-                                 /* outputs: */
-                                 {"NSGrid"},
-                                 /* params: */
-                                 {},
-                                 /* category: */
-                                 {"Eulerian"}});
+ZENDEFNODE(ZSGridAssignAttribute, {/* inputs: */
+                                   {"Grid", "SourceGrid", {"string", "Attribute", ""}, {"bool", "Staggered", "0"}},
+                                   /* outputs: */
+                                   {"Grid"},
+                                   /* params: */
+                                   {},
+                                   /* category: */
+                                   {"Eulerian"}});
 
 struct ZSNavierStokesDt : INode {
     void apply() override {
@@ -272,7 +276,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -290,7 +293,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -306,7 +308,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -336,7 +337,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vSrcTag = src_tag(NSGrid, "v"),
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -352,7 +352,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = dst_tag(NSGrid, "v"),
                  vDstTag = zs::SmallString{"tmp"}] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
@@ -369,7 +368,6 @@ struct ZSNSAdvectDiffuse : INode {
                  vTag = src_tag(NSGrid, "v"), vSrcTag = zs::SmallString{"tmp"},
                  vDstTag = dst_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
                     auto icoord = spgv.iCoord(blockno, cellno);
-                    auto wcoord = spgv.indexToWorld(icoord);
 
                     for (int ch = 0; ch < 3; ++ch) {
                         auto u_adv = spgv.iStaggeredCellPack(advTag, icoord, ch) + wind;
