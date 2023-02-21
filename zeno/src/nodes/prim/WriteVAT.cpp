@@ -227,6 +227,22 @@ struct WriteCustomVAT : INode {
             }
             std::string path = get_param<std::string>("path");
             write_vat(v, path);
+
+            vector<vector<vec3f>> nrms;
+            nrms.resize(prims.size());
+            auto& nrm_ref = prim->verts.attr<vec3f>("nrm");
+            for (auto i = 0; i < prims.size(); i++) {
+                auto prim = prims[i];
+                nrms[i].resize(prim->tris.size() * 3);
+                for (auto j = 0; j < prim->tris.size(); j++) {
+                    const auto & tri = prim->tris[j];
+                    nrms[i][j * 3 + 0] = nrm_ref[tri[0]];
+                    nrms[i][j * 3 + 1] = nrm_ref[tri[1]];
+                    nrms[i][j * 3 + 2] = nrm_ref[tri[2]];
+                }
+            }
+            write_vat(nrms, path + ".nrm");
+
             {
                 std::string obj_path = path + ".obj";
                 auto prim = std::make_shared<zeno::PrimitiveObject>();
