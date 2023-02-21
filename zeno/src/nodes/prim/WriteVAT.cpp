@@ -230,9 +230,9 @@ struct WriteCustomVAT : INode {
 
             vector<vector<vec3f>> nrms;
             nrms.resize(prims.size());
-            auto& nrm_ref = prim->verts.attr<vec3f>("nrm");
             for (auto i = 0; i < prims.size(); i++) {
                 auto prim = prims[i];
+                auto& nrm_ref = prim->verts.attr<vec3f>("nrm");
                 nrms[i].resize(prim->tris.size() * 3);
                 for (auto j = 0; j < prim->tris.size(); j++) {
                     const auto & tri = prim->tris[j];
