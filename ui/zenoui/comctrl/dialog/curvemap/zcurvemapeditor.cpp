@@ -8,7 +8,10 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include "zassert.h"
-
+#include <zenomodel/include/igraphsmodel.h>.
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenoedit/zenoapplication.h>
+#include "variantptr.h"
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 	: QDialog(parent)
@@ -35,6 +38,8 @@ void ZCurveMapEditor::initUI()
     m_ui->btnLoadPreset->setProperty("cssClass", "curve-preset");
     m_ui->btnSavePreset->setProperty("cssClass", "curve-preset");
     m_ui->cbIsTimeline->setProperty("cssClass", "curve-timeline");
+    m_ui->btnAddCurve->setProperty("cssClass", "curve-preset");
+    m_ui->btnDelCurve->setProperty("cssClass", "curve-preset");
 
     //todo: move to ui file.
     m_pGroupHdlType = new QButtonGroup(this);
@@ -95,13 +100,13 @@ void ZCurveMapEditor::initButtonShadow()
 void ZCurveMapEditor::initChannelModel()
 {
     m_channelModel = new QStandardItemModel(this);
-    QStandardItem* pRootItem = new QStandardItem("Channels");
+    QStandardItem *pRootItem = new QStandardItem("Channels");
     m_channelModel->appendRow(pRootItem);
     m_ui->channelView->setModel(m_channelModel);
     m_ui->channelView->expandAll();
 
     m_selection = new QItemSelectionModel(m_channelModel);
-    m_ui->channelView->setVisible(m_ui->cbIsTimeline->isChecked());
+    //m_ui->channelView->setVisible(m_ui->cbIsTimeline->isChecked());
 }
 
 CurveModel* ZCurveMapEditor::currentModel()
@@ -146,11 +151,14 @@ void ZCurveMapEditor::initSignals()
     connect(m_ui->editYFrom, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
     connect(m_ui->editYTo, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
     connect(m_ui->cbIsTimeline, SIGNAL(stateChanged(int)), this, SLOT(onCbTimelineChanged(int)));
+    connect(m_ui->btnAddCurve, SIGNAL(clicked()), this, SLOT(onAddCurveBtnClicked()));
+    connect(m_ui->btnDelCurve, SIGNAL(clicked()), this, SLOT(onDelCurveBtnClicked()));
 }
 
-void ZCurveMapEditor::addCurve(CurveModel* model)
+void ZCurveMapEditor::addCurve(CurveModel *model)
 {
-    static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
+    //static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
+    static const QMap<QString, QColor> preset = {{"x", "#CE2F2F"}, {"y", "#2FCD5F"}, {"z", "#307BCD"}};
 
     QString id = model->id();
     m_models.insert(id, model);
@@ -164,26 +172,37 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     m_ui->editYFrom->setText(QString::number(range.yFrom));
     m_ui->editYTo->setText(QString::number(range.yTo));
 
+    //int n = pRootItem->rowCount();
+    //QColor curveClr;
+    //if (n < sizeof(preset) / sizeof(QColor)) 
+    //{
+    //    curveClr = preset[n];
+    //}
+    //else
+    //{
+    //    curveClr = QColor(77, 77, 77);
+    //}
+
+    m_bate_rows.push_back(model);
+    CurveGrid *pGrid = m_ui->gridview->gridItem();
+    pGrid->setCurvesColor(id, preset[id]);
+
     QStandardItem *pItem = new QStandardItem(model->id());
     pItem->setCheckable(true);
     pItem->setCheckState(Qt::Checked);
     QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
-
-    int n = pRootItem->rowCount();
-    QColor curveClr;
-    if (n < sizeof(preset) / sizeof(QColor))
+    if (pRootItem->rowCount() == 0)
     {
-        curveClr = preset[n];
+        pRootItem->appendRow(pItem);
     }
-    else
-    {
-        curveClr = QColor(77, 77, 77);
+    else {
+        int i = 0;
+        while (pRootItem->child(i, 0) != NULL && model->id() > pRootItem->child(i, 0)->data(Qt::DisplayRole).toString())
+        {
+            i++;
+        }
+        pRootItem->insertRow(i, pItem);
     }
-
-    pRootItem->appendRow(pItem);
-    m_bate_rows.push_back(model);
-    CurveGrid *pGrid = m_ui->gridview->gridItem();
-    pGrid->setCurvesColor(id, curveClr);
 
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
@@ -213,12 +232,55 @@ void ZCurveMapEditor::onCbTimelineChanged(int state)
     }
 }
 
+void ZCurveMapEditor::onAddCurveBtnClicked() {
+    QStandardItem * pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
+    if (pRootItem->rowCount() != 3)
+    {
+        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        CurveModel *newCurve = curve_util::deflModel(pGraphsModel);
+
+        if (pRootItem->child(0, 0) == NULL || pRootItem->child(0, 0)->data(Qt::DisplayRole) != "x")
+        {
+            newCurve->setId("x");
+            addCurve(newCurve);
+        } else if (pRootItem->child(1, 0) == NULL || pRootItem->child(1, 0)->data(Qt::DisplayRole) != "y")
+        {
+            newCurve->setId("y");
+            addCurve(newCurve);
+        } else {
+            newCurve->setId("z");
+            addCurve(newCurve);
+        }
+    }
+}
+
+void ZCurveMapEditor::onDelCurveBtnClicked() {
+    QModelIndexList lst = m_ui->channelView->selectionModel()->selectedIndexes();
+    if (lst.size() != 0 && lst[0] != m_channelModel->index(0, 0))
+    {
+        QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
+        QString curveName = lst[0].data(Qt::DisplayRole).toString();
+        pRootItem->removeRow(lst[0].row());
+
+        CurveGrid *pGrid = m_ui->gridview->gridItem();
+        pGrid->setCurvesVisible(curveName, false);
+
+        delete m_models[curveName];
+        m_bate_rows.erase(std::find(m_bate_rows.begin(), m_bate_rows.end(), m_models[curveName]));
+        m_models.remove(curveName);
+    }
+}
+
 int ZCurveMapEditor::curveCount() const {
     return (int)m_bate_rows.size();
 }
 
 CurveModel *ZCurveMapEditor::getCurve(int i) const {
     return m_bate_rows.at(i);
+}
+
+CURVES_MODEL ZCurveMapEditor::getModel() const {
+    return m_models;
 }
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)

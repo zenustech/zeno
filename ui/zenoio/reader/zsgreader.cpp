@@ -7,6 +7,7 @@
 #include "variantptr.h"
 #include "common.h"
 #include <zenomodel/customui/customuirw.h>
+#include "iotags.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -729,7 +730,7 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
         for (const auto &paramObj : jsonParams.GetObject()) {
             const QString &name = paramObj.name.GetString();
             const rapidjson::Value &value = paramObj.value;
-            if (!value.IsObject())
+            if (!value.IsObject() || !value.HasMember(iotags::params::params_valueKey)) //compatible old version
                 return false;
 
             PARAM_INFO paramData;
@@ -737,9 +738,9 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
                 paramData.typeDesc = value["type"].GetString();
             QVariant var;
             if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-                var = UiHelper::parseJsonByValue(paramData.typeDesc, value["value"],nullptr); //dynamic type on SubInput defl.
+                var = UiHelper::parseJsonByValue(paramData.typeDesc, value[iotags::params::params_valueKey],nullptr); //dynamic type on SubInput defl.
             else
-                var = UiHelper::parseJsonByType(paramData.typeDesc, value["value"], currGraph);
+                var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey], currGraph);
 
             if (value.HasMember("control")) {
                 PARAM_CONTROL ctrl;

@@ -78,8 +78,11 @@ public:
             pGraphsModel->addExecuteCommand(new RenameObjCommand(pGraphsModel, keyObj, newValue.toString()));
         };
 
-        const QString& key = m_sockKeyIdx.data().toString();
-        m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbEditFinished, nullptr, CALLBACK_SWITCH(), QVariant());
+        CallbackCollection cbSet;
+        cbSet.cbEditFinished = cbEditFinished;
+
+        const QString &key = m_sockKeyIdx.data().toString();
+        m_editText = zenoui::createItemWidget(key, CONTROL_STRING, "string", cbSet, nullptr, QVariant());
         m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
