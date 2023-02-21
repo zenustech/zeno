@@ -1,5 +1,6 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -118,6 +119,9 @@ void Zenovis::doFrameUpdate()
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
     int frameid = getCurrentFrameId();
+
+    zenoApp->getMainWindow()->doFrameUpdate(frameid);
+
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);
     }

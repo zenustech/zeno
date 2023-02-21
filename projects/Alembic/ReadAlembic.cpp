@@ -269,7 +269,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             if (!read_done) {
                 log_info("[alembic] totally {} velocities", marr->size());
             }
-            auto &parr = prim->attr<vec3f>("vel");
+            auto &parr = prim->add_attr<vec3f>("vel");
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
                 parr.emplace_back(val[0], val[1], val[2]);

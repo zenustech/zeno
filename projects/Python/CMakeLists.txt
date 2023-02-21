@@ -48,7 +48,29 @@ if (BUILD_LIBPYTHON_SHARED)
 else()
     target_link_libraries(zeno PRIVATE libpython-static)
 endif()
+
+#### BEGIN cihou python dapigu ####
 add_dependencies(zeno python)
+get_property(fuckers GLOBAL PROPERTY FUCKING_PYTHON_EXTENSION_TARGETS)
+foreach (fucker IN ITEMS ${fuckers})
+    if (TARGET ${fucker})
+        add_dependencies(zeno ${fucker})
+        message(STATUS "[+] ${fucker}")
+    else()
+        message(STATUS "[ ] ${fucker}")
+    endif()
+endforeach()
+get_property(fuckconfig GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI)
+get_property(fuckconfig2 GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI2)
+get_property(fuckconfig3 GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI3)
+add_custom_target(fuckpythonnimabidesysconfig
+    WORKING_DIRECTORY ${fuckconfig3}
+    COMMENT "CIHOU PYTHON WDNMD DIAONIDAYE CONNIMAFIG"
+    DEPENDS python
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${fuckconfig}" "${fuckconfig2}" 
+)
+add_dependencies(zeno fuckpythonnimabidesysconfig)
+##### END cihou python dapigu #####
 
 target_include_directories(zeno PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h (unix)

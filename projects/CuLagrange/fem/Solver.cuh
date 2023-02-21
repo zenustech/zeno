@@ -10,6 +10,7 @@
 #include "zensim/cuda/Cuda.h"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
@@ -30,6 +31,7 @@ struct IPCSystem : IObject {
     using ivec2 = zs::vec<int, 2>;
     using mat2 = zs::vec<T, 2, 2>;
     using mat3 = zs::vec<T, 3, 3>;
+    using mat3f = zs::vec<float, 3, 3>;
     using pair_t = zs::vec<int, 2>;
     using pair3_t = zs::vec<int, 3>;
     using pair4_t = zs::vec<int, 4>;
@@ -182,6 +184,7 @@ struct IPCSystem : IObject {
     void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
+    void findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
@@ -220,6 +223,7 @@ struct IPCSystem : IObject {
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
+    int frameno = -1;
     int substep = -1;
     std::size_t estNumCps = 1000000;
     bool enableGround = false;
@@ -325,6 +329,7 @@ struct IPCSystem : IObject {
 
     // possibly accessed in compactHessian and cgsolve
     CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
+    zs::SparseMatrix<mat3f, true> spmat{};
 
     // boundary contacts
     // auxiliary data (spatial acceleration)

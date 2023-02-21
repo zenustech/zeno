@@ -100,10 +100,12 @@ private:
     QVector2D record_res;
     QPointF m_lastPos;
     QTimer* m_pauseRenderDally;
+    QTimer* m_wheelEventDally;
 
 public:
     bool simpleRenderChecked;
     bool updateLightOnce;
+    bool m_bMovingCamera;
 };
 
 class CameraKeyframeWidget;
