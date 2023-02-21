@@ -50,6 +50,8 @@ protected:
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
+    QLineF calculateLinePos();
+
 	const int sz = 6;
     QGraphicsLineItem* m_line;
 	CurveNodeItem* m_node;
