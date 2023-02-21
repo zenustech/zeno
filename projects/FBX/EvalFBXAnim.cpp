@@ -177,8 +177,10 @@ struct EvalAnim{
             bone.update(m_CurrentFrame);
             nodeTransform = bone.m_LocalTransform;
 
-            //std::cout << "FBX: Anim Node Name " << nodeName << std::endl;
-            //Helper::printAiMatrix(nodeTransform);
+            if(m_evalOption.printAnimData) {
+                std::cout << "FBX: Anim Node Name " << nodeName << std::endl;
+                Helper::printAiMatrix(nodeTransform);
+            }
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
 
@@ -345,10 +347,14 @@ struct EvalFBXAnim : zeno::INode {
         auto fps = get_input2<float>("fps");
         auto unit = get_param<std::string>("unit");
         auto interAnimData = get_param<std::string>("interAnimData");
-        auto paramWriteData = get_param<bool>("writeData");
+        auto writeData = get_param<bool>("writeData");
+        auto printAnimData = get_param<bool>("printAnimData");
         unit == "FROM_MAYA" ? evalOption.globalScale = 0.01f : evalOption.globalScale = 1.0f;
         interAnimData == "TRUE" ? evalOption.interAnimData = true : evalOption.interAnimData = false;
-        paramWriteData == true ? evalOption.writeData = true : evalOption.writeData = false;
+        if(writeData)
+            evalOption.writeData = true;
+        if(printAnimData)
+            evalOption.printAnimData = true;
 
         auto nodeTree = evalOption.interAnimData ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
         auto boneTree = evalOption.interAnimData ? fbxData->boneTree : get_input<BoneTree>("bonetree");
@@ -358,8 +364,8 @@ struct EvalFBXAnim : zeno::INode {
             zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
         }
 
-        zeno::log_info("FBX: Eval Option InterAnimData {} WriteData {} UnitScale {}",
-                       evalOption.interAnimData, evalOption.writeData, evalOption.globalScale);
+        //zeno::log_info("FBX: Eval Option InterAnimData {} WriteData {} UnitScale {}",
+        //               evalOption.interAnimData, evalOption.writeData, evalOption.globalScale);
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto transDict = std::make_shared<zeno::DictObject>();
@@ -460,8 +466,8 @@ struct EvalFBXAnim : zeno::INode {
 
         //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
 
-        auto writeData = std::make_shared<SFBXData>();
-        *writeData = anim.m_FbxData;
+        auto data2write = std::make_shared<SFBXData>();
+        *data2write = anim.m_FbxData;
 
         set_output("prim", std::move(prim));
         set_output("bsPrims", std::move(bsPrims));
@@ -473,7 +479,7 @@ struct EvalFBXAnim : zeno::INode {
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
-        set_output("writeData", std::move(writeData));
+        set_output("writeData", std::move(data2write));
     }
 };
 ZENDEFNODE(EvalFBXAnim,
@@ -492,6 +498,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
                    {"enum TRUE FALSE", "interAnimData", "FALSE"},
                    {"bool", "writeData", "false"},
+                   {"bool", "printAnimData", "false"},
                },  /* category: */
                {
                    "FBX",

@@ -50,7 +50,8 @@ ZENDEFNODE(MarkZSLevelSet, {
 
 /// match topology (partition union, ignore transformation difference)
 struct ZSLevelSetTopologyUnion : INode {
-    template <typename SplsT, typename TableT> void topologyUnion(SplsT &ls, const TableT &refTable) {
+    template <typename SplsT, typename TableT>
+    void topologyUnion(SplsT &ls, const TableT &refTable) {
         using namespace zs;
         auto cudaPol = cuda_exec().device(0);
 
@@ -198,8 +199,8 @@ struct ZSLevelSetFloodFill : INode {
                     })(sdfLs.template getView<execspace_e::cuda>());
                 } else if constexpr (is_same_v<sdf_ls_t, const_transition_ls_t>) {
                     match([&cudaPol, &lsPtr, &sdfLs](auto fieldPair) {
-                        auto &fvSrc = std::get<0>(fieldPair);
-                        auto &fvDst = std::get<1>(fieldPair);
+                        auto &fvSrc = zs::get<0>(fieldPair);
+                        auto &fvDst = zs::get<1>(fieldPair);
                         extend_level_set_domain(cudaPol, *lsPtr,
                                                 TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst},
                                                                        sdfLs._stepDt, sdfLs._alpha});

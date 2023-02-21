@@ -2,7 +2,16 @@
 
 namespace scheme {
 
-template <typename T> constexpr T HJ_WENO3(T fm, T fi, T fp, T fpp, T u, T dh) {
+template <typename T>
+constexpr T upwind_1st(T fm, T fi, T fp, T u, T dh) {
+    if (u > 0)
+        return (fi - fm) / dh;
+    else
+        return (fp - fi) / dh;
+}
+
+template <typename T>
+constexpr T HJ_WENO3(T fm, T fi, T fp, T fpp, T u, T dh) {
     const int sgn = (u > 0) ? 1 : -1;
     const T D = -sgn * dh;
     const T eps = (T)1e-10;
@@ -18,27 +27,32 @@ template <typename T> constexpr T HJ_WENO3(T fm, T fi, T fp, T fpp, T u, T dh) {
     return dfc + df3 / ((T)1.0 + (T)2.0 * r * r);
 }
 
-template <typename T> constexpr T central_diff_2nd(T fm, T f, T fp, T dh) {
+template <typename T>
+constexpr T central_diff_2nd(T fm, T f, T fp, T dh) {
     return (fp - (T)2.0 * f + fm) / (dh * dh);
 }
 
-template <typename T> constexpr T minmod(const T a, const T b) {
+template <typename T>
+constexpr T minmod(const T a, const T b) {
     const T sgn = a >= 0. ? 1.0 : -1.0;
     return sgn * zs::max((T)0, zs::min(sgn * a, sgn * b));
 }
 
-template <typename T> constexpr T TVD_MUSCL3(const T fdw, const T fup, const T fup2) {
+template <typename T>
+constexpr T TVD_MUSCL3(const T fdw, const T fup, const T fup2) {
     const T b = (T)4.0;
     const T dfp = fup2 - fup;
     const T dfm = fup - fdw;
     return fup - (T)0.25 * ((T)4.0 / (T)3.0 * minmod(dfm, dfp * b) + (T)2.0 / (T)3.0 * minmod(dfp, dfm * b));
 }
 
-template <typename T> constexpr T clip(const T min, const T f, const T max) {
+template <typename T>
+constexpr T clip(const T min, const T f, const T max) {
     return (f > max) ? max : (f < min) ? min : f;
 }
 
-template <typename T> constexpr T line_fraction(T ls_0, T ls_1) {
+template <typename T>
+constexpr T line_fraction(T ls_0, T ls_1) {
     T p{};
 
     if (ls_0 * ls_1 < 0.) {
@@ -53,7 +67,8 @@ template <typename T> constexpr T line_fraction(T ls_0, T ls_1) {
     return p;
 }
 
-template <typename T> constexpr T line_area(T nx, T ny, T alpha) {
+template <typename T>
+constexpr T line_area(T nx, T ny, T alpha) {
     T a{}, v{}, area{};
 
     alpha += (nx + ny) / (T)2.0;
@@ -93,7 +108,8 @@ template <typename T> constexpr T line_area(T nx, T ny, T alpha) {
     return clip((T)0., area, (T)1.0);
 }
 
-template <typename T> constexpr T face_fraction(T ls_bl, T ls_br, T ls_tl, T ls_tr) {
+template <typename T>
+constexpr T face_fraction(T ls_bl, T ls_br, T ls_tl, T ls_tr) {
     T px[2] = {}, py[2] = {};
     px[0] = line_fraction(ls_bl, ls_tl);
     px[1] = line_fraction(ls_br, ls_tr);

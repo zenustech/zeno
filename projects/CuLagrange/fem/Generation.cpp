@@ -623,7 +623,7 @@ struct ToZSTetrahedra : INode {
 
         ompExec(zs::range(tris.size()), [&, surfaces = proxy<space>({}, surfaces)](int triNo) mutable {
             // if(lineNo == 1) {
-            auto check_tri = surfaces.template pack<3>("inds", triNo).template reinterpret_bits<int>();
+            auto check_tri = surfaces.pack(dim_c<3>, "inds", triNo, int_c);
             auto tri = tris[triNo];
             if (tri[0] != check_tri[0] || tri[1] != check_tri[1] || tri[2] != check_tri[2]) {
                 printf("GENERATION::tri_mismatch%d : [%d %d %d] != [%d %d %d]\n", triNo, check_tri[0], check_tri[1],

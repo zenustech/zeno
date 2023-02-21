@@ -117,7 +117,7 @@ struct ZSExtendSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
-                                {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "false"}},
+                                {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "0"}},
                                 /* outputs: */
                                 {"SparseGrid"},
                                 /* params: */
@@ -127,12 +127,12 @@ ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
 
 struct ZSMaintainSparseGrid : INode {
     template <typename PredT>
-    void maintain(ZenoSparseGrid *nsgridPtr, zs::SmallString tag, PredT pred, int nlayers) {
+    void maintain(ZenoSparseGrid *zsgridPtr, zs::SmallString tag, PredT pred, int nlayers) {
         using namespace zs;
         static constexpr auto space = execspace_e::cuda;
         namespace cg = ::cooperative_groups;
         auto pol = cuda_exec();
-        auto &spg = nsgridPtr->getSparseGrid();
+        auto &spg = zsgridPtr->getSparseGrid();
 
         if (!spg._grid.hasProperty(tag))
             throw std::runtime_error(fmt::format("property [{}] not exist!", tag.asString()));
@@ -277,49 +277,51 @@ struct ZSMaintainSparseGrid : INode {
             }
         });
 
-        /// @brief adjust multigrid accordingly
-        // grid
-        nbs = spg.numBlocks();
-        auto &spg1 = nsgridPtr->spg1;
-        spg1.resize(pol, nbs);
-        auto &spg2 = nsgridPtr->spg2;
-        spg2.resize(pol, nbs);
-        auto &spg3 = nsgridPtr->spg3;
-        spg3.resize(pol, nbs);
-        // table
-        {
-            const auto &table = spg._table;
-            auto &table1 = spg1._table;
-            auto &table2 = spg2._table;
-            auto &table3 = spg3._table;
-            table1.reset(true);
-            table1._cnt.setVal(nbs);
-            table2.reset(true);
-            table2._cnt.setVal(nbs);
-            table3.reset(true);
-            table3._cnt.setVal(nbs);
+        if (get_input2<bool>("multigrid")) {
+            /// @brief adjust multigrid accordingly
+            // grid
+            nbs = spg.numBlocks();
+            auto &spg1 = zsgridPtr->spg1;
+            spg1.resize(pol, nbs);
+            auto &spg2 = zsgridPtr->spg2;
+            spg2.resize(pol, nbs);
+            auto &spg3 = zsgridPtr->spg3;
+            spg3.resize(pol, nbs);
+            // table
+            {
+                const auto &table = spg._table;
+                auto &table1 = spg1._table;
+                auto &table2 = spg2._table;
+                auto &table3 = spg3._table;
+                table1.reset(true);
+                table1._cnt.setVal(nbs);
+                table2.reset(true);
+                table2._cnt.setVal(nbs);
+                table3.reset(true);
+                table3._cnt.setVal(nbs);
 
-            table1._buildSuccess.setVal(1);
-            table2._buildSuccess.setVal(1);
-            table3._buildSuccess.setVal(1);
-            pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
-                             tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
-                auto bcoord = table._activeKeys[i];
-                tab1.insert(bcoord / 2, i, true);
-                tab2.insert(bcoord / 4, i, true);
-                tab3.insert(bcoord / 8, i, true);
-            });
+                table1._buildSuccess.setVal(1);
+                table2._buildSuccess.setVal(1);
+                table3._buildSuccess.setVal(1);
+                pol(range(nbs), [table = proxy<space>(table), tab1 = proxy<space>(table1), tab2 = proxy<space>(table2),
+                                 tab3 = proxy<space>(table3)] __device__(std::size_t i) mutable {
+                    auto bcoord = table._activeKeys[i];
+                    tab1.insert(bcoord / 2, i, true);
+                    tab2.insert(bcoord / 4, i, true);
+                    tab3.insert(bcoord / 8, i, true);
+                });
 
-            int tag1 = table1._buildSuccess.getVal();
-            int tag2 = table2._buildSuccess.getVal();
-            int tag3 = table3._buildSuccess.getVal();
-            if (tag1 == 0 || tag2 == 0 || tag3 == 0)
-                zeno::log_error("check multigrid build success state: {}, {}, {}\n", tag1, tag2, tag3);
+                int tag1 = table1._buildSuccess.getVal();
+                int tag2 = table2._buildSuccess.getVal();
+                int tag3 = table3._buildSuccess.getVal();
+                if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                    zeno::log_error("check multigrid build success state: {}, {}, {}\n", tag1, tag2, tag3);
+            }
         }
     }
 
     void apply() override {
-        auto zsSPG = get_input<ZenoSparseGrid>("NSGrid");
+        auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto tag = get_input2<std::string>("Attribute");
         auto nlayers = get_input2<int>("layers");
         auto needRefit = get_input2<bool>("refit");
@@ -345,18 +347,21 @@ struct ZSMaintainSparseGrid : INode {
                 [dx = zsSPG->getSparseGrid().voxelSize()[0]] __device__(float v) -> bool { return v < 2 * dx; },
                 nlayers);
 
-        set_output("NSGrid", zsSPG);
+        set_output("SparseGrid", zsSPG);
     }
 };
 
-ZENDEFNODE(ZSMaintainSparseGrid,
-           {/* inputs: */
-            {"NSGrid", {"enum rho sdf", "Attribute", "rho"}, {"bool", "refit", "1"}, {"int", "layers", "2"}},
-            /* outputs: */
-            {"NSGrid"},
-            /* params: */
-            {},
-            /* category: */
-            {"Eulerian"}});
+ZENDEFNODE(ZSMaintainSparseGrid, {/* inputs: */
+                                  {"SparseGrid",
+                                   {"enum rho sdf", "Attribute", "rho"},
+                                   {"bool", "refit", "1"},
+                                   {"int", "layers", "2"},
+                                   {"bool", "multigrid", "1"}},
+                                  /* outputs: */
+                                  {"SparseGrid"},
+                                  /* params: */
+                                  {},
+                                  /* category: */
+                                  {"Eulerian"}});
 
 } // namespace zeno
