@@ -53,6 +53,7 @@ public:
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
+    void sortRecentFile(QStringList &lst);
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
@@ -117,7 +118,8 @@ public:
         ACTION_SELECT_NODE,
         ACTION_SNAPGRID,
     };
-
+signals:
+    void recentFilesChanged();
 public slots:
     void openFileDialog();
     void onNewFile();
@@ -173,6 +175,7 @@ private:
     QJsonObject readDefaultLayout();
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
+    void loadRecentFiles();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

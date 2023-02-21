@@ -134,6 +134,8 @@ void ZenoMainWindow::initMenu()
     initCustomLayoutAction(lst, true);
     //check user saved layout.
     loadSavedLayout();
+    //init recent files
+    loadRecentFiles();
 }
 
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
@@ -901,12 +903,62 @@ bool ZenoMainWindow::openFile(QString filePath)
     return true;
 }
 
+void ZenoMainWindow::loadRecentFiles() 
+{
+    m_ui->menuRecent_Files->clear();
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("Recent File List");
+    QStringList lst = settings.childKeys();
+    sortRecentFile(lst);
+    for (int i = 0; i < lst.size(); i++) {
+        const QString &key = lst[i];
+        const QString &path = settings.value(key).toString();
+        if (!path.isEmpty()) {
+            QAction *action = new QAction(path);
+            m_ui->menuRecent_Files->addAction(action);
+            connect(action, &QAction::triggered, this, [=]() {
+                bool ret = openFile(path);
+                if (!ret) {
+                    int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                    if (flag & QMessageBox::Yes) {
+                        QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
+                        _settings.beginGroup("Recent File List");
+                        _settings.remove(key);
+                        m_ui->menuRecent_Files->removeAction(action);
+                    }
+                }
+            });
+        }
+    }
+}
+
+void ZenoMainWindow::sortRecentFile(QStringList &lst) 
+{
+    qSort(lst.begin(), lst.end(), [](const QString &s1, const QString &s2) {
+        static QRegExp rx("File (\\d+)");
+        int num1 = 0;
+        if (rx.indexIn(s1) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num1 = caps[1].toInt();
+        }
+        int num2 = 0;
+        if (rx.indexIn(s2) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num2 = caps[1].toInt();
+        }
+        return num1 > num2;
+    });
+}
+
 void ZenoMainWindow::recordRecentFile(const QString& filePath)
 {
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
 
     QStringList keys = settings.childKeys();
+    sortRecentFile(keys);
     QStringList paths;
     for (QString key : keys) {
         QString path = settings.value(key).toString();
@@ -927,17 +979,24 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     if (keys.isEmpty()) {
         idx = 0;
     } else {
-        for (QString key : keys) {
-            static QRegExp rx("File (\\d+)");
-            if (rx.indexIn(key) != -1) {
-                QStringList caps = rx.capturedTexts();
-                if (caps.length() == 2 && idx < caps[1].toInt())
-                    idx = caps[1].toInt();
-            }
+        QString key = keys.first();
+        static QRegExp rx("File (\\d+)");
+        if (rx.indexIn(key) != -1) 
+        {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2 && idx < caps[1].toInt())
+                idx = caps[1].toInt();
         }
     }
 
     settings.setValue(QString("File %1").arg(idx + 1), filePath);
+    //limit 5
+    while (settings.childKeys().size() > 5) {
+        settings.remove(keys.last());
+        keys.removeLast();
+    }
+    loadRecentFiles();
+    emit recentFilesChanged();
 }
 
 void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
