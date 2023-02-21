@@ -70,6 +70,7 @@ void ReadFBXPrim::onEditClicked()
         .set2<std::string>("udim:", "DISABLE")
         .set2<bool>("invOpacity:", true)
         .set2<bool>("primitive:", false)
+        .set2<bool>("printTree:", false)
         .set2<bool>("triangulate:", true)
         .call();
     zeno::log_info("ReadFBXPrim Caller End");

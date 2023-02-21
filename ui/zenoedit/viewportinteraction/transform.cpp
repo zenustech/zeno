@@ -26,6 +26,7 @@ FakeTransformer::FakeTransformer()
 void FakeTransformer::addObject(const std::string& name) {
     if (name.empty()) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (!scene->objectsMan->get(name).has_value()) return;
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
