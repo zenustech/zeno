@@ -198,7 +198,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     cbSet.cbEditFinished = funcZoomEdited;
     cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     cbZoom->setEditable(false);
-    cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    //cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    cbZoom->setFixedSize(ZenoStyle::dpiScaled(85), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);

@@ -682,7 +682,7 @@
     <message>
         <location filename="../../zenomainwindow.ui" line="443"/>
         <source>Shortcut List</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">快捷键列表</translation>
     </message>
 </context>
 <context>

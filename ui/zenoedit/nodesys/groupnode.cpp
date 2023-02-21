@@ -397,6 +397,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setOpacity(1);
         QPen pen(background);
         pen.setWidthF(ZenoStyle::dpiScaled(2));
+        pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
         painter->drawRect(rect);
     }
