@@ -224,10 +224,6 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new LiveMeshNode(params);
     }
-    else if(descName == "LiveCameraNode")
-    {
-        return new LiveCameraNode(params);
-    }
     else
     {
         return new ZenoNode(params);

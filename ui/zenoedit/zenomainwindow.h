@@ -3,7 +3,6 @@
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "launch/livetcpserver.h"
 #include "dock/zenodockwidget.h"
 #include "dock/ztabdockwidget.h"
 #include "panel/zenolights.h"
@@ -31,6 +30,9 @@ struct ZENO_RECORD_RUN_INITPARAM {
 class ZenoDockWidget;
 class DisplayWidget;
 class ZTimeline;
+class LiveTcpServer;
+class LiveHttpServer;
+class LiveSignalsBridge;
 
 namespace Ui
 {
@@ -53,11 +55,13 @@ public:
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
+    void doFrameUpdate(int frame);
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
-    float mouseSen = 0.2;
-    LiveTcpServer liveTcpServer;
+    LiveTcpServer* liveTcpServer;
+    LiveHttpServer* liveHttpServer;
+    LiveSignalsBridge* liveSignalsBridge;
 
     enum ActionType {
         //File

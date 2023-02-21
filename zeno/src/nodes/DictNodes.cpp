@@ -195,7 +195,7 @@ struct DictUnion : zeno::INode {
 };
 
 ZENDEFNODE(DictUnion, {
-    {{"dict1", "dict"}, {"dict2", "dict"}},
+    {{"DictObject", "dict1"}, {"DictObject", "dict2"}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},

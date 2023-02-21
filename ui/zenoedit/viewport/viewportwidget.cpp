@@ -462,7 +462,9 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(true)
     , m_pauseRenderDally(new QTimer)
+    , m_wheelEventDally(new QTimer)
     , simpleRenderChecked(false)
+    , m_bMovingCamera(false)
 {
     QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -485,6 +487,11 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         m_pauseRenderDally->stop();
         //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
     });
+
+    connect(m_wheelEventDally, &QTimer::timeout, [&](){
+        m_wheelEventDally->stop();
+        m_bMovingCamera = false;
+    });
 }
 
 void ViewportWidget::setSimpleRenderOption() {
@@ -499,6 +506,8 @@ void ViewportWidget::setSimpleRenderOption() {
 
 ViewportWidget::~ViewportWidget()
 {
+    delete m_pauseRenderDally;
+    delete m_wheelEventDally;
 }
 
 namespace {
@@ -557,6 +566,7 @@ void ViewportWidget::paintGL()
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
     if(event->button() == Qt::MidButton){
+        m_bMovingCamera = true;
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
@@ -566,6 +576,9 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    if(event->button() == Qt::MidButton){
+        m_bMovingCamera = true;
+    }
     setSimpleRenderOption();
 
     _base::mouseMoveEvent(event);
@@ -575,6 +588,8 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 
 void ViewportWidget::wheelEvent(QWheelEvent* event)
 {
+    m_bMovingCamera = true;
+    m_wheelEventDally->start(100);
     setSimpleRenderOption();
 
     _base::wheelEvent(event);
@@ -583,6 +598,9 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
 }
 
 void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+    if(event->button() == Qt::MidButton){
+        m_bMovingCamera = false;
+    }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();
@@ -974,22 +992,22 @@ void DisplayWidget::onRecord()
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
-        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0, numOptix = 0, numMSAA = 0;
-        QString presets, path, filename;
-        bool bRecordOnRun = false;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename, numOptix, numMSAA, bRecordOnRun);
-        //validation.
-
         VideoRecInfo recInfo;
-        recInfo.record_path = path;
-        recInfo.frameRange = {frameStart, frameEnd};
-        recInfo.res = {(float)width, (float)height};
-        recInfo.bitrate = bitrate;
-        recInfo.fps = fps;
-        recInfo.videoname = filename;
-        recInfo.numOptix = numOptix;
-        recInfo.numMSAA = numMSAA;
-        recInfo.bRecordRun = bRecordOnRun;
+        dlg.getInfo(
+                recInfo.frameRange.first,
+                recInfo.frameRange.second,
+                recInfo.fps,
+                recInfo.bitrate,
+                recInfo.res[0],
+                recInfo.res[1],
+                recInfo.record_path,
+                recInfo.videoname,
+                recInfo.numOptix,
+                recInfo.numMSAA,
+                recInfo.bRecordRun,
+                recInfo.bExportVideo
+            );
+        //validation.
 
         m_recordMgr.setRecordInfo(recInfo);
 
