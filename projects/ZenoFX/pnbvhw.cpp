@@ -79,8 +79,8 @@ struct ParticlesBuildBvh : zeno::INode {
 
 ZENDEFNODE(ParticlesBuildBvh, {
                                   {{"PrimitiveObject", "primNei"},
-                                   {"numeric:float", "radius"},
-                                   {"numeric:float", "radiusMin"}},
+                                   {"float", "radius"},
+                                   {"float", "radiusMin"}},
                                   {{"LBvh", "lbvh"}},
                                   {},
                                   {"zenofx"},
