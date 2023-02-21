@@ -52,6 +52,11 @@ MatInput const &attrs) {
     auto att_uv = attrs.uv;
     auto att_nrm = attrs.nrm;
     auto att_tang = attrs.tang;
+    auto att_instPos = attrs.instPos;
+    auto att_instNrm = attrs.instNrm;
+    auto att_instUv = attrs.instUv;
+    auto att_instClr = attrs.instClr;
+    auto att_instTang = attrs.instTang;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
@@ -387,6 +392,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
@@ -647,6 +657,11 @@ extern "C" __global__ void __closesthit__radiance()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
