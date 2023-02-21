@@ -115,6 +115,10 @@ namespace zenoui
                 {
                     pLineEdit->setValidator(new QIntValidator(pLineEdit));
                 }
+                else if (ctrl == CONTROL_FLOAT)
+                {
+                    pLineEdit->setValidator(new QDoubleValidator(pLineEdit));
+                }
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.
