@@ -38,6 +38,11 @@
      <addaction name="actionScreen_Shoot"/>
      <addaction name="actionRecord_Video"/>
     </widget>
+    <widget class="QMenu" name="menuRecent_Files">
+     <property name="title">
+      <string>Recent Files</string>
+     </property>
+    </widget>
     <addaction name="action_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
@@ -45,6 +50,7 @@
     <addaction name="action_Import"/>
     <addaction name="menu_Export"/>
     <addaction name="action_Close"/>
+    <addaction name="menuRecent_Files"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
