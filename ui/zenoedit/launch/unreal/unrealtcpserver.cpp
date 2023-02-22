@@ -1,11 +1,8 @@
 
 #include "unrealtcpserver.h"
-#include "launch/unreal/model/transform.h"
 #include <zeno/utils/log.h>
 #include <QThread>
 #include <QTcpServer>
-#include <QTcpSocket>
-#include "msgpack.h"
 
 UnrealTcpServer::UnrealTcpServer(QObject* parent)
     : QObject(parent) {

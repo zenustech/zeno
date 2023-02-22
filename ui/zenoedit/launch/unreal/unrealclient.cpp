@@ -1,6 +1,5 @@
 #include "unrealclient.h"
-#include "launch/unreal/model/transform.h"
-#include "msgpack.h"
+#include <atomic>
 
 UnrealLiveLinkTcpClient::UnrealLiveLinkTcpClient(QObject* parent, QTcpSocket* inTcpSocket)
     : IUnrealLiveLinkClient(parent),
@@ -23,6 +22,18 @@ void UnrealLiveLinkTcpClient::cleanupSocket() {
     m_socket->deleteLater();
 }
 
+bool UnrealLiveLinkTcpClient::sendPacket(const ZBTControlPacketType packetType, uint8_t* data, const uint16_t size) {
+    static std::atomic<uint16_t> currentPacketIndex = 0;
+
+    ZBTPacketHeader header {
+        currentPacketIndex.fetch_add(1),
+        size,
+        packetType,
+    };
+
+    return QtSocketHelper::writeData(m_socket, header, data);
+}
+
 #pragma region tcp_socket_events
 void UnrealLiveLinkTcpClient::onSocketClosed() {
     emit invalid(this);
@@ -34,12 +45,16 @@ void UnrealLiveLinkTcpClient::onSocketReceiveData() {
         return;
     }
 
-    // TODO: darc read data to buffer and then handle it in new thread
-    QByteArray byteArray = m_socket->readAll();
-    qint64 size = byteArray.size();
-    Translation translation { 1.4131, M_PI, 1.f };
-    auto data = msgpack::pack(translation);
-    m_socket->write(reinterpret_cast<const char *>(data.data()), data.size());
+    QtSocketHelper::readToByteBuffer(m_socket, m_buffer);
+
+    const int16_t packetSize = m_buffer.getNextPacketSize();
+    auto* tmp = static_cast<uint8_t *>(malloc(packetSize));
+    bool bIsSuccess = m_buffer.readSinglePacket(tmp);
+    auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
+    sendPacket(std::get<0>(res)->type, nullptr, 0);
+
+//    uint8_t data = 123;
+//    sendPacket(ZBTControlPacketType::AuthRequire, &data, sizeof(data));
 }
 
 void UnrealLiveLinkTcpClient::onError(QAbstractSocket::SocketError error) {
