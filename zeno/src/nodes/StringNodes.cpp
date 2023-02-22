@@ -4,8 +4,6 @@
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
 #include <zeno/extra/GlobalState.h>
-#include <iostream>
-#include <fstream>
 
 namespace zeno {
 namespace {
@@ -271,6 +269,49 @@ ZENDEFNODE(EndFrame, {
     {},
     {"fileio"},
 });*/
+
+struct StringToNumber : zeno::INode {
+
+    virtual void apply() override {
+        auto in_str = get_input2<std::string>("str");
+        auto type = get_input2<std::string>("type");
+        auto obj = std::make_unique<zeno::NumericObject>();
+        if (type == "float") {
+            float v = std::stof(in_str);
+            obj->set(v);
+        }
+        else if (type == "int") {
+            int v = std::stoi(in_str);
+            obj->set(v);
+        }
+        else {
+            throw zeno::makeError("Unknown type");
+        }
+
+        set_output("num_str", std::move(obj));
+    }
+};
+
+ZENDEFNODE(StringToNumber, {{
+                                /* inputs: */
+                                {"enum float int", "type", "all"},
+                                {"string", "str", "0"},
+                            },
+
+                            {
+                                /* outputs: */
+                                "num_str",
+                            },
+
+                            {
+                                /* params: */
+
+                            },
+
+                            {
+                                /* category: */
+                                "string",
+                            }});
 
 }
 }
