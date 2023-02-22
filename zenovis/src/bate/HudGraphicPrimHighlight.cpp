@@ -88,6 +88,7 @@ struct PrimitiveHighlight : IGraphicDraw {
                         }
                     }
                 }
+                if (!prim) continue;
                 // ----- draw selected particles -----
                 if (prim->tris->empty()) {
                     // prepare data
