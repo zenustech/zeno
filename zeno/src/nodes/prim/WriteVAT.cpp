@@ -9,6 +9,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 using std::vector;
 using zeno::vec3f;
 
@@ -113,6 +118,34 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
         }
         zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
     }
+}
+
+
+static void write_vat_nrm(vector<vector<vec3f>> &v, const std::string &path) {
+    int frames = v.size();
+    int maxWidth = 0;
+    for (auto i = 0; i < frames; i++) {
+        int width = v[i].size();
+        maxWidth = std::max(maxWidth, width);
+    }
+    int maxWidthAlign = align_to(maxWidth, 8192);
+    int height = frames * (maxWidthAlign / 8192);
+
+    std::vector<uint8_t> nrms;
+
+    for (auto i = 0; i < frames; i++) {
+        int width = v[i].size();
+        v[i].resize(maxWidthAlign);
+        for (auto j = 0; j < maxWidthAlign; j++) {
+            nrms.push_back(uint8_t((v[i][j][0] * 0.5 + 0.5) * 255.99));
+            nrms.push_back(uint8_t((v[i][j][1] * 0.5 + 0.5) * 255.99));
+            nrms.push_back(uint8_t((v[i][j][2] * 0.5 + 0.5) * 255.99));
+        }
+        zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
+    }
+
+    stbi_flip_vertically_on_write(false);
+    stbi_write_png(path.c_str(), 8192, height, 3, nrms.data(), 0);
 }
 
 // VAT format
@@ -241,7 +274,7 @@ struct WriteCustomVAT : INode {
                     nrms[i][j * 3 + 2] = nrm_ref[tri[2]];
                 }
             }
-            write_vat(nrms, path + ".nrm");
+            write_vat_nrm(nrms, path + ".png");
 
             {
                 std::string obj_path = path + ".obj";
