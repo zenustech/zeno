@@ -390,16 +390,14 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     QFontMetrics fm(this->font());
     QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height() - m_pTextItem->boundingRect().height());
     QColor background = blackboard.background.isValid() ? blackboard.background : QColor(0, 100, 168);
-    if (!index().data(ROLE_COLLASPED).toBool())
-    {
-        painter->setOpacity(0.3);
-        painter->fillRect(rect, background);
-        painter->setOpacity(1);
-        QPen pen(background);
-        pen.setWidthF(ZenoStyle::dpiScaled(2));
-        painter->setPen(pen);
-        painter->drawRect(rect);
-    }
+    painter->setOpacity(0.3);
+    painter->fillRect(rect, background);
+    painter->setOpacity(1);
+    QPen pen(background);
+    pen.setWidthF(ZenoStyle::dpiScaled(2));
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->drawRect(rect);
     qreal width = ZenoStyle::dpiScaled(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));

@@ -70,6 +70,10 @@ void ZenoWelcomePage::initSignals()
     connect(m_ui->lblGithub, &ZTextLabel::clicked, this, [=]() {
         QDesktopServices::openUrl(QUrl("https://github.com/zenustech/zeno"));
     });
+
+    connect(zenoApp->getMainWindow(), &ZenoMainWindow::recentFilesChanged, this, [=]() {
+        initRecentFiles();
+    });
 }
 
 void ZenoWelcomePage::initRecentFiles()
@@ -77,44 +81,32 @@ void ZenoWelcomePage::initRecentFiles()
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
     QStringList lst = settings.childKeys();
-    qSort(lst.begin(), lst.end(), [](const QString &s1, const QString &s2) { 
-         static QRegExp rx("File (\\d+)");
-        int num1 = 0;
-        if (rx.indexIn(s1) != -1) {
-             QStringList caps = rx.capturedTexts();
-            if (caps.length() == 2)
-                num1 = caps[1].toInt();
-        }
-        int num2 = 0;
-        if (rx.indexIn(s2) != -1) {
-            QStringList caps = rx.capturedTexts();
-            if (caps.length() == 2)
-                num2 = caps[1].toInt();
-        }
-        return num1 < num2;
-    });
+    zenoApp->getMainWindow()->sortRecentFile(lst);
 
-    static const int nLimit = 4;
-
-    for (int i = lst.size() - 1; i >= 0; i--)
+    for (int i = 0; i < lst.size(); i++)
     {
-        if (lst.size() - 1 - i > nLimit) {
-            settings.remove(lst[i]);
-            continue;
-        }
-
         const QString& key = lst[i];
         const QString& path = settings.value(key).toString();
         if (!path.isEmpty())
         {
             QFileInfo info(path);
             const QString& fn = info.fileName();
-            ZTextLabel *pLabel = new ZTextLabel(fn);
-            pLabel->setTextColor(QColor(133, 130, 128));
-            pLabel->setFont(QFont("HarmonyOS Sans", 11));
-            pLabel->setToolTip(path);
+            QLayoutItem *item;
+            ZTextLabel *pLabel;
+            if (item = m_ui->layoutFiles->itemAt(i)) {
+                QWidget *widget = item->widget();
+                pLabel = qobject_cast<ZTextLabel *>(widget);
+                if (pLabel)
+                    pLabel->setText(fn);
+            } 
+            else {
+                pLabel = new ZTextLabel(fn);
+                pLabel->setTextColor(QColor(133, 130, 128));
+                pLabel->setFont(QFont("HarmonyOS Sans", 11));
+                pLabel->setToolTip(path);
 
-            m_ui->layoutFiles->addWidget(pLabel);
+                m_ui->layoutFiles->addWidget(pLabel);
+            }
 
             connect(pLabel, &ZTextLabel::clicked, this, [=]() {
                 bool ret = zenoApp->getMainWindow()->openFile(path);

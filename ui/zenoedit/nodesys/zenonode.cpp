@@ -47,6 +47,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_paramsLayout(nullptr)
     , m_outputsLayout(nullptr)
     , m_groupNode(nullptr)
+    , m_pStatusWidgets(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -1383,9 +1384,12 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
 
 void ZenoNode::onOptionsUpdated(int options)
 {
-    m_pStatusWidgets->blockSignals(true);
-    m_pStatusWidgets->setOptions(options);
-    m_pStatusWidgets->blockSignals(false);
+    if (m_pStatusWidgets) 
+    {
+        m_pStatusWidgets->blockSignals(true);
+        m_pStatusWidgets->setOptions(options);
+        m_pStatusWidgets->blockSignals(false);
+    }
 }
 
 void ZenoNode::updateWhole()
