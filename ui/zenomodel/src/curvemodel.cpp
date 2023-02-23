@@ -275,7 +275,9 @@ QPair<QPointF, QPointF> CurveModel::adjustWhenLeftHdlChanged(const QModelIndex &
         qreal length = roffset.length();
         if (nodeType == HDL_ALIGNED)
             length = loffset.length();
-        roffset = -loffset.normalized() * length;
+        // if loffset equals to zero, it's dir will be zero
+        if (loffset != QVector2D(0, 0))
+            roffset = -loffset.normalized() * length;
 
         rightOffset = roffset.toPointF();
         QPointF rightPos = nodePos + roffset.toPointF();
@@ -310,7 +312,9 @@ QPair<QPointF, QPointF> CurveModel::adjustWhenRightHdlChanged(const QModelIndex&
         qreal length = loffset.length();
         if (nodeType == HDL_ALIGNED)
             length = roffset.length();
-        loffset = -roffset.normalized() * length;
+        // if roffset equals to zero, it's dir will be zero
+        if (roffset != QVector2D(0, 0))
+            loffset = -roffset.normalized() * length;
 
         leftOffset = loffset.toPointF();
     }
