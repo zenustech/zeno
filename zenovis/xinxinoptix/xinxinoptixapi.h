@@ -28,7 +28,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 void load_object(std::string const &key, std::string const &mtlid, const std::string& instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab);
 void unload_object(std::string const &key);
-void load_inst(const std::string &key, const std::string &instID, std::size_t numInsts, const float *translate, const float *direct, const std::string &onbType,  const float *scale);
+void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
 void unload_inst(const std::string &key);
 void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi );
 void unload_light();
