@@ -12,12 +12,18 @@ enum class ZBTControlPacketType : uint16_t {
     Max = 0xFFFF,
 };
 
+/** bytes to indicate start of packet */
+constexpr std::array<uint8_t, 2> g_packetStart { 0xDA, 0x2C };
+
+/** bytes to spilt up the packet stream */
+constexpr std::array<uint8_t, 2> g_packetSplit { 0x03, 0x04 };
+
 /**
  * Header struct of ZenoBridge TCP Packet
  */
-struct ZBTPacketHeader {
+struct alignas(8) ZBTPacketHeader {
     explicit ZBTPacketHeader(uint16_t inIndex, uint16_t inLength, ZBTControlPacketType inType)
-        : marker(0xDA2C),
+        : marker( *reinterpret_cast<const uint16_t*>(g_packetStart.data()) ),
           index(inIndex),
           length(inLength),
           type(inType)
@@ -33,14 +39,11 @@ struct ZBTPacketHeader {
     ZBTControlPacketType type;
 };
 
-/** bytes to spilt up the packet stream */
-constexpr std::array<uint8_t, 2> g_packetSplit { 0x03, 0x04 };
-
 /**
  * A packet looks like
  *  +------------+--------------+-------------+
     |    Index   |    Length    | Packet Type |
-    |    2Byte   |    2Byte     |    4Byte    |
+    |    2Byte   |    2Byte     |    2Byte    |
     +------------+--------------+-------------+
     |                                         |
     |                                         |

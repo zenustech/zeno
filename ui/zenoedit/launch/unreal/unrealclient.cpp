@@ -34,6 +34,18 @@ bool UnrealLiveLinkTcpClient::sendPacket(const ZBTControlPacketType packetType, 
     return QtSocketHelper::writeData(m_socket, header, data);
 }
 
+void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
+    const int16_t packetSize = m_buffer.getNextPacketSize();
+    if (packetSize != -1) {
+        auto* tmp = static_cast<uint8_t *>(malloc(packetSize));
+        bool bIsSuccess = m_buffer.readSinglePacket(tmp);
+        auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
+        sendPacket(std::get<0>(res)->type, nullptr, 0);
+    }
+
+    m_buffer.cleanUp();
+}
+
 #pragma region tcp_socket_events
 void UnrealLiveLinkTcpClient::onSocketClosed() {
     emit invalid(this);
@@ -47,12 +59,6 @@ void UnrealLiveLinkTcpClient::onSocketReceiveData() {
 
     QtSocketHelper::readToByteBuffer(m_socket, m_buffer);
 
-    const int16_t packetSize = m_buffer.getNextPacketSize();
-    auto* tmp = static_cast<uint8_t *>(malloc(packetSize));
-    bool bIsSuccess = m_buffer.readSinglePacket(tmp);
-    auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
-    sendPacket(std::get<0>(res)->type, nullptr, 0);
-
 //    uint8_t data = 123;
 //    sendPacket(ZBTControlPacketType::AuthRequire, &data, sizeof(data));
 }
@@ -61,5 +67,6 @@ void UnrealLiveLinkTcpClient::onError(QAbstractSocket::SocketError error) {
     using E = QAbstractSocket::SocketError;
 
     Q_UNUSED(error);
+    emit invalid(this);
 }
 #pragma endregion tcp_socket_events

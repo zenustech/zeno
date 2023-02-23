@@ -6,14 +6,17 @@
 #include <QObject>
 #include <QAbstractSocket>
 #include <QTcpSocket>
+#include <QTimer>
 
 class IUnrealLiveLinkClient : public QObject {
     Q_OBJECT
 
 public:
-    using ByteBuffer = ByteBuffer<10240>;
+    using ByteBuffer = ByteBuffer<2048>;
 
-    explicit IUnrealLiveLinkClient(QObject* parent) : QObject(parent) {}
+    explicit IUnrealLiveLinkClient(QObject* parent) : QObject(parent) {
+        startTimer(5);
+    }
     ~IUnrealLiveLinkClient() override = default;
 
 public:
@@ -34,6 +37,8 @@ public:
      */
     virtual bool sendPacket(ZBTControlPacketType packetType, uint8_t* data, uint16_t size) = 0;
 
+    void timerEvent(QTimerEvent *event) override = 0;
+
 signals:
     void invalid(IUnrealLiveLinkClient * who);
 };
@@ -49,7 +54,9 @@ public:
     explicit UnrealLiveLinkTcpClient(QObject* parent, QTcpSocket* inTcpSocket);
     ~UnrealLiveLinkTcpClient() override;
 
-  private:
+    void timerEvent(QTimerEvent *event) override;
+
+private:
 
 private slots:
     void onSocketClosed();

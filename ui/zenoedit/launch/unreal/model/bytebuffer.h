@@ -69,18 +69,55 @@ struct ByteBuffer {
         return  getNextPacketSize_Unsafe();
     }
 
-    int16_t getNextPacketSize_Unsafe() {
+    int16_t getFirstPacketStartIndex_Unsafe() {
         if (0 == m_cursor) return -1;
 
-        const auto cursorIter = m_buf.begin() + m_cursor + 1;
-        const auto it = std::search(
-            m_buf.begin(), cursorIter,
+        const auto bufEndIter = m_buf.begin() + m_cursor + 1;
+        const auto itPacketStart = std::search(
+            m_buf.begin(), bufEndIter,
+            g_packetStart.begin(), g_packetStart.end()
+        );
+
+        if (itPacketStart != bufEndIter) {
+            return std::distance(m_buf.begin(), itPacketStart);
+        }
+
+        return -1;
+    }
+
+    int16_t getFirstPacketEndIndex_Unsafe() {
+        if (0 == m_cursor) return -1;
+
+        const auto bufEndIter = m_buf.begin() + m_cursor + 1;
+        const auto itPacketEnd = std::search(
+            m_buf.begin(), bufEndIter,
             g_packetSplit.begin(), g_packetSplit.end()
         );
 
-        if (it != cursorIter) {
-            const int16_t endIndex = std::distance(m_buf.begin(), it) + g_packetSplit.size();
-            return endIndex;
+        if (itPacketEnd != bufEndIter) {
+            return std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+        }
+
+        return -1;
+    }
+
+    int16_t getNextPacketSize_Unsafe() {
+        if (0 == m_cursor) return -1;
+
+        const auto bufEndIter = m_buf.begin() + m_cursor + 1;
+        const auto itPacketStart = std::search(
+            m_buf.begin(), bufEndIter,
+            g_packetStart.begin(), g_packetStart.end()
+        );
+        const auto itPacketEnd = std::search(
+            m_buf.begin(), bufEndIter,
+            g_packetSplit.begin(), g_packetSplit.end()
+        );
+
+        if (itPacketEnd != bufEndIter && itPacketStart != bufEndIter) {
+            const uint16_t startIndex = std::distance(m_buf.begin(), itPacketStart);
+            const int16_t endIndex = std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+            return endIndex - startIndex;
         }
 
         return  -1;
@@ -102,7 +139,8 @@ struct ByteBuffer {
             return false;
         }
 
-        std::memmove(outPacketBuf, m_buf.data(), packetSize);
+        const int16_t packetStartIdx = getFirstPacketStartIndex_Unsafe();
+        std::memmove(outPacketBuf, m_buf.data() + packetStartIdx, packetSize);
         shiftForward_Unsafe(packetSize);
 
         return true;
@@ -129,6 +167,16 @@ struct ByteBuffer {
         ValueType* rawData = m_buf.data();
         std::memmove(rawData, rawData + size, m_cursor - size + 1);
         m_cursor -= size;
+    }
+
+    /** clean up data not belongs to packet */
+    void cleanUp() {
+        std::scoped_lock lock { m_mutex };
+
+        const int16_t startIdx = getFirstPacketStartIndex_Unsafe();
+        if (startIdx != 0) {
+            shiftForward_Unsafe(startIdx);
+        }
     }
 
     /** This operation isn't thread safety */
