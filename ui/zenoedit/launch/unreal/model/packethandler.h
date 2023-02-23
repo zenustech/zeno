@@ -46,7 +46,8 @@ private:
 };
 
 
-#define REG_PACKET_HANDLER(Name, PacketType) \
+#define REG_PACKET_HANDLER(Name, PacketType, Block) \
+    template<> PacketHandler PacketHandlerAnnotation<PacketType>::handler = [] (void* inData, bool& bHasRespond, ZBTControlPacketType& outPacketType, OutPacketBufferType& outBuffer, uint16_t& outSize) Block;\
     static struct THIS_IS_NOT_START_WITH_StaticInitFor##Name {     \
         THIS_IS_NOT_START_WITH_StaticInitFor##Name() {             \
             PacketHandlerMap::get().addHandler(PacketType, PacketHandlerAnnotation<PacketType>::handler); \

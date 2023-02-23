@@ -59,15 +59,6 @@ void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
     m_buffer.cleanUp();
 }
 
-template <> PacketHandler PacketHandlerAnnotation<ZBTControlPacketType::AuthRequire>::handler = [] (void*, bool& bHasRespond, ZBTControlPacketType& outPacketType, OutPacketBufferType& outBuffer, uint16_t& outSize) {
-    outSize = 1;
-    outBuffer = { 0x11 };
-    outPacketType = ZBTControlPacketType::AuthRequire;
-    bHasRespond = true;
-};
-REG_PACKET_HANDLER(AuthRequire, ZBTControlPacketType::AuthRequire);
-
-
 #pragma region tcp_socket_events
 void UnrealLiveLinkTcpClient::onSocketClosed() {
     emit invalid(this);
@@ -89,3 +80,9 @@ void UnrealLiveLinkTcpClient::onError(QAbstractSocket::SocketError error) {
     emit invalid(this);
 }
 #pragma endregion tcp_socket_events
+
+/**
+ * Copy handlers to here and only here.
+ * We need to run static initializer to map handler at runtime.
+ */
+#include "handler/unrealhandler.h"

@@ -27,12 +27,12 @@ void UnrealTcpServer::start(QThread* qThread, const QHostAddress& inAddress, int
     if (isRunning()) return;
 
     auto startServer = [inAddress, inPort, this] {
-      m_server = new QTcpServer(this);
-      if (!m_server->listen(inAddress, inPort)) {
-          zeno::log_error("failed to bind unreal bridge server at '{}:{}'", inAddress.toString().toStdString(), inPort);
-      }
+        m_server = new QTcpServer(this);
+        if (!m_server->listen(inAddress, inPort)) {
+            zeno::log_error("failed to bind unreal bridge server at '{}:{}'", inAddress.toString().toStdString(), inPort);
+        }
 
-      connect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+        connect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
     };
 
     if (nullptr != qThread) {
@@ -48,13 +48,13 @@ void UnrealTcpServer::start(QThread* qThread, const QHostAddress& inAddress, int
 void UnrealTcpServer::shutdown() {
     if (nullptr != m_currentThread) {
         disconnect(m_currentThread, SIGNAL(started(QPrivateSignal)));
+        m_currentSocket = nullptr;
     }
     if (nullptr != m_server) {
         disconnect(m_server, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+        m_server->deleteLater();
+        m_server = nullptr;
     }
-
-    delete m_server;
-    delete m_currentSocket;
 }
 
 #pragma region signal_handler
@@ -87,7 +87,7 @@ void UnrealTcpServer::onClientInvalided(IUnrealLiveLinkClient * who) {
 #pragma endregion signal_handler
 
 void zeno::startUnrealTcpServer(const QHostAddress &inAddress, int32_t inPort) {
-    auto* pThread = new QThread;
+    static auto* pThread = new QThread;
     UnrealTcpServer::getStaticClass().start(pThread, inAddress, inPort);
     pThread->start(QThread::HighPriority);
 }
