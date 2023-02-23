@@ -1,4 +1,5 @@
 
+#include "unrealclient.h"
 #include "unrealtcpserver.h"
 #include <zeno/utils/log.h>
 #include <QThread>

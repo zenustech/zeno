@@ -4,11 +4,11 @@
 #include <QObject>
 #include <QHostAddress>
 #include <vector>
-#include "unrealclient.h"
 
 class QThread;
 class QTcpServer;
 class QTcpSocket;
+class IUnrealLiveLinkClient;
 
 class UnrealTcpServer final : public QObject {
     Q_OBJECT

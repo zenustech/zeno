@@ -39,12 +39,34 @@ void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
     if (packetSize != -1) {
         auto* tmp = static_cast<uint8_t *>(malloc(packetSize));
         bool bIsSuccess = m_buffer.readSinglePacket(tmp);
-        auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
-        sendPacket(std::get<0>(res)->type, nullptr, 0);
+        auto header = reinterpret_cast<const ZBTPacketHeader*>(tmp);
+
+        bool bHasRespond = false;
+        ZBTControlPacketType respondPacketType = ZBTControlPacketType::Start;
+        OutPacketBufferType respondData;
+        uint16_t respondSize = 0;
+
+        PacketHandlerMap::get().tryCall(header->type, tmp, bHasRespond, respondPacketType, respondData, respondSize);
+
+        if (bHasRespond && respondData.has_value()) {
+            sendPacket(respondPacketType, respondData->data(), respondSize);
+        }
+
+//        auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
+//        sendPacket(std::get<0>(res)->type, nullptr, 0);
     }
 
     m_buffer.cleanUp();
 }
+
+template <> PacketHandler PacketHandlerAnnotation<ZBTControlPacketType::AuthRequire>::handler = [] (void*, bool& bHasRespond, ZBTControlPacketType& outPacketType, OutPacketBufferType& outBuffer, uint16_t& outSize) {
+    outSize = 1;
+    outBuffer = { 0x11 };
+    outPacketType = ZBTControlPacketType::AuthRequire;
+    bHasRespond = true;
+};
+REG_PACKET_HANDLER(AuthRequire, ZBTControlPacketType::AuthRequire);
+
 
 #pragma region tcp_socket_events
 void UnrealLiveLinkTcpClient::onSocketClosed() {
@@ -58,9 +80,6 @@ void UnrealLiveLinkTcpClient::onSocketReceiveData() {
     }
 
     QtSocketHelper::readToByteBuffer(m_socket, m_buffer);
-
-//    uint8_t data = 123;
-//    sendPacket(ZBTControlPacketType::AuthRequire, &data, sizeof(data));
 }
 
 void UnrealLiveLinkTcpClient::onError(QAbstractSocket::SocketError error) {

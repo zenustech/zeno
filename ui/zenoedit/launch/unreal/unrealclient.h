@@ -2,6 +2,7 @@
 #define ZENO_UNREALCLIENT_H
 
 #include "model/bytebuffer.h"
+#include "model/packethandler.h"
 #include "model/networktypes.h"
 #include <QObject>
 #include <QAbstractSocket>
@@ -15,7 +16,7 @@ public:
     using ByteBuffer = ByteBuffer<2048>;
 
     explicit IUnrealLiveLinkClient(QObject* parent) : QObject(parent) {
-        startTimer(5);
+        startTimer(1);
     }
     ~IUnrealLiveLinkClient() override = default;
 
