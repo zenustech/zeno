@@ -489,7 +489,9 @@ QStringList UiHelper::getCoreTypeList()
         //"writepath",
         //"readpath",
         "color",
-        "curve"
+        "curve",
+        "list",
+        "dict"
     };
     return types;
 }

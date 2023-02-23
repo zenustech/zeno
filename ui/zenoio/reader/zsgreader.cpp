@@ -742,7 +742,12 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
             else
                 var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey], currGraph);
 
-            if (value.HasMember("control")) {
+            CONTROL_INFO ctrlInfo = UiHelper::getControlByType(nodeCls, PARAM_PARAM, name, paramData.typeDesc);
+            if (ctrlInfo.control != CONTROL_NONE && ctrlInfo.controlProps.isValid()) {
+                paramData.control = ctrlInfo.control;
+                paramData.controlProps = ctrlInfo.controlProps;
+            }
+            else if (value.HasMember("control")) {
                 PARAM_CONTROL ctrl;
                 QVariant props;
                 bool bret = JsonHelper::importControl(value["control"], ctrl, props);
