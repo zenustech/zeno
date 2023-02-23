@@ -296,8 +296,42 @@
            <widget class="QWidget" name="pageNone"/>
            <widget class="QWidget" name="pageCombobox">
             <layout class="QGridLayout" name="gridLayout_3">
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>items</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <layout class="QVBoxLayout" name="verticalLayout_8">
+               <item>
+                <widget class="QPushButton" name="m_pUpButton">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="verticalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
              <item row="1" column="1">
               <widget class="QTableWidget" name="itemsTable">
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
                <property name="rowCount">
                 <number>1</number>
                </property>
@@ -312,13 +346,6 @@
                </attribute>
                <row/>
                <column/>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_12">
-               <property name="text">
-                <string>items</string>
-               </property>
               </widget>
              </item>
             </layout>

@@ -155,6 +155,37 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
     connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+
+    m_ui->m_pUpButton->setFixedWidth(32);
+    m_ui->m_pUpButton->setEnabled(false);
+    m_ui->m_pUpButton->setIcon(QIcon(":/icons/moveUp.svg"));
+    connect(m_ui->itemsTable, &QTableWidget::itemSelectionChanged, this, [=]() {
+        m_ui->m_pUpButton->setEnabled(true);
+        auto item = m_ui->itemsTable->currentItem();
+        if (item) {
+            int row = item->row();
+            if (row == 0) {
+                m_ui->m_pUpButton->setEnabled(false);
+            }
+        } else {
+            m_ui->m_pUpButton->setEnabled(false);
+        }
+    });
+
+    connect(m_ui->m_pUpButton, &QPushButton::clicked, this, [=]() {
+        auto item = m_ui->itemsTable->currentItem();
+        if (item) {
+            int row = item->row() - 1;
+            disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
+                       SLOT(onComboTableItemsCellChanged(int, int)));
+            QString text = item->text();
+            item->setText(m_ui->itemsTable->item(row, 0)->text());
+            connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
+                    SLOT(onComboTableItemsCellChanged(int, int)));
+            m_ui->itemsTable->item(row, 0)->setText(text);
+            m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
+        }
+    });
 }
 
 void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
@@ -168,8 +199,17 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
     for (int r = 0; r < m_ui->itemsTable->rowCount(); r++)
     {
         QTableWidgetItem* pItem = m_ui->itemsTable->item(r, 0);
-        if (pItem && !pItem->text().isEmpty())
+        if (pItem && !pItem->text().isEmpty()) {
+            if (lst.contains(pItem->text())) 
+            {
+                QMessageBox::information(this, tr("Info"), tr("The %1 item already exists").arg(pItem->text()));
+                disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+                pItem->setText("");
+                connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+                return;
+            }
             lst.append(pItem->text());
+        }
     }
     if (lst.isEmpty())
         return;
@@ -182,6 +222,17 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
     if (row == m_ui->itemsTable->rowCount() - 1)
     {
         m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
+        m_ui->m_pUpButton->setEnabled(true);
+    }
+
+    //update control.
+    QLayoutItem *pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem) {
+        QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
+        if (pControl) {
+            pControl->clear();
+            pControl->addItems(lst);
+        }
     }
 }
 
@@ -197,14 +248,20 @@ void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVar
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
 {
-    QModelIndex idx = m_ui->paramsView->currentIndex();
-    if (!idx.isValid() || !idx.parent().isValid())
-        return;
+    if (m_ui->itemsTable->hasFocus()) {
+        int row = m_ui->itemsTable->currentRow();
+        if (row < m_ui->itemsTable->rowCount() - 1)
+            m_ui->itemsTable->removeRow(row);
+    } else {
+        QModelIndex idx = m_ui->paramsView->currentIndex();
+        if (!idx.isValid() || !idx.parent().isValid())
+            return;
 
-    //QString parentPath = idx.parent().data(ROLE_OBJPATH).toString();
-    //ViewParamRemoveCommand *pCommand = new ViewParamRemoveCommand(m_pGraphsModel, parentPath, idx.row());
-    //m_commandSeq.append(pCommand);
-    m_proxyModel->removeRow(idx.row(), idx.parent());
+        //QString parentPath = idx.parent().data(ROLE_OBJPATH).toString();
+        //ViewParamRemoveCommand *pCommand = new ViewParamRemoveCommand(m_pGraphsModel, parentPath, idx.row());
+        //m_commandSeq.append(pCommand);
+        m_proxyModel->removeRow(idx.row(), idx.parent());
+    }
 }
 
 void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
