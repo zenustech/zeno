@@ -157,12 +157,17 @@ namespace zeno
             /* test
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
             prim->verts.resize(3);
-            auto &tranlate = prim->add_attr<zeno::vec3f>("pos");
-            auto &direct = prim->add_attr<zeno::vec3f>("nrm");
-            auto &scale = prim->add_attr<zeno::vec3f>("clr");
-            tranlate = {{5, 0, 0}, {0, 5, 0}, {0, 0, 5}};
-            direct = {{1, 0, 0}, {0, 1, 0}, {1, 1, 0}};
-            scale = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+            auto &pos = prim->add_attr<zeno::vec3f>("pos");
+            auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+            auto &clr = prim->add_attr<zeno::vec3f>("clr");
+            auto &uv = prim->add_attr<zeno::vec3f>("uv");
+            auto &tang = prim->add_attr<zeno::vec3f>("tang");
+
+            pos = {{2, 0, 0}, {0, 0, 0}, {-2, 0, 0}}; // translation
+            nrm = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // direction
+            clr = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}; // scaling
+            uv = {{0, 0, 1}, {0, 1, 0}, {1, 0, 0}};
+            tang = {{0, 1, 1}, {1, 0, 1}, {1, 1, 0}};
             */
 
             set_output("object", std::move(obj));
