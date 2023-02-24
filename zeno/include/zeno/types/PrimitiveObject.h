@@ -37,14 +37,16 @@ static zeno::vec3f polyNormal(std::vector<zeno::vec3f> & verts, std::vector<int>
     {
         normal += zeno::cross(verts[poly[i+1]]-verts[poly[0]], verts[poly[i]]-verts[poly[0]]);
     }
-    normal = zeno::normalize(normal);
+    normal = -zeno::normalize(normal);
     return normal;
 }
-static bool isReflex(zeno::vec3f a, zeno::vec3f b, zeno::vec3f c, zeno::vec3f n)
+static char isReflex(zeno::vec3f a, zeno::vec3f b, zeno::vec3f c, zeno::vec3f n)
 {
-    return zeno::dot(zeno::cross(b-a, c-b), n) < 0 ;
+    
+    return zeno::dot(zeno::cross(b - a, c - b), n) <= 0 ? 1 : 0;
 }
-static void markReflex(std::vector<zeno::vec3f> & verts, std::vector<int> &poly, std::vector<bool> & reflexMark, zeno::vec3f n)
+static void markReflex(std::vector<zeno::vec3f> &verts, std::vector<int> &poly, std::vector<char> &reflexMark,
+                       zeno::vec3f n) 
 {
     reflexMark.resize(poly.size());
     for(int i=0;i<poly.size();i++)
@@ -54,7 +56,7 @@ static void markReflex(std::vector<zeno::vec3f> & verts, std::vector<int> &poly,
         reflexMark[i] = isReflex(verts[poly[prev]], verts[poly[i]], verts[poly[next]], n);
     }
 }
-static void takeOutTriangle(std::vector<zeno::vec3f> & verts, std::vector<int> &poly, std::vector<bool>& reflexMark, std::vector<zeno::vec3i> & triangles)
+static void takeOutTriangle(std::vector<zeno::vec3f> & verts, std::vector<int> &poly, std::vector<char>& reflexMark, std::vector<zeno::vec3i> & triangles)
 {
     if(poly.size()==3)
     {
@@ -66,30 +68,45 @@ static void takeOutTriangle(std::vector<zeno::vec3f> & verts, std::vector<int> &
         //find 3 consecutive points which satisfy:
         //if there are no reflex points, any 3 points
         //if there are at least one reflex point, a must be the reflex point, and b must be a non-reflex point
-        bool anyReflex = false;
+        char anyReflex = 0;
         for(auto r:reflexMark)
         {
+            //printf("r : %d\n", r);
             anyReflex = anyReflex | r;
         }
 
+
         int a = 0;
         int b = 1;
+        int c = 2;
+        while (zeno::length(zeno::cross(verts[poly[b]] - verts[poly[a]], verts[poly[c]] - verts[poly[b]])) <=
+               0.0000001)
+        {
+            a++;
+            b++;
+            c++;
+        }
+        
         if(anyReflex == true)
         {
-            for(a = 0; a < poly.size(); a++)
+            while(a < poly.size())
             {
                 b = (a + 1) % poly.size();
                 if(reflexMark[a] == true && reflexMark[b] == false)
                     break;
+                a++;
             }
         }
-        int c = (a+2) % poly.size();
+        c = (a+2) % poly.size();
 
         triangles.push_back(zeno::vec3i(poly[a], poly[b], poly[c]));
+        //printf("tridx : %d, %d, %d\n", poly[a], poly[b], poly[c]);
+        //printf("tridx : %d, %d, %d\n", a, b, c);
         //remove b from the poly loop
         poly.erase(poly.begin()+b);
         //recompute reflexMark
         auto n = polyNormal(verts, poly);
+        //printf("n:%f, %f, %f\n", n[0], n[1], n[2]);
         markReflex(verts, poly, reflexMark, n);
         //recursively take out triangle from the rest of things
         takeOutTriangle(verts, poly, reflexMark, triangles);
@@ -99,9 +116,13 @@ static void polygonDecompose(std::vector<zeno::vec3f> & verts, std::vector<int> 
                              std::vector<vec3i> & triangles)
 {
     triangles.resize(0);
-    std::vector<bool> reflexMark;
+    std::vector<char> reflexMark;
     auto n = polyNormal(verts, poly);
     markReflex(verts, poly, reflexMark, n);
+    for (int i=0;i<reflexMark.size();i++) {
+    
+        //printf("r: %d\n", reflexMark[i] );
+    }
     takeOutTriangle(verts, poly, reflexMark, triangles);
 
 }
