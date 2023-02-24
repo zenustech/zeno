@@ -8,9 +8,8 @@ namespace zeno {
     class IObject;
 
     struct UnrealHook {
-        static void fetchViewObject(const std::string& inObjKey, std::shared_ptr<IObject> inData);
+        static void fetchViewObject(const std::string& inObjKey, const std::shared_ptr<IObject>& inData);
     };
-
 }
 
 #endif //ZENO_UNREALHOOK_H
