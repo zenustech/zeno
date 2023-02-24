@@ -626,3 +626,28 @@ void ViewParamModel::clone(ViewParamModel* pModel)
         pRoot->appendRow(newItem);
     }
 }
+
+void ViewParamModel::disableNodeParam(QStandardItem *item) 
+{
+    for (int r = 0; r < item->rowCount(); r++) {
+        QStandardItem *newItem = item->child(r);
+        VParamItem *pVItem = static_cast<VParamItem *>(newItem);
+        if (pVItem &&
+            (pVItem->m_name == iotags::params::panel_inputs || 
+            pVItem->m_name == iotags::params::panel_params ||
+            pVItem->m_name == iotags::params::panel_outputs)) 
+        {
+                newItem->setData(false, ROLE_VAPRAM_EDITTABLE);
+            for (int r = 0; r < newItem->rowCount(); r++) 
+            {
+                QStandardItem *childItem = newItem->child(r);
+                childItem->setData(false, ROLE_VAPRAM_EDITTABLE);
+            }
+        } 
+        else 
+        {
+            newItem->setData(true, ROLE_VAPRAM_EDITTABLE);
+            disableNodeParam(newItem);
+        }
+    }
+}

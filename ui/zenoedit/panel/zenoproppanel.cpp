@@ -232,7 +232,11 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             pTabLayout->addStretch();
             tabWid->setLayout(pTabLayout);
         }
+        QLayoutItem *layoutItem = pTabLayout->itemAt(pTabLayout->count() - 1);
+        if (layoutItem && dynamic_cast<QSpacerItem *>(layoutItem))
+            pTabLayout->removeItem(layoutItem);
         syncAddGroup(pTabLayout, newItem, first);
+        pTabLayout->addStretch();
     }
     else if (vType == VPARAM_PARAM)
     {
@@ -332,6 +336,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
+    panelCtrl.pIcon = pIcon;
     panelCtrl.m_viewIdx = perIdx;
     panelCtrl.pControl = pControl;
 
@@ -472,8 +477,10 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
 
                 ctrl.controlLayout->removeWidget(ctrl.pControl);
                 ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                ctrl.controlLayout->removeWidget(ctrl.pIcon);
                 delete ctrl.pControl;
                 delete ctrl.pLabel;
+                delete ctrl.pIcon;
                 m_controls[tabName][groupName].remove(paramName);
             }
         }
@@ -529,8 +536,10 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 
             ctrl.controlLayout->removeWidget(ctrl.pControl);
             ctrl.controlLayout->removeWidget(ctrl.pLabel);
+            ctrl.controlLayout->removeWidget(ctrl.pIcon);
             delete ctrl.pControl;
             delete ctrl.pLabel;
+            delete ctrl.pIcon;
 
             int row = group.keys().indexOf(paramName, 0);
             syncAddControl(pGridLayout, param, row);

@@ -140,5 +140,33 @@ void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first,
 
 void PanelParamModel::onNodeParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
 {
-    
+    QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+    ZASSERT_EXIT(pModel);
+    const QModelIndex& idxNodeParam = pModel->index(first, 0, parent);
+    if (!idxNodeParam.isValid())
+        return;
+
+    VParamItem* pNodeParam = static_cast<VParamItem*>(pModel->itemFromIndex(idxNodeParam));
+    VParamItem* parentItem = static_cast<VParamItem*>(pNodeParam->parent());
+    const QString &parentName = parentItem->m_name;
+    QList<QStandardItem *> lst;
+    if (parentName == iotags::params::node_inputs)
+    {
+        lst = findItems(iotags::params::panel_inputs, Qt::MatchRecursive | Qt::MatchExactly);
+    }
+    else if (parentName == iotags::params::node_params)
+    {
+        lst = findItems(iotags::params::panel_params, Qt::MatchRecursive | Qt::MatchExactly);
+    }
+    else if (parentName == iotags::params::node_outputs)
+    {
+        lst = findItems(iotags::params::panel_outputs, Qt::MatchRecursive | Qt::MatchExactly);
+    }
+    ZASSERT_EXIT(lst.size() == 1);
+    for (int row = 0; row < lst[0]->rowCount(); row++) {
+        VParamItem *pChild = static_cast<VParamItem *>(lst[0]->child(row));
+        if (pChild && pChild->m_name == pNodeParam->m_name) {
+            lst[0]->removeRow(row);
+        }
+    }
 }

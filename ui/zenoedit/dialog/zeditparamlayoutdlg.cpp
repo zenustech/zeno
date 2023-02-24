@@ -75,8 +75,8 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     bool bEditable = index.data(ROLE_VAPRAM_EDITTABLE).toBool();
-    //if (!bEditable)
-    //    return nullptr;
+    if (!bEditable)
+        return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
@@ -122,6 +122,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     }
 
     m_proxyModel->clone(m_model);
+    if (!bNodeUI)
+        m_proxyModel->disableNodeParam(m_proxyModel->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_proxyModel);
     m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_ui->paramsView));
@@ -254,7 +256,8 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
             m_ui->itemsTable->removeRow(row);
     } else {
         QModelIndex idx = m_ui->paramsView->currentIndex();
-        if (!idx.isValid() || !idx.parent().isValid())
+        bool bEditable = idx.data(ROLE_VAPRAM_EDITTABLE).toBool();
+        if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
             return;
 
         //QString parentPath = idx.parent().data(ROLE_OBJPATH).toString();
@@ -272,7 +275,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
     m_ui->editName->setText(name);
     bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
-    //m_ui->editName->setEnabled(bEditable);
+    m_ui->editName->setEnabled(bEditable);
 
     //delete old control.
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -309,7 +312,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             BlockSignalScope scope(m_ui->cbControl);
             BlockSignalScope scope2(m_ui->cbTypes);
 
-            m_ui->cbControl->setEnabled(true);
+            m_ui->cbControl->setEnabled(bEditable);
             m_ui->cbControl->clear();
             QStringList items = UiHelper::getControlLists(dataType);
             m_ui->cbControl->addItems(items);
@@ -342,6 +345,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         if (ctrl == CONTROL_ENUM)
         {
             CONTROL_PROPERTIES pros = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+            m_ui->itemsTable->setEnabled(bEditable);
             if (pros.find("items") != pros.end())
             {
                 const QStringList& items = pros["items"].toStringList();
@@ -368,12 +372,15 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
             QVariant step = map["step"];
             m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
+            m_ui->editStep->setEnabled(bEditable);
 
             QVariant min = map["min"];
             m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
+            m_ui->editMin->setEnabled(bEditable);
 
             QVariant max = map["max"];
             m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
+            m_ui->editMax->setEnabled(bEditable);
         }
         else
         {
@@ -442,6 +449,11 @@ void ZEditParamLayoutDlg::onBtnAdd()
         if (type != VPARAM_GROUP)
         {
             QMessageBox::information(this, tr("Error "), tr("create control needs to place under the group"));
+            return;
+        }
+        bool bEditable = pItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+        if (!bEditable) {
+            QMessageBox::information(this, tr("Error "), tr("The Group cannot be edited"));
             return;
         }
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
