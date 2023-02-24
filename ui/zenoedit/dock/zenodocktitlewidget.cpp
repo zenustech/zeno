@@ -1,3 +1,5 @@
+#if 0
+
 #include "zenodocktitlewidget.h"
 #include <comctrl/ziconbutton.h>
 #include <comctrl/ztoolbutton.h>
@@ -554,3 +556,5 @@ void ZenoPropDockTitleWidget::paintEvent(QPaintEvent* event)
 	p.setFont(QFont("HarmonyOS Sans", 11));
 	p.drawText(rect(), Qt::AlignCenter, m_title);
 }
+
+#endif

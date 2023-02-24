@@ -40,6 +40,7 @@ public:
     void onUpdateViewport(const QString& action);
     void onRunFinished();
     void newFrameUpdate();
+    void testCleanupGL();
 
     static PANEL_TYPE title2Type(const QString &title);
 

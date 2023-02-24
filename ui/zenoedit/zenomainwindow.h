@@ -137,8 +137,6 @@ public slots:
     void onMenuActionTriggered(bool bTriggered);
     void onSplitDock(bool);
     void onCloseDock();
-    void onToggleDockWidget(DOCK_TYPE, bool);
-    void onDockSwitched(DOCK_TYPE);
     void importGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
@@ -171,7 +169,6 @@ private:
     void saveLayout2();
     void SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation);
     QString getOpenFileByDialog();
-    QString uniqueDockObjName(DOCK_TYPE type);
     void setActionProperty();
     void screenShoot();
     void setActionIcon(QAction* action);

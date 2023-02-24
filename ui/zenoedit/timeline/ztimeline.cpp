@@ -62,8 +62,16 @@ void ZTimeline::initSignals()
     });
     connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
         //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
-        auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *viewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(viewport);
+
+        auto scene = viewport->getZenoVis()->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
         viewport->simpleRenderChecked = bChecked;
         scene->drawOptions->simpleRender = bChecked;
         scene->drawOptions->needRefresh = true;
@@ -104,7 +112,15 @@ void ZTimeline::initSignals()
             emit run();
         }
     });
-    connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
+
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget* pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget* pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    connect(pViewport->getZenoVis(), SIGNAL(frameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
 }
 
 void ZTimeline::initStyleSheet()

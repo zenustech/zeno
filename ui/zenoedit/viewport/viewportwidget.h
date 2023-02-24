@@ -13,12 +13,15 @@
 
 class ZTimeline;
 class ZenoMainWindow;
+class Zenovis;
+class ViewportWidget;
+class Picker;
 
-class CameraControl : public QWidget
+class CameraControl : public QObject
 {
     Q_OBJECT
 public:
-    CameraControl(QWidget* parent = nullptr);
+    CameraControl(ViewportWidget* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
     void setAperture(float aperture);
@@ -43,6 +46,8 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
+    ViewportWidget* getViewport() const;
+
     bool m_mmb_pressed;
     float m_theta;
     float m_phi;
@@ -55,7 +60,6 @@ private:
     float m_aperture;
     float m_focalPlaneDistance;
     QVector2D m_res;
-
     QSet<int> m_pressedKeys;
 };
 
@@ -66,10 +70,19 @@ class ViewportWidget : public QGLWidget
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
+    void testCleanUp();
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
     QVector2D cameraRes() const;
+    Zenovis* getZenoVis() const;
+    std::shared_ptr<zeno::Picker> picker() const;
+    std::shared_ptr<zeno::FakeTransformer> fakeTransformer() const;
+    zenovis::Session* getSession() const;
+    bool isPlaying() const;
+    void startPlay(bool bPlaying);
+    int getCurrentFrameId();
+    int setCurrentFrameId(int frameid);
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
@@ -96,11 +109,14 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
-    std::shared_ptr<CameraControl> m_camera;
+    CameraControl* m_camera;
+    Zenovis* m_zenovis;
     QVector2D record_res;
     QPointF m_lastPos;
     QTimer* m_pauseRenderDally;
     QTimer* m_wheelEventDally;
+    std::shared_ptr<zeno::Picker> m_picker;
+    std::shared_ptr<zeno::FakeTransformer> m_fakeTrans;
 
 public:
     bool simpleRenderChecked;
@@ -120,6 +136,7 @@ public:
     QSize sizeHint() const override;
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
+    void testCleanUp();
 
 public slots:
     void updateFrame(const QString& action = "");

@@ -27,7 +27,7 @@
 #include <zenomodel/include/command.h>
 #include "nodesys/groupnode.h"
 #include <zenoui/style/zenostyle.h>
-
+#include "viewport/viewportwidget.h"
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
@@ -979,20 +979,29 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
 void ZenoSubGraphScene::selectObjViaNodes() {
     // FIXME temp function for merge
     // for selecting objects in viewport via selected nodes
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget* pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget* pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+    auto scene = pViewport->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
     QList<QGraphicsItem*> selItems = this->selectedItems();
-    auto& picker = zeno::Picker::GetInstance();
-    picker.clear();
+    auto picker = pViewport->picker();
+    ZASSERT_EXIT(picker);
+    picker->clear();
     for (auto item : selItems) {
         if (auto* pNode = qgraphicsitem_cast<ZenoNode*>(item)) {
             auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
             for (const auto& [prim_name, _] : scene->objectsMan->pairsShared()) {
                 if (prim_name.find(node_id) != std::string::npos)
-                    picker.add(prim_name);
+                    picker->add(prim_name);
             }
         }
     }
-    picker.sync_to_scene();
+    picker->sync_to_scene();
     zenoApp->getMainWindow()->updateViewport();
 }
 

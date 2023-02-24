@@ -233,6 +233,15 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
             pViewport = pDock->getUniqueViewport();
         if (!pEditor)
             pEditor = pDock->getAnyEditor();
+        for (int i = 0; i < pDock->count(); i++)
+        {
+            DisplayWidget* pDisplay = qobject_cast<DisplayWidget*>(pDock->widget(i));
+            if (pDisplay)
+            {
+                int actionType = pAction->property("ActionType").toInt();
+                //pDisplay->onCommandDispatched(actionType, bTriggered);
+            }
+        }
     }
     if (pEditor)
     {
@@ -313,28 +322,17 @@ void ZenoMainWindow::resetDocks(PtrLayoutNode root)
     if (root == nullptr)
         return;
 
-    ZTabDockWidget* cake = nullptr;
-
     m_layoutRoot.reset();
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget *pDock : docks) {
-        if (pDock->getUniqueViewport()) {
-            //because of the unsteadiness of create/delete viewport widget,
-            //we keep the viewport dock, and divide docks based on it.
-            cake = pDock;
-        }
-        else {
-            pDock->close();
-            delete pDock;
-        }
+        pDock->close();
+        //pDock->testCleanupGL();
+        //delete pDock;
     }
 
     m_layoutRoot = root;
-    if (!cake)
-    {
-        cake = new ZTabDockWidget(this);
-        addDockWidget(Qt::TopDockWidgetArea, cake);
-    }
+    ZTabDockWidget* cake = new ZTabDockWidget(this);
+    addDockWidget(Qt::TopDockWidgetArea, cake);
     initDocksWidget(cake, m_layoutRoot);
     m_nResizeTimes = 2;
 }
@@ -820,6 +818,21 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         settings.endGroup();
         settings.endGroup();
 
+        //clean up opengl components.
+
+        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget *pDock : docks) {
+            pDock->close();
+            try {
+                pDock->testCleanupGL();
+            } catch (...) {
+                //QString errMsg = QString::fromLatin1(e.what());
+                int j;
+                j = 0;
+            }
+            delete pDock;
+        }
+
         QMainWindow::closeEvent(event);
     } 
     else 
@@ -1008,32 +1021,6 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     emit recentFilesChanged();
 }
 
-void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
-{
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks)
-    {
-        DOCK_TYPE _type = dock->type();
-        if (_type == type)
-            dock->setVisible(bShow);
-    }
-}
-
-QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
-{
-    switch (type)
-    {
-    case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
-    case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
-    case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
-    case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
-    case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
-    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
-    default:
-        return UiHelper::generateUuid("dock_empty_");
-    }
-}
-
 void ZenoMainWindow::setActionProperty() 
 {
     m_ui->action_New->setProperty("ActionType", ACTION_NEW);
@@ -1088,7 +1075,16 @@ void ZenoMainWindow::screenShoot()
         tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
     QString ext = QFileInfo(path).suffix();
     if (!path.isEmpty()) {
-        Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+
+        //todo: ask the user to select a viewport to screenshot.
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *pViewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+
+        pViewport->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
     }
 }
 
@@ -1102,47 +1098,6 @@ void ZenoMainWindow::setActionIcon(QAction *action)
     {
         action->setIcon(QIcon("://icons/checked.png"));
     }
-}
-
-void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
-{
-    ZenoDockWidget *pDock = qobject_cast<ZenoDockWidget *>(sender());
-    switch (type)
-    {
-        case DOCK_EDITOR: {
-            ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
-            pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-            pDock->setWidget(type, pEditor2);
-            break;
-        }
-        case DOCK_VIEW: {
-            //complicated opengl framework.
-            DisplayWidget* view = new DisplayWidget;
-            pDock->setWidget(type, view);
-            break;
-        }
-        case DOCK_NODE_PARAMS: {
-            ZenoPropPanel *pWidget = new ZenoPropPanel;
-            pDock->setWidget(type, pWidget);
-            break;
-        }
-        case DOCK_NODE_DATA: {
-            ZenoSpreadsheet *pWidget = new ZenoSpreadsheet;
-            pDock->setWidget(type, pWidget);
-            break;
-        }
-        case DOCK_LOG: {
-            ZPlainLogPanel* pPanel = new ZPlainLogPanel;
-            pDock->setWidget(type, pPanel);
-            break;
-        }
-        case DOCK_LIGHTS: {
-            ZenoLights* pPanel = new ZenoLights;
-            pDock->setWidget(type, pPanel);
-            break;
-        }
-    }
-    pDock->setObjectName(uniqueDockObjName(type));
 }
 
 bool ZenoMainWindow::saveQuit() {

@@ -16,6 +16,9 @@ using std::string;
 using std::unordered_set;
 using std::unordered_map;
 using std::function;
+
+class ViewportWidget;
+
 namespace zeno {
 
 std::optional<float> ray_box_intersect(
@@ -34,12 +37,11 @@ bool test_in_selected_bounding(
     QVector3D down_normWS
 );
 
-class Picker {
-  public:
-    static Picker& GetInstance() {
-        static Picker instance;
-        return instance;
-    }
+class Picker
+{
+public:
+    Picker(ViewportWidget* pViewport);
+    void initialize();
     void pick(int x, int y);
     void pick(int x0, int y0, int x1, int y1);
     void add(const string& prim_name);
@@ -55,14 +57,12 @@ class Picker {
     void clear();
     void set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)>);
 
-  private:
-    Picker() {
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        picker = zenovis::makeFrameBufferPicker(scene);
-        select_mode_context = -1;
-    };
+private:
+    zenovis::Scene* scene() const;
 
     std::unique_ptr<zenovis::IPicker> picker;
+    
+    ViewportWidget* m_pViewport;
 
     function<void(unordered_map<string, unordered_set<int>>&)> picked_elems_callback;
 

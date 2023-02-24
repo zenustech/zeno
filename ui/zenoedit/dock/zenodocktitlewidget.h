@@ -1,6 +1,7 @@
 #ifndef __ZENO_EDITOR_DOCKWIDGET_H__
 #define __ZENO_EDITOR_DOCKWIDGET_H__
 
+#if 0
 #include "zenodockwidget.h"
 
 class ZenoDockTitleWidget : public QWidget
@@ -90,5 +91,7 @@ protected:
 private:
 	QString m_title;
 };
+
+#endif
 
 #endif

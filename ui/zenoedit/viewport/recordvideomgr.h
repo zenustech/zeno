@@ -30,6 +30,8 @@ struct VideoRecInfo
     }
 };
 
+class Zenovis;
+
 class RecordVideoMgr : public QObject
 {
     Q_OBJECT
@@ -50,6 +52,7 @@ signals:
 
 private:
     void finishRecord();
+    Zenovis* getZenovis();
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;

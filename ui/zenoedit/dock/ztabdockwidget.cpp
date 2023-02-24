@@ -90,6 +90,17 @@ QWidget* ZTabDockWidget::widget() const
     return m_tabWidget;
 }
 
+void ZTabDockWidget::testCleanupGL()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        if (DisplayWidget *pDis = qobject_cast<DisplayWidget*>(wid)) {
+            pDis->testCleanUp();
+        }
+    }
+}
+
 DisplayWidget* ZTabDockWidget::getUniqueViewport() const
 {
     if (1 == count())
@@ -209,7 +220,16 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             {
                 const QModelIndex &idx = nodes[0];
                 QString nodeId = idx.data(ROLE_OBJID).toString();
-                auto *scene = Zenovis::GetInstance().getSession()->get_scene();
+
+                //todo: dispatch to each panel?
+                ZenoMainWindow *pWin = zenoApp->getMainWindow();
+                ZASSERT_EXIT(pWin);
+                DisplayWidget *pWid = pWin->getDisplayWidget();
+                ZASSERT_EXIT(pWid);
+                ViewportWidget *pViewport = pWid->getViewportWidget();
+                ZASSERT_EXIT(pViewport);
+
+                auto *scene = pViewport->getSession()->get_scene();
                 scene->selected.clear();
                 std::string nodeid = nodeId.toStdString();
                 for (auto const &[key, ptr] : scene->objectsMan->pairs()) {

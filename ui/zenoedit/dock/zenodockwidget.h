@@ -1,6 +1,7 @@
 #ifndef __ZENO_DOCKWIDGET_H__
 #define __ZENO_DOCKWIDGET_H__
 
+#if 0
 #include <unordered_set>
 #include <QtWidgets>
 
@@ -66,6 +67,6 @@ private:
     ZDockTabWidget* m_tabWidget;
 };
 
-
+#endif
 
 #endif
