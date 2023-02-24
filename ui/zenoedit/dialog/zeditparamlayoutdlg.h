@@ -60,6 +60,7 @@ private:
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
+    void switchStackProperties(int ctrl, VParamItem *pItem);
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;

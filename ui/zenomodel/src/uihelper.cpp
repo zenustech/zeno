@@ -506,7 +506,7 @@ QStringList UiHelper::getAllControls()
 QStringList UiHelper::getControlLists(const QString& type)
 {
     QList<PARAM_CONTROL> ctrls;
-    if (type == "int") { ctrls = { CONTROL_INT, CONTROL_SPINBOX_SLIDER, CONTROL_HSPINBOX }; }
+    if (type == "int") { ctrls = { CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
     else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }

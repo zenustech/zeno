@@ -93,7 +93,7 @@ struct SLIDER_INFO {
     qreal step;
     qreal min;
     qreal max;
-    SLIDER_INFO() : step(1.), min(0.), max(0.) {}
+    SLIDER_INFO() : step(1.), min(0.), max(100.) {}
 };
 Q_DECLARE_METATYPE(SLIDER_INFO)
 

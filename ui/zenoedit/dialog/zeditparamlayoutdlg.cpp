@@ -342,50 +342,11 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->editCoreParamType->setText(dataType);
         m_ui->itemsTable->setRowCount(0);
 
-        if (ctrl == CONTROL_ENUM)
-        {
-            CONTROL_PROPERTIES pros = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-            m_ui->itemsTable->setEnabled(bEditable);
-            if (pros.find("items") != pros.end())
-            {
-                const QStringList& items = pros["items"].toStringList();
-                m_ui->itemsTable->setRowCount(items.size() + 1);
-                for (int r = 0; r < items.size(); r++)
-                {
-                    QTableWidgetItem* newItem = new QTableWidgetItem(items[r]);
-                    m_ui->itemsTable->setItem(r, 0, newItem);
-                }
-            }
-            else
-            {
-                m_ui->itemsTable->setRowCount(1);
-            }
-            m_ui->stackProperties->setCurrentIndex(1);
-        }
-        else if (ctrl == CONTROL_HSLIDER ||
-                 ctrl == CONTROL_HSPINBOX ||
-                 ctrl == CONTROL_SPINBOX_SLIDER)
-        {
-            m_ui->stackProperties->setCurrentIndex(2);
-            bool bIntVal = dataType == "int";
-            QVariantMap map = controlProperties.toMap();
-
-            QVariant step = map["step"];
-            m_ui->editStep->setText(QString::number(bIntVal ? step.toInt() : step.toFloat()));
-            m_ui->editStep->setEnabled(bEditable);
-
-            QVariant min = map["min"];
-            m_ui->editMin->setText(QString::number(bIntVal ? min.toInt() : min.toFloat()));
-            m_ui->editMin->setEnabled(bEditable);
-
-            QVariant max = map["max"];
-            m_ui->editMax->setText(QString::number(bIntVal ? max.toInt() : max.toFloat()));
-            m_ui->editMax->setEnabled(bEditable);
-        }
-        else
-        {
-            m_ui->stackProperties->setCurrentIndex(0);
-        }
+        switchStackProperties(ctrl, pCurrentItem);
+        m_ui->itemsTable->setEnabled(bEditable);
+        m_ui->editStep->setEnabled(bEditable);
+        m_ui->editMin->setEnabled(bEditable);
+        m_ui->editMax->setEnabled(bEditable);
     }
 }
 
@@ -543,6 +504,46 @@ void ZEditParamLayoutDlg::recordSubInputCommands(bool bSubInput, VParamItem* pIt
 #endif
 }
 
+void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem) 
+{
+    QVariant controlProperties = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+    if (ctrl == CONTROL_ENUM) {
+        CONTROL_PROPERTIES pros = controlProperties.toMap();
+        
+        if (pros.find("items") != pros.end()) {
+                const QStringList &items = pros["items"].toStringList();
+                m_ui->itemsTable->setRowCount(items.size() + 1);
+                for (int r = 0; r < items.size(); r++) {
+                QTableWidgetItem *newItem = new QTableWidgetItem(items[r]);
+                m_ui->itemsTable->setItem(r, 0, newItem);
+                }
+        } else {
+                m_ui->itemsTable->setRowCount(1);
+        }
+        m_ui->stackProperties->setCurrentIndex(1);
+    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX || ctrl == CONTROL_SPINBOX_SLIDER) {
+        m_ui->stackProperties->setCurrentIndex(2);
+        QVariantMap map = controlProperties.toMap();
+        SLIDER_INFO info;
+        if (!map.isEmpty()) {
+                info.step = map["step"].toInt();
+                info.min = map["min"].toInt();
+                info.max = map["max"].toInt();
+        } else {
+                CONTROL_PROPERTIES properties;
+                properties["step"] = info.step;
+                properties["min"] = info.min;
+                properties["max"] = info.max;
+                pItem->setData(properties, ROLE_VPARAM_CTRL_PROPERTIES);
+        }
+        m_ui->editStep->setText(QString::number(info.step));
+        m_ui->editMin->setText(QString::number(info.min));
+        m_ui->editMax->setText(QString::number(info.max));
+    } else {
+        m_ui->stackProperties->setCurrentIndex(0);
+    }
+}
+
 
 
 void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName)
@@ -607,6 +608,28 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         return;
 
     proxyModelSetData(layerIdx, ctrl, ROLE_PARAM_CTRL);
+
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem)
+    {
+        QWidget* pControlWidget = pLayoutItem->widget();
+        delete pControlWidget;
+    }
+
+    CallbackCollection cbSets;
+    cbSets.cbEditFinished = [=](QVariant newValue) {
+        proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
+    };
+    const QString &dataType = m_ui->cbTypes->itemText(idx);
+    QVariant value = UiHelper::initVariantByControl(ctrl);
+    QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
+    if (valueControl) {
+        valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
+        m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+        VParamItem *pItem = static_cast<VParamItem *>(m_proxyModel->itemFromIndex(layerIdx));
+        switchStackProperties(ctrl, pItem);
+    }
 }
 
 void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
@@ -628,6 +651,17 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         delete pControlWidget;
     }
 
+    CallbackCollection cbSets;
+    cbSets.cbEditFinished = [=](QVariant newValue) {
+        proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
+    };
+    QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    QWidget *valueControl = zenoui::createWidget(pItem->m_value, pItem->m_ctrl, dataType, cbSets, controlProperties);
+    if (valueControl) {
+        valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
+        m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+        switchStackProperties(pItem->m_ctrl, pItem);
+    }
     //update control list
     QStringList items = UiHelper::getControlLists(dataType);
     m_ui->cbControl->clear();
