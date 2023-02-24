@@ -27,14 +27,14 @@ struct PacketHandlerMap {
     }
 
     void tryCall(
-        const ZBTControlPacketType value,
+        const ZBTControlPacketType inPacketType,
         void* inPacket,
         bool& outHasRespond,
         ZBTControlPacketType& outPacketType,
         OutPacketBufferType& outRespondData,
         uint16_t& outDataSize
     ) {
-        auto it = handlerMap.find(value);
+        auto it = handlerMap.find(inPacketType);
         if (it != handlerMap.end()) {
             PacketHandler handler = it->second;
             handler(inPacket, outHasRespond, outPacketType, outRespondData, outDataSize);

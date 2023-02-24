@@ -1,3 +1,5 @@
+option(ZENO_ENABLE_UNREALENGINE "Enable extension for UnrealEngine(Bridge server and hooks)" OFF)
+
 find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
@@ -34,6 +36,10 @@ if (ZENO_MULTIPROCESS)
     if (ZENO_IPC_USE_TCP)
         target_compile_definitions(zenoedit PRIVATE -DZENO_IPC_USE_TCP)
     endif()
+endif()
+
+if (ZENO_ENABLE_UNREALENGINE)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_ENABLE_UNREALENGINE)
 endif()
 
 if (ZENO_INSTALL_TARGET)

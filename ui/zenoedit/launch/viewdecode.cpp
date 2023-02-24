@@ -10,6 +10,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/funcs/ObjectCodec.h>
+#include "unreal/unrealhook.h"
 #include <rapidjson/document.h>
 #include <type_traits>
 #include <iostream>
@@ -75,6 +76,7 @@ struct PacketProc {
                 zeno::log_warn("failed to decode view object");
                 return false;
             }
+            zeno::UnrealHook::fetchViewObject(objKey, object);
             clearGlobalIfNeeded();
             zeno::getSession().globalComm->addViewObject(objKey, object);
 
