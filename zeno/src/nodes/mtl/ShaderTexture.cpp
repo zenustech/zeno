@@ -32,7 +32,14 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
         auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
         //em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
-        em->emitCode(type + "(texture2D(zenotex[" + std::to_string(texId) + "], vec2(" + coord + ")))");
+
+        auto dim = em->determineType(get_input("coord").get()); 
+
+        if (dim == 3) {
+            em->emitCode(type + "(samplingVDB(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
+        } else {
+            em->emitCode(type + "(texture2D(zenotex[" + std::to_string(texId) + "], vec2(" + coord + ")))");
+        }
     }
 };
 

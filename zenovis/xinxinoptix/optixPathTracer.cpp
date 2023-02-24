@@ -109,9 +109,9 @@ int32_t mouse_button = -1;
 //int32_t samples_per_launch = 16;
 
 std::vector<std::shared_ptr<VolumeWrapper>> list_volume;
-std::vector<std::shared_ptr<VolumeAccel>> list_volume_accel;
+std::vector<std::shared_ptr<VolumeAccel>>   list_volume_accel;
 
-std::vector<uint> list_volume_index;
+std::vector<uint> list_volume_index_in_shader_list;
 
 //------------------------------------------------------------------------------
 //
@@ -805,13 +805,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
 
     // process volume
     {  
-        //sbt_offset = g_mtlidlut.size() * RAY_TYPE_COUNT;
-
         for ( uint i=0; i<list_volume.size(); ++i ) {
 
             OptixInstance optix_instance = {};
 
-            sbt_offset = list_volume_index[i] * RAY_TYPE_COUNT;
+            sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
 
             optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
             optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
@@ -1037,9 +1035,9 @@ static void createSBT( PathTracerState& state )
 
     for( int j = 0; j < g_mtlidlut.size(); ++j ) {
 
-        auto key_vdb = OptixUtil::rtMaterialShaders[j].m_vdb;
+        auto has_vdb = OptixUtil::rtMaterialShaders[j].has_vdb;
 
-        if (key_vdb.empty()) {
+        if (!has_vdb) {
 
             sbt_idx = RAY_TYPE_COUNT*j;  // SBT for radiance ray-type for ith material
             hitgroup_records[sbt_idx] = {};
@@ -1081,21 +1079,33 @@ static void createSBT( PathTracerState& state )
             sbt_idx = 2*j; 
             HitGroupRecord rec = {};
 
-            if (OptixUtil::g_vdb.count(key_vdb) == 0) continue;
-            auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
+            if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
+                continue;
+            }
 
-            rec.data.density_grid = reinterpret_cast<void*>( volumeWrapper->grid_density.deviceptr );
-            rec.data.temp_grid = reinterpret_cast<void*>( volumeWrapper->grid_temp.deviceptr );
+            auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
 
-            rec.data.density_max = volumeWrapper->grid_density.max_value;
-            rec.data.temperature_max = volumeWrapper->grid_temp.max_value;
+            //if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
+            //auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
 
             rec.data.opacityHDDA = 0.25f;
-            rec.data.colorVDB = make_float3(1);
-
             rec.data.sigma_a = 1.0f;
             rec.data.sigma_s = 1.0f;
             rec.data.greenstein = 0;
+
+            for(uint t=0; t<min(vdb_list.size(), 8); ++t)
+            {
+                auto vdb_key = vdb_list[t];
+                auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
+
+                rec.data.vdb_grids[t] = vdb_ptr->grids.front().deviceptr;
+                rec.data.vdb_max_v[t] = vdb_ptr->grids.front().max_value;
+            }
+
+             for(int t=0;t<32;t++)
+            {
+                rec.data.textures[t] = OptixUtil::rtMaterialShaders[j].getTexture(t);
+            }
 
             OPTIX_CHECK(optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[j].m_radiance_hit_group, &rec ) );
             hitgroup_records[sbt_idx] = rec;
@@ -1151,10 +1161,10 @@ static void cleanupState( PathTracerState& state )
     }
     list_volume.clear();
 
-    for (auto const& [key, val] : OptixUtil::g_vdb) {
+    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
         cleanupVolume(*val);
     }
-    OptixUtil::g_vdb.clear();
+    OptixUtil::g_vdb_cached_map.clear();
 
         state.d_raygen_record.reset();
         state.d_miss_records.reset();
@@ -1279,9 +1289,9 @@ void updateVolume() {
 
     OptixUtil::logInfoVRAM("Before update Volume");
 
-    for (auto const& [key, val] : OptixUtil::g_vdb) {
+    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
 
-        if (OptixUtil::g_vdb_index.count(key) > 0) {
+        if (OptixUtil::g_vdb_indice_visible.count(key) > 0) {
             // UPLOAD to GPU
             for (auto& task : val->loadTasks) {
                 task();
@@ -1294,7 +1304,7 @@ void updateVolume() {
     OptixUtil::logInfoVRAM("After update Volume");
 
     list_volume.clear();
-    list_volume_index.clear();
+    list_volume_index_in_shader_list.clear();
 
     for (uint i=0; i<list_volume_accel.size(); ++i) {
         auto ele = list_volume_accel[i];
@@ -1304,15 +1314,14 @@ void updateVolume() {
 
     OptixUtil::logInfoVRAM("Before Volume GAS");
 
-    for (auto const& [key, val] : OptixUtil::g_vdb_index)
-    {
-        if(OptixUtil::g_vdb.count(key) == 0) continue;
+    for (auto const& [index, val] : OptixUtil::g_vdb_list_for_each_shader) {
+        auto base_key = val.front();
 
-        list_volume.push_back(OptixUtil::g_vdb[key]);
+        if (OptixUtil::g_vdb_indice_visible.count(base_key) == 0) continue;
 
-        auto index = val;
-        list_volume_index.push_back(index);
-    }
+        list_volume.push_back( OptixUtil::g_vdb_cached_map[base_key] );
+        list_volume_index_in_shader_list.push_back(index);
+   }
 
     for (uint i=0; i<list_volume.size(); ++i) {
         VolumeAccel accel;
@@ -1804,7 +1813,7 @@ void optixupdatelight() {
 }
 
 void optixupdatematerial(std::vector<std::string> const     &shaders, 
-                         std::vector<std::string> const     &markers,
+                         std::vector<bool> const            &markers,
                          std::vector<std::vector<std::string>> &texs) 
 {
     camera_changed = true;
@@ -1825,7 +1834,7 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
         if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
         
-        if (markers[i].empty()) {
+        if (!markers[i]) {
             OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(), 
                                                     "__closesthit__radiance", 
                                                     "__anyhit__shadow_cutout");
@@ -1834,7 +1843,7 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
                                                     "__closesthit__radiance_volume", 
                                                     "__anyhit__occlusion_volume",
                                                     "__intersection__volume");
-            OptixUtil::rtMaterialShaders.back().m_vdb = markers[i];                                        
+            OptixUtil::rtMaterialShaders.back().has_vdb = markers[i];                                        
         }
 
         if(texs.size()>0){

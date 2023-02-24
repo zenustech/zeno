@@ -94,15 +94,13 @@ extern "C" __global__ void __raygen__rg()
 
         float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
-        if(length(ray_direction)==0){
-            printf("%f, %f, %f\n",ray_direction.x, ray_direction.y, ray_direction.z);
-        }
+   
         float3 eye_shake     = r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up); // Camera local space
 
-        //ray_origin           = cam.eye + eye_shake;
-        //ray_direction        = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
+        ray_origin           = cam.eye + eye_shake;
+        ray_direction        = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
 
-        //ray_direction = normalize(ray_direction);
+        ray_direction = normalize(ray_direction);
 
         RadiancePRD prd; 
         prd.emission     = make_float3(0.f);

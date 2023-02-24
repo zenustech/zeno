@@ -70,13 +70,13 @@ struct ShaderFinalize : INode {
             {1,"mat_isCamera"},
             {1,"mat_isVoxelDomain"},
 
-            {1, "BlackbodyTempOffset"},
-            {1, "BlackbodyTempScale"},
-            {1, "BlackbodyIntensity"},
-
             {1, "vol_absorption"},
             {1, "vol_scattering"},
-            {1, "vol_anisotropy"}
+            {1, "vol_anisotropy"},
+
+            {3, "vol_sample_albedo"},
+            {3, "vol_sample_emission"},
+            {1, "vol_sample_density"},
 
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
@@ -122,14 +122,14 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectID", std::make_shared<NumericObject>(float(-1))),
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
-
-            get_input<IObject>("BlackbodyTempOffset", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("BlackbodyTempScale", std::make_shared<NumericObject>(float(1.0))),
-            get_input<IObject>("BlackbodyIntensity", std::make_shared<NumericObject>(float(1.0))),
             
             get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("vol_anisotropy", std::make_shared<NumericObject>(float(0)))
+            get_input<IObject>("vol_anisotropy", std::make_shared<NumericObject>(float(0))),
+
+            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
+            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
         });
         auto commonCode = em.getCommonCode();
 
@@ -156,6 +156,35 @@ struct ShaderFinalize : INode {
 
             auto texCode = "uniform sampler2D zenotex[32]; \n";
             mtl->common.insert(0, texCode);
+        }
+
+        if (has_input("tex3dList"))
+        {
+            auto tex3dList = get_input<ListObject>("tex3dList")->get<zeno::StringObject>();
+
+            for (const auto& ele : tex3dList) {
+
+                auto path = ele->get();
+                auto ud = ele->userData();
+
+                const std::string _key_ = "channel";
+                std::string channel_string = "";
+
+                if (ud.has(_key_)) {
+
+                    if (ud.isa<zeno::StringObject>(_key_)) {
+                        //auto get = ud.get<zeno::StringObject>("channel");
+                        channel_string = ud.get2<std::string>(_key_);
+
+                    } else if (ud.isa<zeno::NumericObject>(_key_)) {
+                        auto channel_number = ud.get2<int>(_key_);
+                        channel_number = max(0, channel_number);
+
+                        channel_string = std::to_string(channel_number);
+                    } 
+                }
+                mtl->tex3Ds.push_back(std::make_pair(path, channel_string)); 
+            }
         }
 
         //if (has_input("mtlid"))
@@ -216,14 +245,15 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
-
-        {"float", "BlackbodyTempOffset", "0"},
-        {"float", "BlackbodyTempScale", "1"},
-        {"float", "BlackbodyIntensity", "1"},
+        {"list", "tex3dList"},
 
         {"float", "vol_absorption", "1"},
         {"float", "vol_scattering", "1"},
-        {"float", "vol_anisotropy", "0"}
+        {"float", "vol_anisotropy", "0"},
+        
+        {"vec3f", "vol_sample_albedo", "1,1,1"},
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"float", "vol_sample_density", "0"},
     },
     {
         {"MaterialObject", "mtl"},

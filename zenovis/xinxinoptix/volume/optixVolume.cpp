@@ -20,8 +20,43 @@
 // Functions for manipulating Volume instances
 // ----------------------------------------------------------------------------
 
-template< class T >
-using decay_t = typename std::decay<T>::type;
+void fetchGridName( const std::string& path, std::string& name) {
+    openvdb::initialize();
+    openvdb::io::File file(path);
+    
+    file.open(); 
+
+    if ( file.hasGrid(name) ) { return; }
+
+    std::cout << "<<< Error: " << path << " >>>" << std::endl;
+    std::cout << "This VDB file doesn't have grid named << " << name << " >>" << std::endl;
+    
+    auto ni = file.beginName();
+    name = ni.gridName();
+
+    std::cout << "Trying to read grid << " << name << " >> instead." << std::endl;
+}
+
+std::string fetchGridName( const std::string& path, const uint index ) {
+    openvdb::initialize();
+    openvdb::io::File file(path);
+    
+    file.open(); 
+
+    const auto grid_count = file.getGrids()->size();
+
+    if (grid_count == 0) {
+        throw std::runtime_error("This VDB file doesn't have any grid");
+    }
+
+    auto ni = file.beginName();
+
+    for (uint i=0; i<index && ni != file.endName(); ++i)
+    {
+        ++ni;//tmp_grids.push_back(file.readGrid(nameIter.gridName()));
+    } 
+    return ni.gridName();
+}
 
 bool loadVolume( VolumeWrapper& volume, const std::string& path )
 {
@@ -36,10 +71,11 @@ bool loadVolume( VolumeWrapper& volume, const std::string& path )
     {
         loadVolumeVDB(volume, path);
     }
-    else if(filePath.extension() == ".nvdb")
-    {
-        loadVolumeNVDB(volume, path);
-    } else {
+    // else if(filePath.extension() == ".nvdb")
+    // {
+    //     //loadVolumeNVDB(volume, path);
+    // } 
+    else {
         std::cout << filePath.filename() << " is unsupported type";
         return false;
     }
@@ -57,13 +93,14 @@ void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path) {
         std::cerr << "        " << m.gridName << std::endl;
     }
 
-    volume.loadTasks.emplace_back([&volume, path, gridName=list[0].gridName] {
-        loadGrid( volume.grid_density, path, gridName );
-    });
+    volume.grids.clear();
+    volume.grids.resize(list.size());
+    
+    volume.loadTasks.clear();
 
-    if (list.size() > 1) {
-        volume.loadTasks.emplace_back([&volume, path, gridName=list[1].gridName] {
-            loadGrid( volume.grid_temp, path, gridName );
+    for (uint i=0; i<list.size(); ++i) {
+        volume.loadTasks.emplace_back([&volume, path, i] {
+            loadGrid( volume.grids[i], path, i);
         });
     }
 }
@@ -74,35 +111,50 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     
     file.open(); 
 
-    openvdb::GridBase::Ptr baseGrid, tempGrid;
+    const bool picking = volume.selected.size() > 0;
 
-    if (file.getGrids()->size()>1) {
-
-        for (openvdb::io::File::NameIterator nameIter = file.beginName();
-        nameIter != file.endName(); ++nameIter)
-        {
-            // Read in only the grid we are interested in.
-            if (nameIter.gridName() == "density") { // temperature
-                baseGrid = file.readGrid(nameIter.gridName());
-            } else if (nameIter.gridName() == "temperature") {
-                tempGrid = file.readGrid(nameIter.gridName());
-            }else {
-                std::cout << "skipping grid " << nameIter.gridName() << std::endl;
-            }
-        }
-
-    } else if(file.getGrids()->size()==1) {
-        auto nameIter = file.beginName();
-        baseGrid = file.readGrid(nameIter.gridName());
-    } else {
+    const auto grid_count = picking?  volume.selected.size():file.getGrids()->size();  
+    if (grid_count == 0) {
         throw std::runtime_error("This VDB file doesn't have any grid");
     }
+
+    std::vector<openvdb::GridBase::Ptr> tmp_grids;
+
+    if (picking) {
+
+        for (uint i=0; i<grid_count; ++i) {
+            auto selected = volume.selected.at(i);
+
+            if (file.hasGrid(selected)) {
+                tmp_grids.push_back(file.readGrid(volume.selected.at(i)));
+            } else {
+
+                std::cout << "<<< Error: " << path << " >>>" << std::endl;
+                std::cout << "This VDB file doesn't have grid named << " << selected << " >>" << std::endl;
+
+                auto nameIter = file.beginName();
+                auto realName = nameIter.gridName();
+                volume.selected[i] = realName;
+
+                std::cout << "Trying to read grid << " << realName << " >> instead." << std::endl;
+
+                tmp_grids.push_back(file.readGrid(realName));
+            } 
+        }
+    } 
+    else {
+        for (auto nameIter = file.beginName(); nameIter != file.endName(); ++nameIter)
+            tmp_grids.push_back(file.readGrid(nameIter.gridName()));
+    }
+
+    assert(tmp_grids.size() != 0);
+    auto& baseGrid = tmp_grids.front();
     
     file.close();
 
-    auto new_matrix = volume.transform;
+    const auto parent_matrix = volume.transform;
 
-    auto old_matrix = [&]() -> glm::f64mat4 {
+    const auto child_matrix = [&]() -> glm::f64mat4 {
 
         auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
         glm::f64mat4 result;
@@ -113,44 +165,92 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
         return result;
     }();
 
-    openvdb::math::Mat4f transformMat = openvdb::math::Mat4f::identity();
-    auto linearTransform = openvdb::math::Transform::createLinearTransform(transformMat);     
+    auto result_matrix = parent_matrix * child_matrix;  
 
-    auto new_transform = //openvdb::math::Transform::Ptr(linearTransform);
-        baseGrid->transform().copy(); //.createLinearTransform();
-
-    new_matrix = new_matrix * old_matrix;
-
-    auto test_mat = new_transform->baseMap()->getAffineMap()->getMat4();
+    auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
+    auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
 
     for (uint i=0; i<16; ++i) {
-        *(test_mat[0]+i) = new_matrix[i/4][i%4];
+        *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
     }
 
-    openvdb::math::Transform::Ptr test_transform = openvdb::math::Transform::createLinearTransform(test_mat);
+    auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
 
-    baseGrid->setTransform(test_transform);
-    if (tempGrid != nullptr) {
-        tempGrid->setTransform(test_transform);
-    }
+    volume.grids.clear();
+    volume.grids.resize(tmp_grids.size());
 
-    auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
+    volume.loadTasks.clear();
 
-        openvdb::FloatGrid::Ptr srcGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid_ptr);
-        result = nanovdb::openToNanoVDB(*srcGrid, nanovdb::StatsMode::All); 
+        auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
+            openvdb::FloatGrid::Ptr srcGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid_ptr);
+            result = nanovdb::openToNanoVDB(*srcGrid, nanovdb::StatsMode::All); 
+        };
+
+    for (uint i=0; i<grid_count; ++i) {
+        auto grid = tmp_grids[i];
+        grid->setTransform(result_transform);
+
+        parsing(grid, volume.grids[i].handle);
+
+        if (picking) {
+            auto name = volume.selected[i];
+            volume.loadTasks.emplace_back([&volume, path, name, i] {
+                loadGrid(volume.grids[i], path, name);
+            });
+        } else {
+            volume.loadTasks.emplace_back([&volume, path, i] {
+                loadGrid(volume.grids[i], path, i);
+            });
+        } // else 
     };
+}
 
-    parsing(baseGrid, volume.grid_density.handle);
-    volume.loadTasks.emplace_back([&volume, path, gridName=baseGrid->getName()] {
-        loadGrid(volume.grid_density, path, gridName);
-    });
+void processGrid(GridWrapper& grid, const std::string& path) 
+{
+    auto& gridHdl = grid.handle;
 
-    if (tempGrid != nullptr) {
-        parsing(tempGrid, volume.grid_temp.handle);
-        volume.loadTasks.emplace_back([&volume, path, gridName=tempGrid->getName()] {
-            loadGrid(volume.grid_temp, path, gridName);
-        });
+    auto* meta = gridHdl.gridMetaData();
+    if( meta->isPointData() )
+        throw std::runtime_error("NanoVDB Point Data cannot be handled by Zeno Optix");
+    if( meta->isLevelSet() )
+        throw std::runtime_error("NanoVDB Level Sets cannot be handled by Zeno Optix");
+
+    if (grid.deviceptr != 0) { return; }
+
+    // auto x = gridHdl.grid<nanovdb::Fp16>();
+    // const nanovdb::Map& map = gridHdl.grid<float>()->map();
+
+    // NanoVDB files represent the sparse data-structure as flat arrays that can be
+    // uploaded to the device "as-is".
+    assert( gridHdl.size() != 0 );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
+
+        auto* tmp_grid = gridHdl.grid<float>(); //.grid<nanovdb::FloatGrid>();
+
+        auto mini = tmp_grid->tree().root().minimum();
+        auto maxi = tmp_grid->tree().root().maximum();
+
+        auto average = tmp_grid->tree().root().average();
+        auto variance = tmp_grid->tree().root().variance();
+        auto deviation = tmp_grid->tree().root().stdDeviation();
+
+        grid.max_value = maxi;
+
+    auto gridname = meta->shortGridName();
+
+    std::cout << "max value is " << maxi << " in " << path << " {" << gridname << "}." << std::endl;
+}
+
+void loadGrid( GridWrapper& grid, const std::string& path, const uint index ) 
+{
+    auto& gridHdl = grid.handle;
+
+    if ( gridHdl.size() == 0 ) {
+        grid.handle = nanovdb::io::readGrid<>( path, index );
     }
+
+    processGrid(grid, path);
 }
 
  void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gridname )
@@ -171,62 +271,22 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
         throw std::runtime_error( ss.str() );
     }
 
-    auto* meta = gridHdl.gridMetaData();
-    if( meta->isPointData() )
-        throw std::runtime_error("NanoVDB Point Data cannot be handled by Zeno Optix");
-    if( meta->isLevelSet() )
-        throw std::runtime_error("NanoVDB Level Sets cannot be handled by Zeno Optix");
-
-    if (grid.deviceptr != 0) { return; }
-
-    // auto x = gridHdl.grid<nanovdb::Fp16>();
-    // const nanovdb::Map& map = gridHdl.grid<float>()->map();
-
-    // NanoVDB files represent the sparse data-structure as flat arrays that can be
-    // uploaded to the device "as-is".
-    assert( gridHdl.size() != 0 );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
-
-        auto* tmp_grid = gridHdl.grid<float>(); //.grid<nanovdb::FloatGrid>();
-        
-        auto vmax = tmp_grid->indexBBox().max();
-        auto vmin = tmp_grid->indexBBox().min();
-        auto accessor = tmp_grid->getAccessor();
-
-        float max_value = 1.0;
-
-        //vsize[0]; vsize[1]; vsize[2];
-        for (int32_t i=vmin[0]; i<vmax[0]; ++i) {
-            for (int32_t j=vmin[1]; j<vmax[1]; ++j) {
-                for (int32_t k=vmin[2]; k<vmax[2]; ++k) {
-                    auto coord = nanovdb::Coord(i, j, k);
-                    auto value = accessor.getValue(coord);
-                    max_value = fmaxf(max_value, value);
-                }
-            }
-        }
-
-        grid.max_value = max_value;
-
-    std::cout << "max value in filename: " << path << " girdname " << gridname << " is " << max_value << std::endl;
+    processGrid(grid, path);
 }
 
 void unloadGrid(GridWrapper& grid) {
     //grid.handle.reset();
-    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( grid.deviceptr ) ) );
+    if (0 != grid.deviceptr) {
+        CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( grid.deviceptr ) ) );
+        grid.deviceptr = 0;
+    }
 }
 
 void cleanupVolume( VolumeWrapper& volume )
 {
     // OptiX cleanup
-    if ( volume.grid_density.deviceptr != 0) {
-	    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_density.deviceptr ) ) );
-        volume.grid_density.deviceptr = 0;
-    }
-    if ( volume.grid_temp.deviceptr != 0) {
-        CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( volume.grid_temp.deviceptr ) ) ); 
-        volume.grid_temp.deviceptr = 0;
+    for (auto& grid : volume.grids) {
+        unloadGrid(grid);
     }
 }
 
@@ -239,7 +299,8 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
 
     {
-        auto grid_handle = volume.grid_density.handle.grid<float>();
+        auto& baseGrid = volume.grids.front();
+        auto grid_handle = baseGrid.handle.grid<float>();
 
 		// get this grid's aabb
         sutil::Aabb aabb;
@@ -345,7 +406,9 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 {
     // Extract the index-to-world-space affine transform from the Grid and convert
     // to 3x4 row-major matrix for Optix.
-	auto* grid_handle = volume.grid_density.handle.grid<float>();
+    auto& baseGrid = volume.grids.front();
+
+	auto* grid_handle = baseGrid.handle.grid<float>();
 	const nanovdb::Map& map = grid_handle->map();
 	transform[0] = map.mMatF[0]; transform[1] = map.mMatF[1]; transform[2]  = map.mMatF[2]; transform[3]  = map.mVecF[0];
 	transform[4] = map.mMatF[3]; transform[5] = map.mMatF[4]; transform[6]  = map.mMatF[5]; transform[7]  = map.mVecF[1];
@@ -354,7 +417,8 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 
 sutil::Aabb worldAabb( const VolumeWrapper& volume )
 {
-	auto* meta = volume.grid_density.handle.gridMetaData();
+    auto& baseGrid = volume.grids.front();
+	auto* meta = baseGrid.handle.gridMetaData();
 
 	auto bbox = meta->worldBBox();
 	float3 min = { static_cast<float>( bbox.min()[0] ),

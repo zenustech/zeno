@@ -25,18 +25,22 @@ struct GridWrapper {
 
 struct VolumeWrapper
 {
-	GridWrapper grid_density;
-	GridWrapper grid_temp;
-
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
 	glm::f64mat4 transform; 
+	std::vector<std::string> selected;
 
+	std::vector<GridWrapper> grids;
 	std::vector<std::function<void()>> loadTasks;
 };
 
 bool loadVolume( VolumeWrapper& volume, const std::string& path );
 void loadVolumeVDB( VolumeWrapper& volume, const std::string& path);
 void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path);
+
+void fetchGridName( const std::string& path, std::string& name);
+std::string fetchGridName( const std::string& path, const uint index );
+
+void loadGrid( GridWrapper& grid, const std::string& path, const uint index );
 void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gridname );
 
 void unloadGrid(GridWrapper& grid);

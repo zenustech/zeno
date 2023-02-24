@@ -641,6 +641,12 @@ struct GraphicPrimitive : IGraphic {
     {
       load_texture2Ds(prim->mtl->tex2Ds);
     }
+
+    if ((prim->mtl != nullptr) && !prim->mtl->tex3Ds.empty())
+    {
+        std::cout << "Trying to load tex3Ds placeholder"<< std::endl;
+    }
+
     //load_textures(path);
     prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
   }

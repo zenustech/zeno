@@ -404,32 +404,62 @@ inline void logInfoVRAM(std::string info) {
         used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 }
 
-inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb;
-inline std::map<std::string, uint> g_vdb_index;
+inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb_cached_map;
+inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
-inline void preloadVDB(std::string& path, uint index, glm::f64mat4& transform) 
+inline std::map<uint, std::vector<std::string> > g_vdb_list_for_each_shader;
+
+inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel, 
+                       uint index_of_shader, uint index_inside_shader,
+                       const glm::f64mat4& transform, 
+                       std::string& combined_key)
 {
+    auto path = path_channel.first;
+    auto channel = path_channel.second;
+
+        auto isNumber = [] (const std::string& s)
+        {
+            for (char const &ch : s) {
+                if (std::isdigit(ch) == 0)
+                    return false;
+            }
+            return true;
+        };
+
+    if ( isNumber(channel) ) {
+        auto channel_index = (uint)std::stoi(channel);
+        channel = fetchGridName(path, channel_index);
+    } else {
+        fetchGridName(path, channel);
+    }
+
+    const auto vdb_key = path + "{" + channel + "}";
+    combined_key = vdb_key;
+
     zeno::log_debug("loading VDB :{}", path);
 
-    if (g_vdb.count(path)) {
+    if (g_vdb_cached_map.count(vdb_key)) {
 
-        if ((g_vdb[path]->transform) == transform) {
-            g_vdb_index[path] = index;
-            return;
+        if ((g_vdb_cached_map[vdb_key]->transform) == transform) {
+            g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
+            return true;
         } else {
-            cleanupVolume(*g_vdb[path]);
+            cleanupVolume(*g_vdb_cached_map[vdb_key]);
         }
     }
 
     auto volume_ptr = std::make_shared<VolumeWrapper>();
     volume_ptr->transform = transform;
+    volume_ptr->selected = {channel};
     
     auto succ = loadVolume(*volume_ptr, path); 
     
-    if (!succ) {return;}
+    if (!succ) {return false;}
 
-    g_vdb[path] = volume_ptr;
-    g_vdb_index[path] = index;
+    g_vdb_cached_map[vdb_key] = volume_ptr;
+    g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
+
+    return true;
 }
 
 #include <stb_image.h>
@@ -509,8 +539,10 @@ struct rtMatShader
     std::string                          m_hittingEntry              ;
     std::string                          m_shadingEntry              ;
     std::string                          m_occlusionEntry            ;
-    std::string                          m_vdb                       ;
     std::map<int, std::string>           m_texs;
+
+    bool                                 has_vdb;
+
     void clearTextureRecords()
     {
         m_texs.clear();

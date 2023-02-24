@@ -113,16 +113,11 @@ struct HitGroupData
     float4* uniforms;
     cudaTextureObject_t textures[32];
 
+    unsigned long long vdb_grids[8];
+    float vdb_max_v[8];
+
     // cihou nanovdb
     float opacityHDDA;
-
-    void* density_grid; 
-    void* temp_grid; 
-    
-    float density_max;
-    float temperature_max;
-
-    float3 colorVDB;
 
     float sigma_a, sigma_s;
     float greenstein; // -1 ~ 1
