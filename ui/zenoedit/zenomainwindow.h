@@ -96,7 +96,7 @@ public:
         ACTION_SHOW_GRID,
         ACTION_BACKGROUND_COLOR,
         ACTION_SOLID,
-        ACTION_SHADONG,
+        ACTION_SHADING,
         ACTION_OPTIX,
         //View EnvTex
         ACTION_BLACK_WHITE,

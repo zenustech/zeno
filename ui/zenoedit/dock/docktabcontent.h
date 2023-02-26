@@ -8,6 +8,7 @@
 class ZIconToolButton;
 class ZenoGraphsEditor;
 class ZTextLabel;
+class DisplayWidget;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -80,11 +81,30 @@ private:
     QComboBox* cbZoom;
 };
 
-class DockContent_View : public QWidget
+class DockContent_View : public DockToolbarWidget
 {
     Q_OBJECT
 public:
     explicit DockContent_View(QWidget* parent = nullptr);
+    void onCommandDispatched(QAction* pAction, bool bTriggered);
+    DisplayWidget* getDisplayWid() const;
+
+protected:
+    void initToolbar(QHBoxLayout* pToolLayout) override;
+    QWidget *initWidget() override;
+    void initConnections() override;
+
+private:
+    DisplayWidget* m_pDisplay;
+    ZToolBarButton* m_smooth_shading;
+    ZToolBarButton* m_normal_check;
+    ZToolBarButton* m_wire_frame;
+    ZToolBarButton *m_show_grid;
+    ZToolBarButton *m_background_clr;
+    ZToolBarButton *m_solid;
+    ZToolBarButton *m_shading;
+    ZToolBarButton *m_optix;
+    QComboBox* m_cbRenderWay;
 };
 
 class DockContent_Log : public DockToolbarWidget

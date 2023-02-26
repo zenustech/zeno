@@ -38,17 +38,12 @@ public:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
-    void onRunFinished();
     void newFrameUpdate();
     void testCleanupGL();
 
     static PANEL_TYPE title2Type(const QString &title);
 
 public slots:
-    /*timeline*/
-    void onRun();
-    void onRecord();
-    void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();

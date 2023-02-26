@@ -151,7 +151,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
 {
     QAction* pAction = qobject_cast<QAction*>(sender());
     int actionType = pAction->property("ActionType").toInt();
-    if (actionType == ACTION_SHADONG || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
+    if (actionType == ACTION_SHADING || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
     {
         setActionIcon(m_ui->actionShading);
         setActionIcon(m_ui->actionSolid);
@@ -561,29 +561,25 @@ void ZenoMainWindow::initTimelineDock()
     });
 
     connect(m_pTimeline, &ZTimeline::run, this, [=]() {
-        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget *pDock : docks)
-            pDock->onRun();
+        auto pDisplay = this->getDisplayWidget();
+        pDisplay->onRun();
     });
 
     connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
-        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget *pDock : docks)
-            pDock->onKill();
+        auto pDisplay = this->getDisplayWidget();
+        pDisplay->onKill();
     });
 
     connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
-        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget *pDock : docks)
-            pDock->onRun();
+        auto pDisplay = this->getDisplayWidget();
+        pDisplay->onRun();
     });
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         if (m_pTimeline->isAlways()) {
-            auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-            for (ZTabDockWidget *pDock : docks)
-                pDock->onRun();
+            auto pDisplay = this->getDisplayWidget();
+            pDisplay->onKill();
         }
     });
 }
@@ -704,7 +700,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onRunFinished();
+        dock->onFinished();
     }
 }
 
@@ -1048,7 +1044,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionShow_Grid->setProperty("ActionType", ACTION_SHOW_GRID);
     m_ui->actionBackground_Color->setProperty("ActionType", ACTION_BACKGROUND_COLOR);
     m_ui->actionSolid->setProperty("ActionType", ACTION_SOLID);
-    m_ui->actionShading->setProperty("ActionType", ACTION_SHADONG);
+    m_ui->actionShading->setProperty("ActionType", ACTION_SHADING);
     m_ui->actionOptix->setProperty("ActionType", ACTION_OPTIX);
     m_ui->actionBlackWhite->setProperty("ActionType", ACTION_BLACK_WHITE);
     m_ui->actionCreek->setProperty("ActionType", ACTION_GREEK);
