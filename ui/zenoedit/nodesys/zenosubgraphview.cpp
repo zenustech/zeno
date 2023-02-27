@@ -609,6 +609,8 @@ void LayerPathWidget::onPathItemClicked()
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
     : QWidget(parent)
+    , m_prop(nullptr)
+    , m_floatPanelShow(false)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setSpacing(0);
@@ -672,4 +674,49 @@ void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
 void ZenoSubGraphView::focusOn(const QString& nodeId)
 {
     m_view->focusOn(nodeId, QPointF(), false);
+}
+
+void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
+    if (m_floatPanelShow) {
+        if (m_prop == nullptr || nodes[0] != m_lastSelectedNode) {
+            if (m_prop == nullptr) {
+                m_prop = new DockContent_Parameter(this);
+                m_prop->initUI();
+                m_prop->resize(this->width() * 0.2, this->height() * 0.5);
+                m_prop->setMinimumWidth(300);
+                m_prop->setMinimumHeight(400);
+            }
+            m_prop->show();
+            m_prop->onNodesSelected(subgIdx, nodes, true);
+
+            m_lastSelectedNode = nodes[0];
+        } else {
+            m_floatPanelShow = !m_prop->isVisible();
+            m_prop->setVisible(!m_prop->isVisible());
+        }
+        m_prop->move(this->width() - m_prop->width(), 0);
+    }
+}
+
+void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_P) {
+        ZenoSubGraphScene *s = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
+        if (s->selectNodesIndice().size() == 1)
+        {
+            m_floatPanelShow = true;
+            showFloatPanel(s->subGraphIndex(), s->selectNodesIndice());
+        } else if (s->selectNodesIndice().size() == 0 && m_prop->isVisible())
+        {
+            m_prop->hide();
+            m_floatPanelShow = false;
+        }
+    }
+    QWidget::keyPressEvent(event);
+}
+
+void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
+    if (m_prop != nullptr && m_prop->isVisible()) {
+        m_prop->move(this->width() - m_prop->width(), 0);
+    }
+    QWidget::resizeEvent(event);
 }
