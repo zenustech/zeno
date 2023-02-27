@@ -181,7 +181,7 @@ static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     }, /* outputs: */ {
     "data",
     }, /* params: */ {
-    {"enum float float3 int int3 points", "type", "float"},
+    {"enum float float3 int int3 points", "type", ""},
     }, /* category: */ {
     "openvdb",
     }});

@@ -584,17 +584,18 @@ namespace DisneyBSDF{
             bool is_inside,
             vec3 T,
             vec3 B,
-            vec3 N
+            vec3 N,
+            bool& isTrans
 
             )
     {
         if(wo.z == 0.0f){
-//            fPdf = 0.0f;
-//            rPdf = 0.0f;
-//            reflectance = vec3(0.0f);
-//            wi = vec3(0.0f);
-//            return false;
-            wo.z = 1e-5;
+            fPdf = 0.0f;
+            rPdf = 0.0f;
+            reflectance = vec3(0.0f);
+            wi = vec3(0.0f);
+            return false;
+//            wo.z = 1e-5;
         }
         float rscaled = thin ? BRDFBasics::ThinTransmissionRoughness(ior,  roughness) : roughness;
 
@@ -646,10 +647,12 @@ namespace DisneyBSDF{
             }else{
                 if( Transmit(wm, wo,relativeIOR, wi)){
                     flag = transmissionEvent;
+                    isTrans = true;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(transmittanceColor, scatterDistance);
                 }else{
                     flag = scatterEvent;
+                    isTrans = true;
                     wi = normalize(reflect(-wo,wm));
                 }
                 reflectance = G1v * vec3(1.0f);    
@@ -661,18 +664,18 @@ namespace DisneyBSDF{
         }
 
         if(wi.z == 0.0f){
-//            fPdf = 0.0f;
-//            rPdf = 0.0f;
-//            reflectance = vec3(0.0f);
-//            wi = vec3(0.0f);
-//            return false;
-            if(rnd(seed)>0.5)
-            {
-                wi.z = 1e-5;
-            } else
-            {
-                wi.z = - (1e-5);
-            }
+            fPdf = 0.0f;
+            rPdf = 0.0f;
+            reflectance = vec3(0.0f);
+            wi = vec3(0.0f);
+            return false;
+//            if(rnd(seed)>0.5)
+//            {
+//                wi.z = 1e-5;
+//            } else
+//            {
+//                wi.z = - (1e-5);
+//            }
         }
 
         //if(roughness < 0.01f){
@@ -728,12 +731,12 @@ namespace DisneyBSDF{
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
         if(NoL==0.0f ){
-//            fPdf = 0.0f;
-//            rPdf = 0.0f;
-//            reflectance = vec3(0.0f);
-//            wi = vec3(0.0f);
-//            return false;
-            wi.z = 1e-5;
+            fPdf = 0.0f;
+            rPdf = 0.0f;
+            reflectance = vec3(0.0f);
+            wi = vec3(0.0f);
+            return false;
+            //wi.z = 1e-5;
         }
 
         float NoV = wo.z;
@@ -888,7 +891,8 @@ namespace DisneyBSDF{
         int& phaseFuncion,
         vec3& extinction,
         bool& isDiff,
-        bool& isSS
+        bool& isSS,
+        bool& isTrans
             )
     {
         rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926);
@@ -926,7 +930,7 @@ namespace DisneyBSDF{
             pLobe = pClearcoat;
             isDiff = true;
         }else if(pSpecTrans > 0.001f && p <= (pSpecular + pClearcoat + pSpecTrans)){
-            success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N);
+            success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N, isTrans);
             pLobe = pSpecTrans;
         }else {
             isDiff = true;
