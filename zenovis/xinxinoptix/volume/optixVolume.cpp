@@ -37,7 +37,7 @@ void fetchGridName( const std::string& path, std::string& name) {
     std::cout << "Trying to read grid << " << name << " >> instead." << std::endl;
 }
 
-std::string fetchGridName( const std::string& path, const uint index ) {
+std::string fetchGridName( const std::string& path, uint index ) {
     openvdb::initialize();
     openvdb::io::File file(path);
     
@@ -47,6 +47,14 @@ std::string fetchGridName( const std::string& path, const uint index ) {
 
     if (grid_count == 0) {
         throw std::runtime_error("This VDB file doesn't have any grid");
+    }
+
+    if (index >= grid_count) {
+        std::cout << "<<< Error: " << path << " >>>" << std::endl;
+
+        std::cout << "This VDB file doesn't have grid at index " << index << std::endl;
+        std::cout << "Trying to read grid at index 0" << std::endl; 
+        index = 0;
     }
 
     auto ni = file.beginName();

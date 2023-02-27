@@ -168,7 +168,7 @@ struct ShaderFinalize : INode {
                 auto ud = ele->userData();
 
                 const std::string _key_ = "channel";
-                std::string channel_string = "";
+                std::string channel_string = "0";
 
                 if (ud.has(_key_)) {
 

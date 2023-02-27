@@ -38,7 +38,7 @@ void loadVolumeVDB( VolumeWrapper& volume, const std::string& path);
 void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path);
 
 void fetchGridName( const std::string& path, std::string& name);
-std::string fetchGridName( const std::string& path, const uint index );
+std::string fetchGridName( const std::string& path, uint index );
 
 void loadGrid( GridWrapper& grid, const std::string& path, const uint index );
 void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gridname );

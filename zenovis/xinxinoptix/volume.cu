@@ -413,13 +413,11 @@ extern "C" __global__ void __closesthit__radiance_volume()
     prd->direction = ray_dir;
     
     prd->emission = emitting;
-    prd->radiance = vec3(0.0f);
 
     if (v_density == 0) {
         prd->CH = 0.0;
         //prd->depth += 0;
         prd->radiance = vec3(0); 
-        prd->radiance = prd->emission;
         return;
     }
 
@@ -521,8 +519,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     //                                    10, // be careful
     //                                    .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
     // }
-
-    prd->radiance = vec3(0.0);
 
     prd->CH = 1.0;
     prd->depth += 1;
