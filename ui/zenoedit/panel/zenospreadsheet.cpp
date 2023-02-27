@@ -68,17 +68,20 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMainLayout->addWidget(pStatusBar);
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
+    ZERROR_EXIT(pWin);
     DisplayWidget* pWid = pWin->getDisplayWidget();
     ZASSERT_EXIT(pWid);
     ViewportWidget *pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
+    ZERROR_EXIT(pViewport);
     auto zenovis = pViewport->getZenoVis();
-    ZASSERT_EXIT(zenovis);
+    ZERROR_EXIT(zenovis);
 
-    connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
+    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
+        auto sess = zenovis->getSession();
+        ZERROR_EXIT(sess);
         auto scene = zenovis->getSession()->get_scene();
+        ZERROR_EXIT(scene);
         for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
             if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
                 setPrim(key);

@@ -107,7 +107,7 @@ QVector<DisplayWidget*> ZTabDockWidget::viewports() const
     QVector<DisplayWidget*> views;
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
-        QWidget* wid = m_tabWidget->widget(0);
+        QWidget* wid = m_tabWidget->widget(i);
         if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
         {
             views.append(pView->getDisplayWid());
