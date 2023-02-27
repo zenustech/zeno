@@ -16,6 +16,7 @@
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenomodel/include/uihelper.h>
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -417,7 +418,19 @@ void ZTabDockWidget::onFloatTriggered()
         setParent(nullptr);
         m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint |
                         Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
+
+        QString filePath;
+        auto pCurrentGraph = zenoApp->graphsManagment()->currentModel();
+        if (pCurrentGraph)
+        {
+            filePath = pCurrentGraph->filePath();
+        }
+        QString winTitle = UiHelper::nativeWindowTitle(filePath);
+        auto mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            mainWin->updateNativeWinTitle(winTitle);
         setWindowIcon(QIcon(":/icons/zeno-logo.png"));
+
         setWindowFlags(m_newFlags);
         show();
     }

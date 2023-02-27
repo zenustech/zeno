@@ -98,27 +98,36 @@ void ZenoMainWindow::initWindowProperty()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
     setWindowIcon(QIcon(":/icons/zeno-logo.png"));
-    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
+    setWindowTitle(UiHelper::nativeWindowTitle(""));
     connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
         QString path = info.filePath();
-        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)")
-                            .arg(path)
-                            .arg(QString::fromStdString(getZenoVersion()));
-        setWindowTitle(title);
+        QString title = UiHelper::nativeWindowTitle(path);
+        updateNativeWinTitle(title);
     });
     connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() { 
-        QString title =
-            QString::fromUtf8("Zeno Editor (%2)").arg(QString::fromStdString(getZenoVersion()));
-        setWindowTitle(title);
+        QString title = UiHelper::nativeWindowTitle("");
+        updateNativeWinTitle(title);
     });
     connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
         QFileInfo info(fn);
         QString path = info.filePath();
-        QString title =
-            QString::fromUtf8("%1 - Zeno Editor (%2)").arg(path).arg(QString::fromStdString(getZenoVersion()));
-        setWindowTitle(title);
+        QString title = UiHelper::nativeWindowTitle(path);
+        updateNativeWinTitle(title);
     });
+}
+
+void ZenoMainWindow::updateNativeWinTitle(const QString& title)
+{
+    QWidgetList lst = QApplication::topLevelWidgets();
+    for (auto wid : lst)
+    {
+        if (qobject_cast<ZTabDockWidget*>(wid) ||
+            qobject_cast<ZenoMainWindow*>(wid))
+        {
+            wid->setWindowTitle(title);
+        }
+    }
 }
 
 void ZenoMainWindow::initLive() {

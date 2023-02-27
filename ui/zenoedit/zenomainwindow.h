@@ -151,6 +151,7 @@ public slots:
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
     void onRunTriggered();
+    void updateNativeWinTitle(const QString& title);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
