@@ -549,41 +549,35 @@ void ZenoMainWindow::initTimelineDock()
     setCentralWidget(m_pTimeline);
 
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
-        auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget* pDock : docks)
-            pDock->onPlayClicked(bPlaying);
+        QVector<DisplayWidget*> views = viewports();
+        for (DisplayWidget* view : views) {
+            view->onPlayClicked(bPlaying);
+        }
     });
 
     connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
-        auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget* pDock : docks)
-            pDock->onSliderValueChanged(frame);
+        QVector<DisplayWidget*> views = viewports();
+        for (DisplayWidget* view : views) {
+            view->onSliderValueChanged(frame);
+        }
     });
 
     connect(m_pTimeline, &ZTimeline::run, this, [=]() {
-        auto pDisplay = this->getDisplayWidget();
-        if (pDisplay)
-            pDisplay->onRun();
+        onRunTriggered();
     });
 
     connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
-        auto pDisplay = this->getDisplayWidget();
-        if (pDisplay)
-            pDisplay->onKill();
+        killProgram();
     });
 
     connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
-        auto pDisplay = this->getDisplayWidget();
-        if (pDisplay)
-            pDisplay->onRun();
+        onRunTriggered();
     });
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         if (m_pTimeline->isAlways()) {
-            auto pDisplay = this->getDisplayWidget();
-            if (pDisplay)
-                pDisplay->onKill();
+            killProgram();
         }
     });
 }
@@ -606,6 +600,56 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+QVector<DisplayWidget*> ZenoMainWindow::viewports() const
+{
+    QVector<DisplayWidget*> views;
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
+    {
+        views.append(pDock->viewports());
+    }
+
+    //top level floating windows.
+    QWidgetList lst = QApplication::topLevelWidgets();
+    for (auto wid : lst)
+    {
+        if (ZTabDockWidget* pFloatWin = qobject_cast<ZTabDockWidget*>(wid))
+        {
+            views.append(pFloatWin->viewports());
+        }
+    }
+    return views;
+}
+
+void ZenoMainWindow::onRunTriggered()
+{
+    QVector<DisplayWidget*> views = viewports();
+
+    clearErrorMark();
+
+    for (auto view : views)
+    {
+        view->beforeRun();
+    }
+
+    ZASSERT_EXIT(m_pTimeline);
+    QPair<int, int> fromTo = m_pTimeline->fromTo();
+    int beginFrame = fromTo.first;
+    int endFrame = fromTo.second;
+    if (endFrame >= beginFrame && beginFrame >= 0)
+    {
+        auto pGraphsMgr = zenoApp->graphsManagment();
+        IGraphsModel* pModel = pGraphsMgr->currentModel();
+        if (!pModel)
+            return;
+        launchProgram(pModel, beginFrame, endFrame);
+    }
+
+    for (auto view : views)
+    {
+        view->afterRun();
+    }
+}
 
 void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
 {
@@ -665,10 +709,10 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
 
 void ZenoMainWindow::updateViewport(const QString& action)
 {
-    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (auto dock : docks2)
+    QVector<DisplayWidget*> views = viewports();
+    for (DisplayWidget* view : views)
     {
-        dock->onUpdateViewport(action);
+        view->updateFrame(action);
     }
 }
 
@@ -686,18 +730,8 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
 
 DisplayWidget* ZenoMainWindow::getDisplayWidget()
 {
-    DisplayWidget* pViewport = nullptr;
-    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZTabDockWidget* pDock : docks)
-    {
-        if (!pViewport)
-        {
-            pViewport = pDock->getUniqueViewport();
-            if (pViewport)
-                break;
-        }
-    }
-    return pViewport;
+    QVector<DisplayWidget*> views = viewports();
+    return !views.isEmpty() ? views[0] : nullptr;
 }
 
 void ZenoMainWindow::onRunFinished()

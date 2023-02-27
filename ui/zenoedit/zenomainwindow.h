@@ -150,6 +150,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
+    void onRunTriggered();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -178,6 +179,7 @@ private:
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
     void loadRecentFiles();
+    QVector<DisplayWidget*> viewports() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

@@ -33,6 +33,7 @@ public:
     QWidget* widget(int i) const;
     QWidget* widget() const;
     DisplayWidget* getUniqueViewport() const;
+    QVector<DisplayWidget*> viewports() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);

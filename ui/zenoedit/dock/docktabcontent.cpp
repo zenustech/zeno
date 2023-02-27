@@ -329,8 +329,14 @@ DockContent_View::DockContent_View(QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
     , m_cbRenderWay(nullptr)
+    , m_smooth_shading(nullptr)
+    , m_normal_check(nullptr)
+    , m_wire_frame(nullptr)
+    , m_show_grid(nullptr)
+    , m_background_clr(nullptr)
+    , m_recordVideo(nullptr)
+    , m_screenshoot(nullptr)
 {
-
 }
 
 void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
@@ -353,6 +359,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     m_recordVideo = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
     m_recordVideo->setToolTip(tr("Record Video"));
+
+    m_screenshoot = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_screenshoot->setToolTip(tr("Screenshoot"));
 
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
@@ -381,6 +390,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_cbRenderWay);
     pToolLayout->addWidget(m_background_clr);
     pToolLayout->addWidget(m_recordVideo);
+    pToolLayout->addWidget(m_screenshoot);
     pToolLayout->addStretch();
 }
 
@@ -408,12 +418,16 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHOW_GRID, bToggled);
     });
 
-    connect(m_background_clr, &ZToolBarButton::toggled, this, [=](bool bToggled) {
-        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, bToggled);
+    connect(m_background_clr, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, true);
     });
 
     connect(m_recordVideo, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_RECORD_VIDEO, true);
+    });
+
+    connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
 }
 

@@ -101,14 +101,28 @@ void ZTabDockWidget::testCleanupGL()
     }
 }
 
+QVector<DisplayWidget*> ZTabDockWidget::viewports() const
+{
+    QVector<DisplayWidget*> views;
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
+        {
+            views.append(pView->getDisplayWid());
+        }
+    }
+    return views;
+}
+
 DisplayWidget* ZTabDockWidget::getUniqueViewport() const
 {
     if (1 == count())
     {
         QWidget* wid = m_tabWidget->widget(0);
-        if (DockContent_View* pEditor = qobject_cast<DockContent_View*>(wid))
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
         {
-            return pEditor->getDisplayWid();
+            return pView->getDisplayWid();
         }
     }
     else {

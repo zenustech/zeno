@@ -137,11 +137,14 @@ public:
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
     void testCleanUp();
+    void beforeRun();
+    void afterRun();
 
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
     void onRecord();
+    void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);

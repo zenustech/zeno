@@ -943,6 +943,10 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
     {
         onRecord();
     }
+    else if (actionType == ZenoMainWindow::ACTION_SCREEN_SHOOT)
+    {
+        onScreenShoot();
+    }
     else if (actionType == ZenoMainWindow::ACTION_BLACK_WHITE 
         || actionType == ZenoMainWindow::ACTION_GREEK
         || actionType == ZenoMainWindow::ACTION_DAY_LIGHT 
@@ -1008,6 +1012,19 @@ void DisplayWidget::onSliderValueChanged(int frame)
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonToggle(false);
     }
+}
+
+void DisplayWidget::beforeRun()
+{
+    m_view->clearTransformer();
+    m_view->getSession()->get_scene()->selected.clear();
+}
+
+void DisplayWidget::afterRun()
+{
+    m_view->updateLightOnce = true;
+    auto scene = m_view->getSession()->get_scene();
+    scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::onRun()
@@ -1102,6 +1119,19 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent* event) {
     _base::keyReleaseEvent(event);
+}
+
+void DisplayWidget::onScreenShoot()
+{
+    QString path = QFileDialog::getSaveFileName(
+        nullptr, tr("Path to Save"), "",
+        tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
+    QString ext = QFileInfo(path).suffix();
+    if (!path.isEmpty())
+    {
+        ZASSERT_EXIT(m_view);
+        m_view->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+    }
 }
 
 void DisplayWidget::onRecord()

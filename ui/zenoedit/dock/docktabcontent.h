@@ -102,6 +102,7 @@ private:
     ZToolBarButton* m_show_grid;
     ZToolBarButton* m_background_clr;
     ZToolBarButton* m_recordVideo;
+    ZToolBarButton* m_screenshoot;
     QComboBox* m_cbRenderWay;
 };
 
