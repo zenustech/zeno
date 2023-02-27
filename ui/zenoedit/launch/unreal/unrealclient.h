@@ -85,8 +85,14 @@ struct QtSocketHelper {
             return false;
         }
 
-        // ensure data to be sent are big endian
-        ZBTPacketHeader littleHeader = qToLittleEndian(header);
+        // ensure data to be sent are little endian
+        ZBTPacketHeader littleHeader {
+            qToLittleEndian(header.index),
+            qToLittleEndian(header.length),
+            qToLittleEndian(header.type),
+            qToLittleEndian(header.marker),
+        };
+        // TODO: fix up non-integer swap
         T* littleData = static_cast<T*>(qMallocAligned(header.length, 8));
         qToLittleEndian<T>(data, header.length, littleData);
 
@@ -108,6 +114,8 @@ struct QtSocketHelper {
 
     /**
      * Write wrapped data to target socket
+     * It's impossible to swap data's byteorder with out typeinfo.
+     * You have to wrapper it on your own.
      * @param target input socket
      * @param header packet header
      * @param data data to send
@@ -117,11 +125,25 @@ struct QtSocketHelper {
             return false;
         }
 
-        target->write(reinterpret_cast<const char *>(&header), sizeof(ZBTPacketHeader));
+        // ensure data to be sent are little endian
+        ZBTPacketHeader littleHeader {
+            qToLittleEndian(header.index),
+            qToLittleEndian(header.length),
+            qToLittleEndian(header.type),
+            qToLittleEndian(header.marker),
+        };
+
+        target->write(reinterpret_cast<const char *>(&littleHeader), sizeof(ZBTPacketHeader));
         if (header.length != 0) {
             target->write(reinterpret_cast<const char *>(data), header.length);
         }
-        target->write(reinterpret_cast<const char *>(g_packetSplit.data()), g_packetSplit.size());
+#if Q_BYTE_ORDER == Q_BIG_ENDIAN
+        decltype(g_packetSplit) packetSplit {};
+        std::reverse_copy(g_packetSplit.begin(), g_packetSplit.end(), packetSplit.begin());
+#else // Q_LITTLE_ENDIAN
+        decltype(g_packetSplit)& packetSplit = g_packetSplit;
+#endif // Q_BYTE_ORDER
+        target->write(reinterpret_cast<const char *>(packetSplit.data()), packetSplit.size());
 
         return true;
     }

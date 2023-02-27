@@ -8,6 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <cstring>
+#include "byteorder.h"
 #include "networktypes.h"
 
 template <size_t Size>
@@ -73,13 +74,25 @@ struct ByteBuffer {
         if (0 == m_cursor) return -1;
 
         const auto bufEndIter = m_buf.begin() + m_cursor + 1;
-        const auto itPacketStart = std::search(
-            m_buf.begin(), bufEndIter,
-            g_packetStart.begin(), g_packetStart.end()
-        );
 
-        if (itPacketStart != bufEndIter) {
-            return std::distance(m_buf.begin(), itPacketStart);
+        if (zeno::byteorder::is_big_endian()) {
+            const auto itPacketStart = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetStart.rbegin(), g_packetStart.rend()
+            );
+
+            if (itPacketStart != bufEndIter) {
+                return std::distance(m_buf.begin(), itPacketStart);
+            }
+        } else {
+            const auto itPacketStart = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetStart.begin(), g_packetStart.end()
+            );
+
+            if (itPacketStart != bufEndIter) {
+                return std::distance(m_buf.begin(), itPacketStart);
+            }
         }
 
         return -1;
@@ -89,13 +102,25 @@ struct ByteBuffer {
         if (0 == m_cursor) return -1;
 
         const auto bufEndIter = m_buf.begin() + m_cursor + 1;
-        const auto itPacketEnd = std::search(
-            m_buf.begin(), bufEndIter,
-            g_packetSplit.begin(), g_packetSplit.end()
-        );
 
-        if (itPacketEnd != bufEndIter) {
-            return std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+        if (zeno::byteorder::is_big_endian()) {
+            const auto itPacketEnd = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetSplit.rbegin(), g_packetSplit.rend()
+            );
+
+            if (itPacketEnd != bufEndIter) {
+                return std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+            }
+        } else {
+            const auto itPacketEnd = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetSplit.begin(), g_packetSplit.end()
+            );
+
+            if (itPacketEnd != bufEndIter) {
+                return std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+            }
         }
 
         return -1;
@@ -105,19 +130,37 @@ struct ByteBuffer {
         if (0 == m_cursor) return -1;
 
         const auto bufEndIter = m_buf.begin() + m_cursor + 1;
-        const auto itPacketStart = std::search(
-            m_buf.begin(), bufEndIter,
-            g_packetStart.begin(), g_packetStart.end()
-        );
-        const auto itPacketEnd = std::search(
-            m_buf.begin(), bufEndIter,
-            g_packetSplit.begin(), g_packetSplit.end()
-        );
 
-        if (itPacketEnd != bufEndIter && itPacketStart != bufEndIter) {
-            const uint16_t startIndex = std::distance(m_buf.begin(), itPacketStart);
-            const int16_t endIndex = std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
-            return endIndex - startIndex;
+        if (zeno::byteorder::is_big_endian()) {
+            const auto itPacketStart = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetStart.rbegin(), g_packetStart.rend()
+            );
+            const auto itPacketEnd = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetSplit.rbegin(), g_packetSplit.rend()
+            );
+
+            if (itPacketEnd != bufEndIter && itPacketStart != bufEndIter) {
+                const uint16_t startIndex = std::distance(m_buf.begin(), itPacketStart);
+                const int16_t endIndex = std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+                return endIndex - startIndex;
+            }
+        } else {
+            const auto itPacketStart = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetStart.begin(), g_packetStart.end()
+            );
+            const auto itPacketEnd = std::search(
+                m_buf.begin(), bufEndIter,
+                g_packetSplit.begin(), g_packetSplit.end()
+            );
+
+            if (itPacketEnd != bufEndIter && itPacketStart != bufEndIter) {
+                const uint16_t startIndex = std::distance(m_buf.begin(), itPacketStart);
+                const int16_t endIndex = std::distance(m_buf.begin(), itPacketEnd) + g_packetSplit.size();
+                return endIndex - startIndex;
+            }
         }
 
         return  -1;

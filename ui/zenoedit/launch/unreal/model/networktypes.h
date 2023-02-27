@@ -19,14 +19,19 @@ constexpr std::array<uint8_t, 2> g_packetStart { 0xDA, 0x2C };
 /** bytes to spilt up the packet stream */
 constexpr std::array<uint8_t, 2> g_packetSplit { 0x03, 0x04 };
 
-enum class ZBFileType : uint32_t {};
+enum class ZBFileType : uint32_t {
+    Start = 0,
+    HeightField,
+    End,
+    Max = 0xFFFFFFFF,
+};
 
 /**
  * Header struct of ZenoBridge TCP Packet
  */
 struct alignas(8) ZBTPacketHeader {
-    explicit ZBTPacketHeader(uint16_t inIndex, uint16_t inLength, ZBTControlPacketType inType)
-        : marker( *reinterpret_cast<const uint16_t*>(g_packetStart.data()) ),
+    explicit ZBTPacketHeader(uint16_t inIndex, uint16_t inLength, ZBTControlPacketType inType, uint16_t inMarker = *reinterpret_cast<const uint16_t*>(g_packetStart.data()))
+        : marker(inMarker),
           index(inIndex),
           length(inLength),
           type(inType)
