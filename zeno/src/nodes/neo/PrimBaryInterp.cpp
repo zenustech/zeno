@@ -1,6 +1,4 @@
-#include "tbb/concurrent_vector.h"
-#include "tbb/parallel_for.h"
-#include "tbb/scalable_allocator.h"
+#include <stdexcept>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -51,12 +49,13 @@ struct PrimBarycentricInterp : INode {
                     prim->attr(key));
         }
 
-        tbb::parallel_for((size_t)0, (size_t)(points->size()), (size_t)1, [&](size_t index) {
+        #pragma omp parallel for
+        for (size_t index = 0; index < points->size(); ++index) {
             auto tidx = prim->tris[(int)triIndex[index]];
             int v0 = (int)(tidx[0]), v1 = (int)(tidx[1]), v2 = (int)(tidx[2]);
             vec3f w = wIndex[index];
             BarycentricInterp(points.get(), prim.get(), index, v0, v1, v2, points->verts[index], w, idTag, weightTag);
-        });
+        }
 
         set_output("Particles", get_input("Particles"));
     }
