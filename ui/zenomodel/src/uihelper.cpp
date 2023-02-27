@@ -509,7 +509,7 @@ QStringList UiHelper::getControlLists(const QString& type)
     if (type == "int") { ctrls = { CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
     else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
-    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
+    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
     else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }

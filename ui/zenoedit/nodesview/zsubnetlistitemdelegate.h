@@ -39,6 +39,7 @@ protected:
 
 private slots:
     void onDelete(const QModelIndex& index);
+    void onRename(const QModelIndex &index);
 
 private:
     IGraphsModel* m_model;
