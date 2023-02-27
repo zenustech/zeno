@@ -9,6 +9,9 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "zassert.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
 
 
 int ZLightsModel::rowCount(const QModelIndex &parent) const {
@@ -28,7 +31,15 @@ QVariant ZLightsModel::data(const QModelIndex &index, int role) const {
 void ZLightsModel::updateByObjectsMan() {
     beginResetModel();
     light_names.clear();
-    auto session = Zenovis::GetInstance().getSession();
+
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget* pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget* pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    auto session = pViewport->getSession();
     ZERROR_EXIT(session);
 
     auto scene = session->get_scene();

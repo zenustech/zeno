@@ -327,13 +327,6 @@ void ZToolButton::setRadius(int radius)
     m_radius = radius;
 }
 
-void ZToolButton::showToolTip()
-{
-    QPoint pt = QCursor::pos();
-    QHelpEvent* e = new QHelpEvent(QEvent::ToolTip, mapFromGlobal(pt), pt);
-    QApplication::postEvent(this, e);
-}
-
 void ZToolButton::setChecked(bool bChecked)
 {
     if (bChecked == m_bChecked)

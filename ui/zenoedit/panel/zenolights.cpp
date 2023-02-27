@@ -130,7 +130,17 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         }
     });
     connect(write_all_btn, &QPushButton::clicked, this, [&](){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *pViewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto scene = pViewport->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
+        //todo: move objsMan outof scene.
         for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
             if (key.find("LightNode") != std::string::npos) {
                 QString primid = QString(key.c_str());
@@ -139,7 +149,17 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         }
     });
     connect(procedural_sky_btn, &QPushButton::clicked, this, [&](){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *pViewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+
+        auto scene = pViewport->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
         for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
             if (key.find("ProceduralSky") != std::string::npos) {
                 QString primid = QString(key.c_str());
@@ -165,7 +185,16 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *pViewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto scene = pViewport->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
         std::shared_ptr<zeno::IObject> ptr = scene->objectsMan->lightObjects[name];
 
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(ptr.get())){
@@ -508,7 +537,16 @@ void ZenoLights::modifyLightData() {
     zeno::vec3f rotate = zeno::vec3f(rotateX, rotateY, rotateZ);
     auto verts = computeLightPrim(pos, rotate, scale);
 
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget *pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    auto scene = pViewport->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
     std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
     auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
 
@@ -555,7 +593,16 @@ void ZenoLights::modifySunLightDir() {
 
     bool found = false;
 
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget *pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+
+    auto scene = pViewport->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
     for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
         if (key.find("ProceduralSky") != std::string::npos) {
             found = true;
@@ -598,7 +645,15 @@ void ZenoLights::modifySunLightDir() {
 }
 
 void ZenoLights::write_param_into_node(const QString& primid) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget *pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+    auto scene = pViewport->getSession()->get_scene();
+
     if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
         return;
     }

@@ -7,6 +7,7 @@
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include "nodesview/zenographseditor.h"
+#include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
@@ -321,11 +322,128 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 }
 
 
+/// <summary>
+/// </summary>
+/// <param name="parent"></param>
 DockContent_View::DockContent_View(QWidget* parent)
-    : QWidget(parent)
+    : DockToolbarWidget(parent)
+    , m_pDisplay(nullptr)
+    , m_cbRenderWay(nullptr)
+    , m_smooth_shading(nullptr)
+    , m_normal_check(nullptr)
+    , m_wire_frame(nullptr)
+    , m_show_grid(nullptr)
+    , m_background_clr(nullptr)
+    , m_recordVideo(nullptr)
+    , m_screenshoot(nullptr)
 {
-
 }
+
+void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
+{
+    m_smooth_shading = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_smooth_shading->setToolTip(tr("Smooth Shading"));
+
+    m_normal_check = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_normal_check->setToolTip(tr("Normal Check"));
+
+    m_wire_frame = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_wire_frame->setToolTip(tr("Wireframe"));
+
+    m_show_grid = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_show_grid->setToolTip(tr("Show Grid"));
+    m_show_grid->setChecked(true);
+
+    m_background_clr = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_background_clr->setToolTip(tr("Background Color"));
+
+    m_recordVideo = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_recordVideo->setToolTip(tr("Record Video"));
+
+    m_screenshoot = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_screenshoot->setToolTip(tr("Screenshoot"));
+
+    QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
+    QVariant props = items;
+
+    Callback_EditFinished funcRender = [=](QVariant newValue) {
+        if (newValue == items[0]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
+        }
+        else if (newValue == items[1]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHADING, true);
+        }
+        else if (newValue == items[2]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
+        }
+    };
+    CallbackCollection cbSet;
+    cbSet.cbEditFinished = funcRender;
+    m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    m_cbRenderWay->setEditable(false);
+    m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(20));
+
+    pToolLayout->addWidget(m_smooth_shading);
+    pToolLayout->addWidget(m_normal_check);
+    pToolLayout->addWidget(m_wire_frame);
+    pToolLayout->addWidget(m_show_grid);
+    pToolLayout->addWidget(m_cbRenderWay);
+    pToolLayout->addWidget(m_background_clr);
+    pToolLayout->addWidget(m_recordVideo);
+    pToolLayout->addWidget(m_screenshoot);
+    pToolLayout->addStretch();
+}
+
+QWidget* DockContent_View::initWidget()
+{
+    m_pDisplay = new DisplayWidget;
+    return m_pDisplay;
+}
+
+void DockContent_View::initConnections()
+{
+    connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SMOOTH_SHADING, bToggled);
+    });
+
+    connect(m_normal_check, &ZToolBarButton::toggled, this, [=](bool bToggled) {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_NORMAL_CHECK, bToggled);
+    });
+
+    connect(m_wire_frame, &ZToolBarButton::toggled, this, [=](bool bToggled) {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_WIRE_FRAME, bToggled);
+    });
+
+    connect(m_show_grid, &ZToolBarButton::toggled, this, [=](bool bToggled) {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHOW_GRID, bToggled);
+    });
+
+    connect(m_background_clr, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, true);
+    });
+
+    connect(m_recordVideo, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_RECORD_VIDEO, true);
+    });
+
+    connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
+    });
+}
+
+void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)
+{
+    if (m_pDisplay) {
+        int actionType = pAction->property("ActionType").toInt();
+        m_pDisplay->onCommandDispatched(actionType, bTriggered);
+    }
+}
+
+DisplayWidget* DockContent_View::getDisplayWid() const
+{
+    return m_pDisplay;
+}
+
 
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)

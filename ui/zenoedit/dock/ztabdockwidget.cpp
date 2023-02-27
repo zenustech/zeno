@@ -90,12 +90,40 @@ QWidget* ZTabDockWidget::widget() const
     return m_tabWidget;
 }
 
+void ZTabDockWidget::testCleanupGL()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        if (DisplayWidget *pDis = qobject_cast<DisplayWidget*>(wid)) {
+            pDis->testCleanUp();
+        }
+    }
+}
+
+QVector<DisplayWidget*> ZTabDockWidget::viewports() const
+{
+    QVector<DisplayWidget*> views;
+    for (int i = 0; i < m_tabWidget->count(); i++)
+    {
+        QWidget* wid = m_tabWidget->widget(0);
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
+        {
+            views.append(pView->getDisplayWid());
+        }
+    }
+    return views;
+}
+
 DisplayWidget* ZTabDockWidget::getUniqueViewport() const
 {
     if (1 == count())
     {
         QWidget* wid = m_tabWidget->widget(0);
-        return qobject_cast<DisplayWidget*>(wid);
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
+        {
+            return pView->getDisplayWid();
+        }
     }
     else {
         return nullptr;
@@ -128,7 +156,9 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_VIEW:
         {
-            return new DisplayWidget;
+            DockContent_View* wid = new DockContent_View;
+            wid->initUI();
+            return wid;
         }
         case PANEL_EDITOR:
         {
@@ -209,7 +239,16 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             {
                 const QModelIndex &idx = nodes[0];
                 QString nodeId = idx.data(ROLE_OBJID).toString();
-                auto *scene = Zenovis::GetInstance().getSession()->get_scene();
+
+                //todo: dispatch to each panel?
+                ZenoMainWindow *pWin = zenoApp->getMainWindow();
+                ZASSERT_EXIT(pWin);
+                DisplayWidget *pWid = pWin->getDisplayWidget();
+                ZASSERT_EXIT(pWid);
+                ViewportWidget *pViewport = pWid->getViewportWidget();
+                ZASSERT_EXIT(pViewport);
+
+                auto *scene = pViewport->getSession()->get_scene();
                 scene->selected.clear();
                 std::string nodeid = nodeId.toStdString();
                 for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
@@ -256,66 +295,52 @@ void ZTabDockWidget::onUpdateViewport(const QString& action)
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
-        QWidget* wid = m_tabWidget->widget(i);
-        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(m_tabWidget->widget(i)))
         {
-            pView->updateFrame(action);
+            DisplayWidget* pWid = pView->getDisplayWid();
+            ZASSERT_EXIT(pWid);
+            pWid->updateFrame(action);
         }
     }
-}
-
-void ZTabDockWidget::onRunFinished()
-{
-    for (int i = 0; i < m_tabWidget->count(); i++)
-    {
-        QWidget* wid = m_tabWidget->widget(i);
-        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
-        {
-            pView->onFinished();
-        }
-    }
-}
-
-void ZTabDockWidget::onRun()
-{
-    for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(m_tabWidget->widget(i)))
-            pView->onRun();
-}
-
-void ZTabDockWidget::onRecord()
-{
-    for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
-            pView->onRecord();
-}
-
-void ZTabDockWidget::onKill()
-{
-    for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
-            pView->onKill();
 }
 
 void ZTabDockWidget::onPlayClicked(bool bChecked)
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
-            pView->onPlayClicked(bChecked);
+    {
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(m_tabWidget->widget(i)))
+        {
+            DisplayWidget* pWid = pView->getDisplayWid();
+            ZASSERT_EXIT(pWid);
+            pWid->onPlayClicked(bChecked);
+        }
+    }
 }
 
 void ZTabDockWidget::onSliderValueChanged(int frame)
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
-            pView->onSliderValueChanged(frame);
+    {
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(m_tabWidget->widget(i)))
+        {
+            DisplayWidget* pWid = pView->getDisplayWid();
+            ZASSERT_EXIT(pWid);
+            pWid->onSliderValueChanged(frame);
+        }
+    }
 }
 
 void ZTabDockWidget::onFinished()
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
-        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
-            pView->onFinished();
+    {
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(m_tabWidget->widget(i)))
+        {
+            DisplayWidget* pWid = pView->getDisplayWid();
+            ZASSERT_EXIT(pWid);
+            pWid->onFinished();
+        }
+    }
 }
 
 void ZTabDockWidget::paintEvent(QPaintEvent* event)

@@ -60,7 +60,6 @@ public slots:
     void setText(const QString& text);
     void setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover);
     void setIconSize(const QSize& size);
-    void showToolTip();
     void setChecked(bool bChecked);
     void setDown(bool bDown);
     void setButtonOptions(int style);
