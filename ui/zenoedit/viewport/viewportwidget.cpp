@@ -914,7 +914,7 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
         m_view->getSession()->set_render_engine(e);
         updateFrame(QString::fromUtf8(e));
     }
-    else if (actionType == ZenoMainWindow::ACTION_SHADONG)
+    else if (actionType == ZenoMainWindow::ACTION_SHADING)
     {
         const char* e = "zhxx";
         m_view->getSession()->set_render_engine(e);

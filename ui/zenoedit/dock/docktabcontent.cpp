@@ -335,46 +335,48 @@ DockContent_View::DockContent_View(QWidget* parent)
 
 void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 {
-    m_smooth_shading = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_normal_check = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_wire_frame = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_show_grid = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_background_clr = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_smooth_shading = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_smooth_shading->setToolTip(tr("Smooth Shading"));
+
+    m_normal_check = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_normal_check->setToolTip(tr("Normal Check"));
+
+    m_wire_frame = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_wire_frame->setToolTip(tr("Wireframe"));
+
+    m_show_grid = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_show_grid->setToolTip(tr("Show Grid"));
+    m_show_grid->setChecked(true);
+
+    m_background_clr = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_background_clr->setToolTip(tr("Background Color"));
 
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
 
-    Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
+    Callback_EditFinished funcRender = [=](QVariant newValue) {
+        if (newValue == items[0]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
+        }
+        else if (newValue == items[1]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHADING, true);
+        }
+        else if (newValue == items[2]) {
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
+        }
     };
     CallbackCollection cbSet;
-    cbSet.cbEditFinished = funcZoomEdited;
-    m_cbRenderWay = qobject_cast<QComboBox *>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbSet.cbEditFinished = funcRender;
+    m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     m_cbRenderWay->setEditable(false);
-    //cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-    m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(85), ZenoStyle::dpiScaled(20));
-
-
-    m_solid = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_solid->setChecked(true);
-    m_shading = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_optix = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg",
-                                          ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
     pToolLayout->addWidget(m_wire_frame);
     pToolLayout->addWidget(m_show_grid);
+    pToolLayout->addWidget(m_cbRenderWay);
     pToolLayout->addWidget(m_background_clr);
-    pToolLayout->addWidget(m_solid);
-    pToolLayout->addWidget(m_shading);
-    pToolLayout->addWidget(m_optix);
     pToolLayout->addStretch();
 }
 
@@ -404,25 +406,6 @@ void DockContent_View::initConnections()
 
     connect(m_background_clr, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, bToggled);
-    });
-
-    connect(m_solid, &ZToolBarButton::toggled, this, [=](bool bToggled) {
-        m_solid->setChecked(true);
-        m_shading->setChecked(false);
-        m_optix->setChecked(false);
-        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
-    });
-    connect(m_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
-        m_solid->setChecked(false);
-        m_shading->setChecked(true);
-        m_optix->setChecked(false);
-        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHADING, true);
-    });
-    connect(m_optix, &ZToolBarButton::toggled, this, [=](bool bToggled) {
-        m_solid->setChecked(false);
-        m_shading->setChecked(false);
-        m_optix->setChecked(true);
-        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
     });
 }
 

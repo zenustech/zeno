@@ -101,9 +101,6 @@ private:
     ZToolBarButton* m_wire_frame;
     ZToolBarButton *m_show_grid;
     ZToolBarButton *m_background_clr;
-    ZToolBarButton *m_solid;
-    ZToolBarButton *m_shading;
-    ZToolBarButton *m_optix;
     QComboBox* m_cbRenderWay;
 };
 
