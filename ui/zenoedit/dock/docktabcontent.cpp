@@ -207,17 +207,13 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
 
-    lblFileName = new ZTextLabel;
-    lblFileName->setFont(QFont("Segoe UI Semibold", 12));
-    lblFileName->setTextColor(QColor(255, 255, 255, 255 * 0.7));
-
     pToolLayout->addWidget(pSubnetMgr);
     pToolLayout->addWidget(pFold);
     pToolLayout->addWidget(pUnfold);
     pToolLayout->addWidget(pSnapGrid);
     pToolLayout->addWidget(pBlackboard);
     pToolLayout->addWidget(pFullPanel);
-    pToolLayout->addWidget(lblFileName, 0, Qt::AlignCenter);
+    pToolLayout->addStretch();
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
     pToolLayout->addWidget(pSettings);
@@ -235,32 +231,6 @@ QWidget* DockContent_Editor::initWidget()
 void DockContent_Editor::initConnections()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
-        QFileInfo info(fn);
-        lblFileName->setText(info.fileName());
-    });
-    connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() {
-        lblFileName->clear();
-    });
-    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
-        lblFileName->setText(fn);
-    });
-    connect(pGraphsMgm, &GraphsManagment::dirtyChanged, this, [=](bool isDirty) {
-        QString name = lblFileName->text();
-        if (isDirty) {
-            if (!name.endsWith("*")) {
-                if (name.isEmpty())
-                    name = "newFile";
-                name.append("*");
-                lblFileName->setText(name);
-            }
-        } else {
-            if (name.endsWith("*")) {
-                name.remove("*");
-                lblFileName->setText(name);
-            }
-        }
-    });
     connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
     { 
         m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Subnet); 

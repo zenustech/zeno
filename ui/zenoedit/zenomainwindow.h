@@ -162,6 +162,7 @@ private:
     void initMenu();
     void initLive();
     void initDocks();
+    void initWindowProperty();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
     void resetDocks(PtrLayoutNode root);

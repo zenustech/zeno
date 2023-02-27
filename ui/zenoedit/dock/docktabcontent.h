@@ -67,7 +67,6 @@ protected:
 
 private:
     ZenoGraphsEditor* m_pEditor;
-    ZTextLabel* lblFileName;
     ZToolBarButton *pListView;
     ZToolBarButton *pTreeView;
     ZToolBarButton *pSubnetMgr;

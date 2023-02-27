@@ -54,7 +54,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
+
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
         zeno::log_info("ZENO_OPEN: {}", p);
@@ -79,6 +79,7 @@ void ZenoMainWindow::init()
     initMenu();
     initLive();
     initDocks();
+    initWindowProperty();
 
     addToolBar(Qt::LeftToolBarArea, new FakeToolbar(false));
     addToolBar(Qt::RightToolBarArea, new FakeToolbar(false));
@@ -90,9 +91,34 @@ void ZenoMainWindow::init()
     setAutoFillBackground(true);
     setPalette(pal);
 
-    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
-
     m_ui->statusbar->showMessage(tr("Status Bar"));
+}
+
+void ZenoMainWindow::initWindowProperty()
+{
+    auto pGraphsMgm = zenoApp->graphsManagment();
+    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
+    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
+    connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
+        QFileInfo info(fn);
+        QString path = info.filePath();
+        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)")
+                            .arg(path)
+                            .arg(QString::fromStdString(getZenoVersion()));
+        setWindowTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() { 
+        QString title =
+            QString::fromUtf8("Zeno Editor (%2)").arg(QString::fromStdString(getZenoVersion()));
+        setWindowTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
+        QFileInfo info(fn);
+        QString path = info.filePath();
+        QString title =
+            QString::fromUtf8("%1 - Zeno Editor (%2)").arg(path).arg(QString::fromStdString(getZenoVersion()));
+        setWindowTitle(title);
+    });
 }
 
 void ZenoMainWindow::initLive() {

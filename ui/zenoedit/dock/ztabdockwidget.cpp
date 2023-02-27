@@ -398,7 +398,7 @@ void ZTabDockWidget::onMaximizeTriggered()
 void ZTabDockWidget::onFloatTriggered()
 {
     if (isFloating()) 
-	{
+    {
         setWindowFlags(m_oldFlags);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         //need redock
@@ -409,33 +409,17 @@ void ZTabDockWidget::onFloatTriggered()
         }
         setFloating(false);
     } 
-	else 
-	{
+    else 
+    {
         setFloating(true);
         m_oldFlags = windowFlags();
-        if (m_debugPanel == PANEL_EDITOR) 
-		{
-            setParent(nullptr);
-            m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint |
-                         Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
-            setWindowFlags(m_newFlags);
-            show();
-        } 
-		else if (m_debugPanel == PANEL_VIEW) 
-		{
-            //reinitialize glview is not allowed.
-            setParent(nullptr);
-            m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint;
-            setWindowFlags(m_newFlags);
-            show();
-        }
-		else 
-		{
-			setParent(nullptr);
-            m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowCloseButtonHint;
-            setWindowFlags(m_newFlags);
-            show();
-		}
+
+        setParent(nullptr);
+        m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint |
+                        Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
+        setWindowIcon(QIcon(":/icons/zeno-logo.png"));
+        setWindowFlags(m_newFlags);
+        show();
     }
 }
 
