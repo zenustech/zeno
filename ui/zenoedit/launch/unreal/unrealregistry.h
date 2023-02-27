@@ -5,20 +5,7 @@
 #include <string>
 #include <cstdint>
 #include <unordered_map>
-
-struct IUnrealSubject {
-    std::string m_name;
-};
-
-struct UnrealHeightFieldSubject : public IUnrealSubject {
-    int64_t m_resolution;
-    std::vector<float> m_height;
-
-    template <class T>
-    inline void pack(T& pack) {
-        pack(m_name, m_resolution, m_height);
-    }
-};
+#include "model/subject.h"
 
 /**
  * maintain subjects send to unreal live link

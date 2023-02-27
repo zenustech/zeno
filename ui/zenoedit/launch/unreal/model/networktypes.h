@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <string>
 #include <array>
+#include <vector>
 
 enum class ZBTControlPacketType : uint16_t {
     Start = 0x0000,
@@ -28,6 +29,23 @@ enum class ZBFileType : uint32_t {
 
 /**
  * Header struct of ZenoBridge TCP Packet
+* A packet looks like
+*  +------------+--------------+-------------+
+   |Marker+Index|    Length    | Packet Type |
+   |    4Byte   |    2Byte     |    2Byte    |
+   +------------+--------------+-------------+
+   |                                         |
+   |                                         |
+   |          Data                           |
+   |                                         |
+   |          Size equal to length bytes     |
+   |                                         |
+   |                                         |
+   |                                         |
+   +-----------------------------------------+
+   |         0x03             0x04           |
+   |                                         |
+   +-----------------------------------------+
  */
 struct alignas(8) ZBTPacketHeader {
     explicit ZBTPacketHeader(uint16_t inIndex, uint16_t inLength, ZBTControlPacketType inType, uint16_t inMarker = *reinterpret_cast<const uint16_t*>(g_packetStart.data()))
@@ -47,24 +65,16 @@ struct alignas(8) ZBTPacketHeader {
     ZBTControlPacketType type;
 };
 
-/**
- * A packet looks like
- *  +------------+--------------+-------------+
-    |    Index   |    Length    | Packet Type |
-    |    2Byte   |    2Byte     |    2Byte    |
-    +------------+--------------+-------------+
-    |                                         |
-    |                                         |
-    |          Data                           |
-    |                                         |
-    |          Size equal to length bytes     |
-    |                                         |
-    |                                         |
-    |                                         |
-    +-----------------------------------------+
-    |         0x03             0x04           |
-    |                                         |
-    +-----------------------------------------+
- */
+// UDP
+struct alignas(8) ZBUFileMessageHeader {
+    ZBFileType type;
+    uint32_t size, file_id;
+    uint16_t total_part, part_id;
+};
+
+struct alignas(8) ZBUFileMessage {
+    ZBUFileMessageHeader header;
+    std::vector<uint8_t> data;
+};
 
 #endif //ZENO_NETWORKTYPES_H
