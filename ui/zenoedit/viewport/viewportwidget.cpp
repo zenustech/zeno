@@ -1136,14 +1136,14 @@ void DisplayWidget::onRecord()
                 recInfo.videoname,
                 recInfo.numOptix,
                 recInfo.numMSAA,
-                recInfo.bRecordRun,
+                recInfo.bRecordAfterRun,
                 recInfo.bExportVideo
             );
         //validation.
 
         m_recordMgr.setRecordInfo(recInfo);
 
-        if (recInfo.bRecordRun)
+        if (!recInfo.bRecordAfterRun)
         {
             connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
                 ZRecordProgressDlg dlgProc(recInfo);

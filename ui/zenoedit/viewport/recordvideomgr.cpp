@@ -57,7 +57,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         }
     }
 
-    if (m_recordInfo.bRecordRun)
+    if (!m_recordInfo.bRecordAfterRun)
     {
         Zenovis* pVis = getZenovis();
         bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));

@@ -562,24 +562,28 @@ void ZenoMainWindow::initTimelineDock()
 
     connect(m_pTimeline, &ZTimeline::run, this, [=]() {
         auto pDisplay = this->getDisplayWidget();
-        pDisplay->onRun();
+        if (pDisplay)
+            pDisplay->onRun();
     });
 
     connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
         auto pDisplay = this->getDisplayWidget();
-        pDisplay->onKill();
+        if (pDisplay)
+            pDisplay->onKill();
     });
 
     connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
         auto pDisplay = this->getDisplayWidget();
-        pDisplay->onRun();
+        if (pDisplay)
+            pDisplay->onRun();
     });
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         if (m_pTimeline->isAlways()) {
             auto pDisplay = this->getDisplayWidget();
-            pDisplay->onKill();
+            if (pDisplay)
+                pDisplay->onKill();
         }
     });
 }
@@ -689,7 +693,8 @@ DisplayWidget* ZenoMainWindow::getDisplayWidget()
         if (!pViewport)
         {
             pViewport = pDock->getUniqueViewport();
-            break;
+            if (pViewport)
+                break;
         }
     }
     return pViewport;

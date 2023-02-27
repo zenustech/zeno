@@ -351,6 +351,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_background_clr = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
     m_background_clr->setToolTip(tr("Background Color"));
 
+    m_recordVideo = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_recordVideo->setToolTip(tr("Record Video"));
+
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
 
@@ -377,6 +380,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_show_grid);
     pToolLayout->addWidget(m_cbRenderWay);
     pToolLayout->addWidget(m_background_clr);
+    pToolLayout->addWidget(m_recordVideo);
     pToolLayout->addStretch();
 }
 
@@ -406,6 +410,10 @@ void DockContent_View::initConnections()
 
     connect(m_background_clr, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, bToggled);
+    });
+
+    connect(m_recordVideo, &ZToolBarButton::clicked, this, [=]() {
+        m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_RECORD_VIDEO, true);
     });
 }
 

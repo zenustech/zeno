@@ -99,8 +99,9 @@ private:
     ZToolBarButton* m_smooth_shading;
     ZToolBarButton* m_normal_check;
     ZToolBarButton* m_wire_frame;
-    ZToolBarButton *m_show_grid;
-    ZToolBarButton *m_background_clr;
+    ZToolBarButton* m_show_grid;
+    ZToolBarButton* m_background_clr;
+    ZToolBarButton* m_recordVideo;
     QComboBox* m_cbRenderWay;
 };
 

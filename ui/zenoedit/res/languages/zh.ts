@@ -89,6 +89,10 @@
         <source>Background Color</source>
         <translation>背景颜色</translation>
     </message>
+    <message>
+        <source>Record Video</source>
+        <translation>录制视频</translation>
+    </message>
 </context>
 <context>
     <name>EditParamLayoutDlg</name>
@@ -696,7 +700,7 @@
     </message>
     <message>
         <source>record when run</source>
-        <translation type="unfinished">运行时记录</translation>
+        <translation type="obsolete">运行时记录</translation>
     </message>
     <message>
         <source>Height:</source>
@@ -732,7 +736,11 @@
     </message>
     <message>
         <source>export video</source>
-        <translation type="unfinished"></translation>
+        <translation>是否导出视频</translation>
+    </message>
+    <message>
+        <source>record video after running.</source>
+        <translation>运行以后才能录制</translation>
     </message>
 </context>
 <context>

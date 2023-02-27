@@ -16,11 +16,11 @@ struct VideoRecInfo
     int numMSAA = 0;
     int numOptix = 1;
     int numSamples = 16;
-    bool bRecordRun;
+    bool bRecordAfterRun;
     bool bExportVideo;
     bool exitWhenRecordFinish = false;
     VideoRecInfo()
-        : bRecordRun(false)
+        : bRecordAfterRun(false)
         , bExportVideo(false)
         , fps(0)
         , bitrate(0)
