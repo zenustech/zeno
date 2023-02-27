@@ -52,6 +52,7 @@ void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
             sendPacket(respondPacketType, respondData->data(), respondSize);
         }
 
+        free(tmp);
     }
 
     m_buffer.cleanUp();
