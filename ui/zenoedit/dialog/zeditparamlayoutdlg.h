@@ -21,13 +21,18 @@ class ParamTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit ParamTreeItemDelegate(QObject* parent = nullptr);
+    explicit ParamTreeItemDelegate(ViewParamModel *model, QObject *parent = nullptr);
     ~ParamTreeItemDelegate();
 
     // editing
     QWidget* createEditor(QWidget* parent,
         const QStyleOptionViewItem& option,
         const QModelIndex& index) const override;
+
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+
+  private:
+    ViewParamModel *m_model;
 };
 
 
@@ -74,6 +79,8 @@ private:
 
     QMap<QString, QString> m_renameRecord;
     QVector<QUndoCommand*> m_commandSeq;
+
+    bool m_bNodeUI;
 };
 
 

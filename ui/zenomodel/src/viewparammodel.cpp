@@ -627,6 +627,20 @@ void ViewParamModel::clone(ViewParamModel* pModel)
     }
 }
 
+bool ViewParamModel::checkParamName(QStandardItem *item, const QString &name) 
+{
+    bool ret = false;
+    for (int r = 0; r < item->rowCount(); r++) {
+        QStandardItem *newItem = item->child(r);
+        VParamItem *pVItem = static_cast<VParamItem *>(newItem);
+        if (pVItem && (pVItem->m_name == name || !checkParamName(pVItem, name))) 
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void ViewParamModel::disableNodeParam(QStandardItem *item) 
 {
     for (int r = 0; r < item->rowCount(); r++) {

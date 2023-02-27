@@ -503,10 +503,16 @@ QStringList UiHelper::getAllControls()
         "Integer Vector 2", "Color", "Curve", "SpinBox", "Slider", "SpinBoxSlider" };
 }
 
-QStringList UiHelper::getControlLists(const QString& type)
+QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
 {
     QList<PARAM_CONTROL> ctrls;
-    if (type == "int") { ctrls = { CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; }
+    if (type == "int") 
+    { 
+        if (isNodeUI)
+            ctrls = {CONTROL_INT, CONTROL_HSPINBOX}; 
+        else
+            ctrls = {CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; 
+    }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
     else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }

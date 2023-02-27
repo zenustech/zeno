@@ -42,6 +42,7 @@ public:
     bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
                   int destinationChild) override;
 
+    bool checkParamName(QStandardItem *item, const QString &name);
     void disableNodeParam(QStandardItem *item);
 
 signals:

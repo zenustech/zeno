@@ -63,8 +63,9 @@ static CONTROL_ITEM_INFO getControlByName(const QString& name)
 }
 
 
-ParamTreeItemDelegate::ParamTreeItemDelegate(QObject* parent)
-    : QStyledItemDelegate(parent)
+ParamTreeItemDelegate::ParamTreeItemDelegate(ViewParamModel *model, QObject *parent)
+    : QStyledItemDelegate(parent),
+    m_model(model) 
 {
 }
 
@@ -80,6 +81,18 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
     return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
+void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const 
+{
+    QString oldName = index.data().toString();
+    QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
+    if (oldName != newName) {
+        if (m_model->checkParamName(m_model->invisibleRootItem(), newName)) {
+            QStyledItemDelegate::setModelData(editor, model, index);
+        } else {
+            QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
+        }
+    }
+}
 
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, IGraphsModel* pGraphsModel, QWidget* parent)
@@ -89,6 +102,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     , m_nodeIdx(nodeIdx)
     , m_pGraphsModel(pGraphsModel)
     , m_bSubgraphNode(false)
+    , m_bNodeUI(bNodeUI)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -99,6 +113,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     };
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
+        if (bNodeUI && (controlList[i].ctrl == CONTROL_HSLIDER || controlList[i].ctrl == CONTROL_SPINBOX_SLIDER))
+            continue;
         lstCtrls.append(controlList[i].name);
         m_ui->cbControl->addItem(controlList[i].name);
     }
@@ -126,7 +142,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
         m_proxyModel->disableNodeParam(m_proxyModel->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_proxyModel);
-    m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_ui->paramsView));
+    m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_proxyModel, m_ui->paramsView));
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
     QModelIndex selIdx = selModel->currentIndex();
@@ -314,7 +330,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
             m_ui->cbControl->setEnabled(bEditable);
             m_ui->cbControl->clear();
-            QStringList items = UiHelper::getControlLists(dataType);
+            QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
             m_ui->cbControl->addItems(items);
             m_ui->cbControl->setCurrentText(ctrlName);
 
@@ -550,6 +566,8 @@ void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, con
 {
     //ViewParamSetDataCommand *pCmd = new ViewParamSetDataCommand(m_pGraphsModel, oldPath, newName, ROLE_VPARAM_NAME);
     //m_commandSeq.append(pCmd);
+    if (m_ui->editName->text() != newName)
+        m_ui->editName->setText(newName);
 }
 
 void ZEditParamLayoutDlg::onNameEditFinished()
@@ -561,8 +579,21 @@ void ZEditParamLayoutDlg::onNameEditFinished()
     QStandardItem* pItem = m_proxyModel->itemFromIndex(currIdx);
     QString oldPath = pItem->data(ROLE_OBJPATH).toString();
     QString newName = m_ui->editName->text();
-    pItem->setData(newName, ROLE_VPARAM_NAME);
-    onProxyItemNameChanged(pItem->index(), oldPath, newName);
+    QString oldName = pItem->data(ROLE_VPARAM_NAME).toString();
+    if (oldName != newName) {
+        if (m_proxyModel->checkParamName(m_proxyModel->invisibleRootItem(), newName)) 
+        {
+            pItem->setData(newName, ROLE_VPARAM_NAME);
+            onProxyItemNameChanged(pItem->index(), oldPath, newName);
+        } 
+        else 
+        {
+            disconnect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
+            m_ui->editName->setText(oldName);
+            connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
+            QMessageBox::information(this, tr("Info"), tr("The param name already exists"));
+        }
+    }
 }
 
 void ZEditParamLayoutDlg::onLabelEditFinished()
@@ -663,7 +694,7 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         switchStackProperties(pItem->m_ctrl, pItem);
     }
     //update control list
-    QStringList items = UiHelper::getControlLists(dataType);
+    QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
     m_ui->cbControl->clear();
     m_ui->cbControl->addItems(items);
 }
