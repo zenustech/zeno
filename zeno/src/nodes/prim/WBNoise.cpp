@@ -9,10 +9,6 @@
 #include <cmath>
 #include <random>
 
-#include <cstdlib>
-#include <ctime>
-
-
 namespace zeno
 {
 namespace
@@ -25,7 +21,7 @@ namespace
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Perlin Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-const int noise_permutation[]={
+const int noise_permutation[] = {
     151,160,137,91,90,15,
     131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
     190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
@@ -782,12 +778,12 @@ ZENDEFNODE(erode_noise_analytic_simplex_2d,
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Sparse Convolution Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define TABSIZE 256 //暂时这些有的可以当做参数 有的不用宏定义  就把很多老派的写法都去掉！
+#define TABSIZE 256 
 #define TABMASK (TABSIZE - 1)
 #define PERM(x) perm[(x)&TABMASK]
 #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz))) 
-//#define RANDMASK 0x7fffffff
-//#define RANDNBR (std::rand() / RAND_MAX)
+#define RANDMASK 0x7fffffff
+#define RANDNBR ((rand() & RANDMASK) / (double)RANDMASK)
 #define FLOOR(x) ((int)(x) - ((x) < 0 && (x) != (int)(x)))
 
 unsigned char perm[TABSIZE] = {
@@ -805,23 +801,18 @@ unsigned char perm[TABSIZE] = {
     145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52
 };
 
-std::random_device rd; // modern random
-auto seed{rd()};
-std::default_random_engine engine(seed);
-std::uniform_real_distribution<float> d(0, 1);
-
 float impulseTab[TABSIZE * 4];
 void impulseTabInit(int seed) {
     int i;
     float *f = impulseTab;
+    srand(seed); /* Set random number generator seed. */
     for (i = 0; i < TABSIZE; i++) {
-        *f++ = d(engine);
-        *f++ = d(engine);
-        *f++ = d(engine);
-        *f++ = 1. - 2. * d(engine);
+        *f++ = RANDNBR;
+        *f++ = RANDNBR;
+        *f++ = RANDNBR;
+        *f++ = 1. - 2. * RANDNBR;
     }
 }
-
 
 float catrom2(float d) {
 #define SAMPRATE 100 /* table entries per unit distance */
@@ -851,7 +842,7 @@ float catrom2(float d) {
 }
 
 #define NEXT(h) (((h) + 1) & TABMASK)
-#define NIMPULSES 3 //5*5*5*3
+#define NIMPULSES 3
 float scnoise(float x, float y, float z, int seed) {
     static int initialized;
     float *fp;
@@ -874,19 +865,17 @@ float scnoise(float x, float y, float z, int seed) {
     fz = z - iz;
     
     /* Perform the sparse convolution. */
-    for (i = -2; i <= 2; i++) {  //cell of the grid is 5
+    for (i = -2; i <= 2; i++) {
         for (j = -2; j <= 2; j++) {
             for (k = -2; k <= 2; k++) { /* Compute voxel hash code. */
-                h = INDEX(ix + i, iy + j, iz + k); //PSN
-                for (n = NIMPULSES; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */  
-                //每个cell内随机产生NIMPULSES个impulse
-                    fp = &impulseTab[h * 4]; // get impulse
-                    dx = fx - (i + *fp++);   //i + *fp++   周围几个晶胞的脉冲
+                h = INDEX(ix + i, iy + j, iz + k);
+                for (n = NIMPULSES; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */
+                    fp = &impulseTab[h * 4];
+                    dx = fx - (i + *fp++);
                     dy = fy - (j + *fp++);
-                    dz = fz - (k + *fp++); //convolve the kernel and impulse.  
+                    dz = fz - (k + *fp++);
                     distsq = dx * dx + dy * dy + dz * dz;
-                    sum += catrom2(distsq) * *fp;   // 这里第四个fp 指向的就是每个点的权重？    filter kernel--在gabor noise里面变成了gabor kernel。（因为catrom就是一个filter，代入这个func就是进行了卷积！ 像图像处理那样）
-                    //稀疏卷积涉及到通过将一个filter函数与一组随机定位的随机脉冲(randomly located random impulses)(泊松过程, a Poisson process)进行卷积来建立一个噪声函数。
+                    sum += catrom2(distsq) * *fp;
                 }
             }
         }
@@ -917,7 +906,7 @@ struct erode_noise_sparse_convolution : INode {
 //#pragma omp parallel for
             for (int i = 0; i < arr.size(); i++) {
                 if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                    float x = scnoise(pos[i][0], pos[i][1], pos[i][2], seed);  //左边没有别的意思 只是变换为了随机。？
+                    float x = scnoise(pos[i][0], pos[i][1], pos[i][2], seed);
                     float y = scnoise(pos[i][1], pos[i][2], pos[i][0], seed);
                     float z = scnoise(pos[i][2], pos[i][0], pos[i][1], seed);
                     arr[i] = vec3f(x, y, z);
@@ -949,207 +938,6 @@ ZENDEFNODE(erode_noise_sparse_convolution,
     {
         "erode",
     }});
-
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Gabor Noise
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class pseudo_random_number_generator
-{
-public:
-  void seed(unsigned s) { x_ = s; }
-  unsigned operator()() { x_ *= 3039177861u; return x_; }
-  float uniform_0_1() { return float(operator()()) / float(0xffffffff); } //unsigner int max
-  float uniform(float min, float max)
-    { return min + (uniform_0_1() * (max - min)); }
-  unsigned poisson(float mean)
-  {
-    float g_ = std::exp(-mean);
-    unsigned em = 0;
-    double t = uniform_0_1();
-    while (t > g_) {
-      ++em;
-      t *= uniform_0_1();
-    }
-    return em;
-  }
-private:
-  unsigned x_;
-};
-
-
-/*
-unsigned char uniform(float intensity) {
-	if (intensity <= 0.0) {
-		return 0;
-	}
-	else if (intensity < 1.0) {
-		return static_cast<unsigned char>(intensity * 255);
-	}
-	else {
-		return 255;
-	}
-}
-*/
-
-float gabor(float K, float a, float F_0, float omega_0, float x, float y)
-{
-  float gaussian_envelop = K * std::exp(-M_PI * (a * a) * ((x * x) + (y * y)));
-  float sinusoidal_carrier = std::cos(2.0 * M_PI * F_0 * ((x * std::cos(omega_0)) + (y * std::sin(omega_0))));
-  return gaussian_envelop * sinusoidal_carrier;
-}
-
-unsigned morton(unsigned x, unsigned y)
-{
-  unsigned z = 0;
-  for (unsigned i = 0; i < (sizeof(unsigned) * 8); ++i) {   //char bit-----8
-    z |= ((x & (1 << i)) << i) | ((y & (1 << i)) << (i + 1));
-  }
-  return z;
-}
-
-class noise
-{
-public:
-  noise(float K, float a, float F_0, float omega_0, float number_of_impulses_per_kernel, unsigned period, unsigned random_offset)
-    :  K_(K), a_(a), F_0_(F_0), omega_0_(omega_0), period_(period), random_offset_(random_offset)
-  {
-    kernel_radius_ = std::sqrt(-std::log(0.05) / M_PI) / a_;
-    impulse_density_ = number_of_impulses_per_kernel / (M_PI * kernel_radius_ * kernel_radius_);
-  }
-  float operator()(float x, float y) const
-  {
-    x /= kernel_radius_, y /= kernel_radius_;
-    float int_x = std::floor(x), int_y = std::floor(y);
-    float frac_x = x - int_x, frac_y = y - int_y;
-    int i = int(int_x), j = int(int_y);
-    float noise = 0.0;
-    for (int di = -1; di <= +1; ++di) {
-      for (int dj = -1; dj <= +1; ++dj) {
-        noise += cell(i + di, j + dj, frac_x - di, frac_y - dj);
-      }
-    }
-    return noise;
-  }
-  float cell(int i, int j, float x, float y) const
-  {
-    //unsigned s = (((unsigned(j) % period_) * period_) + (unsigned(i) % period_)) + random_offset_; // periodic noise
-    unsigned s = morton(i, j) + random_offset_; // nonperiodic noise
-    if (s == 0) s = 1;
-    pseudo_random_number_generator prng;
-    prng.seed(s);
-    double number_of_impulses_per_cell = impulse_density_ * kernel_radius_ * kernel_radius_;
-    unsigned number_of_impulses = prng.poisson(number_of_impulses_per_cell);
-    float noise = 0.0;
-    for (unsigned i = 0; i < number_of_impulses; ++i) {
-      float x_i = prng.uniform_0_1();
-      float y_i = prng.uniform_0_1();
-      float w_i = prng.uniform(-1.0, +1.0);
-      float omega_0_i = prng.uniform(0.0, 2.0 * M_PI);
-      float x_i_x = x - x_i;
-      float y_i_y = y - y_i;
-      if (((x_i_x * x_i_x) + (y_i_y * y_i_y)) < 1.0) {
-        noise += w_i * gabor(K_, a_, F_0_, omega_0_, x_i_x * kernel_radius_, y_i_y * kernel_radius_); // anisotropic  //parameter
-        //noise += w_i * gabor(K_, a_, F_0_, omega_0_i, x_i_x * kernel_radius_, y_i_y * kernel_radius_); // isotropic
-      }
-    }
-    return noise;
-  }
-  float variance() const
-  {
-    float integral_gabor_filter_squared = ((K_ * K_) / (4.0 * a_ * a_)) * (1.0 + std::exp(-(2.0 * M_PI * F_0_ * F_0_) / (a_ * a_)));
-    return impulse_density_ * (1.0 / 3.0) * integral_gabor_filter_squared;
-  }
-private:
-  float K_;
-  float a_;
-  float F_0_;
-  float omega_0_;
-  float kernel_radius_;
-  float impulse_density_;
-  unsigned period_;
-  unsigned random_offset_;
-};
-
-
-
-
-//因为gabor讲究的就是一个可控性 所以把这些都变成参数 
-//unsigned resolution = 256;   //可能不需要 
-float K_ = 4.0;
-float a_ = 0.05;
-float F_0_ = 0.2;
-float omega_0_ = M_PI / 4.0;
-float number_of_impulses_per_kernel = 64.0;
-unsigned period = 256;
-unsigned random_offset = std::time(0);
-
-//trackbars: K 0.5-5    a 0.005-0.1  F 0.01-0.3  omega 0.0-M_PI
-
-//bool isotropic = false; // option
-///float noise = process(resolution, K_, a_, F_0_, omega_0_, isotropic, number_of_impulses_per_kernel, period, random_offset);
-
-
-// ---------------------------------------------------------------------------
-
-noise noise_(K_, a_, F_0_, omega_0_, number_of_impulses_per_kernel, period, random_offset);
-
-float scale = 3.0 * std::sqrt(noise_.variance());
-
-
-
-
-struct erode_noise_gabor_2d : INode {
-    void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-
-        auto attrName = get_param<std::string>("attrName");
-        if (!terrain->has_attr(attrName)) {
-            terrain->add_attr<vec3f>(attrName);
-        }
-        auto& noise = terrain->verts.attr<vec3f>(attrName);
-
-        auto posLikeAttrName = get_input<StringObject>("posLikeAttrName")->get();
-        if (!terrain->verts.has_attr(posLikeAttrName))
-        {
-            zeno::log_error("no such data named '{}'.", posLikeAttrName);
-        }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
-
-        glm::vec3 ret{};// = glm::vec3(0, 0, 0);
-//#pragma omp parallel for
-        for (int i = 0; i < terrain->verts.size(); i++)
-        {   
-            float noise2dV = 0.5 + 0.5 * noise_(pos[i][0], pos[i][2])/scale;
-            ret = glm::vec3{noise2dV, noise2dV, noise2dV};
-            //ret = 0.5 + 0.5 * noise_(glm::vec2(pos[i][0], pos[i][2]))/scale;
-            noise[i] = vec3f(ret.x, ret.y, ret.z);
-        }
-
-        set_output("prim_2DGrid", get_input("prim_2DGrid"));
-    }
-};
-//attr type 需要与否 就是output的type。
-ZENDEFNODE(erode_noise_gabor_2d,
-    {/* inputs: */ {
-        "prim_2DGrid",
-        {"string", "posLikeAttrName", "pos"},
-    },
-    /* outputs: */
-    {
-        "prim_2DGrid",
-    },
-    /* params: */
-    {
-        {"string", "attrName", "noise"},
-    },
-    /* category: */
-    {
-        "erode",
-    }});
-
-
-
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
