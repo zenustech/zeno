@@ -7,6 +7,7 @@ CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent
     : QStandardItemModel(parent)
     , m_range(rg)
     , m_id(id)
+    , m_bVisible(true)
 {
 }
 
@@ -14,6 +15,7 @@ CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int c
     : QStandardItemModel(rows, columns, parent)
     , m_range(rg)
     , m_id(id)
+    , m_bVisible(true)
 {
 }
 
@@ -113,6 +115,15 @@ QString CurveModel::id() const
 
 void CurveModel::setId(QString id) {
     m_id = id;
+}
+
+void CurveModel::setVisible(bool visible) {
+    m_bVisible = visible;
+}
+
+
+bool CurveModel::getVisible() {
+    return m_bVisible;
 }
 
 bool CurveModel::isTimeline() const

@@ -29,6 +29,7 @@ public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
+    void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
 
 public slots:
 	void resetModel(IGraphsModel* pModel);

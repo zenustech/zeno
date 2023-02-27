@@ -186,10 +186,11 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
     m_bate_rows.push_back(model);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
     pGrid->setCurvesColor(id, preset[id]);
+    pGrid->setCurvesVisible(id, model->getVisible());
 
     QStandardItem *pItem = new QStandardItem(model->id());
     pItem->setCheckable(true);
-    pItem->setCheckState(Qt::Checked);
+    pItem->setCheckState(model->getVisible() ? Qt::Checked : Qt::Unchecked);
     QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
     if (pRootItem->rowCount() == 0)
     {
@@ -480,10 +481,12 @@ void ZCurveMapEditor::onChannelModelDataChanged(const QModelIndex &topLeft, cons
         if (state == Qt::Checked)
         {
             pGrid->setCurvesVisible(id, true);
+            m_models[id]->setVisible(true);
         }
         else if (state == Qt::Unchecked)
         {
             pGrid->setCurvesVisible(id, false);
+            m_models[id]->setVisible(false);
         }
     }
 }

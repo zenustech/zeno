@@ -39,6 +39,8 @@ public:
     void setTimeline(bool bTimeline);
     QString id() const;
     void setId(QString id);
+    void setVisible(bool visible);
+    bool getVisible();
     std::string z_serialize() const;
     void z_deserialize(std::string_view s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
@@ -57,6 +59,7 @@ private:
     CURVE_RANGE m_range;
     QString m_id;
     bool m_bTimeline;
+    bool m_bVisible;
 };
 
 typedef QMap<QString, CurveModel*> CURVES_MODEL;

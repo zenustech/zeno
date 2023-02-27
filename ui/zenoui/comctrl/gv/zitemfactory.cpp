@@ -306,8 +306,8 @@ namespace zenoui
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
                     // what if value changed? removed?
-                    CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
-                    for (CURVES_MODEL::Iterator it = curves.begin(); it != curves.end(); it++) {
+                    const CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
+                    for (CURVES_MODEL::ConstIterator it = curves.begin(); it != curves.end(); it++) {
                         pEditor->addCurve(*it);
                     }
                     pEditor->show();
