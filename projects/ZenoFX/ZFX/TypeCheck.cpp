@@ -126,7 +126,7 @@ struct TypeCheck : Visitor<TypeCheck> {
                 error("function `%s` takes exactly 3 arguments", name.c_str());
             }
 
-        } else if (contains({"normalize"}, name)) {
+        } else if (contains({"normalize", "normalizesafe"}, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }
