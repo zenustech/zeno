@@ -139,6 +139,12 @@ struct ParticlesWrangle : zeno::INode {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
                         return 1;
+                    } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        return 2;
                     } else {
                         printf("invalid parameter type encountered: `%s`\n",
                                 typeid(T).name());
@@ -161,6 +167,8 @@ struct ParticlesWrangle : zeno::INode {
             auto key = name.substr(1);
             if (dim == 3) {
                 prim->add_attr<zeno::vec3f>(key);
+            } else if (dim == 2) {
+                prim->add_attr<zeno::vec2f>(key);
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {

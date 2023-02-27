@@ -89,6 +89,12 @@ struct NumericWrangle : zeno::INode {
                     parnames.emplace_back(key, 1);
                     parnames.emplace_back(key, 2);
                     return 3;
+                } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                    parvals.push_back(v[0]);
+                    parvals.push_back(v[1]);
+                    parnames.emplace_back(key, 0);
+                    parnames.emplace_back(key, 1);
+                    return 2;
                 } else if constexpr (std::is_convertible_v<T, float>) {
                     parvals.push_back(float(v));
                     parnames.emplace_back(key, 0);
