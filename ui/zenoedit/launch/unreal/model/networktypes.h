@@ -8,6 +8,7 @@
 enum class ZBTControlPacketType : uint16_t {
     Start = 0x0000,
     AuthRequire,
+    SendHeightField,
     End,
     Max = 0xFFFF,
 };
@@ -17,6 +18,8 @@ constexpr std::array<uint8_t, 2> g_packetStart { 0xDA, 0x2C };
 
 /** bytes to spilt up the packet stream */
 constexpr std::array<uint8_t, 2> g_packetSplit { 0x03, 0x04 };
+
+enum class ZBFileType : uint32_t {};
 
 /**
  * Header struct of ZenoBridge TCP Packet

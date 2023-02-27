@@ -52,8 +52,6 @@ void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
             sendPacket(respondPacketType, respondData->data(), respondSize);
         }
 
-//        auto res = zeno_bridge::parsePacketType<uint8_t>(tmp);
-//        sendPacket(std::get<0>(res)->type, nullptr, 0);
     }
 
     m_buffer.cleanUp();

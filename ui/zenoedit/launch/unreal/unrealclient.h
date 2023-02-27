@@ -8,6 +8,7 @@
 #include <QAbstractSocket>
 #include <QTcpSocket>
 #include <QTimer>
+#include <QtEndian>
 
 class IUnrealLiveLinkClient : public QObject {
     Q_OBJECT
@@ -57,6 +58,11 @@ public:
 
     void timerEvent(QTimerEvent *event) override;
 
+    /** not thread safe */
+    QTcpSocket* getSocket() {
+        return m_socket;
+    }
+
 private:
 
 private slots:
@@ -73,6 +79,33 @@ private:
 // TODO: darc support LocalSocket for unix-like OS
 
 struct QtSocketHelper {
+    template <typename T>
+    static bool writeDataEndianSafe(QAbstractSocket* target, const ZBTPacketHeader& header, const T* const data) {
+        if (nullptr == target || (nullptr == data && header.length != 0) || !target->isOpen() || !target->isWritable()) {
+            return false;
+        }
+
+        // ensure data to be sent are big endian
+        ZBTPacketHeader littleHeader = qToLittleEndian(header);
+        T* littleData = static_cast<T*>(qMallocAligned(header.length, 8));
+        qToLittleEndian<T>(data, header.length, littleData);
+
+        target->write(reinterpret_cast<const char *>(&littleHeader), sizeof(ZBTPacketHeader));
+        if (header.length != 0) {
+            target->write(reinterpret_cast<const char *>(littleData), header.length);
+        }
+#if Q_BYTE_ORDER == Q_BIG_ENDIAN
+        decltype(g_packetSplit) packetSplit {};
+        std::reverse_copy(g_packetSplit.begin(), g_packetSplit.end(), packetSplit.begin());
+#else // Q_LITTLE_ENDIAN
+        decltype(g_packetSplit)& packetSplit = g_packetSplit;
+#endif // Q_BYTE_ORDER
+        target->write(reinterpret_cast<const char *>(packetSplit.data()), packetSplit.size());
+
+        qFreeAligned(littleData);
+        return true;
+    }
+
     /**
      * Write wrapped data to target socket
      * @param target input socket
