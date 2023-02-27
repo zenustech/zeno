@@ -52,6 +52,11 @@ MatInput const &attrs) {
     auto att_uv = attrs.uv;
     auto att_nrm = attrs.nrm;
     auto att_tang = attrs.tang;
+    auto att_instPos = attrs.instPos;
+    auto att_instNrm = attrs.instNrm;
+    auto att_instUv = attrs.instUv;
+    auto att_instClr = attrs.instClr;
+    auto att_instTang = attrs.instTang;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
@@ -387,6 +392,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
@@ -490,7 +500,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 }
                 if(rnd(prd->seed)<1-specTrans||prd->nonThinTransHit>1)
                 {
-                    prd->shadowAttanuation = vec3(1e-6f,1e-6f,1e-6f);
+                    prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
                     return;
                 }
@@ -505,7 +515,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
 
 
-        prd->shadowAttanuation = vec3(1e-6f);
+        prd->shadowAttanuation = vec3(0);
         optixTerminateRay();
         return;
     }
@@ -647,6 +657,11 @@ extern "C" __global__ void __closesthit__radiance()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
@@ -825,6 +840,7 @@ extern "C" __global__ void __closesthit__radiance()
     vec3 reflectance = vec3(0.0f);
     bool isDiff = false;
     bool isSS = false;
+    bool isTrans = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
@@ -859,7 +875,8 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->medium,
                 extinction,
                 isDiff,
-                isSS
+                isSS,
+                isTrans
                 )  == false)
         {
             isSS = false;
@@ -897,11 +914,11 @@ extern "C" __global__ void __closesthit__radiance()
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
-    if(flag == DisneyBSDF::transmissionEvent) {
+    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         prd->is_inside = dot(vec3(N),vec3(wi))<0;
     }
 
-    if(flag == DisneyBSDF::transmissionEvent){
+    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent){
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
@@ -915,7 +932,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->transColor = transmittanceColor;
                 prd->scatterStep = scatterStep;
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
+                prd->maxDistance = isTrans? 1e16 : DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) ;
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
            //}
@@ -936,7 +953,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
+                prd->maxDistance = isTrans? 1e16:DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }
@@ -1021,11 +1038,11 @@ extern "C" __global__ void __closesthit__radiance()
                                    &shadow_prd);
 
                     light_attenuation = shadow_prd.shadowAttanuation;
-                    //if (fmaxf(light_attenuation) > 0.0f) {
+                    if (fmaxf(light_attenuation) > 0.0f) {
 
                         weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist  * Ldist) /
                                  (length(light.emission)+1e-6f) ;
-                    //}
+                    }
                 }
                 prd->LP = P;
                 prd->Ldir = L;
