@@ -1,5 +1,7 @@
 #ifndef ZENO_SUBJECT_H
 #define ZENO_SUBJECT_H
+#include <string>
+#include <vector>
 
 struct IUnrealSubject {
     std::string m_name;

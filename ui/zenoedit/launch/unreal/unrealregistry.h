@@ -28,6 +28,20 @@ public:
 
     bool isDirty() const;
 
+    [[nodiscard]]
+    const std::unordered_map<std::string, IUnrealSubject>& subjects() const {
+        return m_subjects;
+    }
+
+    [[nodiscard]]
+    std::vector<UnrealHeightFieldSubject> height_fields() const {
+        std::vector<UnrealHeightFieldSubject> subs;
+        for (const std::string& name : m_height_field_subjects) {
+            subs.push_back((UnrealHeightFieldSubject&)m_subjects.at(name));
+        }
+        return subs;
+    }
+
 private:
     std::unordered_map<std::string, IUnrealSubject> m_subjects;
     std::vector<std::string> m_height_field_subjects;

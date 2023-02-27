@@ -8,6 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <cstring>
+#include <cassert>
 #include "byteorder.h"
 #include "networktypes.h"
 
@@ -173,7 +174,7 @@ struct ByteBuffer {
      * @return return false if there is no complete packet received
      */
     bool readSinglePacket(uint8_t* outPacketBuf) {
-        if (0 == m_cursor) return -1;
+        if (0 == m_cursor) return false;
 
         std::scoped_lock lock { m_mutex };
 

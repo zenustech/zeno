@@ -13,6 +13,8 @@ void UnrealLiveLinkTcpClient::init() {
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(onSocketClosed()));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(onSocketReceiveData()));
     connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
+
+    sendPacket(ZBTControlPacketType::AuthRequire, nullptr, 0);
 }
 
 void UnrealLiveLinkTcpClient::cleanupSocket() {

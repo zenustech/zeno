@@ -10,6 +10,8 @@ enum class ZBTControlPacketType : uint16_t {
     Start = 0x0000,
     AuthRequire,
     SendHeightField,
+    RegisterSession,
+    SendAuthToken,
     End,
     Max = 0xFFFF,
 };
@@ -18,7 +20,7 @@ enum class ZBTControlPacketType : uint16_t {
 constexpr std::array<uint8_t, 2> g_packetStart { 0xDA, 0x2C };
 
 /** bytes to spilt up the packet stream */
-constexpr std::array<uint8_t, 2> g_packetSplit { 0x03, 0x04 };
+constexpr std::array<uint8_t, 4> g_packetSplit { 0x03, 0x04, 0xA5, 0xF6 };
 
 enum class ZBFileType : uint32_t {
     Start = 0,
@@ -75,6 +77,16 @@ struct alignas(8) ZBUFileMessageHeader {
 struct alignas(8) ZBUFileMessage {
     ZBUFileMessageHeader header;
     std::vector<uint8_t> data;
+};
+
+// Packet Bodies
+struct alignas(8) ZPKSendToken {
+    std::string token;
+
+    template <typename T>
+    void pack(T& pack) {
+        pack(token);
+    }
 };
 
 #endif //ZENO_NETWORKTYPES_H
