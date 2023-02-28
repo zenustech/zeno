@@ -63,13 +63,15 @@ endforeach()
 get_property(fuckconfig GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI)
 get_property(fuckconfig2 GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI2)
 get_property(fuckconfig3 GLOBAL PROPERTY FUCK_PYTHON_SYSCONFIG_NIMABI3)
-add_custom_target(fuckpythonnimabidesysconfig
-    WORKING_DIRECTORY ${fuckconfig3}
-    COMMENT "CIHOU PYTHON WDNMD DIAONIDAYE CONNIMAFIG"
-    DEPENDS python
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${fuckconfig}" "${fuckconfig2}" 
-)
-add_dependencies(zeno fuckpythonnimabidesysconfig)
+if(UNIX)
+    add_custom_target(fuckpythonnimabidesysconfig
+        WORKING_DIRECTORY ${fuckconfig3}
+        COMMENT "CIHOU PYTHON WDNMD DIAONIDAYE CONNIMAFIG"
+        DEPENDS python
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${fuckconfig}" "${fuckconfig2}"
+    )
+    add_dependencies(zeno fuckpythonnimabidesysconfig)
+endif()
 ##### END cihou python dapigu #####
 
 target_include_directories(zeno PRIVATE
