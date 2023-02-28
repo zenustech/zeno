@@ -47,7 +47,6 @@ public slots:
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos, bool isError);
     void focusOnWithNoSelect(const QString& nodeId);
-    void onScrollControlAdded(ZenoParamWidget*);
 
 signals:
     void zoomed(qreal);
@@ -67,7 +66,6 @@ private:
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
-    bool m_bControlActive;
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;

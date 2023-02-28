@@ -302,13 +302,6 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbSet, scene, ctrlProps);
-    if (CONTROL_ENUM == ctrl)
-    {
-        QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);
-        ZenoParamWidget* pWidgetItem = qobject_cast<ZenoParamWidget*>(pItem);
-        if (pWidgetItem)
-            scene->addScrollControl(pWidgetItem);
-    }
     return pControl;
 }
 
@@ -900,14 +893,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
 
-    QGraphicsItem *pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbSet, scene, ctrlProps);
-    if (CONTROL_ENUM == ctrl)
-    {
-        QGraphicsProxyWidget* pItem = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl);
-        ZenoParamWidget* pWidgetItem = qobject_cast<ZenoParamWidget*>(pItem);
-        if (pWidgetItem)
-            scene->addScrollControl(pWidgetItem);
-    }
+    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbSet, scene, ctrlProps);
     return pControl;
 }
 

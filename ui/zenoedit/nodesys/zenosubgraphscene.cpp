@@ -397,19 +397,6 @@ void ZenoSubGraphScene::clearMark()
     m_errNodes.clear();
 }
 
-QList<ZenoParamWidget*> ZenoSubGraphScene::getScrollControls() const
-{
-    return m_scrollControls;
-}
-
-void ZenoSubGraphScene::addScrollControl(ZenoParamWidget* pWidget)
-{
-    if (!pWidget)
-        return;
-    m_scrollControls.append(pWidget);
-    emit scrollControlAdded(pWidget);
-}
-
 void ZenoSubGraphScene::setSnapGrid(bool bChecked)
 {
     m_bSnapGrid = bChecked;

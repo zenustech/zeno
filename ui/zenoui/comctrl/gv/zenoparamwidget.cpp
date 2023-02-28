@@ -485,12 +485,29 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setLineEdit(pLineEdit);
 #endif
 
+    QListView* pComboboxView = qobject_cast<QListView*>(m_combobox->view());
+    if (pComboboxView)
+        pComboboxView->installEventFilter(this);
+
     setWidget(m_combobox);
 
     setZValue(ZVALUE_ELEMENT);
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
     connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
     connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+bool ZenoParamComboBox::eventFilter(QObject* object, QEvent* event)
+{
+    if (event->type() == QEvent::Wheel && object == m_combobox->view())
+    {
+        //when scroll to the bottom of combobox's view, the event will be ignore,
+        //and then trigger zoom, which is not convient when activating.
+        //see _ZenoSubGraphView::wheelEvent.
+        event->setAccepted(true);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(object, event);
 }
 
 void ZenoParamComboBox::setItems(const QStringList& items)

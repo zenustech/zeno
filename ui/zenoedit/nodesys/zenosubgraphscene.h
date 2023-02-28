@@ -32,8 +32,6 @@ public:
     void markError(const QString& nodeid);
     void clearMark();
     QGraphicsItem* getNode(const QString& id);
-    QList<ZenoParamWidget*> getScrollControls() const;
-    void addScrollControl(ZenoParamWidget* pWidget);
     void setSnapGrid(bool bChecked);
     bool IsSnapGrid() const;
 
@@ -47,9 +45,6 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
-
-signals:
-    void scrollControlAdded(ZenoParamWidget*);
 
 public slots:
     void onZoomed(qreal factor);
@@ -83,7 +78,6 @@ private:
     std::map<QString, ZenoNode*> m_nodes;
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
-    QList<ZenoParamWidget*> m_scrollControls;  //resolve conflict scroll event with graphicsview.
     ZenoTempLink* m_tempLink;
     ZenoSocketItem* m_hoverSocket;
     bool m_bSnapGrid;

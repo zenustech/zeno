@@ -195,6 +195,9 @@ public:
     void setText(const QString& text);
     QString text();
 
+protected:
+    bool eventFilter(QObject* object, QEvent* event) override;
+
 signals:
     void textActivated(const QString& text);
 
