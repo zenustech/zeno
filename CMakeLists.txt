@@ -169,7 +169,6 @@ endif()
 ## --- end cihou perf-geeks
 
 add_subdirectory(zeno)
-add_subdirectory(projects)
 
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
@@ -184,6 +183,8 @@ if (ZENO_BUILD_EDITOR)
     add_subdirectory(ui/zenoedit)
     add_subdirectory(zenovis)
 endif()
+
+add_subdirectory(projects)
 
 if (ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno Designer")

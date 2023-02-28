@@ -1,9 +1,5 @@
 #include "launch/livehttpserver.h"
 #include "launch/livetcpserver.h"
-#ifdef ZENO_ENABLE_UNREALENGINE
-#include "launch/unreal/unrealtcpserver.h"
-#include "launch/unreal/unrealudpserver.h"
-#endif // ZENO_ENABLE_UNREALENGINE
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -47,10 +43,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     liveTcpServer = new LiveTcpServer;
     liveHttpServer = new LiveHttpServer;
     liveSignalsBridge = new LiveSignalsBridge;
-#ifdef ZENO_ENABLE_UNREALENGINE
-    zeno::startUnrealTcpServer();
-    zeno::startUnrealUdpServer();
-#endif // ZENO_ENABLE_UNREALENGINE
 
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
