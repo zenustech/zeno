@@ -31,6 +31,7 @@
 #include "iotags.h"
 #include "groupnode.h"
 
+
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(parent)
     , m_renderParams(params)
@@ -63,6 +64,9 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     {
         _drawBorderWangStyle(painter);
     }
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+    if (type == NORMAL_NODE)
+        _base::paint(painter, option, widget);
 }
 
 void ZenoNode::_drawBorderWangStyle(QPainter* painter)
@@ -121,7 +125,8 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     mainLayout->setDebugName("mainLayout");
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
-    mainLayout->setSpacing(0);
+
+    mainLayout->setSpacing(type == NORMAL_NODE ? ZenoStyle::dpiScaled(2) : 0);
     setLayout(mainLayout);
 
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
@@ -140,6 +145,9 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     if (type == BLACKBOARD_NODE || type == GROUP_NODE) {
         setZValue(ZVALUE_BLACKBOARD);
+    } else {
+        //set color for normal node(background)
+        setColors(false, QColor("#000000"), QColor("#000000"), QColor("#000000"));
     }
 
     m_border->setZValue(ZVALUE_NODE_BORDER);
