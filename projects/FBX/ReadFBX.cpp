@@ -4,7 +4,7 @@
 
 #define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include "stb_image_write.h"
 
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
@@ -1005,6 +1005,11 @@ void readFBXFile(
 
     if(readOption.generate){
         scene = importer.ReadFile(fbx_path, 0);
+        if(scene == nullptr){
+            std::cout << "Read empty fbx scene\n";
+            return;
+        }
+
         mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
