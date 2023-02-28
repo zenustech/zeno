@@ -48,7 +48,7 @@ void UnrealLiveLinkTcpClient::timerEvent(QTimerEvent *event) {
         OutPacketBufferType respondData;
         uint16_t respondSize = 0;
 
-        PacketHandlerMap::get().tryCall(header->type, tmp, bHasRespond, respondPacketType, respondData, respondSize);
+        PacketHandlerMap::get().tryCall(header->type, tmp, header->length, bHasRespond, respondPacketType, respondData, respondSize);
 
         if (bHasRespond && respondData.has_value()) {
             sendPacket(respondPacketType, respondData->data(), respondSize);

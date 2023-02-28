@@ -6,12 +6,15 @@
 #include <array>
 #include <vector>
 
+#define MSGPACK_TRAIT(...) template <typename T> void pack(T& pack) { pack(__VA_ARGS__); }
+
 enum class ZBTControlPacketType : uint16_t {
     Start = 0x0000,
     AuthRequire,
     SendHeightField,
     RegisterSession,
     SendAuthToken,
+    AuthFailed,
     End,
     Max = 0xFFFF,
 };
@@ -83,10 +86,13 @@ struct alignas(8) ZBUFileMessage {
 struct alignas(8) ZPKSendToken {
     std::string token;
 
-    template <typename T>
-    void pack(T& pack) {
-        pack(token);
-    }
+    MSGPACK_TRAIT(token);
+};
+
+struct alignas(8) ZPKRegisterSession {
+    std::string sessionName;
+
+    MSGPACK_TRAIT(sessionName);
 };
 
 #endif //ZENO_NETWORKTYPES_H

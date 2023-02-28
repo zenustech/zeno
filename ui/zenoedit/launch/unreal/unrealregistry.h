@@ -5,6 +5,8 @@
 #include <string>
 #include <cstdint>
 #include <unordered_map>
+#include <optional>
+#include <random>
 #include "model/subject.h"
 
 /**
@@ -53,6 +55,43 @@ public:
         static UnrealSubjectRegistry sUnrealSubjectRegistry;
 
         return sUnrealSubjectRegistry;
+    }
+};
+
+struct UnrealSessionInfo {
+    std::optional<std::string> udp_address;
+    std::optional<uint16_t> udp_port;
+};
+
+struct UnrealSessionRegistry {
+
+public:
+    std::string newSession() {
+        std::string name = newSessionName();
+        UnrealSessionInfo info {};
+        m_session_info.insert(std::make_pair(name, std::move(info)));
+        return name;
+    }
+
+private:
+    std::unordered_map<std::string, UnrealSessionInfo> m_session_info;
+
+    static std::string newSessionName() {
+        std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
+        std::random_device rd;
+        std::mt19937 generator(rd());
+
+        std::shuffle(str.begin(), str.end(), generator);
+
+        return str.substr(0, 32);    // assumes 32 < number of characters in str
+    }
+
+public:
+    static UnrealSessionRegistry& getStatic() {
+        static UnrealSessionRegistry sUnrealSessionRegistry;
+
+        return sUnrealSessionRegistry;
     }
 };
 

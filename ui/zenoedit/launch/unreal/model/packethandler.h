@@ -7,7 +7,7 @@
 #include "networktypes.h"
 
 typedef std::optional<std::vector<uint8_t>> OutPacketBufferType;
-typedef void(*ZBTPacketHandler)(void*, bool&, ZBTControlPacketType&, OutPacketBufferType&, uint16_t&);
+typedef void(*ZBTPacketHandler)(const void*, const uint16_t, bool&, ZBTControlPacketType&, OutPacketBufferType&, uint16_t&);
 
 template <
     ZBTControlPacketType InPacketType
@@ -29,6 +29,7 @@ struct PacketHandlerMap {
     void tryCall(
         const ZBTControlPacketType inPacketType,
         void* inPacket,
+        uint16_t inSize,
         bool& outHasRespond,
         ZBTControlPacketType& outPacketType,
         OutPacketBufferType& outRespondData,
@@ -37,7 +38,7 @@ struct PacketHandlerMap {
         auto it = handlerMap.find(inPacketType);
         if (it != handlerMap.end()) {
             ZBTPacketHandler handler = it->second;
-            handler(inPacket, outHasRespond, outPacketType, outRespondData, outDataSize);
+            handler(inPacket, inSize, outHasRespond, outPacketType, outRespondData, outDataSize);
         }
     }
 
@@ -48,7 +49,7 @@ private:
 
 #define REG_PACKET_HANDLER(Name, PacketType, Block) \
     template<>                                                                                                  \
-    ZBTPacketHandler PacketHandlerAnnotation<PacketType>::handler = [] (void* inData, bool& bHasRespond, ZBTControlPacketType& outPacketType, OutPacketBufferType& outBuffer, uint16_t& outSize) Block;\
+    ZBTPacketHandler PacketHandlerAnnotation<PacketType>::handler = [] (const void* inData, const uint16_t inSize, bool& bHasRespond, ZBTControlPacketType& outPacketType, OutPacketBufferType& outBuffer, uint16_t& outSize) Block;\
     static struct THIS_IS_NOT_START_WITH_StaticInitFor##Name {     \
         THIS_IS_NOT_START_WITH_StaticInitFor##Name() {             \
             PacketHandlerMap::get().addHandler(PacketType, PacketHandlerAnnotation<PacketType>::handler); \
