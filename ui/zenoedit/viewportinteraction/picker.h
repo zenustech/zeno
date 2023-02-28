@@ -11,11 +11,6 @@
 
 #define CMP(x, y) \
 	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
-
-using std::string;
-using std::unordered_set;
-using std::unordered_map;
-using std::function;
 namespace zeno {
 
 std::optional<float> ray_box_intersect(
@@ -42,18 +37,18 @@ class Picker {
     }
     void pick(int x, int y);
     void pick(int x0, int y0, int x1, int y1);
-    void add(const string& prim_name);
-    string just_pick_prim(int x, int y);
-    const unordered_set<string>& get_picked_prims();
-    const unordered_map<string, unordered_set<int>>& get_picked_elems();
+    void add(const std::string& prim_name);
+    std::string just_pick_prim(int x, int y);
+    const std::unordered_set<std::string>& get_picked_prims();
+    const std::unordered_map<std::string, std::unordered_set<int>>& get_picked_elems();
     void sync_to_scene();
-    void load_from_str(const string& str, int mode);
-    string save_to_str(int mode);
+    void load_from_str(const std::string& str, int mode);
+    std::string save_to_str(int mode);
     void save_context();
     void load_context();
-    void focus(const string& prim_name);
+    void focus(const std::string& prim_name);
     void clear();
-    void set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)>);
+    void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
 
   private:
     Picker() {
@@ -64,16 +59,16 @@ class Picker {
 
     std::unique_ptr<zenovis::IPicker> picker;
 
-    function<void(unordered_map<string, unordered_set<int>>&)> picked_elems_callback;
+    std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;
 
-    unordered_set<string> selected_prims;
-    unordered_map<string, unordered_set<int>> selected_elements;
+    std::unordered_set<std::string> selected_prims;
+    std::unordered_map<std::string, std::unordered_set<int>> selected_elements;
 
     int select_mode_context;
-    unordered_set<string> selected_prims_context;
-    unordered_map<string, unordered_set<int>> selected_elements_context;
+    std::unordered_set<std::string> selected_prims_context;
+    std::unordered_map<std::string, std::unordered_set<int>> selected_elements_context;
 
-    string focused_prim;
+    std::string focused_prim;
 };
 
 }

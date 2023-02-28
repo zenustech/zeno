@@ -16,6 +16,10 @@
 #include <regex>
 #include <utility>
 
+using std::string;
+using std::unordered_map;
+using std::unordered_set;
+using std::function;
 namespace zeno {
 
 //void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
