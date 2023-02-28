@@ -71,6 +71,25 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             auto b = make_stm(args[2]);
             return stm("min", b, stm("max", a, x));
 
+        } else if (name == "fit") {
+            ERROR_IF(args.size() != 5);
+            auto src = make_stm(args[0]);
+            auto omin = make_stm(args[1]);
+            auto omax = make_stm(args[2]);
+            auto nmin = make_stm(args[3]);
+            auto nmax = make_stm(args[4]);
+            src = stm("min", omax, stm("max", src, omin));
+            return (src - omin) / (omax - omin) * (nmax - nmin) + nmin;
+
+        } else if (name == "efit") {
+            ERROR_IF(args.size() != 5);
+            auto src = make_stm(args[0]);
+            auto omin = make_stm(args[1]);
+            auto omax = make_stm(args[2]);
+            auto nmin = make_stm(args[3]);
+            auto nmax = make_stm(args[4]);
+            return (src - omin) / (omax - omin) * (nmax - nmin) + nmin;
+
         } else if (name == "length") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
