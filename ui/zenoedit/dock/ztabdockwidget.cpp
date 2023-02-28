@@ -259,6 +259,12 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 }
                 onPrimitiveSelected(scene->selected);
             }
+        } 
+        else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {
+            if (select && nodes.size() == 1)
+            {
+                editor->getEditor()->showFloatPanel(subgIdx, nodes);
+            }
         }
     }
 }

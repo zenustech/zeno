@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenoui/nodesys/nodesys_common.h>
+#include "dock/docktabcontent.h"
 
 class ZenoSubGraphScene;
 class ZenoNewnodeMenu;
@@ -103,6 +104,11 @@ public:
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
+    void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 signals:
 	void pathUpdated(QString);
@@ -111,6 +117,10 @@ signals:
 private:
     _ZenoSubGraphView* m_view;
     LayerPathWidget* m_pathWidget;
+
+    QModelIndex m_lastSelectedNode;
+    bool m_floatPanelShow;
+    DockContent_Parameter *m_prop;
 };
 
 
