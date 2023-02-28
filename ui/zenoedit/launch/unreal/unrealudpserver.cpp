@@ -97,16 +97,16 @@ void UnrealUdpServer::timerEvent(QTimerEvent* event) {
 
     // TODO: darc move send height field to unreal to a better place
     if (UnrealSubjectRegistry::getStatic().isDirty()) {
-        for (auto& sessions : UnrealSessionRegistry::getStatic().all()) {
+        for (auto& session : UnrealSessionRegistry::getStatic().all()) {
             for (auto& item : UnrealSubjectRegistry::getStatic().height_fields()) {
-                std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(item, ZBFileType::HeightField);
+                std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(const_cast<UnrealHeightFieldSubject&>(item), ZBFileType::HeightField);
                 for (auto& datagram : datagrams) {
-                    datagram.setDestination(QHostAddress{ QString::fromStdString(sessions->udp_address.value()) }, sessions->udp_port.value());
+                    datagram.setDestination(QHostAddress{ QString::fromStdString(session.udp_address.value()) }, session.udp_port.value());
                     m_socket->writeDatagram(datagram);
                 }
             }
         }
-        UnrealSubjectRegistry::getStatic().markDirty(true);
+        UnrealSubjectRegistry::getStatic().markDirty(false);
     }
 }
 

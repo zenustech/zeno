@@ -33,10 +33,12 @@ bool UnrealSessionRegistry::hasSession(const std::string &sessionName) {
     return m_session_info.find(sessionName) != m_session_info.end();
 }
 
-std::vector<UnrealSessionInfo*> UnrealSessionRegistry::all() {
-    std::vector<UnrealSessionInfo *> tmp;
+std::vector<UnrealSessionInfo> UnrealSessionRegistry::all() {
+    std::vector<UnrealSessionInfo> tmp;
     for (auto kv : m_session_info) {
-        tmp.push_back(&kv.second);
+        if (kv.second.udp_address.has_value() && kv.second.udp_port.has_value()) {
+            tmp.push_back(kv.second);
+        }
     }
     return tmp;
 }

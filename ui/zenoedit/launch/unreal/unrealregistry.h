@@ -17,13 +17,13 @@ class UnrealSubjectRegistry {
 public:
     template <class T = IUnrealSubject>
     void put(const std::string& key, const T& data) {
-        m_subjects.insert(key, data);
+        m_subjects.push_back(key);
     }
 
     template <>
     void put<UnrealHeightFieldSubject>(const std::string& key, const UnrealHeightFieldSubject& data) {
-        m_subjects.insert_or_assign(key, data);
-        m_height_field_subjects.push_back(key);
+        m_subjects.push_back(key);
+        m_height_field_subjects.push_back(data);
     }
 
     void markDirty(bool flag);
@@ -31,22 +31,18 @@ public:
     bool isDirty() const;
 
     [[nodiscard]]
-    const std::unordered_map<std::string, IUnrealSubject>& subjects() const {
+    const std::vector<std::string>& subjects() const {
         return m_subjects;
     }
 
     [[nodiscard]]
-    std::vector<UnrealHeightFieldSubject> height_fields() const {
-        std::vector<UnrealHeightFieldSubject> subs;
-        for (const std::string& name : m_height_field_subjects) {
-            subs.push_back((UnrealHeightFieldSubject&)m_subjects.at(name));
-        }
-        return subs;
+    const std::vector<UnrealHeightFieldSubject>& height_fields() const {
+        return m_height_field_subjects;
     }
 
 private:
-    std::unordered_map<std::string, IUnrealSubject> m_subjects;
-    std::vector<std::string> m_height_field_subjects;
+    std::vector<std::string> m_subjects;
+    std::vector<UnrealHeightFieldSubject> m_height_field_subjects;
 
     bool m_bIsDirty = true;
 
@@ -74,7 +70,7 @@ public:
 
     bool hasSession(const std::string& sessionName);
 
-    std::vector<UnrealSessionInfo*> all();
+    std::vector<UnrealSessionInfo> all();
 
 private:
     std::unordered_map<std::string, UnrealSessionInfo> m_session_info;
