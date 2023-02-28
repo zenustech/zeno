@@ -40,6 +40,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <filesystem>
 
 #include <cudaMemMarco.hpp>
 
@@ -417,6 +418,21 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
     auto path = path_channel.first;
     auto channel = path_channel.second;
 
+    std::filesystem::path filePath = path;
+
+    if ( !std::filesystem::exists(filePath) ) {
+        std::cout << filePath.string() << " doesn't exist";
+        return false;
+    }
+
+    auto fileTime = std::filesystem::last_write_time(filePath);
+    // std::filesystem::file_time_type::duration ft = fileTime.time_since_epoch();
+    // if (filePath.extension() != ".vdb")
+    // {
+    //     std::cout << filePath.filename() << " doesn't exist";
+    //     return false;
+    // }
+
         auto isNumber = [] (const std::string& s)
         {
             for (char const &ch : s) {
@@ -440,7 +456,10 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
 
     if (g_vdb_cached_map.count(vdb_key)) {
 
-        if ((g_vdb_cached_map[vdb_key]->transform) == transform) {
+        auto& cached = g_vdb_cached_map[vdb_key];
+
+        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time) {
+
             g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
             return true;
         } else {
@@ -449,6 +468,7 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
     }
 
     auto volume_ptr = std::make_shared<VolumeWrapper>();
+    volume_ptr->file_time = fileTime;
     volume_ptr->transform = transform;
     volume_ptr->selected = {channel};
     

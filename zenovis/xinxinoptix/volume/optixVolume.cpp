@@ -104,10 +104,10 @@ void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path) {
     volume.grids.clear();
     volume.grids.resize(list.size());
     
-    volume.loadTasks.clear();
+    volume.tasks.clear();
 
     for (uint i=0; i<list.size(); ++i) {
-        volume.loadTasks.emplace_back([&volume, path, i] {
+        volume.tasks.emplace_back([&volume, path, i] {
             loadGrid( volume.grids[i], path, i);
         });
     }
@@ -187,7 +187,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     volume.grids.clear();
     volume.grids.resize(tmp_grids.size());
 
-    volume.loadTasks.clear();
+    volume.tasks.clear();
 
         auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
             openvdb::FloatGrid::Ptr srcGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid_ptr);
@@ -202,11 +202,11 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
         if (picking) {
             auto name = volume.selected[i];
-            volume.loadTasks.emplace_back([&volume, path, name, i] {
+            volume.tasks.emplace_back([&volume, path, name, i] {
                 loadGrid(volume.grids[i], path, name);
             });
         } else {
-            volume.loadTasks.emplace_back([&volume, path, i] {
+            volume.tasks.emplace_back([&volume, path, i] {
                 loadGrid(volume.grids[i], path, i);
             });
         } // else 

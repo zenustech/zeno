@@ -19,6 +19,7 @@ namespace zeno
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
         std::vector<std::pair<std::string, std::string>> tex3Ds;
+        std::string transform;
         std::string mtlidkey;  // unused for now
 
         size_t serializeSize() const
@@ -69,6 +70,10 @@ namespace zeno
                 size += sizeof(value_len);
                 size += value.length();
             }
+
+            auto transformLen{transform.size()};
+            size += sizeof(transformLen);
+            size += transformLen;
 
             return size;
         }
@@ -148,6 +153,13 @@ namespace zeno
                 memcpy(str + i, value.c_str(), value_len);
                 i += value_len;
             }
+
+            auto transformLen{transform.size()};
+            memcpy(str + i, &transformLen, sizeof(transformLen));
+            i += sizeof(transformLen);
+
+            transform.copy(str + i, transformLen);
+            i += transformLen;
         }
 
         std::vector<char> serialize() const
@@ -246,6 +258,13 @@ namespace zeno
 
                 this->tex3Ds[j] = std::make_pair(key, value);;
             }
+
+            size_t transformLen;
+            memcpy(&transformLen, str + i, sizeof(transformLen));
+            i += sizeof(transformLen);
+
+            this->transform = std::string{str + i, transformLen};
+            i += transformLen;
         }
 
         static MaterialObject deserialize(const std::vector<char> &str)

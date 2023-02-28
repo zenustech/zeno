@@ -185,6 +185,14 @@ struct ShaderFinalize : INode {
                 }
                 mtl->tex3Ds.push_back(std::make_pair(path, channel_string)); 
             }
+
+            auto ud = get_input<ListObject>("tex3dList")->userData();
+
+            if ( ud.has("transform") ) {
+            
+                auto transformString = ud.get2<std::string>("transform");
+                mtl->transform = transformString;
+            }
         }
 
         //if (has_input("mtlid"))

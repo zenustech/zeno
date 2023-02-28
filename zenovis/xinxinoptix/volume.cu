@@ -411,7 +411,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     ray_orig = test_point;
     prd->origin = ray_orig;
     prd->direction = ray_dir;
-    
+
     prd->emission = emitting;
 
     if (v_density == 0) {
@@ -585,11 +585,15 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         const auto v_density = vol_out.density;
 
         transmittance *= 1 - min(max(0.0, v_density), 1.0f);
-        // if (transmittance < 0.1) {
-        //     float q = max(0.05, 1 - transmittance);
-        //     if (rnd(prd->seed) < q) { transmittance = 0; }
-        //     transmittance /= 1-q;
-        // }
+        auto avg = dot(transmittance, make_float3(1.0f/3.0f));
+        if (avg < 0.1) {
+            float q = max(0.05, 1 - avg);
+            if (rnd(prd->seed) < q) { 
+                transmittance = vec3(0); 
+            } else {
+                transmittance /= 1-q;
+            }
+        }
         if (v_density > 0) {
             transmittance *= vol_out.albedo;
         }

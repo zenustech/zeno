@@ -65,6 +65,7 @@ struct GraphicsManager {
             std::string shader;
             std::string mtlidkey;
             std::string extensions;
+            std::string transform;
         };
         struct DetPrimitive {
             std::shared_ptr<zeno::PrimitiveObject> primSp;
@@ -345,7 +346,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->mtlidkey, mtl->extensions};
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->mtlidkey, mtl->extensions, mtl->transform};
             }
         }
 
@@ -754,10 +755,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                     glm::f64mat4 linear_transform(1.0);  
 
-                    if (!mtldet->extensions.empty()) {
+                    if (!mtldet->transform.empty()) {
                     
                         rapidjson::Document d;
-                        d.Parse(mtldet->extensions.c_str());
+                        d.Parse(mtldet->transform.c_str());
 
                         if ( !d.IsNull() ) {
 

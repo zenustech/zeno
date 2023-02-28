@@ -1293,7 +1293,7 @@ void updateVolume() {
 
         if (OptixUtil::g_vdb_indice_visible.count(key) > 0) {
             // UPLOAD to GPU
-            for (auto& task : val->loadTasks) {
+            for (auto& task : val->tasks) {
                 task();
             } //val->uploadTasks.clear();
         } else {      

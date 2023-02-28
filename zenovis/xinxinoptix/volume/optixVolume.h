@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <string>
+#include <filesystem>
 
 struct GridWrapper {
 	nanovdb::GridHandle<> handle;
@@ -29,8 +30,10 @@ struct VolumeWrapper
 	glm::f64mat4 transform; 
 	std::vector<std::string> selected;
 
+	std::filesystem::file_time_type file_time;
+
 	std::vector<GridWrapper> grids;
-	std::vector<std::function<void()>> loadTasks;
+	std::vector<std::function<void()>> tasks;
 };
 
 bool loadVolume( VolumeWrapper& volume, const std::string& path );
