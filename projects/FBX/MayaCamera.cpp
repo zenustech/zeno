@@ -415,7 +415,7 @@ struct LiveMeshNode : INode {
     }
 
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prims = std::make_shared<zeno::ListObject>();
         auto vertSrc = get_input2<std::string>("vertSrc");
 
         int frameid;
@@ -436,32 +436,37 @@ struct LiveMeshNode : INode {
             //file.close();
 
             json parseData = json::parse(vertSrc);
-            auto frameDataCount = parseData.count(std::to_string(frameid));
+
+            auto& frameData = parseData[std::to_string(frameid)];
+            auto frameDataSize = frameData["DATA"].size();
 
             std::cout << "src size " << vertSrc.size()
-                      << " frame data count " << frameDataCount
+                      << " data size " << frameDataSize
                       << " frame " << frameid
                       << "\n";
 
-            if(frameDataCount){
-                auto& frameData = parseData[std::to_string(frameid)];
-                int vertices_size = frameData["MESH_POINTS"].size();
-                int vertexCount_size = frameData["MESH_VERTEX_COUNTS"].size();
-                int vertexList_size = frameData["MESH_VERTEX_LIST"].size();
+            auto& AllMeshData = frameData["DATA"];
+            for(auto& mapItem: AllMeshData.items()){
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                std::cout << "iter map key " << mapItem.key() << "\n";
+                auto& mapData = mapItem.value();
+                int vertices_size = mapData["MESH_POINTS"].size();
+                int vertexCount_size = mapData["MESH_VERTEX_COUNTS"].size();
+                int vertexList_size = mapData["MESH_VERTEX_LIST"].size();
                 PrimIngredient ingredient;
-                ingredient.vertices = frameData["MESH_POINTS"].get<VERTICES>();
-                ingredient.vertexCount = frameData["MESH_VERTEX_COUNTS"].get<VERTEX_COUNT>();
-                ingredient.vertexList = frameData["MESH_VERTEX_LIST"].get<VERTEX_LIST>();
+                ingredient.vertices = mapData["MESH_POINTS"].get<VERTICES>();
+                ingredient.vertexCount = mapData["MESH_VERTEX_COUNTS"].get<VERTEX_COUNT>();
+                ingredient.vertexList = mapData["MESH_VERTEX_LIST"].get<VERTEX_LIST>();
                 std::cout << "Vertices Size " << vertices_size << " " << vertexCount_size << " " << vertexList_size << "\n";
                 GeneratePrimitiveObject(ingredient, prim);
-            }else{
 
+                prims->arr.emplace_back(prim);
             }
 
         }else{
 
         }
-        set_output("prim", std::move(prim));
+        set_output("prims", std::move(prims));
     }
 };
 
@@ -471,7 +476,7 @@ ZENO_DEFNODE(LiveMeshNode)({
         {"string", "vertSrc", ""},
     },
     {
-        "prim"
+        "prims"
     },
     {
     },

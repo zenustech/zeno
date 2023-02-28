@@ -1054,3 +1054,6 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
         zenoApp->getMainWindow()->updateViewport();
     }
 }
+ZTimeline *DisplayWidget::getTimelinePointer() {
+    return m_timeline;
+}

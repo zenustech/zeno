@@ -1,5 +1,6 @@
 import sys
 import time
+import array
 import socket
 import ctypes
 import PySide2
@@ -62,9 +63,7 @@ class ServerWorker(QtCore.QObject):
 
 class MayaApi:
     def __init__(self) -> None:
-        self.vertex_count_list = []
-        self.vertex_list_list = []
-        self.points_list = []
+        self.meshDataMap = {}
         self.cam_trans = []
 
     def getCurrentFrame(self):
@@ -105,16 +104,15 @@ class MayaApi:
         selection = om.MSelectionList()
         om.MGlobal.getActiveSelectionList( selection )
         iterSel = om.MItSelectionList(selection, om.MFn.kMesh)
-        #print("Sel ", selection)
-        self.vertex_count_list = []
-        self.vertex_list_list = []
-        self.points_list = []
+        print("Sel ", selection)
 
         while not iterSel.isDone():
+            vertex_count_list = []
+            vertex_list_list = []
+            points_list = []
             # get dagPath
             dagPath = om.MDagPath()
             iterSel.getDagPath( dagPath )
-            print("Dag Path", dagPath)
             # create empty point array
             inMeshMPointArray = om.MPointArray()
             # create function set and get points in world space
@@ -122,19 +120,26 @@ class MayaApi:
             currentInMeshMFnMesh.getPoints(inMeshMPointArray, om.MSpace.kWorld)
             inMeshMIntArray_vertexCount = om.MIntArray()
             inMeshMIntArray_vertexList = om.MIntArray()
-            currentInMeshMFnMesh.getVertices(inMeshMIntArray_vertexCount, inMeshMIntArray_vertexList);
+            currentInMeshMFnMesh.getVertices(inMeshMIntArray_vertexCount, inMeshMIntArray_vertexList)
             for i in range(inMeshMIntArray_vertexCount.length()):
-                self.vertex_count_list.append(inMeshMIntArray_vertexCount[i])
+                vertex_count_list.append(inMeshMIntArray_vertexCount[i])
             for i in range(inMeshMIntArray_vertexList.length()):
-                self.vertex_list_list.append(inMeshMIntArray_vertexList[i])
+                vertex_list_list.append(inMeshMIntArray_vertexList[i])
             # put each point to a list
-            for i in range( inMeshMPointArray.length() ) :
-                #v1 = math.floor(inMeshMPointArray[i][0] * 10000)/10000
-                #v2 = math.floor(inMeshMPointArray[i][0] * 10000)/10000
-                #v3 = math.floor(inMeshMPointArray[i][0] * 10000)/10000
-                self.points_list.append( [inMeshMPointArray[i][0], inMeshMPointArray[i][1], inMeshMPointArray[i][2]] )
-            #pointList.append( [v1, v2, v3] )
-            break
+            for i in range(inMeshMPointArray.length()):
+                points_list.append([inMeshMPointArray[i][0], inMeshMPointArray[i][1], inMeshMPointArray[i][2]])
+
+            full_path = dagPath.fullPathName().replace("|", "_")
+            strip_full_path = full_path[1:]
+            data = {
+                "MESH_POINTS": points_list,
+                "MESH_VERTEX_LIST": vertex_list_list,
+                "MESH_VERTEX_COUNTS": vertex_count_list
+            }
+
+            print("Iter Dag Path", full_path)
+            self.meshDataMap[strip_full_path] = data
+            iterSel.next()
 
 class Helper(QtCore.QObject):
     def __init__(self) -> None:
@@ -197,13 +202,13 @@ class Helper(QtCore.QObject):
 
     def send_sync_data(self):
         _addr = 'http://{}/sync_data'.format(self.host_address)
-        print("SendSyncData ", _addr)
+        _frame = self.api.getCurrentFrame()
+        print("SendSyncData ", _addr, "Frame", _frame, "Map", len(self.api.meshDataMap))
         data = {
-            "FRAME": self.api.getCurrentFrame(), 
-            "MESH_POINTS": self.api.points_list,
-            "MESH_VERTEX_LIST": self.api.vertex_list_list,
-            "MESH_VERTEX_COUNTS": self.api.vertex_count_list
+            "FRAME": _frame,
+            "DATA": self.api.meshDataMap
             }
+
         r = requests.post(_addr, json=data)
         print("SendSyncData ", r)
 
@@ -297,7 +302,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.connectUi()
 
     def retranslateUi(self):
-        host = "192.168.3.15:18080"
+        host = "127.0.0.1:18080"
         port = "18081"
         self.setWindowTitle("Zeno Live Sync")
         self.helloButton.setText("hello")
@@ -343,9 +348,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         print("=========="*2)
         print("Global Window ", maya_basicTest_window)
         print("Camera Data ", self.helper.api.cam_trans)
-        print("Mesh Data Points ", self.helper.api.points_list)
-        print("Mesh Data Vertex ", self.helper.api.vertex_list_list)
-        print("Mesh Data Counts ", self.helper.api.vertex_count_list)
+        print("Mesh Map Data ", self.helper.api.meshDataMap)
         print("Server Enabled ", self.helper.server_started)
         print("Sync Enabled ", self.helper.enable_sync)
         print("=========="*2)
@@ -368,6 +371,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def onHelloButtonClicked(self):
         self.helper.send_hello()
+        self.helper.send_client_info(False)
     
     def onStartServerButtonClicked(self):
         if self.helper.server_started:

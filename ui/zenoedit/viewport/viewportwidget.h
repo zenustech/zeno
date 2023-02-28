@@ -122,6 +122,7 @@ public:
     void resetTimeline(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
+    ZTimeline* getTimelinePointer();
 
 public slots:
     void updateFrame(const QString& action = "");

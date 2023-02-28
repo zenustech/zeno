@@ -24,17 +24,15 @@ LiveHttpServer::LiveHttpServer() {
                 json parseData = json::parse(req.body);
 
                 int frame = parseData["FRAME"].get<double>();
-                int vertices_size = parseData["MESH_POINTS"].size();
-                int vertexCount_size = parseData["MESH_VERTEX_COUNTS"].size();
-                int vertexList_size = parseData["MESH_VERTEX_LIST"].size();
-                if(vertices_size && vertexCount_size && vertexList_size) {
+                int data_size = parseData["DATA"].size();
+                if(data_size) {
                     d_frame_mesh[std::to_string(frame)] = parseData;
 
                     //auto vertices = parseData["vertices"].get<std::vector<std::vector<float>>>();
                     //auto vertexCount = parseData["vertexCount"].get<std::vector<int>>();
                     //auto vertexList = parseData["vertexList"].get<std::vector<int>>();
                     emit zenoApp->getMainWindow()->liveSignalsBridge->frameMeshSendDone();
-                    std::cout << " Frame " << frame << " Size " << vertices_size << " " << vertexCount_size << " " << vertexList_size << "\n";
+                    std::cout << " Frame " << frame << " DataSize " << data_size << "\n";
                 }
 
                 return crow::response{"<h1>LiveHttpServer: SyncInfo - Zeno<h1>"};
