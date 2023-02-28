@@ -16,6 +16,7 @@ enum class ZBTControlPacketType : uint16_t {
     SendAuthToken,
     AuthFailed,
     BindUdpToSession,
+    RemoveSession,
     End,
     Max = 0xFFFF,
 };

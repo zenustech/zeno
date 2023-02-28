@@ -35,10 +35,14 @@ bool UnrealSessionRegistry::hasSession(const std::string &sessionName) {
 
 std::vector<UnrealSessionInfo> UnrealSessionRegistry::all() {
     std::vector<UnrealSessionInfo> tmp;
-    for (auto kv : m_session_info) {
+    for (const auto& kv : m_session_info) {
         if (kv.second.udp_address.has_value() && kv.second.udp_port.has_value()) {
             tmp.push_back(kv.second);
         }
     }
     return tmp;
+}
+
+void UnrealSessionRegistry::removeSession(const std::string &sessionName) {
+    m_session_info.erase(sessionName);
 }

@@ -37,4 +37,13 @@ REG_PACKET_HANDLER(BindUdpToSession, ZBTControlPacketType::BindUdpToSession, {
     }
 });
 
+REG_PACKET_HANDLER(RemoveSession, ZBTControlPacketType::RemoveSession, {
+    std::error_code err;
+    const auto data = msgpack::unpack<ZPKRegisterSession>(reinterpret_cast<const uint8_t*>(inData) + sizeof(ZBTPacketHeader), inSize, err);
+
+    if (!err) {
+        UnrealSessionRegistry::getStatic().removeSession(data.sessionName);
+    }
+});
+
 #endif //ZENO_UNREALMISC_H

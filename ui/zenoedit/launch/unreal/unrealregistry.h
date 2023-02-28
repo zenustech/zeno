@@ -70,6 +70,8 @@ public:
 
     bool hasSession(const std::string& sessionName);
 
+    void removeSession(const std::string& sessionName);
+
     std::vector<UnrealSessionInfo> all();
 
 private:
