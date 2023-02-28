@@ -1,5 +1,6 @@
 import sys
 import time
+import json
 import array
 import socket
 import ctypes
@@ -18,6 +19,7 @@ sys.path.append(r"C:\Users\AMD\AppData\Roaming\Python\Python310\site-packages")
 sys.path.append(r"C:\Users\AMD\scoop\persist\python\Lib\site-packages")
 import requests
 
+binary_path = "c:/src/sync"
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
@@ -110,6 +112,8 @@ class MayaApi:
             vertex_count_list = []
             vertex_list_list = []
             points_list = []
+            uv_list = []
+
             # get dagPath
             dagPath = om.MDagPath()
             iterSel.getDagPath( dagPath )
@@ -127,17 +131,39 @@ class MayaApi:
                 vertex_list_list.append(inMeshMIntArray_vertexList[i])
             # put each point to a list
             for i in range(inMeshMPointArray.length()):
-                points_list.append([inMeshMPointArray[i][0], inMeshMPointArray[i][1], inMeshMPointArray[i][2]])
+                # for write binary, we flatten the data
+                # points_list.append([inMeshMPointArray[i][0], inMeshMPointArray[i][1], inMeshMPointArray[i][2]])
+
+                pa = inMeshMPointArray[i]
+                points_list.append(pa[0])
+                points_list.append(pa[1])
+                points_list.append(pa[2])
+
+            # uv
+            U_MFloatArray = om.MFloatArray()
+            V_MFloatArray = om.MFloatArray()
+            uvIdsMIntArray = om.MIntArray()
+            uvCountsMIntArray = om.MIntArray()
+            currentInMeshMFnMesh.getUVs(U_MFloatArray, V_MFloatArray)
+            currentInMeshMFnMesh.getAssignedUVs (uvCountsMIntArray, uvIdsMIntArray)
+
+            for i in range( inMeshMIntArray_vertexList.length() ):
+                u = U_MFloatArray[uvIdsMIntArray[i]]
+                v = V_MFloatArray[uvIdsMIntArray[i]]
+                uv_list.append(u)
+                uv_list.append(v)
 
             full_path = dagPath.fullPathName().replace("|", "_")
             strip_full_path = full_path[1:]
             data = {
                 "MESH_POINTS": points_list,
                 "MESH_VERTEX_LIST": vertex_list_list,
-                "MESH_VERTEX_COUNTS": vertex_count_list
+                "MESH_VERTEX_COUNTS": vertex_count_list,
+                "MESH_UV": uv_list
             }
 
             print("Iter Dag Path", full_path)
+            print("  Size", int(len(points_list)/3), len(vertex_list_list), len(vertex_count_list), int(len(uv_list)/2))
             self.meshDataMap[strip_full_path] = data
             iterSel.next()
 
@@ -203,12 +229,62 @@ class Helper(QtCore.QObject):
     def send_sync_data(self):
         _addr = 'http://{}/sync_data'.format(self.host_address)
         _frame = self.api.getCurrentFrame()
-        print("SendSyncData ", _addr, "Frame", _frame, "Map", len(self.api.meshDataMap))
+
+        # print("SendSyncData ", _addr, "Frame", _frame, "Map", len(self.api.meshDataMap))
+        # data = {
+        #     "FRAME": _frame,
+        #     "DATA": self.api.meshDataMap
+        #     }
+        # r = requests.post(_addr, json=data)
+        # print("SendSyncData ", r)
+
+        _frame = int(_frame)
+        sizes = {}
+        mesh_info = {}
+        for k in self.api.meshDataMap.keys():
+            v = "{}.{}.VERTEX".format(_frame, k)
+            i = "{}.{}.INDICES".format(_frame, k)
+            c = "{}.{}.COUNTS".format(_frame, k)
+            u = "{}.{}.UV".format(_frame, k)
+            mk = {"VERTEX": v, "INDICES": i, "COUNTS": c, "UV": u}
+
+            s = []
+            # UV
+            with open("{}/{}".format(binary_path, u), "wb") as f:
+                su = self.api.meshDataMap[k]["MESH_UV"]
+                array.array("f", su).tofile(f)
+                s.append(len(su))
+            # POINTS
+            with open("{}/{}".format(binary_path, v), "wb") as f:
+                sv = self.api.meshDataMap[k]["MESH_POINTS"]
+                array.array("f", sv).tofile(f)
+                s.append(len(sv))
+            # INDICES
+            with open("{}/{}".format(binary_path, i), "wb") as f:
+                si = self.api.meshDataMap[k]["MESH_VERTEX_LIST"]
+                array.array("l", si).tofile(f)
+                s.append(len(si))
+            # COUNTS
+            with open("{}/{}".format(binary_path, c), "wb") as f:
+                sc = self.api.meshDataMap[k]["MESH_VERTEX_COUNTS"]
+                array.array("l", sc).tofile(f)
+                s.append(len(sc))
+
+            sizes[k] = s
+            mesh_info[k] = mk
+
+        json_object = json.dumps(mesh_info, indent=4)
+        info_path = "{}/{}.info.json".format(binary_path, _frame)
+        with open(info_path, "w") as outfile:
+            outfile.write(json_object)
+
         data = {
             "FRAME": _frame,
-            "DATA": self.api.meshDataMap
+            "BPATH": binary_path,
+            "BPATHI": info_path,
+            "SIZES": sizes
             }
-
+        print("SendSyncData ", data)
         r = requests.post(_addr, json=data)
         print("SendSyncData ", r)
 
