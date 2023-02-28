@@ -21,7 +21,13 @@ ZenoSocketItem::ZenoSocketItem(
                  cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
     m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
     m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
-    m_margin = ZenoStyle::dpiScaled(15);
+    m_innerSockMargin = ZenoStyle::dpiScaled(15);
+    m_socketXOffset = ZenoStyle::dpiScaled(24);
+    if (!m_bInnerSock)
+    {
+        setData(GVKEY_SIZEHINT, m_size);
+        setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+    }
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
@@ -33,7 +39,15 @@ int ZenoSocketItem::type() const
 
 QPointF ZenoSocketItem::center() const
 {
-    return this->sceneBoundingRect().center();
+    if (m_bInnerSock) {
+        return this->sceneBoundingRect().center();
+    }
+    else
+    {
+        //(0, 0) is the position of socket.
+        QPointF center = mapToScene(QPointF(m_size.width() / 2., m_size.height() / 2.));
+        return center;
+    }
 }
 
 QModelIndex ZenoSocketItem::paramIndex() const
@@ -45,12 +59,16 @@ QRectF ZenoSocketItem::boundingRect() const
 {
     if (m_bInnerSock)
     {
-        QRectF rc(QPointF(0, 0), m_size + QSize(2 * m_margin, 2 * m_margin));
+        QRectF rc(QPointF(0, 0), m_size + QSize(2 * m_innerSockMargin, 2 * m_innerSockMargin));
         return rc;
     }
     else
     {
-        return QRectF(QPointF(0, 0), m_size);
+        QSizeF wholeSize = QSizeF(m_size.width() + m_socketXOffset, m_size.height());
+        if (m_bInput)
+            return QRectF(QPointF(-m_socketXOffset, 0), wholeSize);
+        else
+            return QRectF(QPointF(0, 0), wholeSize);
     }
 }
 
@@ -194,7 +212,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     }
     else
     {
-        QRectF rc(m_margin, m_margin, m_size.width(), m_size.height());
+        QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
         painter->drawEllipse(rc);
     }
 }

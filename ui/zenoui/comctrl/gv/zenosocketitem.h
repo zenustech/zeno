@@ -49,7 +49,8 @@ private:
     SOCK_STATUS m_status;
     const QPersistentModelIndex m_viewSockIdx;
     QSizeF m_size;
-    int m_margin;
+    int m_innerSockMargin;
+    int m_socketXOffset;
     bool m_bInput;
     bool m_bInnerSock;
     bool m_bHovered;
