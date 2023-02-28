@@ -15,6 +15,7 @@ enum class ZBTControlPacketType : uint16_t {
     RegisterSession,
     SendAuthToken,
     AuthFailed,
+    BindUdpToSession,
     End,
     Max = 0xFFFF,
 };
@@ -93,6 +94,13 @@ struct alignas(8) ZPKRegisterSession {
     std::string sessionName;
 
     MSGPACK_TRAIT(sessionName);
+};
+
+struct alignas(8) ZPKBindUdpToSession : public ZPKRegisterSession {
+    std::string address;
+    uint16_t port;
+
+    MSGPACK_TRAIT(sessionName, address, port);
 };
 
 #endif //ZENO_NETWORKTYPES_H

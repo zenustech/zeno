@@ -1,9 +1,10 @@
 #include "unrealudpserver.h"
 #include "model/networktypes.h"
-#include <zeno/utils/log.h>
-#include <QUdpSocket>
+#include "unrealregistry.h"
 #include <QThread>
+#include <QUdpSocket>
 #include <QtEndian>
+#include <zeno/utils/log.h>
 
 UnrealUdpServer &UnrealUdpServer::getStaticClass() {
     static UnrealUdpServer sUnrealUdpServer;
@@ -92,6 +93,20 @@ void UnrealUdpServer::timerEvent(QTimerEvent* event) {
 
     if (m_msg_buffer.size() > 1024) {
         m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + 512);
+    }
+
+    // TODO: darc move send height field to unreal to a better place
+    if (UnrealSubjectRegistry::getStatic().isDirty()) {
+        for (auto& sessions : UnrealSessionRegistry::getStatic().all()) {
+            for (auto& item : UnrealSubjectRegistry::getStatic().height_fields()) {
+                std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(item, ZBFileType::HeightField);
+                for (auto& datagram : datagrams) {
+                    datagram.setDestination(QHostAddress{ QString::fromStdString(sessions->udp_address.value()) }, sessions->udp_port.value());
+                    m_socket->writeDatagram(datagram);
+                }
+            }
+        }
+        UnrealSubjectRegistry::getStatic().markDirty(true);
     }
 }
 

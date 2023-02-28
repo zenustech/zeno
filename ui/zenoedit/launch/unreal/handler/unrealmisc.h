@@ -28,4 +28,13 @@ REG_PACKET_HANDLER(SendAuthToken, ZBTControlPacketType::SendAuthToken, {
     }
 });
 
+REG_PACKET_HANDLER(BindUdpToSession, ZBTControlPacketType::BindUdpToSession, {
+    std::error_code err;
+    const auto data = msgpack::unpack<ZPKBindUdpToSession>(reinterpret_cast<const uint8_t*>(inData) + sizeof(ZBTPacketHeader), inSize, err);
+
+    if (!err) {
+        UnrealSessionRegistry::getStatic().updateSession(data.sessionName, {data.address, data.port});
+    }
+});
+
 #endif //ZENO_UNREALMISC_H

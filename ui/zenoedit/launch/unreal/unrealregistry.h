@@ -66,12 +66,15 @@ struct UnrealSessionInfo {
 struct UnrealSessionRegistry {
 
 public:
-    std::string newSession() {
-        std::string name = newSessionName();
-        UnrealSessionInfo info {};
-        m_session_info.insert(std::make_pair(name, std::move(info)));
-        return name;
-    }
+    std::string newSession();
+
+    bool updateSession(const std::string& sessionName, const UnrealSessionInfo& info);
+
+    const UnrealSessionInfo& getSessionInfo(const std::string& sessionName);
+
+    bool hasSession(const std::string& sessionName);
+
+    std::vector<UnrealSessionInfo*> all();
 
 private:
     std::unordered_map<std::string, UnrealSessionInfo> m_session_info;
