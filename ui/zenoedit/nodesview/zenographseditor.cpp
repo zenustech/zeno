@@ -428,7 +428,10 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 
 void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
     ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
-    pView->showFloatPanel(subgIdx, nodes);
+    if (pView != NULL)
+    {
+        pView->showFloatPanel(subgIdx, nodes);
+    }
 }
 
 void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)

@@ -700,15 +700,16 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
 
 void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_P) {
-        ZenoSubGraphScene *s = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
-        if (s->selectNodesIndice().size() == 1)
+        ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
+        if (scene != NULL)
         {
-            m_floatPanelShow = true;
-            showFloatPanel(s->subGraphIndex(), s->selectNodesIndice());
-        } else if (s->selectNodesIndice().size() == 0 && m_prop && m_prop->isVisible())
-        {
-            m_prop->hide();
-            m_floatPanelShow = false;
+            if (scene->selectNodesIndice().size() == 1) {
+                m_floatPanelShow = true;
+                showFloatPanel(scene->subGraphIndex(), scene->selectNodesIndice());
+            } else if (scene->selectNodesIndice().size() == 0 && m_prop != NULL && m_prop->isVisible()) {
+                m_prop->hide();
+                m_floatPanelShow = false;
+            }
         }
     }
     QWidget::keyPressEvent(event);
