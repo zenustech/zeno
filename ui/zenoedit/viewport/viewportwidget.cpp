@@ -777,7 +777,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    m_recordMgr.setParent(this);
+    initRecordMgr();
 
     /*
     ZMenuBar* menuBar = new ZMenuBar;
@@ -814,6 +814,23 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 DisplayWidget::~DisplayWidget()
 {
 
+}
+
+void DisplayWidget::initRecordMgr()
+{
+    m_recordMgr.setParent(this);
+
+    connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [=](int frameid) {
+        zeno::log_info("frame {} has been recorded", frameid);
+    });
+
+    connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString recPath) {
+        VideoRecInfo _recInfo;
+        _recInfo.record_path = recPath;
+        ZRecordProgressDlg dlgProc(_recInfo);
+        dlgProc.onRecordFinished();
+        dlgProc.exec();
+    });
 }
 
 void DisplayWidget::testCleanUp()
@@ -973,7 +990,7 @@ void DisplayWidget::onFinished()
         updateFrame();
         onPlayClicked(false);
         BlockSignalScope scope(timeline);
-        timeline->setPlayButtonToggle(false);
+        timeline->setPlayButtonChecked(false);
     }
 }
 
@@ -1010,7 +1027,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         updateFrame();
         onPlayClicked(false);
         BlockSignalScope scope(timeline);
-        timeline->setPlayButtonToggle(false);
+        timeline->setPlayButtonChecked(false);
     }
 }
 
@@ -1189,21 +1206,8 @@ void DisplayWidget::onRecord()
                 return;
             }
 
-            m_view->startPlay(true);
-
-            ZRecordProgressDlg dlgProc(recInfo);
-            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
-            connect(&m_recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
-            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
-
-            dlgProc.show();
-            if (QDialog::Accepted == dlgProc.exec())
-            {
-            }
-            else
-            {
-                m_recordMgr.cancelRecord();
-            }
+            //todo: set the time frame start end.
+            zenoApp->getMainWindow()->toggleTimelinePlay(true);
         }
     }
 }

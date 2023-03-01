@@ -656,6 +656,11 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
     return views;
 }
 
+void ZenoMainWindow::toggleTimelinePlay(bool bOn)
+{
+    m_pTimeline->togglePlayButton(bOn);
+}
+
 void ZenoMainWindow::onRunTriggered()
 {
     QVector<DisplayWidget*> views = viewports();

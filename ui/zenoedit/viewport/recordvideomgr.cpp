@@ -12,7 +12,7 @@
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
-    , m_timer(nullptr)
+    , m_currFrame(0)
 {
 }
 
@@ -32,8 +32,7 @@ Zenovis* RecordVideoMgr::getZenovis()
 
 void RecordVideoMgr::cancelRecord()
 {
-    if (m_timer)
-        m_timer->stop();
+    //todo:
     //Zenovis::GetInstance().blockSignals(false);
 }
 
@@ -57,25 +56,15 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         }
     }
 
-    if (!m_recordInfo.bRecordAfterRun)
-    {
-        Zenovis* pVis = getZenovis();
-        bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
-    }
-    else
-    {
-        m_timer = new QTimer(this);
-        connect(m_timer, SIGNAL(timeout()), this, SLOT(recordFrame()));
-        m_timer->start(0);
-    }
+    Zenovis* pVis = getZenovis();
+    bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+    ZASSERT_EXIT(ret);
 }
 
-void RecordVideoMgr::finishRecord()
+void RecordVideoMgr::endRecToExportVideo()
 {
-    if (m_timer)
-        m_timer->stop();
     if (!m_recordInfo.bExportVideo) {
-        emit recordFinished();
+        emit recordFinished(m_recordInfo.record_path);
         return;
     }
     //Zenovis::GetInstance().blockSignals(false);
@@ -108,53 +97,18 @@ void RecordVideoMgr::finishRecord()
                       .arg(m_recordInfo.audioPath);
             ret = QProcess::execute(cmd);
             if (ret == 0)
-                emit recordFinished();
+                emit recordFinished(m_recordInfo.record_path);
             else
                 emit recordFailed(QString());
+            return;
         }
-        emit recordFinished();
+        emit recordFinished(m_recordInfo.record_path);
     }
     else
     {
         //todo get the error string from QProcess.
         emit recordFailed(QString());
     }
-}
-
-void RecordVideoMgr::recordFrame()
-{
-    if (m_currFrame > m_recordInfo.frameRange.second)
-    {
-        finishRecord();
-        return;
-    }
-
-    Zenovis* pVis = getZenovis();
-    ZASSERT_EXIT(pVis);
-
-    pVis->setCurrentFrameId(m_currFrame);
-    pVis->paintGL();
-
-    auto record_file = zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), m_currFrame);
-
-    auto scene = pVis->getSession()->get_scene();
-    auto old_num_samples = scene->drawOptions->num_samples;
-    scene->drawOptions->num_samples = m_recordInfo.numOptix;
-    scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
-
-    auto [x, y] = pVis->getSession()->get_window_size();
-
-    auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-    pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
-    pVis->getSession()->do_screenshot(record_file, extname);
-    pVis->getSession()->set_window_size(x, y);
-    scene->drawOptions->num_samples = old_num_samples;
-
-    m_pics.append(QString::fromStdString(record_file));
-
-    emit frameFinished(m_currFrame);
-
-    m_currFrame++;
 }
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)
@@ -189,14 +143,23 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             scene->drawOptions->num_samples = old_num_samples;
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;
+            emit frameFinished(m_currFrame);
         }
 
         if (currFrame == m_recordInfo.frameRange.second)
         {
-            finishRecord();
+            //disconnect first, to stop receiving the signal from viewport.
+            Zenovis* pVis = getZenovis();
+            bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+            ZASSERT_EXIT(ret);
+
+            endRecToExportVideo();
+
+            zeno::log_critical("after executing endRecToExportVideo()");
 
             //clear issues:
             m_recordInfo = VideoRecInfo();
+
         }
     }
 }

@@ -157,6 +157,7 @@ signals:
 
 private:
     bool isOptxRendering() const;
+    void initRecordMgr();
 
     ViewportWidget* m_view;
     CameraKeyframeWidget* m_camera_keyframe;

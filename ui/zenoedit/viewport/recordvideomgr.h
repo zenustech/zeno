@@ -41,22 +41,20 @@ public:
     void setRecordInfo(const VideoRecInfo& recInfo);
 
 public slots:
-    void recordFrame();
     void cancelRecord();
     void onFrameDrawn(int);
 
 signals:
     void frameFinished(int);
-    void recordFinished();
+    void recordFinished(QString);
     void recordFailed(QString);
 
 private:
-    void finishRecord();
+    void endRecToExportVideo();
     Zenovis* getZenovis();
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;
-    QTimer* m_timer;
     int m_currFrame;
 };
 
