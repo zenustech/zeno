@@ -21,7 +21,8 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 
     virtual void emitCode(EmissionPass *em) override {
         auto attr = get_input2<std::string>("attr");
-        return em->emitCode("att_" + attr);
+        auto type = get_input2<std::string>("type");
+        return em->emitCode(type + "(att_" + attr + ")");
     }
 };
 
