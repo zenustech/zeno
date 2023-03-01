@@ -1206,9 +1206,29 @@ void DisplayWidget::onRecord()
                 return;
             }
 
-            //todo: set the time frame start end.
+            // first, set the time frame start end.
+            moveToFrame(recInfo.frameRange.first);
+
+            // and then play.
             zenoApp->getMainWindow()->toggleTimelinePlay(true);
         }
+    }
+}
+
+void DisplayWidget::moveToFrame(int frame)
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+
+    m_view->setCurrentFrameId(frame);
+    updateFrame();
+    onPlayClicked(false);
+    {
+        BlockSignalScope scope(timeline);
+        timeline->setPlayButtonChecked(false);
+        timeline->setSliderValue(frame);
     }
 }
 
