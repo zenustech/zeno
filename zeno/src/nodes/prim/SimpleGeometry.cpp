@@ -62,11 +62,11 @@
 namespace zeno {
 namespace {
 namespace cc4{
-    static void flipPrimFaceOrder(PrimitiveObject *prim) {
-        for (auto &ind: prim->tris) {
-            std::swap(ind[1], ind[2]);
-        }
+static void flipPrimFaceOrder(PrimitiveObject *prim) {
+    for (auto &ind: prim->tris) {
+        std::swap(ind[1], ind[2]);
     }
+}
 }
 }
 }
@@ -447,7 +447,7 @@ struct CreateCube : zeno::INode {
             p = p * scale * size;
 
             ROTATE_COMPUTE
-                p+= position;
+            p+= position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
@@ -463,21 +463,21 @@ struct CreateCube : zeno::INode {
 };
 
 ZENDEFNODE(CreateCube, {
-    {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        ROTATE_PARM
-        NORMUV_PARM
-        {"int", "div_w", "2"},
-        {"int", "div_h", "2"},
-        {"int", "div_d", "2"},
-        {"float", "size", "1"},
-        {"bool", "quads", "0"},
-    },
-    {"prim"},
-    {},
-    {"create"},
-});
+                           {
+                               {"vec3f", "position", "0, 0, 0"},
+                               {"vec3f", "scaleSize", "1, 1, 1"},
+                               ROTATE_PARM
+                                   NORMUV_PARM
+                               {"int", "div_w", "2"},
+                               {"int", "div_h", "2"},
+                               {"int", "div_d", "2"},
+                               {"float", "size", "1"},
+                               {"bool", "quads", "0"},
+                           },
+                           {"prim"},
+                           {},
+                           {"create"},
+                       });
 
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
@@ -505,12 +505,12 @@ struct CreateDisk : zeno::INode {
         for (int i = 0; i < divisions; i++) {
             float rad = 2 * M_PI * i / divisions;
             auto p = zeno::vec3f(cos(rad) * radius, 0,
-                           -sin(rad) * radius);
+                                 -sin(rad) * radius);
             auto p4uv = p * scaleSize;
             p = p4uv;
 
             ROTATE_COMPUTE
-                p+= position;
+            p+= position;
 
             verts.emplace_back(p);
             tris.emplace_back(i+1, 0, i+2);
@@ -528,18 +528,18 @@ struct CreateDisk : zeno::INode {
 };
 
 ZENDEFNODE(CreateDisk, {
-    {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        ROTATE_PARM
-        NORMUV_PARM
-        {"float", "radius", "1"},
-        {"int", "divisions", "32"},
-    },
-    {"prim"},
-    {},
-    {"create"},
-});
+                           {
+                               {"vec3f", "position", "0, 0, 0"},
+                               {"vec3f", "scaleSize", "1, 1, 1"},
+                               ROTATE_PARM
+                                   NORMUV_PARM
+                               {"float", "radius", "1"},
+                               {"int", "divisions", "32"},
+                           },
+                           {"prim"},
+                           {},
+                           {"create"},
+                       });
 
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
@@ -585,7 +585,7 @@ struct CreatePlane : zeno::INode {
                 p = p * scale * size;
 
                 ROTATE_COMPUTE
-                    p +=position;
+                p +=position;
 
                 auto zcp = zeno::vec3f(p[0], p[1], p[2]);
                 verts.push_back(zcp);
@@ -912,7 +912,7 @@ struct CreateTube : zeno::INode {
             p = p * scale ;
 
             ROTATE_COMPUTE
-                p+=position;
+            p+=position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
@@ -965,11 +965,6 @@ struct CreateSphere : zeno::INode {
         std::vector<int> loops = {};
         std::vector<zeno::vec2f> uvs = {};
         std::vector<zeno::vec3f> nors = {};
-
-//        auto &tris = prim->tris;
-//        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-//        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-//        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
         verts.push_back (vec3f(0,1,0));
         for (auto row = 1; row < rows; row++) {
@@ -1109,6 +1104,27 @@ struct CreateSphere : zeno::INode {
             nors2[i] = nors[i];
         }
 
+        if (!get_input2<bool>("hasNormal")){
+            prim->verts.attrs.erase("nrm");
+        }
+
+        if (!get_input2<bool>("hasVertUV")){
+            prim->uvs.clear();
+            prim->loops.erase_attr("uvs");
+        }
+
+        if (get_input2<bool>("isFlipFace")){
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                auto [base, cnt] = prim->polys[i];
+                for (int j = 0; j < (cnt / 2); j++) {
+                    std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
+                    if (prim->loops.has_attr("uvs")) {
+                        std::swap(prim->loops.attr<int>("uvs")[base + j], prim->loops.attr<int>("uvs")[base + cnt - 1 - j]);
+                    }
+                }
+            }
+        }
+
         if(!quad){
             primTriangulate(prim.get());
         }
@@ -1162,17 +1178,17 @@ struct CreateCone : zeno::INode {
 };
 
 ZENDEFNODE(CreateCone, {
-    {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"float", "height", "2"},
-        {"int", "lons", "32"},
-    },
-    {"prim"},
-    {},
-    {"create"},
-});
+                           {
+                               {"vec3f", "position", "0, 0, 0"},
+                               {"vec3f", "scaleSize", "1, 1, 1"},
+                               {"float", "radius", "1"},
+                               {"float", "height", "2"},
+                               {"int", "lons", "32"},
+                           },
+                           {"prim"},
+                           {},
+                           {"create"},
+                       });
 
 struct CreateCylinder : zeno::INode {
     virtual void apply() override {
@@ -1219,16 +1235,16 @@ struct CreateCylinder : zeno::INode {
 };
 
 ZENDEFNODE(CreateCylinder, {
-    {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"float", "height", "2"},
-        {"int", "lons", "32"},
-    },
-    {"prim"},
-    {},
-    {"create"},
-});
+                               {
+                                   {"vec3f", "position", "0, 0, 0"},
+                                   {"vec3f", "scaleSize", "1, 1, 1"},
+                                   {"float", "radius", "1"},
+                                   {"float", "height", "2"},
+                                   {"int", "lons", "32"},
+                               },
+                               {"prim"},
+                               {},
+                               {"create"},
+                           });
 }
 }
