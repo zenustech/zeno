@@ -59,10 +59,10 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             if (!read_done) {
                 log_info("[alembic] totally {} velocities", marr->size());
             }
-            auto &parr = prim->attr<vec3f>("vel");
+            auto &parr = prim->add_attr<vec3f>("vel");
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
-                parr.emplace_back(val[0], val[1], val[2]);
+                parr[i] = {val[0], val[1], val[2]};
             }
         }
     }
@@ -234,10 +234,10 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
             if (!read_done) {
                 log_info("[alembic] totally {} velocities", marr->size());
             }
-            auto &parr = prim->attr<vec3f>("vel");
+            auto &parr = prim->add_attr<vec3f>("vel");
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
-                parr.emplace_back(val[0], val[1], val[2]);
+                parr[i] = {val[0], val[1], val[2]};
             }
         }
     }
@@ -272,7 +272,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             auto &parr = prim->add_attr<vec3f>("vel");
             for (size_t i = 0; i < marr->size(); i++) {
                 auto const &val = (*marr)[i];
-                parr.emplace_back(val[0], val[1], val[2]);
+                parr[i] = {val[0], val[1], val[2]};
             }
         }
     }
