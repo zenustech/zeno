@@ -13,7 +13,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
-#include "kernel/laplace_matrix.hpp"
+#include "kernel/laplacian.hpp"
 #include "linear_system/mfcg.hpp"
 
 namespace zeno {

@@ -101,7 +101,7 @@ namespace zeno { namespace COLLISION_UTILS {
         // // auto avge = (e01 + e02 + e12)/(T)3.0;
 
         // T barySum = (T)1.0;
-        // T distance = COLLISION_UTILS::pointTriangleDistance(t0,t1,t2,p,barySum);
+        // T distance = pointTriangleDistance(t0,t1,t2,p,barySum);
         // // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
         // // collisionEps = avge * max_ratio;
         // auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
