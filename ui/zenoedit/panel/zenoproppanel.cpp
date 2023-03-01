@@ -26,6 +26,7 @@
 #include "../dialog/zeditparamlayoutdlg.h"
 #include <zenoui/comctrl/zspinboxslider.h>
 #include "zenoblackboardpropwidget.h"
+#include <zenoui/comctrl/zcontrolgroup.h>
 
 
 class RetryScope
@@ -283,11 +284,26 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
     QVariant val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
-    const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
-    const QVariant& pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+
+    
+    const QString &typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+    const QVariant &pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
+
+    if (ctrl == CONTROL_GROUP) 
+    {
+        ZControlGroup *pGroup = new ZControlGroup(paramName, this);
+        pGroupLayout->addWidget(pGroup, row, 0, 1, 3);
+        _PANEL_CONTROL panelCtrl;
+        panelCtrl.controlLayout = pGroupLayout;
+        panelCtrl.pControl = pGroup;
+        panelCtrl.m_viewIdx = perIdx;
+
+        m_controls[tabName][groupName][paramName] = panelCtrl;
+        return true;
+    }
 
     if (ctrl == CONTROL_DICTPANEL)
     {
@@ -476,11 +492,15 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
                 ZASSERT_EXIT(pGridLayout);
 
                 ctrl.controlLayout->removeWidget(ctrl.pControl);
-                ctrl.controlLayout->removeWidget(ctrl.pLabel);
-                ctrl.controlLayout->removeWidget(ctrl.pIcon);
                 delete ctrl.pControl;
-                delete ctrl.pLabel;
-                delete ctrl.pIcon;
+                if (ctrl.pLabel) {
+                    ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                    delete ctrl.pLabel;
+                }
+                if (ctrl.pIcon) {
+                    ctrl.controlLayout->removeWidget(ctrl.pIcon);
+                    delete ctrl.pIcon;
+                }
                 m_controls[tabName][groupName].remove(paramName);
             }
         }
@@ -514,14 +534,19 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     {
         QStandardItem* param = groupItem->child(r);
 
-        if (role == ROLE_VPARAM_NAME)
+        if (role == ROLE_PARAM_NAME)
         {
             for (auto it = group.begin(); it != group.end(); it++)
             {
                 if (it->second.m_viewIdx == param->index())
                 {
                     const QString& newName = it->second.m_viewIdx.data(ROLE_VPARAM_NAME).toString();
-                    it->second.pLabel->setText(newName);
+                    if (qobject_cast<ZControlGroup*>(it->second.pControl)) {
+                        ZControlGroup *pGroup = qobject_cast<ZControlGroup *>(it->second.pControl);
+                        pGroup->setText(newName);
+                    } else {
+                        it->second.pLabel->setText(newName);
+                    }
                     it->first = newName;
                     break;
                 }
@@ -535,11 +560,15 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             ZASSERT_EXIT(pGridLayout);
 
             ctrl.controlLayout->removeWidget(ctrl.pControl);
-            ctrl.controlLayout->removeWidget(ctrl.pLabel);
-            ctrl.controlLayout->removeWidget(ctrl.pIcon);
             delete ctrl.pControl;
-            delete ctrl.pLabel;
-            delete ctrl.pIcon;
+            if (ctrl.pLabel) {
+                ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                delete ctrl.pLabel;
+            }
+            if (ctrl.pIcon) {
+                ctrl.controlLayout->removeWidget(ctrl.pIcon);
+                delete ctrl.pIcon;
+            }
 
             int row = group.keys().indexOf(paramName, 0);
             syncAddControl(pGridLayout, param, row);

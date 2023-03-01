@@ -814,6 +814,31 @@ void ZenoParamSpinBox::setValue(int value)
     m_pSpinBox->setValue(value);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamGroup::ZenoParamGroup(const QString &text, QGraphicsItem *parent) : 
+    ZenoParamWidget(parent)
+{
+    m_pControlGroup = new ZControlGroup(text);
+    setWidget(m_pControlGroup);
+    m_pControlGroup->setStyleSheet(
+        R"(
+        ZControlGroup{
+            background:rgb(45,50,57);
+        } 
+        QFrame{
+            color:rgb(22,25,29);
+        } 
+        QLabel{
+            font:12pt \"Alibaba PuHuiTi\"; 
+            color:rgb(94,103,115); 
+        })"
+    );
+}
+
+void ZenoParamGroup::setText(const QString& text) 
+{
+    m_pControlGroup->setText(text);
+}
     //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()

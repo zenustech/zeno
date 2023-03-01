@@ -66,6 +66,9 @@ private:
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
     void switchStackProperties(int ctrl, VParamItem *pItem);
+    void addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl);
+    void delControlGroup(bool bInput, const QString &name);
+    void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row);
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;

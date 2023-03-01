@@ -379,6 +379,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
+    case CONTROL_GROUP:             return "Group";
     default:
         return "";
     }
@@ -465,6 +466,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "Dict Panel")
     {
         return CONTROL_DICTPANEL;
+    }
+    else if (descName == "Group")
+    {
+        return CONTROL_GROUP;
     }
     else
     {

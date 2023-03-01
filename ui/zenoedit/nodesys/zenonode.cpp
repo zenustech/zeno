@@ -419,7 +419,15 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
 
     if (role == ROLE_PARAM_NAME)
     {
-        if (groupName == iotags::params::node_inputs)
+        const int paramCtrl = pItem->data(ROLE_PARAM_CTRL).toInt();
+        if (paramCtrl == CONTROL_GROUP) {
+            for (auto group : m_groups) {
+                if (group.viewidx == viewParamIdx) {
+                    group.group_control->setText(paramName);
+                }
+            }
+        }
+        else if (groupName == iotags::params::node_inputs)
         {
             for (int i = 0; i < m_inSockets.size(); i++)
             {
@@ -619,13 +627,23 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     {
         bool bInput = groupName == iotags::params::node_inputs;
         ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
-        ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
-        pSocketsLayout->addLayout(pSocketLayout);
+        int ctrl = viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
+        if (ctrl == CONTROL_GROUP) {
+            pSocketsLayout->addLayout(addGroup(viewParamIdx));
+        } else {
+            ZSocketLayout *pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
+            pSocketsLayout->addLayout(pSocketLayout);
+        }
         updateWhole();
     }
     else if (groupName == iotags::params::node_params)
     {
-        m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
+        int ctrl = viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
+        if (ctrl == CONTROL_GROUP) {
+            m_paramsLayout->addLayout(addGroup(viewParamIdx));
+        } else {
+            m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
+        }
     }
 }
 
@@ -661,13 +679,13 @@ void ZenoNode::onViewParamsMoved(const QModelIndex& parent, int start, int end, 
             }
         }
 #endif
-        m_inSockets.move(start, destRow);
+        //m_inSockets.move(start, destRow);
         m_inputsLayout->moveItem(start, destRow);
         updateWhole();
     }
     else if (groupName == iotags::params::node_outputs)
     {
-        m_outSockets.move(start, destRow);
+        //m_outSockets.move(start, destRow);
         m_outputsLayout->moveItem(start, destRow);
         updateWhole();
     }
@@ -684,6 +702,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         m_params.clear();
         m_inSockets.clear();
         m_outSockets.clear();
+        m_groups.clear();
         return;
     }
 
@@ -701,8 +720,21 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     QStandardItem* paramItem = parentItem->child(first);
     const QString& groupName = parentItem->text();
     const QModelIndex& viewParamIdx = paramItem->index();
-
-    if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
+    const int paramCtrl = viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
+    if (paramCtrl == CONTROL_GROUP) {
+        for (auto group : m_groups) {
+            if (group.viewidx == viewParamIdx) {
+                ZGraphicsLayout *paramLayout = group.ctrl_layout;
+                m_groups.removeOne(group);
+                ZGraphicsLayout *pParentLayout = paramLayout->parentLayout();
+                if (pParentLayout)
+                    pParentLayout->removeLayout(paramLayout);
+                updateWhole();
+                break;
+            }
+        }
+    }
+    else if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
         bool bInput = groupName == iotags::params::node_inputs;
         const QString& sockName = viewParamIdx.data(ROLE_VPARAM_NAME).toString();
@@ -737,8 +769,13 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
     {
         const QStandardItem* pItem = socketItems->child(r);
         const QModelIndex& viewIdx = pItem->index();
-        ZSocketLayout* pSocketLayout = addSocket(viewIdx, bInput, pScene);
-        pSocketsLayout->addLayout(pSocketLayout);
+        int ctrl = viewIdx.data(ROLE_PARAM_CTRL).toInt();
+        if (ctrl == CONTROL_GROUP) {
+            pSocketsLayout->addLayout(addGroup(viewIdx));
+        } else {
+            ZSocketLayout *pSocketLayout = addSocket(viewIdx, bInput, pScene);
+            pSocketsLayout->addLayout(pSocketLayout);
+        }
     }
     return pSocketsLayout;
 }
@@ -803,7 +840,13 @@ ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphSce
     {
         const QStandardItem* pItem = paramItems->child(r);
         const QModelIndex& idx = pItem->index();
-        paramsLayout->addLayout(addParam(idx, pScene));
+        int ctrl = idx.data(ROLE_PARAM_CTRL).toInt();
+        if (ctrl == CONTROL_GROUP) {
+            paramsLayout->addLayout(addGroup(idx));
+        }
+        else {
+            paramsLayout->addLayout(addParam(idx, pScene));
+        }
     }
 
     ZGraphicsLayout* pCustomParams = initCustomParamWidgets();
@@ -869,6 +912,22 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
 
     m_params[paramName] = paramCtrl;
     return paramCtrl.ctrl_layout;
+}
+
+ZGraphicsLayout *ZenoNode::addGroup(const QModelIndex &viewparamIdx) 
+{
+    const QString &groupName = viewparamIdx.data(ROLE_VPARAM_NAME).toString();
+    _group_ctrl groupCtrl;
+    groupCtrl.ctrl_layout = new ZGraphicsLayout(true);
+    groupCtrl.ctrl_layout->setSpacing(ZenoStyle::dpiScaled(32));
+    groupCtrl.ctrl_layout->setContentsMargin(0, ZenoStyle::dpiScaled(2), 0, 0);
+
+    ZenoParamGroup *pGroup = new ZenoParamGroup(groupName, this);
+    groupCtrl.ctrl_layout->addItem(pGroup);
+    groupCtrl.group_control = pGroup;
+    groupCtrl.viewidx = viewparamIdx;
+    m_groups << groupCtrl;
+    return groupCtrl.ctrl_layout;
 }
 
 QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
@@ -1397,4 +1456,7 @@ void ZenoNode::updateWhole()
     ZGraphicsLayout::updateHierarchy(this);
     emit inSocketPosChanged();
     emit outSocketPosChanged();
+    for (auto group : m_groups) {
+        group.group_control->resize(boundingRect().width() - ZenoStyle::dpiScaled(8), group.group_control->boundingRect().height());
+    }
 }

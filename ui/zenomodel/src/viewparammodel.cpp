@@ -326,13 +326,17 @@ bool ViewParamModel::moveRows(
             {
                 if (srcParent->m_name == iotags::params::node_inputs)
                 {
-                    desc.inputs.move(srcRow, dstRow);
-                    m_model->updateSubgDesc(nodeCls, desc);
+                    if (desc.inputs.size() > srcRow && desc.inputs.size() > dstRow) {
+                        desc.inputs.move(srcRow, dstRow);
+                        m_model->updateSubgDesc(nodeCls, desc);
+                    }
                 }
                 else if (srcParent->m_name == iotags::params::node_outputs)
                 {
-                    desc.outputs.move(srcRow, dstRow);
-                    m_model->updateSubgDesc(nodeCls, desc);
+                    if (desc.outputs.size() > srcRow && desc.outputs.size() > dstRow) {
+                        desc.outputs.move(srcRow, dstRow);
+                        m_model->updateSubgDesc(nodeCls, desc);
+                    }
                 }
             }
         }
