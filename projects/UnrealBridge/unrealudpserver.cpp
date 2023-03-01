@@ -89,8 +89,6 @@ void UnrealUdpServer::timerEvent(QTimerEvent* event) {
         m_msg_buffer.erase(i);
     }
 
-    // TODO: darc assemble streams
-
     if (m_msg_buffer.size() > 1024) {
         m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + 512);
     }
@@ -115,6 +113,12 @@ void UnrealUdpServer::onNewMessage() {
     QNetworkDatagram datagram = m_socket->receiveDatagram();
 
     m_msg_buffer.push_back(std::move(datagram));
+}
+
+void UnrealUdpServer::sendDatagram(const QNetworkDatagram &datagram) {
+    if (m_socket) {
+        m_socket->writeDatagram(datagram);
+    }
 }
 
 void zeno::startUnrealUdpServer(const QHostAddress &inAddress, int32_t inPort) {

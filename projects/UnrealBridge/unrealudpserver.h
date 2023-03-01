@@ -46,6 +46,8 @@ public:
 
     void timerEvent(QTimerEvent *event) override;
 
+    void sendDatagram(const QNetworkDatagram& datagram);
+
 private slots:
     void onNewMessage();
 
