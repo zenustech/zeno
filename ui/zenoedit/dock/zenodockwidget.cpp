@@ -1,3 +1,4 @@
+#if 0
 #include "zenodockwidget.h"
 #include "zenodocktitlewidget.h"
 #include "zenomainwindow.h"
@@ -329,3 +330,4 @@ void ZenoDockWidget::newFrameUpdate() {
         panel->updateLights();
     }
 }
+#endif

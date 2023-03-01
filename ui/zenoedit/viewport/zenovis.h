@@ -41,7 +41,7 @@ public slots:
     int setCurrentFrameId(int frameid);
 
 public:
-    static Zenovis& GetInstance();
+    Zenovis(QObject* parent = nullptr);
     void loadGLAPI(void *procaddr);
     void initializeGL();
     void paintGL();
@@ -53,7 +53,6 @@ public:
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
 
 //private:
-    Zenovis();
     void doFrameUpdate();
 
     //static QString sIoPath;

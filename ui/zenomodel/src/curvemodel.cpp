@@ -7,6 +7,7 @@ CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent
     : QStandardItemModel(parent)
     , m_range(rg)
     , m_id(id)
+    , m_bVisible(true)
 {
 }
 
@@ -14,6 +15,7 @@ CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int c
     : QStandardItemModel(rows, columns, parent)
     , m_range(rg)
     , m_id(id)
+    , m_bVisible(true)
 {
 }
 
@@ -113,6 +115,15 @@ QString CurveModel::id() const
 
 void CurveModel::setId(QString id) {
     m_id = id;
+}
+
+void CurveModel::setVisible(bool visible) {
+    m_bVisible = visible;
+}
+
+
+bool CurveModel::getVisible() {
+    return m_bVisible;
 }
 
 bool CurveModel::isTimeline() const
@@ -275,7 +286,9 @@ QPair<QPointF, QPointF> CurveModel::adjustWhenLeftHdlChanged(const QModelIndex &
         qreal length = roffset.length();
         if (nodeType == HDL_ALIGNED)
             length = loffset.length();
-        roffset = -loffset.normalized() * length;
+        // if loffset equals to zero, it's dir will be zero
+        if (loffset != QVector2D(0, 0))
+            roffset = -loffset.normalized() * length;
 
         rightOffset = roffset.toPointF();
         QPointF rightPos = nodePos + roffset.toPointF();
@@ -310,7 +323,9 @@ QPair<QPointF, QPointF> CurveModel::adjustWhenRightHdlChanged(const QModelIndex&
         qreal length = loffset.length();
         if (nodeType == HDL_ALIGNED)
             length = roffset.length();
-        loffset = -roffset.normalized() * length;
+        // if roffset equals to zero, it's dir will be zero
+        if (roffset != QVector2D(0, 0))
+            loffset = -roffset.normalized() * length;
 
         leftOffset = loffset.toPointF();
     }

@@ -8,8 +8,9 @@
 #include <zeno/zeno.h>
 
 
-Zenovis::Zenovis()
-    : m_solver_frameid(0)
+Zenovis::Zenovis(QObject *parent)
+    : QObject(parent)
+    , m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
     , m_resolution(QPoint(1,1))
@@ -17,12 +18,6 @@ Zenovis::Zenovis()
     , m_playing(false)
     , m_camera_keyframe(nullptr)
 {
-}
-
-Zenovis& Zenovis::GetInstance()
-{
-    static Zenovis instance;
-    return instance;
 }
 
 void Zenovis::loadGLAPI(void *procaddr)

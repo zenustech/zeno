@@ -25,7 +25,6 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     , m_dragMove(false)
     , m_menu(nullptr)
     , m_pSearcher(nullptr)
-    , m_bControlActive(false)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -154,9 +153,19 @@ void _ZenoSubGraphView::cameraFocus()
         QString nodeId = pNode->nodeId();
         zeno::vec3f center;
         float radius;
-        bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        DisplayWidget *pWid = pWin->getDisplayWidget();
+        ZASSERT_EXIT(pWid);
+        ViewportWidget *pViewport = pWid->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto pZenovis = pViewport->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+
+        bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);
         if (found) {
-            Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+            pZenovis->m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
             zenoApp->getMainWindow()->updateViewport();
         }
     }
@@ -207,33 +216,6 @@ void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
     QRectF rect = m_scene->nodesBoundingRect();
     fitInView(rect, Qt::KeepAspectRatio);
     gentle_zoom(1.0);
-
-    //install event filter for scrollable control.
-    for (ZenoParamWidget* pWidget : m_scene->getScrollControls())
-    {
-        onScrollControlAdded(pWidget);
-    }
-    connect(m_scene, SIGNAL(scrollControlAdded(ZenoParamWidget*)), this, SLOT(onScrollControlAdded(ZenoParamWidget*)));
-}
-
-void _ZenoSubGraphView::onScrollControlAdded(ZenoParamWidget* pControl)
-{
-    if (!pControl)
-        return;
-
-    if (ZComboBox* pCombobox = qobject_cast<ZComboBox*>(pControl->widget()))
-    {
-        connect(pCombobox, &ZComboBox::beforeShowPopup, this, [=]() {
-            m_bControlActive = true;
-        });
-        connect(pCombobox, &ZComboBox::afterHidePopup, this, [=]() {
-            m_bControlActive = false;
-        });
-    }
-    else if (ZenoParamMultilineStr* pMulti = qobject_cast<ZenoParamMultilineStr*>(pControl))
-    {
-        //need to scroll on multilinestr? ambigious with scene.
-    }
 }
 
 void _ZenoSubGraphView::setPath(const QString& path)
@@ -310,8 +292,7 @@ void _ZenoSubGraphView::resetTransform()
 
 void _ZenoSubGraphView::scrollContentsBy(int dx, int dy)
 {
-    if (!m_bControlActive)
-        QGraphicsView::scrollContentsBy(dx, dy);
+    QGraphicsView::scrollContentsBy(dx, dy);
 }
 
 void _ZenoSubGraphView::showEvent(QShowEvent *event) 
@@ -380,8 +361,23 @@ void _ZenoSubGraphView::mouseDoubleClickEvent(QMouseEvent* event)
 
 void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
 {
-    if (!m_bControlActive)
+    //mock QGraphicsView::wheelEvent:
+    event->ignore();
+    QGraphicsSceneWheelEvent wheelEvent(QEvent::GraphicsSceneWheel);
+    wheelEvent.setWidget(viewport());
+    wheelEvent.setScenePos(mapToScene(event->position().toPoint()));
+    wheelEvent.setScreenPos(event->globalPosition().toPoint());
+    wheelEvent.setButtons(event->buttons());
+    wheelEvent.setModifiers(event->modifiers());
+    const bool horizontal = qAbs(event->angleDelta().x()) > qAbs(event->angleDelta().y());
+    wheelEvent.setDelta(horizontal ? event->angleDelta().x() : event->angleDelta().y());
+    wheelEvent.setOrientation(horizontal ? Qt::Horizontal : Qt::Vertical);
+    wheelEvent.setAccepted(false);
+    QCoreApplication::sendEvent(scene(), &wheelEvent);
+    event->setAccepted(wheelEvent.isAccepted());
+    if (!event->isAccepted())
     {
+        //executing zoom
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
         int idx = factors.indexOf(zoomFactor);
@@ -398,10 +394,6 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         zoomFactor = factors[idx];
         gentle_zoom(zoomFactor);
     }
-    else
-    {
-        return QGraphicsView::wheelEvent(event);
-    }
 }
 
 bool _ZenoSubGraphView::eventFilter(QObject* watched, QEvent* event)
@@ -412,7 +404,6 @@ bool _ZenoSubGraphView::eventFilter(QObject* watched, QEvent* event)
 void _ZenoSubGraphView::focusOutEvent(QFocusEvent* event)
 {
     QGraphicsView::focusOutEvent(event);
-    m_bControlActive = false;
 }
 
 void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
@@ -618,6 +609,8 @@ void LayerPathWidget::onPathItemClicked()
 
 ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
     : QWidget(parent)
+    , m_prop(nullptr)
+    , m_floatPanelShow(false)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setSpacing(0);
@@ -681,4 +674,50 @@ void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
 void ZenoSubGraphView::focusOn(const QString& nodeId)
 {
     m_view->focusOn(nodeId, QPointF(), false);
+}
+
+void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
+    if (m_floatPanelShow) {
+        if (m_prop == nullptr || nodes[0] != m_lastSelectedNode) {
+            if (m_prop == nullptr) {
+                m_prop = new DockContent_Parameter(this);
+                m_prop->initUI();
+                m_prop->resize(this->width() * 0.2, this->height() * 0.5);
+                m_prop->setMinimumWidth(300);
+                m_prop->setMinimumHeight(400);
+            }
+            m_prop->show();
+            m_prop->onNodesSelected(subgIdx, nodes, true);
+
+            m_lastSelectedNode = nodes[0];
+        } else {
+            m_floatPanelShow = !m_prop->isVisible();
+            m_prop->setVisible(!m_prop->isVisible());
+        }
+        m_prop->move(this->width() - m_prop->width(), 0);
+    }
+}
+
+void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_P) {
+        ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
+        if (scene != NULL)
+        {
+            if (scene->selectNodesIndice().size() == 1) {
+                m_floatPanelShow = true;
+                showFloatPanel(scene->subGraphIndex(), scene->selectNodesIndice());
+            } else if (scene->selectNodesIndice().size() == 0 && m_prop != NULL && m_prop->isVisible()) {
+                m_prop->hide();
+                m_floatPanelShow = false;
+            }
+        }
+    }
+    QWidget::keyPressEvent(event);
+}
+
+void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
+    if (m_prop != nullptr && m_prop->isVisible()) {
+        m_prop->move(this->width() - m_prop->width(), 0);
+    }
+    QWidget::resizeEvent(event);
 }

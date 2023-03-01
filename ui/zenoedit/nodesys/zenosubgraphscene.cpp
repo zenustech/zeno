@@ -27,7 +27,7 @@
 #include <zenomodel/include/command.h>
 #include "nodesys/groupnode.h"
 #include <zenoui/style/zenostyle.h>
-
+#include "viewport/viewportwidget.h"
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
@@ -36,7 +36,6 @@
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
-    , m_hoverSocket(nullptr)
     , m_bSnapGrid(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
@@ -397,19 +396,6 @@ void ZenoSubGraphScene::clearMark()
     m_errNodes.clear();
 }
 
-QList<ZenoParamWidget*> ZenoSubGraphScene::getScrollControls() const
-{
-    return m_scrollControls;
-}
-
-void ZenoSubGraphScene::addScrollControl(ZenoParamWidget* pWidget)
-{
-    if (!pWidget)
-        return;
-    m_scrollControls.append(pWidget);
-    emit scrollControlAdded(pWidget);
-}
-
 void ZenoSubGraphScene::setSnapGrid(bool bChecked)
 {
     m_bSnapGrid = bChecked;
@@ -595,45 +581,6 @@ void ZenoSubGraphScene::onNodePosChanged()
             currBlackboardNode->nodePosChanged(senderNode);
         }
     }
-}
-
-void ZenoSubGraphScene::detectNearestSocket(const QPointF& mousePos)
-{
-    static const qreal sbrWidth = ZenoStyle::dpiScaled(150);
-    static const qreal sbrHeight = ZenoStyle::dpiScaled(24);
-
-    QRectF rcBr(mousePos.x() - sbrWidth / 2, mousePos.y() - sbrHeight / 2, sbrWidth, sbrHeight);
-
-    QList<QGraphicsItem*> catchedItems = items(rcBr, Qt::IntersectsItemShape);
-    float minDist = std::numeric_limits<float>::max();
-    ZenoSocketItem* pOldHover = m_hoverSocket;
-    m_hoverSocket = nullptr;
-    for (QGraphicsItem* item : catchedItems)
-    {
-        if (ZenoSocketItem* sock = qgraphicsitem_cast<ZenoSocketItem*>(item))
-        {
-            qreal cx = rcBr.center().x();
-            qreal sx = sock->scenePos().x();
-            if ((sock->isInputSocket() && cx < sx) ||
-                (!sock->isInputSocket() && cx > sx))
-            {
-                QPointF offset = sock->scenePos() - mousePos;
-                float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
-                if (dist < minDist)
-                {
-                    m_hoverSocket = sock;
-                    minDist = dist;
-                }
-            }
-        }
-    }
-    if (pOldHover) {
-        pOldHover->setHovered(false);
-    }
-    if (m_hoverSocket) {
-        m_hoverSocket->setHovered(true);
-    }
-    pOldHover = m_hoverSocket;
 }
 
 void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
@@ -859,20 +806,12 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         onSocketAbsorted(event->scenePos());
         return;
     }
-    else
-    {
-        detectNearestSocket(event->scenePos());
-    }
     QGraphicsScene::mouseMoveEvent(event);
 }
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (!m_tempLink && event->button() == Qt::LeftButton && m_hoverSocket)
-    {
-        emit m_hoverSocket->clicked(m_hoverSocket->isInputSocket());
-    }
-    else if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
+    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
     {
         onTempLinkClosed();
         removeItem(m_tempLink);
@@ -892,16 +831,6 @@ void ZenoSubGraphScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 void ZenoSubGraphScene::focusOutEvent(QFocusEvent* event)
 {
     QGraphicsScene::focusOutEvent(event);
-    if (m_hoverSocket)
-    {
-        ZenoSocketItem::SOCK_STATUS status = m_hoverSocket->sockStatus();
-        if (status == ZenoSocketItem::STATUS_TRY_CONN)
-        {
-            m_hoverSocket->setSockStatus(ZenoSocketItem::STATUS_NOCONN);
-        }
-        m_hoverSocket->setHovered(false);
-        m_hoverSocket = nullptr;
-    }
 }
 
 void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)
@@ -979,20 +908,29 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
 void ZenoSubGraphScene::selectObjViaNodes() {
     // FIXME temp function for merge
     // for selecting objects in viewport via selected nodes
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget* pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget* pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+    auto scene = pViewport->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
     QList<QGraphicsItem*> selItems = this->selectedItems();
-    auto& picker = zeno::Picker::GetInstance();
-    picker.clear();
+    auto picker = pViewport->picker();
+    ZASSERT_EXIT(picker);
+    picker->clear();
     for (auto item : selItems) {
         if (auto* pNode = qgraphicsitem_cast<ZenoNode*>(item)) {
             auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
             for (const auto& [prim_name, _] : scene->objectsMan->pairsShared()) {
                 if (prim_name.find(node_id) != std::string::npos)
-                    picker.add(prim_name);
+                    picker->add(prim_name);
             }
         }
     }
-    picker.sync_to_scene();
+    picker->sync_to_scene();
     zenoApp->getMainWindow()->updateViewport();
 }
 

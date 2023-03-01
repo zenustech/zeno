@@ -12,6 +12,7 @@
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 
+
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
 
@@ -1841,5 +1842,31 @@ void UiHelper::reAllocIdents2(const QString& targetSubgraph,
         const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
 
         outLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+}
+
+static std::string getZenoVersion()
+{
+    const char *date = __DATE__;
+    const char *table[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+    int month = std::find(table, table + 12, std::string(date, 3)) - table + 1;
+    int day = std::stoi(std::string(date + 4, 2));
+    int year = std::stoi(std::string(date + 7, 4));
+    return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
+}
+
+QString UiHelper::nativeWindowTitle(const QString& currentFilePath)
+{
+    QString ver = QString::fromStdString(getZenoVersion());
+    if (currentFilePath.isEmpty())
+    {
+        return QString("Zeno Editor (%1)").arg(ver);
+    }
+    else
+    {
+        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)").arg(currentFilePath).arg(ver);
+        return title;
     }
 }

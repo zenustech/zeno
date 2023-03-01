@@ -96,7 +96,7 @@ public:
         ACTION_SHOW_GRID,
         ACTION_BACKGROUND_COLOR,
         ACTION_SOLID,
-        ACTION_SHADONG,
+        ACTION_SHADING,
         ACTION_OPTIX,
         //View EnvTex
         ACTION_BLACK_WHITE,
@@ -137,8 +137,6 @@ public slots:
     void onMenuActionTriggered(bool bTriggered);
     void onSplitDock(bool);
     void onCloseDock();
-    void onToggleDockWidget(DOCK_TYPE, bool);
-    void onDockSwitched(DOCK_TYPE);
     void importGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
@@ -152,6 +150,8 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
+    void onRunTriggered();
+    void updateNativeWinTitle(const QString& title);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -163,6 +163,7 @@ private:
     void initMenu();
     void initLive();
     void initDocks();
+    void initWindowProperty();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
     void resetDocks(PtrLayoutNode root);
@@ -171,7 +172,6 @@ private:
     void saveLayout2();
     void SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation);
     QString getOpenFileByDialog();
-    QString uniqueDockObjName(DOCK_TYPE type);
     void setActionProperty();
     void screenShoot();
     void setActionIcon(QAction* action);
@@ -181,6 +181,7 @@ private:
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
     void loadRecentFiles();
+    QVector<DisplayWidget*> viewports() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

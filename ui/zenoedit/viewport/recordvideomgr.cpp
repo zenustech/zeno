@@ -21,6 +21,15 @@ RecordVideoMgr::~RecordVideoMgr()
     cancelRecord();
 }
 
+Zenovis* RecordVideoMgr::getZenovis()
+{
+    DisplayWidget* pWid =  qobject_cast<DisplayWidget *>(parent());
+    ZASSERT_EXIT(pWid, nullptr);
+    ViewportWidget* viewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(viewport, nullptr);
+    return viewport->getZenoVis();
+}
+
 void RecordVideoMgr::cancelRecord()
 {
     if (m_timer)
@@ -48,10 +57,10 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         }
     }
 
-    if (m_recordInfo.bRecordRun)
+    if (!m_recordInfo.bRecordAfterRun)
     {
-        auto& inst = Zenovis::GetInstance();
-        bool ret = connect(&inst, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+        Zenovis* pVis = getZenovis();
+        bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
     }
     else
     {
@@ -120,24 +129,25 @@ void RecordVideoMgr::recordFrame()
         return;
     }
 
-    auto& inst = Zenovis::GetInstance();
+    Zenovis* pVis = getZenovis();
+    ZASSERT_EXIT(pVis);
 
-    inst.setCurrentFrameId(m_currFrame);
-    inst.paintGL();
+    pVis->setCurrentFrameId(m_currFrame);
+    pVis->paintGL();
 
     auto record_file = zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), m_currFrame);
 
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = pVis->getSession()->get_scene();
     auto old_num_samples = scene->drawOptions->num_samples;
     scene->drawOptions->num_samples = m_recordInfo.numOptix;
     scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
-    auto [x, y] = Zenovis::GetInstance().getSession()->get_window_size();
+    auto [x, y] = pVis->getSession()->get_window_size();
 
     auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-    Zenovis::GetInstance().getSession()->set_window_size( (int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
-    Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname);
-    Zenovis::GetInstance().getSession()->set_window_size(x, y);
+    pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
+    pVis->getSession()->do_screenshot(record_file, extname);
+    pVis->getSession()->set_window_size(x, y);
     scene->drawOptions->num_samples = old_num_samples;
 
     m_pics.append(QString::fromStdString(record_file));
@@ -155,6 +165,9 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
     bool bFrameCompleted = pGlobalComm->isFrameCompleted(currFrame);
     bool bFrameRecorded = m_recordInfo.m_bFrameFinished[currFrame];
 
+    Zenovis* pVis = getZenovis();
+    ZASSERT_EXIT(pVis);
+
     if (bFrameCompleted && !bFrameRecorded)
     {
         if (currFrame >= m_recordInfo.frameRange.first && currFrame <= m_recordInfo.frameRange.second)
@@ -162,17 +175,17 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             auto record_file = zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), currFrame);
             QFileInfo fileInfo(QString::fromStdString(record_file));
 
-            auto scene = Zenovis::GetInstance().getSession()->get_scene();
+            auto scene = pVis->getSession()->get_scene();
             auto old_num_samples = scene->drawOptions->num_samples;
             scene->drawOptions->num_samples = m_recordInfo.numSamples;
             scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
-            auto [x, y] = Zenovis::GetInstance().getSession()->get_window_size();
+            auto [x, y] = pVis->getSession()->get_window_size();
 
             auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-            Zenovis::GetInstance().getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
-            Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname);
-            Zenovis::GetInstance().getSession()->set_window_size(x, y);
+            pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
+            pVis->getSession()->do_screenshot(record_file, extname);
+            pVis->getSession()->set_window_size(x, y);
             scene->drawOptions->num_samples = old_num_samples;
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;

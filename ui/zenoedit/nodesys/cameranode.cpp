@@ -3,7 +3,8 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-
+#include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
 #include <viewport/zenovis.h>
 #include "zenovis/Session.h"
 #include <zeno/core/Session.h>
@@ -50,8 +51,13 @@ void CameraNode::onEditClicked()
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
 
-    auto &inst = Zenovis::GetInstance();
-    auto sess = inst.getSession();
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget *pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+    auto sess = pViewport->getSession();
     ZASSERT_EXIT(sess);
 
     auto scene = sess->get_scene();

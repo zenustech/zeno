@@ -10,6 +10,9 @@
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
+#include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
+
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -63,10 +66,22 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 //    pStatusBar->setAlignment(Qt::AlignRight);
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
-    auto * zenovis = &Zenovis::GetInstance();
-    connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
+
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZERROR_EXIT(pWin);
+    DisplayWidget* pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZERROR_EXIT(pViewport);
+    auto zenovis = pViewport->getZenoVis();
+    ZERROR_EXIT(zenovis);
+
+    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        auto sess = zenovis->getSession();
+        ZERROR_EXIT(sess);
+        auto scene = zenovis->getSession()->get_scene();
+        ZERROR_EXIT(scene);
         for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
             if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
                 setPrim(key);
@@ -83,7 +98,16 @@ void ZenoSpreadsheet::clear() {
 
 void ZenoSpreadsheet::setPrim(std::string primid) {
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    DisplayWidget *pWid = pWin->getDisplayWidget();
+    ZASSERT_EXIT(pWid);
+    ViewportWidget *pViewport = pWid->getViewportWidget();
+    ZASSERT_EXIT(pViewport);
+    auto scene = pViewport->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
         if (key != primid) {

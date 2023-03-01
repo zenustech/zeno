@@ -485,12 +485,29 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setLineEdit(pLineEdit);
 #endif
 
+    QListView* pComboboxView = qobject_cast<QListView*>(m_combobox->view());
+    if (pComboboxView)
+        pComboboxView->installEventFilter(this);
+
     setWidget(m_combobox);
 
     setZValue(ZVALUE_ELEMENT);
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
     connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
     connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+bool ZenoParamComboBox::eventFilter(QObject* object, QEvent* event)
+{
+    if (event->type() == QEvent::Wheel && object == m_combobox->view())
+    {
+        //when scroll to the bottom of combobox's view, the event will be ignore,
+        //and then trigger zoom, which is not convient when activating.
+        //see _ZenoSubGraphView::wheelEvent.
+        event->setAccepted(true);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(object, event);
 }
 
 void ZenoParamComboBox::setItems(const QStringList& items)
@@ -1135,9 +1152,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minView(nullptr)
     , m_minOnce(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(48, 63)), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(48, 63)), this);
-    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(37, 63)), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(37, 66)), this);
 	m_once = new ZenoImageItem(
         ":/icons/ONCE_dark.svg",
         ":/icons/ONCE_light.svg",
@@ -1171,9 +1188,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_mute->hide();
     m_view->hide();
 
-    m_minOnce->setPos(QPointF(0, 1));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(29), 1));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(58), 1));
+    m_minOnce->setPos(QPointF(0, 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(29), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(58), 0));
 
     QSizeF sz2 = m_once->size();
     qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);

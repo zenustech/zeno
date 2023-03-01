@@ -16,11 +16,11 @@ struct VideoRecInfo
     int numMSAA = 0;
     int numOptix = 1;
     int numSamples = 16;
-    bool bRecordRun;
+    bool bRecordAfterRun;
     bool bExportVideo;
     bool exitWhenRecordFinish = false;
     VideoRecInfo()
-        : bRecordRun(false)
+        : bRecordAfterRun(false)
         , bExportVideo(false)
         , fps(0)
         , bitrate(0)
@@ -29,6 +29,8 @@ struct VideoRecInfo
         frameRange = { -1, -1 };
     }
 };
+
+class Zenovis;
 
 class RecordVideoMgr : public QObject
 {
@@ -50,6 +52,7 @@ signals:
 
 private:
     void finishRecord();
+    Zenovis* getZenovis();
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;

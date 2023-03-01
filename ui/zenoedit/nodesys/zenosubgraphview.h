@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenoui/nodesys/nodesys_common.h>
+#include "dock/docktabcontent.h"
 
 class ZenoSubGraphScene;
 class ZenoNewnodeMenu;
@@ -47,7 +48,6 @@ public slots:
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos, bool isError);
     void focusOnWithNoSelect(const QString& nodeId);
-    void onScrollControlAdded(ZenoParamWidget*);
 
 signals:
     void zoomed(qreal);
@@ -67,7 +67,6 @@ private:
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
-    bool m_bControlActive;
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;
@@ -105,6 +104,11 @@ public:
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
+    void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 signals:
 	void pathUpdated(QString);
@@ -113,6 +117,10 @@ signals:
 private:
     _ZenoSubGraphView* m_view;
     LayerPathWidget* m_pathWidget;
+
+    QModelIndex m_lastSelectedNode;
+    bool m_floatPanelShow;
+    DockContent_Parameter *m_prop;
 };
 
 
