@@ -170,17 +170,11 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         QPainterPath path;
         qreal halfpw = pen.widthF() / 2;
         qreal xleft, xright, ytop, ybottom;
-        if (bDrawBg) {
-            xleft = 0;
-            xright = m_size.width();
-            ytop = 0;
-            ybottom = m_size.height();
-        } else {
-            xleft = halfpw;
-            xright = m_size.width() - halfpw;
-            ytop = halfpw;
-            ybottom = m_size.height() - halfpw;
-        }
+
+        xleft = halfpw;
+        xright = m_size.width() - halfpw;
+        ytop = halfpw;
+        ybottom = m_size.height() - halfpw;
 
         if (m_bInput)
         {
@@ -195,15 +189,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
             path.arcTo(rcTopRight, 0, 90);
             path.lineTo(QPointF(xleft, ytop));
 
-            if (bDrawBg) {
-                painter->fillPath(path, bgClr);
-            }
-            else {
-                painter->setBrush(Qt::NoBrush);
-                painter->drawPath(path);
-                QRectF rc(QPointF(0, 0), QPointF(halfpw * 3, m_size.height()));
-                painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
-            }
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(path);
+            QRectF rc(QPointF(0, halfpw), QPointF(halfpw * 3.5, m_size.height() * 0.9));
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
         }
         else
         {
@@ -219,15 +208,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
             path.arcTo(rcBottomLeft, 180, 90);
             path.lineTo(QPointF(xright, ybottom));
 
-            if (bDrawBg) {
-                painter->fillPath(path, bgClr);
-            }
-            else {
-                painter->setBrush(Qt::NoBrush);
-                painter->drawPath(path);
-                QRectF rc(QPointF(halfpw * 2, 0), QPointF(m_size.width(), m_size.height()));
-                painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
-            }
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(path);
+            QRectF rc(QPointF(halfpw, halfpw), QPointF(m_size.width(), m_size.height() * 0.9));
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
         }
     }
     else
