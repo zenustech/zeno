@@ -19,12 +19,12 @@ using zeno::vec3f;
 
 namespace zeno {
 
-static int16_t f32_to_i16(float v) {
-    return v * std::numeric_limits<int16_t>::max();
+static uint16_t f32_to_u16(float v) {
+    return v * std::numeric_limits<uint16_t>::max();
 }
 
-static float i16_to_f32(int16_t v) {
-    return (float)v / std::numeric_limits<int16_t>::max();
+static float u16_to_f32(uint16_t v) {
+    return (float)v / std::numeric_limits<uint16_t>::max();
 }
 
 static void write_vec3f(std::ofstream &file, zeno::vec3f vec) {
@@ -44,13 +44,13 @@ static zeno::vec3f read_vec3f(std::ifstream &file) {
 static void write_normalized_vec3f(std::ofstream &file, vec3f vec, vec3f _min, vec3f _max) {
     vec = (vec - _min) / (_max - _min);
 
-    int16_t _0 = f32_to_i16(vec[0]);
-    int16_t _1 = f32_to_i16(vec[1]);
-    int16_t _2 = f32_to_i16(vec[2]);
+    uint16_t _0 = f32_to_u16(vec[0]);
+    uint16_t _1 = f32_to_u16(vec[1]);
+    uint16_t _2 = f32_to_u16(vec[2]);
 
-    file.write((char*)&_0, sizeof(int16_t));
-    file.write((char*)&_1, sizeof(int16_t));
-    file.write((char*)&_2, sizeof(int16_t));
+    file.write((char*)&_0, sizeof(uint16_t));
+    file.write((char*)&_1, sizeof(uint16_t));
+    file.write((char*)&_2, sizeof(uint16_t));
 }
 
 static int align_to(int count, int align) {
@@ -64,17 +64,17 @@ static int align_to(int count, int align) {
 }
 
 static zeno::vec3f read_normalized_vec3f(std::ifstream &file, vec3f _min, vec3f _max) {
-    int16_t _0;
-    int16_t _1;
-    int16_t _2;
-    file.read((char*)&_0, sizeof (int16_t));
-    file.read((char*)&_1, sizeof (int16_t));
-    file.read((char*)&_2, sizeof (int16_t));
+    uint16_t _0;
+    uint16_t _1;
+    uint16_t _2;
+    file.read((char*)&_0, sizeof (uint16_t));
+    file.read((char*)&_1, sizeof (uint16_t));
+    file.read((char*)&_2, sizeof (uint16_t));
 
     zeno::vec3f vec = {
-            i16_to_f32(_0),
-            i16_to_f32(_1),
-            i16_to_f32(_2)
+            u16_to_f32(_0),
+            u16_to_f32(_1),
+            u16_to_f32(_2)
     };
     vec = vec * (_max - _min) + _min;
     return vec;
@@ -336,7 +336,7 @@ ZENDEFNODE(WriteCustomVAT, {
         {"int", "frameStart", "0"},
         {"int", "frameEnd", "100"},
     },
-    {"primitive"},
+    {"VAT"},
 });
 
 struct ReadCustomVAT : INode {
@@ -381,7 +381,7 @@ ZENDEFNODE(ReadCustomVAT, {
     {
         {"readpath", "path", ""},
     },
-    {"primitive"},
+    {"VAT"},
 });
 
 struct ReadVATFile : INode {
@@ -409,7 +409,7 @@ ZENDEFNODE(ReadVATFile, {
         {"PrimitiveObject", "image"},
     },
     {},
-    {"primitive"},
+    {"VAT"},
 });
 
 } // namespace zeno
