@@ -436,6 +436,37 @@ ZENDEFNODE(QueryClosestPrimitive, {
                                   });
 #endif
 
+struct FollowUpReferencePrimitive : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto idTag = get_input2<std::string>("bvh_id");
+        auto wsTag = get_input2<std::string>("bvh_ws");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &ids = prim->attr<float>(idTag);
+        auto &ws = prim->attr<zeno::vec3f>(wsTag);
+        auto refPrim = get_input2<PrimitiveObject>("ref_surf_prim");
+        auto &refPos = refPrim->attr<vec3f>("pos");
+        auto &refTris = refPrim->tris.values;
+        auto pol = zs::omp_exec();
+        pol(zs::range(prim->size()), [&](int i) {
+            int triNo = ids[i];
+            auto w = ws[i];
+            auto tri = refTris[triNo];
+            pos[i] = w[0] * refPos[tri[0]] + w[1] * refPos[tri[1]] + w[2] * refPos[tri[2]];
+        });
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(FollowUpReferencePrimitive, {
+                                           {{"PrimitiveObject", "prim"},
+                                            {"PrimitiveObject", "ref_surf_prim"},
+                                            {"string", "idTag", "bvh_id"},
+                                            {"string", "weightTag", "bvh_ws"}},
+                                           {{"PrimitiveObject", "prim"}},
+                                           {},
+                                           {"zs_geom"},
+                                       });
+
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
         using zsbvh_t = ZenoLinearBvh;
