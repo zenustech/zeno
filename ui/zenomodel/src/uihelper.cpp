@@ -600,6 +600,8 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
     {
         //control by multilink socket property. see SOCKET_PROPERTY
         return CONTROL_NONE;
+    } else if (type == "Group") {
+        return CONTROL_GROUP;
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());

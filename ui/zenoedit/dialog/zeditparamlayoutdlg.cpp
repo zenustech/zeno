@@ -565,6 +565,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = name;
+    info.type = "Group";
     if (bInput) {
         desc.inputs[name].info = info;
     } else {
@@ -615,6 +616,7 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = newName;
+    info.type = "Group";
     if (bInput) {
         desc.inputs[newName].info = info;
         ZASSERT_EXIT(desc.inputs.find(oldName) != desc.inputs.end());

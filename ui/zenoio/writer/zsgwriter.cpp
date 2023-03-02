@@ -128,6 +128,12 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     //new io format for socket.
     writer.StartObject();
 
+    if (socket.control == CONTROL_GROUP) {
+        writer.Key("control");
+        JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
+        writer.EndObject();
+        return;
+    }
     //property
     if (socket.sockProp != SOCKPROP_NORMAL)
     {
