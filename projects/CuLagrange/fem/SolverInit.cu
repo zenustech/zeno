@@ -567,6 +567,7 @@ void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     auto cudaPol = zs::cuda_exec();
     if (kappa0 == 0) {
+        auto prevKappa = kappa;
         /// kappaMin
         initKappa(cudaPol);
         /// adaptive kappa
@@ -585,6 +586,12 @@ void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
             if (kappaSurf > kappa && kappaSurf < kappaMax) {
                 kappa = kappaSurf;
             }
+        }
+        {
+            if (std::isinf(kappa) || std::isnan(kappa))
+                kappa = prevKappa;
+            if (kappa < limits<T>::epsilon() || std::isinf(kappa) || std::isnan(kappa))
+                kappa = 1000.f;
         }
         boundaryKappa = kappa;
         zeno::log_info("auto kappa: {} ({} - {})\n", this->kappa, this->kappaMin, this->kappaMax);
