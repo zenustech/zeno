@@ -143,6 +143,7 @@ public:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
+    void onRun(int frameStart, int frameEnd);
     void onRecord();
     void onScreenShoot();
     void onKill();
@@ -157,6 +158,8 @@ signals:
 
 private:
     bool isOptxRendering() const;
+    void initRecordMgr();
+    void moveToFrame(int frame);
 
     ViewportWidget* m_view;
     CameraKeyframeWidget* m_camera_keyframe;

@@ -252,9 +252,14 @@ void ZTimeline::setSliderValue(int frameid)
     m_ui->timeliner->setSliderValue(frameid);
 }
 
-void ZTimeline::setPlayButtonToggle(bool bToggle)
+void ZTimeline::setPlayButtonChecked(bool bToggle)
 {
     m_ui->btnPlay->setChecked(bToggle);
+}
+
+void ZTimeline::togglePlayButton(bool bOn)
+{
+    m_ui->btnPlay->toggle(bOn);
 }
 
 void ZTimeline::onFrameEditted()

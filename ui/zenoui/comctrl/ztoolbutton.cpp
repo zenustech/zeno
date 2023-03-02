@@ -391,6 +391,17 @@ void ZToolButton::mouseReleaseEvent(QMouseEvent* e)
     emit clicked();
 }
 
+void ZToolButton::toggle(bool bOn)
+{
+    if (buttonOption() & Opt_Checkable)
+    {
+        if (m_bChecked == bOn)
+            return;
+        setChecked(bOn);
+        emit toggled(bOn);
+    }
+}
+
 void ZToolButton::setCustomTip(QString tip)
 {
     m_customTip = tip;
