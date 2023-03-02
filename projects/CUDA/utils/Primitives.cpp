@@ -439,8 +439,8 @@ ZENDEFNODE(QueryClosestPrimitive, {
 struct FollowUpReferencePrimitive : INode {
     void apply() override {
         auto prim = get_input2<PrimitiveObject>("prim");
-        auto idTag = get_input2<std::string>("bvh_id");
-        auto wsTag = get_input2<std::string>("bvh_ws");
+        auto idTag = get_input2<std::string>("idTag");
+        auto wsTag = get_input2<std::string>("weightTag");
         auto &pos = prim->attr<zeno::vec3f>("pos");
         auto &ids = prim->attr<float>(idTag);
         auto &ws = prim->attr<zeno::vec3f>(wsTag);
