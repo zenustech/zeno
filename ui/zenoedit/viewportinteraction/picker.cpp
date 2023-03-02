@@ -135,6 +135,12 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
     }
 }
 
+void Picker::pick_depth(int x, int y) {
+    auto depth = picker->getDepth(x, y);
+    picked_depth_callback(depth, x, y);
+    qDebug() << "picker: " << depth;
+}
+
 void Picker::add(const string& prim_name) {
     selected_prims.insert(prim_name);
 }
@@ -233,8 +239,19 @@ void Picker::clear() {
     selected_elements.clear();
 }
 
+void Picker::set_picked_depth_callback(std::function<void(float, int, int)> callback) {
+    picked_depth_callback = std::move(callback);
+}
+
 void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
     picked_elems_callback = std::move(callback);
+}
+
+bool Picker::is_draw_mode() {
+    return draw_mode;
+}
+void Picker::switch_draw_mode() {
+    draw_mode = !draw_mode;
 }
 
 const unordered_set<string>& Picker::get_picked_prims() {

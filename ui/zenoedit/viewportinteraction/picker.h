@@ -37,6 +37,7 @@ class Picker {
     }
     void pick(int x, int y);
     void pick(int x0, int y0, int x1, int y1);
+    void pick_depth(int x, int y);
     void add(const std::string& prim_name);
     std::string just_pick_prim(int x, int y);
     const std::unordered_set<std::string>& get_picked_prims();
@@ -48,10 +49,13 @@ class Picker {
     void load_context();
     void focus(const std::string& prim_name);
     void clear();
+    void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
+    bool is_draw_mode();
+    void switch_draw_mode();
 
   private:
-    Picker() {
+    Picker() : draw_mode(false) {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         picker = zenovis::makeFrameBufferPicker(scene);
         select_mode_context = -1;
@@ -59,6 +63,7 @@ class Picker {
 
     std::unique_ptr<zenovis::IPicker> picker;
 
+    std::function<void(float, int, int)> picked_depth_callback;
     std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;
 
     std::unordered_set<std::string> selected_prims;
@@ -69,6 +74,7 @@ class Picker {
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements_context;
 
     std::string focused_prim;
+    bool draw_mode;
 };
 
 }
