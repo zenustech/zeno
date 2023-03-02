@@ -126,9 +126,7 @@ DisplayWidget* ZTabDockWidget::getUniqueViewport() const
             return pView->getDisplayWid();
         }
     }
-    else {
-        return nullptr;
-    }
+    return nullptr;
 }
 
 ZenoGraphsEditor* ZTabDockWidget::getAnyEditor() const

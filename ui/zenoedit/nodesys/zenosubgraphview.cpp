@@ -365,8 +365,15 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
     event->ignore();
     QGraphicsSceneWheelEvent wheelEvent(QEvent::GraphicsSceneWheel);
     wheelEvent.setWidget(viewport());
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
     wheelEvent.setScenePos(mapToScene(event->position().toPoint()));
     wheelEvent.setScreenPos(event->globalPosition().toPoint());
+#else
+    wheelEvent.setScenePos(mapToScene(event->posF().toPoint()));
+    wheelEvent.setScreenPos(event->globalPosF().toPoint());
+#endif
+
     wheelEvent.setButtons(event->buttons());
     wheelEvent.setModifiers(event->modifiers());
     const bool horizontal = qAbs(event->angleDelta().x()) > qAbs(event->angleDelta().y());
