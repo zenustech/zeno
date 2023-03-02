@@ -112,6 +112,8 @@ void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first,
 
     VParamItem* pNodeParam = static_cast<VParamItem*>(pModel->itemFromIndex(idxNodeParam));
     VParamItem* parentItem = static_cast<VParamItem*>(pNodeParam->parent());
+    ZERROR_EXIT(parentItem);
+
     const QString& parentName = parentItem->m_name;
     if (parentName == iotags::params::node_inputs)
     {

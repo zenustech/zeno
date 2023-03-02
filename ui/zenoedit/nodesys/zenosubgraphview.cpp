@@ -689,7 +689,7 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
             if (m_prop == nullptr) {
                 m_prop = new DockContent_Parameter(this);
                 m_prop->initUI();
-                m_prop->resize(this->width() * 0.2, this->height() * 0.5);
+                m_prop->resize(this->width() * 0.2, this->height());
                 m_prop->setMinimumWidth(300);
                 m_prop->setMinimumHeight(400);
             }
@@ -724,6 +724,7 @@ void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
 
 void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
     if (m_prop != nullptr && m_prop->isVisible()) {
+        m_prop->resize(m_prop->width(), this->height() * 1.0);
         m_prop->move(this->width() - m_prop->width(), 0);
     }
     QWidget::resizeEvent(event);

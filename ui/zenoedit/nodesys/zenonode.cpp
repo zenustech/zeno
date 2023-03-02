@@ -257,15 +257,18 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
-    m_paramsLayout->setDebugName("Params Layout");
+    if (m_paramsLayout)
+        m_paramsLayout->setDebugName("Params Layout");
     m_bodyLayout->addLayout(m_paramsLayout);
 
     m_inputsLayout = initSockets(inputsItem, true, pScene);
-    m_inputsLayout->setDebugName("inputs layout");
+    if (m_inputsLayout)
+        m_inputsLayout->setDebugName("inputs layout");
     m_bodyLayout->addLayout(m_inputsLayout);
 
     m_outputsLayout = initSockets(outputsItem, false, pScene);
-    m_outputsLayout->setDebugName("outputs layout");
+    if (m_outputsLayout)
+        m_outputsLayout->setDebugName("outputs layout");
     m_bodyLayout->addLayout(m_outputsLayout);
 
     bodyWidget->setLayout(m_bodyLayout);
@@ -731,6 +734,8 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
 
 ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
 {
+    ZASSERT_EXIT(socketItems, nullptr);
+
     ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
     pSocketsLayout->setSpacing(5);
 
@@ -795,6 +800,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
 
 ZGraphicsLayout* ZenoNode::initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene)
 {
+    ZASSERT_EXIT(paramItems, nullptr);
+
     ZGraphicsLayout* paramsLayout = new ZGraphicsLayout(false);
     paramsLayout->setSpacing(5);
     qreal margin = ZenoStyle::dpiScaled(16);
