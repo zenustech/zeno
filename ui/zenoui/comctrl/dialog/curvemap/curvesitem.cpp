@@ -19,6 +19,10 @@ CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, Q
 CurvesItem::~CurvesItem()
 {
     //todo: delete all nodes and curves.
+    for (auto i : m_vecNodes)
+    {
+        delete i;
+    }
 }
 
 void CurvesItem::initCurves(CurveModel* model)

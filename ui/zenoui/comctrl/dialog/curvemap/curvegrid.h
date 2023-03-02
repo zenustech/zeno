@@ -21,6 +21,7 @@ public:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 	void resetTransform(QRectF rc, CURVE_RANGE rg, bool bInit);
 	void addCurve(CurveModel* model);
+    void removeCurve(QString id);
     bool isFuncCurve() const;
     void setCurvesVisible(QString id, bool bVisible);
     void setCurvesColor(QString id, QColor color);
