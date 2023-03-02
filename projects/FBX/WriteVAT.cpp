@@ -155,7 +155,7 @@ static void write_vat_nrm(vector<vector<vec3f>> &v, const std::string &path) {
 // max_vertex_count : int32_t
 // image_height : int32_t (image_width always 8192, not save)
 // vertex_count_per_frame: frame_count * int32_t
-// data: (w * h) * (int16_t, int16_t, int16_t)
+// data: (w * h) * (uint16_t, uint16_t, uint16_t)
 
 struct VATTexture {
     int frame_count;
