@@ -32,6 +32,7 @@ Zenovis* RecordVideoMgr::getZenovis()
 
 void RecordVideoMgr::cancelRecord()
 {
+    disconnectSignal();
     //todo:
     //Zenovis::GetInstance().blockSignals(false);
 }
@@ -111,6 +112,12 @@ void RecordVideoMgr::endRecToExportVideo()
     }
 }
 
+void RecordVideoMgr::disconnectSignal()
+{
+    Zenovis* pVis = getZenovis();
+    bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+}
+
 void RecordVideoMgr::onFrameDrawn(int currFrame)
 {
     auto& pGlobalComm = zeno::getSession().globalComm;
@@ -149,9 +156,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
         if (currFrame == m_recordInfo.frameRange.second)
         {
             //disconnect first, to stop receiving the signal from viewport.
-            Zenovis* pVis = getZenovis();
-            bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
-            ZASSERT_EXIT(ret);
+            disconnectSignal();
 
             endRecToExportVideo();
 

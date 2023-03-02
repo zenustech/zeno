@@ -52,6 +52,7 @@ signals:
 private:
     void endRecToExportVideo();
     Zenovis* getZenovis();
+    void disconnectSignal();
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;

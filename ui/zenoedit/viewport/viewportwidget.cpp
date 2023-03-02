@@ -1044,6 +1044,29 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
+void DisplayWidget::onRun(int frameStart, int frameEnd)
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+
+    auto pGraphsMgr = zenoApp->graphsManagment();
+    ZASSERT_EXIT(pGraphsMgr);
+
+    IGraphsModel* pModel = pGraphsMgr->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    mainWin->clearErrorMark();
+
+    m_view->clearTransformer();
+    m_view->getSession()->get_scene()->selected.clear();
+
+    launchProgram(pModel, frameStart, frameEnd);
+
+    m_view->updateLightOnce = true;
+    auto scene = m_view->getSession()->get_scene();
+    scene->objectsMan->lightObjects.clear();
+}
+
 void DisplayWidget::onRun()
 {
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
@@ -1190,27 +1213,49 @@ void DisplayWidget::onRecord()
 
         m_recordMgr.setRecordInfo(recInfo);
 
-        if (!recInfo.bRecordAfterRun)
+        bool bRun = !recInfo.bRecordAfterRun;
+
+        if (!bRun && pGlobalComm->maxPlayFrames() == 0)
         {
-            connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {
-                ZRecordProgressDlg dlgProc(recInfo);
-                dlgProc.onRecordFinished();
-                dlgProc.exec();
-            });
+            QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
+            return;
+        }
+
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+
+        int recStartFrame = recInfo.frameRange.first;
+        int recEndFrame = recInfo.frameRange.second;
+
+        if (bRun)
+        {
+            //clear the global Comm first, to avoid play old frames.
+            zeno::getSession().globalComm->clearState();
+
+            //expand the timeline if necessary.
+            ZTimeline* timeline = mainWin->timeline();
+            auto pair = timeline->fromTo();
+            if (pair.first > recStartFrame || pair.second < recEndFrame)
+            {
+                //expand timeline
+                timeline->initFromTo(qMin(pair.first, recStartFrame), qMax(recEndFrame, pair.second));
+            }
+
+            //reset the current frame on timeline.
+            moveToFrame(recStartFrame);
+
+            // and then toggle play.
+            mainWin->toggleTimelinePlay(true);
+
+            //and then run.
+            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
         }
         else
         {
-            if (pGlobalComm->maxPlayFrames() == 0)
-            {
-                QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
-                return;
-            }
-
             // first, set the time frame start end.
-            moveToFrame(recInfo.frameRange.first);
-
+            moveToFrame(recStartFrame);
             // and then play.
-            zenoApp->getMainWindow()->toggleTimelinePlay(true);
+            mainWin->toggleTimelinePlay(true);
         }
     }
 }
