@@ -712,6 +712,11 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socket
     {
         if (!desc.categories.contains("list"))
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
+    } 
+    else if (pItem->m_type == "group-line") 
+    {
+        if (!desc.categories.contains("group-line"))
+            pItem->m_sockProp = SOCKPROP_GROUP;
     }
 
     //not type desc on list output socket, add it here.

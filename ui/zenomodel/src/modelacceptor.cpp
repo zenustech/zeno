@@ -215,6 +215,8 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
         prop = SOCKPROP_DICTLIST_PANEL;
     else if (sockProperty == "editable")
         prop = SOCKPROP_EDITABLE;
+    else if (sockProperty == "group-line")
+        prop = SOCKPROP_GROUP;
 
     //the layout should be standard inputs desc by latest descriptors.
     //so, we can only add dynamic key. for example, list and dict node.

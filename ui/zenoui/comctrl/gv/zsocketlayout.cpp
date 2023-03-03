@@ -9,6 +9,7 @@
 #include "zdictpanel.h"
 #include "variantptr.h"
 #include "render/common_id.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
 
 
 ZSocketLayout::ZSocketLayout(
@@ -275,4 +276,38 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
     }
     exist = false;
     return QPointF();
+}
+
+ZGroupSocketLayout::ZGroupSocketLayout(IGraphsModel *pModel, const QPersistentModelIndex &viewSockIdx, bool bInput) :
+    ZSocketLayout(pModel, viewSockIdx, bInput)
+{
+}
+
+ZGroupSocketLayout::~ZGroupSocketLayout() {
+}
+
+void ZGroupSocketLayout::initUI(IGraphsModel *pModel, const CallbackForSocket &cbSock) 
+{
+    setContentsMargin(0, ZenoStyle::dpiScaled(6), 0, 0);
+    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
+    bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
+    const QString &name = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+
+    m_pGroupLine = new ZenoParamGroupLine(name);
+    m_pGroupLine->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+    m_pGroupLine->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));    
+    addItem(m_pGroupLine);
+}
+
+ZenoSocketItem *ZGroupSocketLayout::socketItemByIdx(const QModelIndex &sockIdx) const {
+    return nullptr;
+}
+
+QPointF ZGroupSocketLayout::getSocketPos(const QModelIndex &sockIdx, bool &exist) {
+    return QPointF();
+}
+
+void ZGroupSocketLayout::updateSockName(const QString &name) 
+{
+    m_pGroupLine->setText(name);
 }

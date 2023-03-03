@@ -31,16 +31,6 @@ class ZenoNode : public ZLayoutBackground
         QPersistentModelIndex viewidx;
         _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
     };
-    struct _group_ctrl {
-        ZenoParamGroup *group_control;
-        ZGraphicsLayout *ctrl_layout;
-        QPersistentModelIndex viewidx;
-        _group_ctrl() : group_control(nullptr), ctrl_layout(nullptr) {
-        }
-        bool operator==(const _group_ctrl& other) {
-            return viewidx == other.viewidx;
-        }
-    };
 
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
@@ -135,7 +125,6 @@ private:
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
-    ZGraphicsLayout *addGroup(const QModelIndex &idx);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -147,7 +136,6 @@ private:
 
     FuckQMap<QString, _param_ctrl> m_params;
     QVector<ZSocketLayout*> m_outSockets;
-    QVector<_group_ctrl> m_groups;
 
     ZSimpleTextItem* m_NameItem;
     ZenoMinStatusBtnItem* m_pStatusWidgets;

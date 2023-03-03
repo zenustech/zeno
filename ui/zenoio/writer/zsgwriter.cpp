@@ -128,12 +128,6 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     //new io format for socket.
     writer.StartObject();
 
-    if (socket.control == CONTROL_GROUP) {
-        writer.Key("control");
-        JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
-        writer.EndObject();
-        return;
-    }
     //property
     if (socket.sockProp != SOCKPROP_NORMAL)
     {
@@ -143,6 +137,8 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                 writer.String("dict-panel");
             } else if (socket.sockProp & SOCKPROP_EDITABLE) {
                 writer.String("editable");
+            } else if (socket.sockProp & SOCKPROP_GROUP) {
+                writer.String("group-line");
             } else {
                 writer.String("normal");
             }

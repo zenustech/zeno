@@ -116,6 +116,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     {
         if (bNodeUI && (controlList[i].ctrl == CONTROL_HSLIDER || controlList[i].ctrl == CONTROL_SPINBOX_SLIDER))
             continue;
+        else if (!bNodeUI && controlList[i].ctrl == CONTROL_GROUP)
+            continue;
         lstCtrls.append(controlList[i].name);
         m_ui->cbControl->addItem(controlList[i].name);
     }
@@ -451,6 +453,11 @@ void ZEditParamLayoutDlg::onBtnAdd()
                 pNewItem->setData(properties, ROLE_VPARAM_CTRL_PROPERTIES);
                 break;
             }
+            case CONTROL_GROUP: 
+            {
+                pNewItem->m_sockProp = SOCKPROP_GROUP;
+                break;
+            }
         }
 
         pItem->appendRow(pNewItem);
@@ -565,7 +572,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = name;
-    info.type = "Group";
+    info.type = "group-line";
     if (bInput) {
         desc.inputs[name].info = info;
     } else {
@@ -616,7 +623,7 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = newName;
-    info.type = "Group";
+    info.type = "group-line";
     if (bInput) {
         desc.inputs[newName].info = info;
         ZASSERT_EXIT(desc.inputs.find(oldName) != desc.inputs.end());

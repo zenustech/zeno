@@ -380,7 +380,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
-    case CONTROL_GROUP:             return "Group";
+    case CONTROL_GROUP:             return "group-line";
     default:
         return "";
     }
@@ -468,7 +468,7 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_DICTPANEL;
     }
-    else if (descName == "Group")
+    else if (descName == "group-line")
     {
         return CONTROL_GROUP;
     }
@@ -600,7 +600,7 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
     {
         //control by multilink socket property. see SOCKET_PROPERTY
         return CONTROL_NONE;
-    } else if (type == "Group") {
+    } else if (type == "group-line") {
         return CONTROL_GROUP;
     }
     else {

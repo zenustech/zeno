@@ -717,6 +717,11 @@ bool IParamModel::_insertRow(
     {
         if (!desc.categories.contains("list"))
             item.prop = SOCKPROP_DICTLIST_PANEL;
+    } 
+    else if (type == "group-line") 
+    {
+        if (!desc.categories.contains("group-line"))
+            item.prop = SOCKPROP_GROUP;
     }
 
     //not type desc on list output socket, add it here.

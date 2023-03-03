@@ -14,7 +14,6 @@
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/znumslider.h>
 #include <zenoui/comctrl/zspinboxslider.h>
-#include <zenoui/comctrl/zcontrolgroup.h>
 
 
 class ZenoTextLayoutItem;
@@ -326,14 +325,16 @@ class ZenoParamSpinBox : public ZenoParamWidget {
     QSpinBox *m_pSpinBox;
 };
 
-class ZenoParamGroup : public ZenoParamWidget {
-    Q_OBJECT
-  public:
-    ZenoParamGroup(const QString &text, QGraphicsItem *parent = nullptr);
-    void setText(const QString& text);
+class ZenoParamGroupLine : public QGraphicsItem
+{
+public:
+    ZenoParamGroupLine(const QString &text, QGraphicsItem *parent = nullptr);
+   QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    void setText(const QString &text);
 
   private:
-    ZControlGroup *m_pControlGroup;
+    QString m_text;
 };
 
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem

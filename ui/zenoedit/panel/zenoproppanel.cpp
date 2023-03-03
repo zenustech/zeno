@@ -26,7 +26,6 @@
 #include "../dialog/zeditparamlayoutdlg.h"
 #include <zenoui/comctrl/zspinboxslider.h>
 #include "zenoblackboardpropwidget.h"
-#include <zenoui/comctrl/zcontrolgroup.h>
 
 
 class RetryScope
@@ -292,19 +291,6 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
 
-    if (ctrl == CONTROL_GROUP) 
-    {
-        ZControlGroup *pGroup = new ZControlGroup(paramName, this);
-        pGroupLayout->addWidget(pGroup, row, 0, 1, 3);
-        _PANEL_CONTROL panelCtrl;
-        panelCtrl.controlLayout = pGroupLayout;
-        panelCtrl.pControl = pGroup;
-        panelCtrl.m_viewIdx = perIdx;
-
-        m_controls[tabName][groupName][paramName] = panelCtrl;
-        return true;
-    }
-
     if (ctrl == CONTROL_DICTPANEL)
     {
         val = paramItem->data(ROLE_VPARAM_LINK_MODEL);
@@ -316,6 +302,10 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
             RetryScope scope(m_bReentry);
             zenoApp->getMainWindow()->dispatchCommand(&act, true);
         };
+    } 
+    else if (ctrl == CONTROL_GROUP) 
+    {
+        return false;
     }
 
     cbSet.cbEditFinished = [=](QVariant newValue) {
@@ -541,12 +531,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                 if (it->second.m_viewIdx == param->index())
                 {
                     const QString& newName = it->second.m_viewIdx.data(ROLE_VPARAM_NAME).toString();
-                    if (qobject_cast<ZControlGroup*>(it->second.pControl)) {
-                        ZControlGroup *pGroup = qobject_cast<ZControlGroup *>(it->second.pControl);
-                        pGroup->setText(newName);
-                    } else {
-                        it->second.pLabel->setText(newName);
-                    }
+                    it->second.pLabel->setText(newName);
                     it->first = newName;
                     break;
                 }
