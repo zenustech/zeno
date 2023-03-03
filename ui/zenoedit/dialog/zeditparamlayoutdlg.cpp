@@ -17,7 +17,7 @@
 
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Contrl Group", CONTROL_GROUP, ""},
+    {"Contrl Group", CONTROL_GROUP_LINE, ""},
     {"Integer",             CONTROL_INT,            "int"},
     {"Float",               CONTROL_FLOAT,          "float"},
     {"String",              CONTROL_STRING,         "string"},
@@ -116,7 +116,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     {
         if (bNodeUI && (controlList[i].ctrl == CONTROL_HSLIDER || controlList[i].ctrl == CONTROL_SPINBOX_SLIDER))
             continue;
-        else if (!bNodeUI && controlList[i].ctrl == CONTROL_GROUP)
+        else if (!bNodeUI && controlList[i].ctrl == CONTROL_GROUP_LINE)
             continue;
         lstCtrls.append(controlList[i].name);
         m_ui->cbControl->addItem(controlList[i].name);
@@ -311,7 +311,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
     }
-    else if (type == VPARAM_GROUP || pCurrentItem->m_ctrl == CONTROL_GROUP)
+    else if (type == VPARAM_GROUP || pCurrentItem->m_ctrl == CONTROL_GROUP_LINE)
     {
         m_ui->cbControl->setEnabled(false);
         m_ui->cbTypes->setEnabled(false);
@@ -453,7 +453,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
                 pNewItem->setData(properties, ROLE_VPARAM_CTRL_PROPERTIES);
                 break;
             }
-            case CONTROL_GROUP: 
+            case CONTROL_GROUP_LINE: 
             {
                 pNewItem->m_sockProp = SOCKPROP_GROUP;
                 break;
@@ -573,6 +573,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
     info.control = ctrl;
     info.name = name;
     info.type = "group-line";
+    info.sockProp = SOCKPROP_GROUP;
     if (bInput) {
         desc.inputs[name].info = info;
     } else {
@@ -904,7 +905,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 QString newName = name;
                 if (bApplySubnetParam)
                 {
-                    if (ctrl == CONTROL_GROUP) 
+                    if (ctrl == CONTROL_GROUP_LINE) 
                     {
                         updateControlGroup(bSubInput, newName, oldName, ctrl, r);
                     } 
@@ -923,7 +924,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     pTarget->setData(newName, ROLE_PARAM_NAME);
                 }
             }
-            if (ctrl == CONTROL_GROUP)
+            if (ctrl == CONTROL_GROUP_LINE)
                 continue;
             if (pCurrent->vType == VPARAM_PARAM)
             {
@@ -1004,7 +1005,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             {
                 if (m_bSubgraphNode) 
                 {
-                    if (ctrl == CONTROL_GROUP) 
+                    if (ctrl == CONTROL_GROUP_LINE) 
                     {
                         addControlGroup(bSubInput, name, ctrl);
                         QStandardItem *pNewItem = pCurrent->clone();
@@ -1090,7 +1091,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             {
                 if (bApplySubnetParam) 
                 {
-                    if (pItem->m_ctrl == CONTROL_GROUP) 
+                    if (pItem->m_ctrl == CONTROL_GROUP_LINE) 
                     {
                         delControlGroup(bSubInput, pItem->m_name);
                         appliedItem->removeRow(r);

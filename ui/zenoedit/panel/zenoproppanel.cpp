@@ -303,7 +303,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
             zenoApp->getMainWindow()->dispatchCommand(&act, true);
         };
     } 
-    else if (ctrl == CONTROL_GROUP) 
+    else if (ctrl == CONTROL_GROUP_LINE) 
     {
         return false;
     }
