@@ -103,17 +103,6 @@ QGraphicsItem* ZSocketLayout::control() const
 ZenoSocketItem* ZSocketLayout::socketItem() const
 {
     return m_socket;
-    //if (m_bEditable)
-    //{
-    //    //not base on qgraphicsitem_cast because we need a unify "type", see QGraphicsItem::Type.
-    //    ZSocketEditableItem* pEdit = static_cast<ZSocketEditableItem*>(m_text);
-    //    return pEdit->socketItem();
-    //}
-    //else
-    //{
-    //    ZSocketGroupItem* pEdit = static_cast<ZSocketGroupItem*>(m_text);
-    //    return pEdit->socketItem();
-    //}
 }
 
 QPointF ZSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
