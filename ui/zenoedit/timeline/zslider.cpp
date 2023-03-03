@@ -11,10 +11,7 @@ ZSlider::ZSlider(QWidget* parent)
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
 
-QSize ZSlider::sizeHint() const
-{
-    return ZenoStyle::dpiScaledSize(QSize(0, 36));
-}
+
 
 void ZSlider::mousePressEvent(QMouseEvent* event)
 {
@@ -114,6 +111,12 @@ int ZSlider::_getframes()
     return frames;
 }
 
+QSize ZSlider::sizeHint() const
+{
+    int h = ZenoStyle::dpiScaled(scaleH + fontHeight + fontScaleSpacing);
+    return QSize(0, h);
+}
+
 void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
@@ -121,22 +124,23 @@ void ZSlider::paintEvent(QPaintEvent* event)
     int n = m_to - m_from + 1;
     int frames = _getframes();
 
-    QFont font("Segoe UI", 10);
+    QFont font("Segoe UI", 9);
+    font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
+    int hh = metrics.height();
+
     painter.setFont(font);
 
     for (int i = m_from; i <= m_to; i++)
     {
-        int h = 0;
         int x = _frameToPos(i);
         QString scaleValue = QString::number(i);
         painter.setPen(QPen(QColor("#5A646F"), 1));
 
         if (i % 5 == 0)
         {
-            h = 12;
-
             //draw time tick
+            int h = ZenoStyle::dpiScaled(scaleH);
             int xpos = _frameToPos(i);
             int textWidth = metrics.horizontalAdvance(scaleValue);
             //don't know the y value.
@@ -144,37 +148,36 @@ void ZSlider::paintEvent(QPaintEvent* event)
             if (m_value != i)
                 painter.drawText(QPoint(xpos - textWidth / 2, yText), scaleValue);
 
-            int y = height() - h - 2;
+            int y = height() - h;
             painter.drawLine(QPointF(x, y), QPointF(x, y + h));
         }
         else
         {
-            h = 5;
-            int y = height() - h - 2;
-            painter.drawLine(QPointF(x, y), QPointF(x, y + h/* - 3*/));
+            int h = ZenoStyle::dpiScaled(smallScaleH);
+            int y = height() - h;
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h));
         }
     }
 
     painter.setPen(QPen(QColor("#335A646F"), 1));
-    painter.drawLine(QPointF(_frameToPos(m_from), height() - 5 - 4), QPointF(_frameToPos(m_to), height() - 5 - 4));
-    drawSlideHandle(&painter);
+    //painter.drawLine(QPointF(_frameToPos(m_from), height() - 5 - 4), QPointF(_frameToPos(m_to), height() - 5 - 4));
+    drawSlideHandle(&painter, scaleH);
 }
 
-void ZSlider::drawSlideHandle(QPainter* painter)
+void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
 {
     //draw time slider
     qreal xleftmost = _frameToPos(m_from);
     qreal xrightmost = _frameToPos(m_to);
     qreal xarrow_pos = _frameToPos(m_value);
-    qreal yarrow_pos = height() / 2 - 15. / 2;
 
     painter->setPen(Qt::NoPen);
-    int y = height() - 10;
-    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, height() - 2)), QColor(76, 159, 244, 64));
+    int y = height() - scaleH;
+    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
 
     //draw handle.
-    static const int handleHeight = ZenoStyle::dpiScaled(16);
-    static const int handleWidth = ZenoStyle::dpiScaled(8);
+    static const int handleHeight = ZenoStyle::dpiScaled(12);
+    static const int handleWidth = ZenoStyle::dpiScaled(6);
     y = height() - handleHeight;
     qreal x = xarrow_pos - handleWidth / 2;
     painter->fillRect(QRectF(QPointF(xarrow_pos - handleWidth / 2, y),

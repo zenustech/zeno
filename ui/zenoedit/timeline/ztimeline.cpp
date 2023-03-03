@@ -60,6 +60,7 @@ void ZTimeline::initSignals()
         if (bChecked)
             emit alwaysChecked();
     });
+
     //connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
     //    //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
     //    ZenoMainWindow *pWin = zenoApp->getMainWindow();
@@ -161,11 +162,11 @@ void ZTimeline::initButtons()
     m_ui->btnPlay->setIcon(
         ZenoStyle::dpiScaledSize(QSize(24, 24)),
         ":/icons/timeline_pause_idle.svg",
-        ":/icons/timeline_pause_light.svg",
+        ":/icons/timeline_pause_hover.svg",
         ":/icons/timeline_play_idle.svg",
-        ":/icons/timeline_play_light.svg");
+        ":/icons/timeline_play_hover.svg");
     m_ui->btnPlay->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnPlay->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnPlay->setBackgroundClr(QColor(), QColor(), QColor(), QColor());
 
     m_ui->btnForward->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnForward->setIcon(
@@ -220,17 +221,8 @@ void ZTimeline::initButtons()
     m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
     m_ui->btnKill->setFont(font);
 
-    //m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
-    //m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",
-    //                         ":/icons/sound-on.svg", "");
-    //m_ui->btnSound->setMargins(QMargins(3, 2, 2, 3));
-    //m_ui->btnSound->setBackgroundClr(bg, hoverBg, bg, hoverBg);
-
-    //m_ui->btnSettings->setButtonOptions(ZToolButton::Opt_HasIcon);
-    //m_ui->btnSettings->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline-settings.svg", "",
-    //                        ":/icons/timeline-settings.svg", "");
-    //m_ui->btnSettings->setMargins(QMargins(3, 2, 2, 3));
-    //m_ui->btnSettings->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    QFont font2("Segoe UI", 10);
+    m_ui->editFrame->setFont(font2);
 }
 
 void ZTimeline::initSize()

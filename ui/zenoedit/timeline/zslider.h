@@ -27,8 +27,12 @@ private:
     int _posToFrame(int x);
     int _frameToPos(int frame);
     int _getframes();
-    void drawSlideHandle(QPainter* painter);
+    void drawSlideHandle(QPainter* painter, int scaleH);
     const int m_sHMargin = 13;
+    const int scaleH = 9;
+    const int smallScaleH = 5;
+    const int fontHeight = 15;  //QFont font("Segoe UI", 9);
+    const int fontScaleSpacing = 4;
 
     int m_from, m_value, m_to;
     QTransform m_transform;
