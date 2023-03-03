@@ -380,7 +380,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
-    case CONTROL_GROUP:             return "group-line";
+    case CONTROL_GROUP_LINE:             return "group-line";
     default:
         return "";
     }
@@ -470,7 +470,7 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     }
     else if (descName == "group-line")
     {
-        return CONTROL_GROUP;
+        return CONTROL_GROUP_LINE;
     }
     else
     {
@@ -601,7 +601,7 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         //control by multilink socket property. see SOCKET_PROPERTY
         return CONTROL_NONE;
     } else if (type == "group-line") {
-        return CONTROL_GROUP;
+        return CONTROL_GROUP_LINE;
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());

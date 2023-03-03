@@ -44,6 +44,7 @@ public:
     QSize iconSize() const;
     QMargins margins() const;
     void setCheckable(bool bCheckable);
+    void toggle(bool bOn);
     bool isChecked() const;
     bool isDown() const;
     bool isPressed() const;

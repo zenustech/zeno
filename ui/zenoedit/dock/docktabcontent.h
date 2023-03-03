@@ -73,6 +73,7 @@ private:
     ZToolBarButton *pFold;
     ZToolBarButton *pUnfold;
     ZToolBarButton *pSnapGrid;
+    ZToolBarButton *pShowGrid;
     ZToolBarButton *pBlackboard;
     ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;

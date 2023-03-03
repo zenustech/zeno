@@ -25,6 +25,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     , m_dragMove(false)
     , m_menu(nullptr)
     , m_pSearcher(nullptr)
+    , m_bShowGrid(true)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -91,6 +92,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     setSceneRect(rcView);
 
     gentle_zoom(1.0);
+}
+
+void _ZenoSubGraphView::showGrid(bool bShow)
+{
+    m_bShowGrid = bShow;
+    update();
 }
 
 void _ZenoSubGraphView::redo()
@@ -486,9 +493,7 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
     painter->fillRect(rect, QColor("#13191f"));
-
-    static const bool bDrawGrid = true;
-    if (bDrawGrid)
+    if (m_bShowGrid)
     {
         QTransform tf = transform();
         qreal scale = tf.m11();
@@ -673,6 +678,11 @@ void ZenoSubGraphView::setZoom(const qreal& scale)
     m_view->setScale(scale);
 }
 
+void ZenoSubGraphView::showGrid(bool bShow)
+{
+    m_view->showGrid(bShow);
+}
+
 void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
 {
     m_view->focusOnWithNoSelect(nodeId);
@@ -689,7 +699,7 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
             if (m_prop == nullptr) {
                 m_prop = new DockContent_Parameter(this);
                 m_prop->initUI();
-                m_prop->resize(this->width() * 0.2, this->height() * 0.5);
+                m_prop->resize(this->width() * 0.2, this->height());
                 m_prop->setMinimumWidth(300);
                 m_prop->setMinimumHeight(400);
             }
@@ -724,6 +734,7 @@ void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
 
 void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
     if (m_prop != nullptr && m_prop->isVisible()) {
+        m_prop->resize(m_prop->width(), this->height() * 1.0);
         m_prop->move(this->width() - m_prop->width(), 0);
     }
     QWidget::resizeEvent(event);

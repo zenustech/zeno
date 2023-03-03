@@ -280,5 +280,7 @@
     <file>icons/zeno-logo.svg</file>
     <file>icons/zeno-logo.png</file>
     <file>icons/nodeEditor_group_scale-adjustor.svg</file>
+    <file>icons/nodeEditor_grid_selected.svg</file>
+    <file>icons/nodeEditor_grid_unselected.svg</file>
 </qresource>
 </RCC>

@@ -163,17 +163,19 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
 void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 {
     pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
-    pListView->setChecked(false);
-
     pTreeView = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
     pSubnetMgr = new ZToolBarButton(false, ":/icons/nodeEditor_subnetManager_unselected.svg", ":/icons/nodeEditor_subnetManager_selected.svg");
     pFold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeFold_unselected.svg", ":/icons/nodeEditor_nodeFold_selected.svg");
     pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
     pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
+    pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
     pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+
+    pListView->setChecked(false);
+    pShowGrid->setChecked(true);
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -211,6 +213,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pFold);
     pToolLayout->addWidget(pUnfold);
     pToolLayout->addWidget(pSnapGrid);
+    pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pBlackboard);
     pToolLayout->addWidget(pFullPanel);
     pToolLayout->addStretch();
@@ -267,6 +270,12 @@ void DockContent_Editor::initConnections()
     connect(pSnapGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         QAction act("SnapGrid");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_SNAPGRID);
+        if (m_pEditor)
+            m_pEditor->onAction(&act, QVariantList(), bChecked);
+    });
+    connect(pShowGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        QAction act("ShowGrid");
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_SHOWGRID);
         if (m_pEditor)
             m_pEditor->onAction(&act, QVariantList(), bChecked);
     });

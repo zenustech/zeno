@@ -122,6 +122,7 @@ public:
         ACTION_ZOOM,
         ACTION_SELECT_NODE,
         ACTION_SNAPGRID,
+        ACTION_SHOWGRID,
     };
 signals:
     void recentFilesChanged();
@@ -152,6 +153,7 @@ public slots:
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
     void onRunTriggered();
     void updateNativeWinTitle(const QString& title);
+    void toggleTimelinePlay(bool bOn);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1031</width>
+    <width>1046</width>
     <height>508</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_11">
    <property name="spacing">
-    <number>6</number>
+    <number>16</number>
    </property>
    <property name="leftMargin">
     <number>30</number>
@@ -108,6 +108,9 @@ QTreeView::item:selected:!active {
       <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="1,1,1,1">
        <item>
         <widget class="QPushButton" name="btnAddCurve">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>增加曲线</string>
          </property>
@@ -128,6 +131,9 @@ QTreeView::item:selected:!active {
        </item>
        <item>
         <widget class="QPushButton" name="btnDelCurve">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>删除曲线</string>
          </property>

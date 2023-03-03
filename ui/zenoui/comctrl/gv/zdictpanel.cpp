@@ -157,6 +157,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     m_bDict = coreType == "dict";
 
     QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(pKeyObjModel);
     for (int r = 0; r < pKeyObjModel->rowCount(); r++)
     {
         const QModelIndex& idxKey = pKeyObjModel->index(r, 0);
