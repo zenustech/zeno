@@ -8,6 +8,7 @@
 #include "zensim/profile/CppTimers.hpp"
 #include "zensim/types/SmallVector.hpp"
 #include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
 #include <zeno/utils/log.h>
 
 #define PROFILE_IPC 0
@@ -1142,6 +1143,8 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
     pol(range(numDofs), [execTag, cgtemp = proxy<space>({}, cgtemp), bTag] ZS_LAMBDA(int vi) mutable {
         cgtemp.tuple(dim_c<3>, bTag, vi) = vec3f::zeros();
     });
+    CppTimer timer;
+    timer.tick();
 #if 0
     // hess1
     pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
@@ -1241,14 +1244,32 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
                     atomic_add(execTag, &cgtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
             });
     }
-#endif
-
+#elif 1
+    {
+        pol(range(spmat.outerSize() * 32), [execTag, cgtemp = proxy<space>({}, cgtemp),
+                                            dxOffset = cgtemp.getPropertyOffset(dxTag),
+                                            bOffset = cgtemp.getPropertyOffset(bTag),
+                                            spmat = proxy<space>(spmat)] ZS_LAMBDA(int) mutable {
+            auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+            auto row = (blockDim.x * blockIdx.x + threadIdx.x) / tile.num_threads();
+            auto bg = spmat._ptrs[row];
+            auto ed = spmat._ptrs[row + 1];
+            auto sum = vec3f::zeros();
+            for (auto i = bg + tile.thread_rank(); i < ed; i += tile.num_threads())
+                sum += spmat._vals[i] * cgtemp.pack(dim_c<3>, dxOffset, spmat._inds[i]);
+            float sumx = zs::cg::reduce(tile, sum[0], zs::cg::plus<float>());
+            float sumy = zs::cg::reduce(tile, sum[1], zs::cg::plus<float>());
+            float sumz = zs::cg::reduce(tile, sum[2], zs::cg::plus<float>());
+            if (tile.thread_rank() == 0)
+                cgtemp.tuple(dim_c<3>, bOffset, row) = cgtemp.pack(dim_c<3>, bOffset, row) + vec3f{sumx, sumy, sumz};
+        });
+    }
+#else
     /// for validation only! remove soon
     {
         pol(range(spmat.outerSize()),
-            [execTag, hess4 = proxy<space>(hess4), cgtemp = proxy<space>({}, cgtemp),
-             dxOffset = cgtemp.getPropertyOffset(dxTag), bOffset = cgtemp.getPropertyOffset(bTag),
-             spmat = proxy<space>(spmat)] ZS_LAMBDA(int row) mutable {
+            [execTag, cgtemp = proxy<space>({}, cgtemp), dxOffset = cgtemp.getPropertyOffset(dxTag),
+             bOffset = cgtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int row) mutable {
                 auto bg = spmat._ptrs[row];
                 auto ed = spmat._ptrs[row + 1];
                 auto sum = vec3f::zeros();
@@ -1257,6 +1278,8 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
                 cgtemp.tuple(dim_c<3>, bOffset, row) = cgtemp.pack(dim_c<3>, bOffset, row) + sum;
             });
     }
+#endif
+    // timer.tock("multiply takes");
 }
 
 void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag) {
