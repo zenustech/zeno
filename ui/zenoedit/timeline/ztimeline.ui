@@ -97,103 +97,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnRun">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>62</width>
-         <height>24</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>62</width>
-         <height>24</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>Segoe UI</family>
-         <weight>75</weight>
-         <italic>false</italic>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="cursor">
-        <cursorShape>PointingHandCursor</cursorShape>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton
-{
-	border-style:none;
-	border-radius: 2px;
-	background-color: #FF4578AC;
-	color: #FFFFFF;
-}
-
-QPushButton:hover
-{
-	color: #FFFFFF;
-}</string>
-       </property>
-       <property name="text">
-        <string>RUN</string>
-       </property>
+      <widget class="ZToolButton" name="btnRun">
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnKill">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>62</width>
-         <height>24</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>62</width>
-         <height>24</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>Segoe UI</family>
-         <weight>75</weight>
-         <italic>false</italic>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="cursor">
-        <cursorShape>PointingHandCursor</cursorShape>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton
-{
-	border-style:none;
-	border-radius: 2px;
-	background-color: #FF4D5561;
-	color: #FFFFFF;
-}
-
-QPushButton:hover
-{
-	color: #FF675F;
-}</string>
-       </property>
-       <property name="text">
-        <string>Kill</string>
-       </property>
+      <widget class="ZToolButton" name="btnKill">
       </widget>
      </item>
      <item>

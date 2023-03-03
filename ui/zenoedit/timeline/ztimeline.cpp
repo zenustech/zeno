@@ -138,6 +138,23 @@ void ZTimeline::initButtons()
 
     QColor hoverBg("#4F5963");
 
+    //run
+    m_ui->btnRun->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_HasText);
+    m_ui->btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline_run_thunder.svg",
+                                  ":/icons/timeline_run_thunder.svg", "", "");
+    m_ui->btnRun->setText(tr("RUN"));
+    m_ui->btnRun->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
+
+    //kill
+    m_ui->btnKill->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_HasText);
+    m_ui->btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline_kill_clean.svg",
+                                  ":/icons/timeline_kill_clean.svg", "", "");
+    m_ui->btnKill->setText(tr("Kill"));
+    m_ui->btnKill->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
+
+
     m_ui->btnBackToStart->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackToStart->setIcon(
         ZenoStyle::dpiScaledSize(QSize(24, 24)),
@@ -187,6 +204,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnForwardToEnd->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+
 
     //m_ui->btnRecycle->setButtonOptions(ZToolButton::Opt_HasIcon);
     //m_ui->btnRecycle->setIcon(
