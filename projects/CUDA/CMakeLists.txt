@@ -18,6 +18,7 @@ set(ZENSIM_INSTALL OFF)
 set(ZS_BUILD_SHARED_LIBS OFF)
 set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_subdirectory(zpc)
 
@@ -34,6 +35,7 @@ target_compile_options(zpc_cuda_deps
 target_link_options(zeno
   PRIVATE $<DEVICE_LINK:-dlto>
 )
+target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
 #[=[
@@ -68,3 +70,5 @@ target_sources(zeno PRIVATE
   utils/TopoUtils.cu
   utils/Noise.cu
 )
+
+add_subdirectory(remesh)
