@@ -246,6 +246,20 @@ struct WriteCustomVAT : INode {
             prims[frameid - frameStart] = prim;
         }
         if (frameid == frameEnd) {
+            // face overflow check
+            {
+                int max_face_per_vat = 8192 / frameCount * 8192 / 3;
+                int max_face_in_prims = 0;
+                for (const auto & prim : prims) {
+                    max_face_in_prims = std::max(max_face_in_prims, (int)prim->tris.size());
+                }
+
+                if (max_face_in_prims > max_face_per_vat) {
+                    zeno::log_error("max_face_in_prims: {} > max_face_per_vat: {}", max_face_in_prims, max_face_per_vat);
+                    set_output("prim", raw_prim);
+                    return;
+                }
+            }
             vector<vector<vec3f>> v;
             v.resize(prims.size());
             for (auto i = 0; i < prims.size(); i++) {
