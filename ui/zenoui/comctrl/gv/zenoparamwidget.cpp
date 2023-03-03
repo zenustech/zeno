@@ -831,6 +831,48 @@ void ZenoParamSpinBox::setValue(int value)
     m_pSpinBox->setValue(value);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamGroupLine::ZenoParamGroupLine(const QString &text, QGraphicsItem *parent) : 
+    QGraphicsItem(parent),
+    m_text(text)
+{
+
+}
+
+QRectF ZenoParamGroupLine::boundingRect() const 
+{
+    return QRectF(QPointF(0, 0), data(GVKEY_SIZEHINT).toSizeF());
+}
+
+void ZenoParamGroupLine::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
+{
+    //draw text
+    QFont font("Alibaba PuHuiTi", 12);
+    QFontMetrics fm(font);
+    qreal width = fm.width(m_text);
+    QPen pen;
+    pen.setColor(QColor(94, 103, 115));
+    painter->setPen(pen);
+    painter->setFont(font);
+    QRectF rect = this->boundingRect();
+    qreal x = (rect.width() - width) / 2;
+    rect.adjust(x, 0, -x, 0);
+    painter->drawText(rect, Qt::AlignCenter, m_text);
+    //draw line
+    qreal y = rect.y() + (rect.height() / 2);
+    pen.setColor(QColor(22, 25, 29));
+    pen.setWidthF(ZenoStyle::dpiScaled(2));
+    painter->setPen(pen);
+    painter->drawLine(QPointF(0, y), QPointF(rect.left() - ZenoStyle::dpiScaled(4), y));
+    painter->drawLine(QPointF(rect.right() + ZenoStyle::dpiScaled(4), y), QPointF(boundingRect().right(), y));
+}
+
+void ZenoParamGroupLine::setText(const QString &text) 
+{
+    m_text = text;
+    update();
+}
+
     //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()

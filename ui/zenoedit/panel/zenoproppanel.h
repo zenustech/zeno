@@ -16,9 +16,10 @@ class ZenoPropPanel : public QWidget
     {
         QWidget* pControl;
         QLabel* pLabel;
+        QLabel *pIcon;
         QLayout* controlLayout;
         QPersistentModelIndex m_viewIdx;    //compare when rename.
-        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), controlLayout(nullptr) {}
+        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pIcon(nullptr), controlLayout(nullptr) {}
     };
     typedef FuckQMap<QString, _PANEL_CONTROL> PANEL_GROUP;
     typedef FuckQMap<QString, PANEL_GROUP> PANEL_TAB;

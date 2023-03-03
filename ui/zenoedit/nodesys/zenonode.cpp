@@ -423,6 +423,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
 
     if (role == ROLE_PARAM_NAME)
     {
+        const int paramCtrl = pItem->data(ROLE_PARAM_CTRL).toInt();
         if (groupName == iotags::params::node_inputs)
         {
             for (int i = 0; i < m_inSockets.size(); i++)
@@ -461,6 +462,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 }
             }
         }
+        updateWhole();
         return;
     }
 
@@ -622,8 +624,8 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
         bool bInput = groupName == iotags::params::node_inputs;
-        ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
-        ZSocketLayout* pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
+        ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;        
+        ZSocketLayout *pSocketLayout = addSocket(viewParamIdx, bInput, pScene);
         pSocketsLayout->addLayout(pSocketLayout);
         updateWhole();
     }
@@ -665,13 +667,13 @@ void ZenoNode::onViewParamsMoved(const QModelIndex& parent, int start, int end, 
             }
         }
 #endif
-        m_inSockets.move(start, destRow);
+        //m_inSockets.move(start, destRow);
         m_inputsLayout->moveItem(start, destRow);
         updateWhole();
     }
     else if (groupName == iotags::params::node_outputs)
     {
-        m_outSockets.move(start, destRow);
+        //m_outSockets.move(start, destRow);
         m_outputsLayout->moveItem(start, destRow);
         updateWhole();
     }
@@ -705,7 +707,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     QStandardItem* paramItem = parentItem->child(first);
     const QString& groupName = parentItem->text();
     const QModelIndex& viewParamIdx = paramItem->index();
-
+    const int paramCtrl = viewParamIdx.data(ROLE_PARAM_CTRL).toInt();
     if (groupName == iotags::params::node_inputs || groupName == iotags::params::node_outputs)
     {
         bool bInput = groupName == iotags::params::node_inputs;
@@ -743,7 +745,7 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
     {
         const QStandardItem* pItem = socketItems->child(r);
         const QModelIndex& viewIdx = pItem->index();
-        ZSocketLayout* pSocketLayout = addSocket(viewIdx, bInput, pScene);
+        ZSocketLayout *pSocketLayout = addSocket(viewIdx, bInput, pScene);
         pSocketsLayout->addLayout(pSocketLayout);
     }
     return pSocketsLayout;
@@ -772,6 +774,9 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     ZSocketLayout* pMiniLayout = nullptr;
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
+    } 
+    else if (sockProp & SOCKPROP_GROUP) {
+        pMiniLayout = new ZGroupSocketLayout(pModel, viewSockIdx, bInput);
     }
     else {
         pMiniLayout = new ZSocketLayout(pModel, viewSockIdx, bInput);

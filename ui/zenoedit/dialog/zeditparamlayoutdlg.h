@@ -21,13 +21,18 @@ class ParamTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit ParamTreeItemDelegate(QObject* parent = nullptr);
+    explicit ParamTreeItemDelegate(ViewParamModel *model, QObject *parent = nullptr);
     ~ParamTreeItemDelegate();
 
     // editing
     QWidget* createEditor(QWidget* parent,
         const QStyleOptionViewItem& option,
         const QModelIndex& index) const override;
+
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+
+  private:
+    ViewParamModel *m_model;
 };
 
 
@@ -60,6 +65,10 @@ private:
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
+    void switchStackProperties(int ctrl, VParamItem *pItem);
+    void addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl);
+    void delControlGroup(bool bInput, const QString &name);
+    void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row);
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;
@@ -73,6 +82,8 @@ private:
 
     QMap<QString, QString> m_renameRecord;
     QVector<QUndoCommand*> m_commandSeq;
+
+    bool m_bNodeUI;
 };
 
 

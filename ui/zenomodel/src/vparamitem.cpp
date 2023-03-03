@@ -206,8 +206,15 @@ QVariant VParamItem::data(int role) const
         if (m_customData.find(role) != m_customData.end())
         {
             return m_customData[role];
+        } 
+    case ROLE_VAPRAM_EDITTABLE: 
+    {
+        if (m_customData.find(role) != m_customData.end()) {
+            return m_customData[role];
+        } else {
+            return true;
         }
-    case ROLE_VAPRAM_EDITTABLE:
+    }
     default:
         return QStandardItem::data(role);
     }
@@ -312,12 +319,11 @@ void VParamItem::setData(const QVariant& value, int role)
             break;
         }
         case ROLE_VPARAM_CTRL_PROPERTIES:
+        case ROLE_VAPRAM_EDITTABLE: 
         {
             m_customData[role] = value;
             break;
         }
-        case ROLE_VAPRAM_EDITTABLE:
-            break;
     }
     QStandardItem::setData(value, role);
 }

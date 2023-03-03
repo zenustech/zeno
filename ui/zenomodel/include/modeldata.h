@@ -29,6 +29,7 @@ enum PARAM_CONTROL {
     CONTROL_VEC2_FLOAT,
     CONTROL_DICTPANEL,      //for socket, this control allow to link multiple sockets.  for panel, this control displays as a table.
     CONTROL_NONVISIBLE,     //for legacy param like _KEYS, _POINTS, _HANDLES.
+    CONTROL_GROUP
 };
 
 enum NODE_TYPE {
@@ -74,6 +75,7 @@ enum SOCKET_PROPERTY {
     SOCKPROP_EDITABLE = 1 << 1,
     SOCKPROP_MULTILINK = 1 << 2,
     SOCKPROP_DICTLIST_PANEL = 1 << 3,
+    SOCKPROP_GROUP = 1 << 4,
 };
 
 struct PARAM_INFO {
@@ -93,7 +95,7 @@ struct SLIDER_INFO {
     qreal step;
     qreal min;
     qreal max;
-    SLIDER_INFO() : step(1.), min(0.), max(0.) {}
+    SLIDER_INFO() : step(1.), min(0.), max(100.) {}
 };
 Q_DECLARE_METATYPE(SLIDER_INFO)
 

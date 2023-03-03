@@ -380,6 +380,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
+    case CONTROL_GROUP:             return "group-line";
     default:
         return "";
     }
@@ -467,6 +468,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_DICTPANEL;
     }
+    else if (descName == "group-line")
+    {
+        return CONTROL_GROUP;
+    }
     else
     {
         return CONTROL_NONE;
@@ -490,7 +495,9 @@ QStringList UiHelper::getCoreTypeList()
         //"writepath",
         //"readpath",
         "color",
-        "curve"
+        "curve",
+        "list",
+        "dict"
     };
     return types;
 }
@@ -502,13 +509,19 @@ QStringList UiHelper::getAllControls()
         "Integer Vector 2", "Color", "Curve", "SpinBox", "Slider", "SpinBoxSlider" };
 }
 
-QStringList UiHelper::getControlLists(const QString& type)
+QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
 {
     QList<PARAM_CONTROL> ctrls;
-    if (type == "int") { ctrls = { CONTROL_INT, CONTROL_SPINBOX_SLIDER, CONTROL_HSPINBOX }; }
+    if (type == "int") 
+    { 
+        if (isNodeUI)
+            ctrls = {CONTROL_INT, CONTROL_HSPINBOX}; 
+        else
+            ctrls = {CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; 
+    }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
     else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
-    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
+    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
     else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }
@@ -587,6 +600,8 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
     {
         //control by multilink socket property. see SOCKET_PROPERTY
         return CONTROL_NONE;
+    } else if (type == "group-line") {
+        return CONTROL_GROUP;
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());

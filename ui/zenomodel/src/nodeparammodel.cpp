@@ -712,6 +712,11 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socket
     {
         if (!desc.categories.contains("list"))
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
+    } 
+    else if (pItem->m_type == "group-line") 
+    {
+        if (!desc.categories.contains("group-line"))
+            pItem->m_sockProp = SOCKPROP_GROUP;
     }
 
     //not type desc on list output socket, add it here.
@@ -916,6 +921,11 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
                 desc.inputs[sockName].info.defaultValue = deflVal;
                 QVariantMap ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
+                if (desc.inputs[sockName].info.control != pItem->m_ctrl) 
+                {
+                    desc.inputs[sockName].info.control = pItem->m_ctrl;
+                    isUpdate = true;
+                }
                 if (desc.inputs[sockName].info.ctrlProps != ctrlProp)
                 {
                     desc.inputs[sockName].info.ctrlProps = ctrlProp;
@@ -937,6 +947,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                     // update socket for current subgraph node.
                     NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                     QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
+                    nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
                     nodeParams->setData(paramIdx, pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES], ROLE_VPARAM_CTRL_PROPERTIES);
                 }
 			}

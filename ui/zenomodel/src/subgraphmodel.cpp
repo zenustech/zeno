@@ -400,6 +400,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
 
         switch (role)
         {
+            case ROLE_OBJNAME: 
+            {
+                item.objCls = value.toString();
+                break;
+            }
             case ROLE_INPUTS:
             {
                 INPUT_SOCKETS inputs = value.value<INPUT_SOCKETS>();

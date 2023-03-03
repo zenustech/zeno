@@ -232,7 +232,11 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             pTabLayout->addStretch();
             tabWid->setLayout(pTabLayout);
         }
+        QLayoutItem *layoutItem = pTabLayout->itemAt(pTabLayout->count() - 1);
+        if (layoutItem && dynamic_cast<QSpacerItem *>(layoutItem))
+            pTabLayout->removeItem(layoutItem);
         syncAddGroup(pTabLayout, newItem, first);
+        pTabLayout->addStretch();
     }
     else if (vType == VPARAM_PARAM)
     {
@@ -279,8 +283,10 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     const QString& paramName = paramItem->data(ROLE_VPARAM_NAME).toString();
     QVariant val = paramItem->data(ROLE_PARAM_VALUE);
     PARAM_CONTROL ctrl = (PARAM_CONTROL)paramItem->data(ROLE_PARAM_CTRL).toInt();
-    const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
-    const QVariant& pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+
+    
+    const QString &typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+    const QVariant &pros = paramItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
@@ -296,6 +302,10 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
             RetryScope scope(m_bReentry);
             zenoApp->getMainWindow()->dispatchCommand(&act, true);
         };
+    } 
+    else if (ctrl == CONTROL_GROUP) 
+    {
+        return false;
     }
 
     cbSet.cbEditFinished = [=](QVariant newValue) {
@@ -332,6 +342,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
+    panelCtrl.pIcon = pIcon;
     panelCtrl.m_viewIdx = perIdx;
     panelCtrl.pControl = pControl;
 
@@ -471,9 +482,15 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
                 ZASSERT_EXIT(pGridLayout);
 
                 ctrl.controlLayout->removeWidget(ctrl.pControl);
-                ctrl.controlLayout->removeWidget(ctrl.pLabel);
                 delete ctrl.pControl;
-                delete ctrl.pLabel;
+                if (ctrl.pLabel) {
+                    ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                    delete ctrl.pLabel;
+                }
+                if (ctrl.pIcon) {
+                    ctrl.controlLayout->removeWidget(ctrl.pIcon);
+                    delete ctrl.pIcon;
+                }
                 m_controls[tabName][groupName].remove(paramName);
             }
         }
@@ -507,7 +524,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     {
         QStandardItem* param = groupItem->child(r);
 
-        if (role == ROLE_VPARAM_NAME)
+        if (role == ROLE_PARAM_NAME)
         {
             for (auto it = group.begin(); it != group.end(); it++)
             {
@@ -528,9 +545,15 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             ZASSERT_EXIT(pGridLayout);
 
             ctrl.controlLayout->removeWidget(ctrl.pControl);
-            ctrl.controlLayout->removeWidget(ctrl.pLabel);
             delete ctrl.pControl;
-            delete ctrl.pLabel;
+            if (ctrl.pLabel) {
+                ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                delete ctrl.pLabel;
+            }
+            if (ctrl.pIcon) {
+                ctrl.controlLayout->removeWidget(ctrl.pIcon);
+                delete ctrl.pIcon;
+            }
 
             int row = group.keys().indexOf(paramName, 0);
             syncAddControl(pGridLayout, param, row);

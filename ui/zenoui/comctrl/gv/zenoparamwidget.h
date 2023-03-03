@@ -325,6 +325,18 @@ class ZenoParamSpinBox : public ZenoParamWidget {
     QSpinBox *m_pSpinBox;
 };
 
+class ZenoParamGroupLine : public QGraphicsItem
+{
+public:
+    ZenoParamGroupLine(const QString &text, QGraphicsItem *parent = nullptr);
+   QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    void setText(const QString &text);
+
+  private:
+    QString m_text;
+};
+
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
 public:

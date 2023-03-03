@@ -140,6 +140,10 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 onDelete(index);
                 });
 
+            connect(pRename, &QAction::triggered, this, [=]() {
+                onRename(index);
+            });
+
             menu->addAction(pCopySubnet);
             menu->addAction(pPasteSubnet);
             menu->addSeparator();
@@ -161,6 +165,14 @@ void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
         return;
     }
     m_model->removeSubGraph(subgName);
+}
+
+void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
+{
+    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"));
+    if (!name.isEmpty()) {
+        m_model->setData(index, name, Qt::EditRole);
+    }
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

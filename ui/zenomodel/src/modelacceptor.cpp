@@ -215,6 +215,8 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
         prop = SOCKPROP_DICTLIST_PANEL;
     else if (sockProperty == "editable")
         prop = SOCKPROP_EDITABLE;
+    else if (sockProperty == "group-line")
+        prop = SOCKPROP_GROUP;
 
     //the layout should be standard inputs desc by latest descriptors.
     //so, we can only add dynamic key. for example, list and dict node.
@@ -583,7 +585,7 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
 
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
 
-    if (noCls != "SubInput")
+    if (noCls != "SubInput" && noCls != "SubOutput")
         return;
 
      //update desc.
@@ -606,9 +608,15 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
     QString subGraphName = m_currentGraph->name();
     bool ret = m_pModel->getDescriptor(subGraphName, desc);
     ZASSERT_EXIT(ret);
-    ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
-    desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
-    desc.inputs[sockName].info.control = newCtrl;
+    if (noCls == "SubInput") {
+        ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
+        desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
+        desc.inputs[sockName].info.control = newCtrl;
+    } else {
+        ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
+        desc.outputs[sockName].info.ctrlProps = ctrlProps.toMap();
+        desc.outputs[sockName].info.control = newCtrl;
+    }
 
     //no control info stored on desc in zsg, have to reset control by SubInput/SubOutput
     m_pModel->updateSubgDesc(subGraphName, desc);

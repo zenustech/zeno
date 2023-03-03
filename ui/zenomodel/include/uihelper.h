@@ -42,7 +42,7 @@ public:
     static CONTROL_INFO getControlByType(const QString &nodeCls, PARAM_CLASS cls, const QString &socketName,const QString &socketType);    
     static QString getTypeByControl(PARAM_CONTROL ctrl);
     static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramPath);
-    static QStringList getControlLists(const QString& type);
+    static QStringList getControlLists(const QString& type, bool isNodeUI);
     static QStringList getAllControls();
     static QString getControlDesc(PARAM_CONTROL ctrl);
     static PARAM_CONTROL getControlByDesc(const QString& descName);

@@ -18,6 +18,7 @@ static CONTROL_INFO _infos[] = {
     {"NumericEval",                 PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
     {"ParticlesNeighborz",          PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
     {"SubInput",                    PARAM_PARAM, "type",        CONTROL_ENUM,             QVariant()},
+    {"SubOutput", PARAM_PARAM, "type", CONTROL_ENUM, QVariant()},
 };
 
 
@@ -32,7 +33,7 @@ GlobalControlMgr::GlobalControlMgr()
 {
     for (int i = 0; i < sizeof(_infos) / sizeof(CONTROL_INFO); i++)
     {
-        if (_infos[i].objCls == "SubInput")
+        if (_infos[i].objCls == "SubInput" || _infos[i].objCls == "SubOutput")
         {
             QVariantMap map;
             map["items"] = UiHelper::getCoreTypeList();
