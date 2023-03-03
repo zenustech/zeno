@@ -25,6 +25,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     , m_dragMove(false)
     , m_menu(nullptr)
     , m_pSearcher(nullptr)
+    , m_bShowGrid(true)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -91,6 +92,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     setSceneRect(rcView);
 
     gentle_zoom(1.0);
+}
+
+void _ZenoSubGraphView::showGrid(bool bShow)
+{
+    m_bShowGrid = bShow;
+    update();
 }
 
 void _ZenoSubGraphView::redo()
@@ -486,9 +493,7 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
     painter->fillRect(rect, QColor("#13191f"));
-
-    static const bool bDrawGrid = true;
-    if (bDrawGrid)
+    if (m_bShowGrid)
     {
         QTransform tf = transform();
         qreal scale = tf.m11();
@@ -671,6 +676,11 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 void ZenoSubGraphView::setZoom(const qreal& scale)
 {
     m_view->setScale(scale);
+}
+
+void ZenoSubGraphView::showGrid(bool bShow)
+{
+    m_view->showGrid(bShow);
 }
 
 void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)

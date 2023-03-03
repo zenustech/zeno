@@ -30,6 +30,7 @@
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"
 #include "groupnode.h"
+#include "dialog/zeditparamlayoutdlg.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -1149,6 +1150,15 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
                 }
             }
         });
+        QAction* propDlg = new QAction(tr("Custom Param"));
+        nodeMenu->addAction(propDlg);
+        connect(propDlg, &QAction::triggered, this, [=]() {
+            QStandardItemModel* params = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
+            ZASSERT_EXIT(params);
+            ZEditParamLayoutDlg dlg(params, true, m_index, pGraphsModel);
+            dlg.exec();
+        });
+
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
