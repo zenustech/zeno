@@ -329,6 +329,13 @@ namespace zeno {
                 for(int array_id = 0;array_id != nm_arrays;++array_id){
                     int nm_components,nm_tuples;
                     bufferp = readline(buffer,fp,&line_count);
+                    sscanf(bufferp,"%s",array_name);
+                    if(!strcmp(array_name,"METADATA")){
+                        printf("skip_line : %s\n",bufferp);
+                        bufferp = readline(buffer,fp,&line_count);
+                        printf("skip_line : %s\n",bufferp);
+                        bufferp = readline(buffer,fp,&line_count);
+                    }
                     sscanf(bufferp,"%s %d %d %s",array_name,&nm_components,&nm_tuples,dummy_str);
                     printf("array_name : %s | nm_components  %d | nm_tuples : %d | type : %s at %d\n",
                         array_name,nm_components,nm_tuples,dummy_str,line_count);

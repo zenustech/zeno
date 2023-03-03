@@ -231,8 +231,10 @@ namespace EDGE_EDGE_COLLISION {
         // ndotHessian = ndot_hessian(x);
         const MATRIX12 springLengthH = springLengthHessian(e,n,diff,a,b);
         
-        return (REAL)2.0 * _mu * (dyadic_prod(springLengthGrad,springLengthGrad) +
-                            springLength * springLengthH);
+        //return 2.0 * _mu * (springLengthGrad * springLengthGrad.transpose() +
+        //                    springLength * springLengthH);
+
+        return (REAL)2.0 * _mu * dyadic_prod(springLengthGrad,springLengthGrad);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -288,8 +290,11 @@ namespace EDGE_EDGE_COLLISION {
         
         //return 2.0 * _mu * (springLengthGrad * springLengthGrad.transpose() +
         //                    springLength * springLengthH);
-        return (REAL)-2.0 * _mu * (springLength * springLengthH - 
-                            zs::dyadic_prod(springLengthGrad,springLengthGrad));
+        // return (REAL)-2.0 * _mu * (springLength * springLengthH - 
+        //                     zs::dyadic_prod(springLengthGrad,springLengthGrad));
+
+        return (REAL)2.0 * _mu * zs::dyadic_prod(springLengthGrad,springLengthGrad);
+
     }
 
 };

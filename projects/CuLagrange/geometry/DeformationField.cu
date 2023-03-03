@@ -20,8 +20,8 @@ struct ZSIsotropicTensionField : INode {
         auto& verts = zssurf->getParticles();
         auto& tris = zssurf->getQuadraturePoints();
 
-        if(tris.getPropertySize("inds") != 3) {
-            fmt::print("ZSCalcSurfaceTenssionField only supports triangle surface mesh {}\n",tris.getPropertySize("inds"));
+        if(tris.getChannelSize("inds") != 3) {
+            fmt::print("ZSCalcSurfaceTenssionField only supports triangle surface mesh {}\n",tris.getChannelSize("inds"));
             throw std::runtime_error("ZSCalcSurfaceTenssionField only supports triangle surface mesh");
         }
         if(!verts.hasProperty(ref_channel)){
@@ -158,7 +158,7 @@ struct ZSEvalDeformationGradient : zeno::INode {
         }
 
         auto& quads = zsvolume->getQuadraturePoints();
-        if(quads.getPropertySize("inds") != 4) {
+        if(quads.getChannelSize("inds") != 4) {
             fmt::print("the input zsvolume should be a tetrahedra mesh\n");
             throw std::runtime_error("the input zsvolume should be a tetrahedra mesh");
         }
@@ -173,7 +173,7 @@ struct ZSEvalDeformationGradient : zeno::INode {
 
         if(!quads.hasProperty(gradientTag)) {
             quads.append_channels(cudaExec,{{gradientTag,9}});
-        }else if(quads.getPropertySize(gradientTag) != 9) {
+        }else if(quads.getChannelSize(gradientTag) != 9) {
             fmt::print("the size of F channel {} is not 9\n",gradientTag);
             throw std::runtime_error("the size of F channel is not 9");
         }
