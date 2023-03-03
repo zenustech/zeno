@@ -60,22 +60,22 @@ void ZTimeline::initSignals()
         if (bChecked)
             emit alwaysChecked();
     });
-    connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
-        //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
-        ZenoMainWindow *pWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pWin);
-        DisplayWidget *pWid = pWin->getDisplayWidget();
-        ZASSERT_EXIT(pWid);
-        ViewportWidget *viewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(viewport);
+    //connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
+    //    //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
+    //    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    //    ZASSERT_EXIT(pWin);
+    //    DisplayWidget *pWid = pWin->getDisplayWidget();
+    //    ZASSERT_EXIT(pWid);
+    //    ViewportWidget *viewport = pWid->getViewportWidget();
+    //    ZASSERT_EXIT(viewport);
 
-        auto scene = viewport->getZenoVis()->getSession()->get_scene();
-        ZASSERT_EXIT(scene);
+    //    auto scene = viewport->getZenoVis()->getSession()->get_scene();
+    //    ZASSERT_EXIT(scene);
 
-        viewport->simpleRenderChecked = bChecked;
-        scene->drawOptions->simpleRender = bChecked;
-        scene->drawOptions->needRefresh = true;
-    });
+    //    viewport->simpleRenderChecked = bChecked;
+    //    scene->drawOptions->simpleRender = bChecked;
+    //    scene->drawOptions->needRefresh = true;
+    //});
     m_ui->btnAlways->setShortcut(QKeySequence("F1"));
 
     //m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
@@ -125,7 +125,7 @@ void ZTimeline::initSignals()
 
 void ZTimeline::initStyleSheet()
 {
-    auto editors = findChildren<QLineEdit *>(QString(), Qt::FindDirectChildrenOnly);
+    auto editors = findChildren<QLineEdit *>(QString(), Qt::FindChildrenRecursively);
     for (QLineEdit *pLineEdit : editors) {
         pLineEdit->setProperty("cssClass", "FCurve-lineedit");
     }
@@ -187,15 +187,15 @@ void ZTimeline::initButtons()
     m_ui->btnForwardToEnd->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
-    m_ui->btnRecycle->setButtonOptions(ZToolButton::Opt_HasIcon);
-    m_ui->btnRecycle->setIcon(
-        ZenoStyle::dpiScaledSize(QSize(24, 24)),
-        ":/icons/timeline_loopMethod_loop.svg",
-        ":/icons/timeline_loopMethod_loop.svg",
-        "",
-        "");
-    m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    //m_ui->btnRecycle->setButtonOptions(ZToolButton::Opt_HasIcon);
+    //m_ui->btnRecycle->setIcon(
+    //    ZenoStyle::dpiScaledSize(QSize(24, 24)),
+    //    ":/icons/timeline_loopMethod_loop.svg",
+    //    ":/icons/timeline_loopMethod_loop.svg",
+    //    "",
+    //    "");
+    //m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
+    //m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
     QColor bg(35, 40, 47);
     m_ui->btnAlways->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
@@ -211,8 +211,8 @@ void ZTimeline::initButtons()
     QFont font("Alibaba PuHuiTi", 10);
     font.setWeight(QFont::DemiBold);
 
-    //m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
-    m_ui->btnSimpleRender->setFont(font);
+    ////m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
+    //m_ui->btnSimpleRender->setFont(font);
 
     m_ui->btnRun->setShortcut(QKeySequence("F2"));
     m_ui->btnRun->setFont(font);
@@ -220,17 +220,17 @@ void ZTimeline::initButtons()
     m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
     m_ui->btnKill->setFont(font);
 
-    m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
-    m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",
-                             ":/icons/sound-on.svg", "");
-    m_ui->btnSound->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnSound->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    //m_ui->btnSound->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
+    //m_ui->btnSound->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/sound-off.svg", "",
+    //                         ":/icons/sound-on.svg", "");
+    //m_ui->btnSound->setMargins(QMargins(3, 2, 2, 3));
+    //m_ui->btnSound->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 
-    m_ui->btnSettings->setButtonOptions(ZToolButton::Opt_HasIcon);
-    m_ui->btnSettings->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline-settings.svg", "",
-                            ":/icons/timeline-settings.svg", "");
-    m_ui->btnSettings->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnSettings->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    //m_ui->btnSettings->setButtonOptions(ZToolButton::Opt_HasIcon);
+    //m_ui->btnSettings->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline-settings.svg", "",
+    //                        ":/icons/timeline-settings.svg", "");
+    //m_ui->btnSettings->setMargins(QMargins(3, 2, 2, 3));
+    //m_ui->btnSettings->setBackgroundClr(bg, hoverBg, bg, hoverBg);
 }
 
 void ZTimeline::initSize()

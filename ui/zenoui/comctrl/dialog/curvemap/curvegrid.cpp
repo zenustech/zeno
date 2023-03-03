@@ -70,6 +70,11 @@ void CurveGrid::addCurve(CurveModel* model)
     m_curves[id] = pCurves;
 }
 
+void CurveGrid::removeCurve(QString id) {
+    delete m_curves[id];
+    m_curves.remove(id);
+}
+
 QPointF CurveGrid::logicToScene(QPointF logicPos)
 {
     QPointF pos = m_invTrans.map(logicPos);

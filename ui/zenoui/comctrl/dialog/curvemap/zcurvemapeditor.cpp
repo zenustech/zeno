@@ -270,7 +270,7 @@ void ZCurveMapEditor::onDelCurveBtnClicked() {
         pRootItem->removeRow(lst[0].row());
 
         CurveGrid *pGrid = m_ui->gridview->gridItem();
-        pGrid->setCurvesVisible(curveName, false);
+        pGrid->removeCurve(curveName);
 
         delete m_models[curveName];
         m_bate_rows.erase(std::find(m_bate_rows.begin(), m_bate_rows.end(), m_models[curveName]));
