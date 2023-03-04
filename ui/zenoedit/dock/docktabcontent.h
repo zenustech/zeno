@@ -31,6 +31,7 @@ protected:
     virtual void initConnections() = 0;
 
     QWidget* m_pWidget;
+    static const int sToolbarHeight;
 };
 
 class DockContent_Parameter : public DockToolbarWidget
@@ -103,7 +104,23 @@ private:
     ZToolBarButton* m_background_clr;
     ZToolBarButton* m_recordVideo;
     ZToolBarButton* m_screenshoot;
+    ZToolBarButton* m_moveBtn;
+    ZToolBarButton* m_scaleBtn;
+    ZToolBarButton* m_rotateBtn;
+
     QComboBox* m_cbRenderWay;
+    QAction* m_pFocus;
+    QAction *m_pOrigin;
+    QAction *m_front;
+    QAction *m_back;
+    QAction *m_right;
+    QAction *m_left;
+    QAction *m_top;
+    QAction *m_bottom;
+
+    QAction *m_move;
+    QAction *m_rotate;
+    QAction *m_scale;
 };
 
 class DockContent_Log : public DockToolbarWidget

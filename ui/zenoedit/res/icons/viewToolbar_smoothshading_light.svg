@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>viewToolbar_smoothshading_light</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/viewToolbar/smoothshading/light" fill="#DFE2E5" fill-rule="nonzero">
+            <path d="M9.5,3.5 C12.4727145,3.5 14.9404956,5.66187679 15.4169061,8.49919314 L13.8882751,8.49904566 C13.4331936,6.49553637 11.6412474,5 9.5,5 C7.01471863,5 5,7.01471863 5,9.5 C5,11.6412474 6.49553637,13.4331936 8.49904566,13.8882751 L8.5,8.5 L16.5,8.5 L16.5,16.5 L8.5,16.5 L8.49919314,15.4169061 C5.66187679,14.9404956 3.5,12.4727145 3.5,9.5 C3.5,6.1862915 6.1862915,3.5 9.5,3.5 Z M9.999,13.117 L10,15 L11.882,15 L9.999,13.117 Z M10.997,10 L10,10 L9.999,10.996 L14.003,15 L15,15 L14.999,14.002 L10.997,10 Z M15,10 L13.118,10 L14.999,11.881 L15,10 Z" id="Combined-Shape"></path>
+        </g>
+    </g>
+</svg>

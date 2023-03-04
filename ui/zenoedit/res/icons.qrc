@@ -288,5 +288,25 @@
     <file>icons/nodeEditor_group_scale-adjustor.svg</file>
     <file>icons/nodeEditor_grid_selected.svg</file>
     <file>icons/nodeEditor_grid_unselected.svg</file>
+    <file>icons/viewToolbar_background_idle.svg</file>
+    <file>icons/viewToolbar_background_light.svg</file>
+    <file>icons/viewToolbar_grid_idle.svg</file>
+    <file>icons/viewToolbar_grid_light.svg</file>
+    <file>icons/viewToolbar_move_idle.svg</file>
+    <file>icons/viewToolbar_move_light.svg</file>
+    <file>icons/viewToolbar_normalcheck_idle.svg</file>
+    <file>icons/viewToolbar_normalcheck_light.svg</file>
+    <file>icons/viewToolbar_record_idle.svg</file>
+    <file>icons/viewToolbar_record_light.svg</file>
+    <file>icons/viewToolbar_rotate_idle.svg</file>
+    <file>icons/viewToolbar_rotate_light.svg</file>
+    <file>icons/viewToolbar_scale_idle.svg</file>
+    <file>icons/viewToolbar_scale_light.svg</file>
+    <file>icons/viewToolbar_screenshot_light.svg</file>
+    <file>icons/viewToolbar_screenshot_idle.svg</file>
+    <file>icons/viewToolbar_smoothshading_idle.svg</file>
+    <file>icons/viewToolbar_smoothshading_light.svg</file>
+    <file>icons/viewToolbar_wireframe_idle.svg</file>
+    <file>icons/viewToolbar_wireframe_light.svg</file>
 </qresource>
 </RCC>
