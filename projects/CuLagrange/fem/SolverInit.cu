@@ -335,7 +335,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
     if (hasBoundary())
         numDofs += coVerts->size();
     numBouDofs = numDofs - coOffset;
-    spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), numDofs, numDofs};
+    spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), (int)numDofs, (int)numDofs};
 
     fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
                svOffset, seOffset, sfOffset);
