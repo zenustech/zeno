@@ -3160,7 +3160,8 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         // CHECK PN CONDITION
         T res = infNorm(pol, "dir");
         T cons_res = constraintResidual(pol);
-        if (res < targetGRes && cons_res == 0) {
+        /// @note do not exit in the beginning
+        if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0) {
             zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
                            res);
             break;
