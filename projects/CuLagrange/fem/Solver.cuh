@@ -367,6 +367,7 @@ struct IPCSystem : IObject {
     bvfront_t selfStFront, boundaryStFront;
     bvfront_t selfSeFront, boundarySeFront;
     bool frontManageRequired;
+    std::optional<bv_t> wholeBv;
     T dt, framedt, curRatio;
 };
 

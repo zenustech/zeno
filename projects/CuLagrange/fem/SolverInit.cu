@@ -466,6 +466,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     projectDBC = false;
     BCsatisfied = false;
 
+    /// @note reset collision counters
     if (enableContact) {
         nPP.setVal(0);
         nPE.setVal(0);
@@ -487,6 +488,38 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
         ncsPT.setVal(0);
         ncsEE.setVal(0);
+    }
+
+    /// @note sort primhandle verts. Do this periodically for MAS
+    if (state.getFrameNo() % 10 == 0) {
+        /// @brief do once
+        if (!wholeBv.has_value()) {
+            bvs.resize(1);
+            bvs.setVal(bv_t{vec3::constant(limits<T>::max()), vec3::constant(limits<T>::lowest())});
+            for (auto &primHandle : prims) {
+                if (primHandle.isAuxiliary())
+                    continue;
+                auto &verts = primHandle.getVerts();
+                // initialize BC info
+                // predict pos, initialize augmented lagrangian, constrain weights
+                pol(Collapse(verts.size()),
+                    [verts = view<space>({}, verts), bvs = view<space>(bvs)] __device__(int i) mutable {
+                        auto x = verts.pack<3>("x", i);
+                        for (int d = 0; d != 3; ++d) {
+                            atomic_min(exec_cuda, &bvs(0)._min[d], x[d] - 10 * limits<T>::epsilon());
+                            atomic_max(exec_cuda, &bvs(0)._max[d], x[d] + 10 * limits<T>::epsilon());
+                        }
+                    });
+            }
+            wholeBv = bvs.getVal();
+        }
+
+        for (auto &primHandle : prims) {
+            if (primHandle.isAuxiliary())
+                continue;
+            auto &verts = primHandle.getVerts();
+            primHandle.computeMortonCodeOrder(pol, tempi, *wholeBv);
+        }
     }
 
     for (auto &primHandle : prims) {
@@ -595,16 +628,8 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         init_front(seInds, boundarySeFront);
     }
 
-    auto wholeBv = updateWholeBoundingBoxSize(pol);
-
-    /// @note only do this periodically, for MAS
-    if (state.getFrameNo() % 10 == 0)
-        for (auto &primHandle : prims) {
-            if (primHandle.isAuxiliary())
-                continue;
-            auto &verts = primHandle.getVerts();
-            primHandle.computeMortonCodeOrder(pol, tempi, wholeBv);
-        }
+    /// @note update whole bounding box, but the first one may be done during the initial morton code ordering
+    wholeBv = updateWholeBoundingBoxSize(pol);
 
     /// for faster linear solve
     hess1.init(vtemp.get_allocator(), numDofs);
