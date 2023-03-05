@@ -3250,6 +3250,7 @@ struct StepIPCSystem : INode {
         }
         // update velocity and positions
         A->writebackPositionsAndVelocities(cudaPol);
+        A->state.stepFrame();
 
         set_output("ZSIPCSystem", A);
     }

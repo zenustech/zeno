@@ -125,6 +125,40 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfArea(zs::CudaExecut
     zsprimPtr->setMeta(s_meanSurfAreaTag, tmp);
     return tmp;
 }
+void IPCSystem::PrimitiveHandle::computeMortonCodeOrder(zs::CudaExecutionPolicy &pol, zs::Vector<zs::u32> &tempBuffer,
+                                                        const bv_t &bv) {
+    if (!vertsPtr)
+        return;
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto &verts = getVerts();
+    const auto ndofs = verts.size();
+    tempBuffer.resize(ndofs * 2); // [unordered, ..., ordered, ...]
+
+    if (!originalToOrdered.has_value())
+        originalToOrdered = zs::Vector<int>{verts.get_allocator(), ndofs};
+    else
+        (*originalToOrdered).resize(ndofs);
+    auto &dsts = *originalToOrdered;
+    if (!orderedToOriginal.has_value())
+        orderedToOriginal = zs::Vector<int>{verts.get_allocator(), ndofs};
+    else
+        (*orderedToOriginal).resize(ndofs);
+    auto &indices = *orderedToOriginal; // stored the ordered indices
+    // initialization: ascending indices, morton codes
+    pol(range(ndofs), [dsts = view<space>(dsts), codes = view<space>(tempBuffer), verts = view<space>({}, verts),
+                       bv = bv] ZS_LAMBDA(int i) mutable {
+        auto coord = bv.getUniformCoord(verts.pack(dim_c<3>, "x", i)).template cast<f32>();
+        codes[i] = (zs::u32)morton_code<3>(coord);
+        dsts[i] = i;
+    });
+    // radix sort
+    radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + ndofs, indices.begin(), ndofs);
+    // compute inverse mapping
+    pol(range(ndofs),
+        [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(int i) mutable { dsts[indices[i]] = i; });
+    return;
+}
 
 /// IPCSystem
 typename IPCSystem::T IPCSystem::averageNodalMass(zs::CudaExecutionPolicy &pol) {
@@ -177,16 +211,19 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
     else
         return 0;
 }
-void IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
+typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     /// @note use edge bvh in case there are only strands in the system
     bv_t bv = seBvh.getTotalBox(pol);
+    auto ret = bv;
     if (hasBoundary()) {
         auto bouBv = bouSeBvh.getTotalBox(pol);
         merge(bv, bouBv._min);
         merge(bv, bouBv._max);
     }
     boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
+    /// @note only for primHandle local ordering
+    return ret;
 }
 void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
     // should be called after dHat set
@@ -313,8 +350,10 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::um, 0},
       FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
       fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
+      // temporary buffer
+      temp{estNumCps, zs::memsrc_e::um, 0},
       //
-      temp{estNumCps, zs::memsrc_e::um, 0}, csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
+      csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
       ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
       ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
@@ -346,7 +385,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"BCorder", 1}, // 0: unbounded, 3: sticky boundary condition
                       {"BCtarget", 3},
                       {"BCfixed", 1},
-                      {"ws", 1},     // mass, also as constraint jacobian
+                      {"ws", 1}, // mass, also as constraint jacobian
                       {"cons", 3},
 
                       {"dir", 3},
@@ -361,7 +400,9 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"p", 3},
                       {"q", 3}},
                      numDofs};
+    // temporary buffers
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
+    tempi = zs::Vector<zs::u32>{vtemp.get_allocator(), vtemp.size()};
 
     // inertial hessian
     tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
@@ -377,6 +418,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"p", 3},
                       {"q", 3}},
                      numDofs};
+
+    state.reset();
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
@@ -552,7 +595,16 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         init_front(seInds, boundarySeFront);
     }
 
-    updateWholeBoundingBoxSize(pol);
+    auto wholeBv = updateWholeBoundingBoxSize(pol);
+
+    /// @note only do this periodically, for MAS
+    if (state.getFrameNo() % 10 == 0)
+        for (auto &primHandle : prims) {
+            if (primHandle.isAuxiliary())
+                continue;
+            auto &verts = primHandle.getVerts();
+            primHandle.computeMortonCodeOrder(pol, tempi, wholeBv);
+        }
 
     /// for faster linear solve
     hess1.init(vtemp.get_allocator(), numDofs);
