@@ -584,42 +584,6 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
     ZASSERT_EXIT(idx.isValid());
 
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
-
-    if (noCls != "SubInput" && noCls != "SubOutput")
-        return;
-
-     //update desc.
-    QString sockName;
-    PARAM_CONTROL newCtrl;
-    QVariant ctrlProps;
-    for (auto paramInfo : params)
-    {
-        if (paramInfo.name == "name") 
-        {
-            sockName = paramInfo.value.toString();
-        }
-        else if (paramInfo.name == "defl") 
-        {
-            newCtrl = paramInfo.control;
-            ctrlProps = paramInfo.controlProps;
-        }
-    }
-    NODE_DESC desc;
-    QString subGraphName = m_currentGraph->name();
-    bool ret = m_pModel->getDescriptor(subGraphName, desc);
-    ZASSERT_EXIT(ret);
-    if (noCls == "SubInput") {
-        ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
-        desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
-        desc.inputs[sockName].info.control = newCtrl;
-    } else {
-        ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
-        desc.outputs[sockName].info.ctrlProps = ctrlProps.toMap();
-        desc.outputs[sockName].info.control = newCtrl;
-    }
-
-    //no control info stored on desc in zsg, have to reset control by SubInput/SubOutput
-    m_pModel->updateSubgDesc(subGraphName, desc);
 }
 
 void ModelAcceptor::setPos(const QString& id, const QPointF& pos)

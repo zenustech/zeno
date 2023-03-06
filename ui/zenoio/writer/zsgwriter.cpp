@@ -123,7 +123,7 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
     }
 }
 
-void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& writer)
+void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& writer, bool bDesc)
 {
     //new io format for socket.
     writer.StartObject();
@@ -177,7 +177,7 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         writer.EndObject();
     }
 
-    if (bInput)
+    if (bInput && !bDesc)
     {
         writer.Key("link");
         if (socket.links.isEmpty())
@@ -204,6 +204,9 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
 
         writer.Key("control");
         JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
+
+        writer.Key("type");
+        writer.String(sockType.toUtf8());
     }
 
     writer.EndObject();
@@ -230,7 +233,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 #ifndef LEGACY_ZSG_WRITE
             //adapt new io format, bacause the legacy io format is very restricted!
-            dumpSocket(inSock.info, true, writer);
+            dumpSocket(inSock.info, true, writer, false);
 #else
             QVariant deflVal = inSock.info.defaultValue;
             const QString& sockType = inSock.info.type;
@@ -267,7 +270,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         for (const OUTPUT_SOCKET &outSock : outputs)
         {
             writer.Key(outSock.info.name.toUtf8());
-            dumpSocket(outSock.info, false, writer);
+            dumpSocket(outSock.info, false, writer, false);
         }
     }
     writer.Key("uipos");
@@ -429,6 +432,40 @@ void ZsgWriter::dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer)
     writer.EndObject();
 }
 
+void ZsgWriter::dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER& writer) 
+{
+    //inputs
+    writer.Key("inputs");
+    writer.StartObject();
+    for (INPUT_SOCKET inSock : desc.inputs) {
+        writer.Key(inSock.info.name.toUtf8());
+        dumpSocket(inSock.info, true, writer, true);;
+    }
+    writer.EndObject();
+    //params
+    writer.Key("params");
+    writer.StartObject();
+    for (PARAM_INFO param : desc.params) {
+        writer.Key(param.name.toUtf8());
+        dumpParams(param, writer);
+    }
+    writer.EndObject();
+    //outputs
+    writer.Key("outputs");
+    writer.StartObject();
+    for (OUTPUT_SOCKET outSock : desc.outputs) {
+        writer.Key(outSock.info.name.toUtf8());
+        dumpSocket(outSock.info, false, writer, true);
+    }
+    writer.EndObject();
+
+    writer.Key("categories");
+    AddStringList(desc.categories, writer);
+
+    writer.Key("is_subgraph");
+    writer.Bool(true);
+}
+
 void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer)
 {
     JsonObjBatch batch(writer);
@@ -440,42 +477,43 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
         writer.Key(name.toUtf8());
         JsonObjBatch _batch(writer);
 
+        if(desc.is_subgraph) 
         {
-            writer.Key("inputs");
-            JsonArrayBatch _batchArr(writer);
-
-            for (INPUT_SOCKET inSock : desc.inputs)
+            dumpSubGraphDesc(desc, writer);
+        } 
+        else 
+        {
             {
-                AddVariantToStringList({ inSock.info.type ,inSock.info.name, inSock.info.defaultValue }, writer);
-            }
-        }
-        {
-            writer.Key("params");
-            JsonArrayBatch _batchArr(writer);
+                writer.Key("inputs");
+                JsonArrayBatch _batchArr(writer);
 
-            for (PARAM_INFO param : desc.params)
+                for (INPUT_SOCKET inSock : desc.inputs)
+                {
+                    AddVariantToStringList({inSock.info.type, inSock.info.name, inSock.info.defaultValue}, writer);
+                }
+            }
             {
-                AddVariantToStringList({ param.typeDesc , param.name, param.defaultValue }, writer);
+                writer.Key("params");
+                JsonArrayBatch _batchArr(writer);
+
+                for (PARAM_INFO param : desc.params)
+                {
+                    AddVariantToStringList({param.typeDesc, param.name, param.defaultValue}, writer);
+                }
             }
-        }
 
-        {
-            writer.Key("outputs");
-            JsonArrayBatch _batchArr(writer);
-
-            for (OUTPUT_SOCKET outSock : desc.outputs)
             {
-                AddVariantToStringList({ outSock.info.type , outSock.info.name, outSock.info.defaultValue }, writer);
+                writer.Key("outputs");
+                JsonArrayBatch _batchArr(writer);
+
+                for (OUTPUT_SOCKET outSock : desc.outputs)
+                {
+                    AddVariantToStringList({outSock.info.type, outSock.info.name, outSock.info.defaultValue}, writer);
+                }
             }
-        }
 
-        writer.Key("categories");
-        AddStringList(desc.categories, writer);
-
-        if (desc.is_subgraph)
-        {
-            writer.Key("is_subgraph");
-            writer.Bool(true);
+            writer.Key("categories");
+            AddStringList(desc.categories, writer);
         }
     }
 }
