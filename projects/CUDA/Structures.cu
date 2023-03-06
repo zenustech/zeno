@@ -1,0 +1,12 @@
+#include "Structures.hpp"
+#include "zensim/cuda/execution/ExecutionPolicy.cuh"
+
+namespace zeno {
+
+template void ZenoParticles::orderByMortonCode<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol,
+                                                                        const typename ZenoParticles::bv_t &);
+
+template typename ZenoParticles::bv_t
+ZenoParticles::computeBoundingVolume<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol, zs::SmallString xtag);
+
+} // namespace zeno
