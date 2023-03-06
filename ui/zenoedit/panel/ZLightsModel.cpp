@@ -35,9 +35,9 @@ void ZLightsModel::updateByObjectsMan() {
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
     DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
+    ZERROR_EXIT(pWid);
     ViewportWidget* pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
+    ZERROR_EXIT(pViewport);
 
     auto session = pViewport->getSession();
     ZERROR_EXIT(session);
