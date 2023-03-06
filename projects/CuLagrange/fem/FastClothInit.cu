@@ -378,16 +378,27 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         if (primHandle.isAuxiliary())
             continue;
         auto &verts = primHandle.getVerts();
+        primHandle.hasBC = verts.hasProperty("isBC") && verts.hasProperty("BCtarget"); 
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
-                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+                                     voffset = primHandle.vOffset, dt = dt, 
+                                     hasBC = primHandle.hasBC] __device__(int i) mutable {
             auto x = verts.pack<3>("x", i);
             auto v = verts.pack<3>("v", i);
+            auto vi = voffset + i; 
 
-            vtemp("ws", voffset + i) = verts("m", i);
-            vtemp.tuple<3>("yn", voffset + i) = x;
-            vtemp.tuple<3>("vn", voffset + i) = v;
+            vtemp("ws", vi) = verts("m", i);
+            vtemp.tuple<3>("yn", vi) = x;
+            vtemp.tuple<3>("vn", vi) = v;
+
+            if (hasBC)
+            {
+                vtemp.tuple(dim_c<3>, "BCtarget", vi) = verts.pack(dim_c<3>, "BCtarget", i); 
+                vtemp("isBC", vi) = verts("isBC", vi); 
+            } else {
+                vtemp("isBC", vi) = 0; // otherwise the vertex would not be a BC vertex 
+            }
         });
     }
     if (hasBoundary())
@@ -473,7 +484,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints,
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
                                  T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity, int K,
-                                 int IDyn)
+                                 int IDyn, T BCStiffness)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       cPP{estNumCps * 20, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles().get_allocator(), 1},
       ncPP{zsprims[0]->getParticles().get_allocator(), 1},
@@ -486,7 +497,8 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
       temp{estNumCps, zs::memsrc_e::um, 0},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
-      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K{K}, IDyn{IDyn} {
+      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K{K}, IDyn{IDyn}, 
+      BCStiffness{BCStiffness} {
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::curve) {
@@ -522,6 +534,8 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
+                        {"isBC", 1}, // 0, 1
+                        {"BCtarget", 3},  
                         // linear solver
                         {"dir", 3},
                         {"gridDir", 3},
@@ -682,6 +696,7 @@ struct MakeClothSystem : INode {
         auto input_pn_cap = get_input2<int>("pn_iter_cap");
         auto input_cg_cap = get_input2<int>("cg_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
+        auto input_BC_stiffness = get_input2<float>("BC_stiffness"); 
         auto dt = get_input2<float>("dt");
         auto K = get_input2<int>("K");
         auto IDyn = get_input2<int>("IDyn");
@@ -689,7 +704,7 @@ struct MakeClothSystem : INode {
         auto A = std::make_shared<FastClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, dt,
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
                                                    input_withContact, input_aug_coeff, input_pn_rel, input_cg_rel,
-                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity, K, IDyn);
+                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity, K, IDyn, input_BC_stiffness);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -711,7 +726,8 @@ ZENDEFNODE(MakeClothSystem, {{"ZSParticles",
                               {"int", "cg_iter_cap", "1000"},
                               {"float", "gravity", "-9.8"},
                               {"int", "K", "72"},
-                              {"int", "IDyn", "2"}},
+                              {"int", "IDyn", "2"}, 
+                              {"float", "BC_stiffness", "1000"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});
