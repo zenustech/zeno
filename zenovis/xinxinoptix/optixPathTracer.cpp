@@ -1093,7 +1093,7 @@ static void createSBT( PathTracerState& state )
             rec.data.sigma_s = 1.0f;
             rec.data.greenstein = 0;
 
-            for(uint t=0; t<min(vdb_list.size(), 8); ++t)
+            for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
             {
                 auto vdb_key = vdb_list[t];
                 auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);

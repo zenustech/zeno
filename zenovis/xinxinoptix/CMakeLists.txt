@@ -32,12 +32,12 @@ target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 if (ZENO_SYSTEM_OPENVDB)
     message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
 else() # ../../projects/zenvdb/openvdb/nanovdb
-    get_filename_component(NANOVDB_DIR ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
-    message(${NANOVDB_DIR})
+    get_filename_component(NVDB_PATH ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
+    message(${NVDB_PATH})
 endif()
 
 target_include_directories(zenovis PRIVATE volume)
-# target_include_directories(zenovis PRIVATE nanovdb)
+target_include_directories(zenovis PRIVATE ${NVDB_PATH})
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
@@ -88,11 +88,11 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
 
-    ${NANOVDB_DIR}/@nanovdb/NanoVDB.h
-    ${NANOVDB_DIR}/@nanovdb/util/Ray.h
-    ${NANOVDB_DIR}/@nanovdb/util/HDDA.h
-    # ${NANOVDB_DIR}/@nanovdb/util/Stencils.h
-    ${NANOVDB_DIR}/@nanovdb/util/SampleFromVoxels.h
+    ${NVDB_PATH}/@nanovdb/NanoVDB.h
+    ${NVDB_PATH}/@nanovdb/util/Ray.h
+    ${NVDB_PATH}/@nanovdb/util/HDDA.h
+    # ${NVDB_PATH}/@nanovdb/util/Stencils.h
+    ${NVDB_PATH}/@nanovdb/util/SampleFromVoxels.h
     )
 
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})

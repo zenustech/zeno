@@ -18,6 +18,10 @@
 #include <string>
 #include <filesystem>
 
+#ifndef uint
+typedef unsigned int uint;
+#endif
+
 struct GridWrapper {
 	nanovdb::GridHandle<> handle;
 	CUdeviceptr deviceptr = 0;
