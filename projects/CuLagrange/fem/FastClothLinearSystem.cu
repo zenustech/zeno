@@ -570,15 +570,21 @@ typename FastClothSystem::T FastClothSystem::dynamicsEnergy(zs::CudaExecutionPol
     // inertial energy and coupling
     pol(range(coOffset),
         [vtemp = view<space>({}, vtemp), energy = view<space>(temp), n = coOffset, sigma = sigma * dt * dt, dt = dt,
-         hasExt = vtemp.hasProperty("extf"), extAccel = extAccel] __device__(int vi) mutable {
+         hasExtf = vtemp.hasProperty("extf"), extAccel = extAccel, BCStiffness = BCStiffness] __device__(int vi) mutable {
             auto m = vtemp("ws", vi);
             auto yn = vtemp.pack(dim_c<3>, "yn", vi);
             auto ytilde = vtemp.pack(dim_c<3>, "ytilde", vi);
             auto xn = vtemp.pack(dim_c<3>, "xn", vi);
             auto E =
                 0.5f * m * ((yn - ytilde).l2NormSqr() + sigma * (yn - xn).l2NormSqr()) - m * yn.dot(extAccel) * dt * dt;
-            if (hasExt)
+            if (hasExtf)
                 E -= yn.dot(vtemp.pack(dim_c<3>, "extf", vi)) * dt * dt;
+            bool isBC  = vtemp("isBC", vi) > 0.5f; 
+            if (isBC)
+            {
+                auto BCtarget = vtemp.pack(dim_c<3>, "BCtarget", vi); 
+                E += m * BCStiffness * (yn - BCtarget).l2NormSqr(); 
+            }
             reduce_to(vi, n, E, energy[0]);
         });
 

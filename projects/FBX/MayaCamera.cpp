@@ -384,11 +384,13 @@ ZENO_DEFNODE(LightNode)({
 });
 
 struct LiveMeshNode : INode {
+    typedef std::vector<std::vector<float>> UVS;
     typedef std::vector<std::vector<float>> VERTICES;
     typedef std::vector<int> VERTEX_COUNT;
     typedef std::vector<int> VERTEX_LIST;
 
     struct PrimIngredient{
+        UVS uvs;
         VERTICES vertices;
         VERTEX_COUNT vertexCount;
         VERTEX_LIST vertexList;
@@ -398,10 +400,12 @@ struct LiveMeshNode : INode {
         auto& vert = primObject->verts;
         auto& loops = primObject->loops;
         auto& polys = primObject->polys;
+
         for(int i=0; i<ingredient.vertices.size(); i++){
             auto& v = ingredient.vertices[i];
             vert.emplace_back(v[0], v[1], v[2]);
         }
+
         int start = 0;
         for(int i=0; i<ingredient.vertexCount.size(); i++){
             auto count = ingredient.vertexCount[i];
@@ -412,10 +416,19 @@ struct LiveMeshNode : INode {
 
             start += count;
         }
+
+        primObject->uvs.resize(loops.size());
+        for (auto i = 0; i < loops.size(); i++) {
+            primObject->uvs[i] = vec2f(ingredient.uvs[i][0], ingredient.uvs[i][1]);
+        }
+        auto& loopuvs = primObject->loops.add_attr<int>("uvs");
+        for (auto i = 0; i < loops.size(); i++) {
+            loopuvs[i] = i;
+        }
     }
 
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prims = std::make_shared<zeno::ListObject>();
         auto vertSrc = get_input2<std::string>("vertSrc");
 
         int frameid;
@@ -428,40 +441,132 @@ struct LiveMeshNode : INode {
         if(! vertSrc.empty()){
             using json = nlohmann::json;
 
-            //std::fstream file;
-            //file.open("sample_file.txt", std::ios_base::out);
-            //if(!file.is_open())
-            //    std::cout<<"Unable to open the file.\n";
-            //file<<vertSrc;
-            //file.close();
-
             json parseData = json::parse(vertSrc);
-            auto frameDataCount = parseData.count(std::to_string(frameid));
+
+            /*
+            auto& frameData = parseData[std::to_string(frameid)];
+            auto frameDataSize = frameData["DATA"].size();
 
             std::cout << "src size " << vertSrc.size()
-                      << " frame data count " << frameDataCount
+                      << " data size " << frameDataSize
                       << " frame " << frameid
                       << "\n";
 
-            if(frameDataCount){
-                auto& frameData = parseData[std::to_string(frameid)];
-                int vertices_size = frameData["MESH_POINTS"].size();
-                int vertexCount_size = frameData["MESH_VERTEX_COUNTS"].size();
-                int vertexList_size = frameData["MESH_VERTEX_LIST"].size();
+            auto& AllMeshData = frameData["DATA"];
+            for(auto& mapItem: AllMeshData.items()){
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                std::cout << "iter map key " << mapItem.key() << "\n";
+                auto& mapData = mapItem.value();
+                int vertices_size = mapData["MESH_POINTS"].size();
+                int vertexCount_size = mapData["MESH_VERTEX_COUNTS"].size();
+                int vertexList_size = mapData["MESH_VERTEX_LIST"].size();
                 PrimIngredient ingredient;
-                ingredient.vertices = frameData["MESH_POINTS"].get<VERTICES>();
-                ingredient.vertexCount = frameData["MESH_VERTEX_COUNTS"].get<VERTEX_COUNT>();
-                ingredient.vertexList = frameData["MESH_VERTEX_LIST"].get<VERTEX_LIST>();
+                ingredient.vertices = mapData["MESH_POINTS"].get<VERTICES>();
+                ingredient.vertexCount = mapData["MESH_VERTEX_COUNTS"].get<VERTEX_COUNT>();
+                ingredient.vertexList = mapData["MESH_VERTEX_LIST"].get<VERTEX_LIST>();
                 std::cout << "Vertices Size " << vertices_size << " " << vertexCount_size << " " << vertexList_size << "\n";
                 GeneratePrimitiveObject(ingredient, prim);
-            }else{
 
+                prims->arr.emplace_back(prim);
             }
+             */
 
-        }else{
+            auto& parsedFrameData = parseData[std::to_string(frameid)];
+            if(! parsedFrameData.empty()){
+                auto bPathI = parsedFrameData["BPATHI"].get<std::string>();
+                auto bPath = parsedFrameData["BPATH"].get<std::string>();
+                std::cout<< "bPath info " << bPathI << "\n";
+                std::ifstream t(bPathI);
+                std::stringstream buffer;
+                buffer << t.rdbuf();
 
+                auto& sizesData = parsedFrameData["SIZES"];
+
+                json infoData = json::parse(buffer.str());
+                for(auto& mapItem: infoData.items()){
+                    auto& key = mapItem.key();
+                    auto& value = mapItem.value();
+
+                    auto sizes = sizesData[key].get<std::vector<int>>();
+
+                    auto u = value["UV"].get<std::string>();
+                    auto v = value["VERTEX"].get<std::string>();
+                    auto i = value["INDICES"].get<std::string>();
+                    auto c = value["COUNTS"].get<std::string>();
+
+                    std::cout << "sync info " << key << " sizes " << sizes.size() << "\n";
+                    std::cout << " u " << u << "\n";
+                    std::cout << " v " << v << "\n";
+                    std::cout << " i " << i << "\n";
+                    std::cout << " c " << c << "\n";
+
+                    auto pu = bPath+"/"+u;
+                    auto pv = bPath+"/"+v;
+                    auto pi = bPath+"/"+i;
+                    auto pc = bPath+"/"+c;
+
+                    std::cout << " u.p " << pu << " u.s " << sizes[0] << "\n";
+                    std::cout << " v.p " << pv << " v.s " << sizes[1] << "\n";
+                    std::cout << " i.p " << pi << " i.s " << sizes[2] << "\n";
+                    std::cout << " c.p " << pc << " c.s " << sizes[3] << "\n";
+
+                    FILE *fp_u = fopen(pu.c_str(), "rb");
+                    FILE *fp_v = fopen(pv.c_str(), "rb");
+                    FILE *fp_i = fopen(pi.c_str(), "rb");
+                    FILE *fp_c = fopen(pc.c_str(), "rb");
+
+                    float *_u = new float[sizes[0]];
+                    float *_v = new float[sizes[1]];
+                    int   *_i = new int[sizes[2]];
+                    int   *_c = new int[sizes[3]];
+
+                    fread((void*)(_u), sizeof(float), sizes[0], fp_u);
+                    fread((void*)(_v), sizeof(float), sizes[1], fp_v);
+                    fread((void*)(_i), sizeof(int), sizes[2], fp_i);
+                    fread((void*)(_c), sizeof(int), sizes[3], fp_c);
+
+                    UVS _vu{};
+                    VERTICES _vv{};
+                    VERTEX_LIST _vi{};
+                    VERTEX_COUNT _vc{};
+
+                    for(int s = 0; s < sizes[0]; s+=2){
+                        _vu.push_back({_u[s], _u[s+1]});
+                    }
+                    for(int s = 0; s < sizes[1]; s+=3){
+                        _vv.push_back({_v[s], _v[s+1], _v[s+2]});
+                    }
+                    for(int s = 0; s < sizes[2]; ++s){
+                        _vi.push_back(_i[s]);
+                    }
+                    for(int s = 0; s < sizes[3]; ++s){
+                        _vc.push_back(_c[s]);
+                    }
+
+                    delete [] _u;
+                    delete [] _v;
+                    delete [] _c;
+                    delete [] _i;
+
+                    fclose(fp_u);
+                    fclose(fp_v);
+                    fclose(fp_i);
+                    fclose(fp_c);
+
+                    PrimIngredient ingredient;
+                    ingredient.uvs = _vu;
+                    ingredient.vertices = _vv;
+                    ingredient.vertexCount = _vc;
+                    ingredient.vertexList = _vi;
+                    auto prim = std::make_shared<zeno::PrimitiveObject>();
+                    GeneratePrimitiveObject(ingredient, prim);
+                    prims->arr.emplace_back(prim);
+                }
+            }else{
+                std::cout << "not parsed frame " << frameid << "\n";
+            }
         }
-        set_output("prim", std::move(prim));
+        set_output("prims", std::move(prims));
     }
 };
 
@@ -471,7 +576,7 @@ ZENO_DEFNODE(LiveMeshNode)({
         {"string", "vertSrc", ""},
     },
     {
-        "prim"
+        "prims"
     },
     {
     },

@@ -108,18 +108,23 @@ void FastClothSystem::computeInertialAndCouplingAndForceGradient(zs::CudaExecuti
     constexpr auto space = execspace_e::cuda;
     /// @brief inertial and coupling
     cudaPol(zs::range(coOffset),
-            [vtemp = view<space>({}, vtemp), dt = dt, sigma = sigma * dt * dt] ZS_LAMBDA(int i) mutable {
+            [vtemp = view<space>({}, vtemp), dt = dt, sigma = sigma * dt * dt, 
+            BCStiffness = BCStiffness] ZS_LAMBDA(int i) mutable {
                 auto m = vtemp("ws", i);
                 auto yn = vtemp.pack<3>("yn", i);
-                vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) - m * (yn - vtemp.pack<3>("ytilde", i)) -
+                auto grad = vtemp.pack<3>("grad", i) - m * (yn - vtemp.pack<3>("ytilde", i)) -
                                             m * sigma * (yn - vtemp.pack<3>("xn", i));
-
+                bool isBC = vtemp("isBC", i) > 0.5f;
+                auto BCtarget = vtemp.pack(dim_c<3>, "BCtarget", i);  
+                if (isBC)
+                    grad -= m * BCStiffness * (yn - BCtarget); 
+                vtemp.tuple<3>("grad", i) = grad; 
                 // prepare preconditioner
                 for (int d = 0; d != 3; ++d)
 #if !s_useGDDiagHess
-                    vtemp("P", d * 3 + d, i) += (m * (sigma + 1.0f));
+                    vtemp("P", d * 3 + d, i) += isBC ? (m * (sigma + BCStiffness + 1.0f)): (m * (sigma + 1.0f));
 #else 
-            vtemp("P", d, i) += (m * (sigma + 1.0f));
+                    vtemp("P", d, i) += isBC ? (m * (sigma + BCStiffness + 1.0f)): (m * (sigma + 1.0f));
 #endif
             });
     /// @brief extforce (only grad modified)
@@ -957,5 +962,103 @@ ZENDEFNODE(StepClothSystem, {{
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});
+
+struct FastClothSystemForceField : INode {
+    using T = typename FastClothSystem::T; 
+
+    template <typename VelSplsViewT>
+    void computeForce(zs::CudaExecutionPolicy &cudaPol, float windDragCoeff, float windDensity, int vOffset,
+                      VelSplsViewT velLs, typename FastClothSystem::tiles_t &vtemp,
+                      const typename FastClothSystem::tiles_t &eles) {
+        using namespace zs;
+        cudaPol(range(eles.size()), [windDragCoeff, windDensity, velLs, vtemp = proxy<execspace_e::cuda>({}, vtemp),
+                                     eles = proxy<execspace_e::cuda>({}, eles), vOffset] ZS_LAMBDA(size_t ei) mutable {
+            auto inds = eles.pack<3>("inds", ei, int_c) + vOffset;
+            auto p0 = vtemp.pack(dim_c<3>, "xn", inds[0]);
+            auto p1 = vtemp.pack(dim_c<3>, "xn", inds[1]);
+            auto p2 = vtemp.pack(dim_c<3>, "xn", inds[2]);
+            auto cp = (p1 - p0).cross(p2 - p0);
+            auto area = cp.length();
+            auto n = cp / area;
+            area *= 0.5;
+
+            auto pos = (p0 + p1 + p2) / 3; // get center to sample velocity
+            auto windVel = velLs.getMaterialVelocity(pos);
+
+            auto vel = (vtemp.pack(dim_c<3>, "vn", inds[0]) + vtemp.pack(dim_c<3>, "vn", inds[1]) +
+                        vtemp.pack(dim_c<3>, "vn", inds[2])) /
+                       3;
+            auto vrel = windVel - vel;
+            auto vnSignedLength = n.dot(vrel);
+            auto vn = n * vnSignedLength;
+            auto vt = vrel - vn; // tangent
+            auto windForce = windDensity * area * zs::abs(vnSignedLength) * vn + windDragCoeff * area * vt;
+            auto f = windForce;
+            for (int i = 0; i != 3; ++i)
+                for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &vtemp("extf", d, inds[i]), f[d] / 3);
+                }
+        });
+    }
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto A = get_input<FastClothSystem>("ZSFastClothSystem");
+        auto &vtemp = A->vtemp;
+        const auto numVerts = A->coOffset;
+        auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+
+        auto cudaPol = zs::cuda_exec();
+        vtemp.append_channels(cudaPol, {{"extf", 3}});
+        cudaPol(range(numVerts), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+            vtemp.template tuple<3>("extf", i) = zs::vec<T, 3>::zeros();
+        });
+
+        auto windDrag = get_input2<float>("wind_drag");
+        auto windDensity = get_input2<float>("wind_density");
+
+        for (auto &primHandle : A->prims) {
+            if (primHandle.category != ZenoParticles::category_e::surface)
+                continue;
+            const auto &eles = primHandle.getEles();
+            match([&](const auto &ls) {
+                using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+                using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+                using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
+                if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                    match([&](const auto &lsPtr) {
+                        auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset, lsv, vtemp, eles);
+                    })(ls._ls);
+                } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
+                    match([&](auto lsv) {
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset, SdfVelFieldView{lsv}, vtemp,
+                                     eles);
+                    })(ls.template getView<execspace_e::cuda>());
+                } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
+                    match([&](auto fieldPair) {
+                        auto &fvSrc = zs::get<0>(fieldPair);
+                        auto &fvDst = zs::get<1>(fieldPair);
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset,
+                                     TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
+                                                            ls._alpha},
+                                     vtemp, eles);
+                    })(ls.template getView<zs::execspace_e::cuda>());
+                }
+            })(zsls->getLevelSet());
+        }
+
+        set_output("ZSFastClothSystem", A);
+    }
+};
+
+ZENDEFNODE(FastClothSystemForceField,
+           {
+               {"ZSFastClothSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
+               {"ZSFastClothSystem"},
+               {},
+               {"FEM"},
+           });
 
 } // namespace zeno

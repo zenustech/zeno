@@ -2271,8 +2271,8 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     // inertial
     es.resize(count_warps(coOffset));
     es.reset(0);
-    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, extForce = extForce,
-                          dt = this->dt, n = coOffset] __device__(int vi) mutable {
+    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, dt = this->dt,
+                          n = coOffset] __device__(int vi) mutable {
         auto m = vtemp("ws", vi);
         auto x = vtemp.pack<3>(tag, vi);
         auto xt = vtemp.pack<3>("xhat", vi);
@@ -2280,11 +2280,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         T E = 0;
         {
             // inertia
-            E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
-            // gravity force
-            if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
-                E += -m * extForce.dot(x - xt) * dt * dt;
-            }
+            E = (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
         }
         reduce_to(vi, n, E, es[vi / 32]);
     });
@@ -2301,7 +2297,8 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
             T E = 0;
             {
                 // external force
-                if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                // if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                if (BCorder == 0) {
                     auto extf = vtemp.pack(dim_c<3>, "extf", vi);
                     E += -extf.dot(x - xt) * dt * dt;
                 }
@@ -2730,16 +2727,15 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
                                     int i) mutable { cgtemp.tuple<9>("P", i) = vtemp.pack<3, 3>("P", i); });
     /// solve for A dir = grad;
     // initial guess for hard boundary constraints
-    cudaPol(zs::range(numDofs),
-            [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt,
-             dirOffset = cgtemp.getPropertyOffset("dir"), xtildeOffset = vtemp.getPropertyOffset("xtilde"),
-             xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
-                if (i < coOffset) {
-                    cgtemp.tuple<3>(dirOffset, i) = vec3::zeros();
-                } else {
-                    cgtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
-                }
-            });
+    cudaPol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
+                                 coOffset = coOffset, dt = dt, dirOffset = cgtemp.getPropertyOffset("dir"),
+                                 xtildeOffset = vtemp.getPropertyOffset("xtilde"),
+                                 xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
+        //if (BCorder == 0)
+        cgtemp.tuple<3>(dirOffset, i) = vec3::zeros();
+        //else
+        //    cgtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
+    });
     // temp = A * dir
     multiply(cudaPol, true_c, "dir", "temp");
     project(cudaPol, true_c, "temp"); // project production
@@ -2833,11 +2829,11 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
             [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, dirOffset = vtemp.getPropertyOffset("dir"),
              xtildeOffset = vtemp.getPropertyOffset("xtilde"),
              xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
-                if (i < coOffset) {
-                    vtemp.tuple<3>(dirOffset, i) = vec3::zeros();
-                } else {
-                    vtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
-                }
+                //if (BCorder == 0)
+                //if (i < coOffset)
+                vtemp.tuple<3>(dirOffset, i) = vec3::zeros();
+                //else
+                //    vtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
             });
     // temp = A * dir
     multiply(cudaPol, "dir", "temp");
@@ -3162,20 +3158,19 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 #endif
         // CHECK PN CONDITION
-        T res = infNorm(pol, "dir") / dt;
+        T res = infNorm(pol, "dir");
         T cons_res = constraintResidual(pol);
-        if (res < targetGRes && cons_res == 0) {
+        /// @note do not exit in the beginning
+        if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0) {
             zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
                            res);
             break;
         }
-        fmt::print(fg(fmt::color::aquamarine),
-                   "substep {} newton iter {}: direction residual(/dt) {}, "
-                   "grad residual {}\n",
-                   substep, newtonIter, res, infNorm(pol, "grad"));
+        fmt::print(fg(fmt::color::aquamarine), "substep {} newton iter {}: direction residual {}\n", substep,
+                   newtonIter, res);
         // LINESEARCH
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
+            vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
         });
         T alpha = 1.;
         if (enableContact) {
@@ -3255,6 +3250,7 @@ struct StepIPCSystem : INode {
         }
         // update velocity and positions
         A->writebackPositionsAndVelocities(cudaPol);
+        A->state.stepFrame();
 
         set_output("ZSIPCSystem", A);
     }

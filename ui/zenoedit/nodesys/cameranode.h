@@ -7,8 +7,10 @@ class CameraNode : public ZenoNode
 {
     Q_OBJECT
 public:
-    CameraNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    CameraNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
     ~CameraNode();
+
+    int CameraPattern = 0;
 
 protected:
     ZGraphicsLayout* initCustomParamWidgets() override;
