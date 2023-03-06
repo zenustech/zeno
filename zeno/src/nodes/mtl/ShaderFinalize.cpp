@@ -201,5 +201,138 @@ ZENDEFNODE(ShaderFinalize, {
     {"shader"},
 });
 
+struct StandardSurface : INode {
+    virtual void apply() override {
+        EmissionPass em;
+
+        if (has_input("commonCode"))
+            em.commonCode += get_input<StringObject>("commonCode")->get();
+
+        auto code = em.finalizeCode({
+            {3, "mat_basecolor"},
+            {1, "mat_metallic"},
+            {1, "mat_roughness"},
+            {1, "mat_specular"},
+            {1, "mat_subsurface"},
+            {1, "mat_thickness"},
+            {3, "mat_sssParam"},
+            {3, "mat_sssColor"},
+            {1, "mat_specularTint"},
+            {1, "mat_anisotropic"},
+            {1, "mat_anisoRotation"},
+            {1, "mat_sheen"},
+            {1, "mat_sheenTint"},
+            {1, "mat_clearcoat"},
+            {1, "mat_clearcoatGloss"},
+            {1, "mat_specTrans"},
+            {1, "mat_ior"},
+            {1, "mat_flatness"},
+            {1, "mat_scatterDistance"},
+            {1, "mat_scatterStep"},
+            {1, "mat_thin"},
+            {1, "mat_doubleSide"},
+            {3, "mat_normal"},
+            {1, "mat_displacement"},
+            {1, "mat_smoothness"},
+            {3, "mat_emission"},
+            {1, "mat_opacity"}
+        }, {
+            get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
+            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),
+            get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("sheen", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("sheenTint", std::make_shared<NumericObject>(float(0.5f))),
+            get_input<IObject>("clearcoat", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("clearcoatGloss", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
+            get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("scatterDistance", std::make_shared<NumericObject>(float(10000))),
+            get_input<IObject>("scatterStep", std::make_shared<NumericObject>(float(0))),
+            get_input<IObject>("thin", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("doubleSide", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
+            get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
+
+        });
+        auto commonCode = em.getCommonCode();
+
+        auto mtl = std::make_shared<MaterialObject>();
+        mtl->frag = std::move(code);
+        mtl->common = std::move(commonCode);
+        if (has_input("extensionsCode"))
+            mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
+
+        if (has_input("tex2dList"))
+        {
+            auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
+            for (const auto &tex: tex2dList)
+            {
+                auto texId = mtl->tex2Ds.size();
+                auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
+			    mtl->tex2Ds.push_back(tex);
+                mtl->common.insert(0, texCode);
+            }
+        }
+
+        mtl->mtlidkey = get_input2<std::string>("mtlid");
+
+        set_output("mtl", std::move(mtl));
+    }
+};
+
+ZENDEFNODE(StandardSurface, {
+    {
+        {"vec3f", "basecolor", "1,1,1"},
+        {"float", "metallic", "0.0"},
+        {"float", "roughness", "0.4"},
+        {"float", "specular", "0.5"},
+        {"float", "subsurface", "0.0"},
+        {"float", "thickness", "0.0"},
+        {"vec3f", "sssParam", "1,1,1"},
+        {"vec3f", "sssColor", "1.0,1.0,1.0"},
+        {"float", "specularTint", "0.0"},
+        {"float", "anisotropic", "0.0"},
+        {"float", "anisoRotation", "0.0"},
+        {"float", "sheen", "0.0"},
+        {"float", "sheenTint", "0.0"},
+        {"float", "clearcoat", "0.0"},
+        {"float", "clearcoatGloss", "1.0"},
+        {"float", "specTrans", "0.0"},
+        {"float", "ior", "1.5"},
+        {"float", "flatness", "0.0"},
+        {"float", "scatterDistance", "10000"},
+        {"float", "scatterStep", "0"},
+        {"float", "thin", "0.0"},
+        {"float", "doubleSide", "0.0"},
+        {"vec3f", "normal", "0,0,1"},
+        {"float", "displacement", "0"},
+        {"float", "smoothness", "1.0"},
+        {"vec3f", "emission", "0,0,0"},
+        {"float", "opacity", "0"},
+        {"string", "commonCode"},
+        {"string", "extensionsCode"},
+        {"string", "mtlid", "Mat1"},
+        {"list", "tex2dList"},//TODO: bate's asset manager
+    },
+    {
+        {"MaterialObject", "mtl"},
+    },
+    {
+    },
+    {"shader"},
+});
+
 
 }
