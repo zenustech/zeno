@@ -115,10 +115,10 @@ void Zenovis::doFrameUpdate()
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
 
-//    int frameid = getCurrentFrameId();
-    int frameid = zenoApp->getMainWindow()->timeline()->value();
+    int frameid = getCurrentFrameId();
+    int ui_frameid = zenoApp->getMainWindow()->timeline()->value();
 
-    zenoApp->getMainWindow()->doFrameUpdate(frameid);
+    zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
 
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);
