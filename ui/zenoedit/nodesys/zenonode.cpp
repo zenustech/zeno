@@ -982,15 +982,17 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
     for (ZSocketLayout* sock : socks)
     {
         //todo: socket now is a children of sockettext.
-        if (!sock->socketItem())
+        ZenoSocketItem* pSocketItem = sock->socketItem();
+        if (!pSocketItem)
             continue;
-        QPointF sockPos = sock->socketItem()->center();
+
+        QPointF sockPos = pSocketItem->center();
         QPointF offset = sockPos - pos;
         float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
         if (dist < minDist)
         {
             minDist = dist;
-            pItem = sock->socketItem();
+            pItem = pSocketItem;
         }
     }
     return pItem;

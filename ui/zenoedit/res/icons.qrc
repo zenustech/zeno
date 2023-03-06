@@ -255,18 +255,24 @@
     <file>icons/timeline_loopMethod_zigZag.svg</file>
     <file>icons/timeline_nextFrame_idle.svg</file>
     <file>icons/timeline_nextFrame_light.svg</file>
+    <file>icons/timeline_pause_click.svg</file>
+    <file>icons/timeline_pause_hover.svg</file>
     <file>icons/timeline_pause_idle.svg</file>
     <file>icons/timeline_pause_light.svg</file>
     <file>icons/timeline_play_idle.svg</file>
     <file>icons/timeline_play_light.svg</file>
     <file>icons/timeline_previousFrame_idle.svg</file>
     <file>icons/timeline_previousFrame_light.svg</file>
+    <file>icons/timeline_play_click.svg</file>
+    <file>icons/timeline_play_hover.svg</file>
     <file>icons/timeline_run_idle.svg</file>
     <file>icons/timeline_run_light.svg</file>
     <file>icons/timeline_sound_off.svg</file>
     <file>icons/timeline_sound_on.svg</file>
     <file>icons/timeline_startFrame_idle.svg</file>
     <file>icons/timeline_startFrame_light.svg</file>
+    <file>icons/timeline_kill_clean.svg</file>
+    <file>icons/timeline_run_thunder.svg</file>
     <file>icons/toolbar_search_idle.svg</file>
     <file>icons/toolbar_search_light.svg</file>
     <file>icons/toolbar_localSetting_idle.svg</file>
@@ -282,5 +288,25 @@
     <file>icons/nodeEditor_group_scale-adjustor.svg</file>
     <file>icons/nodeEditor_grid_selected.svg</file>
     <file>icons/nodeEditor_grid_unselected.svg</file>
+    <file>icons/viewToolbar_background_idle.svg</file>
+    <file>icons/viewToolbar_background_light.svg</file>
+    <file>icons/viewToolbar_grid_idle.svg</file>
+    <file>icons/viewToolbar_grid_light.svg</file>
+    <file>icons/viewToolbar_move_idle.svg</file>
+    <file>icons/viewToolbar_move_light.svg</file>
+    <file>icons/viewToolbar_normalcheck_idle.svg</file>
+    <file>icons/viewToolbar_normalcheck_light.svg</file>
+    <file>icons/viewToolbar_record_idle.svg</file>
+    <file>icons/viewToolbar_record_light.svg</file>
+    <file>icons/viewToolbar_rotate_idle.svg</file>
+    <file>icons/viewToolbar_rotate_light.svg</file>
+    <file>icons/viewToolbar_scale_idle.svg</file>
+    <file>icons/viewToolbar_scale_light.svg</file>
+    <file>icons/viewToolbar_screenshot_light.svg</file>
+    <file>icons/viewToolbar_screenshot_idle.svg</file>
+    <file>icons/viewToolbar_smoothshading_idle.svg</file>
+    <file>icons/viewToolbar_smoothshading_light.svg</file>
+    <file>icons/viewToolbar_wireframe_idle.svg</file>
+    <file>icons/viewToolbar_wireframe_light.svg</file>
 </qresource>
 </RCC>

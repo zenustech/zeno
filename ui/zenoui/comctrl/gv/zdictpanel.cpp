@@ -299,7 +299,7 @@ ZenoSocketItem* ZDictPanel::socketItemByIdx(const QModelIndex& sockIdx) const
         if (layoutItem->type == Type_Layout)
         {
             ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
-            if (pDictItem->socketIdx() == sockIdx)
+            if (pDictItem && pDictItem->socketIdx() == sockIdx)
             {
                 return pDictItem->socketItem();
             }

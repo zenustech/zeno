@@ -6,6 +6,8 @@
 #include <zenomodel/include/api.h>
 #include <zenomodel/include/graphsmanagment.h>
 
+#include <chrono>
+
 LiveMeshNode::LiveMeshNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
@@ -38,9 +40,24 @@ ZGraphicsLayout *LiveMeshNode::initCustomParamWidgets() {
 }
 
 void LiveMeshNode::onSyncClicked() {
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
+    auto t1 = high_resolution_clock::now();
+
     auto liveData = to_string(zenoApp->getMainWindow()->liveHttpServer->d_frame_mesh);
     ZENO_HANDLE liveNode = index().internalId();
-    Zeno_SetInputDefl(liveNode, "vertSrc", liveData);
+    Zeno_SetInputDefl(liveNode, "vertSrc", std::move(liveData));
+
+    auto t2 = high_resolution_clock::now();
+    /* Getting number of milliseconds as an integer. */
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+    /* Getting number of milliseconds as a double. */
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "Used time onSyncClicked " << ms_int.count() << " ms\n";
+    std::cout << "Used time onSyncClicked " << ms_double.count() << " ms\n";
 }
 
 void LiveMeshNode::onCleanClicked() {

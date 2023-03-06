@@ -37,6 +37,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
 }
 
+const int DockToolbarWidget::sToolbarHeight = 28;
+
 
 DockToolbarWidget::DockToolbarWidget(QWidget* parent)
     : QWidget(parent)
@@ -51,7 +53,7 @@ void DockToolbarWidget::initUI()
     pLayout->setContentsMargins(0, 0, 0, 0);
 
     QWidget *pToolbar = new QWidget;
-    pToolbar->setFixedHeight(ZenoStyle::dpiScaled(28));
+    pToolbar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
 
     QHBoxLayout* pToolLayout = new QHBoxLayout;
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
@@ -320,27 +322,94 @@ DockContent_View::DockContent_View(QWidget* parent)
 
 void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 {
-    m_smooth_shading = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_moveBtn = new ZToolBarButton(false, ":/icons/viewToolbar_move_idle.svg", ":/icons/viewToolbar_move_light.svg");
+    m_moveBtn->setToolTip(tr("Move Object"));
+
+    m_scaleBtn = new ZToolBarButton(false, ":/icons/viewToolbar_scale_idle.svg", ":/icons/viewToolbar_scale_light.svg");
+    m_scaleBtn->setToolTip(tr("Scale Object"));
+
+    m_rotateBtn = new ZToolBarButton(false, ":/icons/viewToolbar_rotate_idle.svg", ":/icons/viewToolbar_rotate_light.svg");
+    m_rotateBtn->setToolTip(tr("Rotate Object"));
+
+    m_smooth_shading = new ZToolBarButton(true, ":/icons/viewToolbar_smoothshading_idle.svg", ":/icons/viewToolbar_smoothshading_light.svg");
     m_smooth_shading->setToolTip(tr("Smooth Shading"));
 
-    m_normal_check = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_normal_check = new ZToolBarButton(true, ":/icons/viewToolbar_normalcheck_idle.svg", ":/icons/viewToolbar_normalcheck_light.svg");
     m_normal_check->setToolTip(tr("Normal Check"));
 
-    m_wire_frame = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_wire_frame = new ZToolBarButton(true, ":/icons/viewToolbar_wireframe_idle.svg", ":/icons/viewToolbar_wireframe_light.svg");
     m_wire_frame->setToolTip(tr("Wireframe"));
 
-    m_show_grid = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_show_grid = new ZToolBarButton(true, ":/icons/viewToolbar_grid_idle.svg", ":/icons/viewToolbar_grid_light.svg");
     m_show_grid->setToolTip(tr("Show Grid"));
     m_show_grid->setChecked(true);
 
-    m_background_clr = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_background_clr = new ZToolBarButton(false, ":/icons/viewToolbar_background_idle.svg", ":/icons/viewToolbar_background_light.svg");
     m_background_clr->setToolTip(tr("Background Color"));
 
-    m_recordVideo = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_recordVideo = new ZToolBarButton(false, ":/icons/viewToolbar_record_idle.svg", ":/icons/viewToolbar_record_light.svg");
     m_recordVideo->setToolTip(tr("Record Video"));
 
-    m_screenshoot = new ZToolBarButton(false, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_screenshoot = new ZToolBarButton(false, ":/icons/viewToolbar_screenshot_idle.svg", ":/icons/viewToolbar_screenshot_light.svg");
     m_screenshoot->setToolTip(tr("Screenshoot"));
+
+    QMenu *pView = new QMenu(tr("View"));
+    {
+        m_pFocus = new QAction(tr("Focus"));
+        //pAction->setShortcut(QKeySequence("F5"));
+        QMenu *Viewport = new QMenu(tr("Viewport"));
+        m_pOrigin = new QAction(tr("Origin"));
+        //pAction->setShortcut(QKeySequence("F5"));
+        m_front = new QAction(tr("Front"));
+        //m_front->setShortcut(QKeySequence("F5"));
+        m_back = new QAction(tr("Back"));
+        //m_back->setShortcut(QKeySequence("F5"));
+        m_right = new QAction(tr("Right"));
+        //m_right->setShortcut(QKeySequence("F5"));
+        m_left = new QAction(tr("Left"));
+        //m_left->setShortcut(QKeySequence("F5"));
+        m_top = new QAction(tr("Top"));
+        //m_top->setShortcut(QKeySequence("F5"));
+        m_bottom = new QAction(tr("Bottom"));
+        //m_bottom->setShortcut(QKeySequence("F5"));
+
+        Viewport->addAction(m_pOrigin);
+        Viewport->addAction(m_front);
+        Viewport->addAction(m_back);
+        Viewport->addAction(m_right);
+        Viewport->addAction(m_left);
+        Viewport->addAction(m_top);
+        Viewport->addAction(m_bottom);
+
+        pView->addAction(m_pFocus);
+        pView->addMenu(Viewport);
+    }
+    QMenu *pObject = new QMenu(tr("Object"));
+    {
+        QMenu *pTransform = new QMenu(tr("Transform"));
+        m_move = new QAction(tr("Move"));
+
+        m_rotate = new QAction(tr("Rotate"));
+
+        m_scale = new QAction(tr("Scale"));
+
+        pTransform->addAction(m_move);
+        pTransform->addAction(m_rotate);
+        pTransform->addAction(m_scale);
+
+        pObject->addMenu(pTransform);
+    }
+
+    QMenuBar *pMenuBar = new QMenuBar(this);
+    pMenuBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    pMenuBar->setProperty("cssClass", "docktoolbar");
+    pMenuBar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
+    QFont font("Alibaba PuHuiTi", 10);
+    font.setWeight(QFont::Medium);
+    pMenuBar->setFont(font);
+
+    pMenuBar->addMenu(pView);
+    pMenuBar->addMenu(pObject);
 
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
@@ -362,15 +431,29 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_cbRenderWay->setEditable(false);
     m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(20));
 
+    pToolLayout->addWidget(pMenuBar);
+    pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
+    pToolLayout->addStretch(1);
+
+    pToolLayout->addWidget(m_moveBtn);
+    pToolLayout->addWidget(m_rotateBtn);
+    pToolLayout->addWidget(m_scaleBtn);
+
+    pToolLayout->addWidget(new ZLineWidget(false, QColor()));
+
+    pToolLayout->addWidget(m_show_grid);
+    pToolLayout->addWidget(m_background_clr);
+    pToolLayout->addWidget(m_wire_frame);
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
-    pToolLayout->addWidget(m_wire_frame);
-    pToolLayout->addWidget(m_show_grid);
-    pToolLayout->addWidget(m_cbRenderWay);
-    pToolLayout->addWidget(m_background_clr);
-    pToolLayout->addWidget(m_recordVideo);
+
+    pToolLayout->addWidget(new ZLineWidget(false, QColor()));
     pToolLayout->addWidget(m_screenshoot);
-    pToolLayout->addStretch();
+    pToolLayout->addWidget(m_recordVideo);
+
+    pToolLayout->addStretch(7);
+
+    pToolLayout->addWidget(m_cbRenderWay);
 }
 
 QWidget* DockContent_View::initWidget()
@@ -381,6 +464,24 @@ QWidget* DockContent_View::initWidget()
 
 void DockContent_View::initConnections()
 {
+    connect(m_moveBtn, &ZToolBarButton::clicked, this, [=]() {
+        auto viewport = m_pDisplay->getViewportWidget();
+        if (viewport)
+            viewport->changeTransformOperation(0);
+    });
+
+    connect(m_rotateBtn, &ZToolBarButton::clicked, this, [=]() {
+        auto viewport = m_pDisplay->getViewportWidget();
+        if (viewport)
+            viewport->changeTransformOperation(1);
+    });
+
+    connect(m_scaleBtn, &ZToolBarButton::clicked, this, [=]() {
+        auto viewport = m_pDisplay->getViewportWidget();
+        if (viewport)
+            viewport->changeTransformOperation(2);
+    });
+
     connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SMOOTH_SHADING, bToggled);
     });

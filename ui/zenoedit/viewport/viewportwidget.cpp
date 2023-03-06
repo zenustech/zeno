@@ -552,6 +552,18 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     m_camera = new CameraControl(this);
     m_zenovis->m_camera_control = m_camera;
 
+    connect(m_zenovis, &Zenovis::objectsUpdated, this, [=](int frameid) {
+        auto mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            emit mainWin->visObjectsUpdated(this, frameid);
+    });
+
+    connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
+        auto mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            mainWin->visFrameUpdated(frameid);
+    });
+
     connect(m_pauseRenderDally, &QTimer::timeout, [&](){
         auto scene = m_zenovis->getSession()->get_scene();
         scene->drawOptions->simpleRender = false;

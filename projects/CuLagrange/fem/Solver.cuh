@@ -60,6 +60,7 @@ struct IPCSystem : IObject {
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
+        void computeMortonCodeOrder(zs::CudaExecutionPolicy &pol, zs::Vector<zs::u32> &tempBuffer, const bv_t &bv);
 
         auto getModelLameParams() const {
             T mu = 0, lam = 0;
@@ -128,6 +129,8 @@ struct IPCSystem : IObject {
         typename ZenoParticles::dtiles_t svtemp;
         const std::size_t vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
+        /// @note ideally, vtemp's mesh component's dofs should be ordered
+        std::optional<zs::Vector<int>> originalToOrdered, orderedToOriginal;
     };
 
     bool hasBoundary() const noexcept {
@@ -151,7 +154,7 @@ struct IPCSystem : IObject {
     void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
         auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
     }
-    void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
+    bv_t updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
     IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
@@ -223,7 +226,6 @@ struct IPCSystem : IObject {
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
-    int frameno = -1;
     int substep = -1;
     std::size_t estNumCps = 1000000;
     bool enableGround = false;
@@ -314,11 +316,34 @@ struct IPCSystem : IObject {
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
-    zs::Vector<T> temp;
-    zs::Vector<bv_t> bvs; // as temporary buffer
+    zs::Vector<T> temp;        // generally 64-bit
+    zs::Vector<zs::u32> tempi; // 32-bit
+    zs::Vector<bv_t> bvs;      // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
+
+    /// @brief solver state machine
+    struct SolverState {
+        void stepFrame() {
+            frameNo++;
+        }
+        int getFrameNo() const noexcept {
+            return frameNo;
+        }
+        void reset() {
+            frameNo = 0;
+        }
+
+      private:
+        int frameNo{0};
+    } state;
+
+    /// @brief for system hessian storage
+    struct Hessian {
+        /// @note static
+        zs::SparseMatrix<mat3f, true> spmat{};
+    } linsys;
 
     // for faster linear system solve
     HessianPiece<1> hess1;
@@ -342,6 +367,7 @@ struct IPCSystem : IObject {
     bvfront_t selfStFront, boundaryStFront;
     bvfront_t selfSeFront, boundarySeFront;
     bool frontManageRequired;
+    std::optional<bv_t> wholeBv;
     T dt, framedt, curRatio;
 };
 
