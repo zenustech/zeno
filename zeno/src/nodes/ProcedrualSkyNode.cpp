@@ -1,3 +1,4 @@
+#include <string>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
@@ -6,9 +7,14 @@ namespace zeno {
 struct ProceduralSky : INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto path = get_input2<std::string>("3DNoiseDirectoryPath");
+        if (path.empty()) {
+            throw std::runtime_error("need 3D noise directory path");
+        }
 
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("ProceduralSky", std::move(1));
+        prim->userData().set2("3DNoiseDirectory", std::move(path));
         prim->userData().set2("sunLightDir", std::move(get_input2<vec2f>("sunLightDir")));
         prim->userData().set2("sunLightSoftness", std::move(get_input2<float>("sunLightSoftness")));
         prim->userData().set2("windDir", std::move(get_input2<vec2f>("windDir")));
@@ -23,6 +29,7 @@ struct ProceduralSky : INode {
 
 ZENDEFNODE(ProceduralSky, {
         {
+                {"readpath", "3DNoiseDirectoryPath"},
                 {"vec2f", "sunLightDir", "-60,45"},
                 {"float", "sunLightSoftness", "1"},
                 {"float", "sunLightIntensity", "1"},
