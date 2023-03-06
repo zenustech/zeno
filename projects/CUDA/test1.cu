@@ -239,6 +239,25 @@ ZENDEFNODE(ZSCUMathTest, {
                          });
 
 struct ZSTestIterator : INode {
+    struct CustomContainer {
+        decltype(auto) operator[](int i) & {
+            return arr[i];
+        }
+        decltype(auto) operator[](int i) && {
+            return std::move(arr[i]);
+        }
+
+        int arr[100];
+    };
+
+    template <typename Container, typename Index>
+    decltype(auto) authAndAccess(Container &&c, Index i) {
+        return std::forward<Container>(c)[i];
+    }
+    template <typename Container>
+    decltype(auto) authAndAccess(Container &&c) {
+        return std::forward<Container>(c);
+    }
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -279,6 +298,17 @@ struct ZSTestIterator : INode {
             fmt::print("<a, b, c>: ({}, {}, {}) ({}, {}, {})\n", a, b, c, str, ch, num);
         }
 #endif
+        std::vector<int> a{-1, -2, -3};
+        fmt::print("container types: [{}], [{}]\n", get_var_type_str(authAndAccess(a)),
+                   get_var_type_str(authAndAccess(std::vector<int>{1, 2, 3})));
+        fmt::print("container ele types: [{}], [{}]\n", get_var_type_str(authAndAccess(a, 0)),
+                   get_var_type_str(authAndAccess(std::vector<int>{1, 2, 3}, 0)));
+        /////
+        CustomContainer b;
+        fmt::print("container types: [{}], [{}]\n", get_var_type_str(authAndAccess(b)),
+                   get_var_type_str(authAndAccess(CustomContainer{})));
+        fmt::print("container ele types: [{}], [{}]\n", get_var_type_str(authAndAccess(b, 0)),
+                   get_var_type_str(authAndAccess(CustomContainer{}, 0)));
     }
 };
 

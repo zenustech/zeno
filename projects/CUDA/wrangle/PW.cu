@@ -237,7 +237,7 @@ struct ZSParticlesWrangler : zeno::INode {
             void *args[4] = {(void *)&cnt, (void *)&d_params, (void *)&nchns, (void *)&addr};
 
             cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                           (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
+                           (CUstream)currentContext.streamSpare(-1), args, (void **)nullptr);
             // end kernel launch
             cuCtxSynchronize();
         }

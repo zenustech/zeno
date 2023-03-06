@@ -50,6 +50,8 @@ target_sources(zeno PRIVATE
   fem/FastClothPipeline.cu
   fem/FastClothLinearSystem.cu
   fem/FastClothCollision.cu
+  fem/UpdateTargetFromMapping.cu 
+  fem/SetIsBCFromPrim.cu
 )
 
 # fem

@@ -954,108 +954,181 @@ struct CreateSphere : zeno::INode {
         auto radius = get_input2<float>("radius");
         auto quad = get_input2<bool>("quads");
 
-        ROTATE_MATRIX
-
         if (rows < 2) {
             rows = 2;
         }
         if (columns < 3) {
             columns = 3;
         }
+        std::vector<zeno::vec3f> verts = {};
+        std::vector<zeno::vec2i> poly = {};
+        std::vector<int> loops = {};
+        std::vector<zeno::vec2f> uvs = {};
+        std::vector<zeno::vec3f> nors = {};
 
-        auto &uvs = prim->verts.add_attr<zeno::vec3f>("uv");
-        auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
-        auto &verts = prim->verts;
-        auto &tris = prim->tris;
-        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        auto &poly = prim->polys;
-        auto &loops = prim->loops;
-
-        verts.resize((rows + 1) * (columns + 1));
-        for (auto row = 0; row <= rows; row++) {
+        verts.push_back (vec3f(0,1,0));
+        for (auto row = 1; row < rows; row++) {
             float v = (float)row / (float)rows;
             float theta = M_PI * v;
-            for (auto column = 0; column <= columns; column++) {
+            for (auto column = 0; column < columns; column++) {
                 float u = (float)column / (float)columns;
                 float phi = M_PI * 2 * u;
                 float x = sin(theta) * cos(phi);
+                float y = cos(theta);
                 float z = -sin(theta) * sin(phi);
-                float y = cos(theta) ;
-                auto index = (columns + 1) * row + column;
-                vec3f n = vec3f(x, y, z);
-                verts[index] = n;
-                nors[index] = n;
-                uvs[index] = vec3f(u, 1-v, 0);
+                verts.push_back(vec3f(x,y,z));
             }
         }
+        verts.push_back (vec3f(0,-1,0));
         {
-            poly.resize(rows * columns);
-            for (auto i = 0; i < rows * columns; i++) {
-                poly[i] = vec2i(i * 4, 4);
+            //head
+            for (auto column = 0; column < columns; column++) {
+                if (column == columns - 1) {
+                    loops.push_back(0);
+                    loops.push_back(columns);
+                    loops.push_back(1);
+                    poly.push_back(vec2i(column * 3, 3));
+                } else {
+                    loops.push_back(0);
+                    loops.push_back(column + 1);
+                    loops.push_back(column + 2);
+                    poly.push_back(vec2i(column * 3, 3));
+                }
             }
-            loops.resize(rows * columns * 4);
-            for (auto row = 0; row < rows; row++) {
+            //body
+            for (auto row = 1; row < rows - 1; row++) {
                 for (auto column = 0; column < columns; column++) {
-                    auto quad_index = row * columns + column;
                     if (column == columns - 1) {
-                        auto v0 = (columns + 1) * row + column;
-                        auto v1 = (columns + 1) * row;
-                        auto v2 = (columns + 1) * (row + 1) + column;
-                        auto v3 = (columns + 1) * (row + 1);
-                        loops[quad_index * 4 + 0] = v0;
-                        loops[quad_index * 4 + 1] = v2;
-                        loops[quad_index * 4 + 2] = v3;
-                        loops[quad_index * 4 + 3] = v1;
-                    }
-                    else {
-                        auto v0 = (columns + 1) * row + column;
-                        auto v1 = (columns + 1) * row + column + 1;
-                        auto v2 = (columns + 1) * (row + 1) + column;
-                        auto v3 = (columns + 1) * (row + 1) + column + 1;
-                        loops[quad_index * 4 + 0] = v0;
-                        loops[quad_index * 4 + 1] = v2;
-                        loops[quad_index * 4 + 2] = v3;
-                        loops[quad_index * 4 + 3] = v1;
+                        loops.push_back((row - 1) * columns + 1);
+                        loops.push_back((row - 1) * columns + columns);
+                        loops.push_back(row * columns + columns);
+                        loops.push_back(row * columns + 1);
+                        poly.push_back(vec2i(columns * 3 + (row - 1) * columns * 4 + column * 4, 4));
+                    } else {
+                        loops.push_back((row - 1) * columns + column + 2);
+                        loops.push_back((row - 1) * columns + column + 1);
+                        loops.push_back(row * columns + column + 1);
+                        loops.push_back(row * columns + column + 2);
+                        poly.push_back(vec2i(loops.size() - 4, 4));
                     }
                 }
             }
-            prim->uvs.resize(verts.size());
-            for (auto i = 0; i < verts.size(); i++) {
-                prim->uvs[i] = vec2f(uvs[i][0], uvs[i][1]);
-            }
-            auto& loopuvs = prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < loops.size(); i++) {
-                loopuvs[i] = loops[i];
+            //tail
+            for (auto column = 0; column < columns; column++) {
+                if (column == columns - 1) {
+                    loops.push_back((rows - 2) * columns + 1);
+                    loops.push_back((rows - 2) * columns + column + 1);
+                    loops.push_back((rows - 1) * columns + 1);
+                    poly.push_back(vec2i(columns * 3 + (rows - 2) * columns * 4 + column * 3, 3));
+                } else {
+                    loops.push_back((rows - 2) * columns + column + 2);
+                    loops.push_back((rows - 2) * columns + column + 1);
+                    loops.push_back((rows - 1) * columns + 1);
+                    poly.push_back(vec2i(loops.size() - 3, 3));
+                }
             }
         }
 
-        for (int i = 0; i < verts->size(); i++)
-        {
+        for(int column = 0;column < columns;column++){
+            uvs.push_back({(column+0.5f)/columns, 1.0f, 0.0f});
+        }
+        for(int row = 1;row < rows;row++){
+            for(int column = 0;column < columns+1;column++){
+                uvs.push_back({(column+0.0f)/columns,1.0f-(row+0.0f)/rows,0.0f});
+            }
+        }
+        for(int column = 0;column < columns;column++){
+            uvs.push_back({(column+0.5f)/columns, 0.0f, 0.0f});
+        }
+
+        auto& loops_uv = prim->loops.add_attr<int>("uvs");
+        loops_uv.resize(0);
+        for(int column = 0;column < columns;column++){
+            loops_uv.push_back(column);
+            loops_uv.push_back(columns+column);
+            loops_uv.push_back(columns+column+1);
+        }
+        for(int row = 1;row < rows-1;row++){
+            for(int column = 0;column < columns;column++){
+                loops_uv.push_back(columns+(columns+1)*(row-1)+column+1);
+                loops_uv.push_back(columns+(columns+1)*(row-1)+column);
+                loops_uv.push_back(columns+(columns+1)*row+column);
+                loops_uv.push_back(columns+(columns+1)*row+column+1);
+            }
+        }
+        for(int column = 0;column < columns;column++){
+            loops_uv.push_back(columns+(columns+1)*(rows-2)+column+1);
+            loops_uv.push_back(columns+(columns+1)*(rows-2)+column);
+            loops_uv.push_back(columns+(columns+1)*(rows-1)+column);
+        }
+
+        nors.resize(verts.size());
+        for(int i = 0; i < verts.size(); i++){
+            auto n = verts[i];
             auto p = verts[i];
-            auto n = nors[i];
+            auto rotate = get_input2<zeno::vec3f>("rotate");
+            glm::mat4 transform = glm::mat4 (1.0);
+            transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
+            transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
+            transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
+            transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+            transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
+            auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
+            verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
 
-            p = p * scale * radius ;
-
-            ROTATE_COMPUTE
-
-                p+= position;
-
-            auto gn = glm::vec3(n[0], n[1], n[2]);
-            gn = mz * my * mx * gn;
-            n = zeno::vec3f(gn.x, gn.y, gn.z);
-
-            verts[i] = p;
-            nors[i] = n;
+            auto n_transform = glm::transpose(glm::inverse(transform));
+            auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
+            nors[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
 
-        NORMUV_CIHOU
+        prim->verts.resize(verts.size());
+        for (auto i = 0; i < verts.size(); i++) {
+            prim->verts[i] = verts[i];
+        }
+        prim->polys.resize(poly.size());
+        for (auto i = 0; i < poly.size(); i++) {
+            prim->polys[i] = poly[i];
+        }
+        prim->loops.resize(loops.size());
+        for (auto i = 0; i < loops.size(); i++) {
+            prim->loops[i] = loops[i];
+        }
+        prim->uvs.resize(uvs.size());
 
-        if (!quad) {
+        for (auto i = 0; i < uvs.size(); i++) {
+            prim->uvs[i] = uvs[i];
+        }
+
+        auto &nors2 = prim->verts.add_attr<zeno::vec3f>("nrm");
+        for (auto i = 0; i < nors.size(); i++) {
+            nors2[i] = nors[i];
+        }
+
+        if (!get_input2<bool>("hasNormal")){
+            prim->verts.attrs.erase("nrm");
+        }
+
+        if (!get_input2<bool>("hasVertUV")){
+            prim->uvs.clear();
+            prim->loops.erase_attr("uvs");
+        }
+
+        if (get_input2<bool>("isFlipFace")){
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                auto [base, cnt] = prim->polys[i];
+                for (int j = 0; j < (cnt / 2); j++) {
+                    std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
+                    if (prim->loops.has_attr("uvs")) {
+                        std::swap(prim->loops.attr<int>("uvs")[base + j], prim->loops.attr<int>("uvs")[base + cnt - 1 - j]);
+                    }
+                }
+            }
+        }
+
+        if(!quad){
             primTriangulate(prim.get());
         }
-        set_output("prim", std::move(prim));
+        set_output("prim",std::move(prim));
     }
 };
 

@@ -15,7 +15,7 @@
 #define s_useGDDiagHess 1   // for GD solver
 #define s_useLineSearch 1
 #define s_debugOutput 0
-#define s_useHardPhase 1
+#define s_useHardPhase 0
 #define s_clothShearingCoeff 0.01f
 #define s_silentMode 1
 #define s_hardPhaseSilent 1
@@ -131,6 +131,8 @@ struct FastClothSystem : IObject {
         tiles_t svtemp; // surface vert hessian
         const int vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
+
+        bool hasBC = false; 
     };
 
     bool hasBoundary() const noexcept {
@@ -164,7 +166,7 @@ struct FastClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
-                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn);
+                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn, T BCStiffness);
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -352,6 +354,8 @@ struct FastClothSystem : IObject {
     int collisionCnt[10];
     float initInterpolationTime;
     static constexpr bool s_enableProfile = true;
+
+    T BCStiffness; 
 #define s_testSh false
 };
 

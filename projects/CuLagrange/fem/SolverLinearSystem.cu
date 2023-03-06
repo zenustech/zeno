@@ -13,38 +13,24 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // inertial
-    cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp), dt = dt,
+    cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp),
                                   projectDBC = projectDBC] ZS_LAMBDA(int i) mutable {
         auto m = vtemp("ws", i);
-        vtemp.tuple<3>("grad", i) =
-            vtemp.pack<3>("grad", i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+        vtemp.tuple(dim_c<3>, "grad", i) =
+            vtemp.pack(dim_c<3>, "grad", i) - m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
 
-        auto M = mat3::identity() * m;
         int BCorder[1] = {(int)vtemp("BCorder", i)};
+        auto M = mat3::identity() * m;
         tempI.tuple(dim_c<9>, "Hi", i) = M;
         // prepare preconditioner
         for (int d = 0; d != 3; ++d)
             vtemp("P", d * 3 + d, i) += M(d, d);
     });
-    // extforce (only grad modified)
-    for (auto &primHandle : prims) {
-        if (primHandle.isBoundary()) // skip soft boundary
-            continue;
-        cudaPol(zs::range(primHandle.getVerts().size()), [vtemp = proxy<space>({}, vtemp), extForce = extForce, dt = dt,
-                                                          vOffset = primHandle.vOffset] ZS_LAMBDA(int vi) mutable {
-            auto m = vtemp("ws", vOffset + vi);
-            int BCorder = vtemp("BCorder", vOffset + vi);
-            int BCsoft = vtemp("BCsoft", vOffset + vi);
-            if (BCsoft == 0 && BCorder != 3)
-                vtemp.tuple<3>("grad", vOffset + vi) = vtemp.pack<3>("grad", vOffset + vi) + m * extForce * dt * dt;
-        });
-    }
     if (vtemp.hasProperty("extf")) {
         cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int vi) mutable {
             int BCorder = vtemp("BCorder", vi);
-            int BCsoft = vtemp("BCsoft", vi);
-            if (BCsoft == 0 && BCorder != 3)
-                vtemp.template tuple<3>("grad", vi) =
+            if (BCorder == 0) // BCsoft == 0 &&
+                vtemp.tuple(dim_c<3>, "grad", vi) =
                     vtemp.pack(dim_c<3>, "grad", vi) + vtemp.pack(dim_c<3>, "extf", vi) * dt * dt;
         });
     }
@@ -55,7 +41,8 @@ void IPCSystem::computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPo
     // inertial
     cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), gTag, dt = dt] ZS_LAMBDA(int i) mutable {
         auto m = vtemp("ws", i);
-        vtemp.tuple<3>(gTag, i) = vtemp.pack<3>(gTag, i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+        vtemp.tuple(dim_c<3>, gTag, i) =
+            vtemp.pack(dim_c<3>, gTag, i) - m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
     });
 }
 

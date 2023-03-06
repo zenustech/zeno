@@ -259,7 +259,7 @@ struct ZSParticleParticleWrangler : INode {
         void *args[] = {(void *)&cnt, (void *)&cntNei, (void *)&d_params, (void *)&nchns, (void *)&addr};
 
         cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                       (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
+                       (CUstream)currentContext.streamSpare(-1), args, (void **)nullptr);
         // end kernel launch
         cuCtxSynchronize();
 
