@@ -67,16 +67,14 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
-    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZERROR_EXIT(pWin);
-    DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget *pViewport = pWid->getViewportWidget();
-    ZERROR_EXIT(pViewport);
-    auto zenovis = pViewport->getZenoVis();
-    ZERROR_EXIT(zenovis);
 
-    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
+    connect(pWin, &ZenoMainWindow::visObjectsUpdated, this, [=](ViewportWidget* pViewport, int frame) {
+        ZERROR_EXIT(pViewport);
+        auto zenovis = pViewport->getZenoVis();
+        ZERROR_EXIT(zenovis);
+
         std::string prim_name = pPrimName->text().toStdString();
         auto sess = zenovis->getSession();
         ZERROR_EXIT(sess);

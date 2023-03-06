@@ -33,6 +33,7 @@ class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
 class LiveSignalsBridge;
+class ViewportWidget;
 
 namespace Ui
 {
@@ -126,6 +127,9 @@ public:
     };
 signals:
     void recentFilesChanged();
+    void visObjectsUpdated(ViewportWidget* viewport, int frameid);
+    void visFrameUpdated(int);
+
 public slots:
     void openFileDialog();
     void onNewFile();

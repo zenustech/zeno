@@ -124,7 +124,7 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 else if (qobject_cast<DockContent_Editor *>(wid)) {
                     writer.String("Editor");
                 }
-                else if (qobject_cast<DisplayWidget*>(wid)) {
+                else if (qobject_cast<DockContent_View*>(wid)) {
                     writer.String("View");
                 }
                 else if (qobject_cast<ZenoSpreadsheet*>(wid)) {

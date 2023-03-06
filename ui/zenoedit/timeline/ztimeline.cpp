@@ -116,12 +116,7 @@ void ZTimeline::initSignals()
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget* pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
-
-    connect(pViewport->getZenoVis(), SIGNAL(frameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
+    connect(pWin, SIGNAL(visFrameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
 }
 
 void ZTimeline::initStyleSheet()
