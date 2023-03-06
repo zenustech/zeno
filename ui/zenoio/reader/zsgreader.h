@@ -39,7 +39,7 @@ private:
     void _parseDictPanel(bool bInput, const rapidjson::Value& dictPanelObj, const QString& id, const QString& inSock, const QString& nodeName, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
-    NODE_DESCS _parseDescs(const rapidjson::Value& descs);
+    NODE_DESCS _parseDescs(const rapidjson::Value& descs, IAcceptor *pAcceptor);
 };
 
 #endif
