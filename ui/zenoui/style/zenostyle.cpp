@@ -218,7 +218,9 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             }
             else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
             {
-                return QRect(); //todo
+                int xleft = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, widget);
+                int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
+                return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
             }
             else
             {
@@ -252,7 +254,12 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             }
             else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
             {
-                return QRect(); //todo
+                QFontMetrics fontMetrics(opt->font);
+                int textWidth = fontMetrics.horizontalAdvance(opt->text);
+                int textHeight = fontMetrics.height();
+                int xleft = opt->iconSize.width() + 2 * pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, widget);
+                int ypos = opt->rect.height() / 2 - textHeight / 2;
+                return QRect(xleft, ypos, textWidth, textHeight);
             }
             else if (opt->buttonOpts & ZToolButton::Opt_HasText)
             {

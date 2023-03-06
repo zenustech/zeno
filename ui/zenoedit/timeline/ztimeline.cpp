@@ -134,21 +134,22 @@ void ZTimeline::initButtons()
     QColor hoverBg("#4F5963");
 
     //run
-    m_ui->btnRun->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_HasText);
-    m_ui->btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline_run_thunder.svg",
+    m_ui->btnRun->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
+    m_ui->btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(12, 16)), ":/icons/timeline_run_thunder.svg",
                                   ":/icons/timeline_run_thunder.svg", "", "");
-    m_ui->btnRun->setText(tr("RUN"));
+    m_ui->btnRun->setText(tr("Run"));
     m_ui->btnRun->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
+    m_ui->btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
 
     //kill
-    m_ui->btnKill->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_HasText);
-    m_ui->btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/timeline_kill_clean.svg",
-                                  ":/icons/timeline_kill_clean.svg", "", "");
+    m_ui->btnKill->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
+    m_ui->btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/timeline_kill_clean.svg",
+                           ":/icons/timeline_kill_clean.svg", "", "");
     m_ui->btnKill->setText(tr("Kill"));
     m_ui->btnKill->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
-
+    m_ui->btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
 
     m_ui->btnBackToStart->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackToStart->setIcon(
@@ -211,16 +212,16 @@ void ZTimeline::initButtons()
     //m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
     //m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
-    QColor bg(35, 40, 47);
-    m_ui->btnAlways->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
+    m_ui->btnAlways->setButtonOptions(ZToolButton::Opt_SwitchAnimation);
     m_ui->btnAlways->setIcon(
-        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ZenoStyle::dpiScaledSize(QSize(20,20)),
         ":/icons/always-off.svg",
         "",
-        ":/icons/always-on.svg",
+        "",
         "");
     m_ui->btnAlways->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnAlways->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    m_ui->btnAlways->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
+    m_ui->btnAlways->initAnimation();
 
     QFont font("Alibaba PuHuiTi", 10);
     font.setWeight(QFont::DemiBold);
