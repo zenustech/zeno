@@ -2,6 +2,7 @@
 #include "viewportwidget.h"
 #include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
+#include "../timeline/ztimeline.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
@@ -118,7 +119,9 @@ void Zenovis::doFrameUpdate()
 {
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
-    int frameid = getCurrentFrameId();
+
+//    int frameid = getCurrentFrameId();
+    int frameid = zenoApp->getMainWindow()->getDisplayWidget()->getTimelinePointer()->value();
 
     zenoApp->getMainWindow()->doFrameUpdate(frameid);
 
