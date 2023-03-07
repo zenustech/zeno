@@ -246,11 +246,11 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_PARAM_NAME:
         {
-            if (m_index.isValid())
-            {
-                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                pModel->setData(m_index, value, role);
-            }
+            //if (m_index.isValid())
+            //{
+            //    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+            //    pModel->setData(m_index, value, role);
+            //}
             m_name = value.toString();
             //QStandardItem::setData(value, Qt::DisplayRole); //will emit signal, take care!
             break;
@@ -268,11 +268,11 @@ void VParamItem::setData(const QVariant& value, int role)
             if (m_type == value.toString())
                 return;
 
-            if (m_index.isValid())
-            {
-                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                bool ret = pModel->setData(m_index, value, role);
-            }
+            //if (m_index.isValid())
+            //{
+            //    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+            //    bool ret = pModel->setData(m_index, value, role);
+            //}
             m_type = value.toString();
             break;
         }
