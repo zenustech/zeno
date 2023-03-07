@@ -407,13 +407,15 @@ namespace zeno {
 
             auto surf = get_input<ZenoParticles>("zssurf");
             // auto bvh_thickness = get_input2<float>("bvh_thickness");
+
             if(!surf->hasAuxData(ZenoParticles::s_surfTriTag))
                 throw std::runtime_error("the input zsparticles has no surface tris");
             if(!surf->hasAuxData(ZenoParticles::s_surfEdgeTag))
                 throw std::runtime_error("the input zsparticles has no surface lines");
             if(!surf->hasAuxData(ZenoParticles::s_surfVertTag))
                 throw std::runtime_error("the input zsparticles has no surface lines");
-            auto& tris  = (*surf)[ZenoParticles::s_surfTriTag];
+
+            auto& tris  = (*surf)[ZenoParticles::s_surfTriTag] ;
             auto& lines = (*surf)[ZenoParticles::s_surfEdgeTag];
             auto& points = (*surf)[ZenoParticles::s_surfVertTag];
             auto& tets = surf->getQuadraturePoints();
@@ -430,7 +432,6 @@ namespace zeno {
             }
 
             const auto& verts = surf->getParticles();
-
             auto cudaExec = cuda_exec();
             // constexpr auto space = zs::execspace_e::cuda;
 
@@ -502,6 +503,30 @@ namespace zeno {
                                 {"ZSGeometry"}});
 
 
+    struct ZSEvalTriSurfaceNeighbors : INode {
+        void apply() override {
+            using namespace zs;
+            auto surf = get_input<ZenoParticles>("zssurf");
+            if(surf->category != ZenoParticles::category_e::surface){
+                throw std::runtime_error("ZSEvalTriSurfaceNeighbors::only triangulate surface mesh is supported");
+            }
+
+            auto& tris = surf->getQuadraturePoints();
+            const auto& verts = surf->getParticles();
+            auto cudaExec = cuda_exec();
+            auto bvh_thickness = (T)2 * compute_average_edge_length(cudaExec,verts,"x",tris);
+
+            tris.append_channels(cudaExec,{{"ff_inds",3}});
+            if(!compute_ff_neigh_topo(cudaExec,verts,tris,"ff_inds",bvh_thickness))
+                throw std::runtime_error("ZSInitTopoConnect::compute_face_neigh_topo fail");
+            set_output("zssurf",surf);
+        }
+    };
+
+    ZENDEFNODE(ZSEvalTriSurfaceNeighbors, {{{"zssurf"}},
+                                {{"zssurf"}},
+                                {},
+                                {"ZSGeometry"}});
     template<typename VTILEVEC> 
     constexpr vec3 eval_center(const VTILEVEC& verts,const zs::vec<int,4>& tet) {
         auto res = vec3::zeros();
