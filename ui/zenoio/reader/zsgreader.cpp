@@ -447,7 +447,7 @@ void ZsgReader::_parseDictPanel(
             QString link;
             if (inputObj.HasMember("link") && inputObj["link"].IsString())
             {
-                link = QString::fromLocal8Bit(inputObj["link"].GetString());
+                link = QString::fromUtf8(inputObj["link"].GetString());
             }
             pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
         }
