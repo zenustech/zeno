@@ -11,9 +11,6 @@
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 namespace zeno {
-
-/// for cell-based collision detection
-
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
@@ -153,39 +150,39 @@ struct RapidClothSystem : IObject {
     void updateVelocities(zs::CudaExecutionPolicy &pol);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
-    /// collision
+    /// collision; TODO
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
     void computeConstraints(zs::CudaExecutionPolicy &pol); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
     void forwardStep(zs::CudaExecutionPolicy &pol);     // async stepping  
 
-    /// pipeline
+    /// pipeline; TODO
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void subStepping(zs::CudaExecutionPolicy &pol);
     void subSteppingWithNewton(zs::CudaExecutionPolicy &pol); 
     void subSteppingWithGD(zs::CudaExecutionPolicy &pol); 
 
     // dynamics
-    void computeInertialAndCouplingAndForceGradient(zs::CudaExecutionPolicy &cudaPol);
-    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol);
+    void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
+    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
 
     // boundary constraint
-    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol);
+    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
     bool areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
     T boundaryConstraintResidual(zs::CudaExecutionPolicy &pol);
 
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
     T infNorm(zs::CudaExecutionPolicy &pol);
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void newtonDynamicsStep(zs::CudaExecutionPolicy &pol);
     void gdDynamicsStep(zs::CudaExecutionPolicy &pol);
-    T dynamicsEnergy(zs::CudaExecutionPolicy &pol);
+    T dynamicsEnergy(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
 
     // contacts
     void updateConstraintCnt() {

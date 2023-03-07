@@ -100,7 +100,7 @@ typename RapidClothSystem::T RapidClothSystem::PrimitiveHandle::maximumSurfEdgeL
     pol(Collapse{edges.size()}, [edges = view<space>({}, edges), verts = view<space>({}, verts),
                                  edgeLengths = view<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
         auto inds = edges.pack(dim_c<2>, "inds", ei, int_c);
-        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("xt", inds[1])).norm();
+        edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
     return tmp;
@@ -297,8 +297,12 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta * 2}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
         consDegree{maxVertCons * 4}, BCStiffness{BCStiffness} {
+    auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
+        auto bv = primPtr->computeBoundingVolume(cudaPol, "x");
+        primPtr->orderByMortonCode(cudaPol, bv);
+
         if (primPtr->category == ZenoParticles::category_e::curve) {
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<2>{});
         } else if (primPtr->category == ZenoParticles::category_e::surface)
@@ -398,7 +402,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                     (std::size_t)numDofs};
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
 
-    auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
     initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
                          // adaptive dhat, targetGRes, kappa
@@ -458,7 +461,7 @@ void RapidClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &
              asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
                 verts.tuple<3>("x", vi) = vtemp.pack<3>("x[k]", vOffset + vi);
                 if (!asBoundary)
-                    verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
+                    verts.tuple<3>("v", vi) = vtemp.pack<3>("v[0]", vOffset + vi);
             });
     }
     if (hasBoundary())
