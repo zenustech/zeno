@@ -2260,8 +2260,7 @@ typename IPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typename IP
     return 0;
 }
 
-typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag,
-                                        bool includeAugLagEnergy) {
+typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     Vector<T> &es = temp;
@@ -2297,7 +2296,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
             T E = 0;
             {
                 // external force
-                // if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                // if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3)
                 if (BCorder == 0) {
                     auto extf = vtemp.pack(dim_c<3>, "extf", vi);
                     E += -extf.dot(x - xt) * dt * dt;
@@ -2687,7 +2686,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         }
     }
     // constraints
-    if (includeAugLagEnergy) {
+    if (!BCsatisfied) {
         computeConstraints(pol);
         es.resize(count_warps(numDofs));
         es.reset(0);
@@ -2999,7 +2998,7 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // initial energy
-    T E0 = energy(cudaPol, "xn", !BCsatisfied); // must be "xn", cuz elasticity is hardcoded
+    T E0 = energy(cudaPol, "xn"); // must be "xn", cuz elasticity is hardcoded
 
     T E{E0};
     T c1m = 0;
@@ -3014,7 +3013,7 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
         if (enableContact)
             findCollisionConstraints(cudaPol, dHat, xi);
 
-        E = energy(cudaPol, "xn", !BCsatisfied); // must be "xn", cuz elasticity is hardcoded
+        E = energy(cudaPol, "xn"); // must be "xn", cuz elasticity is hardcoded
 
         fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
         if (E <= E0 + alpha * c1m)
@@ -3041,6 +3040,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
 
     /// optimizer
     int newtonIter = 0;
+    T res = limits<T>::max();
     for (; newtonIter != PNCap; ++newtonIter) {
         // check constraints
         if (!BCsatisfied) {
@@ -3078,8 +3078,9 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                     computeFrictionBarrierGradientAndHessian(pol, "grad");
                 }
         }
+
+        // ROTATE GRAD (NO MORE)
 #if 0
-// ROTATE GRAD (NO MORE)
         pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() * vtemp.pack<3>("grad", i);
             vtemp.tuple<3>("grad", i) = grad;
@@ -3091,22 +3092,23 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             pol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
                     // computed during the previous constraint residual check
-                    auto cons = vtemp.pack<3>("cons", i);
-                    auto w = vtemp("ws", i);
-                    vtemp.tuple<3>("grad", i) =
-                        // vtemp.pack<3>("grad", i) + w * vtemp.pack<3>("lambda", i) - boundaryKappa * w * cons;
-                        vtemp.pack<3>("grad", i) - boundaryKappa * w * cons;
                     int BCfixed = vtemp("BCfixed", i);
                     if (!BCfixed) {
+                        auto cons = vtemp.pack<3>("cons", i);
+                        auto w = vtemp("ws", i);
+
                         int BCorder = vtemp("BCorder", i);
-                        for (int d = 0; d != BCorder; ++d)
+                        for (int d = 0; d != BCorder; ++d) {
+                            vtemp("grad", d, i) -= boundaryKappa * w * cons(d);
                             vtemp("P", 4 * d, i) += boundaryKappa * w;
+                        }
                     }
                 });
             // hess (embedded in multiply)
         }
         project(pol, "grad");
-// PREPARE P (INVERSION)
+
+        // PREPARE P (INVERSION)
 #if 0
         if (projectDBC)
             pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
@@ -3138,9 +3140,9 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                vtemp.tuple<9>("P", i) = inverse(mat);
+                vtemp.tuple(dim_c<3, 3>, "P", i) = inverse(mat);
             else
-                vtemp.tuple<9>("P", i) = mat3::identity();
+                vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
         });
 #if 1
         // prepare float edition
@@ -3150,8 +3152,9 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
 #else
         cgsolve(pol);
 #endif
+
+        // ROTATE BACK (NO MORE)
 #if 0
-// ROTATE BACK (NO MORE)
         pol(Collapse{vtemp.size()}, [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int vi) mutable {
             vtemp.template tuple<3>("dir", vi) =
                 vtemp.pack(dim_c<3, 3>, "BCbasis", vi) * vtemp.pack(dim_c<3>, "dir", vi);
@@ -3162,11 +3165,9 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         T cons_res = constraintResidual(pol);
         /// @note do not exit in the beginning
         if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0) {
-            zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
-                           res);
             break;
         }
-        fmt::print(fg(fmt::color::aquamarine), "substep {} newton iter {}: direction residual {}\n", substep,
+        fmt::print(fg(fmt::color::aquamarine), "substep {} newton iter {}: direction residual {}\n", state.getSubstep(),
                    newtonIter, res);
         // LINESEARCH
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
@@ -3216,6 +3217,8 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
         }
     }
+    zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", state.getSubstep(),
+                   newtonIter, res);
     return newtonIter != PNCap;
 }
 
@@ -3250,7 +3253,6 @@ struct StepIPCSystem : INode {
         }
         // update velocity and positions
         A->writebackPositionsAndVelocities(cudaPol);
-        A->state.stepFrame();
 
         set_output("ZSIPCSystem", A);
     }

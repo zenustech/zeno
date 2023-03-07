@@ -128,8 +128,6 @@ struct IPCSystem : IObject {
         typename ZenoParticles::dtiles_t svtemp;
         const std::size_t vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
-        /// @note ideally, vtemp's mesh component's dofs should be ordered
-        std::optional<zs::Vector<int>> originalToOrdered, orderedToOriginal;
     };
 
     bool hasBoundary() const noexcept {
@@ -221,11 +219,10 @@ struct IPCSystem : IObject {
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
-    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
+    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
-    int substep = -1;
     std::size_t estNumCps = 1000000;
     bool enableGround = false;
     bool enableContact = true;
@@ -315,34 +312,69 @@ struct IPCSystem : IObject {
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
-    zs::Vector<T> temp;        // generally 64-bit
-    zs::Vector<zs::u32> tempi; // 32-bit
-    zs::Vector<bv_t> bvs;      // as temporary buffer
+    zs::Vector<T> temp;   // generally 64-bit
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
 
     /// @brief solver state machine
     struct SolverState {
-        void stepFrame() {
+        void frameStepping() {
             frameNo++;
+            substep = -1;
+            curRatio = 0;
         }
+        void subStepping(T ratio) {
+            substep++;
+            curRatio += ratio;
+        }
+        void reset() {
+            substep = -1;
+            frameNo = -1;
+        }
+
         int getFrameNo() const noexcept {
             return frameNo;
         }
-        void reset() {
-            frameNo = 0;
+        int getSubstep() const noexcept {
+            return substep;
         }
 
       private:
-        int frameNo{0};
+        int substep{-1};
+        int frameNo{-1};
+        T curRatio{0};
     } state;
 
     /// @brief for system hessian storage
-    struct Hessian {
-        /// @note static
-        zs::SparseMatrix<mat3f, true> spmat{};
-    } linsys;
+    template <typename T_>
+    struct SystemHessian {
+        using T = T_;
+        using vec3 = zs::vec<T, 3>;
+        using mat3 = zs::vec<T, 3, 3>;
+
+        /// @note only need the non-diagonal upper/lower half sparsity topo
+        template <typename Pol, typename AllocatorT, typename IRange, typename JRange>
+        void initStaticHessian(Pol &pol, const AllocatorT &allocator, int nverts, IRange &&is, JRange &&js) {
+            spmat = zs::SparseMatrix<mat3, true>{allocator, nverts, nverts};
+            spmat.build(pol, nverts, nverts, FWD(is), FWD(js), zs::true_c);
+        }
+
+        /// @brief dynamic part, mainly for collision constraints
+        /// @note initialization: hess.init(allocator, size)
+        /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
+        HessianPiece<2, T> hess2;
+        HessianPiece<3, T> hess3;
+        HessianPiece<4, T> hess4;
+        /// @brief static part
+        zs::SparseMatrix<mat3, true> spmat{};
+        /// @brief preconditioner
+    };
+    // for one-time static hessian topo build
+    SystemHessian<T> linsys;
+    /// @note build linsys.spmat, using is, js as temp
+    void initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol);
 
     // for faster linear system solve
     HessianPiece<1> hess1;
@@ -367,7 +399,7 @@ struct IPCSystem : IObject {
     bvfront_t selfSeFront, boundarySeFront;
     bool frontManageRequired;
     std::optional<bv_t> wholeBv;
-    T dt, framedt, curRatio;
+    T dt, framedt;
 };
 
 } // namespace zeno
