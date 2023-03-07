@@ -77,7 +77,7 @@ QLineEdit[cssClass="FCurve-lineedit"]:focus {
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"] {
-    border: 2px solid #252525;
+    border: 0;
     background-color: #191D21;
     selection-background-color: #4B9EF4;
     color: #C3D2DF;
@@ -100,6 +100,11 @@ QTextEdit[cssClass="proppanel"] {
     background-color: #191D21;
     color: #FFFFFF;
 }
+
+QTextEdit:focus {
+    border: 2px solid #4B9EF4;
+}
+
 QPlainTextEdit[cssClass="logpanel"]
 {
     color: #A3B1C0; 

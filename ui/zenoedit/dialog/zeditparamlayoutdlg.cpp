@@ -35,6 +35,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Color",               CONTROL_COLOR,          "color"},
     {"Curve",               CONTROL_CURVE,          "curve"},
     {"SpinBox",             CONTROL_HSPINBOX,       "int"},
+    {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float"},
     {"Slider",              CONTROL_HSLIDER,        "int"},
     {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int"},
 };
@@ -87,7 +88,9 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
-        if (m_model->checkParamName(m_model->invisibleRootItem(), newName)) {
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(m_model->itemFromIndex(index.parent()));
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow)) {
             QStyledItemDelegate::setModelData(editor, model, index);
         } else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
@@ -453,6 +456,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
         {
             case CONTROL_SPINBOX_SLIDER:
             case CONTROL_HSPINBOX:
+            case CONTROL_HDOUBLESPINBOX:
             case CONTROL_HSLIDER:
             {
                 CONTROL_PROPERTIES properties;
@@ -550,14 +554,15 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
                 m_ui->itemsTable->setRowCount(1);
         }
         m_ui->stackProperties->setCurrentIndex(1);
-    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX || ctrl == CONTROL_SPINBOX_SLIDER) {
+    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX 
+                || ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HDOUBLESPINBOX) {
         m_ui->stackProperties->setCurrentIndex(2);
         QVariantMap map = controlProperties.toMap();
         SLIDER_INFO info;
         if (!map.isEmpty()) {
-                info.step = map["step"].toInt();
-                info.min = map["min"].toInt();
-                info.max = map["max"].toInt();
+                info.step = map["step"].toDouble();
+                info.min = map["min"].toDouble();
+                info.max = map["max"].toDouble();
         } else {
                 CONTROL_PROPERTIES properties;
                 properties["step"] = info.step;
@@ -679,7 +684,9 @@ void ZEditParamLayoutDlg::onNameEditFinished()
     QString newName = m_ui->editName->text();
     QString oldName = pItem->data(ROLE_VPARAM_NAME).toString();
     if (oldName != newName) {
-        if (m_proxyModel->checkParamName(m_proxyModel->invisibleRootItem(), newName)) 
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(pItem->parent());
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow))
         {
             pItem->setData(newName, ROLE_VPARAM_NAME);
             onProxyItemNameChanged(pItem->index(), oldPath, newName);
@@ -711,7 +718,7 @@ void ZEditParamLayoutDlg::onMinEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int from = m_ui->editMin->text().toInt();
+    qreal from = m_ui->editMin->text().toDouble();
     properties["min"] = from;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -723,7 +730,7 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int to = m_ui->editMax->text().toInt();
+    qreal to = m_ui->editMax->text().toDouble();
     properties["max"] = to;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -804,7 +811,7 @@ void ZEditParamLayoutDlg::onStepEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int step = m_ui->editStep->text().toInt();
+    qreal step = m_ui->editStep->text().toDouble();
     properties["step"] = step;
 
     const QString &objPath = layerIdx.data(ROLE_OBJPATH).toString();

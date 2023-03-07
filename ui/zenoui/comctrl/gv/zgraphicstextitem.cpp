@@ -395,7 +395,7 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     painter->setBrush(QColor("#191D21"));
-    qreal width = 2;
+    qreal width = ZenoStyle::dpiScaled(2);
     QPen pen(QColor(75, 158, 244), width);
     QRectF rc = boundingRect();
     if (m_bFocusIn || m_bShowSlider) {

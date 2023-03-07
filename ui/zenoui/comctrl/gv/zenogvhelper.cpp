@@ -116,6 +116,10 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             {
                 pSpinBox->setValue(value.toInt());
             }
+            else if (ZenoParamDoubleSpinBox*pSpinBox = qobject_cast<ZenoParamDoubleSpinBox *>(pItem)) 
+            {
+                pSpinBox->setValue(value.toDouble());
+            }
             break;
         }
         case QGraphicsTextItem::Type:
@@ -142,35 +146,49 @@ void ZenoGvHelper::setCtrlProperties(QGraphicsItem *item,  const QVariant &value
             QGraphicsProxyWidget *pItem = qgraphicsitem_cast<QGraphicsProxyWidget *>(item);
             BlockSignalScope scope(pItem);
 
+            const QVariantMap &map = value.toMap();
             if (ZenoParamComboBox *combBox = qobject_cast<ZenoParamComboBox *>(pItem)) 
             {
-                const QVariantMap &map = value.toMap();
                 if (map.contains("items")) {
                     combBox->setItems(map["items"].toStringList());
                 }
             } 
-            ZenoParamSlider *pSlider = qobject_cast<ZenoParamSlider *>(pItem);
-            ZenoParamSpinBoxSlider *pSpinBoxSlider = qobject_cast<ZenoParamSpinBoxSlider *>(pItem);
-            if (pSlider || pSpinBoxSlider) 
+            else if (map.contains("min") || map.contains("max") || map.contains("step"))
             {
-                const QVariantMap &map = value.toMap();
                 SLIDER_INFO info;
                 if (map.contains("min")) 
                 {
-                    info.min = map["min"].toInt();
+                    info.min = map["min"].toDouble();
                 }
                 if (map.contains("max")) 
                 {
-                    info.max = map["max"].toInt();
+                    info.max = map["max"].toDouble();
                 }
                 if (map.contains("step")) 
                 {
-                    info.step = map["step"].toInt();
+                    info.step = map["step"].toDouble();
                 }
-                if (pSlider)
+                
+                if (qobject_cast<ZenoParamSlider *>(pItem))
+                {
+                    ZenoParamSlider *pSlider = qobject_cast<ZenoParamSlider *>(pItem);
                     pSlider->setSliderInfo(info);
-                else if (pSpinBoxSlider)
+                }
+                else if (qobject_cast<ZenoParamSpinBoxSlider *>(pItem)) 
+                {
+                    ZenoParamSpinBoxSlider *pSpinBoxSlider = qobject_cast<ZenoParamSpinBoxSlider *>(pItem);
                     pSpinBoxSlider->setSliderInfo(info);
+                }
+                else if (qobject_cast<ZenoParamSpinBox *>(pItem)) 
+                {
+                    ZenoParamSpinBox *pSpinBox = qobject_cast<ZenoParamSpinBox *>(pItem);
+                    pSpinBox->setSliderInfo(info);
+                }
+                else if (qobject_cast<ZenoParamDoubleSpinBox *>(pItem)) 
+                {
+                    ZenoParamDoubleSpinBox *pSpinBox = qobject_cast<ZenoParamDoubleSpinBox *>(pItem);
+                    pSpinBox->setSliderInfo(info);
+                }
             }
     }
 }

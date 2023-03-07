@@ -816,12 +816,14 @@ void ZenoParamSpinBoxSlider::updateStyleSheet() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(parent) 
+ZenoParamSpinBox::ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent) : ZenoParamWidget(parent) 
 {
     m_pSpinBox = new QSpinBox;
     m_pSpinBox->setProperty("cssClass", "control");
     m_pSpinBox->setAlignment(Qt::AlignCenter);
     m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
     setWidget(m_pSpinBox);
     connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
 }
@@ -829,6 +831,35 @@ ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(pare
 void ZenoParamSpinBox::setValue(int value) 
 {
     m_pSpinBox->setValue(value);
+}
+
+void ZenoParamSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamDoubleSpinBox::ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent)
+{
+    m_pSpinBox = new QDoubleSpinBox;
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged(double)));
+}
+
+void ZenoParamDoubleSpinBox::setValue(double value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+void ZenoParamDoubleSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
