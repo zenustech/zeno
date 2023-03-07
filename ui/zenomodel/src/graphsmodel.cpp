@@ -1227,17 +1227,17 @@ void GraphsModel::removeSubGraph(const QString& name)
 
 QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 {
-    QModelIndexList results;
+    QModelIndexList nodes;
     for (int i = 0; i < m_subGraphs.size(); i++)
     {
         SubGraphModel* pModel = m_subGraphs[i];
         if (pModel->name() != subgName)
         {
-            results = pModel->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
-            break;
+            auto results = pModel->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
+            nodes.append(results);
         }
     }
-    return results;
+    return nodes;
 }
 
 void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
