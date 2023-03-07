@@ -353,7 +353,8 @@ void ZToolButton::setChecked(bool bChecked)
 
 void ZToolButton::setShortcut(QKeySequence text)
 {
-    //todo
+    QShortcut *shortcut = new QShortcut(text, this);
+    connect(shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
 }
 
 void ZToolButton::setDown(bool bDown)
