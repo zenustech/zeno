@@ -914,28 +914,30 @@ void ZenoSubGraphScene::selectObjViaNodes() {
     // for selecting objects in viewport via selected nodes
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget* pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
-    auto scene = pViewport->getSession()->get_scene();
-    ZASSERT_EXIT(scene);
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto pDisplay : views) {
+        ZASSERT_EXIT(pDisplay);
+        ViewportWidget *pViewport = pDisplay->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto scene = pViewport->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
 
-    QList<QGraphicsItem*> selItems = this->selectedItems();
-    auto picker = pViewport->picker();
-    ZASSERT_EXIT(picker);
-    picker->clear();
-    for (auto item : selItems) {
-        if (auto* pNode = qgraphicsitem_cast<ZenoNode*>(item)) {
-            auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-            for (const auto& [prim_name, _] : scene->objectsMan->pairsShared()) {
-                if (prim_name.find(node_id) != std::string::npos)
-                    picker->add(prim_name);
+        QList<QGraphicsItem *> selItems = this->selectedItems();
+        auto picker = pViewport->picker();
+        ZASSERT_EXIT(picker);
+        picker->clear();
+        for (auto item : selItems) {
+            if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+                auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
+                for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
+                    if (prim_name.find(node_id) != std::string::npos)
+                        picker->add(prim_name);
+                }
             }
         }
+        picker->sync_to_scene();
+        zenoApp->getMainWindow()->updateViewport();
     }
-    picker->sync_to_scene();
-    zenoApp->getMainWindow()->updateViewport();
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

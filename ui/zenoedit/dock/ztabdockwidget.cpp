@@ -242,20 +242,22 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 //todo: dispatch to each panel?
                 ZenoMainWindow *pWin = zenoApp->getMainWindow();
                 ZASSERT_EXIT(pWin);
-                DisplayWidget *pWid = pWin->getDisplayWidget();
-                ZASSERT_EXIT(pWid);
-                ViewportWidget *pViewport = pWid->getViewportWidget();
-                ZASSERT_EXIT(pViewport);
+                QVector<DisplayWidget *> views = pWin->viewports();
+                for (auto pDisplay : views)
+                {
+                    ViewportWidget* pViewport = pDisplay->getViewportWidget();
+                    ZASSERT_EXIT(pViewport);
 
-                auto *scene = pViewport->getSession()->get_scene();
-                scene->selected.clear();
-                std::string nodeid = nodeId.toStdString();
-                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                    if (nodeid == key.substr(0, key.find_first_of(':'))) {
-                        scene->selected.insert(key);
+                    auto *scene = pViewport->getSession()->get_scene();
+                    scene->selected.clear();
+                    std::string nodeid = nodeId.toStdString();
+                    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                        if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                            scene->selected.insert(key);
+                        }
                     }
+                    onPrimitiveSelected(scene->selected);
                 }
-                onPrimitiveSelected(scene->selected);
             }
         } 
         else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {

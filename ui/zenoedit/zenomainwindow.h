@@ -52,7 +52,7 @@ public:
     TIMELINE_INFO timelineInfo();
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
-    DisplayWidget *getDisplayWidget();
+    QVector<DisplayWidget*> viewports() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
@@ -187,7 +187,7 @@ private:
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
     void loadRecentFiles();
-    QVector<DisplayWidget*> viewports() const;
+
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

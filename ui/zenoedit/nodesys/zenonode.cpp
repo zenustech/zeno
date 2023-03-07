@@ -1206,10 +1206,11 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         // for temp support to show handler via transform node
         else if (name.contains("TransformPrimitive"))
         {
-            auto displayWid = zenoApp->getMainWindow()->getDisplayWidget();
-            if (displayWid)
+            QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+            for (auto pDisplay : views)
             {
-                auto viewport = displayWid->getViewportWidget();
+                ZASSERT_EXIT(pDisplay);
+                auto viewport = pDisplay->getViewportWidget();
                 if (viewport)
                     viewport->changeTransformOperation(nodeId());
             }

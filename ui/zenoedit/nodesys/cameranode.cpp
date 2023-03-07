@@ -52,86 +52,90 @@ void CameraNode::onEditClicked()
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget *pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget *pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
-    auto sess = pViewport->getSession();
-    ZASSERT_EXIT(sess);
 
-    auto scene = sess->get_scene();
-    ZASSERT_EXIT(scene);
+    QVector<DisplayWidget*> views = pWin->viewports();
+    for (auto pDisplay : views)
+    {
+        ZASSERT_EXIT(pDisplay);
+        ViewportWidget* pViewport = pDisplay->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto sess = pViewport->getSession();
+        ZASSERT_EXIT(sess);
 
-    UI_VECTYPE vec({ 0., 0., 0. });
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
 
-    PARAM_UPDATE_INFO info;
+        UI_VECTYPE vec({ 0., 0., 0. });
 
-    pModel->beginTransaction("update camera info");
+        PARAM_UPDATE_INFO info;
 
-    INPUT_SOCKET pos = inputs["pos"];
-    //vec = {scene->camera->m_lodcenter.x, scene->camera->m_lodcenter.y, scene->camera->m_lodcenter.z};
-    std::vector<float> camProp = scene->getCameraProp();
-    vec = {camProp[0], camProp[1], camProp[2]};
-    info.name = "pos";
-    info.oldValue = pos.info.defaultValue;
-    info.newValue = QVariant::fromValue(vec);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+        pModel->beginTransaction("update camera info");
 
-    INPUT_SOCKET up = inputs["up"];
-    vec = {camProp[6], camProp[7], camProp[8]};
-    info.name = "up";
-    info.oldValue = up.info.defaultValue;
-    info.newValue = QVariant::fromValue(vec);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-
-    INPUT_SOCKET view = inputs["view"];
-    vec = {camProp[3], camProp[4], camProp[5]};
-    info.name = "view";
-    info.oldValue = view.info.defaultValue;
-    info.newValue = QVariant::fromValue(vec);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-
-    INPUT_SOCKET fov = inputs["fov"];
-    info.name = "fov";
-    info.oldValue = fov.info.defaultValue;
-    info.newValue = QVariant::fromValue(camProp[9]);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-
-    INPUT_SOCKET aperture = inputs["aperture"];
-    info.name = "aperture";
-    info.oldValue = aperture.info.defaultValue;
-    info.newValue = QVariant::fromValue(camProp[10]);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-
-    INPUT_SOCKET focalPlaneDistance = inputs["focalPlaneDistance"];
-    info.name = "focalPlaneDistance";
-    info.oldValue = focalPlaneDistance.info.defaultValue;
-    info.newValue = QVariant::fromValue(camProp[11]);
-    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-
-    // Is CameraNode
-    if(CameraPattern == 0) {
-        INPUT_SOCKET frame = inputs["frame"];
-        // FIXME Not work
-        int frameId = sess->get_curr_frameid();
-        frameId = zeno::getSession().globalState->frameid;
-
-        info.name = "frame";
-        info.oldValue = frame.info.defaultValue;
-        frame.info.defaultValue = QVariant::fromValue(frameId);
-
-        INPUT_SOCKET other = inputs["other"];
-        std::string other_prop;
-        for (int i = 12; i < camProp.size(); i++)
-            other_prop += std::to_string(camProp[i]) + ",";
-        info.name = "other";
-        info.oldValue = other.info.defaultValue;
-        info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
+        INPUT_SOCKET pos = inputs["pos"];
+        //vec = {scene->camera->m_lodcenter.x, scene->camera->m_lodcenter.y, scene->camera->m_lodcenter.z};
+        std::vector<float> camProp = scene->getCameraProp();
+        vec = {camProp[0], camProp[1], camProp[2]};
+        info.name = "pos";
+        info.oldValue = pos.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
-    }
 
-    // Is MakeCamera
-    if(CameraPattern == 1){
-        // Here
+        INPUT_SOCKET up = inputs["up"];
+        vec = {camProp[6], camProp[7], camProp[8]};
+        info.name = "up";
+        info.oldValue = up.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET view = inputs["view"];
+        vec = {camProp[3], camProp[4], camProp[5]};
+        info.name = "view";
+        info.oldValue = view.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET fov = inputs["fov"];
+        info.name = "fov";
+        info.oldValue = fov.info.defaultValue;
+        info.newValue = QVariant::fromValue(camProp[9]);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET aperture = inputs["aperture"];
+        info.name = "aperture";
+        info.oldValue = aperture.info.defaultValue;
+        info.newValue = QVariant::fromValue(camProp[10]);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET focalPlaneDistance = inputs["focalPlaneDistance"];
+        info.name = "focalPlaneDistance";
+        info.oldValue = focalPlaneDistance.info.defaultValue;
+        info.newValue = QVariant::fromValue(camProp[11]);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        // Is CameraNode
+        if(CameraPattern == 0) {
+            INPUT_SOCKET frame = inputs["frame"];
+            // FIXME Not work
+            int frameId = sess->get_curr_frameid();
+            frameId = zeno::getSession().globalState->frameid;
+
+            info.name = "frame";
+            info.oldValue = frame.info.defaultValue;
+            frame.info.defaultValue = QVariant::fromValue(frameId);
+
+            INPUT_SOCKET other = inputs["other"];
+            std::string other_prop;
+            for (int i = 12; i < camProp.size(); i++)
+                other_prop += std::to_string(camProp[i]) + ",";
+            info.name = "other";
+            info.oldValue = other.info.defaultValue;
+            info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
+            pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+        }
+
+        // Is MakeCamera
+        if(CameraPattern == 1){
+            // Here
+        }
     }
 }
