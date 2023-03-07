@@ -124,20 +124,10 @@ QSize ZToolButton::sizeHint() const
 
     int marginLeft = 0, marginRight = 0, marginTop = 0, marginBottom = 0;
 
-    if (false && m_margins.isNull())
-    {
-        marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
-        marginRight = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, this);
-        marginTop = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, this);
-        marginBottom = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, this);
-    }
-    else
-    {
-        marginLeft = m_margins.left();
-        marginRight = m_margins.right();
-        marginTop = m_margins.top();
-        marginBottom = m_margins.bottom();
-    }
+    marginLeft = m_margins.left();
+    marginRight = m_margins.right();
+    marginTop = m_margins.top();
+    marginBottom = m_margins.bottom();
 
     if (!m_text.isEmpty())
     {
@@ -158,10 +148,9 @@ QSize ZToolButton::sizeHint() const
         }
         else if (m_options & Opt_TextRightToIcon)
         {
-            marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
-            w = textWidth + m_iconSize.width() + marginLeft * 3;
-            h = qMax(textHeight, m_iconSize.height()) + marginTop + marginBottom;
-            return QSize(w, h);
+            w = textWidth + m_iconSize.width();
+            w += style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, this);
+            h = qMax(textHeight, m_iconSize.height());
         }
         else
         {

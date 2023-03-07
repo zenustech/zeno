@@ -27,7 +27,8 @@ public:
         PM_ButtonLeftMargin = PM_CustomBase + 1,
         PM_ButtonTopMargin,
         PM_ButtonRightMargin,
-        PM_ButtonBottomMargin
+        PM_ButtonBottomMargin,
+        PM_IconTextSpacing,
     };
     enum ZenoPrimitiveElement
     {
@@ -47,6 +48,7 @@ public:
     static qreal dpiScaled(qreal value);
     static QSize dpiScaledSize(const QSize &value);
     static QSizeF dpiScaledSize(const QSizeF& sz);
+    static QMargins dpiScaledMargins(const QMargins& margins);
     static QString dpiScaleSheet(const QString &sheet);
 
     void drawComplexControl(ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget = nullptr) const override;
