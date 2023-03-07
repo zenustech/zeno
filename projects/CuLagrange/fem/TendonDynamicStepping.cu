@@ -60,6 +60,7 @@ struct TendonDynamicStepping : INode {
         // the function won't reset gradient and hessian
         void computeGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
                             const dtiles_t& vtemp,
+                            const dtiles_t& ttemp,
                             dtiles_t& gh_buffer) {        
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
@@ -108,6 +109,7 @@ struct TendonDynamicStepping : INode {
             cudaPol(zs::range(tris.size()), [dt = dt,dt2 = dt2,
                             verts = proxy<space>({},verts),
                             vtemp = proxy<space>({}, vtemp),
+                            ttemp = proxy<space>({},ttemp),
                             gh_buffer = proxy<space>({},gh_buffer),
                             tris = proxy<space>({}, tris),
                             volf = volf] ZS_LAMBDA (int ti) mutable {
@@ -121,6 +123,11 @@ struct TendonDynamicStepping : INode {
 
                 zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
                 auto F = Ds * IB;
+                zs::vec<T,2,2> AInv = zs::vec<T,2,2>::identity();
+                for(int i = 0;i != 2;++i)
+                    AInv(i,i) = (T)1.0/ttemp("shrink",ti);
+                auto dFActdF = dFAdF(AInv);
+                F = F * AInv;
 
                 auto dFdX = dFdXMatrix(IB,wrapv<3>{});
                 auto dFdXT = dFdX.transpose();
@@ -140,7 +147,7 @@ struct TendonDynamicStepping : INode {
 
                 auto mu = tris("mu",ti);
 
-                auto vecP = flatten(mu * Pstretch + (mu * 0.3) * Pshear);
+                auto vecP = dFActdF.transpose() * flatten(mu * Pstretch + (mu * 0.3) * Pshear);
                 auto vfdt2 = -vole * (dFdXT * vecP) * (dt * dt);
 
                 gh_buffer.tuple(dim_c<9>,"grad",ti) = gh_buffer.pack(dim_c<9>,"grad",ti) + vfdt2;
@@ -212,7 +219,8 @@ struct TendonDynamicStepping : INode {
                 auto stH = stretchHessian();
                 auto shH = shearHessian();
                 auto He = stH + shH;
-                auto H = dFdX.transpose() * He * dFdX * (dt * dt * vole);
+                auto dFdAct_dFdX = dFActdF * dFdX;
+                auto H = dFdAct_dFdX.transpose() * He * dFdAct_dFdX * (dt * dt * vole);
 
                 gh_buffer.template tuple<9*9>("H",ti) = gh_buffer.template pack<9,9>("H",ti) + H;
 
@@ -440,6 +448,7 @@ struct TendonDynamicStepping : INode {
             },verts.size()};
         dtiles_t ttemp{tris.get_allocator(),
             {
+                {"shrink",1},
                 {"nrm",3}
             },tris.size()};
         dtiles_t kc_buffer{kverts.get_allocator(),
@@ -452,9 +461,11 @@ struct TendonDynamicStepping : INode {
             {"grad",9}
         },tris.size());
 
+        auto shrink = get_input2<float>("shrink");
         auto kineCollisionStiffness = get_input2<float>("kineColStiff");
         auto kineInCollisionEps = get_input2<float>("kineInColEps");
         auto kineOutCollisionEps = get_input2<float>("kineOutColEps");
+        
 
         TendonDynamicSteppingSystem A{verts,tris,
             volf,models.density,dt,
@@ -467,6 +478,7 @@ struct TendonDynamicStepping : INode {
         // set initial guess for system equation
         // TILEVEC_OPS::copy(cudaPol,verts,"v",vtemp,"vn");  
         TILEVEC_OPS::copy(cudaPol,verts,"x",vtemp,"xn");
+        TILEVEC_OPS::fill(cudaPol,ttemp,"shrink",(T)shrink);
 
         if(verts.hasProperty("bou_tag")) {
             TILEVEC_OPS::copy(cudaPol,verts,"bou_tag",vtemp,"bou_tag");
@@ -485,7 +497,7 @@ struct TendonDynamicStepping : INode {
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"H",(T)0.0);
             // evaluate element-wise gradient and hessian
 
-            A.computeGradientAndHessian(cudaPol,vtemp,gh_buffer);
+            A.computeGradientAndHessian(cudaPol,vtemp,ttemp,gh_buffer);
             A.computeKinematicCollisionGradientAndHessian(cudaPol,
                 vtemp,ttemp,kverts,kc_buffer,gh_buffer);
             // assemble element-wise gradient
@@ -540,7 +552,8 @@ ZENDEFNODE(TendonDynamicStepping, {{"zssurf","gravity","kboundary",
                                     {"float","kineInColEps","0.01"},
                                     {"float","kineOutColEps","0.02"},
                                     {"float","dt","0.5"},
-                                    {"float","newton_res","0.001"}
+                                    {"float","newton_res","0.001"},
+                                    {"float","shrink","1.0"},
                                     },
                                   {"zssurf"},
                                   {
