@@ -60,7 +60,6 @@ struct IPCSystem : IObject {
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
-        void computeMortonCodeOrder(zs::CudaExecutionPolicy &pol, zs::Vector<zs::u32> &tempBuffer, const bv_t &bv);
 
         auto getModelLameParams() const {
             T mu = 0, lam = 0;

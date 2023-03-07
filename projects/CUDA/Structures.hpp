@@ -322,8 +322,18 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     };
     std::optional<Mapping> vertMapping;
 
+    bool hasVertexMapping() const noexcept {
+        return vertMapping.has_value();
+    }
+    Mapping &refVertexMapping() noexcept {
+        return *vertMapping;
+    }
+    const Mapping &refVertexMapping() const noexcept {
+        return *vertMapping;
+    }
+
     template <typename Pol>
-    bv_t computeBoundingVolume(Pol &pol, zs::SmallString xtag) {
+    bv_t computeBoundingVolume(Pol &pol, zs::SmallString xtag) const {
         using namespace zs;
         constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
         constexpr auto defaultBv =
@@ -427,11 +437,11 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
 
         };
         // update indices (modified in-place)
+        bool flag = false;
+        if (category == category_e::curve || category == category_e::surface || category == category_e::tet)
+            flag = true;
         if (elements.has_value()) {
             auto &eles = getQuadraturePoints();
-            bool flag = false;
-            if (category == category_e::curve || category == category_e::surface || category == category_e::tet)
-                flag = true;
             if (flag) {
                 updateElementIndices(pol, eles);
                 if (hasImage(s_elementTag)) {
@@ -440,18 +450,20 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
                 }
             }
         }
-        if (hasAuxData(s_edgeTag))
-            updateElementIndices(pol, operator[](s_edgeTag));
-        else if (hasAuxData(s_surfTriTag))
-            updateElementIndices(pol, operator[](s_surfTriTag));
-        else if (hasAuxData(s_surfEdgeTag))
-            updateElementIndices(pol, operator[](s_surfEdgeTag));
-        else if (hasAuxData(s_surfVertTag))
-            updateElementIndices(pol, operator[](s_surfVertTag));
-        else if (hasAuxData(s_bendingEdgeTag))
-            updateElementIndices(pol, operator[](s_bendingEdgeTag));
-        else if (hasAuxData(s_surfHalfEdgeTag))
-            updateElementIndices(pol, operator[](s_surfHalfEdgeTag));
+        if (flag) {
+            if (hasAuxData(s_edgeTag))
+                updateElementIndices(pol, operator[](s_edgeTag));
+            else if (hasAuxData(s_surfTriTag))
+                updateElementIndices(pol, operator[](s_surfTriTag));
+            else if (hasAuxData(s_surfEdgeTag))
+                updateElementIndices(pol, operator[](s_surfEdgeTag));
+            else if (hasAuxData(s_surfVertTag))
+                updateElementIndices(pol, operator[](s_surfVertTag));
+            else if (hasAuxData(s_bendingEdgeTag))
+                updateElementIndices(pol, operator[](s_bendingEdgeTag));
+            else if (hasAuxData(s_surfHalfEdgeTag))
+                updateElementIndices(pol, operator[](s_surfHalfEdgeTag));
+        }
     }
 
     std::shared_ptr<particles_t> particles{};

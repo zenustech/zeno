@@ -3,10 +3,13 @@
 
 namespace zeno {
 
+template typename ZenoParticles::bv_t
+ZenoParticles::computeBoundingVolume<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol, zs::SmallString xtag) const;
+
+template void ZenoParticles::updateElementIndices<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol,
+                                                                           typename ZenoParticles::particles_t &eles);
+
 template void ZenoParticles::orderByMortonCode<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol,
                                                                         const typename ZenoParticles::bv_t &);
-
-template typename ZenoParticles::bv_t
-ZenoParticles::computeBoundingVolume<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol, zs::SmallString xtag);
 
 } // namespace zeno
