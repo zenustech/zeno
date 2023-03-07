@@ -133,6 +133,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     if (bNodeUI)
     {
+        m_ui->m_coreMappingWidget->hide();
         m_proxyModel = new NodeParamModel(m_subgIdx, m_model->nodeIdx(), m_pGraphsModel, true, this);
     }
     else
@@ -355,10 +356,18 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         }
 
-        const QString& coreName = pCurrentItem->data(ROLE_PARAM_NAME).toString();
-
-        m_ui->editCoreParamName->setText(coreName);
-        m_ui->editCoreParamType->setText(dataType);
+        if (pCurrentItem->m_index.isValid()) 
+        {
+            const QString &refName = pCurrentItem->m_index.data(ROLE_PARAM_NAME).toString();
+            m_ui->editCoreParamName->setText(refName);
+            const QString &refType = pCurrentItem->m_index.data(ROLE_PARAM_TYPE).toString();
+            m_ui->editCoreParamType->setText(refType);
+        } 
+        else 
+        {
+            m_ui->editCoreParamName->setText(ctrlName);
+            m_ui->editCoreParamType->setText(dataType);
+        }
         m_ui->itemsTable->setRowCount(0);
 
         switchStackProperties(ctrl, pCurrentItem);
@@ -991,7 +1000,11 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     }
                     pTarget->setData(ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
                 }
-                //todo: other info, like mapping, etc.
+                //core mapping
+                if (pCurrent->m_index != pTarget->m_index) 
+                {
+                    pTarget->mapCoreParam(pCurrent->m_index);
+                }
             }
             else
             {
