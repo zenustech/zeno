@@ -184,15 +184,119 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
 }
 
 void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
-    zs::Vector<int> cnt{vtemp.get_allocator(), 1};
-    cnt.setVal(0);
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
     zs::Vector<int> is{temp.get_allocator(), numDofs};
     zs::Vector<int> js{temp.get_allocator(), numDofs};
     pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
+
+    auto reserveStorage = [&is, &js](std::size_t n) {
+        auto size = is.size();
+        is.resize(size + n);
+        js.resize(size + n);
+        return size;
+    };
     ///
     /// elasticity, bending
     ///
-    // pol();
+    /// @note only need to register non-diagonal locations on one side
+    for (auto &primHandle : prims) {
+        /// bending
+        if (primHandle.hasBendingConstraints()) {
+            const auto &eles = *primHandle.bendingEdgesPtr;
+            auto npairs = eles.size();
+            auto offset = reserveStorage(npairs * 6);
+            pol(range(npairs), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                vOffset = primHandle.vOffset, offset, stride = npairs] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[0];
+                is[offset + stride * 3 + ei] = inds[1];
+                is[offset + stride * 4 + ei] = inds[1];
+                is[offset + stride * 5 + ei] = inds[2];
+
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[3];
+                js[offset + stride * 3 + ei] = inds[2];
+                js[offset + stride * 4 + ei] = inds[3];
+                js[offset + stride * 5 + ei] = inds[3];
+            });
+        }
+        /// elasticity
+        if (primHandle.category == ZenoParticles::curve) {
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto offset = reserveStorage(eles.size());
+            pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                     vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                is[offset + ei] = inds[0];
+                js[offset + ei] = inds[1];
+            });
+        } else if (primHandle.category == ZenoParticles::surface) {
+            if (primHandle.isBoundary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto ntris = eles.size();
+            auto offset = reserveStorage(ntris * 3);
+            pol(range(ntris), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                               vOffset = primHandle.vOffset, offset, stride = ntris] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <1, 2>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[1];
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[2];
+            });
+        } else if (primHandle.category == ZenoParticles::tet) {
+            const auto &eles = primHandle.getEles();
+            auto ntets = eles.size();
+            auto offset = reserveStorage(ntets * 6);
+            pol(range(ntets), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                               vOffset = primHandle.vOffset, offset, stride = ntets] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[0];
+                is[offset + stride * 3 + ei] = inds[1];
+                is[offset + stride * 4 + ei] = inds[1];
+                is[offset + stride * 5 + ei] = inds[2];
+
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[3];
+                js[offset + stride * 3 + ei] = inds[2];
+                js[offset + stride * 4 + ei] = inds[3];
+                js[offset + stride * 5 + ei] = inds[3];
+            });
+        }
+    }
+    /// elasticity (soft constraint)
+    for (auto &primHandle : auxPrims) {
+        if (primHandle.category == ZenoParticles::curve) {
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto offset = reserveStorage(eles.size());
+            pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                     vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                is[offset + ei] = inds[0];
+                js[offset + ei] = inds[1];
+            });
+        }
+    }
+
+    linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), numDofs, numDofs};
+    linsys.spmat.build(pol, numDofs, numDofs, range(is), range(js), zs::true_c);
 }
 
 typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {

@@ -353,13 +353,7 @@ struct IPCSystem : IObject {
         using T = T_;
         using vec3 = zs::vec<T, 3>;
         using mat3 = zs::vec<T, 3, 3>;
-
-        /// @note only need the non-diagonal upper/lower half sparsity topo
-        template <typename Pol, typename AllocatorT, typename IRange, typename JRange>
-        void initStaticHessian(Pol &pol, const AllocatorT &allocator, int nverts, IRange &&is, JRange &&js) {
-            spmat = zs::SparseMatrix<mat3, true>{allocator, nverts, nverts};
-            spmat.build(pol, nverts, nverts, FWD(is), FWD(js), zs::true_c);
-        }
+        using spmat_t = zs::SparseMatrix<mat3, true>;
 
         /// @brief dynamic part, mainly for collision constraints
         /// @note initialization: hess.init(allocator, size)
@@ -368,7 +362,7 @@ struct IPCSystem : IObject {
         HessianPiece<3, T> hess3;
         HessianPiece<4, T> hess4;
         /// @brief static part
-        zs::SparseMatrix<mat3, true> spmat{};
+        spmat_t spmat{};
         /// @brief preconditioner
     };
     // for one-time static hessian topo build
