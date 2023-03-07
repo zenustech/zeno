@@ -43,6 +43,7 @@ const QString g_latest_layout = "LatestLayout";
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
+    , m_bAlways(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -596,21 +597,9 @@ void ZenoMainWindow::initTimelineDock()
         }
     });
 
-    connect(m_pTimeline, &ZTimeline::run, this, [=]() {
-        onRunTriggered();
-    });
-
-    connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
-        killProgram();
-    });
-
-    connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
-        onRunTriggered();
-    });
-
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (m_pTimeline->isAlways()) {
+        if (m_bAlways) {
             killProgram();
         }
     });
@@ -1244,15 +1233,26 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
 {
     TIMELINE_INFO info;
     ZASSERT_EXIT(m_pTimeline, info);
-    info.bAlways = m_pTimeline->isAlways();
+    info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
     return info;
 }
 
+bool ZenoMainWindow::isAlways() const
+{
+    return m_bAlways;
+}
+
+void ZenoMainWindow::setAlways(bool bAlways)
+{
+    m_bAlways = bAlways;
+    emit alwaysModeChanged(bAlways);
+}
+
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
-    m_pTimeline->setAlways(info.bAlways);
+    setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
 }
 

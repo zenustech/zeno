@@ -64,6 +64,17 @@
     </message>
 </context>
 <context>
+    <name>DockContent_Editor</name>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+    <message>
+        <source>Kill</source>
+        <translation>终止</translation>
+    </message>
+</context>
+<context>
     <name>DockContent_View</name>
     <message>
         <source>Solid</source>
@@ -1208,11 +1219,11 @@
     </message>
     <message>
         <source>Kill</source>
-        <translation>终止</translation>
+        <translation type="vanished">终止</translation>
     </message>
     <message>
         <source>Run</source>
-        <translation>运行</translation>
+        <translation type="vanished">运行</translation>
     </message>
 </context>
 <context>

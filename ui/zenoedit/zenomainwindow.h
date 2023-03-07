@@ -50,6 +50,8 @@ public:
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
+    void setAlways(bool bAlways);
+    bool isAlways() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
@@ -129,6 +131,7 @@ signals:
     void recentFilesChanged();
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(int);
+    void alwaysModeChanged(bool bAlways);
 
 public slots:
     void openFileDialog();
@@ -192,6 +195,7 @@ private:
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
+    bool m_bAlways;
     int m_nResizeTimes;
     Ui::MainWindow* m_ui;
 
