@@ -501,8 +501,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     picker->sync_to_scene();
                     if (scene->select_mode == zenovis::PICK_OBJECT)
                         onPrimSelected();
-                    transformer.clear();
-                    transformer.addObject(picker->get_picked_prims());
+                    transformer->clear();
+                    transformer->addObject(picker->get_picked_prims());
                 }
             } else {
                 int x0 = m_boundRectStartPos.x();
@@ -1309,7 +1309,9 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
     auto node_id = nodes[0].data(ROLE_OBJNAME).toString();
     if (node_id == "PrimitiveAttrPicker") {
         auto scene = m_view->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
         auto picker = m_view->picker();
+        ZASSERT_EXIT(picker);
         if (select) {
             // check input nodes
             auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
@@ -1375,19 +1377,22 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
         zenoApp->getMainWindow()->updateViewport();
     }
     if (node_id == "MakePrimitive") {
-        auto& picker = zeno::Picker::GetInstance();
+        auto& picker = m_view->picker();
+        ZASSERT_EXIT(picker);
         if (select) {
-            picker.switch_draw_mode();
+            picker->switch_draw_mode();
             zeno::NodeLocation node_location(nodes[0], subgIdx);
-            auto pick_callback = [nodes, node_location](float depth, int x, int y) {
-                auto scene = Zenovis::GetInstance().getSession()->get_scene();
-                auto near = scene->camera->m_near;
-                auto far = scene->camera->m_far;
+            auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
+                Zenovis* pZenovis = m_view->getZenoVis();
+                ZASSERT_EXIT(pZenovis && pZenovis->getSession());
+                auto scene = pZenovis->getSession()->get_scene();
+                auto near_ = scene->camera->m_near;
+                auto far_ = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 1) {
                     depth = depth * 2 - 1;
-                    cz = 2 * near * far / ((far + near) - depth * (far - near));
+                    cz = 2 * near_ * far_ / ((far_ + near_) - depth * (far_ - near_));
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
@@ -1408,10 +1413,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
                 points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
                 zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
             };
-            picker.set_picked_depth_callback(pick_callback);
+            picker->set_picked_depth_callback(pick_callback);
         }
         else {
-            picker.switch_draw_mode();
+            picker->switch_draw_mode();
         }
     }
 }
