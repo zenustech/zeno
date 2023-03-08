@@ -108,7 +108,7 @@
                     },
                     "uipos": [
                         -9148.0,
-                        -652.4000000000002
+                        -652.4000244140625
                     ],
                     "options": []
                 },
@@ -133,7 +133,7 @@
                         },
                         "ElementSize": {
                             "link": null,
-                            "default-value": 15,
+                            "default-value": 10,
                             "control": {
                                 "name": "Integer"
                             },
@@ -161,7 +161,7 @@
                         },
                         "Impulse per kernel": {
                             "link": null,
-                            "default-value": 512,
+                            "default-value": 256,
                             "control": {
                                 "name": "Integer"
                             },
@@ -215,7 +215,7 @@
                     },
                     "uipos": [
                         -8389.8671875,
-                        -666.4000000000002
+                        -666.4000244140625
                     ],
                     "options": [
                         "VIEW"
@@ -231,7 +231,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2816753741
+                                    "uuid": 3217460581
                                 },
                                 "prim": {
                                     "core-param": {
@@ -241,7 +241,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1183632032
+                                    "uuid": 3063924579
                                 },
                                 "ElementSize": {
                                     "core-param": {
@@ -251,7 +251,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 3568526265
+                                    "uuid": 169961723
                                 },
                                 "Scale": {
                                     "core-param": {
@@ -261,7 +261,7 @@
                                     "control": {
                                         "name": "Float Vector 3"
                                     },
-                                    "uuid": 2368355282
+                                    "uuid": 3603864136
                                 },
                                 "noiseseed": {
                                     "core-param": {
@@ -271,7 +271,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 3866951673
+                                    "uuid": 2912862577
                                 },
                                 "isotropic": {
                                     "core-param": {
@@ -281,7 +281,7 @@
                                     "control": {
                                         "name": "Boolean"
                                     },
-                                    "uuid": 2038060998
+                                    "uuid": 1640643107
                                 },
                                 "Impulse per kernel": {
                                     "core-param": {
@@ -291,7 +291,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 1754837282
+                                    "uuid": 2564582590
                                 },
                                 "frequency": {
                                     "core-param": {
@@ -301,7 +301,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 2530381277
+                                    "uuid": 1645915877
                                 },
                                 "Orientation": {
                                     "core-param": {
@@ -311,7 +311,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 2417648977
+                                    "uuid": 1159077219
                                 },
                                 "a_": {
                                     "core-param": {
@@ -321,7 +321,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 3161084629
+                                    "uuid": 804812172
                                 },
                                 "offset": {
                                     "core-param": {
@@ -331,7 +331,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 178333203
+                                    "uuid": 1834424689
                                 }
                             },
                             "Parameters": {},
@@ -340,13 +340,13 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3800585735
+                                    "uuid": 3444469224
                                 },
                                 "prim": {
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 541239170
+                                    "uuid": 3262266475
                                 }
                             }
                         }
@@ -1327,9 +1327,9 @@
                     "blackboard": {
                         "special": false,
                         "width": 500.0,
-                        "height": 510.0,
+                        "height": 520.0,
                         "title": "title",
-                        "content": "a 0.005-0.1  F 0.01-0.3  omega 0.0-M_PI"
+                        "content": "可以参考的范围\na 0.005-0.1  F 0.01-0.3  omega 0.0-M_PI"
                     }
                 },
                 "827f4939-Noise_gabor_2d": {
@@ -1422,8 +1422,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        -993.6000000000003,
-                        1059.2
+                        -993.5999755859375,
+                        1059.199951171875
                     ],
                     "options": []
                 }
