@@ -396,6 +396,37 @@ inline void addTexture(std::string path)
         zeno::log_info("-{}", i->first);
     }
 }
+
+inline std::optional<std::string> noise_tex;
+inline void addNoiseTexture(std::string directoryPath)
+{
+    zeno::log_debug("loading noise texture from directory:{}", directoryPath);
+    // tofix: checkpoint later
+    // if(g_tex.count(directoryPath)) {
+    //     return;
+    // }
+
+    // tofix: try hardcode first
+    int nx, ny, nc;
+    // stbi_set_flip_vertically_on_load(true);
+    const std::string textureBaseName = "lowFrequency";
+    const std::string fileExtension   = "tga";
+// #pragma omp parallel for
+	for (int z = 0; z<num2DImages; z++)
+	{
+		std::string imageIdentifier = directoryPath + textureBaseName + "." + std::to_string(z + 1) + "." + fileExtension;
+		const char* imagePath = imageIdentifier.c_str();
+		stbi_uc* pixels = stbi_load(imagePath, &nx, &ny, &nc, STBI_rgb_alpha);
+		if (!pixels) {
+			throw std::runtime_error("failed to load texture image!");
+		}
+
+		memcpy(&texture3DPixels[z * texWidth * texHeight * 4], pixels, static_cast<size_t>(texWidth * texHeight * 4));
+		stbi_image_free(pixels);
+	}
+
+
+}
 struct rtMatShader
 {
     raii<OptixModule>                    m_ptx_module             ;

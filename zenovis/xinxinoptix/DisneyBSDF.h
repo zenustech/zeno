@@ -1076,21 +1076,65 @@ static __inline__ __device__ float softlight(float base, float blend, float c)
 {
     return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
 }
+static __inline__ __device__ float remap(float x, float a, float b, float c, float d)
+{
+    return (((x - a) / (b - a)) * (d - c)) + c;
+}
+static __inline__ __device__ float sampleLowFrequency(
+    vec3 pos,
+    float coverage
+)
+{
+    vec4 lowFrequencyNoises = texture3D(params.cloudBaseShapeSampler, pos);
+    
+    // x = perlin-worley
+    // y,z,w = worley
+    float lowFrequencyFBM = (lowFrequencyNoises.y * 0.625) + 
+                            (lowFrequencyNoises.z * 0.25)  + 
+                            (lowFrequencyNoises.w * 0.125);
+    
+    lowFrequencyFBM = saturate(lowFrequencyFBM);
+
+    float baseCloud = saturate(remap( 
+            lowFrequencyNoises.x, 
+            (lowFrequencyFBM - 0.9), 1.0, 
+            0.0, 1.0 
+        ));
+
+    float base_cloud_with_coverage = remap( 
+            clamp(baseCloud,coverage,1.0), 
+            coverage, 1.0, 
+            0.0, 1.0
+        );
+
+    base_cloud_with_coverage *= coverage;
+
+    return base_cloud_with_coverage;
+}
+
 static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float time, float freq = 1.0f, int layer = 6)
 {
     // tofix: try 3Dtexture approach
+    // no more real-time calculation of noise and fbm
+    
+    float baseDensity = sampleLowFrequency(
+            pos, 
+            coverage
+        );
+
+    return baseDensity;
 
 	// signal
-	vec3 p = 2.0 * pos * .0212242 * freq; // test time
-    vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
-	float dens = fbm(p + pertb + windDir * time, layer); //, FBM_FREQ);;
+	// vec3 p = 2.0 * pos * .0212242 * freq; // test time
+    // vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
+	// float dens = fbm(p + pertb + windDir * time, layer); //, FBM_FREQ);;
 
-	float cov = 1. - coverage;
-//	dens = smoothstep (cov-0.1, cov + .1, dens);
-//  dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
-    dens *= smoothstep (cov, cov + .1, dens);
+// 	float cov = 1. - coverage;
+// //	dens = smoothstep (cov-0.1, cov + .1, dens);
+// //  dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
+//     dens *= smoothstep (cov, cov + .1, dens);
 
-	return pow(clamp(dens, 0., 1.), 0.5f);
+	// return pow(clamp(dens, 0., 1.), 0.5f);
 }
 static __inline__ __device__ float light(
 	vec3 origin,

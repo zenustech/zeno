@@ -7,8 +7,8 @@ namespace zeno {
 struct ProceduralSky : INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto path = get_input2<std::string>("3DNoiseDirectoryPath");
-        if (path.empty()) {
+        auto directoryPath = get_input2<std::string>("3DNoiseDirectoryPath");
+        if (directoryPath.empty()) {
             throw std::runtime_error("need 3D noise directory path");
         }
 

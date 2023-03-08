@@ -47,6 +47,12 @@ struct Params
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;
+
+    cudaTextureObject_t cloudBaseShapeSampler;
+    // cudaTextureObject_t cloudDetailsHighFreqSampler; // Dont use alpha channel
+    // cudaTextureObject_t curlNoiseSampler; // Don't use alpha channel
+    // cudaTextureObject_t weatherMapSampler; // Don't use alpha channel
+    
     float sky_rot;
     float sky_rot_x;
     float sky_rot_y;
