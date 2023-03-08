@@ -73,6 +73,7 @@ MatInput const &attrs) {
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
+    float mat_new_opacity = 1.0;
     float mat_specTrans = 0.0;
     float mat_ior = 1.0;
     float mat_scatterDistance = 0.0;
@@ -107,7 +108,7 @@ MatInput const &attrs) {
         mats.sheenTint = mat_sheenTint;
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
         mats.clearcoatGloss = mat_clearcoatGloss;
-        mats.opacity = mat_opacity;
+        mats.opacity = max(mat_opacity, 1.0f - mat_new_opacity);
         mats.nrm = mat_normal;
         mats.emission = mat_emission;
         mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
