@@ -842,7 +842,6 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         default:
         {
-            zeno::log_warn("unknown control");
             return QVariant();
         }
     }

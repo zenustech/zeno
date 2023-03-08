@@ -324,13 +324,46 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
     }
-    else if (type == VPARAM_PARAM)
+    else if (type == VPARAM_PARAM && m_bSubgraphNode)
     {
-        const QString& paramName = name;
+        QStandardItem* parentItem = pCurrentItem->parent();
+        const QString &parentName = parentItem->data(ROLE_PARAM_NAME).toString();
+        ZASSERT_EXIT(parentName == iotags::params::node_inputs ||
+                     parentName == iotags::params::node_outputs);
+        bool bInput = parentName == iotags::params::node_inputs;
+
         PARAM_CONTROL ctrl = pCurrentItem->m_ctrl;
         const QString& ctrlName = getControl(ctrl).name;
         const QString& dataType = pCurrentItem->m_type;
-        QVariant deflVal = pCurrentItem->m_value;
+        QVariant deflVal;
+
+        VParamItem* pSourceRoot = static_cast<VParamItem*>(m_model->invisibleRootItem());
+        VParamItem* pSourceItem = pSourceRoot->findItem(pCurrentItem->m_uuid);
+        QString paramName = name;
+        if (pSourceItem) {
+            //get the original name.
+            paramName = pSourceItem->m_name;
+        }
+
+        //deflVal is a common value of desc socket, not value of specific node.
+        NODE_DESC desc;
+        QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+        if (bInput)
+        {
+            if (desc.inputs.find(paramName) != desc.inputs.end())
+            {
+                deflVal = desc.inputs[paramName].info.defaultValue;
+            }
+        }
+        else
+        {
+            if (desc.outputs.find(paramName) != desc.outputs.end())
+            {
+                deflVal = desc.outputs[paramName].info.defaultValue;
+            }
+        }
+
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
         QVariant controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
@@ -358,7 +391,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         QWidget* valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
         if (valueControl)
         {
-            valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
+            valueControl->setEnabled(true);
             m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         }
 
@@ -490,54 +523,6 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
 void ZEditParamLayoutDlg::recordSubInputCommands(bool bSubInput, VParamItem* pItem)
 {
-#if 0
-    if (!m_bSubgraphNode)
-        return;
-
-    const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    const QModelIndex& subgIdx = m_pGraphsModel->index(subgName);
-
-    const QString& vName = pItem->m_name;
-    QString coreName;
-    if (pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
-        coreName = pItem->data(ROLE_PARAM_NAME).toString();
-    const QString& typeDesc = pItem->m_type;
-    const QVariant& deflVal = pItem->m_value;
-    const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
-
-    //new added param.
-    const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
-
-    QPointF pos(0, 0);
-    //todo: node arrangement.
-
-    //QString subIO_ident = NodesMgr::createNewNode(m_pGraphsModel, subgIdx, bSubInput ? "SubInput" : "SubOutput", pos);
-    NODE_DATA newNodeData = NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
-    QString subIO_ident = newNodeData[ROLE_OBJID].toString();
-    AddNodeCommand *pNewNodeCmd = new AddNodeCommand(subIO_ident, newNodeData, m_pGraphsModel, subgIdx);
-    m_commandSeq.append(pNewNodeCmd);
-
-    QString m_namePath, m_typePath, m_deflPath; //todo: fill the target path for SubInput/SubOutput.
-
-
-    ViewParamSetDataCommand* pNameCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_namePath, vName, ROLE_PARAM_VALUE);
-    ViewParamSetDataCommand* pTypeCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_typePath, typeDesc, ROLE_PARAM_TYPE);
-    ViewParamSetDataCommand* pDeflTypeCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_deflPath, typeDesc, ROLE_PARAM_TYPE);
-    ViewParamSetDataCommand* pDeflValueCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_deflPath, defl, ROLE_PARAM_VALUE);
-
-    //have to bind new param idx on subgraph node.
-    IParamModel* _subgnode_paramModel =
-        QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
-    ZASSERT_EXIT(_subgnode_paramModel);
-    const QModelIndex& newParamFromItem = _subgnode_paramModel->index(vName);
-
-    const QString& itemObjPath = pItem->data(ROLE_OBJPATH).toString();
-    const QString& targetPath = newParamFromItem.data(ROLE_OBJPATH).toString();
-
-    MapParamIndexCommand *pMappingCmd = new MapParamIndexCommand(m_pGraphsModel, itemObjPath, targetPath);
-
-    updateSubgParamControl(m_pGraphsModel, subgName, bSubInput, vName, ctrl);
-#endif
 }
 
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem) 

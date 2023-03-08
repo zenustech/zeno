@@ -396,6 +396,10 @@ VParamItem* VParamItem::findItem(uint uuid, int* targetIdx) const
                 *targetIdx = r;
             return pChild;
         }
+        else if (VParamItem* pTarget = pChild->findItem(uuid, targetIdx))
+        {
+            return pTarget;
+        }
     }
     return nullptr;
 }
