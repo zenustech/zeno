@@ -852,6 +852,14 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             }
             m_pGraphsModel->updateSubgDesc(subgName, desc);
 
+            //update type of port. output need this?
+            if (nodeName == "SubInput") {
+                VParamItem *portItem = m_outputs->getItem("port");
+                if (portItem) {
+                    portItem->setData(newType, ROLE_PARAM_TYPE);
+                }
+            }
+
             //update to every subgraph node.
             QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
             for (auto idx : subgNodes)
