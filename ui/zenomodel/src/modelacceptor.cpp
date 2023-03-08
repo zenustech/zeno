@@ -225,11 +225,11 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
         if (prop == SOCKPROP_EDITABLE)
         {
-            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
         }
         else
         {
-            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop);
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop, "");
         }
     }
 }
