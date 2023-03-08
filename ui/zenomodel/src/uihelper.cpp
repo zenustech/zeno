@@ -1326,6 +1326,7 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                 if (i->value.IsObject()) {
                     CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
+                    pModel->setTimeline(val[key_timeline].GetBool());
                     curves.insert(i->name.GetString(), pModel);
                 }
             }
@@ -1407,6 +1408,7 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
                 for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                     if (i->value.IsObject()) {
                         CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
+                        pModel->setTimeline(val[key_timeline].GetBool());
                         curves.insert(i->name.GetString(), pModel);
                     }
                 }

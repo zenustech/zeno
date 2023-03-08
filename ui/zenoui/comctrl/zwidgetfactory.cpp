@@ -215,17 +215,16 @@ namespace zenoui
                     ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
                     // what if value changed? removed?
-                    CurveModel* pModel = QVariantPtr<CurveModel>::asPtr(value);
-                    ZASSERT_EXIT(pModel);
-                    pEditor->addCurve(pModel);
-                    pEditor->show();
+                    const CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
+                    for (CURVES_MODEL::ConstIterator it = curves.begin(); it != curves.end(); it++) {
+                        pEditor->addCurve(*it);
+                    }
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        ZASSERT_EXIT(pEditor->curveCount() == 1);
-                        CurveModel* pCurveModel = pEditor->getCurve(0);
-                        const QVariant& newValue = QVariantPtr<CurveModel>::asVariant(pCurveModel);
-                        cbSet.cbEditFinished(newValue);
+                        CURVES_MODEL curves = pEditor->getModel();
+                        cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });
+                    pEditor->exec();
                 });
                 return pBtn;
             }
