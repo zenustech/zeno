@@ -4,6 +4,9 @@
 
 namespace zeno {
 
+///
+/// @note PrimitiveHandle
+///
 IPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_, ZenoParticles::category_e category)
     : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_},
       etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{}, surfEdgesPtr{},
@@ -125,42 +128,10 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfArea(zs::CudaExecut
     zsprimPtr->setMeta(s_meanSurfAreaTag, tmp);
     return tmp;
 }
-void IPCSystem::PrimitiveHandle::computeMortonCodeOrder(zs::CudaExecutionPolicy &pol, zs::Vector<zs::u32> &tempBuffer,
-                                                        const bv_t &bv) {
-    if (!vertsPtr)
-        return;
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    auto &verts = getVerts();
-    const auto ndofs = verts.size();
-    tempBuffer.resize(ndofs * 2); // [unordered, ..., ordered, ...]
 
-    if (!originalToOrdered.has_value())
-        originalToOrdered = zs::Vector<int>{verts.get_allocator(), ndofs};
-    else
-        (*originalToOrdered).resize(ndofs);
-    auto &dsts = *originalToOrdered;
-    if (!orderedToOriginal.has_value())
-        orderedToOriginal = zs::Vector<int>{verts.get_allocator(), ndofs};
-    else
-        (*orderedToOriginal).resize(ndofs);
-    auto &indices = *orderedToOriginal; // stored the ordered indices
-    // initialization: ascending indices, morton codes
-    pol(range(ndofs), [dsts = view<space>(dsts), codes = view<space>(tempBuffer), verts = view<space>({}, verts),
-                       bv = bv] ZS_LAMBDA(int i) mutable {
-        auto coord = bv.getUniformCoord(verts.pack(dim_c<3>, "x", i)).template cast<f32>();
-        codes[i] = (zs::u32)morton_code<3>(coord);
-        dsts[i] = i;
-    });
-    // radix sort
-    radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + ndofs, indices.begin(), ndofs);
-    // compute inverse mapping
-    pol(range(ndofs),
-        [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(int i) mutable { dsts[indices[i]] = i; });
-    return;
-}
-
-/// IPCSystem
+///
+/// @note IPCSystem
+///
 typename IPCSystem::T IPCSystem::averageNodalMass(zs::CudaExecutionPolicy &pol) {
     using T = typename IPCSystem::T;
     T sumNodalMass = 0;
@@ -211,6 +182,123 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
     else
         return 0;
 }
+
+void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    zs::Vector<int> is{temp.get_allocator(), numDofs};
+    zs::Vector<int> js{temp.get_allocator(), numDofs};
+    /// kinetic, potential (gravity, external force)
+    pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
+
+    auto reserveStorage = [&is, &js](std::size_t n) {
+        auto size = is.size();
+        is.resize(size + n);
+        js.resize(size + n);
+        return size;
+    };
+
+    /// elasticity, bending
+    /// @note only need to register non-diagonal locations on one side
+    for (auto &primHandle : prims) {
+        /// bending
+        if (primHandle.hasBendingConstraints()) {
+            const auto &eles = *primHandle.bendingEdgesPtr;
+            auto npairs = eles.size();
+            auto offset = reserveStorage(npairs * 6);
+            pol(range(npairs), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                vOffset = primHandle.vOffset, offset, stride = npairs] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[0];
+                is[offset + stride * 3 + ei] = inds[1];
+                is[offset + stride * 4 + ei] = inds[1];
+                is[offset + stride * 5 + ei] = inds[2];
+
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[3];
+                js[offset + stride * 3 + ei] = inds[2];
+                js[offset + stride * 4 + ei] = inds[3];
+                js[offset + stride * 5 + ei] = inds[3];
+            });
+        }
+        /// elasticity
+        if (primHandle.category == ZenoParticles::curve) {
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto offset = reserveStorage(eles.size());
+            pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                     vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                is[offset + ei] = inds[0];
+                js[offset + ei] = inds[1];
+            });
+        } else if (primHandle.category == ZenoParticles::surface) {
+            if (primHandle.isBoundary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto ntris = eles.size();
+            auto offset = reserveStorage(ntris * 3);
+            pol(range(ntris), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                               vOffset = primHandle.vOffset, offset, stride = ntris] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <1, 2>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[1];
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[2];
+            });
+        } else if (primHandle.category == ZenoParticles::tet) {
+            const auto &eles = primHandle.getEles();
+            auto ntets = eles.size();
+            auto offset = reserveStorage(ntets * 6);
+            pol(range(ntets), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                               vOffset = primHandle.vOffset, offset, stride = ntets] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+                // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
+                is[offset + ei] = inds[0];
+                is[offset + stride + ei] = inds[0];
+                is[offset + stride * 2 + ei] = inds[0];
+                is[offset + stride * 3 + ei] = inds[1];
+                is[offset + stride * 4 + ei] = inds[1];
+                is[offset + stride * 5 + ei] = inds[2];
+
+                js[offset + ei] = inds[1];
+                js[offset + stride + ei] = inds[2];
+                js[offset + stride * 2 + ei] = inds[3];
+                js[offset + stride * 3 + ei] = inds[2];
+                js[offset + stride * 4 + ei] = inds[3];
+                js[offset + stride * 5 + ei] = inds[3];
+            });
+        }
+    }
+    /// elasticity (soft constraint)
+    for (auto &primHandle : auxPrims) {
+        if (primHandle.category == ZenoParticles::curve) {
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
+                continue;
+            const auto &eles = primHandle.getEles();
+            auto offset = reserveStorage(eles.size());
+            pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
+                                     vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
+                auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                is[offset + ei] = inds[0];
+                js[offset + ei] = inds[1];
+            });
+        }
+    }
+
+    linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
+    linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
+}
+
 typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     /// @note use edge bvh in case there are only strands in the system
@@ -252,6 +340,179 @@ void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
     else
         kappaMin = -gsum / gsnorm;
     // zeno::log_info("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
+}
+void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    auto cudaPol = zs::cuda_exec();
+    if (kappa0 == 0) {
+        auto prevKappa = kappa;
+        /// kappaMin
+        initKappa(cudaPol);
+        /// adaptive kappa
+        { // tet-oriented
+            T H_b = computeHb((T)1e-16 * boxDiagSize2, this->dHat * this->dHat);
+            kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
+            kappaMax = 100 * kappa;
+            if (kappa < kappaMin)
+                kappa = kappaMin;
+            if (kappa > kappaMax)
+                kappa = kappaMax;
+        }
+        { // surf oriented (use framedt here)
+            auto kappaSurf = dt * dt * meanSurfaceArea / 3 * this->dHat * largestMu();
+            // zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+            if (kappaSurf > kappa && kappaSurf < kappaMax) {
+                kappa = kappaSurf;
+            }
+        }
+        {
+            if (std::isinf(kappa) || std::isnan(kappa))
+                kappa = prevKappa;
+            if (kappa < limits<T>::epsilon() || std::isinf(kappa) || std::isnan(kappa))
+                kappa = 1000.f;
+        }
+        boundaryKappa = kappa;
+        zeno::log_info("auto kappa: {} ({} - {})\n", this->kappa, this->kappaMin, this->kappaMax);
+    }
+}
+
+IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t *coVerts,
+                     const typename IPCSystem::tiles_t *coLowResVerts, const typename IPCSystem::tiles_t *coEdges,
+                     const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, bool withContact,
+                     bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap,
+                     T kappa0, T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
+    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
+      PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
+      nPE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
+      PT{estNumCps, zs::memsrc_e::um, 0}, nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EE{estNumCps, zs::memsrc_e::um, 0},
+      nEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+      // mollify
+      PPM{estNumCps, zs::memsrc_e::um, 0}, nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, PEM{estNumCps, zs::memsrc_e::um, 0},
+      nPEM{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+      EEM{estNumCps, zs::memsrc_e::um, 0}, nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+      // friction
+      FPP{estNumCps, zs::memsrc_e::um, 0}, nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0}, FPE{estNumCps, zs::memsrc_e::um, 0},
+      nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::um, 0},
+      FPT{estNumCps, zs::memsrc_e::um, 0}, nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::um, 0},
+      FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
+      // temporary buffer
+      temp{estNumCps, zs::memsrc_e::um, 0},
+      //
+      csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
+      ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      //
+      dt{dt}, framedt{dt}, estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
+      enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
+      augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
+      kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat_}, epsv{epsv_}, extForce{0, gravity, 0} {
+
+    auto cudaPol = zs::cuda_exec();
+
+    coOffset = sfOffset = seOffset = svOffset = 0;
+    for (auto primPtr : zsprims) {
+        ///
+        /// @note order once in the beginning for the moment
+        ///
+        auto bv = primPtr->computeBoundingVolume(cudaPol, "x");
+        primPtr->orderByMortonCode(cudaPol, bv);
+
+        if (primPtr->category == ZenoParticles::category_e::curve) {
+            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<2>{});
+        } else if (primPtr->category == ZenoParticles::category_e::surface)
+            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<3>{});
+        else if (primPtr->category == ZenoParticles::category_e::tet)
+            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
+    }
+    numDofs = coOffset;
+    if (hasBoundary())
+        numDofs += coVerts->size();
+    numBouDofs = numDofs - coOffset;
+
+    // spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), (int)numDofs, (int)numDofs};
+
+    fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
+               svOffset, seOffset, sfOffset);
+
+    vtemp = dtiles_t{zsprims[0]->getParticles<true>().get_allocator(),
+                     {{"grad", 3},
+                      {"P", 9},       // diagonal block preconditioner
+                      {"BCorder", 1}, // 0: unbounded, 3: sticky boundary condition
+                      {"BCtarget", 3},
+                      {"BCfixed", 1},
+                      {"ws", 1}, // mass, also as constraint jacobian
+                      {"cons", 3},
+
+                      {"dir", 3},
+                      {"xn", 3},
+                      {"vn", 3},
+                      {"x0", 3},  // original model positions
+                      {"xn0", 3}, // for line search
+                      {"xtilde", 3},
+                      {"xhat", 3}, // initial positions at the current substep (constraint, extforce)
+                      {"temp", 3},
+                      {"r", 3},
+                      {"p", 3},
+                      {"q", 3}},
+                     numDofs};
+    // temporary buffers
+    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
+
+    // inertial hessian
+    tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
+
+    // connect vtemp with "dir", "grad"
+    cgtemp = tiles_t{vtemp.get_allocator(),
+                     {{"P", 9},
+
+                      {"dir", 3},
+
+                      {"temp", 3},
+                      {"r", 3},
+                      {"p", 3},
+                      {"q", 3}},
+                     numDofs};
+
+    state.reset();
+
+    // average edge length (for CCD filtering)
+    initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
+
+    // adaptive dhat, targetGRes, kappa
+    {
+        // dHat (static)
+        this->dHat = dHat_ * std::sqrt(boxDiagSize2);
+        // adaptive epsv (static)
+        if (epsv_ == 0) {
+            this->epsv = this->dHat;
+        } else {
+            this->epsv = epsv_ * this->dHat;
+        }
+        // kappa (dynamic)
+        suggestKappa(cudaPol);
+        if (kappa0 != 0) {
+            zeno::log_info("manual kappa: {}\n", this->kappa);
+        }
+    }
+
+    {
+        // check initial self intersections
+        // including proximity pairs
+        // do once
+        markSelfIntersectionPrimitives(cudaPol);
+        // markSelfIntersectionPrimitives(cudaPol, zs::true_c);
+    }
+
+    // output adaptive setups
+    // zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
 }
 
 void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
@@ -319,139 +580,10 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
     /// update grad pn residual tolerance
     /// only compute once for targetGRes
-    targetGRes = pnRel * std::sqrt(boxDiagSize2);
+    targetGRes = (targetGRes + pnRel * std::sqrt(boxDiagSize2)) * 0.5f;
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
-}
 
-IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t *coVerts,
-                     const typename IPCSystem::tiles_t *coLowResVerts, const typename IPCSystem::tiles_t *coEdges,
-                     const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, bool withContact,
-                     bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap,
-                     T kappa0, T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
-    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
-      PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
-      nPE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
-      PT{estNumCps, zs::memsrc_e::um, 0}, nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EE{estNumCps, zs::memsrc_e::um, 0},
-      nEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-      // mollify
-      PPM{estNumCps, zs::memsrc_e::um, 0}, nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, PEM{estNumCps, zs::memsrc_e::um, 0},
-      nPEM{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-      EEM{estNumCps, zs::memsrc_e::um, 0}, nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-      // friction
-      FPP{estNumCps, zs::memsrc_e::um, 0}, nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0}, FPE{estNumCps, zs::memsrc_e::um, 0},
-      nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::um, 0},
-      FPT{estNumCps, zs::memsrc_e::um, 0}, nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::um, 0},
-      FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
-      // temporary buffer
-      temp{estNumCps, zs::memsrc_e::um, 0},
-      //
-      csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
-      ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      //
-      dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
-      enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
-      augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
-      kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat_}, epsv{epsv_}, extForce{0, gravity, 0} {
-    coOffset = sfOffset = seOffset = svOffset = 0;
-    for (auto primPtr : zsprims) {
-        if (primPtr->category == ZenoParticles::category_e::curve) {
-            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<2>{});
-        } else if (primPtr->category == ZenoParticles::category_e::surface)
-            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<3>{});
-        else if (primPtr->category == ZenoParticles::category_e::tet)
-            prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
-    }
-    numDofs = coOffset;
-    if (hasBoundary())
-        numDofs += coVerts->size();
-    numBouDofs = numDofs - coOffset;
-    spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), (int)numDofs, (int)numDofs};
-
-    fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
-               svOffset, seOffset, sfOffset);
-
-    vtemp = dtiles_t{zsprims[0]->getParticles<true>().get_allocator(),
-                     {{"grad", 3},
-                      {"P", 9},       // diagonal block preconditioner
-                      {"BCorder", 1}, // 0: unbounded, 3: sticky boundary condition
-                      {"BCtarget", 3},
-                      {"BCfixed", 1},
-                      {"ws", 1}, // mass, also as constraint jacobian
-                      {"cons", 3},
-
-                      {"dir", 3},
-                      {"xn", 3},
-                      {"vn", 3},
-                      {"x0", 3},  // original model positions
-                      {"xn0", 3}, // for line search
-                      {"xtilde", 3},
-                      {"xhat", 3}, // initial positions at the current substep (constraint, extforce)
-                      {"temp", 3},
-                      {"r", 3},
-                      {"p", 3},
-                      {"q", 3}},
-                     numDofs};
-    // temporary buffers
-    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
-    tempi = zs::Vector<zs::u32>{vtemp.get_allocator(), vtemp.size()};
-
-    // inertial hessian
-    tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
-
-    // connect vtemp with "dir", "grad"
-    cgtemp = tiles_t{vtemp.get_allocator(),
-                     {{"P", 9},
-
-                      {"dir", 3},
-
-                      {"temp", 3},
-                      {"r", 3},
-                      {"p", 3},
-                      {"q", 3}},
-                     numDofs};
-
-    state.reset();
-
-    auto cudaPol = zs::cuda_exec();
-    // average edge length (for CCD filtering)
-    initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
-
-    // adaptive dhat, targetGRes, kappa
-    {
-        // dHat (static)
-        this->dHat = dHat_ * std::sqrt(boxDiagSize2);
-        // adaptive epsv (static)
-        if (epsv_ == 0) {
-            this->epsv = this->dHat;
-        } else {
-            this->epsv = epsv_ * this->dHat;
-        }
-        // kappa (dynamic)
-        suggestKappa(cudaPol);
-        if (kappa0 != 0) {
-            zeno::log_info("manual kappa: {}\n", this->kappa);
-        }
-    }
-
-    {
-        // check initial self intersections
-        // including proximity pairs
-        // do once
-        // markSelfIntersectionPrimitives(cudaPol);
-        // markSelfIntersectionPrimitives(cudaPol, zs::true_c);
-    }
-
-    // output adaptive setups
-    // zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
+    initializeStaticMatrixSparsity(pol);
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {
@@ -460,9 +592,9 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
     dt = framedt;
     this->framedt = framedt;
-    curRatio = 0;
 
-    substep = -1;
+    state.frameStepping();
+
     projectDBC = false;
     BCsatisfied = false;
 
@@ -514,12 +646,14 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
             wholeBv = bvs.getVal();
         }
 
+#if 0
         for (auto &primHandle : prims) {
             if (primHandle.isAuxiliary())
                 continue;
             auto &verts = primHandle.getVerts();
-            primHandle.computeMortonCodeOrder(pol, tempi, *wholeBv);
+            // primHandle.computeMortonCodeOrder(pol, tempi, *wholeBv);
         }
+#endif
     }
 
     for (auto &primHandle : prims) {
@@ -641,48 +775,14 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
                    "averageSurfaceArea: {}\n",
                    std::sqrt(boxDiagSize2), targetGRes, dHat, avgNodeMass, meanEdgeLength, meanSurfaceArea);
 }
-void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
-    using namespace zs;
-    auto cudaPol = zs::cuda_exec();
-    if (kappa0 == 0) {
-        auto prevKappa = kappa;
-        /// kappaMin
-        initKappa(cudaPol);
-        /// adaptive kappa
-        { // tet-oriented
-            T H_b = computeHb((T)1e-16 * boxDiagSize2, this->dHat * this->dHat);
-            kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
-            kappaMax = 100 * kappa;
-            if (kappa < kappaMin)
-                kappa = kappaMin;
-            if (kappa > kappaMax)
-                kappa = kappaMax;
-        }
-        { // surf oriented (use framedt here)
-            auto kappaSurf = dt * dt * meanSurfaceArea / 3 * this->dHat * largestMu();
-            // zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
-            if (kappaSurf > kappa && kappaSurf < kappaMax) {
-                kappa = kappaSurf;
-            }
-        }
-        {
-            if (std::isinf(kappa) || std::isnan(kappa))
-                kappa = prevKappa;
-            if (kappa < limits<T>::epsilon() || std::isinf(kappa) || std::isnan(kappa))
-                kappa = 1000.f;
-        }
-        boundaryKappa = kappa;
-        zeno::log_info("auto kappa: {} ({} - {})\n", this->kappa, this->kappaMin, this->kappaMax);
-    }
-}
+
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
     // setup substep dt
-    ++substep;
+    state.subStepping(ratio);
     dt = framedt * ratio;
-    curRatio += ratio;
 
     projectDBC = false;
     BCsatisfied = false;
