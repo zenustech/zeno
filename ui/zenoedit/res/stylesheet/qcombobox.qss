@@ -45,14 +45,21 @@ QComboBox[cssClass="newstyle"] {
     background: rgb(25,29,33);
 }
 
+QComboBox[cssClass="newstyle"]:focus{
+    border: 2px solid #4B9EF4;
+}
 QComboBox[cssClass="newstyle"]::drop-down {
     subcontrol-position: center right;
     border: none;
     background: transparent;
+	min-width: 16px;
+	min-height: 16px;
 }
 
 QComboBox[cssClass="newstyle"]::down-arrow {
     image: url(:/icons/combobox-dropdown.svg);
+	width: 16px;
+	height: 16px;
 }
 
 QComboBox[cssClass="newstyle"]::down-arrow:on, QComboBox[cssClass="newstyle"]::down-arrow:hover {

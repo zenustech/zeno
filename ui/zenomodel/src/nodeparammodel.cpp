@@ -91,6 +91,7 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
         inSocket.info.links = exportLinks(param->m_links);
         inSocket.info.control = param->m_ctrl;
         inSocket.info.ctrlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
+        inSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -117,6 +118,7 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.info.type = param->m_type;
         outSocket.info.sockProp = param->m_sockProp;
         outSocket.info.links = exportLinks(param->m_links);
+        outSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -144,6 +146,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.name = name;
         paramInfo.control = param->m_ctrl;
         paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
+        paramInfo.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
         params.insert(name, paramInfo);
     }
     return true;
@@ -204,6 +207,7 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
 
         QVariant ctrlProps = inSocket.info.ctrlProps;
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+        pItem->setData(inSocket.info.toolTip, ROLE_VPARAM_TOOLTIP);
 
         m_inputs->appendRow(pItem);
 
@@ -229,6 +233,7 @@ void NodeParamModel::setParams(const PARAMS_INFO& params)
 		ctrlProps = paramInfo.controlProps;
 
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+        pItem->setData(paramInfo.toolTip, ROLE_VPARAM_TOOLTIP);
 
         m_params->appendRow(pItem);
     }
@@ -243,6 +248,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
         pItem->m_value = outSocket.info.defaultValue;
         pItem->m_type = outSocket.info.type;
         pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
+        pItem->setData(outSocket.info.toolTip, ROLE_VPARAM_TOOLTIP);
         m_outputs->appendRow(pItem);
         initDictSocket(pItem, outSocket.info);
     }
@@ -319,7 +325,8 @@ void NodeParamModel::setAddParam(
                 const QVariant& deflValue,
                 PARAM_CONTROL ctrl,
                 QVariant ctrlProps,
-                SOCKET_PROPERTY prop)
+                SOCKET_PROPERTY prop,
+                const QString& toolTip)
 {
     VParamItem *pItem = nullptr;
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -331,6 +338,7 @@ void NodeParamModel::setAddParam(
             pItem = new VParamItem(VPARAM_PARAM, name);
             ZASSERT_EXIT(pItem);
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
             pItem->m_name = name;
             pItem->m_value = deflValue;
             pItem->m_type = type;
@@ -357,6 +365,7 @@ void NodeParamModel::setAddParam(
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
             m_params->appendRow(pItem);
         }
         else
@@ -377,6 +386,7 @@ void NodeParamModel::setAddParam(
             pItem->m_type = type;
             pItem->m_ctrl = ctrl;
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
             m_outputs->appendRow(pItem);
             initDictSocket(pItem, SOCKET_INFO());
         }
@@ -969,11 +979,11 @@ void NodeParamModel::onLinkAdded(const VParamItem* pItem)
     {
         const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
         SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
-        setAddParam(PARAM_INPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), prop);
+        setAddParam(PARAM_INPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), prop, "");
     }
     else if (nodeCls == "ExtractDict" && pItem->m_name == lastKey)
     {
         const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-        setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), SOCKPROP_EDITABLE);
+        setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), SOCKPROP_EDITABLE, "");
     }
 }

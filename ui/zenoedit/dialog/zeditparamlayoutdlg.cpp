@@ -35,6 +35,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Color",               CONTROL_COLOR,          "color"},
     {"Curve",               CONTROL_CURVE,          "curve"},
     {"SpinBox",             CONTROL_HSPINBOX,       "int"},
+    {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float"},
     {"Slider",              CONTROL_HSLIDER,        "int"},
     {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int"},
 };
@@ -87,7 +88,9 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
-        if (m_model->checkParamName(m_model->invisibleRootItem(), newName)) {
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(m_model->itemFromIndex(index.parent()));
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow)) {
             QStyledItemDelegate::setModelData(editor, model, index);
         } else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
@@ -157,6 +160,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     connect(selModel, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)),
             this, SLOT(onTreeCurrentChanged(const QModelIndex&, const QModelIndex&)));
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
+    connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
     connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onBtnAdd()));
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
@@ -296,6 +300,8 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     m_ui->editName->setText(name);
     bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
     m_ui->editName->setEnabled(bEditable);
+
+    m_ui->editLabel->setText(pCurrentItem->data(ROLE_VPARAM_TOOLTIP).toString());
 
     //delete old control.
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -453,6 +459,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
         {
             case CONTROL_SPINBOX_SLIDER:
             case CONTROL_HSPINBOX:
+            case CONTROL_HDOUBLESPINBOX:
             case CONTROL_HSLIDER:
             {
                 CONTROL_PROPERTIES properties;
@@ -550,14 +557,15 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
                 m_ui->itemsTable->setRowCount(1);
         }
         m_ui->stackProperties->setCurrentIndex(1);
-    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX || ctrl == CONTROL_SPINBOX_SLIDER) {
+    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX 
+                || ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HDOUBLESPINBOX) {
         m_ui->stackProperties->setCurrentIndex(2);
         QVariantMap map = controlProperties.toMap();
         SLIDER_INFO info;
         if (!map.isEmpty()) {
-                info.step = map["step"].toInt();
-                info.min = map["min"].toInt();
-                info.max = map["max"].toInt();
+                info.step = map["step"].toDouble();
+                info.min = map["min"].toDouble();
+                info.max = map["max"].toDouble();
         } else {
                 CONTROL_PROPERTIES properties;
                 properties["step"] = info.step;
@@ -597,7 +605,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
                 continue;
         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
         nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, name, "", QVariant(), ctrl, QVariant(),
-                                SOCKPROP_NORMAL);
+                                SOCKPROP_NORMAL, "");
     }
 }
 
@@ -679,7 +687,9 @@ void ZEditParamLayoutDlg::onNameEditFinished()
     QString newName = m_ui->editName->text();
     QString oldName = pItem->data(ROLE_VPARAM_NAME).toString();
     if (oldName != newName) {
-        if (m_proxyModel->checkParamName(m_proxyModel->invisibleRootItem(), newName)) 
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(pItem->parent());
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow))
         {
             pItem->setData(newName, ROLE_VPARAM_NAME);
             onProxyItemNameChanged(pItem->index(), oldPath, newName);
@@ -696,7 +706,18 @@ void ZEditParamLayoutDlg::onNameEditFinished()
 
 void ZEditParamLayoutDlg::onLabelEditFinished()
 {
+    const QModelIndex &currIdx = m_ui->paramsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
 
+    QStandardItem *pItem = m_proxyModel->itemFromIndex(currIdx);
+
+    ZASSERT_EXIT(pItem);
+    QString oldText = pItem->data(ROLE_VPARAM_NAME).toString();
+    QString newText = m_ui->editLabel->text();
+    if (oldText == newText)
+        return;
+    pItem->setData(newText, ROLE_VPARAM_TOOLTIP);
 }
 
 void ZEditParamLayoutDlg::onHintEditFinished()
@@ -711,7 +732,7 @@ void ZEditParamLayoutDlg::onMinEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int from = m_ui->editMin->text().toInt();
+    qreal from = m_ui->editMin->text().toDouble();
     properties["min"] = from;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -723,7 +744,7 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int to = m_ui->editMax->text().toInt();
+    qreal to = m_ui->editMax->text().toDouble();
     properties["max"] = to;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -804,7 +825,7 @@ void ZEditParamLayoutDlg::onStepEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int step = m_ui->editStep->text().toInt();
+    qreal step = m_ui->editStep->text().toDouble();
     properties["step"] = step;
 
     const QString &objPath = layerIdx.data(ROLE_OBJPATH).toString();
@@ -1005,6 +1026,16 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 {
                     pTarget->mapCoreParam(pCurrent->m_index);
                 }
+                //tool tip
+                QVariant newTip;
+                if (pCurrent->m_customData.find(ROLE_VPARAM_TOOLTIP) != pCurrent->m_customData.end()) {
+                    newTip = pCurrent->m_customData[ROLE_VPARAM_TOOLTIP];
+                }
+                QVariant oldTip = pTarget->m_customData[ROLE_VPARAM_TOOLTIP];
+                if (oldTip != newTip) 
+                {
+                    pTarget->setData(newTip, ROLE_VPARAM_TOOLTIP);
+                }
             }
             else
             {
@@ -1039,6 +1070,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                             NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
                         PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
                         params["name"].value = name;
+                        params["name"].toolTip = m_ui->editLabel->text();
                         params["type"].value = typeDesc;
                         params["defl"].typeDesc = typeDesc;
                         params["defl"].value = defl;

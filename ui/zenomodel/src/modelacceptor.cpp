@@ -386,7 +386,7 @@ void ModelAcceptor::setInputSocket2(
             //the layout should be standard inputs desc by latest descriptors.
 
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
-            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
         }
         else
         {
@@ -428,6 +428,22 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
     }
 }
 
+void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QString &inSock, const QString &toolTip) 
+{
+    if (!m_currentGraph)
+         return;
+    QString nodeCls;
+    if (cls == PARAM_INPUT)
+         nodeCls = "inputs";
+    else if (cls == PARAM_OUTPUT)
+         nodeCls = "outputs";
+    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(sockIdx, toolTip, ROLE_VPARAM_TOOLTIP);
+}
 void ModelAcceptor::addInnerDictKey(
             bool bInput,
             const QString& ident,

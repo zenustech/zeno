@@ -424,6 +424,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
     pView->resetPath(path, subGraphName, objId, isError);
+
+    m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
 }
 
 void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {

@@ -20,6 +20,7 @@ enum PARAM_CONTROL {
     CONTROL_CURVE,
     CONTROL_HSLIDER,
     CONTROL_HSPINBOX,
+    CONTROL_HDOUBLESPINBOX,
     CONTROL_SPINBOX_SLIDER,
     CONTROL_VEC4_INT,
     CONTROL_VEC4_FLOAT,
@@ -80,6 +81,7 @@ enum SOCKET_PROPERTY {
 
 struct PARAM_INFO {
     QString name;
+    QString toolTip;
     QVariant defaultValue;
     QVariant value;
     PARAM_CONTROL control;
@@ -150,6 +152,7 @@ struct DICTPANEL_INFO
 struct SOCKET_INFO {
     QString nodeid;
     QString name;
+    QString toolTip;
     PARAM_CONTROL control;
     QString type;
 
@@ -169,8 +172,8 @@ struct SOCKET_INFO {
         , control(CONTROL_NONE)
         , sockProp(SOCKPROP_NORMAL)
     {}
-    SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl)
-        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL)
+    SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl, const QString& tip)
+        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL), toolTip(tip)
     {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {

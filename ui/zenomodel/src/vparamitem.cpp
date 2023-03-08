@@ -58,6 +58,11 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
             m_pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES] = topLeft.data(ROLE_VPARAM_CTRL_PROPERTIES);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
+        else if (ROLE_VPARAM_TOOLTIP == role) 
+        {
+            m_pItem->m_customData[ROLE_VPARAM_TOOLTIP] = topLeft.data(ROLE_VPARAM_TOOLTIP);
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+        }
     }
 }
 
@@ -215,6 +220,16 @@ QVariant VParamItem::data(int role) const
             return true;
         }
     }
+    case ROLE_VPARAM_TOOLTIP: 
+    {
+        if (m_customData.find(role) != m_customData.end()) 
+        {
+            return m_customData[role];
+        } else 
+        {
+            return "";
+        }
+    }
     default:
         return QStandardItem::data(role);
     }
@@ -320,6 +335,7 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_VPARAM_CTRL_PROPERTIES:
         case ROLE_VAPRAM_EDITTABLE: 
+        case ROLE_VPARAM_TOOLTIP: 
         {
             m_customData[role] = value;
             break;

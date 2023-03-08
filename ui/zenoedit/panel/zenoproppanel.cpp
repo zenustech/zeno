@@ -326,6 +326,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     QFont font("Alibaba PuHuiTi", 12);
     font.setWeight(QFont::Medium);
     pLabel->setFont(font);
+    pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
 
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
@@ -364,7 +365,7 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     pGroupWidget->setCollasped(bCollaspe);
     QGridLayout* pLayout = new QGridLayout;
     pLayout->setContentsMargins(10, 15, 10, 15);
-    pLayout->setColumnStretch(1, 1);
+    //pLayout->setColumnStretch(1, 1);
     pLayout->setColumnStretch(2, 3);
     pLayout->setSpacing(10);
     for (int k = 0; k < pGroupItem->rowCount(); k++)
@@ -605,6 +606,10 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             {
                 pSpinBox->setValue(value.toInt());
             }
+            else if (QDoubleSpinBox* pSpinBox = qobject_cast<QDoubleSpinBox*>(ctrl.pControl))
+            {
+                pSpinBox->setValue(value.toDouble());
+            }
             else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
             {
                 pSpinSlider->setValue(value.toInt());
@@ -625,8 +630,59 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                     pCombobox->clear();
                     pCombobox->addItems(value.toMap()["items"].toStringList());
 				}
+            } else if (value.type() == QMetaType::QVariantMap && 
+                (value.toMap().contains("min") || value.toMap().contains("max") || value.toMap().contains("step"))) 
+            {
+                QVariantMap map = value.toMap();
+                SLIDER_INFO info;
+                 if (map.contains("min")) {
+                    info.min = map["min"].toDouble();
+                 }
+                 if (map.contains("max")) {
+                    info.max = map["max"].toDouble();
+                 }
+                 if (map.contains("step")) {
+                    info.step = map["step"].toDouble();
+                 }
+
+                 if (qobject_cast<ZSpinBoxSlider *>(ctrl.pControl)) 
+                 {
+                    ZSpinBoxSlider *pSpinBoxSlider = qobject_cast<ZSpinBoxSlider *>(ctrl.pControl);
+                    pSpinBoxSlider->setSingleStep(info.step);
+                    pSpinBoxSlider->setRange(info.min, info.max);
+                 } 
+                 else if (qobject_cast<QSlider *>(ctrl.pControl)) 
+                 {
+                    QSlider *pSlider = qobject_cast<QSlider *>(ctrl.pControl);
+                    pSlider->setSingleStep(info.step);
+                    pSlider->setRange(info.min, info.max);
+                 } 
+                 else if (qobject_cast<QSpinBox *>(ctrl.pControl)) 
+                 {
+                    QSpinBox *pSpinBox = qobject_cast<QSpinBox *>(ctrl.pControl);
+                    pSpinBox->setSingleStep(info.step);
+                    pSpinBox->setRange(info.min, info.max);
+                  } 
+                 else if (qobject_cast<QDoubleSpinBox *>(ctrl.pControl)) 
+                 {
+                    QDoubleSpinBox *pSpinBox = qobject_cast<QDoubleSpinBox *>(ctrl.pControl);
+                    pSpinBox->setSingleStep(info.step);
+                    pSpinBox->setRange(info.min, info.max);
+                  }
             }
-		}
+        } 
+        else if (role == ROLE_VPARAM_TOOLTIP) 
+        {
+            for (auto it = group.begin(); it != group.end(); it++) 
+            {
+                if (it->second.m_viewIdx == param->index()) 
+                {
+                    const QString &newTip = it->second.m_viewIdx.data(ROLE_VPARAM_TOOLTIP).toString();
+                    it->second.pLabel->setToolTip(newTip);
+                    break;
+                }
+            }
+        }
     }
 }
 

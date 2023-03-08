@@ -409,7 +409,11 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 
     int role = roles[0];
-    if (role != ROLE_PARAM_NAME && role != ROLE_PARAM_VALUE && role != ROLE_PARAM_CTRL && role != ROLE_VPARAM_CTRL_PROPERTIES)
+    if (role != ROLE_PARAM_NAME 
+        && role != ROLE_PARAM_VALUE 
+        && role != ROLE_PARAM_CTRL 
+        && role != ROLE_VPARAM_CTRL_PROPERTIES
+        && role != ROLE_VPARAM_TOOLTIP)
         return;
 
     QModelIndex viewParamIdx = pItem->index();
@@ -422,7 +426,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     const QString& groupName = parentItem->text();
     const QString& paramName = pItem->data(ROLE_PARAM_NAME).toString();
 
-    if (role == ROLE_PARAM_NAME)
+    if (role == ROLE_PARAM_NAME || role == ROLE_VPARAM_TOOLTIP)
     {
         const int paramCtrl = pItem->data(ROLE_PARAM_CTRL).toInt();
         if (groupName == iotags::params::node_inputs)
@@ -433,7 +437,10 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == viewParamIdx)
                 {
-                    pSocketLayout->updateSockName(paramName);   //only update name on control.
+                    if (role == ROLE_PARAM_NAME)
+                        pSocketLayout->updateSockName(paramName);   //only update name on control.
+                    else if (role == ROLE_VPARAM_TOOLTIP)
+                        pSocketLayout->updateSockNameToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString()); 
                     break;
                 }
             }
@@ -444,9 +451,16 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             {
                 if (it->second.viewidx == viewParamIdx)
                 {
-                    QString oldName = it->first;
-                    it->first = paramName;
-                    it->second.param_name->setText(paramName);
+                    if (role == ROLE_PARAM_NAME) 
+                    {
+                        QString oldName = it->first;
+                        it->first = paramName;
+                        it->second.param_name->setText(paramName);
+                    }
+                    else if (role == ROLE_VPARAM_TOOLTIP) 
+                    {
+                        it->second.param_name->setToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString());
+                    }
                     break;
                 }
             }
@@ -459,7 +473,10 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == viewParamIdx)
                 {
-                    pSocketLayout->updateSockName(paramName);
+                    if (role == ROLE_PARAM_NAME)
+                        pSocketLayout->updateSockName(paramName);
+                    else if (role == ROLE_VPARAM_TOOLTIP)
+                        pSocketLayout->updateSockNameToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString()); 
                 }
             }
         }
@@ -845,6 +862,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
     textItem->setBrush(m_renderParams.socketClr.color());
     textItem->setFont(m_renderParams.socketFont);
     textItem->updateBoundingRect();
+    textItem->setToolTip(viewparamIdx.data(ROLE_VPARAM_TOOLTIP).toString());
     paramCtrl.param_name = textItem;
     paramCtrl.viewidx = viewparamIdx;
     paramCtrl.ctrl_layout->addItem(paramCtrl.param_name, Qt::AlignVCenter);
@@ -868,6 +886,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_CURVE:
         case CONTROL_HSLIDER:
         case CONTROL_HSPINBOX:
+        case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
         {
             QGraphicsItem* pWidget = initParamWidget(pScene, viewparamIdx);

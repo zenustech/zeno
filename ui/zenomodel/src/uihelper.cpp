@@ -377,6 +377,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_COLOR:             return "Color";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
+    case CONTROL_HDOUBLESPINBOX: return "DoubleSpinBox";
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
@@ -455,6 +456,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "SpinBox")
     {
         return CONTROL_HSPINBOX;
+    } 
+    else if (descName == "DoubleSpinBox") 
+    {
+        return CONTROL_HDOUBLESPINBOX;
     }
     else if (descName == "Slider")
     {
@@ -506,7 +511,7 @@ QStringList UiHelper::getAllControls()
 {
     return { "Integer", "Float", "String", "Boolean", "Multiline String", "read path", "write path", "Enum",
         "Float Vector 4", "Float Vector 3", "Float Vector 2","Integer Vector 4", "Integer Vector 3",
-        "Integer Vector 2", "Color", "Curve", "SpinBox", "Slider", "SpinBoxSlider" };
+        "Integer Vector 2", "Color", "Curve", "SpinBox", "DoubleSpinBox", "Slider", "SpinBoxSlider" };
 }
 
 QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
@@ -520,7 +525,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
             ctrls = {CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; 
     }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
-    else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
+    else if (type == "float") { ctrls = { CONTROL_FLOAT, CONTROL_HDOUBLESPINBOX}; }    //todo: slider/spinbox for float.
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
@@ -618,7 +623,9 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
 {
     switch (ctrl) {
     case CONTROL_INT: return "int";
-    case CONTROL_FLOAT: return "float";
+    case CONTROL_FLOAT: 
+    case CONTROL_HDOUBLESPINBOX:
+        return "float";
     case CONTROL_BOOL:  return "bool";
     case CONTROL_MULTILINE_STRING:
     case CONTROL_STRING: return "string";
@@ -795,6 +802,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_FLOAT:
         case CONTROL_HSLIDER:
         case CONTROL_HSPINBOX:
+        case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
             return 0;
         case CONTROL_BOOL:

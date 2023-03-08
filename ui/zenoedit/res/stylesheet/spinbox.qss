@@ -34,8 +34,13 @@ QSpinBox[cssClass = "control"]
     color: #C3D2DF;
 	font: 14px 'Alibaba PuHuiTi';
     font-weight: 500;
+	border:0;
 }
-                    
+   
+QSpinBox[cssClass = "control"]:focus{
+    border: 2px solid #4B9EF4;
+}
+                 
 QSpinBox[cssClass = "control"]::down-button  
 {
     subcontrol-origin: margin;
@@ -44,6 +49,7 @@ QSpinBox[cssClass = "control"]::down-button
     background-color: #191D21;
     height: 24px;
     width: 20px;
+    margin-left:2px;
 }
                     
 QSpinBox[cssClass = "control"]::down-button:hover 
@@ -59,10 +65,56 @@ QSpinBox[cssClass = "control"]::up-button
      background-color: #191D21;
      height: 24px;
      width: 20px;
+     margin-right:2px;
 }
-                    
+  
 QSpinBox[cssClass = "control"]::up-button:hover 
 {
      image: url(:/icons/rightArrow-on.svg);
 }
                 
+QDoubleSpinBox
+{
+    background: #191D21;
+    height: 28px;
+    color: #C3D2DF;
+    font: 14px 'Alibaba PuHuiTi';
+    font-weight: 500;
+    border:0;
+}
+   
+QDoubleSpinBox:focus{
+    border: 2px solid #4B9EF4;
+}
+                 
+QDoubleSpinBox::down-button  
+{
+    subcontrol-origin: margin;
+    subcontrol-position: center left;
+    image: url(:/icons/leftArrow.svg);
+    background-color: #191D21;
+    height: 24px;
+    width: 20px;
+    margin-left:2px;
+}
+                    
+QDoubleSpinBox::down-button:hover 
+{
+    image: url(:/icons/leftArrow-on.svg);
+}
+                    
+QDoubleSpinBox::up-button  
+{
+     subcontrol-origin: margin;
+     subcontrol-position: center right;
+     image: url(:/icons/rightArrow.svg);
+     background-color: #191D21;
+     height: 24px;
+     width: 20px;
+     margin-right:2px;
+}
+                    
+QDoubleSpinBox::up-button:hover 
+{
+     image: url(:/icons/rightArrow-on.svg);
+}

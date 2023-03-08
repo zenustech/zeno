@@ -208,7 +208,11 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         writer.Key("type");
         writer.String(sockType.toUtf8());
     }
-
+    if (!socket.toolTip.isEmpty()) 
+    {
+        writer.Key("tooltip");
+        writer.String(socket.toolTip.toUtf8());
+    }
     writer.EndObject();
 }
 
@@ -429,6 +433,11 @@ void ZsgWriter::dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer)
     writer.Key("type");
     writer.String(info.typeDesc.toUtf8());
 
+    if (!info.toolTip.isEmpty()) 
+    {
+        writer.Key("tooltip");
+        writer.String(info.toolTip.toUtf8());
+    }
     writer.EndObject();
 }
 

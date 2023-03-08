@@ -348,11 +348,41 @@ namespace zenoui
 			}
             case CONTROL_HSPINBOX: 
 			{
-                ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox;
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
+                ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
 					cbSet.cbEditFinished(value); 
 				});
+                pItemWidget = pSpinBox;
+                break;
+            }
+            case CONTROL_HDOUBLESPINBOX: 
+            {
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) 
+                {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) 
+                    {
+                        sliderInfo.min = props["min"].toDouble();
+                        sliderInfo.max = props["max"].toDouble();
+                        sliderInfo.step = props["step"].toDouble();
+                    }
+                }
+                ZenoParamDoubleSpinBox *pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
+                pSpinBox->setValue(value.toDouble());
+                QObject::connect(pSpinBox, &ZenoParamDoubleSpinBox::valueChanged, [=](double value) { 
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSpinBox;
                 break;
             }

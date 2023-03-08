@@ -345,6 +345,30 @@ void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QSt
     }
 }
 
+void TransferAcceptor::setToolTip(PARAM_CLASS cls, const QString & inNode, const QString & inSock, const QString & toolTip)
+{
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA &data = m_nodes[inNode];
+    
+    if (cls == PARAM_INPUT) 
+    {
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        if (inputs.find(inSock) != inputs.end()) 
+        {
+            inputs[inSock].info.toolTip = toolTip;
+            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        }
+    } 
+    else if (cls == PARAM_OUTPUT) 
+    {
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        if (outputs.find(inSock) != outputs.end()) 
+        {
+            outputs[inSock].info.toolTip = toolTip;
+            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
+    } 
+}
 void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];

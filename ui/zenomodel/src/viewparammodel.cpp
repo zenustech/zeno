@@ -534,6 +534,7 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                 paramItem->m_value = param.m_info.value;
 
                 paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
+                paramItem->setData(param.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
                 if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
                 {
                     //register subnet param control.
@@ -629,20 +630,6 @@ void ViewParamModel::clone(ViewParamModel* pModel)
         QStandardItem* newItem = pRightRoot->child(r)->clone();
         pRoot->appendRow(newItem);
     }
-}
-
-bool ViewParamModel::checkParamName(QStandardItem *item, const QString &name) 
-{
-    bool ret = false;
-    for (int r = 0; r < item->rowCount(); r++) {
-        QStandardItem *newItem = item->child(r);
-        VParamItem *pVItem = static_cast<VParamItem *>(newItem);
-        if (pVItem && (pVItem->m_name == name || !checkParamName(pVItem, name))) 
-        {
-            return false;
-        }
-    }
-    return true;
 }
 
 void ViewParamModel::disableNodeParam(QStandardItem *item) 

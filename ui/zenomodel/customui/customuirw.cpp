@@ -83,6 +83,13 @@ namespace zenomodel
             writer.Key("uuid");
             writer.Uint(pItem->m_uuid);
             //todo: link.
+
+            if (pItem->m_customData.contains(ROLE_VPARAM_TOOLTIP)
+                && !pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().isEmpty())
+            {
+                writer.Key("tooltip");
+                writer.String(pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().toUtf8());
+            }
         }
     }
 
@@ -140,8 +147,15 @@ namespace zenomodel
         ZASSERT_EXIT(paramVal.HasMember("control"), param);
         const rapidjson::Value& controlObj = paramVal["control"];
 
-        const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
-        param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        if (controlObj.HasMember("items") || (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max")))
+        {
+            JsonHelper::importControl(controlObj, param.m_info.control, param.controlInfos);
+        } 
+        else 
+        {
+            const QString &ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
+            param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        }
         param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);
         param.m_info.name = paramName;
 
@@ -149,23 +163,10 @@ namespace zenomodel
         {
             param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
         }
-        if (controlObj.HasMember("items"))
+
+        if (paramVal.HasMember("tooltip")) 
         {
-            //combobox
-            ZASSERT_EXIT(controlObj["items"].IsArray(), param);
-            QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
-            param.controlInfos = lstItems;
-        }
-        if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
-        {
-            int step = controlObj["step"].GetInt();
-            int min = controlObj["min"].GetInt();
-            int max = controlObj["max"].GetInt();
-            SLIDER_INFO sliderInfo;
-            sliderInfo.max = max;
-            sliderInfo.min = min;
-            sliderInfo.step = step;
-            param.controlInfos = QVariant::fromValue(sliderInfo);
+            param.m_info.toolTip = QString::fromUtf8(paramVal["tooltip"].GetString());
         }
 
         return param;

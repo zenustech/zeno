@@ -422,7 +422,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 inSocket.info.defaultValue,
                                 inSocket.info.control,
                                 inSocket.info.ctrlProps,
-                                (SOCKET_PROPERTY)inSocket.info.sockProp
+                                (SOCKET_PROPERTY)inSocket.info.sockProp,
+                                inSocket.info.toolTip
                     );
                     }
                 break;
@@ -444,7 +445,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 outSocket.info.defaultValue,
                                 outSocket.info.control,
                                 outSocket.info.ctrlProps,
-                                (SOCKET_PROPERTY)outSocket.info.sockProp
+                                (SOCKET_PROPERTY)outSocket.info.sockProp, 
+                                outSocket.info.toolTip
                     );
                     }
                 break;
@@ -466,7 +468,8 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 param.value,
                                 param.control,
                                 param.controlProps,
-                                SOCKPROP_UNKNOWN);
+                                SOCKPROP_UNKNOWN,
+                                param.toolTip);
                     }
                 break;
             }
@@ -532,7 +535,7 @@ bool SubGraphModel::setParamValue(
         return false;
 
     //todo: control properties
-    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp);
+    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp, "");
     return false;
 }
 
