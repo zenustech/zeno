@@ -436,7 +436,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
     if (hasBoundary())
         numDofs += coVerts->size();
     numBouDofs = numDofs - coOffset;
-    spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), (int)numDofs, (int)numDofs};
+
+    // spmat = zs::SparseMatrix<mat3f, true>{zsprims[0]->getParticles<true>().get_allocator(), (int)numDofs, (int)numDofs};
 
     fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
                svOffset, seOffset, sfOffset);
@@ -506,7 +507,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // check initial self intersections
         // including proximity pairs
         // do once
-        // markSelfIntersectionPrimitives(cudaPol);
+        markSelfIntersectionPrimitives(cudaPol);
         // markSelfIntersectionPrimitives(cudaPol, zs::true_c);
     }
 
@@ -579,7 +580,7 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
     /// update grad pn residual tolerance
     /// only compute once for targetGRes
-    targetGRes = pnRel * std::sqrt(boxDiagSize2);
+    targetGRes = (targetGRes + pnRel * std::sqrt(boxDiagSize2)) * 0.5f;
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 
     initializeStaticMatrixSparsity(pol);

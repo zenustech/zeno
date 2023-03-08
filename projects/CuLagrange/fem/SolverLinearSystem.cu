@@ -807,7 +807,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
     }
 
     /// for validation only! remove soon
-    {
+    if constexpr (false) {
         //
         auto numTriplets = numDofs + hess2.count() * 4 + hess3.count() * 9 + hess4.count() * 16;
         zs::Vector<int> is{vtemp.get_allocator(), numTriplets}, js{vtemp.get_allocator(), numTriplets};
@@ -880,29 +880,6 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
         spmat.build(pol, numDofs, numDofs, is, js, vs);
         puts("end spmat build");
     }
-}
-
-void IPCSystem::compactHessian(zs::CudaExecutionPolicy &pol) {
-    using CsrT = RM_CVREF_T(linMat);
-    using T = CsrT::value_type;
-    using Tn = CsrT::size_type;
-    using table_type = CsrT::table_type;
-    auto &ap = linMat.ap;
-    auto &aj = linMat.aj;
-    auto &ax = linMat.ax;
-    auto &nnz = linMat.nnz;
-    auto &tab = linMat.tab;
-    const auto numExpectedEntries = numDofs * 8;
-    if (linMat.nrows != numDofs) { // init csr mat
-        linMat.nrows = linMat.ncols = numDofs;
-        ap = zs::Vector<Tn>{vtemp.get_allocator(), numDofs + 1};
-        aj = zs::Vector<int>{vtemp.get_allocator(), numExpectedEntries};
-        ax = zs::Vector<T>{vtemp.get_allocator(), numExpectedEntries};
-        nnz = zs::Vector<Tn>{vtemp.get_allocator(), numDofs + 1};
-        tab = table_type{vtemp.get_allocator(), numExpectedEntries};
-    }
-    nnz.reset(0);
-    tab.reset(true);
 }
 
 IPCSystem::T IPCSystem::infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag) {

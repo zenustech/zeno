@@ -1145,7 +1145,7 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
     });
     CppTimer timer;
     timer.tick();
-#if 0
+#if 1
     // hess1
     pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
                              dxOffset = cgtemp.getPropertyOffset(dxTag),
@@ -3161,7 +3161,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 #endif
         // CHECK PN CONDITION
-        T res = infNorm(pol, "dir");
+        res = infNorm(pol, "dir");
         T cons_res = constraintResidual(pol);
         /// @note do not exit in the beginning
         if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0) {

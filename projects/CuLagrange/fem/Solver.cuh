@@ -203,7 +203,6 @@ struct IPCSystem : IObject {
                                                   bool includeHessian = true);
 
     void convertHessian(zs::CudaExecutionPolicy &pol);
-    void compactHessian(zs::CudaExecutionPolicy &pol);
 
     void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
 
@@ -407,8 +406,6 @@ struct IPCSystem : IObject {
     HessianPiece<4> hess4;
     tiles_t cgtemp;
 
-    // possibly accessed in compactHessian and cgsolve
-    CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
     zs::SparseMatrix<mat3f, true> spmat{};
 
     // boundary contacts
