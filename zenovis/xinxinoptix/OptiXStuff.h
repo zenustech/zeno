@@ -560,8 +560,7 @@ struct rtMatShader
     std::string                          m_shadingEntry              ;
     std::string                          m_occlusionEntry            ;
     std::map<int, std::string>           m_texs;
-
-    bool                                 has_vdb;
+    bool                                 has_vdb{};
 
     void clearTextureRecords()
     {

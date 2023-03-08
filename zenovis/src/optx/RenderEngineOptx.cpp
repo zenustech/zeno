@@ -800,7 +800,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         } // IsNull
                     }
 
-                    bool hasVDB = false;
+                    bool has_vdb = false;
 
                     std::vector<std::string> g_vdb_list_for_this_shader;
                     g_vdb_list_for_this_shader.reserve(mtldet->tex3Ds.size());
@@ -818,15 +818,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         std::string combined_key;
 
                         auto loaded = OptixUtil::preloadVDB(tex, index_of_shader, k, linear_transform, combined_key); 
-                        hasVDB = hasVDB || loaded;
+                        has_vdb = has_vdb || loaded;
 
                         g_vdb_list_for_this_shader.push_back(combined_key);
                     }
-                    if (hasVDB) {
+                    if (has_vdb) {
                         OptixUtil::g_vdb_list_for_each_shader[shaders.size()] = (g_vdb_list_for_this_shader);
                     }
                     
-                    auto selected_template = hasVDB? _volume_template : _material_template; 
+                    auto selected_template = has_vdb? _volume_template : _material_template; 
 
                     std::string shader;
                     auto common_code = mtldet->common;
@@ -870,11 +870,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         texid++;
                     }
                     shaders.push_back(std::move(shader));
-                    markers.push_back(hasVDB);
+                    markers.push_back(has_vdb);
                 }
             }
             std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
-            xinxinoptix::optixupdatematerial(shaders, markers, shader_tex_names);
+            xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
             
             xinxinoptix::updateVolume();
 

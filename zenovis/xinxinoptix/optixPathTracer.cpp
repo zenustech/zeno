@@ -1812,8 +1812,8 @@ void optixupdatelight() {
                 ) );
 }
 
-void optixupdatematerial(std::vector<std::string> const     &shaders, 
-                         std::vector<bool> const            &markers,
+void optixupdatematerial(std::vector<bool> const            &markers,
+                         std::vector<std::string> const     &shaders, 
                          std::vector<std::vector<std::string>> &texs) 
 {
     camera_changed = true;
@@ -1833,7 +1833,7 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
     for (int i = 0; i < shaders.size(); i++) {
         if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-        
+
         if (!markers[i]) {
             OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(), 
                                                     "__closesthit__radiance", 
@@ -1843,8 +1843,8 @@ void optixupdatematerial(std::vector<std::string> const     &shaders,
                                                     "__closesthit__radiance_volume", 
                                                     "__anyhit__occlusion_volume",
                                                     "__intersection__volume");
-            OptixUtil::rtMaterialShaders.back().has_vdb = markers[i];                                        
         }
+        OptixUtil::rtMaterialShaders.back().has_vdb = markers[i]; 
 
         if(texs.size()>0){
             std::cout<<"texSize:"<<texs[i].size()<<std::endl;
