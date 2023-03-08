@@ -4,13 +4,18 @@
 ZTextEdit::ZTextEdit(QWidget* parent)
     : QTextEdit(parent)
 {
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    initUI();
 }
 
 ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
     : QTextEdit(text, parent)
 {
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    initUI();
+}
+
+void ZTextEdit::initUI()
+{
+    setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
 }
 
 QSize ZTextEdit::minimumSizeHint() const
@@ -21,13 +26,14 @@ QSize ZTextEdit::minimumSizeHint() const
 
 QSize ZTextEdit::sizeHint() const
 {
-    QSize s(document()->size().toSize());
-    /*
-     * Make sure width and height have `usable' values.
-     */
-    s.rwidth() = std::max(256, s.width());
-    s.rheight() = std::max(256, s.height());
-    return s;
+    QSize sz = QTextEdit::sizeHint();
+    return sz;
+}
+
+QSize ZTextEdit::viewportSizeHint() const
+{
+    QSize sz = document()->size().toSize();
+    return sz;
 }
 
 void ZTextEdit::focusOutEvent(QFocusEvent* e)

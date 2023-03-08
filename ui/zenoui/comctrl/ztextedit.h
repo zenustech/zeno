@@ -11,6 +11,7 @@ public:
     explicit ZTextEdit(const QString& text, QWidget* parent = nullptr);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+    QSize viewportSizeHint() const override;
 
 signals:
     void editFinished();
@@ -18,6 +19,9 @@ signals:
 protected:
     void focusOutEvent(QFocusEvent* e) override;
     void resizeEvent(QResizeEvent* event) override;
+
+private:
+    void initUI();
 };
 
 
