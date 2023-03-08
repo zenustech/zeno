@@ -743,12 +743,16 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     appendSubGraph(pForkModel);
-    UiHelper::reAllocIdents(nodes, links, oldGraphsToNew);
+
+    NODES_DATA newNodes;
+    LINKS_DATA newLinks;
+
+    UiHelper::reAllocIdents(forkName, nodes, links, /*oldGraphsToNew*/ newNodes, newLinks);
 
     QModelIndex newSubgIdx = indexBySubModel(pForkModel);
 
-    // import nodes and links into the new created subgraph.
-    importNodes(nodes, links, QPointF(), newSubgIdx, false);
+    // import new nodes and links into the new created subgraph.
+    importNodes(newNodes, newLinks, QPointF(), newSubgIdx, false);
 
     //create the new fork subnet node at outter layer.
     NODE_DATA subnetData = NodesMgr::newNodeData(this, forkSubgName);
@@ -1065,7 +1069,7 @@ QModelIndex GraphsModel::extractSubGraph(
     QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(nodesIndice, links);
     QMap<QString, NODE_DATA> newNodes;
     QList<EdgeInfo> newLinks;
-    UiHelper::reAllocIdents2(toSubg, datas.first, datas.second, newNodes, newLinks);
+    UiHelper::reAllocIdents(toSubg, datas.first, datas.second, newNodes, newLinks);
 
     //paste nodes on new subgraph.
     importNodes(newNodes, newLinks, QPointF(0, 0), toSubgIdx, true);

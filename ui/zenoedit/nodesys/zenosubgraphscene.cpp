@@ -477,7 +477,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;
         QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-        UiHelper::reAllocIdents2(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
+        UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
 
         //todo: ret value for api.
         pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
