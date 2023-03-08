@@ -201,7 +201,7 @@ ZENDEFNODE(ShaderFinalize, {
     {"shader"},
 });
 
-struct StandardSurface : INode {
+struct ShaderSurface : INode {
     virtual void apply() override {
         EmissionPass em;
 
@@ -292,8 +292,9 @@ struct StandardSurface : INode {
     }
 };
 
-ZENDEFNODE(StandardSurface, {
+ZENDEFNODE(ShaderSurface, {
     {
+        {"string", "mtlid", "Mat1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -323,7 +324,6 @@ ZENDEFNODE(StandardSurface, {
         {"float", "opacity", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
     },
     {
