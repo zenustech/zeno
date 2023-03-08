@@ -105,7 +105,7 @@ typename IPCSystem::T IPCSystem::constraintResidual(zs::CudaExecutionPolicy &pol
         ret = std::sqrt(nsqr);
     else
         ret = std::sqrt(nsqr / dsqr);
-    return ret < 1e-6 ? 0 : ret;
+    return ret < 1e-3 ? 0 : ret;
 }
 
 // https://developer.nvidia.com/blog/cuda-pro-tip-optimized-filtering-warp-aggregated-atomics/
@@ -3164,7 +3164,8 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         res = infNorm(pol, "dir");
         T cons_res = constraintResidual(pol);
         /// @note do not exit in the beginning
-        if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0) {
+        // if (res < targetGRes * dt && cons_res == 0 && newtonIter != 0)
+        if (res < targetGRes * dt && newtonIter != 0) {
             break;
         }
         fmt::print(fg(fmt::color::aquamarine), "substep {} newton iter {}: direction residual {}\n", state.getSubstep(),
