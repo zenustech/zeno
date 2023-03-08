@@ -13,8 +13,8 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // inertial
-    cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp),
-                                  projectDBC = projectDBC] ZS_LAMBDA(int i) mutable {
+    cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI),
+                                  vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         auto m = vtemp("ws", i);
         vtemp.tuple(dim_c<3>, "grad", i) =
             vtemp.pack(dim_c<3>, "grad", i) - m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
@@ -44,6 +44,92 @@ void IPCSystem::computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPo
         vtemp.tuple(dim_c<3>, gTag, i) =
             vtemp.pack(dim_c<3>, gTag, i) - m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
     });
+}
+
+/// @brief inertial, kinetic (), elasticity, bending,
+void IPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    auto &spmat = linsys.spmat;
+    /// clear entry values
+    spmat._vals.reset(0);
+    /// @note including: inertial, gravity, external force, elasticity, bending
+    /// inertia
+    cudaPol(zs::range(coOffset * 3),
+            [spmat = view<space>(spmat), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+                auto dofi = i / 3;
+                auto m = vtemp("ws", dofi);
+                auto loc = spmat.locate(dofi, dofi);
+                spmat._vals[loc](i % 3, i % 3) = m;
+            });
+    /// bending
+    for (auto &primHandle : prims) {
+        if (primHandle.hasBendingConstraints()) {
+            auto &bedges = *primHandle.bendingEdgesPtr;
+            cudaPol(range(bedges.size()), [bedges = view<space>({}, bedges), spmat = view<space>(linsys.spmat),
+                                           vtemp = view<space>({}, vtemp), dt2 = dt * dt,
+                                           vOffset = primHandle.vOffset] __device__(int i) mutable {
+                auto stcl = bedges.pack(dim_c<4>, "inds", i, int_c) + vOffset;
+
+                int BCorder[4];
+#pragma unroll
+                for (int i = 0; i != 4; ++i)
+                    BCorder[i] = vtemp("BCorder", stcl[i]);
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3)
+                    return;
+                auto e = bedges("e", i);
+                auto h = bedges("h", i);
+                auto k = bedges("k", i);
+                auto ra = bedges("ra", i);
+                auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
+                auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
+                auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
+                auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
+                auto theta = dihedral_angle(x0, x1, x2, x3);
+
+                auto localGrad = dihedral_angle_gradient(x0, x1, x2, x3);
+#if 0
+                auto grad = -localGrad * dt2 * k * 2 * (theta - ra) * e / h;
+                for (int j = 0; j != 4; ++j)
+                    for (int d = 0; d != 3; ++d)
+                        atomic_add(exec_cuda, &vtemp("grad", d, stcl[j]), grad(j * 3 + d));
+#endif
+                // rotate and project
+                auto H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) + dyadic_prod(localGrad, localGrad)) *
+                         k * 2 * e / h;
+                make_pd(H);
+                H *= dt2;
+
+                // 12 * 12 = 16 * 9
+                for (int i = 0; i < 3; ++i)
+                    for (int j = 0; j < 3; ++j) {
+                        auto loc = spmat.locate(i, j);
+                        auto &mat = spmat._vals[loc];
+                        for (int r = 0; r != 3; ++r) {
+                            for (int c = 0; c != 3; ++c) {
+                                atomic_add(exec_cuda, &mat(r, c), H(i * 3 + r, j * 3 + c));
+                            }
+                        }
+                    }
+            });
+        }
+    }
+    /// elasticity
+    for (auto &primHandle : prims) {
+        match([&](auto &elasticModel) {
+            // computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
+            //                                     includeHessian);
+        })(primHandle.getModels().getElasticModel());
+    }
+    for (auto &primHandle : auxPrims) {
+        using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
+        const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
+        match([&](auto &elasticModel) {
+            // computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
+            //                                     includeHessian);
+        })(model);
+    }
 }
 
 /// elasticity

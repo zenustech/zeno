@@ -189,6 +189,7 @@ void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
 
     zs::Vector<int> is{temp.get_allocator(), numDofs};
     zs::Vector<int> js{temp.get_allocator(), numDofs};
+    /// kinetic, potential (gravity, external force)
     pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
 
     auto reserveStorage = [&is, &js](std::size_t n) {
@@ -197,9 +198,8 @@ void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
         js.resize(size + n);
         return size;
     };
-    ///
+
     /// elasticity, bending
-    ///
     /// @note only need to register non-diagonal locations on one side
     for (auto &primHandle : prims) {
         /// bending
@@ -295,8 +295,8 @@ void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
         }
     }
 
-    linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), numDofs, numDofs};
-    linsys.spmat.build(pol, numDofs, numDofs, range(is), range(js), zs::true_c);
+    linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
+    linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
 }
 
 typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
