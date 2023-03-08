@@ -30,6 +30,7 @@ struct RapidClothSystem : IObject {
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
+    using bvfront_t = zs::BvttFront<int, int>;
     using sh_t = zs::SpatialHash<3, int, T>;
     using bv_t = typename bvh_t::Box;
 
@@ -188,11 +189,11 @@ struct RapidClothSystem : IObject {
     void updateConstraintCnt() {
         std::tie(npp, npe, npt, nee, ne) = 
             std::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nE.getVal());
-        opp = 0; 
-        ope = opp + npp;
-        opt = ope + npe; 
-        oee = opt + npt;  
-        oe = oee + nee; 
+        oe = 0; 
+        opt = oe + ne; 
+        oee = opt + npt; 
+        ope = oee + nee; 
+        opp = ope + npe;
     }
 
     // sim params
@@ -243,15 +244,18 @@ struct RapidClothSystem : IObject {
     int npp, npe, npt, nee, ne;
 
     // auxiliary data (spatial acceleration)
-    tiles_t svInds, seInds, stInds;
-    bvh_t svBvh;    // for simulated objects
-    bvh_t bouSvBvh; // for collision objects
-    sh_t svSh;
-    sh_t bouSvSh;
+    tiles_t svInds, seInds, stInds, spInds;
+    bvh_t svBvh, stBvh, seBvh;    // for simulated objects // TODO: all svBvh -> stBvh & seBvh
+    bvh_t bouStBvh, bouSeBvh; // for collision objects
+    bvfront_t selfStFront, boundaryStFront;
+    bvfront_t selfSeeFront, boundarySeeFront;
+    bvfront_t selfSevFront, boundarySevFront;
+    bvfront_t selfSvFront, boundarySvFront; 
+    bool frontManageRequired; 
     T dt, framedt, curRatio;
 
     // boundary condition param 
-    T BCStiffness; 
+    T BCStiffness = 1e6f; 
 };
 
 } // namespace zeno

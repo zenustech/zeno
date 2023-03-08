@@ -197,6 +197,25 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
+
+    auto deduce_node_cnt = [](std::size_t numLeaves) {
+        if (numLeaves <= 2)
+            return numLeaves;
+        return numLeaves * 2 - 1;
+    };
+    // TODO: add other fronts's initialization 
+    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+
+    if (hasBoundary()) {
+        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    }
+
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
             continue;
@@ -227,9 +246,23 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
+    
+    spInds = svInds; 
+    spInds.resize((std::size_t)numDofs); 
+    pol(range(coPoints->size()), 
+        [spInds = proxy<space>({}, spInds), 
+         svoffset = svInds.size(), 
+         coOffset = coOffset] __device__ (int i) mutable {
+            spInds("inds", i + svoffset, int_c) = coOffset + i; 
+        }); 
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int i) mutable {
+            vtemp("n_cons", i, int_c) = 0; 
+        }); 
 
-    /// WARN: ignore BC verts initialization here 
-    reinitialize(pol, dt);
+    /// WARN: ignore BC verts initialization here
+    D = 0;  
+    reinitialize(pol, dt); 
 }
 
 void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
@@ -274,15 +307,57 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                 });
         }
 
+    frontManageRequired = true; 
+#define init_front(sInds, front)                                                                           \
+    {                                                                                                      \
+        auto numNodes = front.numNodes();                                                                  \
+        if (numNodes <= 2) {                                                                               \
+            front.reserve(sInds.size() * numNodes);                                                        \
+            front.setCounter(sInds.size() * numNodes);                                                     \
+            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
+                for (int j = 0; j != numNodes; ++j)                                                        \
+                    front.assign(i *numNodes + j, i, j);                                                   \
+            });                                                                                            \
+        } else {                                                                                           \
+            front.reserve(sInds.size());                                                                   \
+            front.setCounter(sInds.size());                                                                \
+            pol(Collapse{sInds.size()},                                                                    \
+                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });        \
+        }                                                                                                  \
+    }
     {
-        bvs.resize(svInds.size());
+        bvs.resize(svInds.size()); 
         retrieve_bounding_volumes(pol, vtemp, "x[0]", svInds, zs::wrapv<1>{}, 0, bvs);
-        svBvh.build(pol, bvs);
+        svBvh.build(pol, bvs); 
+        init_front(spInds, selfSvFront); 
+
+        bvs.resize(stInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "x[0]", stInds, zs::wrapv<3>{}, 0, bvs);
+        stBvh.build(pol, bvs);
+        init_front(spInds, selfStFront); // Previous WARNING: pt, what about coPoints' vert colliding with stInds' triangles
+
+        bvs.resize(seInds.size());
+        retrieve_bounding_volumes(pol, vtemp, "x[0]", seInds, zs::wrapv<2>{}, 0, bvs);
+        seBvh.build(pol, bvs);
+        init_front(seInds, selfSeeFront);
+        init_front(spInds, selfSevFront); // Previous WARNING: pe
     }
     if (hasBoundary()) {
-        bvs.resize(coPoints->size());
+        bvs.resize(coPoints->size()); 
         retrieve_bounding_volumes(pol, vtemp, "x[0]", *coPoints, zs::wrapv<1>{}, coOffset, bvs);
-        bouSvBvh.build(pol, bvs);
+        bouSvBvh.build(pol, bvs); 
+        init_front(svInds, boundarySvFront); 
+
+        bvs.resize(coEles->size());
+        retrieve_bounding_volumes(pol, vtemp, "x[0]", *coEles, zs::wrapv<3>{}, coOffset, bvs);
+        bouStBvh.build(pol, bvs);
+        init_front(svInds, boundaryStFront);
+
+        bvs.resize(coEdges->size());
+        retrieve_bounding_volumes(pol, vtemp, "x[0]", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
+        bouSeBvh.build(pol, bvs);
+        init_front(seInds, boundarySeeFront);
+        init_front(svInds, boundarySevFront);
     }
 }
 
@@ -322,6 +397,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
+            {"grad", 6}, 
+            {"dist", 1}, 
             {"cons_adj", consDegree}, 
             {"LCP_row", consDegree}, 
             {"color", 1}, 
@@ -333,6 +410,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
+            {"grad", 9}, 
+            {"dist", 1}, 
             {"cons_adj", consDegree}, 
             {"LCP_row", consDegree}, 
             {"color", 1}, 
@@ -344,6 +423,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
+            {"grad", 12},
+            {"dist", 1},  
             {"cons_adj", consDegree},   
             {"LCP_row", consDegree}, 
             {"color", 1}, 
@@ -355,6 +436,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
+            {"grad", 12}, 
+            {"dist", 1}, 
             {"cons_adj", consDegree},  
             {"LCP_row", consDegree}, 
             {"color", 1}, 
@@ -366,6 +449,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
+            {"grad", 6}, 
+            {"dist", 1}, 
             {"cons_adj", consDegree}, 
             {"LCP_row", consDegree}, 
             {"color", 1}, 
@@ -373,6 +458,16 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         }, 
         (std::size_t)estNumCps
     }; 
+    vCons = tiles_i{zsprims[0]->getParticles().get_allocator(), 
+                    {
+                        {"n", 1}, 
+                        {"nE", 1}, 
+                        {"cons", maxVertCons}
+                    }, 
+                    (std::size_t)numDofs
+    }; 
+    opp = ope = opt = oee = oe = 0;     // offsets
+    npp = npe = npt = nee = ne = 0;
     vtemp = tiles_t{zsprims[0]->getParticles().get_allocator(),
                     {
                         // boundary
