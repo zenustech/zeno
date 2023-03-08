@@ -534,6 +534,7 @@ void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
                 paramItem->m_value = param.m_info.value;
 
                 paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
+                paramItem->setData(param.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
                 if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
                 {
                     //register subnet param control.

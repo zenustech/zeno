@@ -1626,6 +1626,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE);
     const PARAM_CONTROL ctrl = (PARAM_CONTROL)deflIdx.data(ROLE_PARAM_CTRL).toInt();
     QVariant ctrlProps = deflIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    QString toolTip = nameIdx.data(ROLE_VPARAM_TOOLTIP).toString();
 
     const QString& subnetNodeName = pSubModel->name();
 
@@ -1638,6 +1639,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     info.name = nameValue;
     info.type = typeValue;
     info.ctrlProps = ctrlProps.toMap();
+    info.toolTip = toolTip;
 
     if (bInsert)
     {
@@ -1664,7 +1666,8 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
                         deflVal,
                         ctrl,
                         ctrlProps,
-                        SOCKPROP_NORMAL
+                        SOCKPROP_NORMAL,
+                        toolTip
             );
         }
     }

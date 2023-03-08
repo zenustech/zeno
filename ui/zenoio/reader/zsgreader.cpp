@@ -421,6 +421,12 @@ void ZsgReader::_parseSocket(
             pAcceptor->setControlAndProperties(nodeName, id, inSock, ctrl, props);
         }
     }
+
+    if (sockObj.HasMember("tooltip")) 
+    {
+        QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+        pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
+    }
 }
 
 void ZsgReader::_parseDictPanel(
@@ -464,6 +470,10 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
         {
             if (sockObj.HasMember("dictlist-panel")) {
                 _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
+            }
+            if (sockObj.HasMember("tooltip")) {
+                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
             }
         }
     }
@@ -803,7 +813,11 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
                     paramData.controlProps = props;
                 }
             }
-
+            if (value.HasMember("tooltip")) 
+            {
+                QString toolTip = QString::fromUtf8(value["tooltip"].GetString());
+                paramData.toolTip = toolTip;
+            }
             paramData.name = name;
             paramData.bEnableConnect = false;
             paramData.value = var;

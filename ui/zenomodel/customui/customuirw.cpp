@@ -83,6 +83,13 @@ namespace zenomodel
             writer.Key("uuid");
             writer.Uint(pItem->m_uuid);
             //todo: link.
+
+            if (pItem->m_customData.contains(ROLE_VPARAM_TOOLTIP)
+                && !pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().isEmpty())
+            {
+                writer.Key("tooltip");
+                writer.String(pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().toUtf8());
+            }
         }
     }
 
@@ -155,6 +162,11 @@ namespace zenomodel
         if (controlObj.HasMember("value"))
         {
             param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
+        }
+
+        if (paramVal.HasMember("tooltip")) 
+        {
+            param.m_info.toolTip = QString::fromUtf8(paramVal["tooltip"].GetString());
         }
 
         return param;

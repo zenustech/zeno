@@ -326,6 +326,7 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     QFont font("Alibaba PuHuiTi", 12);
     font.setWeight(QFont::Medium);
     pLabel->setFont(font);
+    pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
 
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
@@ -663,7 +664,19 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                     pSpinBox->setRange(info.min, info.max);
                   }
             }
-		}
+        } 
+        else if (role == ROLE_VPARAM_TOOLTIP) 
+        {
+            for (auto it = group.begin(); it != group.end(); it++) 
+            {
+                if (it->second.m_viewIdx == param->index()) 
+                {
+                    const QString &newTip = it->second.m_viewIdx.data(ROLE_VPARAM_TOOLTIP).toString();
+                    it->second.pLabel->setToolTip(newTip);
+                    break;
+                }
+            }
+        }
     }
 }
 

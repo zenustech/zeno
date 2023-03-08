@@ -36,7 +36,8 @@ public:
             const QVariant& deflValue,
             PARAM_CONTROL ctrl,
             QVariant ctrlProps,
-            SOCKET_PROPERTY prop
+            SOCKET_PROPERTY prop,
+            const QString& toolTip
     );
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;

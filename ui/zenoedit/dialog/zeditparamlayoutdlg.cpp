@@ -160,6 +160,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     connect(selModel, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)),
             this, SLOT(onTreeCurrentChanged(const QModelIndex&, const QModelIndex&)));
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
+    connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
     connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onBtnAdd()));
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
@@ -299,6 +300,8 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     m_ui->editName->setText(name);
     bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
     m_ui->editName->setEnabled(bEditable);
+
+    m_ui->editLabel->setText(pCurrentItem->data(ROLE_VPARAM_TOOLTIP).toString());
 
     //delete old control.
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -602,7 +605,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
                 continue;
         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
         nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, name, "", QVariant(), ctrl, QVariant(),
-                                SOCKPROP_NORMAL);
+                                SOCKPROP_NORMAL, "");
     }
 }
 
@@ -703,7 +706,18 @@ void ZEditParamLayoutDlg::onNameEditFinished()
 
 void ZEditParamLayoutDlg::onLabelEditFinished()
 {
+    const QModelIndex &currIdx = m_ui->paramsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
 
+    QStandardItem *pItem = m_proxyModel->itemFromIndex(currIdx);
+
+    ZASSERT_EXIT(pItem);
+    QString oldText = pItem->data(ROLE_VPARAM_NAME).toString();
+    QString newText = m_ui->editLabel->text();
+    if (oldText == newText)
+        return;
+    pItem->setData(newText, ROLE_VPARAM_TOOLTIP);
 }
 
 void ZEditParamLayoutDlg::onHintEditFinished()
@@ -1012,6 +1026,16 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 {
                     pTarget->mapCoreParam(pCurrent->m_index);
                 }
+                //tool tip
+                QVariant newTip;
+                if (pCurrent->m_customData.find(ROLE_VPARAM_TOOLTIP) != pCurrent->m_customData.end()) {
+                    newTip = pCurrent->m_customData[ROLE_VPARAM_TOOLTIP];
+                }
+                QVariant oldTip = pTarget->m_customData[ROLE_VPARAM_TOOLTIP];
+                if (oldTip != newTip) 
+                {
+                    pTarget->setData(newTip, ROLE_VPARAM_TOOLTIP);
+                }
             }
             else
             {
@@ -1046,6 +1070,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                             NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
                         PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
                         params["name"].value = name;
+                        params["name"].toolTip = m_ui->editLabel->text();
                         params["type"].value = typeDesc;
                         params["defl"].typeDesc = typeDesc;
                         params["defl"].value = defl;

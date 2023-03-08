@@ -34,6 +34,7 @@ ZSocketLayout::~ZSocketLayout()
 void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock)
 {
     QString sockName;
+    QString toolTip;
     int sockProp = 0;
     if (!m_viewSockIdx.isValid())
     {
@@ -45,6 +46,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
+        toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
     }
 
     QSizeF szSocket(10, 20);
@@ -67,6 +69,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
+    m_text->setToolTip(toolTip);
 
     if (m_bInput)
     {
@@ -146,6 +149,12 @@ void ZSocketLayout::updateSockName(const QString& name)
     }
 }
 
+void ZSocketLayout::updateSockNameToolTip(const QString &tip) 
+{
+    if (m_text)
+        m_text->setToolTip(tip);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZDictSocketLayout::ZDictSocketLayout(
@@ -176,6 +185,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
 
     m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
+    m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());
 
     QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(28, 28));
     m_collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
