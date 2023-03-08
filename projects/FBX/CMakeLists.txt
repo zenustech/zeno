@@ -12,6 +12,9 @@ set(ASSIMP_BUILD_FBX_IMPORTER TRUE CACHE BOOL "CIHOU FBX" FORCE)
 set(ASSIMP_BUILD_FBX_EXPORTER TRUE CACHE BOOL "CIHOU FBX" FORCE)
 add_subdirectory(assimp)
 
+find_package(PNG REQUIRED)
+target_link_libraries(zeno PRIVATE PNG::PNG)
+
 target_link_libraries(zeno PRIVATE assimp)
 
 set(DEM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dem-bones-bin/bin/${CMAKE_SYSTEM_NAME})

@@ -14,6 +14,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#include <png.h>
+
 using std::vector;
 using zeno::vec3f;
 
@@ -51,6 +53,14 @@ static void write_normalized_vec3f(std::ofstream &file, vec3f vec, vec3f _min, v
     file.write((char*)&_0, sizeof(uint16_t));
     file.write((char*)&_1, sizeof(uint16_t));
     file.write((char*)&_2, sizeof(uint16_t));
+}
+
+static void write_normalized_vec3f(std::vector<uint16_t> &data, vec3f vec, vec3f _min, vec3f _max) {
+    vec = (vec - _min) / (_max - _min);
+
+    data.push_back(f32_to_u16(vec[0]));
+    data.push_back(f32_to_u16(vec[1]));
+    data.push_back(f32_to_u16(vec[2]));
 }
 
 static int align_to(int count, int align) {
@@ -124,6 +134,119 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     }
 }
 
+static int writeImage(const char* filename, int width, int height, unsigned char * data, int bit_depth) {
+    int code = 0;
+    FILE *fp = NULL;
+    png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    png_bytep row = data;
+
+    // Open file for writing (binary mode)
+    fp = fopen(filename, "wb");
+    if (fp == NULL) {
+        fprintf(stderr, "Could not open file %s for writing\n", filename);
+        code = 1;
+        goto finalise;
+    }
+
+    // Initialize write structure
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (png_ptr == NULL) {
+        fprintf(stderr, "Could not allocate write struct\n");
+        code = 1;
+        goto finalise;
+    }
+
+    // Initialize info structure
+    info_ptr = png_create_info_struct(png_ptr);
+    if (info_ptr == NULL) {
+        fprintf(stderr, "Could not allocate info struct\n");
+        code = 1;
+        goto finalise;
+    }
+
+    // Setup Exception handling
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        fprintf(stderr, "Error during png creation\n");
+        code = 1;
+        goto finalise;
+    }
+
+    png_init_io(png_ptr, fp);
+
+    // Write header
+    png_set_IHDR(png_ptr, info_ptr, width, height,
+                 bit_depth, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    png_write_info(png_ptr, info_ptr);
+    png_set_swap(png_ptr);
+
+    // Write image data
+    for (int y=0 ; y<height ; y++) {
+        row += width * 3 * bit_depth / 8;
+        png_write_row(png_ptr, row);
+    }
+
+    // End write
+    png_write_end(png_ptr, NULL);
+
+    finalise:
+    if (fp != NULL) fclose(fp);
+    if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+    if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+
+    return code;
+}
+
+static void write_png_vat(vector<vector<vec3f>> &v, const std::string &path) {
+    std::ofstream file(path, std::ios::out | std::ios::binary);
+    file << 'Z';
+    file << 'E';
+    file << 'N';
+    file << 'O';
+
+    vector<vec3f> temp_bboxs;
+    for (const auto& i: v) {
+        auto bbox = parallel_reduce_minmax(i.begin(), i.end());
+        temp_bboxs.push_back(bbox.first);
+        temp_bboxs.push_back(bbox.second);
+    }
+    auto bbox = parallel_reduce_minmax(temp_bboxs.begin(), temp_bboxs.end());
+    zeno::log_info("{} {}", bbox.first, bbox.second);
+    write_vec3f(file, bbox.first);
+    write_vec3f(file, bbox.second);
+
+    int frames = v.size();
+    file.write((char*)&frames, sizeof(int));
+    int maxWidth = 0;
+    for (auto i = 0; i < frames; i++) {
+        int width = v[i].size();
+        maxWidth = std::max(maxWidth, width);
+    }
+    file.write((char*)&maxWidth, sizeof(int));
+    int maxWidthAlign = align_to(maxWidth, 8192);
+    int height = frames * (maxWidthAlign / 8192);
+    file.write((char*)&height, sizeof(int));
+
+    for (auto i = 0; i < frames; i++) {
+        int width = v[i].size();
+        file.write((char*)&width, sizeof(int));
+    }
+    file.close();
+
+    std::vector<uint16_t> data;
+    for (auto i = 0; i < frames; i++) {
+        int width = v[i].size();
+        v[i].resize(maxWidthAlign);
+        for (auto j = 0; j < maxWidthAlign; j++) {
+            write_normalized_vec3f(data, v[i][j], bbox.first, bbox.second);
+        }
+        zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
+    }
+    std::string png_path = path + ".pos.png";
+//    zeno::log_info("{}, {}", data.size(), 8192 * height * 3);
+    writeImage(png_path.c_str(), 8192, height, (unsigned char *)data.data(), 16);
+}
 
 static void write_vat_nrm(vector<vector<vec3f>> &v, const std::string &path) {
     int frames = v.size();
@@ -279,8 +402,7 @@ struct WriteCustomVAT : INode {
                 }
             }
             std::string path = get_param<std::string>("path");
-            write_vat(v, path);
-
+            write_png_vat(v, path);
             vector<vector<vec3f>> nrms;
             nrms.resize(prims.size());
             for (auto i = 0; i < prims.size(); i++) {
@@ -294,7 +416,7 @@ struct WriteCustomVAT : INode {
                     nrms[i][j * 3 + 2] = nrm_ref[tri[2]];
                 }
             }
-            write_vat_nrm(nrms, path + ".png");
+            write_vat_nrm(nrms, path + ".nrm.png");
 
             {
                 std::string obj_path = path + ".obj";
@@ -359,77 +481,77 @@ ZENDEFNODE(WriteCustomVAT, {
     {"VAT"},
 });
 
-struct ReadCustomVAT : INode {
-    vector<vector<vec3f>> v;
-    virtual void apply() override {
-        if (v.empty()) {
-            std::string path = get_param<std::string>("path");
-            v = read_vat(path);
-        }
-
-        int frameid;
-        if (has_input("frameid")) {
-            frameid = get_param<int>("frameid");
-        } else {
-            frameid = getGlobalState()->frameid;
-        }
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        if (frameid < v.size()) {
-            auto & f = v[frameid];
-            prim->verts.resize(f.size());
-            for (auto i = 0; i < prim->verts.size(); i++) {
-                prim->verts[i] = f[i];
-            }
-            prim->tris.resize(f.size() / 3);
-            for (auto i = 0; i < prim->tris.size(); i++) {
-                prim->tris[i][0] = 3 * i + 0;
-                prim->tris[i][1] = 3 * i + 1;
-                prim->tris[i][2] = 3 * i + 2;
-            }
-        }
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(ReadCustomVAT, {
-    {
-        {"frameid"},
-    },
-    {
-        {"prim"},
-    },
-    {
-        {"readpath", "path", ""},
-    },
-    {"VAT"},
-});
-
-struct ReadVATFile : INode {
-    virtual void apply() override {
-        auto path = get_input2<std::string>("path");
-        auto vat = read_vat_texture(path);
-        auto img = std::make_shared<PrimitiveObject>();
-        img->verts.resize(vat.height * 8192);
-        for (int64_t i = 0; i < vat.height * 8192; i++) {
-            img->verts[i] = vat.data[i];
-        }
-
-        img->userData().set2("isImage", 1);
-        img->userData().set2("w", 8192);
-        img->userData().set2("h", vat.height);
-        set_output("image", img);
-    }
-};
-
-ZENDEFNODE(ReadVATFile, {
-    {
-        {"readpath", "path"},
-    },
-    {
-        {"PrimitiveObject", "image"},
-    },
-    {},
-    {"VAT"},
-});
+//struct ReadCustomVAT : INode {
+//    vector<vector<vec3f>> v;
+//    virtual void apply() override {
+//        if (v.empty()) {
+//            std::string path = get_param<std::string>("path");
+//            v = read_vat(path);
+//        }
+//
+//        int frameid;
+//        if (has_input("frameid")) {
+//            frameid = get_param<int>("frameid");
+//        } else {
+//            frameid = getGlobalState()->frameid;
+//        }
+//        auto prim = std::make_shared<zeno::PrimitiveObject>();
+//        if (frameid < v.size()) {
+//            auto & f = v[frameid];
+//            prim->verts.resize(f.size());
+//            for (auto i = 0; i < prim->verts.size(); i++) {
+//                prim->verts[i] = f[i];
+//            }
+//            prim->tris.resize(f.size() / 3);
+//            for (auto i = 0; i < prim->tris.size(); i++) {
+//                prim->tris[i][0] = 3 * i + 0;
+//                prim->tris[i][1] = 3 * i + 1;
+//                prim->tris[i][2] = 3 * i + 2;
+//            }
+//        }
+//        set_output("prim", std::move(prim));
+//    }
+//};
+//
+//ZENDEFNODE(ReadCustomVAT, {
+//    {
+//        {"frameid"},
+//    },
+//    {
+//        {"prim"},
+//    },
+//    {
+//        {"readpath", "path", ""},
+//    },
+//    {"VAT"},
+//});
+//
+//struct ReadVATFile : INode {
+//    virtual void apply() override {
+//        auto path = get_input2<std::string>("path");
+//        auto vat = read_vat_texture(path);
+//        auto img = std::make_shared<PrimitiveObject>();
+//        img->verts.resize(vat.height * 8192);
+//        for (int64_t i = 0; i < vat.height * 8192; i++) {
+//            img->verts[i] = vat.data[i];
+//        }
+//
+//        img->userData().set2("isImage", 1);
+//        img->userData().set2("w", 8192);
+//        img->userData().set2("h", vat.height);
+//        set_output("image", img);
+//    }
+//};
+//
+//ZENDEFNODE(ReadVATFile, {
+//    {
+//        {"readpath", "path"},
+//    },
+//    {
+//        {"PrimitiveObject", "image"},
+//    },
+//    {},
+//    {"VAT"},
+//});
 
 } // namespace zeno
