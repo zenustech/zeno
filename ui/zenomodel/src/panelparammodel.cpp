@@ -64,6 +64,7 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
         pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
         paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
         pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+        pOutputsGroup->setData(true, ROLE_VPARAM_COLLASPED);
 
         const VParamItem* pNodeInputs = nodeParams->getInputs();
         for (int r = 0; r < pNodeInputs->rowCount(); r++)

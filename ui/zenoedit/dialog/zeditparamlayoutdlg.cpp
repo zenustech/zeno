@@ -1082,9 +1082,9 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
                         //the newItem is created just now, after adding the subgraph node.
                         int dstRow = 0;
-                        VParamItem *newItem = pTargetGroup->getItem(name, &dstRow);
-                        pCurrent->m_uuid = newItem->m_uuid;
+                        VParamItem* newItem = pTargetGroup->getItem(name, &dstRow);
                         ZASSERT_EXIT(newItem);
+                        pCurrent->m_uuid = newItem->m_uuid;
 
                         //move the new item to the r-th position.
                         QModelIndex parent = pTargetGroup->index();

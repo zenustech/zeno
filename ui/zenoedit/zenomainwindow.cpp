@@ -43,6 +43,7 @@ const QString g_latest_layout = "LatestLayout";
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
+    , m_bAlways(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -596,21 +597,9 @@ void ZenoMainWindow::initTimelineDock()
         }
     });
 
-    connect(m_pTimeline, &ZTimeline::run, this, [=]() {
-        onRunTriggered();
-    });
-
-    connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
-        killProgram();
-    });
-
-    connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
-        onRunTriggered();
-    });
-
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (m_pTimeline->isAlways()) {
+        if (m_bAlways) {
             killProgram();
         }
     });
@@ -765,12 +754,6 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
             return pEditor;
     }
     return nullptr;
-}
-
-DisplayWidget* ZenoMainWindow::getDisplayWidget()
-{
-    QVector<DisplayWidget*> views = viewports();
-    return !views.isEmpty() ? views[0] : nullptr;
 }
 
 void ZenoMainWindow::onRunFinished()
@@ -1150,15 +1133,18 @@ void ZenoMainWindow::screenShoot()
     QString ext = QFileInfo(path).suffix();
     if (!path.isEmpty()) {
 
-        //todo: ask the user to select a viewport to screenshot.
         ZenoMainWindow *pWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pWin);
-        DisplayWidget *pWid = pWin->getDisplayWidget();
-        ZASSERT_EXIT(pWid);
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-
-        pViewport->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (!views.isEmpty())
+        {
+            //todo: ask the user to select a viewport to screenshot.
+            DisplayWidget* pWid = views[0];
+            ZASSERT_EXIT(pWid);
+            ViewportWidget* pViewport = pWid->getViewportWidget();
+            ZASSERT_EXIT(pViewport);
+            pViewport->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+        }
     }
 }
 
@@ -1247,15 +1233,26 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
 {
     TIMELINE_INFO info;
     ZASSERT_EXIT(m_pTimeline, info);
-    info.bAlways = m_pTimeline->isAlways();
+    info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
     return info;
 }
 
+bool ZenoMainWindow::isAlways() const
+{
+    return m_bAlways;
+}
+
+void ZenoMainWindow::setAlways(bool bAlways)
+{
+    m_bAlways = bAlways;
+    emit alwaysModeChanged(bAlways);
+}
+
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
-    m_pTimeline->setAlways(info.bAlways);
+    setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
 }
 
@@ -1353,20 +1350,27 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
         return;
 
     std::cout << "====== Frame " << frame << "\n";
-    auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
-    std::cout << "====== CameraMoving " << viewport->m_bMovingCamera << "\n";
 
-    // Sync Camera
-    if(viewport->m_bMovingCamera){
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto displayWid : views)
+    {
+        ZASSERT_EXIT(displayWid);
+        auto viewport = displayWid->getViewportWidget();
+        ZASSERT_EXIT(viewport);
+        std::cout << "====== CameraMoving " << viewport->m_bMovingCamera << "\n";
 
-    }
-    // Sync Frame
-    else {
-        int count = liveHttpServer->frameMeshDataCount(frame);
-        std::string data = "FRAME " + std::to_string(frame) + " SYNCMESH " + std::to_string(count);
-        for(auto& c: liveHttpServer->clients) {
-            auto r = liveTcpServer->sendData({c.first, c.second, data});
-            std::cout << "\tClient " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+        // Sync Camera
+        if(viewport->m_bMovingCamera){
+
+        }
+        // Sync Frame
+        else {
+            int count = liveHttpServer->frameMeshDataCount(frame);
+            std::string data = "FRAME " + std::to_string(frame) + " SYNCMESH " + std::to_string(count);
+            for(auto& c: liveHttpServer->clients) {
+                auto r = liveTcpServer->sendData({c.first, c.second, data});
+                std::cout << "\tClient " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+            }
         }
     }
 }

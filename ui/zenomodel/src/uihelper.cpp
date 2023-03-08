@@ -1077,80 +1077,6 @@ QString UiHelper::nthSerialNumName(QString name)
     }
 }
 
-void UiHelper::reAllocIdents(
-            QMap<QString, NODE_DATA>& nodes,
-            QList<EdgeInfo>& links,
-            const QMap<QString, NODE_DATA>& oldGraphsToNew)
-{
-    QMap<QString, QString> old2new;
-    QMap<QString, NODE_DATA> newNodes;
-    for (QString key : nodes.keys())
-    {
-        const NODE_DATA data = nodes[key];
-        const QString& oldId = data[ROLE_OBJID].toString();
-        const QString& name = data[ROLE_OBJNAME].toString();
-        QString newId;
-
-        if (oldGraphsToNew.find(oldId) != oldGraphsToNew.end())
-        {
-            //fork case.
-            NODE_DATA newData = oldGraphsToNew[oldId];
-            newId = newData[ROLE_OBJID].toString();
-            newNodes.insert(newId, newData);
-        }
-        else
-        {
-            newId = UiHelper::generateUuid(name);
-            NODE_DATA newData = data;
-            newData[ROLE_OBJID] = newId;
-            newNodes.insert(newId, newData);
-        }
-        old2new.insert(oldId, newId);
-    }
-    //replace all the old-id in newNodes.
-    for (QString newId : newNodes.keys()) {
-        NODE_DATA& data = newNodes[newId];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inputSocket : inputs) {
-            inputSocket.info.nodeid = newId;
-            inputSocket.info.links.clear();
-        }
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET& outputSocket : outputs) {
-            outputSocket.info.nodeid = newId;
-            outputSocket.info.links.clear();
-        }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    }
-
-    for (EdgeInfo& link : links)
-    {
-        QString outputNode = UiHelper::getSockNode(link.outSockPath);
-        QString outputSock = UiHelper::getSockName(link.outSockPath);
-        QString inputNode = UiHelper::getSockNode(link.inSockPath);
-        QString inputSock = UiHelper::getSockName(link.inSockPath);
-
-        QString newInputNode = old2new[inputNode];
-        QString newOutputNode = old2new[outputNode];
-
-        //todo: how to set this new node ident into link?
-        QString inSubg = UiHelper::getSockSubgraph(link.inSockPath);
-        QString outSubg = UiHelper::getSockSubgraph(link.outSockPath);
-
-        const QString& outSockPath = UiHelper::constructObjPath(outSubg, newOutputNode, "[node]/outputs/", outputSock);
-        const QString& inSockPath = UiHelper::constructObjPath(inSubg, newInputNode, "[node]/inputs/", inputSock);
-
-        EdgeInfo newLink(outSockPath, inSockPath);
-        link.inSockPath = newLink.inSockPath;
-        link.outSockPath = newLink.outSockPath;
-    }
-
-    nodes = newNodes;
-}
-
 QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
 {
     ZASSERT_EXIT(pModel, "");
@@ -1788,7 +1714,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
     return QPair<NODES_DATA, LINKS_DATA>(nodes, links);
 }
 
-void UiHelper::reAllocIdents2(const QString& targetSubgraph,
+void UiHelper::reAllocIdents(const QString& targetSubgraph,
                               const NODES_DATA& inNodes,
                               const LINKS_DATA& inLinks,
                               NODES_DATA& outNodes,

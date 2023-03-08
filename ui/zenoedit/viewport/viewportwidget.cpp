@@ -1025,7 +1025,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
-    if (timeline->isAlways())
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel* pModel = pGraphsMgr->currentModel();

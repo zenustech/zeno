@@ -79,6 +79,11 @@ private:
     ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
+
+    ZToolButton* m_btnRun;
+    ZToolButton* m_btnKill;
+    ZToolButton* m_btnAlways;
+
     QComboBox* cbZoom;
 };
 

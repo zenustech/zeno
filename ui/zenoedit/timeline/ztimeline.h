@@ -18,8 +18,6 @@ public:
     ZTimeline(QWidget* parent = nullptr);
     QPair<int, int> fromTo() const;
     void initFromTo(int from, int to);
-    bool isAlways() const;
-    void setAlways(bool bOn);
     void resetSlider();
     int value() const;
 
@@ -31,9 +29,6 @@ signals:
     void playForwardOneFrame();
     void playForwardLastFrame();
     void sliderValueChanged(int);
-    void alwaysChecked();
-    void run();
-    void kill();
 
 public slots:
     void onTimelineUpdate(int frameid);

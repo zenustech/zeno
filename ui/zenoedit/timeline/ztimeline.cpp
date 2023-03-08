@@ -43,9 +43,7 @@ ZTimeline::ZTimeline(QWidget* parent)
     initStyleSheet();
     initSignals();
     initButtons();
-
-    if (zeno::envconfig::get("ALWAYS"))
-        m_ui->btnAlways->setChecked(true);
+    initSize();
 }
 
 void ZTimeline::initSignals()
@@ -54,12 +52,6 @@ void ZTimeline::initSignals()
     connect(m_ui->editFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
-    connect(m_ui->btnRun, SIGNAL(clicked()), this, SIGNAL(run()));
-    connect(m_ui->btnKill, SIGNAL(clicked()), this, SIGNAL(kill()));
-    connect(m_ui->btnAlways, &ZToolButton::toggled, this, [=](bool bChecked) {
-        if (bChecked)
-            emit alwaysChecked();
-    });
 
     //connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
     //    //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
@@ -77,7 +69,6 @@ void ZTimeline::initSignals()
     //    scene->drawOptions->simpleRender = bChecked;
     //    scene->drawOptions->needRefresh = true;
     //});
-    m_ui->btnAlways->setShortcut(QKeySequence("F1"));
 
     //m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
     //m_ui->btnForward->setShortcut(QKeySequence("F3"));
@@ -108,11 +99,6 @@ void ZTimeline::initSignals()
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
-    connect(m_ui->btnAlways, &ZToolButton::toggled, [=](bool bChecked) {
-        if (bChecked) {
-            emit run();
-        }
-    });
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
@@ -133,23 +119,7 @@ void ZTimeline::initButtons()
 
     QColor hoverBg("#4F5963");
 
-    //run
-    m_ui->btnRun->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
-    m_ui->btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(12, 16)), ":/icons/timeline_run_thunder.svg",
-                                  ":/icons/timeline_run_thunder.svg", "", "");
-    m_ui->btnRun->setText(tr("Run"));
-    m_ui->btnRun->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
-    m_ui->btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
-
-    //kill
-    m_ui->btnKill->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
-    m_ui->btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/timeline_kill_clean.svg",
-                           ":/icons/timeline_kill_clean.svg", "", "");
-    m_ui->btnKill->setText(tr("Kill"));
-    m_ui->btnKill->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
-    m_ui->btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
+    QFont fnt("Alibaba PuHuiTi", 12);
 
     m_ui->btnBackToStart->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackToStart->setIcon(
@@ -158,7 +128,7 @@ void ZTimeline::initButtons()
         ":/icons/timeline_startFrame_light.svg",
         "",
         "");
-    m_ui->btnBackToStart->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnBackToStart->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackToStart->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
     m_ui->btnBackward->setButtonOptions(ZToolButton::Opt_HasIcon);
@@ -168,17 +138,17 @@ void ZTimeline::initButtons()
         ":/icons/timeline_previousFrame_light.svg",
         "",
         "");
-    m_ui->btnBackward->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnBackward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
     m_ui->btnPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnPlay->setIcon(
-        ZenoStyle::dpiScaledSize(QSize(24, 24)),
+        ZenoStyle::dpiScaledSize(QSize(20, 20)),
         ":/icons/timeline_pause_idle.svg",
         ":/icons/timeline_pause_hover.svg",
         ":/icons/timeline_play_idle.svg",
         ":/icons/timeline_play_hover.svg");
-    m_ui->btnPlay->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnPlay->setBackgroundClr(QColor(), QColor(), QColor(), QColor());
 
     m_ui->btnForward->setButtonOptions(ZToolButton::Opt_HasIcon);
@@ -188,7 +158,7 @@ void ZTimeline::initButtons()
         ":/icons/timeline_nextFrame_light.svg",
         "",
         "");
-    m_ui->btnForward->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnForward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
     m_ui->btnForwardToEnd->setButtonOptions(ZToolButton::Opt_HasIcon);
@@ -198,7 +168,7 @@ void ZTimeline::initButtons()
         ":/icons/timeline_endFrame_light.svg",
         "",
         "");
-    m_ui->btnForwardToEnd->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnForwardToEnd->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
 
@@ -212,28 +182,11 @@ void ZTimeline::initButtons()
     //m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
     //m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
-    m_ui->btnAlways->setButtonOptions(ZToolButton::Opt_SwitchAnimation);
-    m_ui->btnAlways->setIcon(
-        ZenoStyle::dpiScaledSize(QSize(20,20)),
-        ":/icons/always-off.svg",
-        "",
-        "",
-        "");
-    m_ui->btnAlways->setMargins(QMargins(3, 2, 2, 3));
-    m_ui->btnAlways->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
-    m_ui->btnAlways->initAnimation();
-
     QFont font("Alibaba PuHuiTi", 10);
     font.setWeight(QFont::DemiBold);
 
     ////m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
     //m_ui->btnSimpleRender->setFont(font);
-
-    m_ui->btnRun->setShortcut(QKeySequence("F2"));
-    m_ui->btnRun->setFont(font);
-
-    m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
-    m_ui->btnKill->setFont(font);
 
     QFont font2("Segoe UI", 10);
     m_ui->editFrame->setFont(font2);
@@ -241,7 +194,8 @@ void ZTimeline::initButtons()
 
 void ZTimeline::initSize()
 {
-
+    m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaledSize(QSize(96, 20)));
+    m_ui->editFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)
@@ -286,11 +240,6 @@ QPair<int, int> ZTimeline::fromTo() const
     return { frameFrom, frameTo };
 }
 
-bool ZTimeline::isAlways() const
-{
-    return m_ui->btnAlways->isChecked();
-}
-
 void ZTimeline::initFromTo(int frameFrom, int frameTo)
 {
     BlockSignalScope s1(m_ui->timeliner);
@@ -301,11 +250,6 @@ void ZTimeline::initFromTo(int frameFrom, int frameTo)
     m_ui->editTo->setText(QString::number(frameTo));
     if (frameTo >= frameFrom)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
-}
-
-void ZTimeline::setAlways(bool bOn)
-{
-    m_ui->btnAlways->setChecked(bOn);
 }
 
 void ZTimeline::resetSlider()
