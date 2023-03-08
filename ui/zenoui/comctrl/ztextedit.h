@@ -15,8 +15,10 @@ public:
 
 signals:
     void editFinished();
+    void geometryUpdated();
 
 protected:
+    void focusInEvent(QFocusEvent* e) override;
     void focusOutEvent(QFocusEvent* e) override;
     void resizeEvent(QResizeEvent* event) override;
 

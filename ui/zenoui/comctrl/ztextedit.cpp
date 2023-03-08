@@ -16,6 +16,12 @@ ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
 void ZTextEdit::initUI()
 {
     setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    QTextDocument *pTextDoc = document();
+    connect(pTextDoc, &QTextDocument::contentsChanged, this, [=]() {
+        QSize s(document()->size().toSize());
+        updateGeometry();
+        emit geometryUpdated();
+    });
 }
 
 QSize ZTextEdit::minimumSizeHint() const
@@ -36,6 +42,11 @@ QSize ZTextEdit::viewportSizeHint() const
     return sz;
 }
 
+void ZTextEdit::focusInEvent(QFocusEvent* e)
+{
+    QTextEdit::focusInEvent(e);
+}
+
 void ZTextEdit::focusOutEvent(QFocusEvent* e)
 {
     QTextEdit::focusOutEvent(e);
@@ -45,6 +56,7 @@ void ZTextEdit::focusOutEvent(QFocusEvent* e)
 void ZTextEdit::resizeEvent(QResizeEvent* event)
 {
     QSize s(document()->size().toSize());
-    updateGeometry();
     QTextEdit::resizeEvent(event);
+    updateGeometry();
+    emit geometryUpdated();
 }
