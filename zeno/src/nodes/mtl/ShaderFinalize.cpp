@@ -62,6 +62,7 @@ struct ShaderFinalize : INode {
             {3,"mat_shad"},
             {3,"mat_strokeTint"},
             {1,"mat_opacity"},
+            {1,"mat_new_opacity"},
             {1,"mat_reflection"},
             {1,"mat_reflectID"},
             {1,"mat_isCamera"},
@@ -105,7 +106,8 @@ struct ShaderFinalize : INode {
             get_input<IObject>("strokeNoise", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("shad", std::make_shared<NumericObject>(vec3f(0,0,0))),
             get_input<IObject>("strokeTint", std::make_shared<NumericObject>(vec3f(0,0,0))),
-            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
+            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))), // old opacity
+            std::make_shared<NumericObject>(float(1.0)), // new opacity
             get_input<IObject>("reflection", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("reflectID", std::make_shared<NumericObject>(float(-1))),
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
@@ -235,7 +237,8 @@ struct ShaderSurface : INode {
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
             {3, "mat_emission"},
-            {1, "mat_opacity"}
+            {1, "mat_opacity"},
+            {1, "mat_new_opacity"},
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
@@ -263,8 +266,8 @@ struct ShaderSurface : INode {
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
-            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
-
+            std::make_shared<NumericObject>(float(0.0)), // old opacity
+            get_input<IObject>("opacity", std::make_shared<NumericObject>(float(1.0))), // new opacity
         });
         auto commonCode = em.getCommonCode();
 
@@ -272,7 +275,7 @@ struct ShaderSurface : INode {
         mtl->frag = std::move(code);
         mtl->common = std::move(commonCode);
         if (has_input("extensionsCode"))
-            mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
+            mtl->extensions = get_input2<std::string>("extensionsCode");
 
         if (has_input("tex2dList"))
         {
@@ -321,7 +324,7 @@ ZENDEFNODE(ShaderSurface, {
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
         {"vec3f", "emission", "0,0,0"},
-        {"float", "opacity", "0"},
+        {"float", "opacity", "1"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"list", "tex2dList"},//TODO: bate's asset manager
