@@ -341,12 +341,8 @@ void NodeParamModel::setAddParam(
         }
         else
         {
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_type = type;
-            pItem->m_sockProp = prop;
-            pItem->m_ctrl = ctrl;
+            //only support editing value.
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
         }
     }
     else if (PARAM_PARAM == cls)
@@ -365,12 +361,8 @@ void NodeParamModel::setAddParam(
         }
         else
         {
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_type = type;
-            pItem->m_sockProp = prop;
-            pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            //only support editing value.
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
         }
     }
     else if (PARAM_OUTPUT == cls)
@@ -390,12 +382,8 @@ void NodeParamModel::setAddParam(
         }
         else
         {
-            pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_sockProp = prop;
-            pItem->m_type = type;
-            pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            //only support editing value.
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
         }
     }
 }
