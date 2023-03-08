@@ -28,7 +28,6 @@ enum MODEL_ROLE
 	ROLE_PANEL_PARAMS,	// all viewed panel parameters.
 	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io. see VARAM_INFO
 	ROLE_NODE_PARAMS,		// all viewed node parameters.
-	ROLE_CUSTOMUI_NODE_IO,
 
 	//synchronize link change, param
 	ROLE_ADDLINK,

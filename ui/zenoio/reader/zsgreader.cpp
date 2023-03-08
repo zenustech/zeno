@@ -193,11 +193,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     }
     if (objValue.HasMember("customui-panel"))
     {
-        _parseCustomUI(nodeid, name, false, objValue["customui-panel"], pAcceptor);
-    }
-    if (objValue.HasMember("customui-node"))
-    {
-        _parseCustomUI(nodeid, name, true, objValue["customui-node"], pAcceptor);
+        _parseCustomPanel(nodeid, name, objValue["customui-panel"], pAcceptor);
     }
 
     if (objValue.HasMember("uipos"))
@@ -479,10 +475,10 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
     }
 }
 
-void ZsgReader::_parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
+void ZsgReader::_parseCustomPanel(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
 {
     VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
-    pAcceptor->addCustomUI(id, bNodeUI, invisibleRoot);
+    pAcceptor->addCustomUI(id, invisibleRoot);
 }
 
 void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor)

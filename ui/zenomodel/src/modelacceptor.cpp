@@ -478,14 +478,13 @@ void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)
     //todo
 }
 
-void ModelAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot)
+void ModelAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
 {
     if (!m_currentGraph)
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot),
-        bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);
+    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot), ROLE_CUSTOMUI_PANEL_IO);
 }
 
 void ModelAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)

@@ -366,11 +366,6 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
             const QString& path = subgPath + cPathSeperator + item.objid;
             return path;
         }
-        case ROLE_CUSTOMUI_NODE_IO:
-        {
-            VPARAM_INFO root = item.nodeParams->exportParams();
-            return QVariant::fromValue(root);
-        }
         case ROLE_CUSTOMUI_PANEL_IO:
         {
             VPARAM_INFO root = item.panelParams->exportParams();
@@ -478,13 +473,6 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
                 ZASSERT_EXIT(item.panelParams, false);
                 item.panelParams->importParamInfo(invisibleRoot);
-                break;
-            }
-            case ROLE_CUSTOMUI_NODE_IO:
-            {
-                const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
-                ZASSERT_EXIT(item.nodeParams, false);
-                item.nodeParams->importParamInfo(invisibleRoot);
                 break;
             }
             case ROLE_COLLASPED:
