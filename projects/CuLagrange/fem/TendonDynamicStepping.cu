@@ -229,6 +229,145 @@ struct TendonDynamicStepping : INode {
             });
         }
 
+        void computeKinematicCollisionGradientAndHessian2(zs::CudaExecutionPolicy& cudaPol,
+            dtiles_t& vtemp,
+            const dtiles_t& tris,
+            const dtiles_t& ktris,
+            const dtiles_t& kverts,
+            dtiles_t& kc_buffer,
+            dtiles_t& gh_buffer) {
+                using namespace zs;
+                constexpr auto space = execspace_e::cuda;
+                int offset = 0;
+                auto stBvh = bvh_t{};
+                // std::cout << "try retrieve bounding volumes" << std::endl;
+                auto bvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},(T)0.0,"x");
+                // std::cout << "end retrieve bounding volumes " << std::endl;
+                stBvh.build(cudaPol,bvs);
+                auto thickness = kine_out_collisionEps + kine_in_collisionEps;
+                // calculate facet normal
+                TILEVEC_OPS::fill<2>(cudaPol,kc_buffer,"inds",zs::vec<int,2>::uniform(-1).template reinterpret_bits<T>());
+                std::cout << "do collision detection" << std::endl;
+                cudaPol(zs::range(tris.size()),[in_collisionEps = kine_in_collisionEps,
+                        out_collisionEps = kine_out_collisionEps,
+                        tris = proxy<space>({},tris),
+                        ktris = proxy<space>({},ktris),
+                        kverts = proxy<space>({},kverts),
+                        vtemp = proxy<space>({},vtemp),
+                        kc_buffer = proxy<space>({},kc_buffer),
+                        stBvh = proxy<space>(stBvh),thickness = thickness] ZS_LAMBDA(int ti) mutable {
+                    auto p = vec3::zeros();
+                    auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                    for(int i = 0;i != 3;++i)
+                        p += vtemp.pack(dim_c<3>,"xn",tri[i]);
+                    p = p/(T)3.0;
+                    auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
+
+                    int nm_collision_pairs = 0;
+                    auto process_kinematic_vertex_face_collision_pairs = [&](int kti) {
+                        if(nm_collision_pairs >= MAX_FP_COLLISION_PAIRS)
+                            return;
+                        auto ktri = ktris.pack(dim_c<3>,"inds",kti).reinterpret_bits(int_c);
+                        T dist = (T)0.0;
+
+                        auto nrm = ktris.pack(dim_c<3>,"nrm",kti);
+                        auto seg = p - kverts.pack(dim_c<3>,"x",ktri[0]);
+
+                        auto kt0 = kverts.pack(dim_c<3>,"x",ktri[0]);
+                        auto kt1 = kverts.pack(dim_c<3>,"x",ktri[1]);
+                        auto kt2 = kverts.pack(dim_c<3>,"x",ktri[2]);
+
+                        T barySum = (T)0.0;
+                        T distance = LSL_GEO::pointTriangleDistance(kt0,kt1,kt2,p,barySum);
+
+                        dist = seg.dot(nrm);
+                        // change dist -> dist > 0 from dist < 0
+                        auto collisionEps = dist < 0 ? out_collisionEps : in_collisionEps;
+                        if(barySum > 1.1)
+                            return;
+
+                        if(distance > collisionEps)
+                            return;
+
+                        if(!LSL_GEO::pointProjectsInsideTriangle(kt0,kt1,kt2,p)){
+                            auto ntris = ktris.pack(dim_c<3>,"ff_inds",kti).reinterpret_bits(int_c);
+
+                            for(int i = 0;i != 3;++i) {
+                                auto nti = ntris[i];
+                                auto edge_normal = ktris.pack(dim_c<3>,"nrm",kti) + ktris.pack(dim_c<3>,"nrm",nti);
+                                edge_normal = (edge_normal)/(edge_normal.norm() + (T)1e-6);
+                                auto e0 = kverts.pack(dim_c<3>,"x",ktri[(i+0)%3]);
+                                auto e1 = kverts.pack(dim_c<3>,"x",ktri[(i+1)%3]);
+                                auto e10 = e1 - e0;
+                                auto bisector_normal = edge_normal.cross(e10).normalized();
+
+                                seg = p - kverts.pack(dim_c<3>,"x",ktri[i]);
+                                if(bisector_normal.dot(seg) < 0)
+                                    return;
+                            }
+                        }
+                        kc_buffer.template tuple<2>("inds",ti * MAX_FP_COLLISION_PAIRS + nm_collision_pairs) =
+                                zs::vec<int,2>(ti,kti).template reinterpret_bits<T>();           
+                        nm_collision_pairs++;  
+                    };
+                    stBvh.iter_neighbors(bv,process_kinematic_vertex_face_collision_pairs);
+                });
+                std::cout << "evaluate collision " << std::endl;
+                cudaPol(zs::range(kc_buffer.size()),
+                    [dt = dt,kd_theta = kd_theta,
+                        kc_buffer = proxy<space>({},kc_buffer),
+                        vtemp = proxy<space>({},vtemp),
+                        tris = proxy<space>({},tris),
+                        ktris = proxy<space>({},ktris),
+                        kverts = proxy<space>({},kverts),
+                        gh_buffer = proxy<space>({},gh_buffer),
+                        in_collisionEps = kine_in_collisionEps,
+                        out_collisionEps = kine_out_collisionEps,
+                        stiffness = kineCollisionStiffness] ZS_LAMBDA(int cpi) mutable {
+                    auto inds = kc_buffer.pack(dim_c<2>,"inds",cpi).reinterpret_bits(int_c);
+                    for(int i = 0;i != 2;++i)
+                        if(inds[i] < 0)
+                            return;
+                    auto p = vec3::zeros();
+                    auto tri = tris.pack(dim_c<3>,"inds",inds[0]).reinterpret_bits(int_c);
+                    for(int i = 0;i != 3;++i)
+                        p += vtemp.pack(dim_c<3>,"xn",tri[i]);
+                    p = p/(T)3.0;
+                    vec3 cv[4] = {};
+                    cv[0] = p;
+                    auto ktri = ktris.pack(dim_c<3>,"inds",inds[1]).reinterpret_bits(int_c);
+                    for(int j = 0;j != 3;++j)
+                        cv[j + 1] = kverts.pack(dim_c<3>,"x",ktri[j]);
+                    auto ceps = out_collisionEps;
+                    auto alpha = stiffness;
+                    auto beta = (T)1.0;
+                    auto mu = tris("mu",inds[0]);
+                    auto lam = tris("lam",inds[0]);
+                    auto cgrad = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps,true)/(T)3.0;
+                    auto cH = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps,true)/(T)9.0;
+
+                    auto cforce = vec3{cgrad[0],cgrad[1],cgrad[2]};
+                    auto cK = mat3{
+                        cH(0,0),cH(0,1),cH(0,2),
+                        cH(1,0),cH(1,1),cH(1,2),
+                        cH(2,0),cH(2,1),cH(2,2)};
+                    auto cC = kd_theta * cK;
+                    cK += cC/dt;
+
+                    vec3 v0[3] = {vtemp.pack(dim_c<3>,"vn", tri[0]),
+                                    vtemp.pack(dim_c<3>,"vn", tri[1]),
+                                    vtemp.pack(dim_c<3>,"vn", tri[2])}; 
+
+                    for(int i = 0;i != 3;++i){
+                        auto cdforce = cforce - cC * v0[i];
+                        for(int j = 0;j != 3;++j)
+                            atomic_add(exec_cuda,&gh_buffer("grad",i*3 + j,inds[0]),cdforce[j]);
+                        for(int k = 0;k != 9;++k)
+                            atomic_add(exec_cuda,&gh_buffer("H",(i*3+k/3)*9 + i*3 + k % 3,inds[0]),cK(k/3,k%3));
+                    }
+                });
+        }
+
         void computeKinematicCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
             dtiles_t& vtemp,
             dtiles_t& ttemp,
@@ -371,13 +510,14 @@ struct TendonDynamicStepping : INode {
         TendonDynamicSteppingSystem(const tiles_t &verts,const tiles_t& tris,
                 const vec3& volf,const T& density,const T& _dt,
                 const T& kine_in_collisionEps,const T& kine_out_collisionEps,
-                const T& kineCollisionStiffness)
-            : verts{verts}, tris{tris},volf{volf},density{density},
+                const T& kineCollisionStiffness,const T& kd_theta)
+            : verts{verts}, tris{tris},volf{volf},density{density},kd_theta{kd_theta},
                     kine_in_collisionEps{kine_in_collisionEps},kine_out_collisionEps{kine_out_collisionEps},
                     kineCollisionStiffness{kineCollisionStiffness},dt{_dt}, dt2{_dt * _dt}{}
 
         const tiles_t &verts;
         const tiles_t &tris;
+        T kd_theta;
         T density;
         vec3 volf;
         T dt;
@@ -425,13 +565,43 @@ struct TendonDynamicStepping : INode {
 
         auto kverts = typename ZenoParticles::particles_t({
                 {"x",3}},0,zs::memsrc_e::device,0);
+        auto ktris = typename ZenoParticles::particles_t({
+                {"inds",3},{"nrm",3},{"ff_inds",3}},0,zs::memsrc_e::device,0);
 
         if(has_input<ZenoParticles>("kboundary")){
             auto kinematic_boundary = get_input<ZenoParticles>("kboundary");
             auto& kb_verts = kinematic_boundary->getParticles();
             kverts.resize(kb_verts.size());
             TILEVEC_OPS::copy<3>(cudaPol,kb_verts,"x",kverts,"x");
+            auto& kb_tris = kinematic_boundary->getQuadraturePoints();
+            if(kb_tris.getChannelSize("inds") != 3)
+                throw std::runtime_error("the input kboundary should be triangulate mesh");
+            ktris.resize(kb_tris.size());
+            TILEVEC_OPS::copy<3>(cudaPol,kb_tris,"inds",ktris,"inds");
+            TILEVEC_OPS::copy<3>(cudaPol,kb_tris,"ff_inds",ktris,"ff_inds");
         }
+
+        // calculate ktris normal
+        cudaPol(zs::range(ktris.size()),
+            [kverts = proxy<space>({},kverts),
+                ktris = proxy<space>({},ktris)] ZS_LAMBDA(int ti) mutable {
+            auto tri = ktris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            auto v0 = kverts.template pack<3>("x",tri[0]);
+            auto v1 = kverts.template pack<3>("x",tri[1]);
+            auto v2 = kverts.template pack<3>("x",tri[2]);
+
+            auto e01 = v1 - v0;
+            auto e02 = v2 - v0;
+
+            auto nrm = e01.cross(e02);
+            auto nrm_norm = nrm.norm();
+            if(nrm_norm < 1e-8)
+                nrm = zs::vec<T,3>::zeros();
+            else
+                nrm = nrm / nrm_norm;
+
+            ktris.tuple(dim_c<3>,"nrm",ti) = nrm;
+        });
 
         dtiles_t vtemp{verts.get_allocator(),
             {
@@ -440,7 +610,7 @@ struct TendonDynamicStepping : INode {
                 {"P",9},
                 {"xn",3},
                 {"xp",3},
-                // {"vn",3},
+                {"vn",3},
                 {"vp",3},
                 {"active",1},
                 {"k_active",1},
@@ -455,6 +625,10 @@ struct TendonDynamicStepping : INode {
             {
                 {"inds",2}
             },kverts.size() * MAX_FP_COLLISION_PAIRS};
+        // dtiles_t kc_buffer{tris.get_allocator(),
+        //     {
+        //         {"inds",2}
+        //     },tris.size() * MAX_FP_COLLISION_PAIRS};
         dtiles_t gh_buffer(tris.get_allocator(),{
             {"inds",3},
             {"H",9 * 9},
@@ -466,11 +640,12 @@ struct TendonDynamicStepping : INode {
         auto kineInCollisionEps = get_input2<float>("kineInColEps");
         auto kineOutCollisionEps = get_input2<float>("kineOutColEps");
         
+        auto kd_theta = get_input2<float>("kd_theta");
 
         TendonDynamicSteppingSystem A{verts,tris,
             volf,models.density,dt,
             kineInCollisionEps,kineOutCollisionEps,
-            kineCollisionStiffness};
+            kineCollisionStiffness,kd_theta};
         
         // step forward
         TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"xp");
@@ -479,6 +654,7 @@ struct TendonDynamicStepping : INode {
         // TILEVEC_OPS::copy(cudaPol,verts,"v",vtemp,"vn");  
         TILEVEC_OPS::copy(cudaPol,verts,"x",vtemp,"xn");
         TILEVEC_OPS::fill(cudaPol,ttemp,"shrink",(T)shrink);
+        TILEVEC_OPS::fill(cudaPol,vtemp,"vn",(T)0.0);
 
         if(verts.hasProperty("bou_tag")) {
             TILEVEC_OPS::copy(cudaPol,verts,"bou_tag",vtemp,"bou_tag");
@@ -496,10 +672,14 @@ struct TendonDynamicStepping : INode {
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,gh_buffer,"H",(T)0.0);
             // evaluate element-wise gradient and hessian
-
+            // std::cout << "eval hessian" << std::endl;
             A.computeGradientAndHessian(cudaPol,vtemp,ttemp,gh_buffer);
-            A.computeKinematicCollisionGradientAndHessian(cudaPol,
-                vtemp,ttemp,kverts,kc_buffer,gh_buffer);
+            // std::cout << "eval kinematic hessian" << std::endl;
+            // A.computeKinematicCollisionGradientAndHessian2(cudaPol,
+            //     vtemp,tris,ktris,kverts,kc_buffer,gh_buffer);
+            // std::cout << "finish eval hessian" << std::endl;
+            // A.computeKinematicCollisionGradientAndHessian(cudaPol,
+            //     vtemp,ttemp,kverts,kc_buffer,gh_buffer);
             // assemble element-wise gradient
             TILEVEC_OPS::fill(cudaPol,vtemp,"grad",(T)0.0);
             TILEVEC_OPS::assemble(cudaPol,gh_buffer,"grad","inds",vtemp,"grad");
@@ -519,8 +699,9 @@ struct TendonDynamicStepping : INode {
             auto ng = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"grad","grad");
             // std::cout << "ng : " << TILEVEC_OPS::dot<9>(cudaPol,vtemp,"grad","grad") << std::endl;
             TILEVEC_OPS::fill(cudaPol,vtemp,"dir",(T)0.0);
+            std::cout << "launch cg solver" << std::endl;
             auto nm_CG_iters = PCG::pcg_with_fixed_sol_solve<3,3>(cudaPol,vtemp,gh_buffer,"dir","bou_tag","grad","P","inds","H",cg_res,max_cg_iters,100);
-
+            std::cout << "finish cg solver" << std::endl;
             auto ndir = TILEVEC_OPS::inf_norm<3>(cudaPol,vtemp,"dir");
             // std::cout << "ndir : " << ndir << std::endl;
 
@@ -530,8 +711,8 @@ struct TendonDynamicStepping : INode {
             cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),alpha,dt] __device__(int i) mutable {
                 vtemp.template tuple<3>("xn", i) =
                     vtemp.template pack<3>("xn", i) + alpha * vtemp.template pack<3>("dir", i);
-                // vtemp.template tuple<3>("vn",i) = 
-                //     (vtemp.template pack<3>("xn",i) - vtemp.template pack<3>("xp",i))/dt; 
+                vtemp.template tuple<3>("vn",i) = 
+                    (vtemp.template pack<3>("xn",i) - vtemp.template pack<3>("xp",i))/dt; 
             });
 
             nm_iters++;
@@ -554,6 +735,7 @@ ZENDEFNODE(TendonDynamicStepping, {{"zssurf","gravity","kboundary",
                                     {"float","dt","0.5"},
                                     {"float","newton_res","0.001"},
                                     {"float","shrink","1.0"},
+                                    {"float","kd_theta","1.0"}
                                     },
                                   {"zssurf"},
                                   {
