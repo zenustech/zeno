@@ -1092,9 +1092,12 @@ static __inline__ __device__ float sampleLowFrequency(
                             (lowFrequencyNoises.z * 0.25)  + 
                             (lowFrequencyNoises.w * 0.125);
 
-    return lowFrequencyFBM;
-
     lowFrequencyFBM = saturate(lowFrequencyFBM);
+
+    //debug
+    // return lowFrequencyNoises.x;
+    return lowFrequencyFBM * 0.2;
+
 
     float baseCloud = saturate(remap( 
             lowFrequencyNoises.x, 
@@ -1117,9 +1120,15 @@ static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverag
 {
     // tofix: try 3Dtexture approach
     // no more real-time calculation of noise and fbm
-    vec3 p = 0.00001 * pos; // test time
+
+    // tofix: how to properly sample noise with pos
+    // float relativeHeight = getRelativeHeightInAtmosphere(pos, earthCenter, startPos, ray.direction, ray.origin);
+    // vec3 skewedSamplePoint = skewSamplePointWithWind(samplePoint, relativeHeight);
+
+    // vec3 p = mod(pos, 1.0f);
+
     float baseDensity = sampleLowFrequency(
-            p + windDir * time, 
+            normalize(pos + windDir * time), 
             coverage
         );
 
@@ -1153,7 +1162,7 @@ static __inline__ __device__ float light(
 	vec3 dir_step = -sunLightDir * march_step;
 	float T = 1.; // transmitance
     float coef = 1.0;
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < steps; i++) {
 		float dens = density(pos, windDir, coverage, time, freq,6);
 
 		float T_i = exp(-absorption * dens * coef * march_step);
@@ -1188,8 +1197,8 @@ static __inline__ __device__ vec4 render_clouds(
 
     // tofix: need to have two layer now
     sphere atmosphere_lower = {
-        vec3(0,-60350., 0),
-        60500., 
+        vec3(0,-350., 0),
+        500., 
         0
     };
     hit_record hit = {
@@ -1274,6 +1283,9 @@ static __inline__ __device__ vec3 proceduralSky(
     
     vec3 sky = render_sky_color(r.direction, sunLightDir);
     if(r_dir.y<-0.001) return sky; // just being lazy
+
+    // debug
+    // return (vec3)texture3D(params.cloudBaseShapeSampler, r_dir);
 
     vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, time);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);

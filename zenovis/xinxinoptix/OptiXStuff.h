@@ -405,16 +405,25 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
     cudaExtent size = make_cudaExtent(nx,ny,nz);
     size_t elements = size.width*size.height*size.depth;
 
+    // tofix: use vector
     float *volumeData = (float *)malloc(elements*nc*sizeof(float));
     float *ptr = volumeData;
 
-    for (size_t i=0; i<elements; i++)
+    for (size_t idx=0; idx<elements; idx++)
     {
-        *ptr++ = nc>=1?img[i*nc+0]:0;
-        *ptr++ = nc>=2?img[i*nc+1]:0;
-        *ptr++ = nc>=3?img[i*nc+2]:0;
-        *ptr++ = nc>=4?img[i*nc+3]:0;
+        *ptr++ = nc>=1?(float)(img[idx*nc + 0])/255.0f:0;
+        *ptr++ = nc>=2?(float)(img[idx*nc + 0])/255.0f:0;
+        *ptr++ = nc>=3?(float)(img[idx*nc + 0])/255.0f:0;
+        *ptr++ = nc>=4?(float)(img[idx*nc + 0])/255.0f:0;
     }
+    // debug
+    zeno::log_error(
+        "volumeData[0,1,2,3]:({},{},{},{})", 
+        *(volumeData+0),
+        *(volumeData+1),
+        *(volumeData+2),
+        *(volumeData+3)
+    );
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
     cudaError_t rc = cudaMalloc3DArray(&texture->gpuImageArray, &channelDesc, size);
@@ -461,10 +470,15 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
 inline void addNoiseTexture(std::string directoryPath)
 {
     zeno::log_debug("loading noise texture from directory:{}", directoryPath);
+    //debug
+    zeno::log_error("map_size: {}", n_tex.size());
     // tofix: hardcode first
     if(n_tex.count(directoryPath)) {
         return;
     }
+
+    //debug
+    zeno::log_error("still loading? {},{}", n_tex.count(directoryPath), directoryPath);
 
     // tofix: try hardcode first
     int nx, ny, nz, nc;

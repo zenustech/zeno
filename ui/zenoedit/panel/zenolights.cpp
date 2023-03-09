@@ -554,6 +554,7 @@ void ZenoLights::modifySunLightDir() {
         if (key.find("ProceduralSky") != std::string::npos) {
             found = true;
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
+                // prim_in->userData().set2("3DNoiseDirectoryPath", std::move(directoryPath));
                 prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
                 prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
                 prim_in->userData().set2("windDir", std::move(windDir));
