@@ -281,7 +281,7 @@ namespace zenoui
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
-                pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+                pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pComboBox->setData(GVKEY_TYPE, type);
 
                 QString val = value.toString();
@@ -340,6 +340,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
 					cbSet.cbEditFinished(value);
 				});
@@ -358,6 +360,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
 					cbSet.cbEditFinished(value); 
@@ -379,6 +383,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamDoubleSpinBox *pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toDouble());
                 QObject::connect(pSpinBox, &ZenoParamDoubleSpinBox::valueChanged, [=](double value) { 
                     cbSet.cbEditFinished(value); 
@@ -398,6 +404,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
 					cbSet.cbEditFinished(value); 
