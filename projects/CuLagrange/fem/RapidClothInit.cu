@@ -393,15 +393,29 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     fmt::print("num total obj <verts, bouVerts, surfV, surfE, surfT>: {}, {}, {}, {}, {}\n", coOffset, numBouDofs,
                svOffset, seOffset, sfOffset);
 
+    tempCons = itiles_t{
+        zsprims[0]->getParticles().get_allocator(), 
+        {
+            {"fixed", 1},        
+            {"max_color", 1}, 
+            {"num_color", 1}, 
+            // use its bits, e.g. 110 means 
+            // color-0: not available, color-1: okay, color-2: okay
+            {"colors", 1}, 
+            {"color", 1}, 
+            {"vi", 4}, 
+            {"vi_len", 1},
+            {"tmp", 1}
+        }, 
+        (std::size_t)estNumCps
+    }; 
     tempPP = tiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
             {"grad", 6}, 
             {"dist", 1}, 
-            {"cons_adj", consDegree}, 
-            {"LCP_row", consDegree}, 
-            {"color", 1}, 
+            {"tmp", 1}, 
             {"lambda", 1} // for LCP
         }, 
         (std::size_t)estNumCps
@@ -412,9 +426,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"inds", 3}, 
             {"grad", 9}, 
             {"dist", 1}, 
-            {"cons_adj", consDegree}, 
-            {"LCP_row", consDegree}, 
-            {"color", 1}, 
+            {"tmp", 1}, 
             {"lambda", 1}
         }, 
         (std::size_t)estNumCps
@@ -425,9 +437,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"inds", 4}, 
             {"grad", 12},
             {"dist", 1},  
-            {"cons_adj", consDegree},   
-            {"LCP_row", consDegree}, 
-            {"color", 1}, 
+            {"tmp", 1}, 
             {"lambda", 1}
         }, 
         (std::size_t)estNumCps
@@ -438,9 +448,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"inds", 4}, 
             {"grad", 12}, 
             {"dist", 1}, 
-            {"cons_adj", consDegree},  
-            {"LCP_row", consDegree}, 
-            {"color", 1}, 
+            {"tmp", 1}, 
             {"lambda", 1}
         }, 
         (std::size_t)estNumCps
@@ -451,18 +459,17 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"inds", 2}, 
             {"grad", 6}, 
             {"dist", 1}, 
-            {"cons_adj", consDegree}, 
-            {"LCP_row", consDegree}, 
-            {"color", 1}, 
+            {"tmp", 1}, 
             {"lambda", 1}
         }, 
         (std::size_t)estNumCps
     }; 
-    vCons = tiles_i{zsprims[0]->getParticles().get_allocator(), 
+    vCons = itiles_t{zsprims[0]->getParticles().get_allocator(), 
                     {
                         {"n", 1}, 
                         {"nE", 1}, 
-                        {"cons", maxVertCons}
+                        {"cons", maxVertCons}, 
+                        {"ind", maxVertCons}    // its index in each constraint 
                     }, 
                     (std::size_t)numDofs
     }; 

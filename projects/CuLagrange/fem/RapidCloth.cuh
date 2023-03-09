@@ -16,7 +16,7 @@ struct RapidClothSystem : IObject {
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
 
     using tiles_t = typename ZenoParticles::particles_t;
-    using tiles_i = zs::TileVector<int, 32>; 
+    using itiles_t = zs::TileVector<int, 32>; 
     using vec3 = zs::vec<T, 3>;
     using vec3f = zs::vec<float, 3>;
     using ivec3 = zs::vec<int, 3>;
@@ -152,6 +152,7 @@ struct RapidClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision; TODO
+    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 3);   
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
     void computeConstraints(zs::CudaExecutionPolicy &pol); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
@@ -190,10 +191,11 @@ struct RapidClothSystem : IObject {
         std::tie(npp, npe, npt, nee, ne) = 
             std::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nE.getVal());
         oe = 0; 
-        opt = oe + ne; 
+        opp = ne; 
+        ope = opp + npp; 
+        opt = ope + npe; 
         oee = opt + npt; 
-        ope = oee + nee; 
-        opp = ope + npe;
+        nCons = oee + nee; 
     }
 
     // sim params
@@ -230,14 +232,16 @@ struct RapidClothSystem : IObject {
     tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
     // buffer
-    tiles_i vCons;          // vertex -> constraint indices & constraints num 
+    itiles_t vCons;          // vertex -> constraint indices & constraints num 
     tiles_t vtemp;          // solver data
     zs::Vector<T> temp;     // as temporary buffer
     zs::Vector<bv_t> bvs;   // as temporary buffer
 
     // collision constraints (edge / non-edge)
     int maxVertCons = 32;
+    int nCons = 0; 
     int consDegree = 32 * 3;
+    itiles_t tempCons;       // LCP constraint matrix storing
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
