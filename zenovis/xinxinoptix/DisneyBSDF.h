@@ -1086,13 +1086,14 @@ static __inline__ __device__ float sampleLowFrequency(
 )
 {
     vec4 lowFrequencyNoises = texture3D(params.cloudBaseShapeSampler, pos);
-    
     // x = perlin-worley
     // y,z,w = worley
     float lowFrequencyFBM = (lowFrequencyNoises.y * 0.625) + 
                             (lowFrequencyNoises.z * 0.25)  + 
                             (lowFrequencyNoises.w * 0.125);
-    
+
+    return lowFrequencyFBM;
+
     lowFrequencyFBM = saturate(lowFrequencyFBM);
 
     float baseCloud = saturate(remap( 
@@ -1116,9 +1117,9 @@ static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverag
 {
     // tofix: try 3Dtexture approach
     // no more real-time calculation of noise and fbm
-    
+    vec3 p = 0.00001 * pos; // test time
     float baseDensity = sampleLowFrequency(
-            pos, 
+            p + windDir * time, 
             coverage
         );
 
@@ -1152,7 +1153,7 @@ static __inline__ __device__ float light(
 	vec3 dir_step = -sunLightDir * march_step;
 	float T = 1.; // transmitance
     float coef = 1.0;
-	for (int i = 0; i < steps; i++) {
+	for (int i = 0; i < 100; i++) {
 		float dens = density(pos, windDir, coverage, time, freq,6);
 
 		float T_i = exp(-absorption * dens * coef * march_step);

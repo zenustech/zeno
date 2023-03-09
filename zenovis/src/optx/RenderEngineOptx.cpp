@@ -425,6 +425,11 @@ struct GraphicsManager {
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
+
+                auto directoryPath = prim_in->userData().get2<std::string>("3DNoiseDirectoryPath");
+                OptixUtil::noise_tex = directoryPath;
+                OptixUtil::addNoiseTexture(directoryPath);
+
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
                 float sunLightIntensity = prim_in->userData().get2<float>("sunLightIntensity");

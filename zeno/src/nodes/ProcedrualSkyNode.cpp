@@ -14,7 +14,7 @@ struct ProceduralSky : INode {
 
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("ProceduralSky", std::move(1));
-        prim->userData().set2("3DNoiseDirectory", std::move(path));
+        prim->userData().set2("3DNoiseDirectoryPath", std::move(directoryPath));
         prim->userData().set2("sunLightDir", std::move(get_input2<vec2f>("sunLightDir")));
         prim->userData().set2("sunLightSoftness", std::move(get_input2<float>("sunLightSoftness")));
         prim->userData().set2("windDir", std::move(get_input2<vec2f>("windDir")));
