@@ -10,8 +10,13 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/UserData.h>
+#include <zeno/extra/TempNode.h>
+#include <zeno/types/StringObject.h>
 
+#include <filesystem>
 #include <vector>
+
+using Path = std::filesystem::path;
 
 ReadFBXPrim::ReadFBXPrim(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
@@ -47,31 +52,37 @@ void ReadFBXPrim::onEditClicked()
     ZENO_HANDLE fbxNode = index().internalId();
     std::string fbxIdentStr = index().data(ROLE_OBJID).toString().toStdString();
 
-    // Find corresponding node
-    auto &inst = Zenovis::GetInstance();
-    auto sess = inst.getSession();
-    ZASSERT_EXIT(sess);
-    auto scene = sess->get_scene();
-    ZASSERT_EXIT(scene);
-    std::vector<std::pair<std::string, zeno::IObject *>> const &objs
-        = scene->objectsMan->pairs();
-    zeno::IObject* fbxObj = nullptr;
-    bool findFbxObj = false;
-    for (auto const &[key, obj] : objs) {
-        if(key.find(fbxIdentStr, 0) != std::string::npos){
-            findFbxObj = true;
-            fbxObj = obj;
-        }
-    }
+    // Get FBX Path
+    ZVARIANT path; std::string type;
+    Zeno_GetInputDefl(fbxNode, "path", path, type);
+    std::string get_path = std::get<std::string>(path);
+    auto p = std::make_shared<zeno::StringObject>(); p->set(get_path);
+    auto fbxFileName = Path(get_path).replace_extension("").filename().string();
+
+    // Get basic information in FBX
+    zeno::log_info("ReadFBXPrim TempNodeSimpleCaller FBX Name {}", fbxFileName);
+    auto outs = zeno::TempNodeSimpleCaller("ReadFBXPrim")
+        .set("path", p)
+        .set2<bool>("generate", true)
+        .set2<std::string>("udim:", "DISABLE")
+        .set2<bool>("invOpacity:", true)
+        .set2<bool>("primitive:", false)
+        .set2<bool>("printTree:", false)
+        .set2<bool>("triangulate:", true)
+        .call();
+    zeno::log_info("ReadFBXPrim Caller End");
 
     // Get the position of current ReadFBXPrim node
     std::pair<float, float> fbxNodePos;
     Zeno_GetPos(fbxNode, fbxNodePos);
 
     // Create nodes
-    if(findFbxObj) {
+    auto fbxObj = outs.get("prim");
+
+    if(fbxObj) {
         auto matNum = fbxObj->userData().getLiterial<int>("matNum");
         auto fbxName = fbxObj->userData().getLiterial<std::string>("fbxName");
+
         ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
         ZASSERT_EXIT(fbxPartGraph);
 

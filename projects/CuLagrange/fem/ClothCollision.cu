@@ -30,18 +30,17 @@ void ClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat)
         findCollisionConstraintsImpl(pol, dHat, false);
     }
 
-    if (coVerts)
-        if (coVerts->size()) {
-            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
-            bouStBvh.refit(pol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
-            bouSeBvh.refit(pol, edgeBvs);
+    if (hasBoundary()) {
+        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset);
+        bouStBvh.refit(pol, triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
+        bouSeBvh.refit(pol, edgeBvs);
 #if 1
-            findCollisionConstraintsImpl(pol, dHat, true);
+        findCollisionConstraintsImpl(pol, dHat, true);
 #else
-            findBoundaryCellCollisionConstraints(pol, dHat);
+        findBoundaryCellCollisionConstraints(pol, dHat);
 #endif
-        }
+    }
     auto [npt, nee] = getCollisionCnts();
     timer.tock(fmt::format("dcd broad phase [pt, ee]({}, {})", npt, nee));
 

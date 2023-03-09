@@ -10,7 +10,19 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
-
+#define s_useNewtonSolver 0 // 0 for gradient descent solver
+#define s_useChebyshevAcc 1 // for GD solver
+#define s_useGDDiagHess 1   // for GD solver
+#define s_useLineSearch 1
+#define s_debugOutput 0
+#define s_useHardPhase 0
+#define s_clothShearingCoeff 0.01f
+#define s_silentMode 1
+#define s_hardPhaseSilent 1
+#define s_useMassSpring 0
+#define s_debugRemoveHashTable 0
+#define s_testLightCache 1
+#define s_hardPhaseLinesearch 0
 namespace zeno {
 
 /// for cell-based collision detection
@@ -33,10 +45,12 @@ struct FastClothSystem : IObject {
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
-    using bvfront_t = zs::BvttFront<int, int>;
+    using sh_t = zs::SpatialHash<3, int, T>;
     using bv_t = typename bvh_t::Box;
-    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>; 
-    static constexpr T s_constraint_residual = 1e-2;
+#if !s_debugRemoveHashTable
+    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>;
+#endif
+    static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;
     inline static const char s_maxSurfEdgeLengthTag[] = "MaxEdgeLength";
     inline static const char s_meanMassTag[] = "MeanMass";
@@ -117,6 +131,8 @@ struct FastClothSystem : IObject {
         tiles_t svtemp; // surface vert hessian
         const int vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
+
+        bool hasBC = false; 
     };
 
     bool hasBoundary() const noexcept {
@@ -150,7 +166,7 @@ struct FastClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
-                    int PNCap, int CGCap, T dHat, T gravity);
+                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn, T BCStiffness);
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -159,14 +175,18 @@ struct FastClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString& tag = "xinit");
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag = "xinit");
+    void lightCD(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag = "xinit");
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, bool withBoundary);
+    void lightFindCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat,
+                                       bool withBoundary); // light version to be tested
+    void lightFilterConstraints(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag);
     /// @note given "xinit", computes x^{k+1}
     void initialStepping(zs::CudaExecutionPolicy &pol);
     bool collisionStep(zs::CudaExecutionPolicy &pol, bool enableHardPhase); // given x^init (x^k) and y^{k+1}
     void softPhase(zs::CudaExecutionPolicy &pol);
-    void hardPhase(zs::CudaExecutionPolicy &pol);
-    bool constraintSatisfied(zs::CudaExecutionPolicy &pol);
+    T hardPhase(zs::CudaExecutionPolicy &pol, T E0);
+    bool constraintSatisfied(zs::CudaExecutionPolicy &pol, bool hasEps = true);
     T constraintEnergy(zs::CudaExecutionPolicy &pol);
     // void computeConstraintGradients(zs::CudaExecutionPolicy &cudaPol);
 
@@ -184,20 +204,32 @@ struct FastClothSystem : IObject {
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
     T infNorm(zs::CudaExecutionPolicy &pol);
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
+    void newtonDynamicsStep(zs::CudaExecutionPolicy &pol);
+    void gdDynamicsStep(zs::CudaExecutionPolicy &pol);
+    T dynamicsEnergy(zs::CudaExecutionPolicy &pol);
+
+    // for debug output data
+    void writeFile(std::string filename, std::string info);
+    int frameCnt = 0;
 
     // contacts
     auto getConstraintCnt() const {
-        return zs::make_tuple(nPP.getVal(), nE.getVal());
+        return std::make_tuple(nPP.getVal(), nE.getVal());
     }
 
     // sim params
     int substep = -1;
     std::size_t estNumCps = 1000000;
 
+    bool firstStepping = true;
+    T alpha = 0.3f; // step size
+    T alphaMin = 0.10f;
+    T alphaDecrease = 0.7f;
     T pnRel = 1e-2;
     T cgRel = 1e-2;
     int PNCap = 1000;
@@ -209,7 +241,7 @@ struct FastClothSystem : IObject {
     bool enableContactSelf = true;
     bool projectDBC = false;
     T augLagCoeff = 1e4;
-    T dHat = 0.0025;
+    T dHat = 8;
     vec3 extAccel;
 
     T boxDiagSize2 = 0;
@@ -234,7 +266,7 @@ struct FastClothSystem : IObject {
     /// @brief positive slack constant, used in proximity search
     /// @note sufficiently large enough to 1) faciliate convergence, 2) address missing pair issue
     /// @note sufficiently small enough to 1) reduce proximity search cost, 2) reduce early repulsion artifacts
-    T epsSlack = 21.75; // (B + Btight) * (B + Btight) + epsSlack + epsSlack < L^2
+    T epsSlack = 30; //21.75; // (B + Btight) * (B + Btight) + epsSlack + epsSlack < L^2
     // 42.25 + 72
     /// @brief hard phase constraint coefficients
     // constexpr T a0 = 0;
@@ -250,13 +282,15 @@ struct FastClothSystem : IObject {
     /// @brief initial displacement limit during the start of K iteration collision steps
     T D = 0.25;
     /// @brief coupling coefficients between cloth dynamics and collision dynamics
-    T sigma = 80000; // s^{-2}
+    T sigma = 160000; // s^{-2}
     /// @brief hard phase termination criteria
     T yita = 0.1;
     /// @brief counts: K [iterative steps], ISoft [soft phase steps], IHard [hard phase steps], IInit [x0 initialization]
-    int K = 72, ISoft = 10 /*6~16*/, IHard = 8, IInit = 6;
+    int K = 72, ISoft = 6 /*6~16*/, IHard = 8, IInit = 6;
     /// @brief counts: R [rollback steps for reduction], IDyn [cloth dynamics iters]
-    int IDyn = 3 /*1~6*/, R = 8;
+    int IDyn = 1 /*1~6*/, R = 8;
+    T chebyOmega = 1.0f;
+    T chebyRho = 0.99f;
 
     T proximityRadius() const {
         return std::sqrt((B + Btight) * (B + Btight) + epsSlack);
@@ -271,15 +305,22 @@ struct FastClothSystem : IObject {
     /// @note allow (bisector) normal update on-the-fly, thus made modifiable
     tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
-    tiles_t vtemp;      // solver data
-    zs::Vector<T> temp; // as temporary buffer
+    tiles_t vtemp;        // solver data
+    zs::Vector<T> temp;   // as temporary buffer
+    zs::Vector<bv_t> bvs; // as temporary buffer
 
     // collision constraints (edge / non-edge)
     zs::Vector<pair_t> PP, E;
     zs::Vector<int> nPP, nE;
+    // for light cache to be tested
+    zs::Vector<pair_t> cPP, cE;
+    zs::Vector<int> ncPP, ncE;
     int npp, ne;
+    int ncpp, nce;
     tiles_t tempPP, tempE;
-    etab_t eTab;        // global surface edge hash table
+#if !s_debugRemoveHashTable
+    etab_t eTab; // global surface edge hash table
+#endif
 
 #if 0
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -300,9 +341,22 @@ struct FastClothSystem : IObject {
     tiles_t svInds, seInds, stInds;
     bvh_t svBvh;    // for simulated objects
     bvh_t bouSvBvh; // for collision objects
-    bvfront_t selfSvFront, boundarySvFront;
-    bool frontManageRequired;
+    sh_t svSh;
+    sh_t bouSvSh;
     T dt, framedt, curRatio;
+
+    zs::CppTimer timer;
+    float auxTime[10]; // bvh build, bvh iter, sh build, sh iter
+    float dynamicsTime[10];
+    float collisionTime[10];
+    int auxCnt[10];
+    int dynamicsCnt[10];
+    int collisionCnt[10];
+    float initInterpolationTime;
+    static constexpr bool s_enableProfile = true;
+
+    T BCStiffness; 
+#define s_testSh false
 };
 
 } // namespace zeno

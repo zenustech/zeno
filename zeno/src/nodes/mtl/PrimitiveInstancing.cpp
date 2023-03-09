@@ -4,6 +4,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -138,5 +139,89 @@ namespace zeno
                 "shader",
             },
         });
+
+    struct BecomeRtInst
+        : zeno::INode
+    {
+        virtual void apply() override
+        {
+            auto obj = get_input<zeno::IObject>("object");
+            auto isInst = get_input2<int>("isInst");
+            auto instID = get_input2<std::string>("instID");
+            auto onbType = get_input2<std::string>("onbType");
+
+            obj->userData().set2("isInst", std::move(isInst));
+            obj->userData().setLiterial("instID", std::move(instID));
+            obj->userData().setLiterial("onbType", std::move(onbType));
+
+            /* test
+            auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
+            prim->verts.resize(3);
+            auto &pos = prim->add_attr<zeno::vec3f>("pos");
+            auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+            auto &clr = prim->add_attr<zeno::vec3f>("clr");
+            auto &uv = prim->add_attr<zeno::vec3f>("uv");
+            auto &tang = prim->add_attr<zeno::vec3f>("tang");
+
+            pos = {{2, 0, 0}, {0, 0, 0}, {-2, 0, 0}}; // translation
+            nrm = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // direction
+            clr = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}; // scaling
+            uv = {{0, 0, 1}, {0, 1, 0}, {1, 0, 0}};
+            tang = {{0, 1, 1}, {1, 0, 1}, {1, 1, 0}};
+            */
+
+            set_output("object", std::move(obj));
+        }
+    };
+
+    ZENDEFNODE(
+        BecomeRtInst,
+        {
+            {
+                {"object"},
+                {"bool", "isInst", "1"},
+                {"string", "instID", "Inst1"},
+                {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
+            },
+            {
+                {"object"},
+            },
+            {},
+            {
+                "shader",
+            },
+        }
+    );
+
+    struct BindRtInst
+        : zeno::INode
+    {
+        virtual void apply() override
+        {
+            auto obj = get_input<zeno::IObject>("object");
+            auto instID = get_input2<std::string>("instID");
+
+            obj->userData().setLiterial("instID", std::move(instID));
+
+            set_output("object", std::move(obj));
+        }
+    };
+
+    ZENDEFNODE(
+        BindRtInst,
+        {
+            {
+                {"object"},
+                {"string", "instID", "Inst1"},
+            },
+            {
+                {"object"},
+            },
+            {},
+            {
+                "shader",
+            },
+        }
+    );
 
 } // namespace zeno

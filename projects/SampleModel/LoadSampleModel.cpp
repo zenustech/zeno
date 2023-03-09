@@ -26,9 +26,9 @@ struct LoadSampleModel : INode {
 
 ZENO_DEFNODE(LoadSampleModel)({
     {
+        {"enum cube monkey sphere humannose Pig_Head temple star", "name", "cube"},
         {"bool", "triangulate", "1"},
         {"bool", "decodeUVs", "1"},
-        {"enum cube monkey sphere humannose Pig_Head temple star", "name", "cube"},
     },
     {"prim"},
     {},
@@ -39,7 +39,14 @@ struct LoadStringPrim : INode {
     inline static thread_local std::shared_ptr<PrimitiveObject> cache[128];
 
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
+        std::string str;
+        if (has_input2<NumericObject>("str")) {
+            std::visit([&] (auto const &val) {
+                str = zeno::to_string(val);
+            }, get_input<NumericObject>("str")->value);
+        } else {
+            str = get_input2<std::string>("str");
+        }
         const float stride = 0.6f;
 
         std::vector<std::shared_ptr<PrimitiveObject>> prims;
@@ -83,8 +90,8 @@ struct LoadStringPrim : INode {
 
 ZENO_DEFNODE(LoadStringPrim)({
     {
-        {"bool", "triangulate", "1"},
         {"string", "str", "Zello World!"},
+        {"bool", "triangulate", "1"},
     },
     {"prim"},
     {},

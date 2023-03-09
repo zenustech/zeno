@@ -7,9 +7,29 @@
 #include "panel/zenolights.h"
 #include "common.h"
 
+
+struct ZENO_RECORD_RUN_INITPARAM {
+    QString sZsgPath = "";
+    bool bRecord = false;
+    int iFrame = 0;
+    int iSFrame = 0;
+    int iSample = 0;
+    int iBitrate = 0;
+    int iFps = 0;
+    QString sPixel = "";
+    QString sPath = "";
+    QString audioPath = "";
+    QString configFilePath = "";
+    bool exitWhenRecordFinish = false;
+};
+
+
 class ZenoDockWidget;
 class DisplayWidget;
 class ZenoGraphsEditor;
+class LiveTcpServer;
+class LiveHttpServer;
+class LiveSignalsBridge;
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -22,8 +42,12 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void resetTimeline(TIMELINE_INFO info);
+    void doFrameUpdate(int frame);
 
     ZenoLights* lightPanel = nullptr;
+    LiveTcpServer* liveTcpServer;
+    LiveHttpServer* liveHttpServer;
+    LiveSignalsBridge* liveSignalsBridge;
 
 public slots:
     void openFileDialog();
@@ -47,6 +71,7 @@ public slots:
     void onFeedBack();
     void clearErrorMark();
     void updateLightList();
+    void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -55,6 +80,7 @@ protected:
 private:
     void init();
     void initMenu();
+    void initLive();
     void initDocks();
     void verticalLayout();
     void onlyEditorLayout();

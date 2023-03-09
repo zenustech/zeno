@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>415</width>
-    <height>357</height>
+    <width>413</width>
+    <height>406</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,10 +26,72 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_7">
        <property name="text">
-        <string>FPS:</string>
+        <string>Height:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="bitrate"/>
+     </item>
+     <item row="10" column="1">
+      <widget class="QLineEdit" name="msaaSamplerNumber"/>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>MSAA Sample Number:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="lineHeight"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Presets:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="cbPresets"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Frame End:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="fps"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLineEdit" name="lineWidth"/>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="filename">
+       <property name="text">
+        <string>File Name:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="frameStart"/>
+     </item>
+     <item row="9" column="1">
+      <widget class="QLineEdit" name="optixSamplerNumber"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="frameEnd"/>
+     </item>
+     <item row="8" column="1">
+      <widget class="QLineEdit" name="lineName">
+       <property name="placeholderText">
+        <string>(Option)</string>
        </property>
       </widget>
      </item>
@@ -40,19 +102,24 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="frameEnd"/>
-     </item>
-     <item row="4" column="1">
-      <widget class="QComboBox" name="cbPresets"/>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="frameStart"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_8">
        <property name="text">
-        <string>Presets:</string>
+        <string>Path:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Frame Start:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>FPS:</string>
        </property>
       </widget>
      </item>
@@ -74,30 +141,6 @@
        </item>
       </layout>
      </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>Height:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Frame End:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="bitrate"/>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Frame Start:</string>
-       </property>
-      </widget>
-     </item>
      <item row="9" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
@@ -105,58 +148,27 @@
        </property>
       </widget>
      </item>
-     <item row="9" column="1">
-      <widget class="QLineEdit" name="optixSamplerNumber"/>
-     </item>
-
-     <item row="10" column="0">
-      <widget class="QLabel" name="label1">
+     <item row="11" column="0">
+      <widget class="QCheckBox" name="cbRunRecord">
        <property name="text">
-        <string>MSAA Sample Number:</string>
+        <string>record when run</string>
        </property>
-      </widget>
-     </item>
-     <item row="11" column="1">
-      <widget class="QCheckBox" name="image_sequence">
-       <property name="text">
-        <string>Save As Image Sequence</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="1">
-      <widget class="QLineEdit" name="msaaSamplerNumber"/>
-     </item>
-     <item row="6" column="1">
-      <widget class="QLineEdit" name="lineHeight"/>
-     </item>
-     <item row="5" column="1">
-      <widget class="QLineEdit" name="lineWidth"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QLineEdit" name="fps"/>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Path:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="filename">
-       <property name="text">
-        <string>File Name:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="QLineEdit" name="lineName">
-       <property name="placeholderText">
-        <string>(Option)</string>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="12" column="0">
+    <widget class="QCheckBox" name="cbExportVideo">
+     <property name="text">
+      <string>export video</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">

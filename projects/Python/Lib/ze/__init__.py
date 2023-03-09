@@ -9,8 +9,8 @@ from typing import Union, Optional, Any, Iterator, Iterable, Callable
 from types import MappingProxyType
 
 
-Numeric = Union[int, float, list[int], list[float]]
-Literial = Union[int, float, list[int], list[float], str]
+Numeric = Union[int, float, Iterable[int], Iterable[float]]
+Literial = Union[int, float, Iterable[int], Iterable[float], str]
 
 
 def initDLLPath(path: str):
@@ -256,18 +256,18 @@ class ZenoObject:
         return value_.value
 
     @staticmethod
-    def _fetchVecInt(handle: int, dim: int) -> list[int]:
+    def _fetchVecInt(handle: int, dim: int) -> Iterable[int]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_int * dim)()
         api.Zeno_GetObjectInt(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
-        return list(value_)
+        return tuple(value_)
 
     @staticmethod
-    def _fetchVecFloat(handle: int, dim: int) -> list[float]:
+    def _fetchVecFloat(handle: int, dim: int) -> Iterable[float]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_float * dim)()
         api.Zeno_GetObjectFloat(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
-        return list(value_)
+        return tuple(value_)
 
     @staticmethod
     def _fetchString(handle: int) -> str:
@@ -361,6 +361,56 @@ class ZenoPrimitiveObject(ZenoObject):
     def asObject(self):
         return ZenoObject.fromHandle(self._handle)
 
+    # Zeno | Houdini
+    # poly | prim
+    # loop | vert
+    # vert | point
+    class HoudiniStyleAccessor:
+        def __init__(self, prim: 'ZenoPrimitiveObject'):
+            self._polys_pos = prim.polys['pos']
+            self._loops_pos = prim.loops['pos']
+            self._prim = prim
+
+        def polypoint(self, poly_id: int, vert_id: int) -> int:
+            base, len = self._polys_pos[poly_id]  # type: ignore
+            if vert_id < 0 or vert_id >= len:
+                raise IndexError('vert_id {} out of range [0, {}) in polygon {}'.format(vert_id, len, poly_id))
+            loop_id = base + vert_id
+            return self._loops_pos[loop_id]  # type: ignore
+
+        def primpoints(self, poly_id: int) -> Iterable[int]:
+            base, len = self._polys_pos[poly_id]  # type: ignore
+            return (self._loops_pos[base + i] for i in range(len))  # type: ignore
+
+        def pointprims(self, vert_id: int):
+            pass
+
+        def createPrim(self, vert_ids: Iterable[int]):
+            poly_base = self._prim.polys.size()
+            loop_base = self._prim.loops.size()
+            vert_ids = tuple(vert_ids)
+            loop_len = len(vert_ids)
+            self._prim.loops.resize(loop_base + loop_len)
+            self._prim.polys.resize(poly_base + 1)
+            self._polys_pos[poly_base] = (loop_base, loop_len)
+            for i in range(loop_len):
+                self._loops_pos[loop_base + i] = vert_ids[i]
+
+        def primAddVert(self, poly_id: int, vert_id: int):
+            loop_base = self._prim.loops.size()
+            old_base, old_len = self._polys_pos[poly_id]  # type: ignore
+            self._prim.loops.resize(loop_base + old_len + 1)  # type: ignore
+            self._polys_pos[poly_id] = (loop_base, old_len)
+            for i in range(old_len):  # type: ignore
+                self._loops_pos[loop_base + i] = self._loops_pos[old_base + i]  # type: ignore
+            self._loops_pos[loop_base + old_len] = vert_id  # type: ignore
+
+        # def removePrim(self, poly_id: int, andloops: bool):
+        #     pass
+
+    def getHouAccessor(self):
+        return self.HoudiniStyleAccessor(self)
+
 
 class _MemSpanWrapper:
     _ptr: int
@@ -392,6 +442,44 @@ class _MemSpanWrapper:
                 base[index * self._dim + i] = value[i]  # type: ignore
         else:
             base[index] = value
+
+    def to_numpy(self, np=None):
+        if np is None:
+            import numpy as np
+        if self._dim != 1:
+            myshape = (self._len, self._dim)
+        else:
+            myshape = (self._len,)
+        sizeinbytes = self._dim * self._len * ctypes.sizeof(self._type)
+        _dtypeLut = {
+            ctypes.c_float: np.float32,
+            ctypes.c_int: np.int32,
+        }
+        dtype = _dtypeLut[self._type]
+        arr = np.empty(myshape, dtype)
+        arr = np.ascontiguousarray(arr)
+        assert sizeinbytes == arr.size * arr.dtype.itemsize
+        ctypes.memmove(arr.ctypes.data, self._ptr, sizeinbytes)
+        return arr
+
+    def from_numpy(self, arr, np=None):
+        if np is None:
+            import numpy as np
+        if self._dim != 1:
+            myshape = (self._len, self._dim)
+        else:
+            myshape = (self._len,)
+        sizeinbytes = self._dim * self._len * ctypes.sizeof(self._type)
+        if tuple(arr.shape) != myshape:
+            raise ValueError('array shape mismatch {} != {}', tuple(arr.shape), myshape)
+        _dtypeLut = {
+            ctypes.c_float: np.float32,
+            ctypes.c_int: np.int32,
+        }
+        dtype = _dtypeLut[self._type]
+        arr = np.ascontiguousarray(arr.astype(dtype))
+        assert sizeinbytes == arr.size * arr.dtype.itemsize
+        ctypes.memmove(self._ptr, arr.ctypes.data, sizeinbytes)
 
     def to_list(self) -> list[Numeric]:
         base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))

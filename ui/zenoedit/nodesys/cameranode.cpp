@@ -9,10 +9,10 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 
-CameraNode::CameraNode(const NodeUtilParam& params, QGraphicsItem* parent)
+CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
-
+    CameraPattern = pattern;
 }
 
 CameraNode::~CameraNode()
@@ -39,8 +39,7 @@ void CameraNode::onEditClicked()
     INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     ZASSERT_EXIT(inputs.find("pos") != inputs.end() &&
         inputs.find("up") != inputs.end() &&
-        inputs.find("view") != inputs.end() &&
-        inputs.find("frame") != inputs.end());
+        inputs.find("view") != inputs.end());
 
     const QString& nodeid = this->nodeId();
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -100,12 +99,29 @@ void CameraNode::onEditClicked()
     info.newValue = QVariant::fromValue(camProp[11]);
     pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
-    INPUT_SOCKET frame = inputs["frame"];
-    // FIXME Not work
-    int frameId = sess->get_curr_frameid();
-    frameId = zeno::getSession().globalState->frameid;
+    // Is CameraNode
+    if(CameraPattern == 0) {
+        INPUT_SOCKET frame = inputs["frame"];
+        // FIXME Not work
+        int frameId = sess->get_curr_frameid();
+        frameId = zeno::getSession().globalState->frameid;
 
-    info.name = "frame";
-    info.oldValue = frame.info.defaultValue;
-    frame.info.defaultValue = QVariant::fromValue(frameId);
+        info.name = "frame";
+        info.oldValue = frame.info.defaultValue;
+        frame.info.defaultValue = QVariant::fromValue(frameId);
+
+        INPUT_SOCKET other = inputs["other"];
+        std::string other_prop;
+        for (int i = 12; i < camProp.size(); i++)
+            other_prop += std::to_string(camProp[i]) + ",";
+        info.name = "other";
+        info.oldValue = other.info.defaultValue;
+        info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+    }
+
+    // Is MakeCamera
+    if(CameraPattern == 1){
+        // Here
+    }
 }

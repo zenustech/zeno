@@ -308,8 +308,8 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         if(!verts.hasProperty(attr)) {
             fmt::print("append new nodal attribute {}[{}]\n",attr,attr_dim);
             verts.append_channels(cudaPol,{{attr,attr_dim}});
-        }else if(verts.getChannelSize(attr) != attr_dim){
-            fmt::print("the verts' {} attr[{}] and quads' {} attr[{}] not matched\n",attr,verts.getChannelSize(attr),attr,attr_dim);
+        }else if(verts.getPropertySize(attr) != attr_dim){
+            fmt::print("the verts' {} attr[{}] and quads' {} attr[{}] not matched\n",attr,verts.getPropertySize(attr),attr,attr_dim);
         }
         cudaPol(range(verts.size()),
             [verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
@@ -406,8 +406,8 @@ struct ZSSampleVertAttr2Quadrature : zeno::INode {
 
         if(!quads.hasProperty(attr))
             quads.append_channels(cudaPol,{{attr,attr_dim}});
-        else if(quads.getChannelSize(attr) != attr_dim) {
-            fmt::print("the size of channel {} V[{}] and Q[{}] not match\n",attr,attr_dim,quads.getChannelSize(attr));
+        else if(quads.getPropertySize(attr) != attr_dim) {
+            fmt::print("the size of channel {} V[{}] and Q[{}] not match\n",attr,attr_dim,quads.getPropertySize(attr));
             throw std::runtime_error("the size of channel does not match");
         }
 

@@ -11,6 +11,15 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     //this->m_dof = cam.dof;
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
+
+    this->m_zxx_in.cx = cam.center[0];
+    this->m_zxx_in.cy = cam.center[1];
+    this->m_zxx_in.cz = cam.center[2];
+
+    this->m_zxx_in.theta = cam.theta;
+    this->m_zxx_in.phi = cam.phi;
+    this->m_zxx_in.radius = cam.radius;
+    this->m_need_sync = true;
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar) {

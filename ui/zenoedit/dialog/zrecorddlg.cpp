@@ -3,6 +3,7 @@
 #include <QFileDialog>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "zassert.h"
 
 
 ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
@@ -11,9 +12,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui = new Ui::RecordVideoDlg;
 	m_ui->setupUi(this);
 
-	m_ui->frameStart->setValidator(new QIntValidator(frameStart, frameEnd));
+	//m_ui->frameStart->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameStart->setText(QString::number(frameStart));
-	m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
+	//m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameEnd->setText(QString::number(frameEnd));
 	m_ui->fps->setValidator(new QIntValidator);
 	m_ui->fps->setText("24");
@@ -54,40 +55,44 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(accepted()), this, SLOT(accept()));
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate,
+                              float& width, float& height, QString& path, QString& fn, int &numOptix, int &numMSAA,
+             bool& bRecordWhenRun, bool& bExportVideo)
+{
+	frameStart = m_ui->frameStart->text().toInt();
+	frameEnd = m_ui->frameEnd->text().toInt();
+	fps = m_ui->fps->text().toInt();
+	bitrate = m_ui->bitrate->text().toInt();
+    numMSAA = m_ui->msaaSamplerNumber->text().toInt();
+    numOptix = m_ui->optixSamplerNumber->text().toInt();
+	width = m_ui->lineWidth->text().toFloat();
+	height = m_ui->lineHeight->text().toFloat();
+	path = m_ui->linePath->text();
+	bRecordWhenRun = m_ui->cbRunRecord->checkState() == Qt::Checked;
+	bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
+	if (path.isEmpty())
+	{
+		QTemporaryDir dir;
+		dir.setAutoRemove(false);
+		path = dir.path();
+	}
+    //create directory to store screenshot pngs.
+    QDir dir(path);
+    ZASSERT_EXIT(dir.exists(), false);
+    dir.mkdir("P");
 
-bool ZRecordVideoDlg::getInfo(VideoRecInfo& recInfo) {
-    int frameStart = m_ui->frameStart->text().toInt();
-    int frameEnd = m_ui->frameEnd->text().toInt();
-    recInfo.frameRange = { frameStart, frameEnd };
-    recInfo.fps = m_ui->fps->text().toInt();
-    recInfo.bitrate = m_ui->bitrate->text().toInt();
-    recInfo.numMSAA = m_ui->msaaSamplerNumber->text().toInt();
-    recInfo.numOptix = m_ui->optixSamplerNumber->text().toInt();
-    recInfo.saveAsImageSequence = m_ui->image_sequence->isChecked();
-    int width = m_ui->lineWidth->text().toInt();
-    int height = m_ui->lineHeight->text().toInt();
-    recInfo.res = { (float)width, (float)height };
-    QString path = m_ui->linePath->text();
-    if (path.isEmpty())
-    {
-        QTemporaryDir dir;
-        dir.setAutoRemove(false);
-        path = dir.path();
-    }
-    recInfo.record_path = path;
-    QString fn = m_ui->lineName->text();
-    if (fn.isEmpty())
-    {
-        fn = "capture";
-        const QString& suffix = ".mp4";
-        int idx = 1;
-        while (QFileInfo(path + "/" + fn + suffix).exists())
-        {
-            fn = "capture_" + QString::number(idx);
-            idx++;
-        }
-        fn += suffix;
-    }
-    recInfo.videoname = fn;
-    return true;
+	fn = m_ui->lineName->text();
+	if (fn.isEmpty())
+	{
+		fn = "capture";
+		const QString& suffix = ".mp4";
+		int idx = 1;
+		while (QFileInfo::exists(path + "/" + fn + suffix))
+		{
+			fn = "capture_" + QString::number(idx);
+			idx++;
+		}
+		fn += suffix;
+	}
+	return true;
 }

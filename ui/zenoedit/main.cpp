@@ -46,6 +46,12 @@ int main(int argc, char *argv[])
         return offline_main(argv[2], begin, end);
     }
 
+    //entrance for the zenoedit-player.
+    if (argc >= 2 && !strcmp(argv[1], "--record"))
+    {
+        extern int record_main(const QCoreApplication& app);
+        return record_main(a);
+    }
 
     QTranslator t;
     QSettings settings(zsCompanyName, zsEditor);

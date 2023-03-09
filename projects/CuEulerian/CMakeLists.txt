@@ -30,11 +30,13 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   levelset/Grid_creator.cu
   levelset/Reinitialization.cu
+  levelset/Extrapolation.cu
 )
 
 # navier stokes
 target_sources(zeno PRIVATE
   navierstokes/NS_pipeline.cu
+  navierstokes/NS_boundary.cu
   navierstokes/NS_linearsolver.cu
   navierstokes/NS_topo.cu
   navierstokes/NS_tracer.cu

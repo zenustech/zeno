@@ -11,6 +11,7 @@
 #include <functional>
 #include <map>
 #include <utility>
+#include "zeno/core/Session.h"
 
 namespace zenovis {
 
@@ -98,8 +99,14 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto nx = impl->scene->camera->m_nx;
     auto ny = impl->scene->camera->m_ny;
 
-    zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
+    auto &ud = zeno::getSession().userData();
+    ud.set2("optix_image_path", path);
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
+
+    if (!ud.has("optix_image_path")) {
+        return;
+    }
+    zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
@@ -108,7 +115,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     }},
     {"jpg", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 80);
+        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 100);
     }},
     {"bmp", [&] {
         stbi_flip_vertically_on_write(true);

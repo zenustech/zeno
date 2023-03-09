@@ -48,6 +48,9 @@ struct Params
     int usingHdrSky;
     cudaTextureObject_t sky_texture;
     float sky_rot;
+    float sky_rot_x;
+    float sky_rot_y;
+    float sky_rot_z;
     float sky_strength;
 
     float sunLightDirX;
@@ -63,6 +66,7 @@ struct Params
 
     float sunSoftness;
     float elapsedTime;
+    bool simpleRender;
 };
 
 
@@ -85,6 +89,13 @@ struct HitGroupData
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
+    int* meshIdxs;
+    float* meshMats;
+    float3* instPos;
+    float3* instNrm;
+    float3* instUv;
+    float3* instClr;
+    float3* instTang;
     float4* uniforms;
     cudaTextureObject_t textures[32];
 

@@ -4,6 +4,7 @@
 #include "heatmapnode.h"
 #include "cameranode.h"
 #include "readfbxprim.h"
+#include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -19,6 +20,10 @@
 #include "blackboardnode.h"
 #include "acceptor/transferacceptor.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
+
+#include "zenomainwindow.h"
+#include <zenovis/ObjectsManager.h>
+#include <viewportinteraction/picker.h>
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -133,11 +138,19 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
     else if (descName == "CameraNode")
     {
-        return new CameraNode(params);
+        return new CameraNode(params, 0);
+    }
+    else if (descName == "MakeCamera")
+    {
+        return new CameraNode(params, 1);
     }
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);
+    }
+    else if(descName == "LiveMeshNode")
+    {
+        return new LiveMeshNode(params);
     }
     else
     {
@@ -841,6 +854,26 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
     }
 }
 
+void ZenoSubGraphScene::selectObjViaNodes() {
+    // FIXME temp function for merge
+    // for selecting objects in viewport via selected nodes
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    QList<QGraphicsItem*> selItems = this->selectedItems();
+    auto& picker = zeno::Picker::GetInstance();
+    picker.clear();
+    for (auto item : selItems) {
+        if (auto* pNode = qgraphicsitem_cast<ZenoNode*>(item)) {
+            auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
+            for (const auto& [prim_name, _] : scene->objectsMan->pairsShared()) {
+                if (prim_name.find(node_id) != std::string::npos)
+                    picker.add(prim_name);
+            }
+        }
+    }
+    picker.sync_to_scene();
+    zenoApp->getMainWindow()->updateViewport();
+}
+
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
     QGraphicsScene::keyPressEvent(event);
@@ -886,5 +919,9 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 pGraphsModel->endTransaction();
             }
         }
+    }
+    else if (!event->isAccepted() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_G) {
+        // FIXME temp function for merge
+        selectObjViaNodes();
     }
 }

@@ -1263,7 +1263,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
             const auto &quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host})
                                              : parobjPtr->getQuadraturePoints();
 
-            int simplex_size = quads.getChannelSize("inds");
+            int simplex_size = quads.getPropertySize("inds");
 
             if (!quads.hasProperty(attrName))
                 throw std::runtime_error("the particles has no specified channel");
@@ -1454,10 +1454,12 @@ struct MakeZSLevelSet : INode {
     }
 };
 ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"}, "aux"},
-                               {"ZSLevelSet"},
-                               {{"enum unknown apic flip aflip boundary", "transfer", "unknown"},
+                               {{"float", "dx", "0.1"},
+                                "aux",
+                                {"enum unknown apic flip aflip boundary", "transfer", "unknown"},
                                 {"enum cellcentered collocated staggered const_velocity", "category", "cellcentered"}},
+                               {"ZSLevelSet"},
+                               {},
                                {"SOP"},
                            });
 

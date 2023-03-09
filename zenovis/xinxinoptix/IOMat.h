@@ -38,4 +38,9 @@ struct MatInput {
     vec3 uv;
     vec3 clr;
     vec3 tang;
+    vec3 instPos;
+    vec3 instNrm;
+    vec3 instUv;
+    vec3 instClr;
+    vec3 instTang;
 };

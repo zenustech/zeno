@@ -591,7 +591,7 @@ struct FleshDynamicStepping : INode {
         auto& verts = zsparticles->getParticles();
         auto& eles = zsparticles->getQuadraturePoints();
 
-        if(eles.getChannelSize("inds") != 4)
+        if(eles.getPropertySize("inds") != 4)
             throw std::runtime_error("the input zsparticles is not a tetrahedra mesh");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
             throw std::runtime_error("the input zsparticles has no surface tris");

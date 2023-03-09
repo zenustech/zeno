@@ -1,14 +1,17 @@
 #include "Structures.hpp"
+#include "zensim/container/Bcht.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/graph/ConnectedComponents.hpp"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/zeno.h>
 #include <zeno/types/UserData.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 
@@ -51,6 +54,133 @@ static zs::Vector<zs::AABBBox<3, float>> retrieve_bounding_volumes(zs::OmpExecut
     });
     return ret;
 }
+
+struct PrimitiveConnectedComponents : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+
+#if 0
+        fmt::print("@@@@@@@@@@@@@@@@@\n");
+        spmat.print();
+        fmt::print("@@@@@@@@@@@@@@@@@\n\n");
+#endif
+
+        /// @note update fathers of each vertex
+        auto &fas = prim->add_attr<int>("fa");
+        union_find(pol, spmat, range(fas));
+
+#if 0
+        fmt::print("$$$$$$$$$$$$$$$$$\n");
+        for (int i = 0; i < pos.size(); ++i) {
+            fmt::print("vert [{}]\'s father {}\n", i, fas[i]);
+        }
+        fmt::print("$$$$$$$$$$$$$$$$$\n\n");
+#endif
+
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+
+#if 0
+        fmt::print("????init??table??\n");
+        for (int i = 0; i != vtab.size(); ++i)
+            fmt::print("[{}]-th set representative: {}\n", i, vtab._activeKeys[i]);
+        fmt::print("?????????????????\n\n");
+#endif
+
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+
+        auto &setids = prim->add_attr<int>("set");
+        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = setNo;
+        });
+        auto numSets = vtab.size();
+        fmt::print("{} disjoint sets in total.\n", numSets);
+
+        auto outPrim = std::make_shared<PrimitiveObject>();
+        outPrim->resize(pos.size());
+        auto id = get_input2<int>("set_index");
+        int setSize = 0;
+        for (int i = 0; i != pos.size(); ++i)
+            if (setids[i] == id)
+                outPrim->attr<zeno::vec3f>("pos")[setSize++] = pos[i];
+        outPrim->resize(setSize);
+
+#if 0
+        fmt::print("?????????????????\n");
+        for (int i = 0; i != numSets; ++i)
+            fmt::print("[{}]-th set representative: {}\n", i, vtab._activeKeys[i]);
+        fmt::print("?????????????????\n\n");
+
+        fmt::print("=================\n");
+        for (int i = 0; i < pos.size(); ++i) {
+            fmt::print("vert [{}] belong to set {}\n", i, setids[i]);
+        }
+        fmt::print("=================\n\n");
+#endif
+
+        set_output("prim", std::move(outPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveConnectedComponents, {
+                                             {{"PrimitiveObject", "prim"}, {"int", "set_index", "0"}},
+                                             {
+                                                 {"PrimitiveObject", "prim"},
+                                             },
+                                             {},
+                                             {"zs_query"},
+                                         });
 
 struct PrimitiveProject : INode {
     virtual void apply() override {
@@ -131,7 +261,7 @@ ZENDEFNODE(PrimitiveProject, {
                                      {"PrimitiveObject", "prim"},
                                  },
                                  {},
-                                 {"primitive"},
+                                 {"zs_query"},
                              });
 
 #if 1
@@ -302,9 +432,40 @@ ZENDEFNODE(QueryClosestPrimitive, {
                                        {"PrimitiveObject", "bvh_prim"},
                                        {"PrimitiveObject", "segment"}},
                                       {},
-                                      {"zenofx"},
+                                      {"zs_query"},
                                   });
 #endif
+
+struct FollowUpReferencePrimitive : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto idTag = get_input2<std::string>("idTag");
+        auto wsTag = get_input2<std::string>("weightTag");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &ids = prim->attr<float>(idTag);
+        auto &ws = prim->attr<zeno::vec3f>(wsTag);
+        auto refPrim = get_input2<PrimitiveObject>("ref_surf_prim");
+        auto &refPos = refPrim->attr<vec3f>("pos");
+        auto &refTris = refPrim->tris.values;
+        auto pol = zs::omp_exec();
+        pol(zs::range(prim->size()), [&](int i) {
+            int triNo = ids[i];
+            auto w = ws[i];
+            auto tri = refTris[triNo];
+            pos[i] = w[0] * refPos[tri[0]] + w[1] * refPos[tri[1]] + w[2] * refPos[tri[2]];
+        });
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(FollowUpReferencePrimitive, {
+                                           {{"PrimitiveObject", "prim"},
+                                            {"PrimitiveObject", "ref_surf_prim"},
+                                            {"string", "idTag", "bvh_id"},
+                                            {"string", "weightTag", "bvh_ws"}},
+                                           {{"PrimitiveObject", "prim"}},
+                                           {},
+                                           {"zs_geom"},
+                                       });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
@@ -359,7 +520,65 @@ ZENDEFNODE(EmbedPrimitiveBvh, {
                                    {"string", "bvh_tag", "bvh"}},
                                   {{"PrimitiveObject", "prim"}},
                                   {},
-                                  {"zenofx"},
+                                  {"zs_accel"},
                               });
+
+struct EmbedPrimitiveSpatialHash : zeno::INode {
+    virtual void apply() override {
+        using zssh_t = ZenoSpatialHash;
+        using sh_t = zssh_t::sh_t;
+        using bv_t = sh_t::bv_t;
+
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &userData = prim->userData();
+        auto sideLength = get_input2<float>("side_length");
+        float thickness = has_input("thickness") ? get_input<zeno::NumericObject>("thickness")->get<float>() : 0.f;
+        auto primType = get_input2<std::string>("prim_type");
+        auto shTag = get_input2<std::string>("spatial_hash_tag");
+
+        auto pol = zs::omp_exec();
+
+        zs::Vector<bv_t> bvs;
+        std::shared_ptr<zssh_t> zssh;
+        ZenoSpatialHash::element_e et = ZenoSpatialHash::point;
+        if (primType == "point") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), thickness);
+            et = ZenoSpatialHash::point;
+        } else if (primType == "line") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->lines.values, thickness);
+            et = ZenoSpatialHash::curve;
+        } else if (primType == "tri") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->tris.values, thickness);
+            et = ZenoSpatialHash::surface;
+        } else if (primType == "quad") {
+            bvs = retrieve_bounding_volumes(pol, prim->attr<vec3f>("pos"), prim->quads.values, thickness);
+            et = ZenoSpatialHash::tet;
+        }
+        if (!userData.has(shTag)) { // build
+            zssh = std::make_shared<zssh_t>();
+            zssh->et = et;
+            sh_t &sh = zssh->get();
+            sh.build(pol, sideLength, bvs);
+            userData.set(shTag, zssh);
+        } else { // refit
+            zssh = std::dynamic_pointer_cast<zssh_t>(userData.get(shTag));
+            zssh->et = et;
+            sh_t &sh = zssh->get();
+            sh.build(pol, sideLength, bvs);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(EmbedPrimitiveSpatialHash, {
+                                          {{"PrimitiveObject", "prim"},
+                                           {"float", "side_length", "1"},
+                                           {"float", "thickness", "0"},
+                                           {"enum point line tri quad", "prim_type", "auto"},
+                                           {"string", "spatial_hash_tag", "sh"}},
+                                          {{"PrimitiveObject", "prim"}},
+                                          {},
+                                          {"zs_accel"},
+                                      });
 
 } // namespace zeno

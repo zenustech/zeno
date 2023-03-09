@@ -4,7 +4,7 @@
 
 #define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include "stb_image_write.h"
 
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
@@ -851,6 +851,7 @@ struct Mesh{
 struct Anim{
     NodeTree m_RootNode;
     BoneTree m_Bones;
+    SFBXReadOption m_readOption;
 
     std::unordered_map<std::string, std::vector<SKeyMorph>> m_Morph;  // Value: NumKeys
     std::unordered_map<std::string, std::vector<std::string>> m_MeshBSName;
@@ -866,7 +867,8 @@ struct Anim{
 
         readHierarchyData(m_RootNode, scene->mRootNode);
 
-        //Helper::printNodeTree(&m_RootNode, 0);
+        if(m_readOption.printTree)
+            Helper::printNodeTree(&m_RootNode, 0);
 
         if(scene->mNumAnimations){
             // TODO handle more animation if have
@@ -999,9 +1001,15 @@ void readFBXFile(
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
     Anim anim;
+    anim.m_readOption = readOption;
 
     if(readOption.generate){
         scene = importer.ReadFile(fbx_path, 0);
+        if(scene == nullptr){
+            std::cout << "Read empty fbx scene\n";
+            return;
+        }
+
         mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
@@ -1118,6 +1126,7 @@ struct ReadFBXPrim : zeno::INode {
         auto generate = get_input2<bool>("generate");
         auto invOpacity = get_param<bool>("invOpacity");
         auto triangulate = get_param<bool>("triangulate");
+        auto printTree = get_param<bool>("printTree");
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
         if(invOpacity)
@@ -1128,6 +1137,8 @@ struct ReadFBXPrim : zeno::INode {
             readOption.generate = true;
         if(triangulate)
             readOption.triangulate = true;
+        if(printTree)
+            readOption.printTree = true;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
@@ -1179,6 +1190,7 @@ ZENDEFNODE(ReadFBXPrim,
                 {"bool", "invOpacity", "true"},
                 {"bool", "primitive", "false"},
                 {"bool", "triangulate", "true"},
+                {"bool", "printTree", "false"},
                },  /* category: */
                {
                    "FBX",

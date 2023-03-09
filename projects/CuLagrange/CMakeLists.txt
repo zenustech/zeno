@@ -5,18 +5,15 @@ if(NOT ZENO_WITH_CUDA)
     "Please specify: -DZENO_WITH_CUDA:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
 endif()
 
-target_link_libraries(zeno PRIVATE zshelper)
-
 #[=[
 target_sources(zeno PRIVATE
   test1.cu
 )
 #]=]
 set_target_properties(zeno
-  PROPERTIES # CUDA_EXTENSIONS ON
+  PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_ARCHITECTURES OFF
 )
 
 #[=[
@@ -44,15 +41,17 @@ target_sources(zeno PRIVATE
 
 # fem-cloth
 target_sources(zeno PRIVATE
-  #fem/ClothInit.cu
-  #fem/ClothPipeline.cu
-  #fem/ClothLinearSystem.cu
-  #fem/ClothCollision.cu
 
+  # fem/ClothInit.cu
+  # fem/ClothPipeline.cu
+  # fem/ClothLinearSystem.cu
+  # fem/ClothCollision.cu
   fem/FastClothInit.cu
   fem/FastClothPipeline.cu
   fem/FastClothLinearSystem.cu
   fem/FastClothCollision.cu
+  fem/UpdateTargetFromMapping.cu 
+  fem/SetIsBCFromPrim.cu
 )
 
 # fem
@@ -61,6 +60,12 @@ target_sources(zeno PRIVATE
   fem/SolverPipeline.cu
   fem/SolverLinearSystem.cu
   fem/SolverIPC.cu
+
+  fem/ipc/UnifiedSolverInit.cu
+  fem/ipc/UnifiedSolverPipeline.cu
+  fem/ipc/UnifiedSolverLinearSystem.cu
+  fem/ipc/UnifiedSolverIPC.cu
+
   fem/BoundaryCondition.cu
   fem/Collisions.cu
 

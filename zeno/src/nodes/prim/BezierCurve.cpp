@@ -2,9 +2,12 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/CurveObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 #include <vector>
+
+
 
 
 /**
@@ -13,11 +16,13 @@
  * @param dest 目的贝塞尔曲线点
  * @param precision 生成精度
  */
-static void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<zeno::vec2f> &dest, double precision) {
+
+
+static void CreateNBezierCurve(const std::vector<zeno::vec3f> src, std::vector<zeno::vec3f> &dest, double precision) {
     int size = src.size();
     std::vector<double> coff(size, 0);
 
-    std::vector<std::vector<int>> a(size, std::vector<int>(size)); // javabean
+    std::vector<std::vector<int>> a(size, std::vector<int>(size));
     {
         for(int i=0;i<size;++i)
         {
@@ -27,7 +32,6 @@ static void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<z
         for(int i=1;i<size;++i)
             for(int j=1;j<i;++j)
                 a[i][j] = a[i-1][j-1] + a[i-1][j];
-
     }
 
     for (double t1 = 0; t1 < 1; t1 += precision) {
@@ -40,11 +44,12 @@ static void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<z
             coff[i] = pow(t2, n - i) * pow(t1, i) * a[n][i];
         }
 
-        zeno::vec2f ret(0, 0);
+        zeno::vec3f ret(0, 0, 0);
         for (int i = 0; i < size; ++i) {
-            zeno::vec2f tmp(src[i][0] * coff[i], src[i][1] * coff[i]);
+            zeno::vec3f tmp(src[i][0] * coff[i], src[i][1] * coff[i], src[i][2] * coff[i]);
             ret[0] = ret[0] + tmp[0];
             ret[1] = ret[1] + tmp[1];
+            ret[2] = ret[2] + tmp[2];
         }
         dest.push_back(ret);
     }
@@ -52,39 +57,85 @@ static void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<z
 
 struct CreateBezierCurve : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("Points");
         auto precision = get_input<zeno::NumericObject>("precision")->get<float>();
-        int iSize = list->arr.size();
-        std::vector<zeno::vec2f> inputPoint;
-        for (int i = 0; i < iSize; i++) {
-            zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->arr[i].get());
-            for (auto p : obj->verts) {
-                inputPoint.push_back({p[0], p[1]});
-                zeno::log_info("input point: {} {}", p[0], p[1]);
-            }                
+        auto tag = get_param<std::string>("SampleTag");
+        auto attr = get_param<std::string>("SampleAttr");
+
+        auto outCurve = std::make_shared<zeno::BCurveObject>();
+        auto outprim = std::make_shared<zeno::PrimitiveObject>();
+        std::vector<zeno::vec3f> inputPoint, cPoints;
+        std::vector<float> tagList;
+       
+        if (has_input<zeno::ListObject>("CustomPoints")) {        
+            auto list = get_input<zeno::ListObject>("CustomPoints");
+            int iSize = list->arr.size();
+            if (iSize > 0) {
+                for (int i = 0; i < iSize; i++) {
+                    zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->arr[i].get());
+                    for (auto p : obj->verts) {
+                        inputPoint.push_back(p);
+                    }
+                }
+            } 
+        } else {
+            auto inPrim = get_input<zeno::PrimitiveObject>("SamplePoints").get();
+            if (attr.empty()) {
+                set_output("prim", std::move(std::shared_ptr<zeno::PrimitiveObject>(new zeno::PrimitiveObject)));
+                set_output("curev", std::move(std::shared_ptr<zeno::BCurveObject>(new zeno::BCurveObject)));
+                return;
+            }
+            auto tmpPs = inPrim->attr<zeno::vec3f>(attr);
+            for (auto p : tmpPs) {
+                inputPoint.push_back(p);
+            }
+
+            auto tmpTags = inPrim->attr<float>(tag);
+            for (auto p : tmpTags) {
+                tagList.push_back(p);
+            }
         }
 
-        std::vector<zeno::vec2f> cPoints;
         CreateNBezierCurve(inputPoint, cPoints, precision);
-        
+
         zeno::log_info("input point size: {}", inputPoint.size());
         zeno::log_info("output point size: {}", cPoints.size());
         zeno::log_info("precision : {}", precision);
-        auto outprim = std::make_shared<zeno::PrimitiveObject>();
-        outprim->verts.resize(cPoints.size());
-        for (int i = 0; i < cPoints.size(); i++) {
-            outprim->verts[i] = {cPoints[i][0], cPoints[i][1], 0};
-        }
+        
+        outCurve->points = inputPoint;
+        outCurve->precision = precision;
+        outCurve->bPoints = cPoints;
+        outCurve->sampleTag = tag;
+
+        if (tagList.size() > 0)
+        {
+            auto tmpScal = 1 / precision;
+            outprim->verts.resize(tagList.size());
+            for (int i = 0; i < tagList.size(); i++) {
+                int idx = tagList.at(i) * tmpScal;
+                outprim->verts[i] = cPoints[idx];
+            }
+        } else {
+            outprim->verts.resize(cPoints.size());
+            for (int i = 0; i < cPoints.size(); i++) {
+                outprim->verts[i] = cPoints[i];
+            }
+        }       
         set_output("prim", std::move(outprim));
+        set_output("curev", std::move(outCurve));
     }
 };
 
 ZENDEFNODE(CreateBezierCurve, {{
-                                   {"list", "Points"}, //input
-                                   {"float", "precision"},
+                                   {"list", "CustomPoints"}, //input
+                                   {"prim", "SamplePoints"}, //input
+                                   {"float", "precision", "0.01"},
                                },
-                               {"prim"},     //output
-                               {},           //prim
+                               {"prim", "curev"}, //output
+                               {
+                                   {"enum Bezier", "Type", "Bezier"},
+                                   {"string", "SampleTag", ""},
+                                   {"string", "SampleAttr", ""},
+                               },           //prim
                                {"create"}}); //cate
 
 struct CreatePoint : zeno::INode {

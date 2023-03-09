@@ -192,7 +192,48 @@ struct GraphicsManager {
 
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
-                if(isRealTimeObject == 0 && isUniformCarrier == 0){
+                auto isInst = prim_in->userData().get2<int>("isInst", 0);
+                if (isInst == 1)
+                {
+                    if (!prim_in->has_attr("pos"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("pos");
+                        prim_in->attr<zeno::vec3f>("pos").assign(prim_in->attr<zeno::vec3f>("pos").size(), zeno::vec3f(0, 0, 0));
+                    }
+                    if (!prim_in->has_attr("nrm"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("nrm");
+                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(), zeno::vec3f(0, 1, 0));
+                    }
+                    if (!prim_in->has_attr("uv"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("uv");
+                        prim_in->attr<zeno::vec3f>("uv").assign(prim_in->attr<zeno::vec3f>("uv").size(), zeno::vec3f(0, 0, 0));
+                    }
+                    if (!prim_in->has_attr("clr"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("clr");
+                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(), zeno::vec3f(1, 1, 1));
+                    }
+                    if (!prim_in->has_attr("tang"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("tang");
+                        prim_in->attr<zeno::vec3f>("tang").assign(prim_in->attr<zeno::vec3f>("tang").size(), zeno::vec3f(1, 0, 0));
+                    }
+                    
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
+                    
+                    std::size_t numInsts = prim_in->verts.size();
+                    const float *pos = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    const float *nrm = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
+                    const float *uv = (const float *)prim_in->attr<zeno::vec3f>("uv").data();
+                    const float *clr = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
+                    const float *tang = (const float *)prim_in->attr<zeno::vec3f>("tang").data();
+                    xinxinoptix::load_inst(key, instID, onbType, numInsts, pos, nrm, uv, clr, tang);
+                }
+                else if (isRealTimeObject == 0 && isUniformCarrier == 0)
+                {
         det = DetPrimitive{prim_in_lslislSp};
         if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
             // todo: zhxx, should comp normal after subd or before????
@@ -304,7 +345,8 @@ struct GraphicsManager {
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
-                    xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
@@ -315,6 +357,7 @@ struct GraphicsManager {
 
         ~ZxxGraphic() {
             xinxinoptix::unload_object(key);
+            xinxinoptix::unload_inst(key);
         }
     };
 
@@ -355,34 +398,30 @@ struct GraphicsManager {
                 //zeno::log_info("processing light key {}", key.c_str());
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
-                prim->verts.resize(5);
-
                 auto p0 = prim_in->verts[prim_in->tris[0][0]];
                 auto p1 = prim_in->verts[prim_in->tris[0][1]];
                 auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p1;
-                auto e2 = p2 - p1;
-                auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
-                auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
-                glm::vec3 g_nor;
+                auto e1 = p0 - p2;
+                auto e2 = p1 - p2;
 
-                g_nor = glm::normalize(glm::cross(g_e1, g_e2));
-                auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
+                auto nor = zeno::normalize(zeno::cross(e1, e2));
                 zeno::vec3f clr;
                 if (prim_in->verts.has_attr("clr")) {
                     clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
                 } else {
                     clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                 }
-                prim->verts[0] = p1;
-                prim->verts[1] = e1;
-                prim->verts[2] = e2;
-                prim->verts[3] = nor;
-                prim->verts[4] = clr;
 
-                xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
-                                        prim->verts[3].data(), prim->verts[4].data());
+                std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
+                std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
+                std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
+                std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
+                std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
+                std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+
+                xinxinoptix::load_light(key, p1.data(), e1.data(), e2.data(),
+                                        nor.data(), clr.data());
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
@@ -400,11 +439,12 @@ struct GraphicsManager {
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 OptixUtil::sky_tex = path;
                 OptixUtil::addTexture(path);
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTexStrength);
+                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
             }
         }
@@ -558,6 +598,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
     bool ensuredshadtmpl = false;
+    bool needUpdateCamera = false;
     std::string shadtmpl;
     std::string_view commontpl;
     std::pair<std::string_view, std::string_view> shadtpl2;
@@ -601,7 +642,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        //zeno::log_info("test Optx::draw()");
 
         bool sizeNeedUpdate = false;
         {
@@ -618,6 +658,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 camNeedUpdate = true;
             oldcamid = newcamid;
         }
+        if(scene->drawOptions->needRefresh){
+            camNeedUpdate = true;
+            scene->drawOptions->needRefresh = false;
+        }
+
+        //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
+        //          << " NeedRefresh " << scene->drawOptions->needRefresh << "\n";
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
@@ -720,8 +767,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
             // timer.tock("done static mesh update");
             // timer.tick();
-            xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
+            xinxinoptix::UpdateDynamicMesh(mtlidlut);
             // timer.tock("done dynamic mesh update");
+
+            xinxinoptix::UpdateInst();
+            xinxinoptix::UpdateStaticInstMesh(mtlidlut);
+            xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
+            xinxinoptix::CopyInstMeshToGlobalMesh();
+            xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
             
             xinxinoptix::optixupdateend();
             
@@ -736,7 +789,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }
