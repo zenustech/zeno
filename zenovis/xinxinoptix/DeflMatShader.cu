@@ -60,6 +60,7 @@ MatInput const &attrs) {
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
+    float mat_base = 1.0;
     vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
     float mat_metallic = 0.0;
     float mat_roughness = 0.5;
@@ -83,6 +84,7 @@ MatInput const &attrs) {
     float mat_scatterStep = 0.0f;
     float mat_smoothness = 0.0f;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    float mat_sssScale = 1.0f;
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
@@ -96,7 +98,7 @@ MatInput const &attrs) {
         return mats;
     }else {
         /* MODME */
-        mats.basecolor = mat_basecolor;
+        mats.basecolor = mat_base * mat_basecolor;
         mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
         mats.roughness = clamp(mat_roughness, 0.01, 0.99);
         mats.subsurface = mat_subsurface;
@@ -118,7 +120,7 @@ MatInput const &attrs) {
         mats.thin = mat_thin;
         mats.doubleSide = mat_doubleSide;
         mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
+        mats.sssParam = mat_sssParam * mat_sssScale;
         mats.scatterStep = mat_scatterStep;
         mats.smoothness = mat_smoothness;
         return mats;

@@ -23,6 +23,7 @@ struct ShaderFinalize : INode {
             em.commonCode += get_input<StringObject>("commonCode")->get();
 
         auto code = em.finalizeCode({
+            {1, "mat_base"},
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -30,6 +31,7 @@ struct ShaderFinalize : INode {
             {1, "mat_subsurface"},
             {1, "mat_thickness"},
             {3, "mat_sssParam"},
+            {1, "mat_sssScale"},
             {3, "mat_sssColor"},
             {1, "mat_foliage"},
             {1, "mat_skin"},
@@ -68,6 +70,7 @@ struct ShaderFinalize : INode {
             {1,"mat_isCamera"},
             {1,"mat_isVoxelDomain"}
         }, {
+            std::make_shared<NumericObject>(float(1.0f)), // base
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
@@ -75,6 +78,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            std::make_shared<NumericObject>(float(1.0f)), // sssScale
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("foliage", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("skin", std::make_shared<NumericObject>(float(0.0f))),
@@ -208,9 +212,10 @@ struct ShaderSurface : INode {
         EmissionPass em;
 
         if (has_input("commonCode"))
-            em.commonCode += get_input<StringObject>("commonCode")->get();
+            em.commonCode += get_input2<std::string>("commonCode");
 
         auto code = em.finalizeCode({
+            {1, "mat_base"},
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -218,6 +223,7 @@ struct ShaderSurface : INode {
             {1, "mat_subsurface"},
             {1, "mat_thickness"},
             {3, "mat_sssParam"},
+            {1, "mat_sssScale"},
             {3, "mat_sssColor"},
             {1, "mat_specularTint"},
             {1, "mat_anisotropic"},
@@ -240,13 +246,15 @@ struct ShaderSurface : INode {
             {1, "mat_opacity"},
             {1, "mat_new_opacity"},
         }, {
-            get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("baseColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
             get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssScale", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
@@ -298,13 +306,15 @@ struct ShaderSurface : INode {
 ZENDEFNODE(ShaderSurface, {
     {
         {"string", "mtlid", "Mat1"},
-        {"vec3f", "basecolor", "1,1,1"},
+        {"float", "base", "1"},
+        {"vec3f", "baseColor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
         {"float", "specular", "0.5"},
         {"float", "subsurface", "0.0"},
         {"float", "thickness", "0.0"},
         {"vec3f", "sssParam", "1,1,1"},
+        {"float", "sssScale", "1"},
         {"vec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
