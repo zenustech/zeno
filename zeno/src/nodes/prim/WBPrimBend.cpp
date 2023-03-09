@@ -1603,8 +1603,7 @@ ZENDEFNODE(erode_project,
         }, /* category: */ {
             "erode"
         } });
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
+
 struct HeightStarPattern : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -1614,76 +1613,71 @@ struct HeightStarPattern : zeno::INode {
         auto posjitter = get_input2<float>("posjitter");
         auto sharpness = get_input2<float>("sharpness");
         auto starness = get_input2<float>("starness");
-        auto sizerandom = get_input2<float>("sizerandom");
         auto sides = get_input2<int>("sides");
+        prim->verts.add_attr<float>("result");
 
-        std::random_device rd;
-        auto seed{rd()};
-        std::default_random_engine e(seed);
         std::uniform_real_distribution<float> dist(0, 1);
 
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < prim->verts.size(); i++) {
-            prim->verts.add_attr<float>("result");
             auto coord = prim->verts.attr<vec3f>("res")[i];
             vec2f coord2d = vec2f(coord[0], coord[1]);
             vec2f cellcenter = vec2f(floor(coord2d[0]), floor(coord2d[1]));
             float result = 0;
-            
+
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     vec2f lcl_cellcenter = cellcenter;
                     lcl_cellcenter[0] += dx;
                     lcl_cellcenter[1] += dy;
-                    vec4f noise = vec4f(dist(e), dist(e), dist(e), dist(e));
-                    vec2f center = coord2d-lcl_cellcenter;
+                    std::minstd_rand e((lcl_cellcenter[0]*100+dx)*(lcl_cellcenter[1]*100+dy));
+                    vec2f center = coord2d - lcl_cellcenter;
 
-                    float lcl_shapesize = shapesize*(1-noise[0]*sizerandom);//roteta 可能有rad deg的问题
-                    float lcl_shapeangle = rotate + ((noise[1]-0.5)*anglerandom)*M_PI*2;
-                    center[0] += (noise[2]-0.5)*posjitter;
-                    center[1] += (noise[3]-0.5)*posjitter;
+                    float lcl_shapeangle = rotate + ((dist(e) - 0.5) * anglerandom) * M_PI * 2;
+                    center[0] += (dist(e) - 0.5) * posjitter;
+                    center[1] += (dist(e) - 0.5) * posjitter;
 
-                    center /= lcl_shapesize;
+                    center /= shapesize;
 
                     //Evaluate star function
                     float distance = lengthSquared(center);
-                    float curangle = atan2(center[0], center[1])+lcl_shapeangle;
-                    float star = pow(abs(cos(curangle * sides/2)), sharpness);
-                    //star *= pow(1-distance, starness);
+                    float curangle = atan2(center[0], center[1]) + lcl_shapeangle;
+                    float star = pow(abs(cos(curangle * sides / 2)), sharpness);
                     star *= starness;
 
-                    int res = distance+star<1? 1 : 0;
+                    int res = distance + star < 1 ? 1 : 0;
                     result = max(result, res);
                     if (result == 1) {
                         break;
                     }
+                }
             }
-
+            prim->verts.attr<float>("result")[i] = result;
         }
-        prim->verts.attr<float>("result")[i] = result;
-    }
         prim->verts.erase_attr("res");
         set_output("prim", std::move(prim));
-  }
+    }
 };
 
-ZENDEFNODE(HeightStarPattern,
-    { /* inputs: */ {
-    {"PrimitiveObject", "prim"},
-    {"float", "rotate", "0"},
-    {"float", "anglerandom", "0"},
-    {"float", "shapesize", "0.5"},
-    {"float", "posjitter", "0"},
-    {"float", "sharpness", "0.5"},
-    {"float", "starness", "0.5"},
-    {"float", "sizerandom", "0"},
-    {"int", "sides", "5"},
-    }, /* outputs: */ {
-    {"PrimitiveObject", "prim"},
-    }, /* params: */ {
-    }, /* category: */ {
-    "erode",
-    }});
+ZENDEFNODE(HeightStarPattern, {/* inputs: */ {
+                                   {"PrimitiveObject", "prim"},
+                                   {"float", "rotate", "0"},
+                                   {"float", "anglerandom", "0"},
+                                   {"float", "shapesize", "0.5"},
+                                   {"float", "posjitter", "0"},
+                                   {"float", "sharpness", "0.5"},
+                                   {"float", "starness", "0.5"},
+                                   {"int", "sides", "5"},
+                               },
+                               /* outputs: */
+                               {
+                                   {"PrimitiveObject", "prim"},
+                               },
+                               /* params: */ {}, /* category: */
+                               {
+                                   "erode",
+                               }});
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
