@@ -386,6 +386,13 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         if (!deflVal.isValid())
             deflVal = UiHelper::initVariantByControl(ctrl);
 
+        cbSets.cbGetIndexData = [=]() -> QVariant { 
+            if (!pCurrentItem->m_value.isValid())
+            {
+                return UiHelper::initVariantByControl(ctrl);
+            }
+            return pCurrentItem->m_value; 
+        };
         QWidget* valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
         if (valueControl)
         {
@@ -756,6 +763,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     const QString &dataType = m_ui->cbTypes->itemText(idx);
     QVariant value = UiHelper::initVariantByControl(ctrl);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
@@ -789,6 +797,7 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    cbSets.cbGetIndexData = [=]() -> QVariant { return pItem->m_value; };
     QWidget *valueControl = zenoui::createWidget(pItem->m_value, pItem->m_ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));

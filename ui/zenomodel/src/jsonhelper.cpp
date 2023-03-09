@@ -180,12 +180,17 @@ namespace JsonHelper
             } else if (value.userType() == QMetaTypeId<CURVES_MODEL>::qt_metatype_id())
             {
                 if (type == "curve") {
+                    CURVES_MODEL curves = value.value<CURVES_MODEL>();
                     writer.StartObject();
                     writer.Key(key_objectType);
                     writer.String("curve");
                     writer.Key(key_timeline);
-                    writer.Bool(true);
-                    CURVES_MODEL curves = value.value<CURVES_MODEL>();
+                    if (curves.size() == 0)
+                    {
+                        writer.Bool(true);
+                    } else {
+                        writer.Bool((*curves.begin())->isTimeline());
+                    }
                     for (auto i : curves) {
                         writer.Key(i->id().toUtf8());
                         dumpCurveModel(i, writer);
@@ -278,7 +283,6 @@ namespace JsonHelper
         //    bool bTimeline = jsonCurve[key_timeline].GetBool();
         //    pModel->setTimeline(bTimeline);
         //}
-        pModel->setTimeline(true);
 
         ZASSERT_EXIT(jsonCurve.HasMember(key_nodes), nullptr);
         for (const rapidjson::Value& nodeObj : jsonCurve[key_nodes].GetArray())

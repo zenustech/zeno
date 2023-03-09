@@ -6,7 +6,7 @@
 #include "variantptr.h"
 #include <zenomodel/include/curveutil.h>
 #include "zassert.h"
-
+#include "graphsmodel.h"
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
@@ -26,7 +26,7 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
     node[ROLE_NODETYPE] = nodeType(descName);
-    initInputSocks(pModel, nodeid, desc.inputs);
+    initInputSocks(pModel, nodeid, desc.inputs, desc.is_subgraph);
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     initOutputSocks(pModel, nodeid, desc.outputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
@@ -66,7 +66,7 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
     }
 }
 
-void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs)
+void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs, bool isSubgraph)
 {
     if (descInputs.find("SRC") == descInputs.end())
     {
@@ -92,6 +92,24 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
                 curves.insert(ids[i], pModel);
             }
             input.info.defaultValue = QVariant::fromValue(curves);
+        }
+    }
+    if (isSubgraph)
+    {
+        for (INPUT_SOCKET &input : descInputs) {
+            if (input.info.control == CONTROL_CURVE) {
+                GraphsModel *graphsModel = qobject_cast<GraphsModel *>(pGraphsModel);
+                CURVES_MODEL curves = input.info.defaultValue.value<CURVES_MODEL>();
+                CURVES_MODEL newCurves;
+                for (QString key : curves.keys()) {
+                    CurveModel *curve = new CurveModel(key, curves[key]->range(), graphsModel->currentGraph());
+                    curve->setVisible(curves[key]->getVisible());
+                    curve->setTimeline(curves[key]->isTimeline());
+                    curve->initItems(curves[key]->getItems());
+                    newCurves.insert(key, curve);
+                }
+                input.info.defaultValue = QVariant::fromValue(newCurves);
+            }
         }
     }
 }
