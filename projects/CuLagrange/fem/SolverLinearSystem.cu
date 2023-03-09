@@ -807,7 +807,8 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
     }
 
     /// for validation only! remove soon
-    if constexpr (false) {
+#if 0
+    {
         //
         auto numTriplets = numDofs + hess2.count() * 4 + hess3.count() * 9 + hess4.count() * 16;
         zs::Vector<int> is{vtemp.get_allocator(), numTriplets}, js{vtemp.get_allocator(), numTriplets};
@@ -880,6 +881,7 @@ void IPCSystem::convertHessian(zs::CudaExecutionPolicy &pol) {
         spmat.build(pol, numDofs, numDofs, is, js, vs);
         puts("end spmat build");
     }
+#endif
 }
 
 IPCSystem::T IPCSystem::infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag) {
