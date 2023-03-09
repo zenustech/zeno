@@ -50,9 +50,11 @@ public:
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
+    void setAlways(bool bAlways);
+    bool isAlways() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
-    DisplayWidget *getDisplayWidget();
+    QVector<DisplayWidget*> viewports() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
@@ -129,6 +131,7 @@ signals:
     void recentFilesChanged();
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(int);
+    void alwaysModeChanged(bool bAlways);
 
 public slots:
     void openFileDialog();
@@ -187,11 +190,12 @@ private:
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
     void loadRecentFiles();
-    QVector<DisplayWidget*> viewports() const;
+
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
+    bool m_bAlways;
     int m_nResizeTimes;
     Ui::MainWindow* m_ui;
 

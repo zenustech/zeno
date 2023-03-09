@@ -34,21 +34,26 @@ void ZLightsModel::updateByObjectsMan() {
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZERROR_EXIT(pWid);
-    ViewportWidget* pViewport = pWid->getViewportWidget();
-    ZERROR_EXIT(pViewport);
+    QVector<DisplayWidget *> views = pWin->viewports();
+    if (!views.isEmpty())
+    {
+        DisplayWidget* pWid = views[0];
+        ZERROR_EXIT(pWid);
+        ViewportWidget* pViewport = pWid->getViewportWidget();
+        ZERROR_EXIT(pViewport);
 
-    auto session = pViewport->getSession();
-    ZERROR_EXIT(session);
+        auto session = pViewport->getSession();
+        ZERROR_EXIT(session);
 
-    auto scene = session->get_scene();
-    ZERROR_EXIT(scene);
+        auto scene = session->get_scene();
+        ZERROR_EXIT(scene);
 
-    for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
-        if (ptr->userData().get2<int>("isL", 0)) {
-            light_names.push_back(key);
+        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+            if (ptr->userData().get2<int>("isL", 0)) {
+                light_names.push_back(key);
+            }
         }
     }
+
     endResetModel();
 }

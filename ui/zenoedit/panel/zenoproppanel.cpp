@@ -258,7 +258,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         if (pGroupWidget->title() == groupName)
         {
             QStandardItem* paramItem = parentItem->child(first);
-            bool ret = syncAddControl(pGroupLayout, paramItem, first);
+            bool ret = syncAddControl(pGroupWidget, pGroupLayout, paramItem, first);
             if (ret)
             {
                 pGroupWidget->updateGeo();
@@ -270,7 +270,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         pModel->markDirty();
 }
 
-bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)
+bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)
 {
     ZASSERT_EXIT(paramItem && pGroupLayout, false);
     QStandardItem* pGroupItem = paramItem->parent();
@@ -340,6 +340,11 @@ bool ZenoPropPanel::syncAddControl(QGridLayout* pGroupLayout, QStandardItem* par
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 
+    if (ZTextEdit* pMultilineStr = qobject_cast<ZTextEdit*>(pControl))
+    {
+        connect(pMultilineStr, &ZTextEdit::geometryUpdated, pGroupWidget, &ZExpandableSection::updateGeo);
+    }
+
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
@@ -366,7 +371,7 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
     for (int k = 0; k < pGroupItem->rowCount(); k++)
     {
         QStandardItem* paramItem = pGroupItem->child(k);
-        syncAddControl(pLayout, paramItem, k);
+        syncAddControl(pGroupWidget, pLayout, paramItem, k);
     }
     pGroupWidget->setContentLayout(pLayout);
     pTabLayout->addWidget(pGroupWidget);
@@ -557,7 +562,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
 
             int row = group.keys().indexOf(paramName, 0);
-            syncAddControl(pGridLayout, param, row);
+            ZExpandableSection* pExpand = findGroup(tabName, groupName);
+            syncAddControl(pExpand, pGridLayout, param, row);
         }
         else if (role == ROLE_PARAM_VALUE)
         {

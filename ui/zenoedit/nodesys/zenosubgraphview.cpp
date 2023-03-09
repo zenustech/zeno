@@ -163,17 +163,20 @@ void _ZenoSubGraphView::cameraFocus()
 
         ZenoMainWindow *pWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pWin);
-        DisplayWidget *pWid = pWin->getDisplayWidget();
-        ZASSERT_EXIT(pWid);
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto pZenovis = pViewport->getZenoVis();
-        ZASSERT_EXIT(pZenovis);
+        QVector<DisplayWidget*> views = pWin->viewports();
+        for (auto pDisplay : views)
+        {
+            ZASSERT_EXIT(pDisplay);
+            ViewportWidget *pViewport = pDisplay->getViewportWidget();
+            ZASSERT_EXIT(pViewport);
+            auto pZenovis = pViewport->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
 
-        bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);
-        if (found) {
-            pZenovis->m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
-            zenoApp->getMainWindow()->updateViewport();
+            bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);
+            if (found) {
+                pZenovis->m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+                zenoApp->getMainWindow()->updateViewport();
+            }
         }
     }
 }

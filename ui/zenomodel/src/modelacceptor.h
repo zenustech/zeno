@@ -79,7 +79,7 @@ public:
 	QObject* currGraphObj() override;
 	void endInputs(const QString& id, const QString& nodeCls) override;
 	void endParams(const QString& id, const QString& nodeCls) override;
-	void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) override;
+	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
 
 private:

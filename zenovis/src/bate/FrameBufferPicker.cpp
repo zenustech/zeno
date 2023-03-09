@@ -558,6 +558,24 @@ struct FrameBufferPicker : IPicker {
         return result;
     }
 
+    virtual float getDepth(int x, int y) override {
+        generate_buffers();
+        draw();
+
+        if (!fbo->complete()) return 0;
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
+        // CHECK_GL(glReadBuffer(GL_DEPTH_ATTACHMENT));
+
+        float depth;
+        CHECK_GL(glReadPixels(x, h - y - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth));
+
+        // CHECK_GL(glReadBuffer(GL_NONE));
+        fbo->unbind();
+        destroy_buffers();
+
+        return depth;
+    }
+
     virtual void focus(const std::string& prim_name) override {
         focus_prim_name = prim_name;
     }

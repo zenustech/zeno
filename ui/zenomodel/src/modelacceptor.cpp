@@ -223,7 +223,14 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
     if (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict")
     {
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
-        nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
+        if (prop == SOCKPROP_EDITABLE)
+        {
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
+        }
+        else
+        {
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop, "");
+        }
     }
 }
 
@@ -471,14 +478,13 @@ void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)
     //todo
 }
 
-void ModelAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot)
+void ModelAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
 {
     if (!m_currentGraph)
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot),
-        bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);
+    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot), ROLE_CUSTOMUI_PANEL_IO);
 }
 
 void ModelAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)

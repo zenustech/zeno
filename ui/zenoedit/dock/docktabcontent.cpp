@@ -15,7 +15,9 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
 #include <zenoui/comctrl/zwidgetfactory.h>
+#include <zeno/utils/envconfig.h>
 #include "zenomainwindow.h"
+#include "launch/corelaunch.h"
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -159,6 +161,9 @@ void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::st
 DockContent_Editor::DockContent_Editor(QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pEditor(nullptr)
+    , m_btnRun(nullptr)
+    , m_btnKill(nullptr)
+    , m_btnAlways(nullptr)
 {
 }
 
@@ -175,6 +180,46 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+
+    m_btnRun = new ZToolButton;
+    m_btnKill = new ZToolButton;
+    m_btnAlways = new ZToolButton;
+
+    QFont fnt("Alibaba PuHuiTi", 10);
+
+    m_btnRun->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
+    m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_run_thunder.svg",
+                          ":/icons/timeline_run_thunder.svg", "", "");
+    m_btnRun->setRadius(ZenoStyle::dpiScaled(2));
+    m_btnRun->setFont(fnt);
+    m_btnRun->setText(tr("Run"));
+    m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
+    m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
+    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
+    m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
+    m_btnRun->setShortcut(QKeySequence("F2"));
+
+    //kill
+    m_btnKill->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
+    m_btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_kill_clean.svg",
+                           ":/icons/timeline_kill_clean.svg", "", "");
+    m_btnKill->setRadius(ZenoStyle::dpiScaled(2));
+    m_btnKill->setFont(fnt);
+    m_btnKill->setText(tr("Kill"));
+    m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
+    m_btnKill->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
+    m_btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
+    m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
+    m_btnKill->setShortcut(QKeySequence("Shift+F2"));
+
+    m_btnAlways->setFixedSize(ZenoStyle::dpiScaledSize(QSize(34, 22)));
+    m_btnAlways->setButtonOptions(ZToolButton::Opt_SwitchAnimation);
+    m_btnAlways->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/always-off.svg", "", "", "");
+    m_btnAlways->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
+    m_btnAlways->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
+    m_btnAlways->initAnimation();
+    if (zeno::envconfig::get("ALWAYS"))
+        m_btnAlways->setChecked(true);
 
     pListView->setChecked(false);
     pShowGrid->setChecked(true);
@@ -203,7 +248,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     cbSet.cbEditFinished = funcZoomEdited;
     cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     cbZoom->setEditable(false);
-    //cbZoom->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
     cbZoom->setFixedSize(ZenoStyle::dpiScaled(85), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pListView);
@@ -218,7 +262,15 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pBlackboard);
     pToolLayout->addWidget(pFullPanel);
+
     pToolLayout->addStretch();
+
+    pToolLayout->addWidget(m_btnAlways);
+    pToolLayout->addWidget(m_btnRun);
+    pToolLayout->addWidget(m_btnKill);
+
+    pToolLayout->addSpacing(ZenoStyle::dpiScaled(100));
+
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
     pToolLayout->addWidget(pSettings);
@@ -286,6 +338,27 @@ void DockContent_Editor::initConnections()
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
         cbZoom->setCurrentText(percent);
+    });
+
+    connect(m_btnRun, &ZToolButton::clicked, this, [=]() {
+        ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pMainWin);
+        pMainWin->onRunTriggered();
+    });
+
+    connect(m_btnKill, &ZToolButton::clicked, this, [=]() {
+        killProgram();
+    });
+
+    connect(m_btnAlways, &ZToolButton::toggled, this, [=](bool bChecked) {
+        ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pMainWin);
+        if (bChecked)
+            pMainWin->onRunTriggered();
+        pMainWin->setAlways(bChecked);
+    });
+    connect(zenoApp->getMainWindow(), &ZenoMainWindow::alwaysModeChanged, this, [=](bool bAlways) {
+        m_btnAlways->setChecked(bAlways);
     });
 }
 

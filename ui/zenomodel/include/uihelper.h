@@ -87,8 +87,7 @@ public:
     static QVector<qreal> scaleFactors();
 
     static QPair<NODES_DATA, LINKS_DATA> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
-    static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
-    static void reAllocIdents2(const QString& targetSubgraph,
+    static void reAllocIdents(const QString& targetSubgraph,
                                const NODES_DATA& inNodes,
                                const LINKS_DATA& inLinks,
                                NODES_DATA& outNodes,

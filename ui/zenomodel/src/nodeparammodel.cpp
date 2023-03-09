@@ -349,10 +349,8 @@ void NodeParamModel::setAddParam(
         }
         else
         {
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
@@ -375,13 +373,11 @@ void NodeParamModel::setAddParam(
         }
         else
         {
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
         }
     }
     else if (PARAM_OUTPUT == cls)
@@ -402,13 +398,11 @@ void NodeParamModel::setAddParam(
         }
         else
         {
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
-            pItem->m_sockProp = prop;
             pItem->m_type = type;
+            pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
         }
     }
 }
@@ -876,6 +870,14 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 desc.outputs[sockName].info.type = newType;
             }
             m_pGraphsModel->updateSubgDesc(subgName, desc);
+
+            //update type of port. output need this?
+            if (nodeName == "SubInput") {
+                VParamItem *portItem = m_outputs->getItem("port");
+                if (portItem) {
+                    portItem->setData(newType, ROLE_PARAM_TYPE);
+                }
+            }
 
             //update to every subgraph node.
             QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
