@@ -14,7 +14,8 @@ namespace zeno {
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
-
+    using T_c = float_c; 
+    
     using tiles_t = typename ZenoParticles::particles_t;
     using itiles_t = zs::TileVector<int, 32>; 
     using vec3 = zs::vec<T, 3>;
@@ -154,7 +155,7 @@ struct RapidClothSystem : IObject {
     /// collision; TODO
     void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 3);   
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
-    void computeConstraints(zs::CudaExecutionPolicy &pol); // xl, cons -> c(xl), J(xl)     
+    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
     void forwardStep(zs::CudaExecutionPolicy &pol);     // async stepping  

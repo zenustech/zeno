@@ -405,7 +405,10 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"color", 1}, 
             {"vi", 4}, 
             {"vi_len", 1},
-            {"tmp", 1}
+            {"tmp", 1}, 
+            {"lambda", 1},  // float, lambda in LCP  
+            {"grad", 12},   // float, constraint gradient 
+            {"val", 1}      // float, constraint value
         }, 
         (std::size_t)estNumCps
     }; 
@@ -413,10 +416,10 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            {"grad", 6}, 
+            // {"grad", 6}, 
             {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1} // for LCP
+            {"tmp", 1} // , 
+            // {"lambda", 1} // for LCP
         }, 
         (std::size_t)estNumCps
     }; 
@@ -424,7 +427,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
-            {"grad", 9}, 
+            // {"grad", 9}, 
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}
@@ -435,7 +438,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"grad", 12},
+            // {"grad", 12},
             {"dist", 1},  
             {"tmp", 1}, 
             {"lambda", 1}
@@ -446,7 +449,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"grad", 12}, 
+            // {"grad", 12}, 
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}
@@ -457,7 +460,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            {"grad", 6}, 
+            // {"grad", 6}, 
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}

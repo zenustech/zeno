@@ -2,6 +2,7 @@
 #include "Structures.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "RapidClothGradHess.inl"
 
 static void findConstraintsImpl(zs::CudaExecutionPolicy &pol, 
     typename RapidClothSystem::T radius, bool withBoundary, const zs::SmallString &tag)
@@ -506,10 +507,165 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 
 
 
 // xl, cons -> c(xl), J(xl)   
-void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol); 
+void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag)
+{
+    using namespace zs; 
+    constexpr auto space = execspace_e::cuda; 
+    pol(range(ne), [vtemp = proxy<space>({}, vtemp), 
+                    tempE = proxy<space>({}, tempE), 
+                    tempCons = proxy<space>({}, tempCons), 
+                    oe, sigma] __device__ (int i) mutable {
+        // calculate grad 
+        int consInd = i + oe; 
+        auto inds = tempE.pack(dim_c<2>, "inds", int_c); 
+        auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto xj = vtemp.pack(dim_c<3>, tag, inds[1]);
+        auto yi = vtemp.pack(dim_c<3>, "y[k+1]", inds[0]); 
+        auto yj = vtemp.pack(dim_c<3>, "y[k+1]", inds[1]);
+        auto xij_norm = (xi - xj).norm() + limits<T>::epsilon(); 
+        auto yij_norm_inv = 1.0f / ((yi - yj).norm() + limits<T>::epsilon(); 
+        auto grad = - (xi - xj) / xij_norm * yij_norm_inv; 
+        auto val = sigma - xij_norm * yij_norm_inv; 
+        for (int d = 0; d < 3; d++)
+            tempCons("grad", d, consInd, T_c) = grad(d); 
+        for (int d = 0; d < 3; d++)
+            tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
+        tempCons("val", consInd, T_c) = val; 
+    }); 
+
+    pol(range(npp), [vtemp = proxy<space>({}, vtemp), 
+                    tempPP = proxy<space>({}, tempPP), 
+                    tempCons = proxy<space>({}, tempCons), 
+                    opp, delta] __device__ (int i) mutable {
+        // calculate grad 
+        int consInd = i + opp; 
+        auto inds = tempPP.pack(dim_c<2>, "inds", int_c); 
+        auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto xj = vtemp.pack(dim_c<3>, tag, inds[1]);
+        auto xij_norm = (xi - xj).norm() + limits<T>::epsilon(); 
+        auto delta_inv = 1.0f / delta; 
+        auto grad = (xi - xj) / xij_norm * delta_inv; 
+        auto val = xij_norm * delta_inv - 1.0f; 
+        for (int d = 0; d < 3; d++)
+            tempCons("grad", d, consInd, T_c) = grad(d); 
+        for (int d = 0; d < 3; d++)
+            tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
+        tempCons("val", consInd) = val; 
+    }); 
+
+    pol(range(npe), [vtemp = proxy<space>({}, vtemp), 
+                    tempPE = proxy<space>({}, tempPE), 
+                    tempCons = proxy<space>({}, tempCons), 
+                    ope, delta] __device__ (int i) mutable {
+        // calculate grad 
+        int consInd = i + ope; 
+        auto inds = tempPE.pack(dim_c<3>, "inds", int_c); 
+        auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto e0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto e1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        zs::vec<9> grad; 
+        PE_area2_grad(p.data(), e0.data(), e1.data(), grad.data()); 
+        auto area = (e0 - p).cross(e1 - p).norm(); 
+        T coef = (e1 - e0).norm() * delta; 
+        grad /= (2.0f * area * coef + limits<T>::epsilon()); 
+        tempCons.tuple(dim_c<9>, "grad", consInd, T_c) = grad; 
+        tempCons("val", consInd, T_c) = area / coef - 1.0f; 
+    }); 
+
+    pol(range(npt), [vtemp = proxy<space>({}, vtemp), 
+                    tempPT = proxy<space>({}, tempPT), 
+                    tempCons = proxy<space>({}, tempCons), 
+                    opt, delta] __device__ (int i) mutable {
+        // calculate grad 
+        int consInd = i + opt; 
+        auto inds = tempPT.pack(dim_c<4>, "inds", int_c); 
+        auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        zs::vec<3, 3> mat;
+        for (int d = 0; d < 3; d++)
+        {
+            mat(d, 0) = t0(d) - p(d); 
+            mat(d, 1) = t1(d) - p(d); 
+            mat(d, 2) = t2(d) - p(d); 
+        }
+        auto vol = determinant(mat); 
+        auto sgn = vol > 0 ? 1.0f : -1.0f; 
+        auto coef = sgn * (t1 - t0).cross(t2 - t0).norm() * delta + limits<T>::epsilon(); 
+        mat = adjoint(mat).transpose();
+
+        zs::vec<3, 4> grad; 
+        for (int d = 0; d < 3; d++)
+            grad(d, 3) = 0; 
+        for (k = 1; k < 4; k++)
+            for (int d = 0; d < 3; d++)
+            {
+                grad(d, k) = mat(d, k); 
+                grad(d, 0) -= mat(d, k); 
+            }
+        grad /= coef; 
+        tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
+        tempCons("val", consInd, T_c) = vol / coef - 1.0f; 
+    }); 
+
+    pol(range(nee), [vtemp = proxy<space>({}, vtemp), 
+                    tempEE = proxy<space>({}, tempEE), 
+                    tempCons = proxy<space>({}, tempCons), 
+                    opt, delta] __device__ (int i) mutable {
+        // calculate grad 
+        int consInd = i + opt; 
+        auto inds = tempPT.pack(dim_c<4>, "inds", int_c); 
+        auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        zs::vec<3, 3> mat, rMat;
+        for (int d = 0; d < 3; d++)
+        {
+            mat(d, 0) = ei1(d) - ei0(d); 
+            mat(d, 1) = ei1(d) - ei0(d); 
+            mat(d, 2) = ej1(d) - ei0(d); 
+        }
+        auto vol = determinant(mat); 
+        auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+        auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
+        auto pj = gammas[1] * (ej1 - ej0) + ej0; 
+        auto dij = pj - pi; 
+        auto dist = dij.norm(); 
+        auto ri0 = ei0 + (dist - delta) * 0.5f * dij; 
+        auto ri1 = ei1 + (dist - delta) * 0.5f * dij; 
+        auto rj0 = ej0 - (dist - delta) * 0.5f * dij;
+        auto rj1 = ej1 - (dist - delta) * 0.5f * dij; 
+        for (int d = 0; d < 3; d++)
+        {
+            rMat(d, 0) = ri1(d) - ri0(d); 
+            rMat(d, 1) = ri1(d) - ri0(d); 
+            rMat(d, 2) = rj1(d) - ri0(d); 
+        }
+        auto coef = determinant(rMat);  
+        mat = adjoint(mat).transpose();
+
+        zs::vec<3, 4> grad; 
+        for (int d = 0; d < 3; d++)
+            grad(d, 3) = 0; 
+        for (k = 1; k < 4; k++)
+            for (int d = 0; d < 3; d++)
+            {
+                grad(d, k) = mat(d, k); 
+                grad(d, 0) -= mat(d, k); 
+            }
+        grad /= coef; 
+        tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
+        tempCons("val", consInd, T_c) = vol / coef - 1.0f; 
+    }); 
+}
 
 // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
-void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol);        
+void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
+{
+    // PGS solver 
+}      
 
 // call cons + solveLCP 
 void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol);    
