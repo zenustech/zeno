@@ -26,7 +26,7 @@ ZTimeline::ZTimeline(QWidget* parent)
     QStringList items = { "23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps" };
     m_ui->comboBox->addItems(items);
     m_ui->comboBox->setItemDelegate(new ZComboBoxItemDelegate2(m_ui->comboBox));
-    m_ui->comboBox->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(24));
     m_ui->comboBox->setProperty("cssClass", "newstyle");
  
     setFocusPolicy(Qt::ClickFocus);

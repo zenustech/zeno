@@ -632,27 +632,33 @@ void ViewParamModel::clone(ViewParamModel* pModel)
     }
 }
 
-void ViewParamModel::disableNodeParam(QStandardItem *item) 
+bool ViewParamModel::isEditable(const QModelIndex &current) 
 {
-    for (int r = 0; r < item->rowCount(); r++) {
-        QStandardItem *newItem = item->child(r);
-        VParamItem *pVItem = static_cast<VParamItem *>(newItem);
-        if (pVItem &&
-            (pVItem->m_name == iotags::params::panel_inputs || 
-            pVItem->m_name == iotags::params::panel_params ||
-            pVItem->m_name == iotags::params::panel_outputs)) 
+    bool bCoreParam = current.data(ROLE_VPARAM_IS_COREPARAM).toBool();
+    if (bCoreParam)
+        return false;
+    int type = current.data(ROLE_VPARAM_TYPE).toInt();
+    if (current.data(ROLE_VPARAM_TYPE) == VPARAM_GROUP) 
+    {
+        QString groupName = current.data(ROLE_VPARAM_NAME).toString();
+        if (!m_bNodeUI) 
         {
-                newItem->setData(false, ROLE_VAPRAM_EDITTABLE);
-            for (int r = 0; r < newItem->rowCount(); r++) 
+            if (groupName == iotags::params::panel_inputs || 
+                groupName == iotags::params::panel_outputs ||
+                groupName == iotags::params::panel_params)
             {
-                QStandardItem *childItem = newItem->child(r);
-                childItem->setData(false, ROLE_VAPRAM_EDITTABLE);
+                return false;
             }
         } 
         else 
         {
-            newItem->setData(true, ROLE_VAPRAM_EDITTABLE);
-            disableNodeParam(newItem);
+            return false;
         }
+    } 
+    else if (current.data(ROLE_VPARAM_TYPE) == VPARAM_PARAM) 
+    {
+        if (!m_model->IsSubGraphNode(m_nodeIdx))
+            return isEditable(current.parent());
     }
+    return true;
 }

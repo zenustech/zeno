@@ -42,7 +42,7 @@ public:
     bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
                   int destinationChild) override;
 
-    void disableNodeParam(QStandardItem *item);
+    bool isEditable(const QModelIndex &current);
 
 signals:
     void editNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);

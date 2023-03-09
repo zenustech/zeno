@@ -77,7 +77,7 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    bool bEditable = index.data(ROLE_VAPRAM_EDITTABLE).toBool();
+    bool bEditable = m_model->isEditable(index);
     if (!bEditable)
         return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
@@ -145,8 +145,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     }
 
     m_proxyModel->clone(m_model);
-    if (!bNodeUI)
-        m_proxyModel->disableNodeParam(m_proxyModel->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_proxyModel);
     m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_proxyModel, m_ui->paramsView));
@@ -280,7 +278,7 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
             m_ui->itemsTable->removeRow(row);
     } else {
         QModelIndex idx = m_ui->paramsView->currentIndex();
-        bool bEditable = idx.data(ROLE_VAPRAM_EDITTABLE).toBool();
+        bool bEditable = m_proxyModel->isEditable(idx);
         if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
             return;
 
@@ -298,7 +296,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
     const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
     m_ui->editName->setText(name);
-    bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+    bool bEditable = m_proxyModel->isEditable(current);
     m_ui->editName->setEnabled(bEditable);
 
     m_ui->editLabel->setText(pCurrentItem->data(ROLE_VPARAM_TOOLTIP).toString());
@@ -475,7 +473,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
             QMessageBox::information(this, tr("Error "), tr("create control needs to place under the group"));
             return;
         }
-        bool bEditable = pItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+        bool bEditable = m_proxyModel->isEditable(layerIdx) || m_bSubgraphNode;
         if (!bEditable) {
             QMessageBox::information(this, tr("Error "), tr("The Group cannot be edited"));
             return;
