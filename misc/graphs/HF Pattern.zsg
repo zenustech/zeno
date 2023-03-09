@@ -15,29 +15,23 @@
                         },
                         "Height": {
                             "link": null,
-                            "default-value": 100.0,
+                            "default-value": 100,
                             "control": {
-                                "name": "Float",
-                                "max": 100.0,
-                                "min": 0.0,
-                                "step": 1.0
+                                "name": "Integer"
                             },
-                            "type": "float"
+                            "type": "int"
                         },
                         "Base Height": {
                             "link": null,
-                            "default-value": 0.0,
+                            "default-value": 1,
                             "control": {
-                                "name": "Float",
-                                "max": 100.0,
-                                "min": 0.0,
-                                "step": 1.0
+                                "name": "Integer"
                             },
-                            "type": "float"
+                            "type": "int"
                         },
                         "Pattern": {
                             "link": null,
-                            "default-value": "Cells",
+                            "default-value": "Ramp",
                             "control": {
                                 "name": "Enum",
                                 "items": [
@@ -80,17 +74,17 @@
                         },
                         "Size": {
                             "link": null,
-                            "default-value": 100.0,
+                            "default-value": 100,
                             "control": {
-                                "name": "Float"
+                                "name": "Integer"
                             },
-                            "type": "float"
+                            "type": "int"
                         },
                         "Scale": {
                             "link": null,
                             "default-value": [
-                                1.0,
-                                1.0
+                                0.8999999761581421,
+                                0.8999999761581421
                             ],
                             "control": {
                                 "name": "Float Vector 2"
@@ -227,7 +221,7 @@
                         },
                         "Ramp Mode": {
                             "link": null,
-                            "default-value": "Radial",
+                            "default-value": "Concentric",
                             "control": {
                                 "name": "Enum",
                                 "items": [
@@ -265,7 +259,7 @@
                         },
                         "Rise over Run": {
                             "link": null,
-                            "default-value": 0.25,
+                            "default-value": 0.30000001192092898,
                             "control": {
                                 "name": "Float"
                             },
@@ -273,7 +267,7 @@
                         },
                         "Step Height": {
                             "link": null,
-                            "default-value": 10,
+                            "default-value": 11,
                             "control": {
                                 "name": "Integer",
                                 "max": 1000,
@@ -326,7 +320,7 @@
                         },
                         "StarRotate": {
                             "link": null,
-                            "default-value": 0,
+                            "default-value": 1,
                             "control": {
                                 "name": "Integer",
                                 "max": 360,
@@ -345,7 +339,7 @@
                         },
                         "StarSharp": {
                             "link": null,
-                            "default-value": 0.5,
+                            "default-value": 0.4000000059604645,
                             "control": {
                                 "name": "Float"
                             },
@@ -361,7 +355,7 @@
                         },
                         "Sides": {
                             "link": null,
-                            "default-value": 5,
+                            "default-value": 6,
                             "control": {
                                 "name": "Integer",
                                 "max": 10,
@@ -402,17 +396,17 @@
                             },
                             "type": "vec3f"
                         },
-                        "CellWall Width": {
+                        "Cell Jitter": {
                             "link": null,
-                            "default-value": 0.07000000029802323,
+                            "default-value": 0.5,
                             "control": {
                                 "name": "Float"
                             },
                             "type": "float"
                         },
-                        "Cell Jitter": {
+                        "CellWall Width": {
                             "link": null,
-                            "default-value": 0.5,
+                            "default-value": 0.07000000029802323,
                             "control": {
                                 "name": "Float"
                             },
@@ -425,8 +419,8 @@
                         "prim": {}
                     },
                     "uipos": [
-                        5258.6455078125,
-                        16828.064453125
+                        2419.64453125,
+                        -60.220703125
                     ],
                     "options": [
                         "VIEW"
@@ -442,7 +436,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 913608440
+                                    "uuid": 3450737084
                                 },
                                 "prim": {
                                     "core-param": {
@@ -452,7 +446,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1528358213
+                                    "uuid": 961978184
                                 },
                                 "Center": {
                                     "core-param": {
@@ -462,7 +456,7 @@
                                     "control": {
                                         "name": "Float Vector 2"
                                     },
-                                    "uuid": 1447159154
+                                    "uuid": 950924306
                                 },
                                 "Rotate": {
                                     "core-param": {
@@ -472,17 +466,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 948519154
-                                },
-                                "Size": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Size",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 1793289152
+                                    "uuid": 1252428259
                                 },
                                 "Scale": {
                                     "core-param": {
@@ -492,13 +476,13 @@
                                     "control": {
                                         "name": "Float Vector 2"
                                     },
-                                    "uuid": 4244375068
+                                    "uuid": 2189137171
                                 },
                                 "pattern": {
                                     "control": {
                                         "name": "String"
                                     },
-                                    "uuid": 487769933
+                                    "uuid": 1040477153
                                 },
                                 "Pattern": {
                                     "core-param": {
@@ -506,15 +490,23 @@
                                         "class": "input"
                                     },
                                     "control": {
-                                        "name": "Enum"
+                                        "name": "Enum",
+                                        "items": [
+                                            "Cells",
+                                            "Ramp",
+                                            "Stars",
+                                            "Stripe",
+                                            "Exp Ramp",
+                                            "Steps"
+                                        ]
                                     },
-                                    "uuid": 1647254538
+                                    "uuid": 488039672
                                 },
                                 "Distrot Pattern": {
                                     "control": {
                                         "name": "Boolean"
                                     },
-                                    "uuid": 1404331285
+                                    "uuid": 715206191
                                 },
                                 "Ramp": {
                                     "core-param": {
@@ -524,19 +516,19 @@
                                     "control": {
                                         "name": "Curve"
                                     },
-                                    "uuid": 2024077063
+                                    "uuid": 3145758589
                                 },
                                 "SpinBox(0)": {
                                     "control": {
                                         "name": "SpinBox"
                                     },
-                                    "uuid": 1224865238
+                                    "uuid": 1201590057
                                 },
                                 "SpinBoxSlider(0)": {
                                     "control": {
                                         "name": "SpinBoxSlider"
                                     },
-                                    "uuid": 4249977603
+                                    "uuid": 1427662337
                                 },
                                 "Rise over Run": {
                                     "core-param": {
@@ -546,19 +538,19 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1238145752
+                                    "uuid": 2969284510
                                 },
                                 "Slider(0)": {
                                     "control": {
                                         "name": "Slider"
                                     },
-                                    "uuid": 3483626840
+                                    "uuid": 1495956636
                                 },
                                 "Step Height": {
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 642998416
+                                    "uuid": 290728685
                                 },
                                 "Ramp Mode": {
                                     "core-param": {
@@ -566,9 +558,14 @@
                                         "class": "input"
                                     },
                                     "control": {
-                                        "name": "Enum"
+                                        "name": "Enum",
+                                        "items": [
+                                            "Linear",
+                                            "Concentric",
+                                            "Radial"
+                                        ]
                                     },
-                                    "uuid": 1631704966
+                                    "uuid": 1175341298
                                 },
                                 "Repeat": {
                                     "core-param": {
@@ -578,7 +575,7 @@
                                     "control": {
                                         "name": "Boolean"
                                     },
-                                    "uuid": 1565877506
+                                    "uuid": 1734531459
                                 },
                                 "Mirror": {
                                     "core-param": {
@@ -588,45 +585,25 @@
                                     "control": {
                                         "name": "Boolean"
                                     },
-                                    "uuid": 3862029923
-                                },
-                                "Height": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Height",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 949979911
-                                },
-                                "Base Height": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Base Height",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 3308063291
+                                    "uuid": 1178176971
                                 },
                                 "Slider(1)1": {
                                     "control": {
                                         "name": "Slider"
                                     },
-                                    "uuid": 1993499549
+                                    "uuid": 1163424142
                                 },
                                 "Ramp Mode_1": {
                                     "control": {
                                         "name": "Enum"
                                     },
-                                    "uuid": 1634755448
+                                    "uuid": 3537084392
                                 },
                                 "Ramp Mode_1_2": {
                                     "control": {
                                         "name": "Enum"
                                     },
-                                    "uuid": 2145867609
+                                    "uuid": 2196027863
                                 },
                                 "Phase": {
                                     "core-param": {
@@ -636,7 +613,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 3996206300
+                                    "uuid": 143994886
                                 },
                                 "Step Ref Height": {
                                     "core-param": {
@@ -646,7 +623,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 2604549033
+                                    "uuid": 383680946
                                 },
                                 "Step Height": {
                                     "core-param": {
@@ -656,7 +633,7 @@
                                     "control": {
                                         "name": "SpinBoxSlider"
                                     },
-                                    "uuid": 525505308
+                                    "uuid": 4004701664
                                 },
                                 "StarRotateRand": {
                                     "core-param": {
@@ -666,7 +643,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 3786255488
+                                    "uuid": 480861634
                                 },
                                 "Shape Size": {
                                     "core-param": {
@@ -676,7 +653,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1172794398
+                                    "uuid": 2471579949
                                 },
                                 "StarRotate": {
                                     "core-param": {
@@ -686,7 +663,7 @@
                                     "control": {
                                         "name": "SpinBoxSlider"
                                     },
-                                    "uuid": 1108891214
+                                    "uuid": 1123997315
                                 },
                                 "StarJtter": {
                                     "core-param": {
@@ -696,7 +673,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1947993413
+                                    "uuid": 2556234608
                                 },
                                 "StarSharp": {
                                     "core-param": {
@@ -706,17 +683,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1102876373
-                                },
-                                "Starness": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Starness",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 3491941148
+                                    "uuid": 2578513929
                                 },
                                 "Sides": {
                                     "core-param": {
@@ -726,13 +693,13 @@
                                     "control": {
                                         "name": "SpinBoxSlider"
                                     },
-                                    "uuid": 2461424496
+                                    "uuid": 2833279228
                                 },
                                 "StarSizeRand": {
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 4176736425
+                                    "uuid": 2818740898
                                 },
                                 "Cell seed": {
                                     "core-param": {
@@ -742,33 +709,13 @@
                                     "control": {
                                         "name": "Float Vector 3"
                                     },
-                                    "uuid": 3651174774
-                                },
-                                "CellWall Width": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/CellWall Width",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 3100848323
-                                },
-                                "Cell Jitter": {
-                                    "core-param": {
-                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Cell Jitter",
-                                        "class": "input"
-                                    },
-                                    "control": {
-                                        "name": "Float"
-                                    },
-                                    "uuid": 3644058319
+                                    "uuid": 4106998880
                                 },
                                 "Cell Number\n": {
                                     "control": {
                                         "name": "Float Vector 2"
                                     },
-                                    "uuid": 215521760
+                                    "uuid": 4263094317
                                 },
                                 "Stripe Width": {
                                     "core-param": {
@@ -778,7 +725,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 602780768
+                                    "uuid": 2336059408
                                 },
                                 "Step Control": {
                                     "core-param": {
@@ -788,7 +735,7 @@
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 3638655808
+                                    "uuid": 3180984903
                                 },
                                 "Stripe Control": {
                                     "core-param": {
@@ -798,7 +745,7 @@
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 853143495
+                                    "uuid": 4212526437
                                 },
                                 "Ramp Control": {
                                     "core-param": {
@@ -808,7 +755,7 @@
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 1833271246
+                                    "uuid": 2165650446
                                 },
                                 "Star Control": {
                                     "core-param": {
@@ -818,7 +765,7 @@
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 1877918140
+                                    "uuid": 3412640498
                                 },
                                 "Cell Control": {
                                     "core-param": {
@@ -828,13 +775,73 @@
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 2091725848
+                                    "uuid": 911140702
                                 },
                                 "": {
                                     "control": {
                                         "name": "group-line"
                                     },
-                                    "uuid": 2608986504
+                                    "uuid": 754452390
+                                },
+                                "Height": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Height",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Integer"
+                                    },
+                                    "uuid": 694372560
+                                },
+                                "Base Height": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Base Height",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Integer"
+                                    },
+                                    "uuid": 2784632377
+                                },
+                                "Cell Jitter": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Cell Jitter",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Float"
+                                    },
+                                    "uuid": 914929767
+                                },
+                                "CellWall Width": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/CellWall Width",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Float"
+                                    },
+                                    "uuid": 2376099218
+                                },
+                                "Starness": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Starness",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Float"
+                                    },
+                                    "uuid": 2724361579
+                                },
+                                "Size": {
+                                    "core-param": {
+                                        "name": "main:3c43b69-HeightPattern:[node]/inputs/Size",
+                                        "class": "input"
+                                    },
+                                    "control": {
+                                        "name": "Integer"
+                                    },
+                                    "uuid": 2525604032
                                 }
                             },
                             "Parameters": {},
@@ -843,13 +850,13 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1681962745
+                                    "uuid": 4217353090
                                 },
                                 "prim": {
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2341961720
+                                    "uuid": 1109881661
                                 }
                             }
                         }
@@ -960,8 +967,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        2718.667236328125,
-                        16969.333984375
+                        -117.33203125,
+                        97.333984375
                     ],
                     "options": []
                 },
@@ -1076,8 +1083,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        3997.33349609375,
-                        16902.666015625
+                        1161.333984375,
+                        30.666015625
                     ],
                     "options": [
                         "MUTE"
@@ -2294,69 +2301,6 @@
                     ],
                     "options": []
                 },
-                "e5af891a-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 100.0,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "Size",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        938.33349609375,
-                        -1445.6666259765626
-                    ],
-                    "options": []
-                },
                 "680953e8-SubInput": {
                     "name": "SubInput",
                     "inputs": {
@@ -2418,8 +2362,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        1090.0,
-                        -2814.6669921875
+                        1207.3333740234376,
+                        -2898.6669921875
                     ],
                     "options": []
                 },
@@ -2437,7 +2381,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": "Cells",
                             "control": {
                                 "name": "String"
                             },
@@ -2563,7 +2507,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": 0.25,
                             "control": {
                                 "name": "String"
                             },
@@ -2728,7 +2672,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": 2,
                             "control": {
                                 "name": "String"
                             },
@@ -2837,132 +2781,6 @@
                     "uipos": [
                         6550.0,
                         3214.0
-                    ],
-                    "options": []
-                },
-                "50c8ec78-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 100.0,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "Height",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        27858.666015625,
-                        1703.333251953125
-                    ],
-                    "options": []
-                },
-                "adbb073b-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 0,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "Base Height",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        28515.333984375,
-                        2352.0
                     ],
                     "options": []
                 },
@@ -3105,7 +2923,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": 0.4000000059604645,
                             "control": {
                                 "name": "String"
                             },
@@ -3226,7 +3044,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 374687240
+                                    "uuid": 1068667930
                                 },
                                 "zfxCode": {
                                     "core-param": {
@@ -3236,7 +3054,7 @@
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 2581899151
+                                    "uuid": 2888429436
                                 },
                                 "params": {
                                     "core-param": {
@@ -3246,7 +3064,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 186479440
+                                    "uuid": 243568693
                                 },
                                 "SRC": {
                                     "core-param": {
@@ -3256,7 +3074,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1117960496
+                                    "uuid": 4133648885
                                 }
                             },
                             "Parameters": {},
@@ -3265,13 +3083,13 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3394938290
+                                    "uuid": 786217999
                                 },
                                 "DST": {
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1777051188
+                                    "uuid": 936350021
                                 }
                             }
                         }
@@ -3608,10 +3426,10 @@
                                 "collasped": false,
                                 "keys": {
                                     "Height": {
-                                        "link": "HeightPattern:50c8ec78-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:ddcc810d-SubInput:[node]/outputs/port"
                                     },
                                     "BaseHeight": {
-                                        "link": "HeightPattern:adbb073b-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:715b7b09-SubInput:[node]/outputs/port"
                                     }
                                 }
                             },
@@ -3670,7 +3488,7 @@
                                         "link": "HeightPattern:680953e8-SubInput:[node]/outputs/port"
                                     },
                                     "Size": {
-                                        "link": "HeightPattern:e5af891a-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:e3c36e94-PortalOut:[node]/outputs/port"
                                     }
                                 }
                             },
@@ -3776,7 +3594,7 @@
                                         "link": "HeightPattern:680953e8-SubInput:[node]/outputs/port"
                                     },
                                     "Size": {
-                                        "link": "HeightPattern:e5af891a-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:2824b659-PortalOut:[node]/outputs/port"
                                     }
                                 }
                             },
@@ -4192,7 +4010,7 @@
                                         "link": "HeightPattern:680953e8-SubInput:[node]/outputs/port"
                                     },
                                     "Size": {
-                                        "link": "HeightPattern:e5af891a-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:6f92efcd-PortalOut:[node]/outputs/port"
                                     },
                                     "height": {
                                         "link": "HeightPattern:84c57d4c-PortalOut:[node]/outputs/port"
@@ -4628,7 +4446,7 @@
                     "name": "PortalIn",
                     "inputs": {
                         "port": {
-                            "link": "HeightPattern:50c8ec78-SubInput:[node]/outputs/port",
+                            "link": "HeightPattern:ddcc810d-SubInput:[node]/outputs/port",
                             "default-value": null,
                             "control": {
                                 "name": ""
@@ -4657,8 +4475,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        28632.0,
-                        1548.0
+                        28776.0,
+                        1584.0
                     ],
                     "options": []
                 },
@@ -4676,7 +4494,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": 0.4000000059604645,
                             "control": {
                                 "name": "String"
                             },
@@ -5044,7 +4862,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": 0.5,
+                            "value": 0.44999998807907107,
                             "control": {
                                 "name": "String"
                             },
@@ -5090,69 +4908,6 @@
                     "uipos": [
                         15498.6669921875,
                         3580.266845703125
-                    ],
-                    "options": []
-                },
-                "1d6b4000-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 0.5,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "Starness",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        17678.33203125,
-                        4675.93359375
                     ],
                     "options": []
                 },
@@ -5231,7 +4986,7 @@
                     "options": [],
                     "blackboard": {
                         "width": 4097.0,
-                        "height": 1724.2667236328126,
+                        "height": 1797.0001220703126,
                         "title": "Star",
                         "background": "#0064a8",
                         "items": [
@@ -5423,7 +5178,7 @@
                                 "collasped": false,
                                 "keys": {
                                     "wall": {
-                                        "link": "HeightPattern:1da177a8-SubInput:[node]/outputs/port"
+                                        "link": "HeightPattern:b6a89b51-SubInput:[node]/outputs/port"
                                     }
                                 }
                             },
@@ -5468,7 +5223,11 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": [
+                                1,
+                                1,
+                                1
+                            ],
                             "control": {
                                 "name": "String"
                             },
@@ -5512,134 +5271,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        19974.0,
-                        7173.0
-                    ],
-                    "options": []
-                },
-                "1da177a8-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 0.07000000029802323,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "CellWall Width",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        22202.66796875,
-                        6910.33349609375
-                    ],
-                    "options": []
-                },
-                "5945ac5-SubInput": {
-                    "name": "SubInput",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "defl": {
-                            "value": 0.5,
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "name": {
-                            "value": "Cell Jitter",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        },
-                        "type": {
-                            "value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "",
-                                    "int",
-                                    "bool",
-                                    "float",
-                                    "string",
-                                    "vec2f",
-                                    "vec2i",
-                                    "vec3f",
-                                    "vec3i",
-                                    "vec4f",
-                                    "vec4i",
-                                    "color",
-                                    "curve",
-                                    "list",
-                                    "dict"
-                                ]
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "port": {},
-                        "hasValue": {},
-                        "DST": {}
-                    },
-                    "uipos": [
-                        20774.66796875,
-                        6271.0
+                        20790.0,
+                        6963.0
                     ],
                     "options": []
                 },
@@ -5924,7 +5557,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": null,
+                            "value": 2.0,
                             "control": {
                                 "name": "String"
                             },
@@ -6025,7 +5658,7 @@
                             "type": "float"
                         },
                         "starness": {
-                            "link": "HeightPattern:1d6b4000-SubInput:[node]/outputs/port",
+                            "link": "HeightPattern:ed5e7937-SubInput:[node]/outputs/port",
                             "default-value": 0.5,
                             "control": {
                                 "name": "Float"
@@ -6055,8 +5688,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        18424.0,
-                        3846.0
+                        18597.333984375,
+                        4012.666748046875
                     ],
                     "options": []
                 },
@@ -6088,7 +5721,7 @@
                             "type": "string"
                         },
                         "celljitter": {
-                            "link": "HeightPattern:5945ac5-SubInput:[node]/outputs/port",
+                            "link": "HeightPattern:650c3fb6-SubInput:[node]/outputs/port",
                             "default-value": 1.0,
                             "control": {
                                 "name": "Float"
@@ -6156,6 +5789,519 @@
                     "uipos": [
                         22031.333984375,
                         6080.66650390625
+                    ],
+                    "options": []
+                },
+                "ddcc810d-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": 100,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "Height",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "int",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        28140.0,
+                        1760.0
+                    ],
+                    "options": []
+                },
+                "715b7b09-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": null,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "Base Height",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "int",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        28392.0,
+                        2384.0
+                    ],
+                    "options": []
+                },
+                "650c3fb6-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": 0.5,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "Cell Jitter",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "float",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        20404.0,
+                        6316.0
+                    ],
+                    "options": []
+                },
+                "b6a89b51-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": 0.07000000029802323,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "CellWall Width",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "float",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        22334.0,
+                        7344.0
+                    ],
+                    "options": []
+                },
+                "ed5e7937-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": 0.5,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "Starness",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "float",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        18060.0,
+                        5240.0
+                    ],
+                    "options": []
+                },
+                "f8e7f66b-PortalIn": {
+                    "name": "PortalIn",
+                    "inputs": {
+                        "port": {
+                            "link": "HeightPattern:52f2052b-SubInput:[node]/outputs/port",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        },
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "name": {
+                            "value": "size",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "DST": {}
+                    },
+                    "uipos": [
+                        1476.6666259765626,
+                        -1546.6666259765626
+                    ],
+                    "options": []
+                },
+                "e3c36e94-PortalOut": {
+                    "name": "PortalOut",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "name": {
+                            "value": "size",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        1688.6666259765626,
+                        -3125.666748046875
+                    ],
+                    "options": []
+                },
+                "2824b659-PortalOut": {
+                    "name": "PortalOut",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "name": {
+                            "value": "size",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        1454.0,
+                        -1022.0
+                    ],
+                    "options": [
+                        "collapsed"
+                    ]
+                },
+                "6f92efcd-PortalOut": {
+                    "name": "PortalOut",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "name": {
+                            "value": "size",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        14742.0,
+                        2196.0
+                    ],
+                    "options": [
+                        "collapsed"
+                    ]
+                },
+                "52f2052b-SubInput": {
+                    "name": "SubInput",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": 100,
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "name": {
+                            "value": "Size",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "int",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "port": {},
+                        "hasValue": {},
+                        "DST": {}
+                    },
+                    "uipos": [
+                        520.0,
+                        -1386.6666259765626
                     ],
                     "options": []
                 }
@@ -15264,27 +15410,21 @@
                     "type": ""
                 },
                 "Height": {
-                    "default-value": null,
+                    "default-value": 100,
                     "control": {
-                        "name": "Float",
-                        "max": 100.0,
-                        "min": 0.0,
-                        "step": 1.0
+                        "name": "Integer"
                     },
-                    "type": "float"
+                    "type": "int"
                 },
                 "Base Height": {
                     "default-value": null,
                     "control": {
-                        "name": "Float",
-                        "max": 100.0,
-                        "min": 0.0,
-                        "step": 1.0
+                        "name": "Integer"
                     },
-                    "type": "float"
+                    "type": "int"
                 },
                 "Pattern": {
-                    "default-value": null,
+                    "default-value": "Cells",
                     "control": {
                         "name": "Enum",
                         "items": [
@@ -15324,17 +15464,16 @@
                     "type": "float"
                 },
                 "Size": {
-                    "default-value": 0.0,
+                    "default-value": 100,
                     "control": {
-                        "name": "Float"
+                        "name": "Integer"
                     },
-                    "type": "float"
+                    "type": "int"
                 },
                 "Scale": {
                     "default-value": [
-                        0.0,
-                        0.0,
-                        0.0
+                        1.0,
+                        1.0
                     ],
                     "control": {
                         "name": "Float Vector 2"
@@ -15342,7 +15481,7 @@
                     "type": "vec2f"
                 },
                 "Phase": {
-                    "default-value": null,
+                    "default-value": 0.4000000059604645,
                     "control": {
                         "name": "Float"
                     },
@@ -15365,12 +15504,17 @@
                 "Ramp Mode": {
                     "default-value": "Linear",
                     "control": {
-                        "name": "String"
+                        "name": "Enum",
+                        "items": [
+                            "Linear",
+                            "Concentric",
+                            "Radial"
+                        ]
                     },
                     "type": "string"
                 },
                 "Repeat": {
-                    "default-value": false,
+                    "default-value": true,
                     "control": {
                         "name": "Boolean"
                     },
@@ -15391,7 +15535,7 @@
                     "type": "group-line"
                 },
                 "Rise over Run": {
-                    "default-value": null,
+                    "default-value": 0.25,
                     "control": {
                         "name": "Float"
                     },
@@ -15422,7 +15566,7 @@
                     "type": "group-line"
                 },
                 "Stripe Width": {
-                    "default-value": null,
+                    "default-value": 2.0,
                     "control": {
                         "name": "Float"
                     },
@@ -15436,7 +15580,7 @@
                     "type": "group-line"
                 },
                 "Shape Size": {
-                    "default-value": null,
+                    "default-value": 0.4000000059604645,
                     "control": {
                         "name": "Float"
                     },
@@ -15460,14 +15604,14 @@
                     "type": "float"
                 },
                 "StarSharp": {
-                    "default-value": 0.0,
+                    "default-value": 0.44999998807907107,
                     "control": {
                         "name": "Float"
                     },
                     "type": "float"
                 },
                 "Starness": {
-                    "default-value": 0.0,
+                    "default-value": 0.5,
                     "control": {
                         "name": "Float"
                     },
@@ -15498,21 +15642,25 @@
                     "type": "group-line"
                 },
                 "Cell seed": {
-                    "default-value": null,
+                    "default-value": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
                     "control": {
                         "name": "Float Vector 3"
                     },
                     "type": "vec3f"
                 },
-                "CellWall Width": {
-                    "default-value": 0.0,
+                "Cell Jitter": {
+                    "default-value": 0.5,
                     "control": {
                         "name": "Float"
                     },
                     "type": "float"
                 },
-                "Cell Jitter": {
-                    "default-value": 0.0,
+                "CellWall Width": {
+                    "default-value": 0.07000000029802323,
                     "control": {
                         "name": "Float"
                     },

@@ -107,8 +107,8 @@
                         "DST": {}
                     },
                     "uipos": [
-                        7768.0517578125,
-                        18420.0703125
+                        893.05078125,
+                        -1119.9296875
                     ],
                     "options": []
                 },
@@ -161,7 +161,7 @@
                                         },
                                         {
                                             "x": 0.1987616141064768,
-                                            "y": 0.9999999999999999,
+                                            "y": 1.0,
                                             "left-handle": {
                                                 "x": -0.1,
                                                 "y": 0.0
@@ -271,12 +271,12 @@
                     },
                     "params": {},
                     "outputs": {
-                        "prim": {},
-                        "DST": {}
+                        "DST": {},
+                        "prim": {}
                     },
                     "uipos": [
-                        8738.666666666664,
-                        18541.333333333336
+                        1863.6669921875,
+                        -998.666015625
                     ],
                     "options": [
                         "VIEW"
@@ -419,36 +419,6 @@
                     ],
                     "options": []
                 },
-                "ff36a211-SubCategory": {
-                    "name": "SubCategory",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            },
-                            "type": ""
-                        }
-                    },
-                    "params": {
-                        "name": {
-                            "value": "subgraph",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "DST": {}
-                    },
-                    "uipos": [
-                        -260.0,
-                        -2119.0
-                    ],
-                    "options": []
-                },
                 "f40a83f2-SubInput": {
                     "name": "SubInput",
                     "inputs": {
@@ -526,7 +496,7 @@
                     },
                     "params": {
                         "defl": {
-                            "value": "",
+                            "value": 2,
                             "control": {
                                 "name": "String"
                             },
@@ -10530,7 +10500,7 @@
                     "type": "int"
                 },
                 "Mask by Height": {
-                    "default-value": false,
+                    "default-value": true,
                     "control": {
                         "name": "Boolean"
                     },
