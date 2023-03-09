@@ -97,7 +97,7 @@ namespace zenoui
                 ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(text, ctrl, m_nodeParams.lineEditParam);
                 pLineEdit->setValidator(validateForSockets(ctrl));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pLineEdit->setData(GVKEY_TYPE, type);
                 QObject::connect(pLineEdit, &ZenoParamLineEdit::editingFinished, [=]() {
@@ -155,7 +155,7 @@ namespace zenoui
                 const QString& path = UiHelper::variantToString(value);
                 ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam);
 
-                pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, 32)));
+                pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, 28)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
 
@@ -206,7 +206,7 @@ namespace zenoui
                 QLinearGradient grad = value.value<QLinearGradient>();
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
 
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
 
@@ -252,7 +252,7 @@ namespace zenoui
                 }
 
                 ZVecEditorItem* pVecEditor = new ZVecEditorItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
-                pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
@@ -280,7 +280,7 @@ namespace zenoui
                 }
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
-                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pComboBox->setData(GVKEY_TYPE, type);
 
@@ -299,7 +299,7 @@ namespace zenoui
             case CONTROL_CURVE:
             {
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
