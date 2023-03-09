@@ -56,6 +56,7 @@ void IPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs
     spmat._vals.reset(0);
     /// @note including: inertial, gravity, external force, elasticity, bending
     /// inertia
+#if 0
     cudaPol(zs::range(coOffset * 3),
             [spmat = view<space>(spmat), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
                 auto dofi = i / 3;
@@ -63,6 +64,9 @@ void IPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs
                 auto loc = spmat.locate(dofi, dofi);
                 spmat._vals[loc](i % 3, i % 3) = m;
             });
+#endif
+
+#if 1
     /// bending
     for (auto &primHandle : prims) {
         if (primHandle.hasBendingConstraints()) {
@@ -115,6 +119,7 @@ void IPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs
             });
         }
     }
+#endif
     /// elasticity
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {

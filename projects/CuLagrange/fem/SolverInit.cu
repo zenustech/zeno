@@ -298,6 +298,7 @@ void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
     linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
     linsys.spmat.localOrdering(pol, 128);
+    linsys.spmat._vals.resize(linsys.spmat.nnz());
 }
 
 typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {

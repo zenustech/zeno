@@ -3106,6 +3106,11 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 });
             // hess (embedded in multiply)
         }
+
+        ///
+        updateInherentHessian(pol, "grad");
+        ///
+
         project(pol, "grad");
 
         // PREPARE P (INVERSION)
