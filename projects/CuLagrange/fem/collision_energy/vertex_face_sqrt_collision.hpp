@@ -118,7 +118,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         if(collide_from_inside)
             reversal = !reversal;
 
-#if 0
+#if 1
 
         using DREAL = double;
 
