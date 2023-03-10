@@ -62,6 +62,7 @@ private slots:
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 private:
+    void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);

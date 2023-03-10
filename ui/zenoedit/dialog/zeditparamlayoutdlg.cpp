@@ -145,6 +145,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     }
 
     m_proxyModel->clone(m_model);
+    initDescValueForProxy();
 
     m_ui->paramsView->setModel(m_proxyModel);
     m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_proxyModel, m_ui->paramsView));
@@ -212,6 +213,26 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     });
 }
 
+void ZEditParamLayoutDlg::initDescValueForProxy()
+{
+    if (m_bNodeUI && m_bSubgraphNode)
+    {
+        NODE_DESC desc;
+        const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+        NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
+        ZASSERT_EXIT(nodeParams);
+        VParamItem* inputs = nodeParams->getInputs();
+
+        for (INPUT_SOCKET inSocket : desc.inputs)
+        {
+            VParamItem* pItem = inputs->getItem(inSocket.info.name);
+            ZASSERT_EXIT(pItem);
+            pItem->setData(inSocket.info.defaultValue, ROLE_PARAM_VALUE);
+        }
+    }
+}
+
 void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 {
     //dump to item.
@@ -262,11 +283,7 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
 {
-    //record this action first.
     const QString& objPath = index.data(ROLE_OBJPATH).toString();
-    //ViewParamSetDataCommand *pCommand =
-    //    new ViewParamSetDataCommand(m_pGraphsModel, objPath, newValue, ROLE_VPARAM_CTRL_PROPERTIES);
-    //m_commandSeq.append(pCommand);
     m_proxyModel->setData(index, newValue, role);
 }
 
@@ -281,10 +298,6 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
         bool bEditable = m_proxyModel->isEditable(idx);
         if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
             return;
-
-        //QString parentPath = idx.parent().data(ROLE_OBJPATH).toString();
-        //ViewParamRemoveCommand *pCommand = new ViewParamRemoveCommand(m_pGraphsModel, parentPath, idx.row());
-        //m_commandSeq.append(pCommand);
         m_proxyModel->removeRow(idx.row(), idx.parent());
     }
 }
@@ -333,34 +346,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         PARAM_CONTROL ctrl = pCurrentItem->m_ctrl;
         const QString& ctrlName = getControl(ctrl).name;
         const QString& dataType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
-        QVariant deflVal;
-
-        VParamItem* pSourceRoot = static_cast<VParamItem*>(m_model->invisibleRootItem());
-        VParamItem* pSourceItem = pSourceRoot->findItem(pCurrentItem->m_uuid);
-        QString paramName = name;
-        if (pSourceItem) {
-            //get the original name.
-            paramName = pSourceItem->m_name;
-        }
-
-        //deflVal is a common value of desc socket, not value of specific node.
-        NODE_DESC desc;
-        QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        m_pGraphsModel->getDescriptor(subnetNodeName, desc);
-        if (bInput)
-        {
-            if (desc.inputs.find(paramName) != desc.inputs.end())
-            {
-                deflVal = desc.inputs[paramName].info.defaultValue;
-            }
-        }
-        else
-        {
-            if (desc.outputs.find(paramName) != desc.outputs.end())
-            {
-                deflVal = desc.outputs[paramName].info.defaultValue;
-            }
-        }
+        QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
 
         bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
         QVariant controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
