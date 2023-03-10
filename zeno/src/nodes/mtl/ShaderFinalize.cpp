@@ -53,7 +53,8 @@ struct ShaderFinalize : INode {
             {3, "mat_normal"},
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
-            {3, "mat_emission"},
+            {1, "mat_emission"},
+            {3, "mat_emissionColor"},
             {1, "mat_zenxposure"},
             {1, "mat_ao"},
             {1, "mat_toon"},
@@ -100,6 +101,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
+            std::make_shared<NumericObject>(float(1)), // emission
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
             get_input<IObject>("exposure", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("ao", std::make_shared<NumericObject>(float(1.0f))),
@@ -242,7 +244,8 @@ struct ShaderSurface : INode {
             {3, "mat_normal"},
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
-            {3, "mat_emission"},
+            {1, "mat_emission"},
+            {3, "mat_emissionColor"},
             {1, "mat_opacity"},
             {1, "mat_new_opacity"},
         }, {
@@ -273,7 +276,8 @@ struct ShaderSurface : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
-            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("emission", std::make_shared<NumericObject>(float(0))),
+            get_input<IObject>("emissionColor", std::make_shared<NumericObject>(vec3f(1, 1, 1))),
             std::make_shared<NumericObject>(float(0.0)), // old opacity
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(1.0))), // new opacity
         });
@@ -333,7 +337,8 @@ ZENDEFNODE(ShaderSurface, {
         {"vec3f", "normal", "0,0,1"},
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
-        {"vec3f", "emission", "0,0,0"},
+        {"float", "emission", "0"},
+        {"vec3f", "emissionColor", "1, 1, 1"},
         {"float", "opacity", "1"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
