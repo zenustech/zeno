@@ -322,110 +322,51 @@ void NodeParamModel::setAddParam(
     VParamItem *pItem = nullptr;
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
 
-    if (PARAM_INPUT == cls)
-    {
-        if (!(pItem = m_inputs->getItem(name)))
-        {
-            pItem = new VParamItem(VPARAM_PARAM, name);
-            ZASSERT_EXIT(pItem);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-            pItem->setData(name, ROLE_PARAM_NAME);
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->setData(type, ROLE_PARAM_TYPE);
-            pItem->m_sockProp = prop;
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            m_inputs->appendRow(pItem);
-            initDictSocket(pItem, SOCKET_INFO());
-        }
-        else
-        {
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->m_name = name;
-            pItem->setData(type, ROLE_PARAM_TYPE);      //only allow to change type on IO processing, especially for SubInput.
-            pItem->m_sockProp = prop;
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+    VParamItem* pGroup = nullptr;
+    switch (cls) {
+    case PARAM_INPUT: pGroup = m_inputs; break;
+    case PARAM_PARAM: pGroup = m_params; break;
+    case PARAM_OUTPUT: pGroup = m_outputs; break;
+    }
 
-            if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
-            {
-                DictKeyModel* pDictModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
-                if (pDictModel)
-                {
-                    for (int r = 0; r < dictPanel.keys.size(); r++) {
-                        const DICTKEY_INFO &keyInfo = dictPanel.keys[r];
-                        pDictModel->insertRow(r);
-                        QModelIndex newIdx = pDictModel->index(r, 0);
-                        pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
-                    }
-                }
-            }
-        }
-    }
-    else if (PARAM_PARAM == cls)
+    ZASSERT_EXIT(pGroup);
+
+    if (!(pItem = pGroup->getItem(name)))
     {
-        if (!(pItem = m_params->getItem(name)))
-        {
-            pItem = new VParamItem(VPARAM_PARAM, name);
-            ZASSERT_EXIT(pItem);
-            pItem->setData(name, ROLE_PARAM_NAME);
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->setData(type, ROLE_PARAM_TYPE);
-            pItem->m_sockProp = prop;
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-            m_params->appendRow(pItem);
-        }
-        else
-        {
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->m_name = name;
-            pItem->setData(type, ROLE_PARAM_TYPE);
-            pItem->m_sockProp = prop;
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-        }
-    }
-    else if (PARAM_OUTPUT == cls)
-    {
-        if (!(pItem = m_outputs->getItem(name)))
-        {
-            pItem = new VParamItem(VPARAM_PARAM, name);
-            ZASSERT_EXIT(pItem);
-            pItem->setData(name, ROLE_PARAM_NAME);
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->m_sockProp = prop;
-            pItem->setData(type, ROLE_PARAM_TYPE);
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-            m_outputs->appendRow(pItem);
+        pItem = new VParamItem(VPARAM_PARAM, name);
+        ZASSERT_EXIT(pItem);
+        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+        pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+        pItem->setData(name, ROLE_PARAM_NAME);
+        pItem->setData(deflValue, ROLE_PARAM_VALUE);
+        pItem->setData(type, ROLE_PARAM_TYPE);
+        pItem->m_sockProp = prop;
+        pItem->setData(ctrl, ROLE_PARAM_CTRL);
+        pGroup->appendRow(pItem);
+        if (PARAM_PARAM != cls)
             initDictSocket(pItem, SOCKET_INFO());
-        }
-        else
+    }
+    else
+    {
+        pItem->setData(deflValue, ROLE_PARAM_VALUE);
+        pItem->m_name = name;
+        pItem->setData(type, ROLE_PARAM_TYPE);      //only allow to change type on IO processing, especially for SubInput.
+        pItem->m_sockProp = prop;
+        pItem->setData(ctrl, ROLE_PARAM_CTRL);
+        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+        pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+
+        if (PARAM_PARAM != cls && 
+            pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
         {
-            pItem->setData(deflValue, ROLE_PARAM_VALUE);
-            pItem->setData(name, ROLE_PARAM_NAME);
-            pItem->setData(type, ROLE_PARAM_TYPE);
-            pItem->m_sockProp = prop;
-            pItem->setData(ctrl, ROLE_PARAM_CTRL);
-            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-            if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+            DictKeyModel* pDictModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+            if (pDictModel)
             {
-                DictKeyModel* pDictModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
-                if (pDictModel)
-                {
-                    for (int r = 0; r < dictPanel.keys.size(); r++)
-                    {
-                        const DICTKEY_INFO &keyInfo = dictPanel.keys[r];
-                        pDictModel->insertRow(r);
-                        QModelIndex newIdx = pDictModel->index(r, 0);
-                        pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
-                    }
+                for (int r = 0; r < dictPanel.keys.size(); r++) {
+                    const DICTKEY_INFO &keyInfo = dictPanel.keys[r];
+                    pDictModel->insertRow(r);
+                    QModelIndex newIdx = pDictModel->index(r, 0);
+                    pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
                 }
             }
         }
