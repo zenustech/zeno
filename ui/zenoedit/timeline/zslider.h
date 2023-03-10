@@ -36,6 +36,10 @@ private:
 
     int m_from, m_value, m_to;
     QTransform m_transform;
+
+    int m_cellLength = 0;
+    int m_lengthUnit[3] = {1, 2, 5};
+    int getCellLength(int total);
 };
 
 #endif

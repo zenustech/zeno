@@ -298,6 +298,9 @@
     <file>icons/viewToolbar_normalcheck_light.svg</file>
     <file>icons/viewToolbar_record_idle.svg</file>
     <file>icons/viewToolbar_record_light.svg</file>
+    <file>icons/viewToolbar_record_recording.svg</file>
+	<file>icons/viewToolbar_record_recordOffClick.svg</file>
+	<file>icons/viewToolbar_record_recordOffHover.svg</file>
     <file>icons/viewToolbar_rotate_idle.svg</file>
     <file>icons/viewToolbar_rotate_light.svg</file>
     <file>icons/viewToolbar_scale_idle.svg</file>

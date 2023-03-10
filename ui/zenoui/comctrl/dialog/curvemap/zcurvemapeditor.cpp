@@ -162,6 +162,7 @@ void ZCurveMapEditor::addCurves(const CURVES_DATA& curves)
         CURVE_DATA curve = curves[key];
         CurveModel* model = new CurveModel(key, curve.rg, this);
         model->initItems(curve);
+        model->setVisible(curve.visible);
         addCurve(model);
     }
 }
@@ -306,7 +307,9 @@ CURVES_DATA ZCurveMapEditor::curves() const
     CURVES_DATA curves;
     for (QString key : m_models.keys())
     {
-        curves.insert(key, m_models[key]->getItems());
+        CURVE_DATA data = m_models[key]->getItems();
+        data.visible = m_models[key]->getVisible();
+        curves.insert(key, data);
     }
     return curves;
 }

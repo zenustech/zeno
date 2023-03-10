@@ -10,7 +10,6 @@ class ZToolButton : public QWidget
     Q_OBJECT
 public:
     struct AnimationInfo {
-      QPixmap icon;
       QColor mBackColor;
 
       bool mOnOff;
@@ -31,10 +30,11 @@ public:
         Opt_RightArrow = 0x0001 << 3,
         Opt_TextUnderIcon = 0x0001 << 4,
         Opt_TextRightToIcon = 0x0001 << 5,
-        Opt_Checkable = 0x0001 << 6,
-        Opt_NoBackground = 0x0001 << 7,
-        Opt_UpRight = 0x0001 << 8,
-        Opt_SwitchAnimation = 0x0001 << 9
+        Opt_TextLeftToIcon = 0x0001 << 6,
+        Opt_Checkable = 0x0001 << 7,
+        Opt_NoBackground = 0x0001 << 8,
+        Opt_UpRight = 0x0001 << 9,
+        Opt_SwitchAnimation = 0x0001 << 10
     };
     ZToolButton(QWidget* parent = nullptr);
     ZToolButton(
