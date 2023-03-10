@@ -282,8 +282,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
         vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
     });
-    computeInertialAndCouplingAndForceGradient(pol);
-    computeElasticGradientAndHessian(pol);
+    computeInertialAndForceGradient(pol, "x[k]");
+    computeElasticGradientAndHessian(pol, "x[k]");
 
     // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
     if (!projectDBC) {

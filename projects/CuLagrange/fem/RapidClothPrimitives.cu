@@ -26,12 +26,12 @@ typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &
     return reduce(cudaPol, temp, thrust::maximum<T>{});
 }
 
-typename RapidClothSystem::T RapidClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) {
+typename RapidClothSystem::T RapidClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag) {
     return zs::sqrt(dot(pol, tag, tag));
 }
 
-typename RapidClothSystem::T RapidClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0,
-                                                 const zs::SmallString tag1) {
+typename RapidClothSystem::T RapidClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0,
+                                                 const zs::SmallString &tag1) {
     using namespace zs;
     using T = typename RapidClothSystem::T;
     constexpr auto space = execspace_e::cuda;
