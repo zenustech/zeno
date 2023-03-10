@@ -31,6 +31,7 @@
 #include "iotags.h"
 #include "groupnode.h"
 #include "dialog/zeditparamlayoutdlg.h"
+#include "settings/zenosettingsmanager.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -1299,7 +1300,8 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-        if (pScene && pScene->IsSnapGrid())
+        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SNAPGRID).toBool();
+        if (pScene && isSnapGrid)
         {
             QPointF pos = value.toPointF();
             int x = pos.x(), y = pos.y();

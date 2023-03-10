@@ -15,6 +15,7 @@
 #include "viewport/viewportwidget.h"
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
+#include "settings/zenosettingsmanager.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -25,7 +26,6 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     , m_dragMove(false)
     , m_menu(nullptr)
     , m_pSearcher(nullptr)
-    , m_bShowGrid(true)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -88,6 +88,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     });
     addAction(mActZenoNewNode);
 
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](int type) {
+        if (type == ZenoSettingsManager::VALUE_SHOWGRID && isVisible()) {
+            showGrid(ZenoSettingsManager::GetInstance().getValue(type).toBool());
+        }
+    });
+
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
 
@@ -96,8 +102,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 
 void _ZenoSubGraphView::showGrid(bool bShow)
 {
-    m_bShowGrid = bShow;
-    update();
+    scene()->invalidate(rect());
 }
 
 void _ZenoSubGraphView::redo()
@@ -496,7 +501,8 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
     painter->fillRect(rect, QColor("#13191f"));
-    if (m_bShowGrid)
+    bool showGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SHOWGRID).toBool();
+    if (showGrid)
     {
         QTransform tf = transform();
         qreal scale = tf.m11();
@@ -679,11 +685,6 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 void ZenoSubGraphView::setZoom(const qreal& scale)
 {
     m_view->setScale(scale);
-}
-
-void ZenoSubGraphView::showGrid(bool bShow)
-{
-    m_view->showGrid(bShow);
 }
 
 void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
