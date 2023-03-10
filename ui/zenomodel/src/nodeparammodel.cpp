@@ -83,7 +83,7 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
         const QString& name = param->m_name;
 
         INPUT_SOCKET inSocket;
-        inSocket.info.defaultValue = param->m_value;
+        inSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
         inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         inSocket.info.name = param->m_name;
         inSocket.info.type = param->m_type;
@@ -112,7 +112,7 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         const QString& name = param->m_name;
 
         OUTPUT_SOCKET outSocket;
-        outSocket.info.defaultValue = param->m_value;
+        outSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
         outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         outSocket.info.name = name;
         outSocket.info.type = param->m_type;
@@ -141,7 +141,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
 
         PARAM_INFO paramInfo;
         paramInfo.bEnableConnect = false;
-        paramInfo.value = param->m_value;
+        paramInfo.value = param->data(ROLE_PARAM_VALUE);
         paramInfo.typeDesc = param->m_type;
         paramInfo.name = name;
         paramInfo.control = param->m_ctrl;
@@ -198,21 +198,16 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
 {
     for (INPUT_SOCKET inSocket : inputs)
     {
-        VParamItem* pItem = new VParamItem(VPARAM_PARAM, inSocket.info.name, false);
-        pItem->m_name = inSocket.info.name;
-        pItem->m_value = inSocket.info.defaultValue;
-        pItem->m_type = inSocket.info.type;
-        pItem->m_sockProp = (SOCKET_PROPERTY)inSocket.info.sockProp;
-        pItem->m_ctrl = inSocket.info.control;
-
-        QVariant ctrlProps = inSocket.info.ctrlProps;
-        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-        pItem->setData(inSocket.info.toolTip, ROLE_VPARAM_TOOLTIP);
-
-        m_inputs->appendRow(pItem);
-
-        //if current item is a dict socket, init dict sockets after new item insered, and then get the valid index to init dict model.
-        initDictSocket(pItem, inSocket.info);
+        setAddParam(PARAM_INPUT, 
+                    inSocket.info.name,
+                    inSocket.info.type,
+                    inSocket.info.defaultValue,
+                    inSocket.info.control,
+                    inSocket.info.ctrlProps,
+                    (SOCKET_PROPERTY)inSocket.info.sockProp,
+                    inSocket.info.dictpanel,
+                    inSocket.info.toolTip
+            );
     }
 }
 
@@ -220,22 +215,16 @@ void NodeParamModel::setParams(const PARAMS_INFO& params)
 {
     for (PARAM_INFO paramInfo : params)
     {
-        VParamItem* pItem = new VParamItem(VPARAM_PARAM, paramInfo.name, false);
-        pItem->m_name = paramInfo.name;
-        pItem->m_value = paramInfo.value;
-        pItem->m_type = paramInfo.typeDesc;
-        pItem->m_sockProp = SOCKPROP_UNKNOWN;
-
-        const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-
-        QVariant ctrlProps;
-        pItem->m_ctrl = paramInfo.control;
-		ctrlProps = paramInfo.controlProps;
-
-        pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
-        pItem->setData(paramInfo.toolTip, ROLE_VPARAM_TOOLTIP);
-
-        m_params->appendRow(pItem);
+        setAddParam(PARAM_PARAM,
+            paramInfo.name,
+            paramInfo.typeDesc,
+            paramInfo.value,
+            paramInfo.control,
+            CONTROL_PROPERTIES(),
+            SOCKPROP_UNKNOWN,
+            DICTPANEL_INFO(),
+            paramInfo.toolTip
+        );
     }
 }
 
@@ -243,14 +232,15 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
 {
     for (OUTPUT_SOCKET outSocket : outputs)
     {
-        VParamItem *pItem = new VParamItem(VPARAM_PARAM, outSocket.info.name, false);
-        pItem->m_name = outSocket.info.name;
-        pItem->m_value = outSocket.info.defaultValue;
-        pItem->m_type = outSocket.info.type;
-        pItem->m_sockProp = (SOCKET_PROPERTY)outSocket.info.sockProp;
-        pItem->setData(outSocket.info.toolTip, ROLE_VPARAM_TOOLTIP);
-        m_outputs->appendRow(pItem);
-        initDictSocket(pItem, outSocket.info);
+        setAddParam(PARAM_OUTPUT,
+            outSocket.info.name,
+            outSocket.info.type,
+            outSocket.info.defaultValue,
+            outSocket.info.control,
+            outSocket.info.ctrlProps,
+            (SOCKET_PROPERTY)outSocket.info.sockProp,
+            outSocket.info.dictpanel,
+            outSocket.info.toolTip);
     }
 }
 
@@ -326,6 +316,7 @@ void NodeParamModel::setAddParam(
                 PARAM_CONTROL ctrl,
                 QVariant ctrlProps,
                 SOCKET_PROPERTY prop,
+                DICTPANEL_INFO dictPanel,
                 const QString& toolTip)
 {
     VParamItem *pItem = nullptr;
@@ -340,7 +331,7 @@ void NodeParamModel::setAddParam(
             pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
             pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
@@ -351,9 +342,25 @@ void NodeParamModel::setAddParam(
         {
             pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_name = name;
-            pItem->m_type = type;
+            pItem->m_type = type;       //only allow to change type on IO processing, especially for SubInput.
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
+            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+
+            if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+            {
+                DictKeyModel* pDictModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+                if (pDictModel)
+                {
+                    for (int r = 0; r < dictPanel.keys.size(); r++) {
+                        const DICTKEY_INFO &keyInfo = dictPanel.keys[r];
+                        pDictModel->insertRow(r);
+                        QModelIndex newIdx = pDictModel->index(r, 0);
+                        pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+                    }
+                }
+            }
         }
     }
     else if (PARAM_PARAM == cls)
@@ -363,7 +370,7 @@ void NodeParamModel::setAddParam(
             pItem = new VParamItem(VPARAM_PARAM, name);
             ZASSERT_EXIT(pItem);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
@@ -378,6 +385,8 @@ void NodeParamModel::setAddParam(
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
+            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
         }
     }
     else if (PARAM_OUTPUT == cls)
@@ -387,7 +396,7 @@ void NodeParamModel::setAddParam(
             pItem = new VParamItem(VPARAM_PARAM, name);
             ZASSERT_EXIT(pItem);
             pItem->m_name = name;
-            pItem->m_value = deflValue;
+            pItem->setData(deflValue, ROLE_PARAM_VALUE);
             pItem->m_sockProp = prop;
             pItem->m_type = type;
             pItem->m_ctrl = ctrl;
@@ -403,6 +412,22 @@ void NodeParamModel::setAddParam(
             pItem->m_type = type;
             pItem->m_sockProp = prop;
             pItem->m_ctrl = ctrl;
+            pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
+            pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+            if (pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
+            {
+                DictKeyModel* pDictModel = QVariantPtr<DictKeyModel>::asPtr(pItem->m_customData[ROLE_VPARAM_LINK_MODEL]);
+                if (pDictModel)
+                {
+                    for (int r = 0; r < dictPanel.keys.size(); r++)
+                    {
+                        const DICTKEY_INFO &keyInfo = dictPanel.keys[r];
+                        pDictModel->insertRow(r);
+                        QModelIndex newIdx = pDictModel->index(r, 0);
+                        pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+                    }
+                }
+            }
         }
     }
 }
@@ -435,7 +460,7 @@ QVariant NodeParamModel::getValue(PARAM_CLASS cls, const QString& name) const
     {
         return QVariant();
     }
-    return pItem->m_value;
+    return pItem->data(ROLE_PARAM_VALUE);
 }
 
 QModelIndex NodeParamModel::getParam(PARAM_CLASS cls, const QString& name) const
@@ -638,7 +663,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
         {
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             ZERROR_EXIT(pItem, false);
-            QVariant oldValue = pItem->m_value;
+            QVariant oldValue = pItem->data(ROLE_PARAM_VALUE);
             if (oldValue == value)
                 return false;
 
@@ -723,7 +748,7 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socket
     else if (pItem->m_type == "group-line") 
     {
         if (!desc.categories.contains("group-line"))
-            pItem->m_sockProp = SOCKPROP_GROUP;
+            pItem->m_sockProp = SOCKPROP_GROUP_LINE;
     }
 
     //not type desc on list output socket, add it here.
@@ -841,11 +866,11 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
         VParamItem* typeItem = m_params->getItem("type");
 
         ZASSERT_EXIT(deflItem && nameItem && typeItem);
-        const QString& sockName = nameItem->m_value.toString();
+        const QString &sockName = nameItem->data(ROLE_PARAM_VALUE).toString();
 
         if (pItem->m_name == "type")
         {
-            const QString& newType = pItem->m_value.toString();
+            const QString& newType = pItem->data(ROLE_PARAM_VALUE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
             const QVariant& newValue = UiHelper::initDefaultValue(newType);
 
@@ -926,7 +951,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
         }
         else if (pItem->m_name == "defl")
         {
-            const QVariant& deflVal = pItem->m_value;
+            const QVariant& deflVal = pItem->data(ROLE_PARAM_VALUE);
             NODE_DESC desc;
             bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
             ZASSERT_EXIT(ret);
@@ -988,11 +1013,11 @@ void NodeParamModel::onLinkAdded(const VParamItem* pItem)
     {
         const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
         SOCKET_PROPERTY prop = nodeCls == "MakeDict" ? SOCKPROP_EDITABLE : SOCKPROP_NORMAL;
-        setAddParam(PARAM_INPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), prop, "");
+        setAddParam(PARAM_INPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), prop);
     }
     else if (nodeCls == "ExtractDict" && pItem->m_name == lastKey)
     {
         const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-        setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), SOCKPROP_EDITABLE, "");
+        setAddParam(PARAM_OUTPUT, newObjName, "", QVariant(), CONTROL_NONE, QVariant(), SOCKPROP_EDITABLE);
     }
 }

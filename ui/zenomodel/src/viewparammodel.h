@@ -25,12 +25,8 @@ public:
 
     //for node ui params:
     void getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs);
-    QModelIndexList paramsIndice();
-    QModelIndexList outputsIndice();
     void arrangeOrder(const QStringList &inputKeys, const QStringList &outputKeys);
 
-    static VParamItem* importParam(IGraphsModel* pGraphsModel, const VPARAM_INFO& param);
-    void importParamInfo(const VPARAM_INFO& invisibleRoot);
     VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool isNodeModel() const;

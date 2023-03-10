@@ -23,6 +23,7 @@ public:
 
     ~PanelParamModel();
     void initParams(NodeParamModel* nodeParams);
+    void importPanelParam(const VPARAM_INFO& invisibleRoot);
 
 public slots:
     void onNodeParamsInserted(const QModelIndex &parent, int first, int last);

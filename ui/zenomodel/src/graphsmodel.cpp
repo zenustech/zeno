@@ -1671,6 +1671,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
                         ctrl,
                         ctrlProps,
                         SOCKPROP_NORMAL,
+                        DICTPANEL_INFO(),
                         toolTip
             );
         }

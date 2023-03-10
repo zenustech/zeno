@@ -137,7 +137,7 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                 writer.String("dict-panel");
             } else if (socket.sockProp & SOCKPROP_EDITABLE) {
                 writer.String("editable");
-            } else if (socket.sockProp & SOCKPROP_GROUP) {
+            } else if (socket.sockProp & SOCKPROP_GROUP_LINE) {
                 writer.String("group-line");
             } else {
                 writer.String("normal");

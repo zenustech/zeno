@@ -33,7 +33,6 @@ struct VParamItem : public QStandardItem
 
     //for easy to debug, store here rather than QStandardItem internal data:
     QString m_name;
-    QVariant m_value;
     QString m_type;
     PARAM_CONTROL m_ctrl;
 
@@ -67,6 +66,9 @@ struct VParamItem : public QStandardItem
     bool operator==(VParamItem* rItem) const;
     void read(QDataStream& in) override;
     void write(QDataStream& out) const override;
+
+private:
+    QVariant m_value;
 };
 
 

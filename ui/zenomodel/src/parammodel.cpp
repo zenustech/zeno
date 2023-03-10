@@ -721,7 +721,7 @@ bool IParamModel::_insertRow(
     else if (type == "group-line") 
     {
         if (!desc.categories.contains("group-line"))
-            item.prop = SOCKPROP_GROUP;
+            item.prop = SOCKPROP_GROUP_LINE;
     }
 
     //not type desc on list output socket, add it here.

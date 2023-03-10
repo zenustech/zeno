@@ -362,7 +362,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     pItem->m_type = pItem->m_tempInfo.m_info.typeDesc;
     pItem->m_name = pItem->m_tempInfo.m_info.name;
     pItem->setText(pItem->m_tempInfo.m_info.name);
-    pItem->m_value = pItem->m_tempInfo.m_info.value;
+    pItem->setData(pItem->m_tempInfo.m_info.value, ROLE_PARAM_VALUE);
     pItem->m_uuid = pItem->m_tempInfo.m_uuid;
 
     if (!coreparam.isEmpty())
@@ -374,7 +374,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
         if (pItem->m_index.isValid())
         {
             pItem->m_type = pItem->m_index.data(ROLE_PARAM_TYPE).toString();
-            pItem->m_value = pItem->m_index.data(ROLE_PARAM_VALUE);
+            pItem->setData(pItem->m_index.data(ROLE_PARAM_VALUE), ROLE_PARAM_VALUE);
         }
     }
     else
@@ -419,138 +419,12 @@ void ViewParamModel::getNodeParams(QModelIndexList& inputs, QModelIndexList& par
     }
 }
 
-QModelIndexList ViewParamModel::paramsIndice()
-{
-    if (!m_bNodeUI)
-        return QModelIndexList();
-
-
-}
-
-QModelIndexList ViewParamModel::outputsIndice()
-{
-    if (!m_bNodeUI)
-        return QModelIndexList();
-
-
-}
-
 VPARAM_INFO ViewParamModel::exportParams() const
 {
     VParamItem* rootItem = static_cast<VParamItem*>(invisibleRootItem()->child(0));
     if (!rootItem)
         return VPARAM_INFO();
     return rootItem->exportParamInfo();
-}
-
-VParamItem* ViewParamModel::importParam(IGraphsModel* pGraphsModel, const VPARAM_INFO& info)
-{
-    if (info.vType == VPARAM_ROOT)
-    {
-        VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
-        for (VPARAM_INFO tab : info.children)
-        {
-            VParamItem *pTabItem = importParam(pGraphsModel, tab);
-            pRoot->appendRow(pTabItem);
-        }
-        return pRoot;
-    }
-    else if (info.vType == VPARAM_TAB)
-    {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, info.m_info.name);
-        for (VPARAM_INFO group : info.children)
-        {
-            VParamItem* pGroupItem = importParam(pGraphsModel, group);
-            pTabItem->appendRow(pGroupItem);
-        }
-        return pTabItem;
-    }
-    else if (info.vType == VPARAM_GROUP)
-    {
-        VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, info.m_info.name);
-        for (VPARAM_INFO param : info.children)
-        {
-            VParamItem* paramItem = importParam(pGraphsModel, param);
-            pGroupItem->appendRow(paramItem);
-        }
-        return pGroupItem;
-    }
-    else if (info.vType == VPARAM_PARAM)
-    {
-        const QString& paramName = info.m_info.name;
-        VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
-
-        //mapping core.
-        const QString& coreparam = info.refParamPath;
-        const QModelIndex& refIdx = pGraphsModel->indexFromPath(info.refParamPath);
-        paramItem->mapCoreParam(refIdx);
-        paramItem->m_ctrl = info.m_info.control;
-        paramItem->m_type = info.m_info.typeDesc;
-        paramItem->m_name = info.m_info.name;
-        paramItem->m_value = info.m_info.value;
-
-        paramItem->setData(info.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
-#if 0
-        if (!coreparam.isEmpty() && (info.m_cls == PARAM_INPUT || info.m_cls == PARAM_OUTPUT))
-        {
-            //register subnet param control.
-            const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-            GlobalControlMgr::instance().onParamUpdated(objCls, info.m_cls, coreparam, paramItem->m_ctrl);
-        }
-#endif
-        return paramItem;
-    }
-    else
-    {
-        ZASSERT_EXIT(false, nullptr);
-        return nullptr;
-    }
-}
-
-void ViewParamModel::importParamInfo(const VPARAM_INFO& invisibleRoot)
-{
-    //clear old data
-    this->clear();
-
-    VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
-    for (VPARAM_INFO tab : invisibleRoot.children)
-    {
-        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_info.name);
-        for (VPARAM_INFO group : tab.children)
-        {
-            VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, group.m_info.name);
-            for (VPARAM_INFO param : group.children)
-            {
-                const QString& paramName = param.m_info.name;
-                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
-
-                //mapping core.
-                const QString& coreparam = param.refParamPath;
-                const QModelIndex& refIdx = m_model->indexFromPath(param.refParamPath);
-                paramItem->mapCoreParam(refIdx);
-                paramItem->m_ctrl = param.m_info.control;
-                paramItem->m_type = param.m_info.typeDesc;
-                paramItem->m_name = param.m_info.name;
-                paramItem->m_value = param.m_info.value;
-
-                paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
-                paramItem->setData(param.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
-                if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
-                {
-                    //register subnet param control.
-                    const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-                    //store control info on desc.
-                    //GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
-                    //                                            paramItem->m_ctrl);
-                }
-                pGroupItem->appendRow(paramItem);
-            }
-            pTabItem->appendRow(pGroupItem);
-        }
-        pRoot->appendRow(pTabItem);
-    }
-    invisibleRootItem()->appendRow(pRoot);
-    markDirty();
 }
 
 QPersistentModelIndex ViewParamModel::nodeIdx() const

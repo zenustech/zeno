@@ -794,7 +794,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
     } 
-    else if (sockProp & SOCKPROP_GROUP) {
+    else if (sockProp & SOCKPROP_GROUP_LINE) {
         pMiniLayout = new ZGroupSocketLayout(pModel, viewSockIdx, bInput);
     }
     else {

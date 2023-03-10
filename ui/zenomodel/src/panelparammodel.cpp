@@ -3,6 +3,7 @@
 #include "vparamitem.h"
 #include "modelrole.h"
 #include "iotags.h"
+#include "igraphsmodel.h"
 
 
 PanelParamModel::PanelParamModel(
@@ -14,7 +15,7 @@ PanelParamModel::PanelParamModel(
     : ViewParamModel(false, nodeIdx, pModel, parent)
 {
     if (!root.children.isEmpty())
-        importParamInfo(root);
+        importPanelParam(root);
     else
         initParams(nodeParams);
     connect(nodeParams, &NodeParamModel::rowsInserted, this, &PanelParamModel::onNodeParamsInserted);
@@ -101,6 +102,52 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
 
     pRoot->appendRow(pTab);
     appendRow(pRoot);
+}
+
+void PanelParamModel::importPanelParam(const VPARAM_INFO& invisibleRoot)
+{
+    //clear old data
+    this->clear();
+
+    VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
+    for (VPARAM_INFO tab : invisibleRoot.children)
+    {
+        VParamItem* pTabItem = new VParamItem(VPARAM_TAB, tab.m_info.name);
+        for (VPARAM_INFO group : tab.children)
+        {
+            VParamItem *pGroupItem = new VParamItem(VPARAM_GROUP, group.m_info.name);
+            for (VPARAM_INFO param : group.children)
+            {
+                const QString& paramName = param.m_info.name;
+                VParamItem* paramItem = new VParamItem(VPARAM_PARAM, paramName);
+
+                //mapping core.
+                const QString& coreparam = param.refParamPath;
+                const QModelIndex& refIdx = m_model->indexFromPath(param.refParamPath);
+                paramItem->mapCoreParam(refIdx);
+                paramItem->m_ctrl = param.m_info.control;
+                paramItem->m_type = param.m_info.typeDesc;
+                paramItem->m_name = param.m_info.name;
+                paramItem->setData(param.m_info.value, ROLE_PARAM_VALUE);
+
+                paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
+                paramItem->setData(param.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
+                if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
+                {
+                    //register subnet param control.
+                    const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                    //store control info on desc.
+                    //GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
+                    //                                            paramItem->m_ctrl);
+                }
+                pGroupItem->appendRow(paramItem);
+            }
+            pTabItem->appendRow(pGroupItem);
+        }
+        pRoot->appendRow(pTabItem);
+    }
+    invisibleRootItem()->appendRow(pRoot);
+    markDirty();
 }
 
 void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first, int last)

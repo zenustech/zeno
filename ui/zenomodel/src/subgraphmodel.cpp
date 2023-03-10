@@ -418,9 +418,10 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 inSocket.info.control,
                                 inSocket.info.ctrlProps,
                                 (SOCKET_PROPERTY)inSocket.info.sockProp,
+                                inSocket.info.dictpanel,
                                 inSocket.info.toolTip
                     );
-                    }
+                }
                 break;
             }
             case ROLE_OUTPUTS:
@@ -441,6 +442,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 outSocket.info.control,
                                 outSocket.info.ctrlProps,
                                 (SOCKET_PROPERTY)outSocket.info.sockProp, 
+                                outSocket.info.dictpanel,
                                 outSocket.info.toolTip
                     );
                     }
@@ -464,6 +466,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 param.control,
                                 param.controlProps,
                                 SOCKPROP_UNKNOWN,
+                                DICTPANEL_INFO(),
                                 param.toolTip);
                     }
                 break;
@@ -472,7 +475,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             {
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
                 ZASSERT_EXIT(item.panelParams, false);
-                item.panelParams->importParamInfo(invisibleRoot);
+                item.panelParams->importPanelParam(invisibleRoot);
                 break;
             }
             case ROLE_COLLASPED:
@@ -523,7 +526,7 @@ bool SubGraphModel::setParamValue(
         return false;
 
     //todo: control properties
-    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp, "");
+    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp);
     return false;
 }
 

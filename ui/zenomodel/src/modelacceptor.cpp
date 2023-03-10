@@ -216,7 +216,7 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
     else if (sockProperty == "editable")
         prop = SOCKPROP_EDITABLE;
     else if (sockProperty == "group-line")
-        prop = SOCKPROP_GROUP;
+        prop = SOCKPROP_GROUP_LINE;
 
     //the layout should be standard inputs desc by latest descriptors.
     //so, we can only add dynamic key. for example, list and dict node.
@@ -225,11 +225,11 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
         if (prop == SOCKPROP_EDITABLE)
         {
-            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
         }
         else
         {
-            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop, "");
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop);
         }
     }
 }
@@ -386,7 +386,7 @@ void ModelAcceptor::setInputSocket2(
             //the layout should be standard inputs desc by latest descriptors.
 
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
-            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop, "");
+            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
         }
         else
         {
