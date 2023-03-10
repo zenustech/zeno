@@ -7,7 +7,8 @@
 #include "zassert.h"
 #include "parammodel.h"
 #include "variantptr.h"
-
+#include "iotags.h"
+#include "apiutil.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
@@ -20,6 +21,8 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
 	connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsInserted);
 	connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeRemoved);
 	connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_subg_rowsRemoved);
+
+    m_spGraph = zeno::getSession().createGraph();
 }
 
 SubGraphModel::~SubGraphModel()
@@ -106,6 +109,24 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
     ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, false, this);
+    connect(ret.nodeParams, &QStandardItemModel::rowsInserted,
+        this, &SubGraphModel::onNodeParamInserted);
+    connect(ret.nodeParams, &QStandardItemModel::rowsAboutToBeRemoved,
+        this, &SubGraphModel::onNodeParamAboutToBeRemoved);
+
+    // add core node.
+    if (m_spGraph)
+    {
+        NODE_DESC desc;
+        m_pGraphsModel->getDescriptor(ret.objCls, desc);
+        const std::string& objCls = ret.objCls.toStdString();
+        const std::string& objId = ret.objid.toStdString();
+        if (desc.is_subgraph) {
+            m_spGraph->addSubnetNode(objId);
+        } else {
+            m_spGraph->addNode(objCls, objId);
+        }
+    }
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -121,6 +142,52 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
         panelInfo = data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>();
     }
     ret.panelParams = new PanelParamModel(ret.nodeParams, panelInfo, nodeIdx, m_pGraphsModel, this);
+}
+
+void SubGraphModel::onNodeParamInserted(const QModelIndex& parent, int first, int last)
+{
+    if (!m_spGraph)
+        return;
+
+    NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(sender());
+    ZASSERT_EXIT(nodeParams);
+    QStandardItem* parentItem = nodeParams->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+
+    const QModelIndex& nodeIdx = nodeParams->nodeIdx();
+    ZASSERT_EXIT(nodeIdx.isValid());
+    //TOTEST: utf8 encoding.
+    std::string ident = nodeIdx.data(ROLE_OBJID).toString().toStdString();
+
+    QStandardItem* paramItem = parentItem->child(first);
+    ZASSERT_EXIT(paramItem);
+
+    const QString& groupName = parentItem->text();
+    const QModelIndex& viewParamIdx = paramItem->index();
+    std::string par = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
+
+    const QVariant& value = paramItem->data(ROLE_PARAM_VALUE);
+    const QString& typeDesc = paramItem->data(ROLE_PARAM_TYPE).toString();
+
+    if (groupName == iotags::params::node_inputs)
+    {
+        zeno::zany zval = zeno::generic_get_qvar<zeno::zany>(value, typeDesc);
+        m_spGraph->setNodeInput(ident, par, zval);
+    }
+    else if (groupName == iotags::params::node_params)
+    {
+        m_spGraph->setNodeParam(ident, par, 
+            zeno::generic_get_qvar<std::variant<int, float, std::string, zeno::zany>, false>(value, typeDesc));
+    }
+    else if (groupName == iotags::params::node_outputs)
+    {
+        //
+    }
+}
+
+void SubGraphModel::onNodeParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const

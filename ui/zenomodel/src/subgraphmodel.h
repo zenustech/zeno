@@ -10,6 +10,9 @@
 #include "viewparammodel.h"
 #include "nodeparammodel.h"
 #include "panelparammodel.h"
+#include <zeno/core/INode.h>
+#include <zeno/core/Graph.h>
+#include <zeno/core/Session.h>
 
 
 class GraphsModel;
@@ -106,6 +109,10 @@ public:
 public slots:
     void onDoubleClicked(const QString &nodename);
 
+private slots:
+    void onNodeParamInserted(const QModelIndex& parent, int first, int last);
+    void onNodeParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+
 private:
     SubGraphModel(const SubGraphModel& rhs);
 
@@ -126,6 +133,8 @@ private:
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;
     QUndoStack* m_stack;
+
+    std::shared_ptr<zeno::Graph> m_spGraph;   //core graph.
 };
 
 #endif
