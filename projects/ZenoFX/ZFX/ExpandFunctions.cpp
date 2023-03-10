@@ -113,7 +113,9 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                 error("dimension mismatch for function `%s`: %d != %d",
                     name.c_str(), a->dim, b->dim);
             }
-            return stm("sqrt", stm_sqrlength(a - b));
+            auto c = a - b;
+            c->dim = a->dim;
+            return stm("sqrt", stm_sqrlength(c));
 
         } else if (name == "dot") {
             ERROR_IF(args.size() != 2);
@@ -130,9 +132,12 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
             auto y = make_stm(args[1]);
-            if (x->dim != 3 || y->dim != 3) {
-                error("`cross` requires two 3-D vectors, got %d-D and %d-D",
-                    x->dim, y->dim);
+            //if (x->dim != 3 || y->dim != 3) {
+                //error("`cross` requires two 3-D vectors, got %d-D and %d-D",
+                    //x->dim, y->dim);
+            if (x->dim != y->dim) {
+                error("dimension mismatch for function `%s`: %d != %d",
+                    name.c_str(), x->dim, y->dim);
             }
             //return stm_cross(x, y);
             std::vector<Statement *> retargs;
@@ -169,10 +174,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                 std::vector<int>{0}, stm_dot(rs2,v)+t[2]));
             
             return ir->emplace_back<VectorComposeStmt>(3, retargs);;
+
         } else if (name == "all") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            ERROR_IF(!x->dim && "all");
             auto ret = x[0];
             for (int i = 1; i < x->dim; i++) {
                 ret = ret & x[i];
@@ -182,7 +187,6 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         } else if (name == "any") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            ERROR_IF(!x->dim && "all");
             auto ret = x[0];
             for (int i = 1; i < x->dim; i++) {
                 ret = ret | x[i];
