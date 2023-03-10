@@ -358,9 +358,9 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(newVParamIdx));
     //mapping core.
     const QString& coreparam = pItem->m_tempInfo.refParamPath;
-    pItem->m_ctrl = pItem->m_tempInfo.m_info.control;
-    pItem->m_type = pItem->m_tempInfo.m_info.typeDesc;
-    pItem->m_name = pItem->m_tempInfo.m_info.name;
+    pItem->setData(pItem->m_tempInfo.m_info.control, ROLE_PARAM_CTRL);
+    pItem->setData(pItem->m_tempInfo.m_info.typeDesc, ROLE_PARAM_TYPE);
+    pItem->setData(pItem->m_tempInfo.m_info.name, ROLE_PARAM_NAME);
     pItem->setText(pItem->m_tempInfo.m_info.name);
     pItem->setData(pItem->m_tempInfo.m_info.value, ROLE_PARAM_VALUE);
     pItem->m_uuid = pItem->m_tempInfo.m_uuid;
@@ -373,7 +373,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
         //copy inner type and value.
         if (pItem->m_index.isValid())
         {
-            pItem->m_type = pItem->m_index.data(ROLE_PARAM_TYPE).toString();
+            pItem->setData(pItem->m_index.data(ROLE_PARAM_TYPE), ROLE_PARAM_TYPE);
             pItem->setData(pItem->m_index.data(ROLE_PARAM_VALUE), ROLE_PARAM_VALUE);
         }
     }

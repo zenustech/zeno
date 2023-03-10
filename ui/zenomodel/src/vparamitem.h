@@ -33,9 +33,8 @@ struct VParamItem : public QStandardItem
 
     //for easy to debug, store here rather than QStandardItem internal data:
     QString m_name;
-    QString m_type;
-    PARAM_CONTROL m_ctrl;
 
+    PARAM_CONTROL m_ctrl;
     VPARAM_TYPE vType;
     VPARAM_INFO m_tempInfo;
     PARAM_LINKS m_links;
@@ -69,6 +68,7 @@ struct VParamItem : public QStandardItem
 
 private:
     QVariant m_value;
+    QString m_type;
 };
 
 

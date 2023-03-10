@@ -125,11 +125,10 @@ void PanelParamModel::importPanelParam(const VPARAM_INFO& invisibleRoot)
                 const QString& coreparam = param.refParamPath;
                 const QModelIndex& refIdx = m_model->indexFromPath(param.refParamPath);
                 paramItem->mapCoreParam(refIdx);
-                paramItem->m_ctrl = param.m_info.control;
-                paramItem->m_type = param.m_info.typeDesc;
-                paramItem->m_name = param.m_info.name;
+                paramItem->setData(param.m_info.control, ROLE_PARAM_CTRL);
+                paramItem->setData(param.m_info.typeDesc, ROLE_PARAM_TYPE);
+                paramItem->setData(param.m_info.name, ROLE_PARAM_NAME);
                 paramItem->setData(param.m_info.value, ROLE_PARAM_VALUE);
-
                 paramItem->setData(param.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
                 paramItem->setData(param.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
                 if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))

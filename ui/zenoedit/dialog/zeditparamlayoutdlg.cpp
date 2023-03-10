@@ -332,7 +332,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         PARAM_CONTROL ctrl = pCurrentItem->m_ctrl;
         const QString& ctrlName = getControl(ctrl).name;
-        const QString& dataType = pCurrentItem->m_type;
+        const QString& dataType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
         QVariant deflVal;
 
         VParamItem* pSourceRoot = static_cast<VParamItem*>(m_model->invisibleRootItem());
@@ -484,8 +484,8 @@ void ZEditParamLayoutDlg::onBtnAdd()
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
         QString newItem = UiHelper::getUniqueName(existNames, ctrl.name);
         VParamItem* pNewItem = new VParamItem(VPARAM_PARAM, newItem);
-        pNewItem->m_ctrl = ctrl.ctrl;
-        pNewItem->m_type = ctrl.defaultType;
+        pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CTRL);
+        pNewItem->setData(ctrl.defaultType, ROLE_PARAM_TYPE);
         pNewItem->setData(UiHelper::initVariantByControl(ctrl.ctrl), ROLE_PARAM_VALUE);
 
         //init properties.
@@ -768,8 +768,8 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         return;
 
     VParamItem* pItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(layerIdx));
-    pItem->m_type = dataType;
-    pItem->m_ctrl = UiHelper::getControlByType(dataType);
+    pItem->setData(dataType, ROLE_PARAM_TYPE);
+    pItem->setData(UiHelper::getControlByType(dataType), ROLE_PARAM_CTRL);
     pItem->setData(UiHelper::initVariantByControl(pItem->m_ctrl), ROLE_PARAM_VALUE);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -870,10 +870,10 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
     {
         VParamItem* pCurrent = static_cast<VParamItem*>(proxyItem->child(r));
         uint uuid = pCurrent->m_uuid;
-        const QString name = pCurrent->m_name;
-        const QString typeDesc = pCurrent->m_type;
+        const QString name = pCurrent->data(ROLE_PARAM_NAME).toString();
+        const QString typeDesc = pCurrent->data(ROLE_PARAM_TYPE).toString();
         const QVariant value = pCurrent->data(ROLE_PARAM_VALUE);
-        const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
+        const PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrent->data(ROLE_PARAM_CTRL).toInt();
         QVariant ctrlProperties;
         if (pCurrent->m_customData.find(ROLE_VPARAM_CTRL_PROPERTIES) != pCurrent->m_customData.end()) 
 		{
@@ -938,7 +938,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             if (pCurrent->vType == VPARAM_PARAM)
             {
                 //check type
-                if (pTarget->m_type != typeDesc)
+                if (pTarget->data(ROLE_PARAM_TYPE) != typeDesc)
                 {
                     if (bApplySubnetParam) {
                         //get subinput type idx, update its value, and then sync to all subgraph node.
@@ -1037,7 +1037,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     else 
                     {
                         const QVariant &defl = pCurrent->data(ROLE_PARAM_VALUE);
-                        const QString &typeDesc = pCurrent->m_type;
+                        const QString &typeDesc = pCurrent->data(ROLE_PARAM_TYPE).toString();
                         const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
 
                         QPointF pos(0, 0);

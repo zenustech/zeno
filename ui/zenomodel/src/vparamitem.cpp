@@ -37,14 +37,14 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
         {
             const QString &newType = topLeft.data(ROLE_PARAM_TYPE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
-            m_pItem->m_ctrl = newCtrl;
-            m_pItem->m_type = newType;
+            m_pItem->setData(newCtrl, ROLE_PARAM_CTRL);
+            m_pItem->setData(newType, ROLE_PARAM_TYPE);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
         else if (ROLE_PARAM_NAME == role)
         {
-            m_pItem->m_name = topLeft.data(ROLE_PARAM_NAME).toString();
+            m_pItem->setData(topLeft.data(ROLE_PARAM_NAME), ROLE_PARAM_NAME);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_VPARAM_NAME});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
