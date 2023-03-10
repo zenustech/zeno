@@ -658,22 +658,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_CLEAR_VIEW) 
     {
         toggleViewForSelected(false);
-    }
-    else if (actionType == ZenoMainWindow::ACTION_SNAPGRID)
-    {
-        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZenoSubGraphScene* pScene = pView->scene();
-        if (pScene)
-        {
-            pScene->setSnapGrid(bChecked);
-        }
-    }
-    else if (actionType == ZenoMainWindow::ACTION_SHOWGRID)
-    {
-        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
-        pView->showGrid(bChecked);
-    }
+    }    
     else if (actionType == ZenoMainWindow::ACTION_CUSTOM_UI) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());

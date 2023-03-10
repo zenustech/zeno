@@ -18,6 +18,7 @@
 #include <zeno/utils/envconfig.h>
 #include "zenomainwindow.h"
 #include "launch/corelaunch.h"
+#include "settings/zenosettingsmanager.h"
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -322,16 +323,10 @@ void DockContent_Editor::initConnections()
         m_pEditor->onAction(&act);
     });
     connect(pSnapGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
-        QAction act("SnapGrid");
-        act.setProperty("ActionType", ZenoMainWindow::ACTION_SNAPGRID);
-        if (m_pEditor)
-            m_pEditor->onAction(&act, QVariantList(), bChecked);
+        ZenoSettingsManager::GetInstance().setValue(ZenoSettingsManager::VALUE_SNAPGRID, bChecked);
     });
     connect(pShowGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
-        QAction act("ShowGrid");
-        act.setProperty("ActionType", ZenoMainWindow::ACTION_SHOWGRID);
-        if (m_pEditor)
-            m_pEditor->onAction(&act, QVariantList(), bChecked);
+        ZenoSettingsManager::GetInstance().setValue(ZenoSettingsManager::VALUE_SHOWGRID, bChecked);
     });
 
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -359,6 +354,17 @@ void DockContent_Editor::initConnections()
     });
     connect(zenoApp->getMainWindow(), &ZenoMainWindow::alwaysModeChanged, this, [=](bool bAlways) {
         m_btnAlways->setChecked(bAlways);
+    });
+
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](int type) {
+        if (type == ZenoSettingsManager::VALUE_SHOWGRID) 
+        {
+            pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(type).toBool());
+        } 
+        else if (type == ZenoSettingsManager::VALUE_SNAPGRID) 
+        {
+            pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(type).toBool());
+        }
     });
 }
 
