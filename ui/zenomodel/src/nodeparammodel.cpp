@@ -348,6 +348,12 @@ void NodeParamModel::setAddParam(
     }
     else
     {
+        if (type == "curve") {
+            CURVES_DATA curves = deflValue.value<CURVES_DATA>();
+            int j;
+            j = -0;
+        }
+
         pItem->setData(deflValue, ROLE_PARAM_VALUE);
         pItem->m_name = name;
         pItem->setData(type, ROLE_PARAM_TYPE);      //only allow to change type on IO processing, especially for SubInput.
