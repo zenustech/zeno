@@ -349,7 +349,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
 #else
 
     while(true) {
-
         auto prob = rnd(prd->seed);
         t_ele -= log(1 - prob) / (sigma_t);
 
@@ -370,11 +369,11 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 test_point = ray_orig + t1 * ray_dir;
             }
 
-            ray_orig = test_point;
-            prd->origin = ray_orig;
-            prd->direction = ray_dir;
-            
-            return;
+            // ray_orig = test_point;
+            // prd->origin = ray_orig;
+            // prd->direction = ray_dir;
+            v_density = 0;
+            break;
         } // over shoot, outside of volume
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
@@ -382,6 +381,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
         VolumeIn vol_in; vol_in.pos = test_point;
         VolumeOut vol_out = evalVolume(nullptr, vol_in);
         v_density = vol_out.density;
+        
+        float3 le = vol_out.emission;
+        emitting += le * (sigma_a / sigma_t);
 
         if (rnd(prd->seed) < v_density) {
 
@@ -389,18 +391,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
             pbrt::HenyeyGreenstein hg { vol_out.anisotropy }; 
                 
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
-            auto pdf = hg.Sample_p(ray_dir, new_dir, uu);
-                            
-            new_dir = make_float3(rnd(prd->seed), rnd(prd->seed), rnd(prd->seed));
+            auto pdf = hg.Sample_p(ray_dir, new_dir, uu);              
+            //new_dir = make_float3(rnd(prd->seed), rnd(prd->seed), rnd(prd->seed));
             new_dir = normalize(new_dir);
 
             scattering = make_float3(sigma_s / sigma_t);
             scattering *= vol_out.albedo;
-                float3 le = vol_out.emission;
-                emitting = le * (sigma_a / sigma_t);
+                
             ray_dir = new_dir;
             break;
-
         } else { v_density = 0; } 
     }
 
@@ -417,7 +416,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     if (v_density == 0) {
         prd->CH = 0.0;
         //prd->depth += 0;
-        prd->radiance = vec3(0); 
+        prd->radiance += prd->emission;
         return;
     }
 

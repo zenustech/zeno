@@ -130,6 +130,7 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
+            ray_direction = normalize(ray_direction);
             traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
 
             tmin = prd.trace_tmin;
@@ -137,12 +138,6 @@ extern "C" __global__ void __raygen__rg()
 
             ray_mask = prd._mask_; 
             prd._mask_ = EverythingMask;
-
-            if (ray_mask != EverythingMask && ray_mask != NothingMask) {
-                //ray_origin = prd.origin;
-                //ray_direction = prd.direction;
-                continue;
-            }
 
 //            vec3 radiance = vec3(prd.radiance);
 //            vec3 oldradiance = radiance;
@@ -162,21 +157,23 @@ extern "C" __global__ void __raygen__rg()
             //prd.radiance += prd.emission;
             if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
-                //result += prd.radiance;
+                // fire without smoke requires this line to work.
             }
+
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
+
+            if (ray_mask != EverythingMask && ray_mask != NothingMask) {
+                //ray_origin = prd.origin;
+                //ray_direction = prd.direction;
+                continue;
+            }
 
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
 
             if( prd.done || params.simpleRender==true){
-                //result = make_float3(prd.seed/float(1000000000));
-                // if (prd.depth > 0) { 
-                //     result = hdrSky(prd.direction);
-                //     result *= prd.attenuation2;                
-                // }
                 break;
             }
 

@@ -46,4 +46,32 @@ cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
     -DZENO_WITH_FBX:BOOL=ON `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+# cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
+#     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+#     -DZENO_WITH_ZenoFX:BOOL=ON `
+#     -DZENOFX_ENABLE_OPENVDB:BOOL=ON `
+#     -DZENOFX_ENABLE_LBVH:BOOL=ON `
+#     -DZENO_WITH_zenvdb:BOOL=ON `
+#     -DZENO_WITH_FastFLIP:BOOL=ON `
+#     -DZENO_WITH_FEM:BOOL=ON `
+#     -DZENO_WITH_Rigid:BOOL=ON `
+#     -DZENO_WITH_cgmesh:BOOL=ON `
+#     -DZENO_WITH_oldzenbase:BOOL=ON `
+#     -DZENO_WITH_TreeSketch:BOOL=ON `
+#     -DZENO_WITH_Skinning:BOOL=ON `
+#     -DZENO_WITH_Euler:BOOL=ON `
+#     -DZENO_WITH_Functional:BOOL=ON `
+#     -DZENO_WITH_LSystem:BOOL=ON `
+#     -DZENO_WITH_mesher:BOOL=ON `
+#     -DZENO_WITH_Alembic:BOOL=ON `
+#     -DZENO_WITH_FBX:BOOL=ON `
+#     -DZENO_WITH_DemBones:BOOL=ON `
+#     -DZENO_WITH_SampleModel:BOOL=ON `
+#     -DZENO_WITH_CalcGeometryUV:BOOL=ON `
+#     -DZENO_WITH_MeshSubdiv:BOOL=ON `
+#     -DZENO_WITH_Audio:BOOL=ON `
+#     -DZENO_WITH_PBD:BOOL=ON `
+#     -DZENO_WITH_GUI:BOOL=ON `
+#     -DZENO_WITH_ImgCV:BOOL=ON
+
 cmake --build ninja --config Release
