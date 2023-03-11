@@ -183,7 +183,7 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
         return 0;
 }
 
-void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
+void IPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
@@ -299,6 +299,10 @@ void IPCSystem::initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
     linsys.spmat.localOrdering(pol, 128);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+
+    linsys.hess2.init(PP.get_allocator(), estNumCps);
+    linsys.hess3.init(PP.get_allocator(), estNumCps);
+    linsys.hess4.init(PP.get_allocator(), estNumCps);
 }
 
 typename IPCSystem::bv_t IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
@@ -585,7 +589,7 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     targetGRes = (targetGRes + pnRel * std::sqrt(boxDiagSize2)) * 0.5f;
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 
-    initializeStaticMatrixSparsity(pol);
+    initializeSystemHessian(pol);
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {

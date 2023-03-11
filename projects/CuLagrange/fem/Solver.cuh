@@ -205,7 +205,7 @@ struct IPCSystem : IObject {
     void convertHessian(zs::CudaExecutionPolicy &pol);
 
     /// @note build linsys.spmat
-    void initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol);
+    void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
     // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
     void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
     // mostly self-collision related
@@ -223,11 +223,11 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
-    // void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
 
     void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
-    // void systemSolve(zs::CudaExecutionPolicy &cudaPol);
+    void systemSolve(zs::CudaExecutionPolicy &cudaPol);
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
