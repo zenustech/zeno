@@ -310,7 +310,6 @@ namespace zenoui
                     });
 
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
-                    pEditor->setWindowFlag(Qt::WindowStaysOnTopHint);
 
                     CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
                     pEditor->addCurves(curves);

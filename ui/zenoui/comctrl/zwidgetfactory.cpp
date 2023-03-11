@@ -220,7 +220,9 @@ namespace zenoui
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });
 
-                    CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    CURVES_DATA curves;
+                    if (cbSet.cbGetIndexData)
+                        curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });

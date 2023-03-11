@@ -220,7 +220,7 @@ void NodeParamModel::setParams(const PARAMS_INFO& params)
             paramInfo.typeDesc,
             paramInfo.value,
             paramInfo.control,
-            CONTROL_PROPERTIES(),
+            paramInfo.controlProps,
             SOCKPROP_UNKNOWN,
             DICTPANEL_INFO(),
             paramInfo.toolTip
