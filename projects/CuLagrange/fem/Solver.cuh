@@ -204,7 +204,12 @@ struct IPCSystem : IObject {
 
     void convertHessian(zs::CudaExecutionPolicy &pol);
 
+    /// @note build linsys.spmat
+    void initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol);
+    // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
     void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    // mostly self-collision related
+    void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
 
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
@@ -396,8 +401,6 @@ struct IPCSystem : IObject {
     };
     // for one-time static hessian topo build
     SystemHessian<T> linsys;
-    /// @note build linsys.spmat, using is, js as temp
-    void initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol);
 
     // for faster linear system solve
     HessianPiece<1> hess1;

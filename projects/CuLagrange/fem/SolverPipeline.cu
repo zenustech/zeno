@@ -3107,9 +3107,10 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             // hess (embedded in multiply)
         }
 
-        ///
+        /// prepare linsys.spmat
         updateInherentHessian(pol, "grad");
-        ///
+        /// prepare linsys.hessx
+        updateDynamicHessian(pol, "grad");
 
         project(pol, "grad");
 
