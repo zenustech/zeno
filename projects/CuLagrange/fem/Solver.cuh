@@ -409,7 +409,7 @@ struct IPCSystem : IObject {
     HessianPiece<4> hess4;
     tiles_t cgtemp;
 
-    zs::SparseMatrix<mat3f, true> spmat{};
+    // zs::SparseMatrix<mat3f, true> spmat{};
 
     // boundary contacts
     // auxiliary data (spatial acceleration)
