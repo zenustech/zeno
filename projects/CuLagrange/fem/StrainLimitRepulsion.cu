@@ -97,8 +97,18 @@ struct StrainLimitRepulsion : INode {
         // strainLimit = strainLimit < 0.1 ? 0.1 : strainLimit;
         auto limitStrength = get_input2<float>("limitStrength");
 
+        zs::Vector<T> constraint_count{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(verts.size()),
+            [constraint_count = proxy<space>(constraint_count)] ZS_LAMBDA(int vi) mutable {
+                constraint_count[vi] = (T)0.0;
+        });
+
+        zs::Vector<zs::vec<T,3,3>> constraint_repulsion{tris.get_allocator(),tris.size()};
+
         TILEVEC_OPS::fill(cudaPol,verts,repulsionTag,(T)0.0);
         cudaPol(zs::range(tris.size()),[
+                constraint_count = proxy<space>(constraint_count),
+                constraint_repulsion = proxy<space>(constraint_repulsion),
                 tris = proxy<space>({},tris),
                 verts = proxy<space>({},verts),
                 strainStretchLimit = strainStretchLimit,
@@ -108,6 +118,7 @@ struct StrainLimitRepulsion : INode {
                 defShapeTag = zs::SmallString(defShapeTag),
                 repulsionTag = zs::SmallString(repulsionTag)] ZS_LAMBDA(int ti) mutable {
             auto inds = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            constraint_repulsion[ti] = zs::vec<T,3,3>::zeros();
             for(int i = 0;i != 3;++i) {
                 auto idx0 = inds[(i + 0) % 3];
                 auto idx1 = inds[(i + 1) % 3];
@@ -119,22 +130,62 @@ struct StrainLimitRepulsion : INode {
 
                 auto strain = en / En;
                 auto repulsion = vec3::zeros();
-                auto alpha = (T)2.0;
+                auto alpha = (T)1.0;
                 if(verts("bou_tag",idx0) > 0.5 || verts("bou_tag",idx1) > 0.5)
-                    alpha = (T)1.0;
+                    alpha = (T)0.5;
 
                 if(strain > strainStretchLimit)
                     repulsion += En * e * (strain - strainStretchLimit) / alpha / en;
-                if(strain < strainShrinkLimit)
+                else if(strain < strainShrinkLimit)
                     repulsion += En * e * (strain - strainShrinkLimit) / alpha / en;
+                else
+                    return;
                 repulsion *= limitStrength;
 
-                for(int d = 0;d != 3;++d){
-                    atomic_add(exec_cuda,&verts(repulsionTag,d,idx0),repulsion[d]);
-                    atomic_add(exec_cuda,&verts(repulsionTag,d,idx1),-repulsion[d]);
+                atomic_add(exec_cuda,&constraint_count[idx0],(T)1.0);
+                atomic_add(exec_cuda,&constraint_count[idx1],(T)1.0);
+
+                for(int d = 0;d != 3;++d)
+                    constraint_repulsion[ti](i,d) = repulsion[d];
+                // for(int d = 0;d != 3;++d){
+                //     atomic_add(exec_cuda,&verts(repulsionTag,d,idx0),repulsion[d]);
+                //     atomic_add(exec_cuda,&verts(repulsionTag,d,idx1),-repulsion[d]);
+                // }
+            }
+        });
+
+        cudaPol(zs::range(tris.size()),
+            [constraint_count = proxy<space>(constraint_count),
+                tris = proxy<space>({},tris),
+                repulsionTag = zs::SmallString(repulsionTag),
+                verts = proxy<space>({},verts),
+                constraint_repulsion = proxy<space>(constraint_repulsion)] ZS_LAMBDA(int ti) mutable {
+            auto inds = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            for(int i = 0;i != 3;++i){
+                auto idx0 = inds[(i + 0) % 3];
+                auto idx1 = inds[(i + 1) % 3];
+                T max_c_num = (T)0;
+                max_c_num = constraint_count[idx0] > max_c_num ? constraint_count[idx0] : max_c_num;
+                max_c_num = constraint_count[idx1] > max_c_num ? constraint_count[idx1] : max_c_num;
+
+                auto repulsion = row(constraint_repulsion[ti],i);
+                if(max_c_num > (T)0.5){
+                    repulsion /= max_c_num;
+                    for(int d = 0;d != 3;++d){
+                        atomic_add(exec_cuda,&verts(repulsionTag,d,idx0),repulsion[d]);
+                        atomic_add(exec_cuda,&verts(repulsionTag,d,idx1),-repulsion[d]);
+                    }
                 }
             }
         });
+
+        // cudaPol(zs::range(verts.size()),
+        //     [constraint_count = proxy<space>(constraint_count),
+        //         repulsionTag = zs::SmallString(repulsionTag),
+        //         verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
+        //         if(constraint_count[vi] > (T)0.5)
+        //             verts.tuple(dim_c<3>,repulsionTag,vi) = verts.pack(dim_c<3>,repulsionTag,vi)/(T)constraint_count[vi];
+        // });
 
         set_output("zssurf",zssurf);
     }
