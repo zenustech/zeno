@@ -229,6 +229,77 @@ struct TendonDynamicStepping : INode {
             });
         }
 
+        void computeKinematicBinderGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
+            dtiles_t& vtemp,
+            const std::string& binderTag,
+            const dtiles_t& tris,
+            const dtiles_t& kverts,
+            dtiles_t& gh_buffer) {
+                using namespace zs;
+                constexpr auto space = execspace_e::cuda;
+                int max_nm_binders = tris.getChannelSize(binderTag);
+                // printf("max_nm_binders = %d\n",max_nm_binders);
+
+                cudaPol(zs::range(tris.size()),
+                    [vtemp = proxy<space>({},vtemp),
+                        binderTag = zs::SmallString(binderTag),
+                        tris = proxy<space>({},tris),
+                        kverts = proxy<space>({},kverts),
+                        binderThickness = binderThickness,
+                        binderStiffness = binderStiffness,
+                        max_nm_binders = max_nm_binders,
+                        gh_buffer = proxy<space>({},gh_buffer)] ZS_LAMBDA(int ti) mutable {
+                    int nm_binders = 0;
+                    // printf("binder_ids[%d] : %d %d %d %d\n",ti,
+                    //     reinterpret_bits<int>(tris(binderTag,0,ti)),
+                    //     reinterpret_bits<int>(tris(binderTag,1,ti)),
+                    //     reinterpret_bits<int>(tris(binderTag,2,ti)),
+                    //     reinterpret_bits<int>(tris(binderTag,3,ti)));
+                    for(int i = 0;i != max_nm_binders;++i){
+                        auto idx = reinterpret_bits<int>(tris(binderTag,i,ti));
+                        if(idx < 0)
+                            break;
+                        ++nm_binders;
+                    }
+
+                    // printf("nm_binders : %d\n",nm_binders);
+
+                    if(nm_binders == 0)
+                        return;
+                    auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                    auto mu = tris("mu",ti);
+                    auto lam = tris("lam",ti);
+                    // auto vole = tris("vol",ti);
+                    vec3 cv[4] = {};
+
+                    cv[1] = vtemp.pack(dim_c<3>,"xn",tri[0]);
+                    cv[2] = vtemp.pack(dim_c<3>,"xn",tri[1]);
+                    cv[3] = vtemp.pack(dim_c<3>,"xn",tri[2]);
+
+                    auto ceps = binderThickness;
+
+                    for(int i = 0;i != nm_binders;++i) {
+                        auto idx = reinterpret_bits<int>(tris(binderTag,i,ti));
+                        cv[0] = kverts.pack(dim_c<3>,"x",idx);
+                        auto alpha = binderStiffness;
+                        auto beta = (T)1.0/(T)nm_binders;
+                        auto cgrad = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps,true);
+                        auto cH = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps,true);
+
+                        // printf("add_binder grad and hessian : %f %f\n",(float)cgrad.norm(),(float)cH.norm());
+
+                        for(int j = 3;j != 12;++j){
+                            int row = j - 3;
+                            atomic_add(exec_cuda,&gh_buffer("grad",row,ti),cgrad[j]);
+                            for(int k = 3;k != 12;++k){
+                                int col = k - 3;
+                                atomic_add(exec_cuda,&gh_buffer("H",row*9 + col,ti),cH(j,k));
+                            }                    
+                        }
+                    }
+                });
+        }
+
         void computeKinematicCollisionGradientAndHessian2(zs::CudaExecutionPolicy& cudaPol,
             dtiles_t& vtemp,
             const dtiles_t& tris,
@@ -510,8 +581,10 @@ struct TendonDynamicStepping : INode {
         TendonDynamicSteppingSystem(const tiles_t &verts,const tiles_t& tris,
                 const vec3& volf,const T& density,const T& _dt,
                 const T& kine_in_collisionEps,const T& kine_out_collisionEps,
-                const T& kineCollisionStiffness,const T& kd_theta)
+                const T& kineCollisionStiffness,const T& kd_theta,
+                const T& binderThickness,const T& binderStiffness)
             : verts{verts}, tris{tris},volf{volf},density{density},kd_theta{kd_theta},
+                    binderThickness{binderThickness},binderStiffness{binderStiffness},
                     kine_in_collisionEps{kine_in_collisionEps},kine_out_collisionEps{kine_out_collisionEps},
                     kineCollisionStiffness{kineCollisionStiffness},dt{_dt}, dt2{_dt * _dt}{}
 
@@ -526,6 +599,9 @@ struct TendonDynamicStepping : INode {
         T out_collisionEps;
 
         T collisionStiffness;
+
+        T binderThickness;
+        T binderStiffness;
 
         T kine_in_collisionEps;
         T kine_out_collisionEps;
@@ -640,12 +716,22 @@ struct TendonDynamicStepping : INode {
         auto kineInCollisionEps = get_input2<float>("kineInColEps");
         auto kineOutCollisionEps = get_input2<float>("kineOutColEps");
         
+        auto binderThickness = get_input2<float>("binderThickness");
+        auto binderStiffness = get_input2<float>("binderStiffness");
+        auto binderTag = get_param<std::string>("binderTag");
+
+        if(!tris.hasProperty(binderTag)) {
+            fmt::print(fg(fmt::color::red),"the tris has no binderTag {}\n",binderTag);
+            throw std::runtime_error("the tris has no binderTag");
+        }
+
         auto kd_theta = get_input2<float>("kd_theta");
 
         TendonDynamicSteppingSystem A{verts,tris,
             volf,models.density,dt,
             kineInCollisionEps,kineOutCollisionEps,
-            kineCollisionStiffness,kd_theta};
+            kineCollisionStiffness,kd_theta,
+            binderThickness,binderStiffness};
         
         // step forward
         TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"xp");
@@ -674,6 +760,12 @@ struct TendonDynamicStepping : INode {
             // evaluate element-wise gradient and hessian
             // std::cout << "eval hessian" << std::endl;
             A.computeGradientAndHessian(cudaPol,vtemp,ttemp,gh_buffer);
+            A.computeKinematicBinderGradientAndHessian(cudaPol,
+                vtemp,
+                binderTag,
+                tris,
+                kverts,
+                gh_buffer);
             // std::cout << "eval kinematic hessian" << std::endl;
             // A.computeKinematicCollisionGradientAndHessian2(cudaPol,
             //     vtemp,tris,ktris,kverts,kc_buffer,gh_buffer);
@@ -732,6 +824,8 @@ ZENDEFNODE(TendonDynamicStepping, {{"zssurf","gravity","kboundary",
                                     {"float","kineColStiff","1"},
                                     {"float","kineInColEps","0.01"},
                                     {"float","kineOutColEps","0.02"},
+                                    {"float","binderThickness","0.01"},
+                                    {"float","binderStiffness","1.0"},
                                     {"float","dt","0.5"},
                                     {"float","newton_res","0.001"},
                                     {"float","shrink","1.0"},
@@ -741,7 +835,8 @@ ZENDEFNODE(TendonDynamicStepping, {{"zssurf","gravity","kboundary",
                                   {
                                     {"int","max_cg_iters","1000"},
                                     {"int","max_newton_iters","5"},
-                                    {"float","cg_res","0.0001"}
+                                    {"float","cg_res","0.0001"},
+                                    {"string","binderTag","binderTag"},
                                   },
                                   {"FEM"}});
 

@@ -54,15 +54,15 @@ target_sources(zeno PRIVATE
 
 # fem
 target_sources(zeno PRIVATE
-  fem/SolverInit.cu
-  fem/SolverPipeline.cu
-  fem/SolverLinearSystem.cu
-  fem/SolverIPC.cu
+  # fem/SolverInit.cu
+  # fem/SolverPipeline.cu
+  # fem/SolverLinearSystem.cu
+  # fem/SolverIPC.cu
 
-  fem/ipc/UnifiedSolverInit.cu
-  fem/ipc/UnifiedSolverPipeline.cu
-  fem/ipc/UnifiedSolverLinearSystem.cu
-  fem/ipc/UnifiedSolverIPC.cu
+  # fem/ipc/UnifiedSolverInit.cu
+  # fem/ipc/UnifiedSolverPipeline.cu
+  # fem/ipc/UnifiedSolverLinearSystem.cu
+  # fem/ipc/UnifiedSolverIPC.cu
 
   fem/BoundaryCondition.cu
   fem/Collisions.cu
@@ -77,6 +77,9 @@ target_sources(zeno PRIVATE
   # fem/collision_energy/edge_edge_sqrt_collition.hpp
   fem/collision_energy/evaluate_collision.hpp
   fem/collision_energy/collision_utils.hpp
+  fem/TendonDynamicStepping.cu
+  fem/StrainLimitRepulsion.cu
+  # fem/KinematicCollisionRepulsion.cu
 )
 
 # geometry
@@ -107,4 +110,5 @@ target_sources(zeno PRIVATE
   geometry/CollisionVis.cu # CHECK THIS
   geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
+  geometry/SurfaceBinder.cu
 )
