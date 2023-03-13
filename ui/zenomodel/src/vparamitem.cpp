@@ -250,7 +250,7 @@ void VParamItem::setData(const QVariant& value, int role)
             {
                 emit pModel->editNameChanged(idx, oldPath, m_name);
             }
-            if (pModel)
+            if (pModel && !m_index.isValid())
                 pModel->markDirty();
             break;
         }
@@ -265,7 +265,7 @@ void VParamItem::setData(const QVariant& value, int role)
                 return;
             m_ctrl = (PARAM_CONTROL)value.toInt();
             auto viewModel = qobject_cast<ViewParamModel*>(model());
-            if (viewModel)
+            if (viewModel && !m_index.isValid())
                 viewModel->markDirty();
             break;
         }
@@ -288,7 +288,7 @@ void VParamItem::setData(const QVariant& value, int role)
             }
             m_value = value;
             auto viewModel = qobject_cast<ViewParamModel*>(model());
-            if (viewModel)
+            if (viewModel && !m_index.isValid())
                 viewModel->markDirty();
             break;
         }

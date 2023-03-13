@@ -669,6 +669,12 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             if (nodes.size() == 1)
             {
                 QModelIndex nodeIdx = nodes[0];
+                //only subgraph node
+                if (!m_model->IsSubGraphNode(nodeIdx)) 
+                {
+                    QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
+                    return;
+                }
                 QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
                 ZASSERT_EXIT(viewParams);
                 ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_model, this);

@@ -266,7 +266,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         }
     }
     ViewParamModel *pModel = qobject_cast<ViewParamModel *>(sender());
-    if (pModel)
+    if (pModel && !newItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
         pModel->markDirty();
 }
 
@@ -717,6 +717,11 @@ void ZenoPropPanel::onSettings()
         ZASSERT_EXIT(viewParams);
 
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        if (!pGraphsModel->IsSubGraphNode(m_idx)) 
+        {
+            QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
+            return;
+        }
         ZEditParamLayoutDlg dlg(viewParams, false, m_idx, pGraphsModel, this);
         dlg.exec();
     });
