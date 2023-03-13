@@ -1104,6 +1104,7 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
     // timer.tick();
     {
         const auto &spmat = linsys.spmat;
+        /// upper part (with diagonal)
         pol(range(spmat.outerSize() * 32),
             [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
              bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
@@ -1119,6 +1120,24 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
                 T sumz = zs::cg::reduce(tile, sum[2], zs::cg::plus<T>());
                 if (tile.thread_rank() == 0)
                     vtemp.tuple(dim_c<3>, bOffset, row) = vtemp.pack(dim_c<3>, bOffset, row) + vec3f{sumx, sumy, sumz};
+            });
+
+        /// lower part (without diagonal)
+        pol(range(spmat.outerSize() * 32),
+            [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
+                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto col = tid / tile.num_threads();
+                auto bg = spmat._ptrs[col] + 1; // skip the diagonal part
+                auto ed = spmat._ptrs[col + 1];
+
+                auto dx = vtemp.pack(dim_c<3>, dxOffset, col);
+                for (auto k = bg + tile.thread_rank(); k < ed; k += tile.num_threads()) {
+                    auto row = spmat._inds[k];
+                    auto inc = spmat._vals[k].transpose() * dx;
+                    for (int d = 0; d != 3; ++d)
+                        atomic_add(exec_cuda, &vtemp(bOffset + d, row), inc(d));
+                }
             });
     }
 #if 0

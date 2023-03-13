@@ -114,6 +114,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                         auto i = inds[vi];
                         for (int vj = 0; vj != 2; ++vj) {
                             auto j = inds[vj];
+                            if (i > j)
+                                continue;
                             auto loc = spmat.locate(i, j, true_c);
                             auto &mat = spmat._vals[loc];
                             for (int r = 0; r != 3; ++r)
@@ -130,7 +132,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                                                          eles = proxy<space>({}, primHandle.getEles()), model, gTag,
                                                          dt = dt,
                                                          vOffset = primHandle.vOffset] __device__(int ei) mutable {
-            auto IB = eles.template pack<2, 2>("IB", ei);
+            auto IB = eles.pack(dim_c<2, 2>, "IB", ei);
             auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
             auto vole = eles("vol", ei);
             vec3 xs[3] = {vtemp.pack(dim_c<3>, "xn", inds[0]), vtemp.pack(dim_c<3>, "xn", inds[1]),
@@ -250,6 +252,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                 auto i = inds[vi];
                 for (int vj = 0; vj != 3; ++vj) {
                     auto j = inds[vj];
+                    if (i > j)
+                        continue;
                     auto loc = spmat.locate(i, j, true_c);
                     auto &mat = spmat._vals[loc];
                     for (int r = 0; r != 3; ++r)
@@ -307,6 +311,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                         auto i = inds[vi];
                         for (int vj = 0; vj != 4; ++vj) {
                             auto j = inds[vj];
+                            if (i > j)
+                                continue;
                             auto loc = spmat.locate(i, j, true_c);
                             auto &mat = spmat._vals[loc];
                             for (int r = 0; r != 3; ++r)
@@ -514,6 +520,8 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                     auto i = stcl[vi];
                     for (int vj = 0; vj < 4; ++vj) {
                         auto j = stcl[vj];
+                        if (i > j)
+                            continue;
                         auto loc = spmat.locate(i, j, true_c);
                         auto &mat = spmat._vals[loc];
                         for (int r = 0; r != 3; ++r) {

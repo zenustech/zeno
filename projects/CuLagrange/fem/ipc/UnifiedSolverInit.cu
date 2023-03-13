@@ -212,6 +212,15 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
             pol(range(npairs), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
                                 vOffset = primHandle.vOffset, offset, stride = npairs] ZS_LAMBDA(int ei) mutable {
                 auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+
+                for (int d = 1; d < 4; ++d)
+                    for (int k = 0; k < 4 - d; ++k)
+                        if (inds[k] > inds[k + 1]) {
+                            auto t = inds[k];
+                            inds[k] = inds[k + 1];
+                            inds[k + 1] = t;
+                        }
+
                 // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
                 is[offset + ei] = inds[0];
                 is[offset + stride + ei] = inds[0];
@@ -237,6 +246,11 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
             pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
                                      vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                 auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                if (inds[0] > inds[1]) {
+                    auto t = inds[0];
+                    inds[0] = inds[1];
+                    inds[1] = t;
+                }
                 is[offset + ei] = inds[0];
                 js[offset + ei] = inds[1];
             });
@@ -249,6 +263,13 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
             pol(range(ntris), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
                                vOffset = primHandle.vOffset, offset, stride = ntris] ZS_LAMBDA(int ei) mutable {
                 auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
+                for (int d = 1; d < 3; ++d)
+                    for (int k = 0; k < 3 - d; ++k)
+                        if (inds[k] > inds[k + 1]) {
+                            auto t = inds[k];
+                            inds[k] = inds[k + 1];
+                            inds[k + 1] = t;
+                        }
                 // <0, 1>, <0, 2>, <1, 2>
                 is[offset + ei] = inds[0];
                 is[offset + stride + ei] = inds[0];
@@ -264,6 +285,13 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
             pol(range(ntets), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
                                vOffset = primHandle.vOffset, offset, stride = ntets] ZS_LAMBDA(int ei) mutable {
                 auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
+                for (int d = 1; d < 4; ++d)
+                    for (int k = 0; k < 4 - d; ++k)
+                        if (inds[k] > inds[k + 1]) {
+                            auto t = inds[k];
+                            inds[k] = inds[k + 1];
+                            inds[k + 1] = t;
+                        }
                 // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
                 is[offset + ei] = inds[0];
                 is[offset + stride + ei] = inds[0];
@@ -291,6 +319,11 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
             pol(range(eles.size()), [is = view<space>(is), js = view<space>(js), eles = view<space>({}, eles),
                                      vOffset = primHandle.vOffset, offset] ZS_LAMBDA(int ei) mutable {
                 auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
+                if (inds[0] > inds[1]) {
+                    auto t = inds[0];
+                    inds[0] = inds[1];
+                    inds[1] = t;
+                }
                 is[offset + ei] = inds[0];
                 js[offset + ei] = inds[1];
             });
@@ -298,7 +331,8 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     }
 
     linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
-    linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
+    // only construct the uppper part
+    linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::false_c);
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
 #if 0
