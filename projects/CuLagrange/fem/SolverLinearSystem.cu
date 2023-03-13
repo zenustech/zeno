@@ -374,7 +374,7 @@ void IPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs
     });
 #endif
 
-    /// @note ground ollision
+    /// @note ground collision
     if (enableGround) {
         for (auto &primHandle : prims) {
             if (primHandle.isBoundary()) // skip soft boundary
