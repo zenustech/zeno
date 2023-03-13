@@ -108,7 +108,7 @@ namespace zenoui
                 pItemWidget = pLineEdit;
 #else
                 ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
@@ -206,7 +206,7 @@ namespace zenoui
                 QLinearGradient grad = value.value<QLinearGradient>();
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
 
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
 
@@ -280,7 +280,7 @@ namespace zenoui
                 }
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
-                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pComboBox->setData(GVKEY_TYPE, type);
 
@@ -299,7 +299,7 @@ namespace zenoui
             case CONTROL_CURVE:
             {
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
@@ -360,7 +360,7 @@ namespace zenoui
                     }
                 }
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
-                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
@@ -383,7 +383,7 @@ namespace zenoui
                     }
                 }
                 ZenoParamDoubleSpinBox *pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
-                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, 28)));
                 pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toDouble());
                 QObject::connect(pSpinBox, &ZenoParamDoubleSpinBox::valueChanged, [=](double value) { 
