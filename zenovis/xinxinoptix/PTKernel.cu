@@ -133,8 +133,11 @@ extern "C" __global__ void __raygen__rg()
             ray_direction = normalize(ray_direction);
             traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
 
-            tmin = prd.trace_tmin;
-            prd.trace_tmin = 1e-5;
+            result = (1.0f + prd.geometryNormal)/2.0f;
+            break;
+
+            tmin = 0; //prd.trace_tmin;
+            prd.trace_tmin = 0;
 
             ray_mask = prd._mask_; 
             prd._mask_ = EverythingMask;

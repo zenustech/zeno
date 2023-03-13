@@ -271,9 +271,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
     const float t0 = prd->vol_t0; // world space
     float t1 = prd->vol_t1; // world space
 
-    RadiancePRD testPRD;
+    RadiancePRD testPRD{};
     testPRD.vol_t1 = CUDART_INF_F;
     testPRD.test_distance = true;
+    testPRD.isSSS = false;
     traceRadianceMasked(
         params.handle,
         ray_orig,
@@ -364,9 +365,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
             } else { // Volume edge
 
                 prd->_mask_ = EverythingMask;
-                prd->trace_tmin = 1e-5;
+                prd->trace_tmin = 0;
 
                 test_point = ray_orig + t1 * ray_dir;
+                test_point = rtgems::offset_ray(test_point, ray_dir);
             }
 
             // ray_orig = test_point;
