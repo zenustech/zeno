@@ -31,6 +31,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         return {ir.get(), ir->push_clone_back(stmt)};
     }
 
+    Stm stm_const(float x) {
+        return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
+    }
+
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
 
         if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[3])) {
@@ -95,6 +99,11 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             return x / stm("sqrt", stm_sqrlength(x));
+
+        } else if (name == "normalizesafe") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return x / stm("sqrt", stm_sqrlength(x)+stm_const(0.0000001));
 
         } else if (name == "distance") {
             ERROR_IF(args.size() != 2);
