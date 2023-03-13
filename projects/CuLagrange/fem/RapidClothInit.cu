@@ -197,6 +197,7 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
+    tempE.resize(seInds.size()); 
 
     auto deduce_node_cnt = [](std::size_t numLeaves) {
         if (numLeaves <= 2)
@@ -234,10 +235,12 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         constexpr int intHalfLen = sizeof(int) * 4;
         pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
+                                     tempE = proxy<space>({}, tempE), 
                                      verts = view<space>({}, verts), intHalfLen] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
+            tempE.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge; 
         });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
@@ -254,10 +257,6 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
          svoffset = svInds.size(), 
          coOffset = coOffset] __device__ (int i) mutable {
             spInds("inds", i + svoffset, int_c) = coOffset + i; 
-        }); 
-    pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp)] __device__ (int i) mutable {
-            vtemp("n_cons", i, int_c) = 0; 
         }); 
 
     /// WARN: ignore BC verts initialization here
@@ -306,6 +305,8 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
                     vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
                     vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
+                    vtemp.tuple(dim_c<3>, "y[k+1]", vi) = x + v * dt; 
+                    vtemp.tuple(dim_c<3>, "y(l)", vi) = x + v * dt; 
                     vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
                 });
         }
@@ -337,13 +338,13 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "x[0]", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
-        init_front(spInds, selfStFront); // Previous WARNING: pt, what about coPoints' vert colliding with stInds' triangles
+        init_front(spInds, selfStFront); 
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "x[0]", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
         init_front(seInds, selfSeeFront);
-        init_front(spInds, selfSevFront); // Previous WARNING: pe
+        init_front(spInds, selfSevFront); 
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -421,7 +422,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            // {"grad", 6}, 
             {"dist", 1}, 
             {"tmp", 1} // , 
             // {"lambda", 1} // for LCP
@@ -432,7 +432,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
-            // {"grad", 9}, 
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}
@@ -443,7 +442,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            // {"grad", 12},
             {"dist", 1},  
             {"tmp", 1}, 
             {"lambda", 1}
@@ -454,7 +452,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            // {"grad", 12}, 
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}
@@ -464,8 +461,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     tempE = tiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
-            {"inds", 2}, 
-            // {"grad", 6}, 
+            {"inds", 2},  
             {"dist", 1}, 
             {"tmp", 1}, 
             {"lambda", 1}
@@ -479,16 +475,16 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"cons", maxVertCons}, 
                         {"ind", maxVertCons}    // its index in each constraint 
                     }, 
-                    (std::size_t)numDofs
+                    (std::size_t)coOffset       // stiff BC
     }; 
-    opp = ope = opt = oee = oe = 0;     // offsets
+    opp = ope = opt = oee = oe = 0;             // offsets
     npp = npe = npt = nee = ne = 0;
     vtemp = tiles_t{zsprims[0]->getParticles().get_allocator(),
                     {
                         // boundary
                         {"ws", 1},
                         {"cons", 3},
-                        {"isBC", 1},        // 0 or 1
+                        {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
                         // cloth dynamics
                         {"x[0]", 3},
@@ -504,7 +500,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         // linear solver
                         {"dir", 3},
                         {"grad", 3},
-                        {"P", 9},           // implement Newton solver first 
+                        {"P", 9},               // implement Newton solver first 
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
