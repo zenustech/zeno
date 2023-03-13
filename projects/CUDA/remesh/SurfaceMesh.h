@@ -126,15 +126,13 @@ public:
         bool is_active_; // helper for C++11 range-based for-loops
     };
 
-    SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim);
+    SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+                std::string line_pick_tag);
     SurfaceMesh(const SurfaceMesh& rhs);
     ~SurfaceMesh();
 
-    int add_tri(const vec3i& vertices);
+    int add_tri(const vec3i& vertices, bool add_lines);
 
-    size_t n_vertices() const { return vertices_size_ - deleted_vertices_; }
-    size_t n_halfedges() const { return halfedges_size_ - 2 * deleted_edges_; }
-    size_t n_edges() const { return edges_size_ - deleted_edges_; }
     size_t n_faces() const { return faces_size_ - deleted_faces_; }
 
 
@@ -172,7 +170,7 @@ public:
     bool is_collapse_ok(int v0v1);
     void collapse(int h);
     void garbage_collection();
-    int split(int e, int v, int& new_edges);
+    int split(int e, int v, int& new_lines);
     bool is_flip_ok(int e) const;
     void flip(int e);
 
@@ -336,7 +334,7 @@ public:
         return vertices_size_ - 1;
     }
 
-    int new_edge(int start, int end) {
+    int new_edge(int start, int end, bool add_lines = true) {
         assert(start != end);
 
         if (halfedges_size_ == PMP_MAX_INDEX - 1) {
@@ -344,10 +342,12 @@ public:
             return PMP_MAX_INDEX;
         }
 
-        prim_->edges.push_back(vec2i(start, end));
-        auto& edeleted = prim_->edges.attr<int>("e_deleted");
-        edeleted.push_back(0);
-        ++edges_size_;
+        if (add_lines) {
+            prim_->lines.push_back(vec2i(start, end));
+            auto& edeleted = prim_->lines.attr<int>("e_deleted");
+            edeleted.push_back(0);
+            ++lines_size_;
+        }
         
         halfedges_size_+=2;
 
@@ -388,8 +388,10 @@ public:
 
     size_t vertices_size_;
     size_t halfedges_size_;
-    size_t edges_size_;
+    size_t lines_size_;
     size_t faces_size_;
+
+    std::string line_pick_tag_;
 
     // connectivity information
     std::vector<VertexConnectivity> vconn_;
@@ -398,7 +400,7 @@ public:
 
     // numbers of deleted entities
     int deleted_vertices_;
-    int deleted_edges_;
+    int deleted_lines_;
     int deleted_faces_;
 
     // indicate garbage present
