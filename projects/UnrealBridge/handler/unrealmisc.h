@@ -37,13 +37,7 @@ REG_PACKET_HANDLER(BindUdpToSession, ZBTControlPacketType::BindUdpToSession, {
     if (!err) {
         UnrealSessionRegistry::getStatic().updateSession(data.sessionName, {data.address, data.port});
         // send subjects
-        for (auto& item : UnrealSubjectRegistry::getStatic().height_fields()) {
-            std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(const_cast<UnrealHeightFieldSubject&>(item), ZBFileType::HeightField);
-            for (auto& datagram : datagrams) {
-                datagram.setDestination(QHostAddress{ QString::fromStdString(data.address)}, data.port);
-                UnrealUdpServer::getStaticClass().sendDatagram(datagram);
-            }
-        }
+        UnrealSubjectRegistry::getStatic().markDirty(true);
     }
 });
 
