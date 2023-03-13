@@ -111,6 +111,7 @@ public slots:
 
 private slots:
     void onNodeParamInserted(const QModelIndex& parent, int first, int last);
+    void onNodeParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onNodeParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:

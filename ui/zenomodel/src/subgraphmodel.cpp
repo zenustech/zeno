@@ -113,6 +113,7 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
         this, &SubGraphModel::onNodeParamInserted);
     connect(ret.nodeParams, &QStandardItemModel::rowsAboutToBeRemoved,
         this, &SubGraphModel::onNodeParamAboutToBeRemoved);
+    connect(ret.nodeParams, &QStandardItemModel::dataChanged, this, &SubGraphModel::onNodeParamDataChanged);
 
     // add core node.
     if (m_spGraph)
@@ -188,6 +189,54 @@ void SubGraphModel::onNodeParamInserted(const QModelIndex& parent, int first, in
 void SubGraphModel::onNodeParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
 
+}
+
+void SubGraphModel::onNodeParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (roles.isEmpty())
+        return;
+
+    NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(sender());
+    ZASSERT_EXIT(nodeParams);
+    QStandardItem* pItem = nodeParams->itemFromIndex(topLeft);
+    ZASSERT_EXIT(pItem);
+
+    const QModelIndex& nodeIdx = nodeParams->nodeIdx();
+    ZASSERT_EXIT(nodeIdx.isValid());
+    //TOTEST: utf8 encoding.
+    std::string ident = nodeIdx.data(ROLE_OBJID).toString().toStdString();
+
+    int vType = pItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (vType != VPARAM_PARAM)
+    {
+        return;
+    }
+
+    int role = roles[0];
+    if (role != ROLE_PARAM_VALUE)
+        return;
+
+    QStandardItem* parentItem = pItem->parent();
+    ZASSERT_EXIT(parentItem);
+
+    const QVariant& newValue = pItem->data(ROLE_PARAM_VALUE);
+    const QString& typeDesc = pItem->data(ROLE_PARAM_TYPE).toString();
+    std::string par = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
+
+    const QString& groupName = parentItem->text();
+    if (groupName == iotags::params::node_inputs)
+    {
+        zeno::zany zval = zeno::generic_get_qvar<zeno::zany>(newValue, typeDesc);
+        m_spGraph->setNodeInput(ident, par, zval);
+    }
+    else if (groupName == iotags::params::node_params)
+    {
+
+    }
+    else if (groupName == iotags::params::node_outputs)
+    {
+
+    }
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
