@@ -9,6 +9,9 @@
 #include <type_traits>
 #include <cstring>
 #include <cassert>
+#include <string>
+#include <sstream>
+#include <iomanip>
 #include "byteorder.h"
 #include "networktypes.h"
 
@@ -257,6 +260,24 @@ namespace zeno_bridge {
 
         return std::make_tuple(pHeader, pData, pEnd);
     }
+}
+
+namespace zeno {
+template<typename TInputIter>
+std::string make_hex_string(TInputIter first, TInputIter last, bool use_uppercase = true, bool insert_spaces = false)
+{
+    std::ostringstream ss;
+    ss << std::hex << std::setfill('0');
+    if (use_uppercase)
+        ss << std::uppercase;
+    while (first != last)
+    {
+        ss << std::setw(2) << static_cast<int>(*first++);
+        if (insert_spaces && first != last)
+            ss << " ";
+    }
+    return ss.str();
+}
 }
 
 #endif //ZENO_BYTEBUFFER_H

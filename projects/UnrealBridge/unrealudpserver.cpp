@@ -97,7 +97,7 @@ void UnrealUdpServer::timerEvent(QTimerEvent* event) {
     if (UnrealSubjectRegistry::getStatic().isDirty()) {
         for (auto& session : UnrealSessionRegistry::getStatic().all()) {
             for (auto& item : UnrealSubjectRegistry::getStatic().height_fields()) {
-                std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(const_cast<UnrealHeightFieldSubject&>(item), ZBFileType::HeightField);
+                std::vector<QNetworkDatagram> datagrams = zeno::makeSendFileDatagrams(const_cast<UnrealHeightFieldSubject&>(item.second), ZBFileType::HeightField);
                 for (auto& datagram : datagrams) {
                     datagram.setDestination(QHostAddress{ QString::fromStdString(session.udp_address.value()) }, session.udp_port.value());
                     m_socket->writeDatagram(datagram);

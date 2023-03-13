@@ -23,7 +23,7 @@ public:
     template <>
     void put<UnrealHeightFieldSubject>(const std::string& key, const UnrealHeightFieldSubject& data) {
         m_subjects.push_back(key);
-        m_height_field_subjects.push_back(data);
+        m_height_field_subjects.insert_or_assign(key, data);
     }
 
     void markDirty(bool flag);
@@ -36,13 +36,13 @@ public:
     }
 
     [[nodiscard]]
-    const std::vector<UnrealHeightFieldSubject>& height_fields() const {
+    const std::unordered_map<std::string, UnrealHeightFieldSubject>& height_fields() const {
         return m_height_field_subjects;
     }
 
 private:
     std::vector<std::string> m_subjects;
-    std::vector<UnrealHeightFieldSubject> m_height_field_subjects;
+    std::unordered_map<std::string, UnrealHeightFieldSubject> m_height_field_subjects;
 
     bool m_bIsDirty = true;
 
