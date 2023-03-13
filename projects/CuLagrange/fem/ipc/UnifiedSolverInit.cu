@@ -502,6 +502,7 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
     // inertial hessian
     tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
 
+#if 0
     // connect vtemp with "dir", "grad"
     cgtemp = tiles_t{vtemp.get_allocator(),
                      {{"P", 9},
@@ -513,6 +514,7 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
                       {"p", 3},
                       {"q", 3}},
                      numDofs};
+#endif
 
     state.reset();
 
@@ -798,12 +800,6 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
 
     /// @note update whole bounding box, but the first one may be done during the initial morton code ordering
     wholeBv = updateWholeBoundingBoxSize(pol);
-
-    /// for faster linear solve
-    hess1.init(vtemp.get_allocator(), numDofs);
-    hess2.init(PP.get_allocator(), estNumCps);
-    hess3.init(PP.get_allocator(), estNumCps);
-    hess4.init(PP.get_allocator(), estNumCps);
 
     zeno::log_warn("box diag size: {}, targetGRes: {}.\n\tdHat: {}, averageNodeMass: {}, averageEdgeLength: {}, "
                    "averageSurfaceArea: {}\n",

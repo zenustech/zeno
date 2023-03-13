@@ -1042,32 +1042,6 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
     }
 }
 
-void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag) {
-    using namespace zs;
-    constexpr execspace_e space = execspace_e::cuda;
-    // projection
-    if (projectDBC)
-        pol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
-                                 tagOffset = cgtemp.getPropertyOffset(tag),
-                                 orderOffset = vtemp.getPropertyOffset("BCorder")] ZS_LAMBDA(int vi) mutable {
-            int BCorder = vtemp(orderOffset, vi);
-            for (int d = 0; d != BCorder; ++d)
-                cgtemp(tagOffset + d, vi) = 0;
-        });
-    else
-        pol(zs::range(numDofs),
-            [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
-             tagOffset = cgtemp.getPropertyOffset(tag), fixedOffset = vtemp.getPropertyOffset("BCfixed"),
-             orderOffset = vtemp.getPropertyOffset("BCorder")] ZS_LAMBDA(int vi) mutable {
-                int BCfixed = vtemp(fixedOffset, vi);
-                if (BCfixed) {
-                    int BCorder = vtemp(orderOffset, vi);
-                    for (int d = 0; d != BCorder; ++d)
-                        cgtemp(tagOffset + d, vi) = 0;
-                }
-            });
-}
-
 void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
@@ -1091,27 +1065,7 @@ void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
             }
         });
 }
-void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
-                                    const zs::SmallString dstTag) {
-    using namespace zs;
-    constexpr execspace_e space = execspace_e::cuda;
-    // precondition
-    //pol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-    //    cgtemp.template tuple<3>(dstTag, vi) =
-    //        cgtemp.pack(dim_c<3, 3>, "P", vi) * cgtemp.pack(dim_c<3>, srcTag, vi);
-    //});
-    pol(zs::range(numDofs * 3), [cgtemp = proxy<space>({}, cgtemp), srcOffset = cgtemp.getPropertyOffset(srcTag),
-                                 dstOffset = cgtemp.getPropertyOffset(dstTag),
-                                 POffset = cgtemp.getPropertyOffset("P")] ZS_LAMBDA(int vi) mutable {
-        int d = vi % 3;
-        vi /= 3;
-        float sum = 0;
-        POffset += d * 3;
-        for (int j = 0; j != 3; ++j)
-            sum += cgtemp(POffset + j, vi) * cgtemp(srcOffset + j, vi);
-        cgtemp(dstOffset + d, vi) = sum;
-    });
-}
+
 void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag,
                                     const zs::SmallString dstTag) {
     using namespace zs;
@@ -1133,155 +1087,6 @@ void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::Smal
             sum += vtemp(POffset + j, vi) * vtemp(srcOffset + j, vi);
         vtemp(dstOffset + d, vi) = sum;
     });
-}
-
-void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
-                                const zs::SmallString bTag) {
-    using namespace zs;
-    constexpr execspace_e space = execspace_e::cuda;
-    constexpr auto execTag = wrapv<space>{};
-    using T = typename RM_CVREF_T(cgtemp)::value_type;
-    // dx -> b
-    pol(range(numDofs), [execTag, cgtemp = proxy<space>({}, cgtemp), bTag] ZS_LAMBDA(int vi) mutable {
-        cgtemp.tuple(dim_c<3>, bTag, vi) = vec3f::zeros();
-    });
-    CppTimer timer;
-    timer.tick();
-#if 1
-    // hess1
-    pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
-                             dxOffset = cgtemp.getPropertyOffset(dxTag),
-                             bOffset = cgtemp.getPropertyOffset(bTag)] __device__(int i) mutable {
-        auto H = hess1.hess[i];
-        zs::vec<float, 3> dx{cgtemp(dxOffset, i), cgtemp(dxOffset + 1, i), cgtemp(dxOffset + 2, i)};
-        // auto dx = cgtemp.pack(dim_c<3>, dxTag, i);
-        dx = H * dx;
-        for (int d = 0; d != 3; ++d)
-            atomic_add(execTag, &cgtemp(bOffset + d, i), dx(d));
-    });
-    // hess2
-    pol(Collapse{hess2.count(), 32}, [execTag, hess2 = proxy<space>(hess2), cgtemp = proxy<space>({}, cgtemp),
-                                      dxOffset = cgtemp.getPropertyOffset(dxTag),
-                                      bOffset = cgtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int ei, int tid) mutable {
-        int rowid = tid / 5;
-        int colid = tid % 5;
-        auto inds = hess2.inds[ei];
-        auto H = hess2.hess[ei];
-        T entryH = 0, entryDx = 0, entryG = 0;
-        if (tid < 30) {
-            entryH = H.val(rowid * 6 + colid);
-            entryDx = cgtemp(dxOffset + colid % 3, inds[colid / 3]);
-            entryG = entryH * entryDx;
-            if (colid == 0) {
-                entryG += H.val(rowid * 6 + 5) * cgtemp(dxOffset + 2, inds[1]);
-            }
-        }
-        for (int iter = 1; iter <= 4; iter <<= 1) {
-            T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-            if (colid + iter < 5 && tid < 30)
-                entryG += tmp;
-        }
-        if (colid == 0 && rowid < 6)
-            atomic_add(execTag, &cgtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-    });
-    // hess3
-    {
-        auto numRows = hess3.count() * 9;
-        auto numWarps = (numRows + 3) / 4; // 8 threads per row
-        pol(Collapse{numWarps * 32}, [execTag, hess3 = proxy<space>(hess3), cgtemp = proxy<space>({}, cgtemp),
-                                      dxOffset = cgtemp.getPropertyOffset(dxTag),
-                                      bOffset = cgtemp.getPropertyOffset(bTag), numRows] ZS_LAMBDA(int tid) mutable {
-            int growid = tid / 8;
-            int rowid = growid % 9;
-            int i = growid / 9;
-            int colid = tid % 8;
-
-            auto inds = hess3.inds[i];
-            auto H = hess3.hess[i];
-            T entryG = 0;
-            if (growid < numRows) {
-                entryG = H.val(rowid * 9 + colid) * cgtemp(dxOffset + colid % 3, inds[colid / 3]);
-                if (colid == 0) {
-                    auto cid = colid + 8;
-                    entryG += H.val(rowid * 9 + cid) * cgtemp(dxOffset + cid % 3, inds[cid / 3]);
-                }
-            }
-            for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 8 && growid < numRows)
-                    entryG += tmp;
-            }
-            if (colid == 0 && growid < numRows)
-                atomic_add(execTag, &cgtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-        });
-    }
-    // hess4
-    {
-        // 0, 1, ..., 7, 0, 1, 2, 3
-        pol(Collapse{hess4.count(), 32 * 3},
-            [execTag, hess4 = proxy<space>(hess4), cgtemp = proxy<space>({}, cgtemp),
-             dxOffset = cgtemp.getPropertyOffset(dxTag),
-             bOffset = cgtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int i, int tid) mutable {
-                int rowid = tid / 8;
-                int colid = tid % 8;
-
-                auto inds = hess4.inds[i];
-                auto H = hess4.hess[i];
-                T entryH = 0, entryDx = 0, entryG = 0;
-                {
-                    entryH = H.val(rowid * 12 + colid);
-                    entryDx = cgtemp(dxOffset + colid % 3, inds[colid / 3]);
-                    entryG = entryH * entryDx;
-                    if (colid < 4) {
-                        auto cid = colid + 8;
-                        entryG += H.val(rowid * 12 + cid) * cgtemp(dxOffset + cid % 3, inds[cid / 3]);
-                    }
-                }
-                for (int iter = 1; iter <= 4; iter <<= 1) {
-                    T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                    if (colid + iter < 8)
-                        entryG += tmp;
-                }
-                if (colid == 0)
-                    atomic_add(execTag, &cgtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-            });
-    }
-#elif 1
-    {
-        pol(range(spmat.outerSize() * 32), [execTag, cgtemp = proxy<space>({}, cgtemp),
-                                            dxOffset = cgtemp.getPropertyOffset(dxTag),
-                                            bOffset = cgtemp.getPropertyOffset(bTag),
-                                            spmat = proxy<space>(spmat)] ZS_LAMBDA(int) mutable {
-            auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
-            auto row = (blockDim.x * blockIdx.x + threadIdx.x) / tile.num_threads();
-            auto bg = spmat._ptrs[row];
-            auto ed = spmat._ptrs[row + 1];
-            auto sum = vec3f::zeros();
-            for (auto i = bg + tile.thread_rank(); i < ed; i += tile.num_threads())
-                sum += spmat._vals[i] * cgtemp.pack(dim_c<3>, dxOffset, spmat._inds[i]);
-            float sumx = zs::cg::reduce(tile, sum[0], zs::cg::plus<float>());
-            float sumy = zs::cg::reduce(tile, sum[1], zs::cg::plus<float>());
-            float sumz = zs::cg::reduce(tile, sum[2], zs::cg::plus<float>());
-            if (tile.thread_rank() == 0)
-                cgtemp.tuple(dim_c<3>, bOffset, row) = cgtemp.pack(dim_c<3>, bOffset, row) + vec3f{sumx, sumy, sumz};
-        });
-    }
-#else
-    /// for validation only! remove soon
-    {
-        pol(range(spmat.outerSize()),
-            [execTag, cgtemp = proxy<space>({}, cgtemp), dxOffset = cgtemp.getPropertyOffset(dxTag),
-             bOffset = cgtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int row) mutable {
-                auto bg = spmat._ptrs[row];
-                auto ed = spmat._ptrs[row + 1];
-                auto sum = vec3f::zeros();
-                for (; bg != ed; ++bg)
-                    sum += spmat._vals[bg] * cgtemp.pack(dim_c<3>, dxOffset, spmat._inds[bg]);
-                cgtemp.tuple(dim_c<3>, bOffset, row) = cgtemp.pack(dim_c<3>, bOffset, row) + sum;
-            });
-    }
-#endif
-    // timer.tock("multiply takes");
 }
 
 void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag,
@@ -2858,106 +2663,6 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
     return E;
 }
 
-void UnifiedIPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
-    // input "grad", multiply, constraints
-    // output "dir"
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-
-    /// @note assume right-hand side is already projected
-    /// copy diagonal block preconditioners
-    cudaPol.sync(false);
-    cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp)] ZS_LAMBDA(
-                                    int i) mutable { cgtemp.tuple<9>("P", i) = vtemp.pack<3, 3>("P", i); });
-    /// solve for A dir = grad;
-    // initial guess for hard boundary constraints
-    cudaPol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), vtemp = proxy<space>({}, vtemp),
-                                 coOffset = coOffset, dt = dt, dirOffset = cgtemp.getPropertyOffset("dir"),
-                                 xtildeOffset = vtemp.getPropertyOffset("xtilde"),
-                                 xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
-        //if (BCorder == 0)
-        cgtemp.tuple<3>(dirOffset, i) = vec3::zeros();
-        //else
-        //    cgtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
-    });
-    // temp = A * dir
-    multiply(cudaPol, true_c, "dir", "temp");
-    project(cudaPol, true_c, "temp"); // project production
-    // r = grad - temp
-    cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
-                                 rOffset = cgtemp.getPropertyOffset("r"), gradOffset = vtemp.getPropertyOffset("grad"),
-                                 tempOffset = cgtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
-        cgtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - cgtemp.pack<3>(tempOffset, i);
-    });
-    // project(cudaPol, true_c, "r"); // project right hand side
-    precondition(cudaPol, true_c, "r", "q");
-    cudaPol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), pOffset = cgtemp.getPropertyOffset("p"),
-                                 qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
-        cgtemp.tuple<3>(pOffset, i) = cgtemp.pack<3>(qOffset, i);
-    });
-    double zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "r", "q");
-    double residualPreconditionedNorm2 = zTrk;
-    double localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
-    int iter = 0;
-
-    //
-    auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] = getCnts();
-    fmt::print("npp: {}, npe: {}, npt: {}, nee: {}, nppm: {}, npem: {}, neem: {}, ncspt: {}, ncsee: {}\n", npp, npe,
-               npt, nee, nppm, npem, neem, ncspt, ncsee);
-
-    CppTimer timer;
-    timer.tick();
-    for (; iter != CGCap; ++iter) {
-        if (iter % 50 == 0)
-            fmt::print("cg iter: {}, norm2: {} (zTrk: {})\n", iter, residualPreconditionedNorm2, zTrk);
-
-        if (residualPreconditionedNorm2 <= localTol2)
-            break;
-        multiply(cudaPol, true_c, "p", "temp");
-        project(cudaPol, true_c, "temp"); // project production
-
-        double alpha = zTrk / zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "temp", "p");
-        cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), dirOffset = cgtemp.getPropertyOffset("dir"),
-                                 pOffset = cgtemp.getPropertyOffset("p"), rOffset = cgtemp.getPropertyOffset("r"),
-                                 tempOffset = cgtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
-            cgtemp.tuple(dim_c<3>, dirOffset, vi) =
-                cgtemp.pack(dim_c<3>, dirOffset, vi) + alpha * cgtemp.pack<3>(pOffset, vi);
-            cgtemp.tuple(dim_c<3>, rOffset, vi) =
-                cgtemp.pack(dim_c<3>, rOffset, vi) - alpha * cgtemp.pack<3>(tempOffset, vi);
-        });
-
-        precondition(cudaPol, true_c, "r", "q");
-        double zTrkLast = zTrk;
-        zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "q", "r");
-        if (zs::isnan(zTrk, zs::exec_seq)) {
-            iter = CGCap;
-            residualPreconditionedNorm2 = (localTol2 / (cgRel * cgRel)) + std::max((localTol2 / (cgRel * cgRel)), (T)1);
-            continue;
-        }
-        double beta = zTrk / zTrkLast;
-        cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), beta, pOffset = cgtemp.getPropertyOffset("p"),
-                                 qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
-            cgtemp.tuple<3>(pOffset, vi) = cgtemp.pack<3>(qOffset, vi) + beta * cgtemp.pack<3>(pOffset, vi);
-        });
-
-        residualPreconditionedNorm2 = zTrk;
-    } // end cg step
-    /// copy back results
-    if (iter == CGCap && residualPreconditionedNorm2 > (localTol2 / (cgRel * cgRel))) {
-        // r = grad - temp
-        cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
-                                     tempOffset = cgtemp.getPropertyOffset("temp"),
-                                     gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
-            cgtemp.tuple<3>(tempOffset, i) = vtemp.pack<3>(gradOffset, i);
-        });
-        precondition(cudaPol, true_c, "temp", "dir");
-        zeno::log_warn("falling back to gradient descent.");
-    }
-    cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp)] ZS_LAMBDA(
-                                    int i) mutable { vtemp.tuple<3>("dir", i) = cgtemp.pack<3>("dir", i); });
-    cudaPol.sync(true);
-    timer.tock(fmt::format("{} cgiters", iter));
-}
 void UnifiedIPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
     // input "grad", multiply, constraints
     // output "dir"
@@ -3387,24 +3092,13 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             else
                 vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
         });
-#if 0
-        // prepare float edition
-        convertHessian(pol);
-        // CG SOLVE
-        cgsolve(pol, true_c);
-#elif 1
+
+#if 1
         systemSolve(pol);
 #else
         cgsolve(pol);
 #endif
 
-        // ROTATE BACK (NO MORE)
-#if 0
-        pol(Collapse{vtemp.size()}, [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int vi) mutable {
-            vtemp.template tuple<3>("dir", vi) =
-                vtemp.pack(dim_c<3, 3>, "BCbasis", vi) * vtemp.pack(dim_c<3>, "dir", vi);
-        });
-#endif
         // CHECK PN CONDITION
         res = infNorm(pol, "dir");
         T cons_res = constraintResidual(pol);
