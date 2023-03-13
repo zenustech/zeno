@@ -76,42 +76,6 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
         srcSocket.info.nodeid = nodeid;
         descInputs.insert("SRC", srcSocket);
     }
-
-    if (descInputs.find("curve") != descInputs.end())
-    {
-        INPUT_SOCKET& input = descInputs["curve"];
-        if (input.info.control == CONTROL_CURVE)
-        {
-            CURVES_MODEL curves;
-            QString ids[] = {"x", "y", "z"};
-            for (int i = 0; i < 3; i++) {
-                CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-                pModel->setData(pModel->index(0, 0), QVariant::fromValue(QPointF(0, i * 0.5)), ROLE_NODEPOS);
-                pModel->setData(pModel->index(1, 0), QVariant::fromValue(QPointF(1, 1 - i * 0.5)), ROLE_NODEPOS);
-                pModel->setId(ids[i]);
-                curves.insert(ids[i], pModel);
-            }
-            input.info.defaultValue = QVariant::fromValue(curves);
-        }
-    }
-    if (isSubgraph)
-    {
-        for (INPUT_SOCKET &input : descInputs) {
-            if (input.info.control == CONTROL_CURVE) {
-                GraphsModel *graphsModel = qobject_cast<GraphsModel *>(pGraphsModel);
-                CURVES_MODEL curves = input.info.defaultValue.value<CURVES_MODEL>();
-                CURVES_MODEL newCurves;
-                for (QString key : curves.keys()) {
-                    CurveModel *curve = new CurveModel(key, curves[key]->range(), graphsModel->currentGraph());
-                    curve->setVisible(curves[key]->getVisible());
-                    curve->setTimeline(curves[key]->isTimeline());
-                    curve->initItems(curves[key]->getItems());
-                    newCurves.insert(key, curve);
-                }
-                input.info.defaultValue = QVariant::fromValue(newCurves);
-            }
-        }
-    }
 }
 
 void NodesMgr::initOutputSocks(IGraphsModel* pModel, const QString& nodeid, OUTPUT_SOCKETS& descOutputs)
