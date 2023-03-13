@@ -1496,7 +1496,7 @@ QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
                     lst.append(QString::number(obj.GetFloat()));
                 }
                 else if (obj.IsString()) {
-                    lst.append(QString::fromLocal8Bit(obj.GetString()));
+                    lst.append(QString::fromUtf8(obj.GetString()));
                 }
             }
             return lst;
