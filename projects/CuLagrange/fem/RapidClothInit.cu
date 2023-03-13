@@ -300,12 +300,13 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                  augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
                     auto x = coverts.pack<3>("x", i);
                     auto v = coverts.pack<3>("v", i);
+                    int vi = coOffset + i; 
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple(dim_c<3>, "x[0]", coOffset + i) = x;
-                    vtemp.tuple(dim_c<3>, "x[k]", coOffset + i) = x;
+                    vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
+                    vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
                     vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
-                    vtemp.tuple(dim_c<3>, "v[0]", coOffset + i) = v;
+                    vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
                 });
         }
 

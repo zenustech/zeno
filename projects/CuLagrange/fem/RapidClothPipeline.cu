@@ -333,7 +333,7 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     
     newtonDynamicsStep(pol); 
     // y(l) = y[k+1]
-    pol(range(vtemp.size), 
+    pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
             vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
         }); 
@@ -356,7 +356,7 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     }
 }
 
-struct StepClothSystem : INode {
+struct StepRapidClothSystem : INode {
     using T = typename RapidClothSystem::T; 
 
     void apply() override {
@@ -381,7 +381,7 @@ struct StepClothSystem : INode {
     }
 };
 
-ZENDEFNODE(StepClothSystem, {{
+ZENDEFNODE(StepRapidClothSystem, {{
                                  "ZSRapidClothSystem",
                                  {"int", "num_substeps", "1"},
                                  {"float", "dt", "0.01"},

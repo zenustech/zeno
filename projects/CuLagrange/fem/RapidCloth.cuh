@@ -182,7 +182,7 @@ struct RapidClothSystem : IObject {
 
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
-    T infNorm(zs::CudaExecutionPolicy &pol, cosnt zs::SmallString &tag);
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
     T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);

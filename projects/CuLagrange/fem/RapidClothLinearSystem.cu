@@ -284,8 +284,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     });
     computeInertialAndForceGradient(pol, "x[k]");
     computeElasticGradientAndHessian(pol, "x[k]");
-
     // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
+    // TODO: revise codes for BC 
     if (!projectDBC) {
         // grad
         pol(zs::range(numBouDofs), [vtemp = view<space>({}, vtemp), boundaryKappa = BCStiffness,
@@ -303,14 +303,18 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
         // hess (embedded in multiply)
     }
     project(pol, "grad");
-
     // PREPARE P
     pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple<9>("P", i) = inverse(vtemp.template pack<3, 3>("P", i));
     });
-
     // CG SOLVE
+    // TODO: use sparse matrix 
     cgsolve(pol);
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "y[k+1]", 3) = 
+                vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
+        }); 
 }
 
 void RapidClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy &pol) {

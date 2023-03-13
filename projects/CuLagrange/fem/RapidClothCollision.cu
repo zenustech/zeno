@@ -722,7 +722,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     for (int d = 0; d < 3; d++)
                         val += tempCons("grad", j * 3 + d, i) * mInv * 
                             tempCons("grad", neV * 3 + d, neCons); 
-                    auto spInd = lcpMat.locate(i, neCons, true); 
+                    auto spInd = lcpMat.locate(i, neCons, true_c); 
                     ax[spInd] += val; 
                 }
             }
@@ -790,6 +790,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
 // call cons + solveLCP 
 void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
 {
+    using namespace zs; 
+    constexpr auto space = execspace_e::cuda; 
     // dynamicsStep should be done previously 
     // x(l), y[k+1] -> LCP -> updated lambda -> updated y(l) 
     computeConstraints(pol, "x(l)"); 
