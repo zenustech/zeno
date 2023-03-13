@@ -289,6 +289,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             vtemp("ws", vi) = verts("m", i);
             vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
             vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
             vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
         });
     }
@@ -301,9 +302,10 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                     auto v = coverts.pack<3>("v", i);
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple<3>("x[0]", coOffset + i) = x;
-                    vtemp.tuple<3>("x[k]", coOffset + i) = x;
-                    vtemp.tuple<3>("v[0]", coOffset + i) = v;
+                    vtemp.tuple(dim_c<3>, "x[0]", coOffset + i) = x;
+                    vtemp.tuple(dim_c<3>, "x[k]", coOffset + i) = x;
+                    vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
+                    vtemp.tuple(dim_c<3>, "v[0]", coOffset + i) = v;
                 });
         }
 
@@ -407,6 +409,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             // LCP
             {"lambda", 1},  // float, lambda in LCP  
             {"grad", 12},   // float, constraint gradient 
+            {"dist", 1}, 
             {"val", 1},     // float, constraint value
             {"b", 1},       // float, b in A*lambda+b, for LCP  
             {"diag", 1}     // float, diag element in the current row 
@@ -492,7 +495,9 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"y[k+1]", 3}, 
                         {"v[0]", 3}, 
                         {"x(l)", 3}, 
+                        {"r(l)", 3}, 
                         {"y(l)", 3}, 
+                        {"disp", 1}, 
                         {"x_tilde", 3},
                         {"x_hat", 3}, 
                         // linear solver
@@ -502,6 +507,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
+                        // forward step
+                        {"Di", 1}, 
                         // intermediate
                         {"temp", 3},
                     },

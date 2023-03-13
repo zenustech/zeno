@@ -330,7 +330,30 @@ void RapidClothSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy 
 void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    // TODO
+    
+    newtonDynamicsStep(pol); 
+    // y(l) = y[k+1]
+    pol(range(vtemp.size), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
+        }); 
+    for (int iters = 0; iters < L; iters++)
+    {
+        if (D < D_min)
+        {
+            findConstraints(pol, D_max); 
+            D = D_max; 
+        }
+        backwardStep(pol); 
+        forwardStep(pol); 
+        // update D
+        auto disp = infNorm(pol, "disp"); 
+        D -= 2 * disp; 
+        // termination check 
+        auto res = infNorm(pol, "r(l)"); 
+        if (res < eps)
+            break; 
+    }
 }
 
 struct StepClothSystem : INode {

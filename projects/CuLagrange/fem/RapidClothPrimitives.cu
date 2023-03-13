@@ -2,14 +2,14 @@
 
 namespace zeno{
 
-typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol) {
+typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString& tag) {
     using namespace zs;
     using T = typename RapidClothSystem::T;
     constexpr auto space = execspace_e::cuda;
     auto nwarps = count_warps(numDofs);
     temp.resize(nwarps);
     cudaPol(range(numDofs), [data = view<space>({}, vtemp), res = view<space>(temp), n = numDofs,
-                             offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
+                             offset = vtemp.getPropertyOffset(tag)] __device__(int pi) mutable {
         auto v = data.pack(dim_c<3>, offset, pi);
         auto val = v.abs().max();
 
