@@ -2288,7 +2288,6 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
             }     // self friction
         }         // enable friction
     }             // enable contact
-
 }
 
 template <typename Model>
@@ -3267,6 +3266,11 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
+    if (!linsys.initialized) {
+        initializeSystemHessian(pol);
+        linsys.initialized = true;
+    }
+
     /// optimizer
     int newtonIter = 0;
     T res = limits<T>::max();
@@ -3384,7 +3388,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         convertHessian(pol);
         // CG SOLVE
         cgsolve(pol, true_c);
-#elif 1
+#elif 0
         systemSolve(pol);
 #else
         cgsolve(pol);

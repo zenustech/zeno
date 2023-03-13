@@ -297,7 +297,10 @@ void IPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
 
     linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
+#if 0
     linsys.spmat.localOrdering(pol, 128);
+
+#endif
     linsys.spmat._vals.resize(linsys.spmat.nnz());
 
     linsys.hess2.init(PP.get_allocator(), estNumCps);
@@ -589,7 +592,8 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     targetGRes = (targetGRes + pnRel * std::sqrt(boxDiagSize2)) * 0.5f;
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 
-    initializeSystemHessian(pol);
+    /// do not initialize system hessian here!
+    /// because the one-time constraint setup later on may break the existing matrix sparsity pattern!
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {
