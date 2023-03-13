@@ -3388,7 +3388,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         convertHessian(pol);
         // CG SOLVE
         cgsolve(pol, true_c);
-#elif 0
+#elif 1
         systemSolve(pol);
 #else
         cgsolve(pol);
