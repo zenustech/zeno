@@ -303,27 +303,17 @@ namespace zenoui
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    static bool editBtnShowed = false;
-                    if (!editBtnShowed)
-                    {
-                        ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
-                        pEditor->setAttribute(Qt::WA_DeleteOnClose);
-                        pEditor->setWindowFlag(Qt::WindowStaysOnTopHint);
+                    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
 
-                        // what if value changed? removed?
-                        const CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
-                        for (CURVES_MODEL::ConstIterator it = curves.begin(); it != curves.end(); it++) {
-                            pEditor->addCurve(*it);
-                        }
-                        pEditor->show();
-                        editBtnShowed = true;
+                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                        cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
+                    });
 
-                        QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                            CURVES_MODEL curves = pEditor->getModel();
-                            cbSet.cbEditFinished(QVariant::fromValue(curves));
-                            editBtnShowed = false;
-                        });
-                    }
+                    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+
+                    CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    pEditor->addCurves(curves);
+                    pEditor->exec();
                 });
                 pItemWidget = pEditBtn;
                 break;

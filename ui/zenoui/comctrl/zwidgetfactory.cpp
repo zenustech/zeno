@@ -214,16 +214,16 @@ namespace zenoui
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
                     ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
-                    // what if value changed? removed?
-                    const CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
-                    for (CURVES_MODEL::ConstIterator it = curves.begin(); it != curves.end(); it++) {
-                        pEditor->addCurve(*it);
-                    }
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        CURVES_MODEL curves = pEditor->getModel();
+                        CURVES_DATA curves = pEditor->curves();
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });
+
+                    CURVES_DATA curves;
+                    if (cbSet.cbGetIndexData)
+                        curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    pEditor->addCurves(curves);
                     pEditor->exec();
                 });
                 return pBtn;

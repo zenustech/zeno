@@ -155,6 +155,17 @@ void ZCurveMapEditor::initSignals()
     connect(m_ui->btnDelCurve, SIGNAL(clicked()), this, SLOT(onDelCurveBtnClicked()));
 }
 
+void ZCurveMapEditor::addCurves(const CURVES_DATA& curves)
+{
+    for (QString key : curves.keys())
+    {
+        CURVE_DATA curve = curves[key];
+        CurveModel* model = new CurveModel(key, curve.rg, this);
+        model->initItems(curve);
+        addCurve(model);
+    }
+}
+
 void ZCurveMapEditor::addCurve(CurveModel *model)
 {
     //static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
@@ -288,6 +299,16 @@ CurveModel *ZCurveMapEditor::getCurve(int i) const {
 
 CURVES_MODEL ZCurveMapEditor::getModel() const {
     return m_models;
+}
+
+CURVES_DATA ZCurveMapEditor::curves() const
+{
+    CURVES_DATA curves;
+    for (QString key : m_models.keys())
+    {
+        curves.insert(key, m_models[key]->getItems());
+    }
+    return curves;
 }
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)

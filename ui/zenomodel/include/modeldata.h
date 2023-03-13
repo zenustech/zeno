@@ -335,6 +335,10 @@ struct CURVE_DATA {
     CURVE_RANGE rg;
 };
 
+typedef QMap<QString, CURVE_DATA> CURVES_DATA;
+Q_DECLARE_METATYPE(CURVES_DATA);
+
+
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)
 

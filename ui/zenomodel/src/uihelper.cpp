@@ -244,7 +244,6 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_READPATH:
     case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
-    case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
     case CONTROL_VEC2_FLOAT:
@@ -271,6 +270,13 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
             vec.resize(3);
         }
         return QVariant::fromValue(vec);
+    }
+    case CONTROL_CURVE:
+    {
+        if (defaultValue.isEmpty())
+        {
+            return QVariant::fromValue(curve_util::deflCurves());
+        }
     }
     default:
         return defaultValue;
@@ -819,8 +825,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         case CONTROL_CURVE:
         {
-            CurveModel* pModel = curve_util::deflModel(nullptr);    //todo: how to set parent?
-            return QVariantPtr<CurveModel>::asVariant(pModel);
+            return QVariant::fromValue(curve_util::deflCurves());
         }
         case CONTROL_VEC4_FLOAT:
         case CONTROL_VEC4_INT:
@@ -1318,16 +1323,17 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         if (type != "curve") {
             return QVariant();
         }
-        CURVES_MODEL curves;
+        CURVES_DATA curves;
         if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-            CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
-            curves.insert("x", xModel);
+            CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
+            curves.insert("x", xCurve);
         } else {
             for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                 if (i->value.IsObject()) {
-                    CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
-                    pModel->setTimeline(val[key_timeline].GetBool());
-                    curves.insert(i->name.GetString(), pModel);
+                    CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
+                    //todo: timeline reading
+                    //pModel->setTimeline(val[key_timeline].GetBool());
+                    curves.insert(i->name.GetString(), curve);
                 }
             }
         }
@@ -1400,16 +1406,16 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
             if (type != "curve") {
                 return QVariant();
             }
-            CURVES_MODEL curves;
+            CURVES_DATA curves;
             if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-                CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
-                curves.insert("x", xModel);
+                CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
+                curves.insert("x", xCurve);
             } else {
                 for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                     if (i->value.IsObject()) {
-                        CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
-                        pModel->setTimeline(val[key_timeline].GetBool());
-                        curves.insert(i->name.GetString(), pModel);
+                        CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
+                        //pModel->setTimeline(val[key_timeline].GetBool()); //todo: timeline
+                        curves.insert(i->name.GetString(), curve);
                     }
                 }
             }
@@ -1490,7 +1496,7 @@ QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
                     lst.append(QString::number(obj.GetFloat()));
                 }
                 else if (obj.IsString()) {
-                    lst.append(QString::fromLocal8Bit(obj.GetString()));
+                    lst.append(QString::fromUtf8(obj.GetString()));
                 }
             }
             return lst;
