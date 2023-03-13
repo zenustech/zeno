@@ -48,13 +48,19 @@ public:
 
     void sendDatagram(const QNetworkDatagram& datagram);
 
+    void tryMakeupFile(uint32_t fileId);
+
+signals:
+    void newFile(ZBFileType, std::vector<uint8_t>);
+
 private slots:
     void onNewMessage();
+    void onNewFile(ZBFileType fileType, std::vector<uint8_t> data);
 
 private:
     QUdpSocket* m_socket;
 
-    std::vector<QNetworkDatagram> m_msg_buffer;
+    std::vector<ZBUFileMessage> m_msg_buffer;
 };
 
 namespace zeno {

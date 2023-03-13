@@ -28,11 +28,13 @@ void UnrealUdpServer::start(QThread *qThread, const QHostAddress& inAddress, int
             zeno::log_error("failed to bind unreal udp server at '{}:{}'", inAddress.toString().toStdString(), inPort);
         }
         connect(m_socket, SIGNAL(readyRead()), this, SLOT(onNewMessage()));
+        connect(this, SIGNAL(newFile(ZBFileType,std::vector<uint8_t>)), this, SLOT(onNewFile(ZBFileType,std::vector<uint8_t>)));
     };
 
     if (nullptr != qThread) {
         moveToThread(qThread);
         connect(qThread, &QThread::started, this, startServer, Qt::QueuedConnection);
+        connect(this, SIGNAL(newFile(ZBFileType,std::vector<uint8_t>)), this, SLOT(onNewFile(ZBFileType,std::vector<uint8_t>)));
     } else {
         startServer();
     }
@@ -51,48 +53,6 @@ bool UnrealUdpServer::isRunning() {
 }
 
 void UnrealUdpServer::timerEvent(QTimerEvent* event) {
-    // TODO: darc clean up message buffer to free memory
-    std::vector<decltype(m_msg_buffer.begin())> elements_to_remove;
-
-    for (auto i = m_msg_buffer.begin(); i < m_msg_buffer.end(); i++) {
-        const QNetworkDatagram& data = *i;
-        const QByteArray& body = data.data();
-        if (body.size() < sizeof(ZBUFileMessageHeader)) {
-            // skip if isn't struct we wanted
-            continue;
-        }
-        auto type =  static_cast<ZBFileType>(qFromLittleEndian(*(uint32_t*)body.constData()));
-        if (type > ZBFileType::End) {
-            // bad type
-            continue;
-        }
-        uint32_t bodySize = qFromLittleEndian(*(uint32_t*)(body.constData() + sizeof(ZBUFileMessageHeader::type)));
-        uint32_t fileId = qFromLittleEndian(*(uint32_t*)(body.constData() + sizeof(ZBUFileMessageHeader::type) + sizeof(ZBUFileMessageHeader::size)));
-        uint16_t totalPart = qFromLittleEndian(*(uint32_t*)(body.constData() + sizeof(ZBUFileMessageHeader::type) + sizeof(ZBUFileMessageHeader::size) + sizeof(ZBUFileMessageHeader::file_id)));
-        uint16_t partId = qFromLittleEndian(*(uint32_t*)(body.constData() + sizeof(ZBUFileMessageHeader::type) + sizeof(ZBUFileMessageHeader::size) + sizeof(ZBUFileMessageHeader::file_id) + sizeof(ZBUFileMessageHeader::total_part)));
-
-        ZBUFileMessageHeader header {
-            type, bodySize, fileId, totalPart, partId,
-        };
-        std::vector<uint8_t> messageData;
-        messageData.resize(body.size() - sizeof(ZBUFileMessageHeader));
-        std::memmove(messageData.data(), body.constData() + sizeof(ZBUFileMessageHeader), body.size() - sizeof(ZBUFileMessageHeader));
-        ZBUFileMessage message {
-            header,
-            std::move(messageData),
-        };
-
-        elements_to_remove.push_back(i);
-    }
-
-    for (const auto& i : elements_to_remove) {
-        m_msg_buffer.erase(i);
-    }
-
-    if (m_msg_buffer.size() > 1024) {
-        m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + 512);
-    }
-
     // TODO: darc move send height field to unreal to a better place
     if (UnrealSubjectRegistry::getStatic().isDirty()) {
         for (auto& session : UnrealSessionRegistry::getStatic().all()) {
@@ -112,12 +72,94 @@ void UnrealUdpServer::onNewMessage() {
     // TODO: darc drop unauthorized message
     QNetworkDatagram datagram = m_socket->receiveDatagram();
 
-    m_msg_buffer.push_back(std::move(datagram));
+    unsigned char* rawData = reinterpret_cast<unsigned char*>(datagram.data().data());
+    const uint16_t dataSize = datagram.data().size();
+
+    if (dataSize < sizeof(ZBUFileMessageHeader)) {
+        return;
+    }
+
+    ZBFileType fileType = qFromLittleEndian(*reinterpret_cast<ZBFileType*>(rawData));
+    if (fileType > ZBFileType::End) {
+        return;
+    }
+
+    auto* messageHeader = reinterpret_cast<ZBUFileMessageHeader*>(rawData);
+    messageHeader->type = qFromLittleEndian(messageHeader->type);
+    messageHeader->total_part = qFromLittleEndian(messageHeader->total_part);
+    messageHeader->size = qFromLittleEndian(messageHeader->size);
+    messageHeader->part_id = qFromLittleEndian(messageHeader->part_id);
+    messageHeader->file_id = qFromLittleEndian(messageHeader->file_id);
+
+    const uint32_t fileId = messageHeader->file_id;
+    std::vector<uint8_t> messageData;
+    messageData.resize(dataSize - sizeof(ZBUFileMessageHeader));
+    std::memmove(messageData.data(), rawData + sizeof(ZBUFileMessageHeader), dataSize - sizeof(ZBUFileMessageHeader));
+    ZBUFileMessage message {
+        *messageHeader,
+        std::move(messageData),
+    };
+
+    m_msg_buffer.push_back(std::move(message));
+    tryMakeupFile(fileId);
 }
 
 void UnrealUdpServer::sendDatagram(const QNetworkDatagram &datagram) {
     if (m_socket) {
         m_socket->writeDatagram(datagram);
+    }
+}
+
+void UnrealUdpServer::tryMakeupFile(const uint32_t fileId) {
+    std::set<uint16_t> partSet;
+    int32_t fileParts = -1;
+    ZBFileType fileType = ZBFileType::End;
+    std::unordered_map<uint16_t , size_t> partIdx;
+    uint64_t totalSize = 0;
+    for (size_t i = 0; i < m_msg_buffer.size(); ++i) {
+        const ZBUFileMessage& item1 = m_msg_buffer[i];
+        if (item1.header.file_id == fileId) {
+            fileParts = std::max(static_cast<int32_t>(item1.header.total_part), fileParts);
+            partSet.insert(item1.header.part_id);
+            fileType = item1.header.type;
+            partIdx.insert_or_assign(item1.header.part_id, i);
+            totalSize += item1.data.size();
+        }
+    }
+
+    if (-1 != fileParts && partSet.size() == fileParts) {
+        std::vector<uint8_t> data;
+        data.resize(totalSize);
+        uint64_t offset = 0;
+
+        for (int32_t i = 0; i < fileParts; ++i) {
+            std::vector<uint8_t>& rawData = m_msg_buffer[partIdx[i]].data;
+            std::memmove(data.data() + offset, rawData.data(), rawData.size());
+            offset += rawData.size();
+        }
+
+        for (auto [key, value] : partIdx) {
+            if (value < m_msg_buffer.size()) {
+                m_msg_buffer.erase(m_msg_buffer.begin() + value);
+            }
+        }
+
+        emit newFile(fileType, data);
+    }
+}
+
+void UnrealUdpServer::onNewFile(ZBFileType fileType, std::vector<uint8_t> data) {
+    if (fileType == ZBFileType::HeightField) {
+        try {
+            const auto subject = msgpack::unpack<UnrealHeightFieldSubject>(data);
+
+            std::shared_ptr<zeno::UnrealZenoHeightFieldSubject> heightFieldSubject = std::make_shared<zeno::UnrealZenoHeightFieldSubject>();
+            heightFieldSubject->heights.resize(data.size());
+            std::memmove(heightFieldSubject->heights.data(), data.data(), data.size() * sizeof(float));
+
+            ZenoSubjectRegistry::getStatic().put(subject.m_name, heightFieldSubject);
+        } catch (msgpack::UnpackerError) {
+        }
     }
 }
 

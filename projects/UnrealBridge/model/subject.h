@@ -17,4 +17,10 @@ struct UnrealHeightFieldSubject : public IUnrealSubject {
     }
 };
 
+enum class EZenoSubjectType : int16_t {
+    Invalid = -1,
+    HeightField = 0,
+    End,
+};
+
 #endif //ZENO_SUBJECT_H
