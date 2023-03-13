@@ -58,9 +58,16 @@ struct ZSSurfaceBind : zeno::INode {
         dtiles_t kverts{kb_verts.get_allocator(),
             {
                 {"x",3},
-                {"inds",1}
+                {"inds",1},
+                {"nrm",3},
+                {"tag",1}
             },kb_verts.size()};
         TILEVEC_OPS::copy(cudaPol,kb_verts,"x",kverts,"x");
+        TILEVEC_OPS::copy(cudaPol,kb_verts,"nrm",kverts,"nrm");
+        if(kb_verts.hasProperty("tag"))
+            TILEVEC_OPS::copy(cudaPol,kb_verts,"tag",kverts,"tag");
+        else
+            TILEVEC_OPS::fill(cudaPol,kverts,"tag",(T)0.0);
         cudaPol(zs::range(kverts.size()),
             [kverts = proxy<space>({},kverts)] ZS_LAMBDA(int vi) mutable {
                 kverts("inds",vi) = reinterpret_bits<T>(vi);
@@ -68,9 +75,17 @@ struct ZSSurfaceBind : zeno::INode {
 
         auto max_nm_binders = get_param<int>("max_nm_binders");
         auto binder_tag = get_param<std::string>("binder_tag");
+        auto thickness_tag = get_param<std::string>("thickness_tag");
+        auto inversion_tag = get_param<std::string>("inversion_tag");
 
-        tris.append_channels(cudaPol,{{binder_tag,max_nm_binders}});
+        tris.append_channels(cudaPol,{
+            {binder_tag,max_nm_binders},
+            {thickness_tag,max_nm_binders},
+            {inversion_tag,max_nm_binders},
+        });
         TILEVEC_OPS::fill(cudaPol,tris,binder_tag,zs::reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(cudaPol,tris,thickness_tag,(T)0.0);
+        TILEVEC_OPS::fill(cudaPol,tris,inversion_tag,(T)-1.0);
 
         auto kpBvh = bvh_t{};
         auto bvs = retrieve_bounding_volumes(cudaPol,kverts,kverts,wrapv<1>{},(T)0.0,"x");
@@ -110,6 +125,8 @@ struct ZSSurfaceBind : zeno::INode {
                 kverts = proxy<space>({},kverts),
                 kpBvh = proxy<space>(kpBvh),
                 binder_tag = zs::SmallString(binder_tag),
+                thickness_tag = zs::SmallString(thickness_tag),
+                inversion_tag = zs::SmallString(inversion_tag),
                 max_nm_binders = max_nm_binders,
                 kinInCollisionEps = kinInCollisionEps,
                 kinOutCollisionEps = kinOutCollisionEps,
@@ -123,6 +140,8 @@ struct ZSSurfaceBind : zeno::INode {
             // printf("testing tri[%d] : %f %f %f\n",ti,(float)p[0],(float)p[1],(float)p[2]);
 
             int nm_binders = 0;
+            int nm_tag = 0;
+            auto binder_tags_vec = zs::vec<T,16>::uniform((T)-1.0);
             auto process_vertex_facet_binding_pairs = [&](int kpi) {
                 // printf("testing %d tri and %d kp\n",ti,kpi);
                 if(nm_binders >= max_nm_binders)
@@ -138,6 +157,9 @@ struct ZSSurfaceBind : zeno::INode {
                 T distance = LSL_GEO::pointTriangleDistance(t0,t1,t2,kp,barySum);
 
                 auto nrm = tris.pack(dim_c<3>,"nrm",ti);
+                auto knrm = kverts.pack(dim_c<3>,"nrm",kpi);
+                if(nrm.dot(knrm) < (T)0.5)
+                    return;
                 auto dist = seg.dot(nrm);
 
                 auto collisionEps = dist < 0 ? kinOutCollisionEps : kinInCollisionEps;
@@ -164,11 +186,27 @@ struct ZSSurfaceBind : zeno::INode {
                         return;
                 }
                 // printf("bind tri[%d] to kp[%d]\n",ti,kpi);
+                binder_tags_vec[nm_binders] = kverts("tag",kpi);
+                bool new_tag = true;
+                for(int i = 0;i != nm_binders;++i)
+                    if(zs::abs(binder_tags_vec[i] - kverts("tag",kpi)) < 1e-4)
+                        new_tag = false;
+                if(new_tag)
+                    nm_tag++;
+
                 tris(binder_tag,nm_binders,ti) = reinterpret_bits<T>(kpi);
+                tris(thickness_tag,nm_binders,ti) = distance;
+                tris(inversion_tag,nm_binders,ti) = dist < 0 ? (T)1.0 : (T)-1.0;
                 nm_binders++;
             };
             kpBvh.iter_neighbors(bv,process_vertex_facet_binding_pairs);
+
+            if(nm_tag > 1)
+                for(int i = 0;i != nm_binders;++i)
+                    tris(binder_tag,i,ti) = reinterpret_bits<T>((int)-1);
         });
+
+
         set_output("zssurf",zssurf);
     }
 };
@@ -181,7 +219,9 @@ ZENDEFNODE(ZSSurfaceBind, {{"zssurf","kboundary",
                                   {"zssurf"},
                                   {
                                     {"int","max_nm_binders","4"},
-                                    {"string","binder_tag","binderTag"}
+                                    {"string","binder_tag","binderTag"},
+                                    {"string","thickness_tag","thicknessTag"},
+                                    {"string","inversion_tag","inversionTag"}
                                   },
                                   {"ZSGeometry"}});
 

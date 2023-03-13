@@ -232,6 +232,8 @@ struct TendonDynamicStepping : INode {
         void computeKinematicBinderGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
             dtiles_t& vtemp,
             const std::string& binderTag,
+            const std::string& thicknessTag,
+            const std::string& inversionTag,
             const dtiles_t& tris,
             const dtiles_t& kverts,
             dtiles_t& gh_buffer) {
@@ -243,9 +245,11 @@ struct TendonDynamicStepping : INode {
                 cudaPol(zs::range(tris.size()),
                     [vtemp = proxy<space>({},vtemp),
                         binderTag = zs::SmallString(binderTag),
+                        thicknessTag = zs::SmallString(thicknessTag),
+                        inversionTag = zs::SmallString(inversionTag),
                         tris = proxy<space>({},tris),
                         kverts = proxy<space>({},kverts),
-                        binderThickness = binderThickness,
+                        // binderThickness = binderThickness,
                         binderStiffness = binderStiffness,
                         max_nm_binders = max_nm_binders,
                         gh_buffer = proxy<space>({},gh_buffer)] ZS_LAMBDA(int ti) mutable {
@@ -270,23 +274,21 @@ struct TendonDynamicStepping : INode {
                     auto mu = tris("mu",ti);
                     auto lam = tris("lam",ti);
                     // auto vole = tris("vol",ti);
-                    vec3 cv[4] = {};
+                    vec3 cp[4] = {};
 
-                    cv[1] = vtemp.pack(dim_c<3>,"xn",tri[0]);
-                    cv[2] = vtemp.pack(dim_c<3>,"xn",tri[1]);
-                    cv[3] = vtemp.pack(dim_c<3>,"xn",tri[2]);
-
-                    auto ceps = binderThickness;
+                    cp[1] = vtemp.pack(dim_c<3>,"xn",tri[0]);
+                    cp[2] = vtemp.pack(dim_c<3>,"xn",tri[1]);
+                    cp[3] = vtemp.pack(dim_c<3>,"xn",tri[2]);
 
                     for(int i = 0;i != nm_binders;++i) {
                         auto idx = reinterpret_bits<int>(tris(binderTag,i,ti));
-                        cv[0] = kverts.pack(dim_c<3>,"x",idx);
+                        auto ceps = tris(thicknessTag,i,ti);
+                        auto from_inside = tris(inversionTag,i,ti) < (T)0.0;
+                        cp[0] = kverts.pack(dim_c<3>,"x",idx);
                         auto alpha = binderStiffness;
                         auto beta = (T)1.0/(T)nm_binders;
-                        auto cgrad = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps,true);
-                        auto cH = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps,true);
-
-                        // printf("add_binder grad and hessian : %f %f\n",(float)cgrad.norm(),(float)cH.norm());
+                        auto cgrad = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cp,mu,lam,ceps,from_inside);
+                        auto cH = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cp,mu,lam,ceps,from_inside);
 
                         for(int j = 3;j != 12;++j){
                             int row = j - 3;
@@ -719,6 +721,8 @@ struct TendonDynamicStepping : INode {
         auto binderThickness = get_input2<float>("binderThickness");
         auto binderStiffness = get_input2<float>("binderStiffness");
         auto binderTag = get_param<std::string>("binderTag");
+        auto thicknessTag = get_param<std::string>("thicknessTag");
+        auto inversionTag = get_param<std::string>("inversionTag");
 
         if(!tris.hasProperty(binderTag)) {
             fmt::print(fg(fmt::color::red),"the tris has no binderTag {}\n",binderTag);
@@ -763,6 +767,8 @@ struct TendonDynamicStepping : INode {
             A.computeKinematicBinderGradientAndHessian(cudaPol,
                 vtemp,
                 binderTag,
+                thicknessTag,
+                inversionTag,
                 tris,
                 kverts,
                 gh_buffer);
@@ -837,6 +843,8 @@ ZENDEFNODE(TendonDynamicStepping, {{"zssurf","gravity","kboundary",
                                     {"int","max_newton_iters","5"},
                                     {"float","cg_res","0.0001"},
                                     {"string","binderTag","binderTag"},
+                                    {"string","thicknessTag","thicknessTag"},
+                                    {"string","inversionTag","inversionTag"}
                                   },
                                   {"FEM"}});
 
