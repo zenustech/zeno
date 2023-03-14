@@ -189,8 +189,8 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    zs::Vector<int> is{temp.get_allocator(), numDofs};
-    zs::Vector<int> js{temp.get_allocator(), numDofs};
+    zs::Vector<int> is{PP.get_allocator(), numDofs};
+    zs::Vector<int> js{PP.get_allocator(), numDofs};
     /// kinetic, potential (gravity, external force)
     pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
 
@@ -477,7 +477,7 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
       FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
       fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
       // temporary buffer
-      temp{estNumCps, zs::memsrc_e::um, 0},
+      temp{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
       csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
       ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},

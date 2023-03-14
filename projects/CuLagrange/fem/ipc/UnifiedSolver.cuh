@@ -277,6 +277,53 @@ struct UnifiedIPCSystem : IObject {
     dtiles_t vtemp;
     dtiles_t tempI;
 
+    /// @brief collision 
+    template <typename ValT>
+    struct DynamicBuffer {
+        DynamicBuffer(std::size_t n = 0)
+            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevSize{n} {
+            reset();
+        }
+        ~DynamicBuffer() = default;
+
+        std::size_t getCount() const {
+            return cnt.getVal();
+        }
+        std::size_t getBufferSize() const {
+            return buf.size();  // capacity is alright
+        }
+        void snapshot() {
+            prevSize = cnt.size();
+        }
+        void resizeToCounter() {
+            buf.resize(getCount());
+        }
+        void restartCounter() {
+            cnt.setVal(prevSize);
+        }
+        void reset() {
+            cnt.setVal(0);
+        }
+
+        struct Port {
+            ValT *buf;
+            int *cnt;
+            std::size_t size;
+            __forceinline__ __device__ void try_push(ValT &&val) {
+                auto no = zs::atomic_add(zs::exec_cuda, cnt, 1);
+                if (no < size)
+                    buf[no] = std::move(val);
+            }
+        };
+        Port port() {
+            return Port{buf.data(), cnt.data(), buf.size()};
+        }
+
+    protected:
+        zs::Vector<ValT> buf;
+        zs::Vector<int> cnt;
+        std::size_t prevSize;
+    };
     // self contacts
     zs::Vector<pair_t> PP;
     zs::Vector<int> nPP;
