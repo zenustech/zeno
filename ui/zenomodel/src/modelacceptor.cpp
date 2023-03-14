@@ -404,7 +404,7 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     ZASSERT_EXIT(sockIdx.isValid());
 
     DictKeyModel *keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    ZASSERT_EXIT(keyModel);
+    ZERROR_EXIT(keyModel);
     keyModel->setCollasped(bCollasped);
 }
 
