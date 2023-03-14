@@ -606,20 +606,6 @@ void UnifiedIPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     exclBouSes = Vector<u8>{vtemp.get_allocator(), nBouSes};
     exclBouSts = Vector<u8>{vtemp.get_allocator(), nBouSts};
 
-    auto deduce_node_cnt = [](std::size_t numLeaves) {
-        if (numLeaves <= 2)
-            return numLeaves;
-        return numLeaves * 2 - 1;
-    };
-    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    if (hasBoundary()) {
-        boundaryStFront =
-            bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySeFront =
-            bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    }
-
     meanEdgeLength = averageSurfEdgeLength(pol);
     meanSurfaceArea = averageSurfArea(pol);
     avgNodeMass = averageNodalMass(pol);
@@ -796,46 +782,23 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
             });
     }
 
-    // spatial accel structs
-    frontManageRequired = true;
-#define init_front(sInds, front)                                                                           \
-    {                                                                                                      \
-        auto numNodes = front.numNodes();                                                                  \
-        if (numNodes <= 2) {                                                                               \
-            front.reserve(sInds.size() * numNodes);                                                        \
-            front.setCounter(sInds.size() * numNodes);                                                     \
-            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
-                for (int j = 0; j != numNodes; ++j)                                                        \
-                    front.assign(i *numNodes + j, i, j);                                                   \
-            });                                                                                            \
-        } else {                                                                                           \
-            front.reserve(sInds.size());                                                                   \
-            front.setCounter(sInds.size());                                                                \
-            pol(Collapse{sInds.size()},                                                                    \
-                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });        \
-        }                                                                                                  \
-    }
     {
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
-        init_front(svInds, selfStFront);
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
-        init_front(seInds, selfSeFront);
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.build(pol, bvs);
-        init_front(svInds, boundaryStFront);
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
-        init_front(seInds, boundarySeFront);
     }
 
     /// @note update whole bounding box, but the first one may be done during the initial morton code ordering
