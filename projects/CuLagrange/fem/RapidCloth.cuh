@@ -159,7 +159,7 @@ struct RapidClothSystem : IObject {
         itiles_t &tempCons, int pairNum, int pairSize, std::size_t offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
     void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
@@ -176,9 +176,9 @@ struct RapidClothSystem : IObject {
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
 
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
-    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);

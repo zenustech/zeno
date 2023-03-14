@@ -28,7 +28,7 @@ void RapidClothSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::Smal
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // precondition
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), srcOffset = vtemp.getPropertyOffset(srcTag),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), srcOffset = vtemp.getPropertyOffset(srcTag),
                              dstOffset = vtemp.getPropertyOffset(dstTag)] ZS_LAMBDA(int vi) mutable {
         vtemp.tuple(dim_c<3>, dstOffset, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcOffset, vi);
     });
@@ -44,7 +44,7 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
     auto bOffset = vtemp.getPropertyOffset(bTag);
 
     /// @brief initialize
-    pol(range(numDofs), [execTag, vtemp = view<space>({}, vtemp), bOffset] ZS_LAMBDA(int vi) mutable {
+    pol(range(coOffset), [execTag, vtemp = view<space>({}, vtemp), bOffset] ZS_LAMBDA(int vi) mutable {
         vtemp.tuple(dim_c<3>, bOffset, vi) = vec3::zeros();
     });
     /// @brief inertial and coupling
@@ -194,7 +194,7 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     pol.sync(false);
     /// solve for A dir = grad;
     // initial guess for hard boundary constraints
-    pol(zs::range(numDofs),
+    pol(zs::range(coOffset),
         [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt, dirOffset = vtemp.getPropertyOffset("dir"),
          xtildeOffset = vtemp.getPropertyOffset("x_tilde"),
          xkOffset = vtemp.getPropertyOffset("x[k]")] ZS_LAMBDA(int i) mutable {
@@ -209,18 +209,18 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     // temp = A * dir
     multiply(pol, "dir", "temp");
     // r = grad - temp
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
                              gradOffset = vtemp.getPropertyOffset("grad"),
                              tempOffset = vtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, rOffset, i) = vtemp.pack(dim_c<3>, gradOffset, i) - vtemp.pack(dim_c<3>, tempOffset, i);
     });
     project(pol, "r");
     precondition(pol, "r", "q");
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, pOffset, i) = vtemp.pack(dim_c<3>, qOffset, i);
     });
-    T zTrk = dot(pol, "r", "q");
+    T zTrk = dot(pol, "r", "q", coOffset);
     T residualPreconditionedNorm2 = zTrk;
     T localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
     int iter = 0;
@@ -236,8 +236,8 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
         multiply(pol, "p", "temp");
         project(pol, "temp"); // need further checking hessian!
 
-        T alpha = zTrk / dot(pol, "temp", "p");
-        pol(range(numDofs), [vtemp = view<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
+        T alpha = zTrk / dot(pol, "temp", "p", coOffset);
+        pol(range(coOffset), [vtemp = view<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
                              pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
                              tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
             vtemp.tuple(dim_c<3>, dirOffset, vi) =
@@ -248,9 +248,9 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
 
         precondition(pol, "r", "q");
         T zTrkLast = zTrk;
-        zTrk = dot(pol, "q", "r");
+        zTrk = dot(pol, "q", "r", coOffset);
         T beta = zTrk / zTrkLast;
-        pol(range(numDofs), [vtemp = view<space>({}, vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
+        pol(range(coOffset), [vtemp = view<space>({}, vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
             vtemp.tuple(dim_c<3>, pOffset, vi) =
                 vtemp.pack(dim_c<3>, qOffset, vi) + beta * vtemp.pack(dim_c<3>, pOffset, vi);

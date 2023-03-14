@@ -201,24 +201,6 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     tempE.resize(ne); 
     nE.setVal(ne); 
 
-    auto deduce_node_cnt = [](std::size_t numLeaves) {
-        if (numLeaves <= 2)
-            return numLeaves;
-        return numLeaves * 2 - 1;
-    };
-    // TODO: add other fronts's initialization 
-    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-
-    if (hasBoundary()) {
-        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    }
-
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
             continue;
@@ -250,15 +232,31 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
-    
     spInds = svInds; 
-    spInds.resize((std::size_t)numDofs); 
+    spInds.resize((std::size_t)(svInds.size() + coPoints->size())); 
+    fmt::print("spInds.size: {}\n", spInds.size()); 
     pol(range(coPoints->size()), 
         [spInds = proxy<space>({}, spInds), 
          svoffset = svInds.size(), 
          coOffset = coOffset] __device__ (int i) mutable {
             spInds("inds", i + svoffset, int_c) = coOffset + i; 
         }); 
+
+    auto deduce_node_cnt = [](std::size_t numLeaves) {
+        if (numLeaves <= 2)
+            return numLeaves;
+        return numLeaves * 2 - 1;
+    };
+    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    if (hasBoundary()) {
+        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        // boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    }
 
     /// WARN: ignore BC verts initialization here
     D = 0;  
@@ -363,11 +361,11 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, 
                     T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, T BCStiffness)
-    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, 
+    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
-        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
-        dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
+        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 1},
+        dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta * 2}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
         consDegree{maxVertCons * 4}, BCStiffness{BCStiffness} {

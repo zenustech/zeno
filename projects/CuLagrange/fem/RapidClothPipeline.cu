@@ -289,18 +289,22 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         }); 
     for (int iters = 0; iters < L; iters++)
     {
+        fmt::print("findConstraints...\n"); 
         if (D < D_min)
         {
             findConstraints(pol, D_max); 
             D = D_max; 
         }
+        fmt::print("backwardStep...\n"); 
         backwardStep(pol); 
+        fmt::print("forwardStep...\n"); 
         forwardStep(pol); 
         // update D
-        auto disp = infNorm(pol, "disp"); 
+        fmt::print("check termination criterion...\n"); 
+        auto disp = infNorm(pol, "disp", numDofs); 
         D -= 2 * disp; 
         // termination check 
-        auto res = infNorm(pol, "r(l)"); 
+        auto res = infNorm(pol, "r(l)", numDofs); 
         if (res < eps)
             break; 
     }

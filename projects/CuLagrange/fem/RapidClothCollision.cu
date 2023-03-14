@@ -23,7 +23,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), 
          front = proxy<space>(stfront), tempPT = proxy<space>({}, tempPT),
          vCons = proxy<space>({}, vCons), 
-         nPT = proxy<space>(nPT), radius, voffset = withBoundary ? coOffset : 0,
+         nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = spInds("inds", vi, int_c); 
@@ -39,6 +39,8 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
                 auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
 
+                if (pt_distance_type(p, t0, t1, t2) != 6)
+                    return; 
                 if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nPT[0], 1); 
                     auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
@@ -80,6 +82,8 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
 
+                if (ee_distance_type(v0, v1, v2, v3) != 8)
+                    return; 
                 if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nEE[0], 1); 
                     auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
@@ -90,7 +94,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
             if (frontManageRequired)
                 bvh.iter_neighbors(bv, i, front, f);
             else
-                bvh.iter_neighbors(bv, front.node(i), f);
+                bvh.iter_neighbors(bv, front.node(i), f);       
         });
     if (frontManageRequired)
         seefront.reorder(pol);
@@ -116,6 +120,8 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
 
+                if (pe_distance_type(p, v2, v3) != 2)
+                    return; 
                 if (auto d2 = dist2_pe(p, v2, v3); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                     auto inds = pair3_t{vi, ejInds[0], ejInds[1]};
@@ -130,7 +136,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
         });
     if (frontManageRequired)
         sevfront.reorder(pol);
-
     // v-> v
     if (!withBoundary)
     {
@@ -212,6 +217,7 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     updateConstraintCnt(); 
     D = D_max; 
     // TODO: coloring for multi-color PGS 
+    fmt::print("consColoring started\n"); 
     consColoring(pol); 
 }
 
