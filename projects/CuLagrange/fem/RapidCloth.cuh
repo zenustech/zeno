@@ -175,11 +175,6 @@ struct RapidClothSystem : IObject {
     void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
 
-    // boundary constraint
-    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    bool areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    T boundaryConstraintResidual(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
     T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
@@ -213,7 +208,6 @@ struct RapidClothSystem : IObject {
     T armijoParam = 1e-4;
     bool enableContact = true;
     bool enableContactSelf = true;
-    bool projectDBC = false;
     T augLagCoeff = 1e4;
     vec3 gravAccel;
 

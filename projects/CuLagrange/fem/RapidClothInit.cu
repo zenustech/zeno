@@ -195,9 +195,11 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
-    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
+    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
-    tempE.resize(seInds.size()); 
+    ne = seInds.size(); 
+    tempE.resize(ne); 
+    nE.setVal(ne); 
 
     auto deduce_node_cnt = [](std::size_t numLeaves) {
         if (numLeaves <= 2)
@@ -232,11 +234,10 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 });
         }
         const auto &edges = primHandle.getSurfEdges();
-        constexpr int intHalfLen = sizeof(int) * 4;
         pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
                                      tempE = proxy<space>({}, tempE), 
-                                     verts = view<space>({}, verts), intHalfLen] __device__(int i) mutable {
+                                     verts = view<space>({}, verts)] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
@@ -272,7 +273,6 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     this->framedt = framedt;
     curRatio = 0;
     substep = -1;
-    projectDBC = false;
 
     /// cloth dynamics status
     for (auto &primHandle : prims) {
@@ -422,9 +422,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            {"dist", 1}, 
-            {"tmp", 1} // , 
-            // {"lambda", 1} // for LCP
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -432,9 +430,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -442,9 +438,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"dist", 1},  
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -452,9 +446,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -462,9 +454,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2},  
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -519,7 +509,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
                          // adaptive dhat, targetGRes, kappa
 }
-// TODO
+
 void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -529,7 +519,6 @@ void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     dt = framedt * ratio;
     curRatio += ratio;
 
-    projectDBC = false;
     pol(Collapse(coOffset), [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         auto xk = vtemp.pack(dim_c<3>, "x[k]", vi);
         vtemp.tuple(dim_c<3>, "x_hat", vi) = xk;
@@ -546,7 +535,7 @@ void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
                 vtemp.tuple(dim_c<3>, "x_tilde", coOffset + i) = newX;
             });
 }
-// TODO
+
 void RapidClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -558,7 +547,7 @@ void RapidClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple<3>("v[0]", vi) = vn;
     });
 }
-// TODO
+
 void RapidClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
