@@ -9,9 +9,9 @@ void UnifiedIPCSystem::SystemHessian<T>::initializePreconditioner(zs::CudaExecut
     ;
     nTotalEntries = buildPreconditioner(pol, system);
     //
-    Pm = zs::Vector<zs::vec<T, 96, 96>>{spmat.get_allocator(), nTotalEntries};
-    Rm = zs::Vector<zs::vec<T, 3>>{spmat.get_allocator(), nTotalEntries};
-    Zm = zs::Vector<zs::vec<T, 3>>{spmat.get_allocator(), nTotalEntries};
+    Pm = zs::Vector<zs::vec<T, 96, 96>>{spmat.get_allocator(), (std::size_t)nTotalEntries};
+    Rm = zs::Vector<zs::vec<T, 3>>{spmat.get_allocator(), (std::size_t)nTotalEntries};
+    Zm = zs::Vector<zs::vec<T, 3>>{spmat.get_allocator(), (std::size_t)nTotalEntries};
     traversed = spmat._ptrs;
 }
 

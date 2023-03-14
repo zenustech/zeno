@@ -376,7 +376,7 @@ struct UnifiedIPCSystem : IObject {
         int nTotalEntries;
         zs::Vector<zs::vec<T, 96, 96>> Pm;
         zs::Vector<zs::vec<T, 3>> Rm, Zm;
-        zs::Vector<int> traversed;
+        RM_CVREF_T(spmat._ptrs) traversed;
 
         void initializePreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
         int buildPreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
