@@ -733,7 +733,6 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
 
         ZLineEdit* pathLineEdit = new ZLineEdit(cacheRootDir);
         pathLineEdit->setFocusPolicy(Qt::ClickFocus);
-        pathLineEdit->setProperty("cssClass", "proppanel");
         pathLineEdit->setFixedWidth(256);
         QAction* pAction = new QAction;
         QIcon icon;

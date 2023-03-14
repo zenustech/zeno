@@ -83,6 +83,7 @@ QLineEdit[cssClass="zeno2_2_lineedit"] {
     color: #C3D2DF;
 	font: 14px 'Alibaba PuHuiTi';
     font-weight: 500;
+	padding: 0px 5px;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {

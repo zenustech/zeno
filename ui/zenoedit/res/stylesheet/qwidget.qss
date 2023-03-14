@@ -3,70 +3,220 @@ QScrollArea[cssClass="proppanel"]
     background: transparent;
 }
 
-QDialog[cssClass="F-Curve"]
+QDialog
 {
-    background: rgb(43,43,43);
+    background: rgb(45,50,57);
+	border-radius:0;
 }
 
+QDialog QPushButton
+{
+    background: #596270;
+	color:#C3D2DF;
+	border:1px solid #191D21;
+	padding:6px 12px;
+}
+
+QDialog QPushButton:hover
+{
+    background: #6A93BC;
+	color:#CFDBE5;
+}
+
+QDialog QPushButton:default
+{
+    background: #4578AC;
+	color:#C3D2DF;
+}
+
+QDialog QPushButton:disabled
+{
+    background: #8A919A;
+	color:#9BAAB4;
+}
+
+QDialog QTreeView, QDialog QListWidget
+{
+    alternate-background-color: rgb(25,29,33);
+	background-color: rgb(34,37,44);
+	color:#8f9ba8;
+	font:12px 'Alibaba PuHuiTi';
+	border:1px solid #191d21;
+	show-decoration-selected: 1;
+}
+
+QDialog QTreeView::item, QDialog QListWidget::item
+{
+	min-height:22px;
+}
+
+QDialog QTreeView::item:hover, QDialog QListWidget::item:hover
+{
+	background-color: rgba(52,67,97,0.8);
+}
+
+QDialog QTreeView::item:selected, QDialog QListWidget::item:selected
+{
+	background-color: rgb(52,67,97);
+	color:#8f9ba8;
+}
+
+QDialog QTreeView::branch:has-children:!has-siblings:closed,
+QDialog QTreeView::branch:closed:has-children:has-siblings 
+{
+    border-image: none;
+    image: url(://icons/ic_parameter_fold.svg);
+}
+
+QDialog QTreeView::branch:open:has-children:!has-siblings,
+QDialog QTreeView::branch:open:has-children:has-siblings  
+{
+    border-image: none;
+    image: url(://icons/ic_parameter_unfold.svg);	
+}
+
+QDialog QTreeView::branch:selected,
+QDialog QTreeView::branch:selected 
+{
+    background-color: rgb(52,67,97);
+}
+
+QDialog QTreeView::branch:hover,
+QDialog QTreeView::branch:hover  
+{
+    background-color: rgba(52,67,97,0.8);	
+}
+
+
+QDialog QLabel
+{
+	font: 12px 'Alibaba PuHuiTi';
+	color: #909CAA;
+	background: rgb(45,50,57);
+}
+
+QDialog QLabel[cssClass = "bold"]
+{
+	font: 12px 'Alibaba PuHuiTi';
+	font-weight: bold;
+	color: #a3b1c0;
+}
+
+QDialog QLineEdit{
+    border: 0;
+    background-color: #191D21;
+    selection-background-color: #4B9EF4;
+    color: #C3D2DF;
+	font: 12px 'Alibaba PuHuiTi';
+	padding: 3px 5px;
+}
+
+QDialog QLineEdit:focus {
+    border: 2px solid #4B9EF4;
+    color: #FFFFFF;
+}
+
+QDialog QLineEdit:disabled {
+    color: #8f9ba8;
+}
+
+QDialog QComboBox {
+    border: 0px;
+    border-radius: 1px;
+    padding: 3px 5px;
+	font: 12px 'Alibaba PuHuiTi';
+    color: #C3D2DF;
+    background: #191D21;
+}
+
+QDialog QComboBox:focus{
+    border: 2px solid #4B9EF4;
+}
+
+QComboBox::drop-down {
+    subcontrol-position: center right;
+    border: none;
+    background: transparent;
+	min-width: 16px;
+	min-height: 16px;
+}
+
+QDialog QComboBox::down-arrow {
+    image: url(:/icons/combobox-dropdown.svg);
+	width: 16px;
+	height: 16px;
+}
+
+QDialog QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
+    image: url(:/icons/combobox-dropdown-on.svg);
+}
+
+QDialog QComboBox:disabled{
+    color: #8f9ba8;
+}
+
+QDialog QComboBox QAbstractItemView{
+    border: 0px;
+    background: rgb(34,37,44);
+    selection-background-color: #4B9EF4;
+	font: 12px 'Alibaba PuHuiTi';
+	color: #C3D2DF;
+    outline: 0px;
+	padding-left:5px;
+}
+
+QDialog QCheckBox{
+    font: 12px 'Alibaba PuHuiTi';
+	color: #909CAA;
+}
+
+QDialog QSpinBox
+{
+    font: 12px 'Alibaba PuHuiTi';
+	border: 0;
+	padding:3px 0px 3px 6px;
+	color: #C3D2DF;
+	background-color: #191D21;
+}
+
+QDialog QSpinBox:focus{
+    border: 2px solid #4B9EF4;
+}
+
+QDialog QSpinBox::up-button
+{
+	border: none;
+}
+
+QDialog QSpinBox::down-button
+{
+	border: none;
+}
+
+QDialog QTableWidget
+{
+	background-color: #191D21;
+	color: #C3D2DF;
+	font: 12px 'Alibaba PuHuiTi';
+	gridline-color:rgb(115,123,133);
+}
+
+QDialog QTableWidget::item
+{
+	background-color: #191D21;
+}
+
+QDialog QFrame#line
+{
+    color:rgb(115,123,133);
+
+}
 QWidget[cssClass="ZTimeline"]
 {
     background: rgb(42,42,42);
 }
 
-QColorDialog
+QDialog[cssClass="F-Curve"]
 {
-    background: rgb(43,43,43);
-}
-
-QColorDialog QPushButton
-{
-    background-color: rgb(79,89,99);
-    color:rgb(255,255,255);
-    border:0;
-	padding:6px 10px 6px 10px;
-}
-
-QColorDialog QPushButton:hover
-{
-    background-color: rgb(111,178,246);
-}
-
-QColorDialog QPushButton:checked
-{
-    background-color: rgb(111,178,246);
-}
-
-QColorDialog QPushButton:pressed
-{
-    background-color: rgba(111,178,246,0.8);
-}
-
-QColorDialog QLabel
-{
-    background-color: rgb(43,43,43);
-    color:rgb(255,255,255);
-}
-
-QColorDialog QLineEdit
-{
-    background-color: rgb(23,23,26);
-    color:rgb(255,255,255);
-    border:0;
-	padding:4px 10px 4px 10px;
-}
-
-QColorDialog QSpinBox
-{
-	border: 0;
-	padding:3px 0px 3px 6px;
-	color: rgb(255,255,255);
-	background-color: rgb(23,23,26);
-}
-QColorDialog QSpinBox::up-button
-{
-	border: none;
-}
-QColorDialog QSpinBox::down-button
-{
-	border: none;
+    background: rgb(45,50,57);
 }
