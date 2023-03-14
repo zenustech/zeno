@@ -138,7 +138,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             auto scene = pVis->getSession()->get_scene();
             auto old_num_samples = scene->drawOptions->num_samples;
-            scene->drawOptions->num_samples = m_recordInfo.numSamples;
+            scene->drawOptions->num_samples = m_recordInfo.numOptix;
             scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
             auto [x, y] = pVis->getSession()->get_window_size();
