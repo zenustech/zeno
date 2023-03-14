@@ -335,6 +335,16 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::false_c);
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+
+    linsys.hess2.init(PP.get_allocator(), estNumCps);
+    linsys.hess3.init(PP.get_allocator(), estNumCps);
+    linsys.hess4.init(PP.get_allocator(), estNumCps);
+    linsys.hess2.reset(false, 0);
+    linsys.hess3.reset(false, 0);
+    linsys.hess4.reset(false, 0);
+
+    /// @note make sure linsys.spmat/hess2/3/4 are all in valid state before calling this api
+    linsys.initializePreconditioner(pol, *this); // 0
 #if 0
     {
         puts("begin ordering checking");
@@ -358,10 +368,6 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
         puts("done ordering checking");
     }
 #endif
-
-    linsys.hess2.init(PP.get_allocator(), estNumCps);
-    linsys.hess3.init(PP.get_allocator(), estNumCps);
-    linsys.hess4.init(PP.get_allocator(), estNumCps);
 }
 
 typename UnifiedIPCSystem::bv_t UnifiedIPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {

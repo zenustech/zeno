@@ -3039,14 +3039,6 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                     computeFrictionBarrierGradientAndHessian(pol, "grad");
                 }
         }
-
-        // ROTATE GRAD (NO MORE)
-#if 0
-        pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() * vtemp.pack<3>("grad", i);
-            vtemp.tuple<3>("grad", i) = grad;
-        });
-#endif
         // APPLY CONSTRAINTS, PROJ GRADIENT
         if (!BCsatisfied) {
             // grad
@@ -3073,37 +3065,11 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         /// prepare linsys.hessx
         updateDynamicHessian(pol, "grad");
 
+        linsys.buildPreconditioner(pol, *this); // 1
+
         project(pol, "grad");
 
         // PREPARE P (INVERSION)
-#if 0
-        if (projectDBC)
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-                int BCorder = vtemp("BCorder", i);
-                if (BCorder == 3)
-                    vtemp.tuple<9>("P", i) = mat3::identity();
-                else {
-                    auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
-                    if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                        vtemp.tuple<9>("P", i) = inverse(mat);
-                    else
-                        vtemp.tuple<9>("P", i) = mat3::identity();
-                }
-            });
-        else
-            pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-                int BCfixed = vtemp("BCfixed", i);
-                if (BCfixed)
-                    vtemp.tuple<9>("P", i) = mat3::identity();
-                else {
-                    auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
-                    if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                        vtemp.tuple<9>("P", i) = inverse(mat);
-                    else
-                        vtemp.tuple<9>("P", i) = mat3::identity();
-                }
-            });
-#endif
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)

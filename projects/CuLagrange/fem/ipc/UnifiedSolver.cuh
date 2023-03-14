@@ -369,9 +369,19 @@ struct UnifiedIPCSystem : IObject {
         HessianPiece<2, T> hess2;
         HessianPiece<3, T> hess3;
         HessianPiece<4, T> hess4;
-        /// @brief static part
-        spmat_t spmat{};
+        /// @brief inherent part
+        spmat_t spmat{}; // _ptrs, _inds, _vals
         /// @brief preconditioner
+        int nLevels;
+        int nTotalEntries;
+        zs::Vector<zs::vec<T, 96, 96>> Pm;
+        zs::Vector<zs::vec<T, 3>> Rm, Zm;
+        zs::Vector<int> traversed;
+
+        void initializePreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
+        int buildPreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
+        void precondition(zs::CudaExecutionPolicy &pol, dtiles_t &vtemp, const zs::SmallString srcTag,
+                          const zs::SmallString dstTag);
     };
     /// probably useful for all possible hessian maintenance?
     /// inherent + dynamic (discrete) 3x3 mat pieces?
