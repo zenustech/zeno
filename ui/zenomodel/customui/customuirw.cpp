@@ -73,6 +73,14 @@ namespace zenomodel
                 }
             }
 
+            QVariant deflVal = pItem->data(ROLE_PARAM_VALUE);
+            const QString &type = pItem->data(ROLE_PARAM_TYPE).toString();
+            bool bValid = UiHelper::validateVariant(deflVal, type);
+            if (bValid && !pItem->m_index.isValid()) {
+                writer.Key("value");
+                JsonHelper::AddVariant(deflVal, type, writer, true);
+            }
+
             PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
             CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
 
@@ -159,9 +167,9 @@ namespace zenomodel
         param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);
         param.m_info.name = paramName;
 
-        if (controlObj.HasMember("value"))
+        if (paramVal.HasMember("value"))
         {
-            param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
+            param.m_info.value = UiHelper::parseJson(paramVal["value"], nullptr);
         }
 
         if (paramVal.HasMember("tooltip")) 

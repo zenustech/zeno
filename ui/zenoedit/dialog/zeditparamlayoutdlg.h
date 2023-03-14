@@ -15,6 +15,7 @@ struct CONTROL_ITEM_INFO
     QString name;
     PARAM_CONTROL ctrl;
     QString defaultType;
+    QString icon;
 };
 
 class ParamTreeItemDelegate : public QStyledItemDelegate
@@ -62,6 +63,9 @@ private slots:
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 private:
+    void initUI();
+    void initIcon(QStandardItem *item);
+    QString getIcon(int control);
     void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);

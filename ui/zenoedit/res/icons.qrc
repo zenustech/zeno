@@ -308,5 +308,24 @@
     <file>icons/viewToolbar_smoothshading_light.svg</file>
     <file>icons/viewToolbar_wireframe_idle.svg</file>
     <file>icons/viewToolbar_wireframe_light.svg</file>
+	<file>icons/parameter_control_tab.svg</file>
+    <file>icons/parameter_control_group.svg</file>
+    <file>icons/parameter_control_integer.svg</file>
+    <file>icons/parameter_control_float.svg</file>
+    <file>icons/parameter_control_string.svg</file>
+    <file>icons/parameter_control_boolean.svg</file>
+    <file>icons/parameter_control_fold.svg</file>
+    <file>icons/parameter_control_enum.svg</file>
+    <file>icons/parameter_control_floatVector4.svg</file>
+    <file>icons/parameter_control_floatVector3.svg</file>
+    <file>icons/parameter_control_floatVector2.svg</file>
+    <file>icons/parameter_control_integerVector4.svg</file>
+    <file>icons/parameter_control_integerVector3.svg</file>
+    <file>icons/parameter_control_integerVector2.svg</file>
+    <file>icons/parameter_control_color.svg</file>
+    <file>icons/parameter_control_curve.svg</file>
+    <file>icons/parameter_control_spinbox.svg</file>
+    <file>icons/parameter_control_slider.svg</file>
+	<file>icons/parameter_control_divider.svg</file>
 </qresource>
 </RCC>
