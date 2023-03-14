@@ -315,31 +315,6 @@ bool ViewParamModel::moveRows(
         }
         VParamItem *pDstItem = static_cast<VParamItem *>(srcParent->child(dstRow));
         pDstItem->cloneFrom(pSrcItemClone);
-
-        //update the order on desc, if subnet node.
-        if (m_bNodeUI && m_model->IsSubGraphNode(m_nodeIdx))
-        {
-            const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-            NODE_DESC desc;
-            bool ret = m_model->getDescriptor(nodeCls, desc);
-            if (ret)
-            {
-                if (srcParent->m_name == iotags::params::node_inputs)
-                {
-                    if (desc.inputs.size() > srcRow && desc.inputs.size() > dstRow) {
-                        desc.inputs.move(srcRow, dstRow);
-                        m_model->updateSubgDesc(nodeCls, desc);
-                    }
-                }
-                else if (srcParent->m_name == iotags::params::node_outputs)
-                {
-                    if (desc.outputs.size() > srcRow && desc.outputs.size() > dstRow) {
-                        desc.outputs.move(srcRow, dstRow);
-                        m_model->updateSubgDesc(nodeCls, desc);
-                    }
-                }
-            }
-        }
     }
     endMoveRows();
     return true;

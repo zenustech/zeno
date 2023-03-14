@@ -960,11 +960,42 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             if (targetRow != r)
             {
                 //move first.
-                QModelIndex parent = appliedItem->index();
-                bool ret = m_model->moveRow(parent, targetRow, parent, r);
-                ZASSERT_EXIT(ret);
+                const int srcRow = targetRow;
+                const int dstRow = r;
+
+                //update desc.
+                NODE_DESC desc;
+                bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+                if (bApplySubnetParam)
+                {
+                    if (bSubInput) {
+                        int sz = desc.inputs.size();
+                        if (sz > srcRow && sz > dstRow) {
+                            desc.inputs.move(srcRow, dstRow);
+                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                        }
+                    }
+                    else {
+                        int sz = desc.outputs.size();
+                        if (sz > srcRow && sz > dstRow) {
+                            desc.outputs.move(srcRow, dstRow);
+                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                        }
+                    }
+                }
+
+                //update the corresponding order for every subgraph node.
+                QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+                for (auto idx : subgNodes)
+                {
+                    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    VParamItem* pGroup = bSubInput ? nodeParams->getInputs() : nodeParams->getOutputs();
+                    ZASSERT_EXIT(pGroup);
+                    QModelIndex parent = pGroup->index();
+                    nodeParams->moveRow(parent, srcRow, parent, dstRow);
+                }
+
                 //reacquire pTarget, because the implementation of moveRow is simplily
-                //copy data, rather than insert/remove.
                 pTarget = static_cast<VParamItem*>(appliedItem->child(r));
             }
 
