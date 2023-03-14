@@ -346,7 +346,10 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
             auto &aj = lcpMat._inds; 
             for (int k = ap[i]; k < ap[i + 1]; k++)
             {
-                if (tempCons("color", aj[k]) == color)
+                int j = aj[k]; 
+                if (j == i)
+                    continue; 
+                if (tempCons("color", j) == color)
                 {
                     correct[k] = 0;  
                     return; 
@@ -384,7 +387,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
     lcpMat.localOrdering(pol); 
     // cons graph coloring 
     zs::Vector<int> finished; 
-    finished.setVal(1); 
+    finished.setVal(0); 
     int seed = 0; 
     while (!finished.getVal())
     { 
@@ -484,7 +487,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
             finished = proxy<space>(finished)] __device__ (int i) mutable {
                 if (tempCons("fixed", i))
                     return; 
-                finished[0] = 1; 
+                finished[0] = 0; 
                 if (tempCons("num_color", i) == 0)
                     tempCons("max_color", i) += 1; 
             }); 
@@ -521,7 +524,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     pol(range(ne), [vtemp = proxy<space>({}, vtemp), 
                     tempE = proxy<space>({}, tempE), 
                     tempCons = proxy<space>({}, tempCons), 
-                    oe = oe, sigma = sigma, tag] __device__ (int i) mutable {
+                    oe = oe, sigma = sigma, tag, delta = delta] __device__ (int i) mutable {
         // calculate grad 
         int consInd = i + oe; 
         auto inds = tempE.pack(dim_c<2>, "inds", i, int_c); 
@@ -533,6 +536,12 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto yij_norm_inv = 1.0f / ((yi - yj).norm() + limits<T>::epsilon()); 
         auto grad = - (xi - xj) / xij_norm * yij_norm_inv; 
         auto val = sigma - xij_norm * yij_norm_inv; 
+        if (val >= 0)
+        {
+            tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = zs::vec<T, 12>::zeros(); 
+            tempCons("val", consInd, T_c) = 0; 
+            return; 
+        } 
         for (int d = 0; d < 3; d++)
             tempCons("grad", d, consInd, T_c) = grad(d); 
         for (int d = 0; d < 3; d++)
@@ -553,6 +562,12 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto delta_inv = 1.0f / delta; 
         auto grad = (xi - xj) / xij_norm * delta_inv; 
         auto val = xij_norm * delta_inv - 1.0f; 
+        if (val >= 0)
+        {
+            tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = zs::vec<T, 12>::zeros(); 
+            tempCons("val", consInd, T_c) = 0; 
+            return; 
+        } 
         for (int d = 0; d < 3; d++)
             tempCons("grad", d, consInd, T_c) = grad(d); 
         for (int d = 0; d < 3; d++)
@@ -574,9 +589,16 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         PE_area2_grad(p.data(), e0.data(), e1.data(), grad.data()); 
         auto area = (e0 - p).cross(e1 - p).norm(); 
         T coef = (e1 - e0).norm() * delta; 
+        auto val = area / coef - 1.0f; 
+        if (val >= 0)
+        {
+            tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = zs::vec<T, 12>::zeros(); 
+            tempCons("val", consInd, T_c) = 0; 
+            return; 
+        } 
         grad /= (2.0f * area * coef + limits<T>::epsilon()); 
         tempCons.tuple(dim_c<9>, "grad", consInd, T_c) = grad; 
-        tempCons("val", consInd, T_c) = area / coef - 1.0f; 
+        tempCons("val", consInd, T_c) = val; 
     }); 
 
     pol(range(npt), [vtemp = proxy<space>({}, vtemp), 
@@ -599,21 +621,29 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }
         auto vol = determinant(mat); 
         auto sgn = vol > 0 ? 1.0f : -1.0f; 
-        auto coef = sgn * (t1 - t0).cross(t2 - t0).norm() * delta + limits<T>::epsilon(); 
+        auto coef = sgn * (t1 - t0).cross(t2 - t0).norm() * delta; 
+        if (zs::abs(coef) < limits<T>::epsilon())
+            coef = sgn * limits<T>::epsilon(); 
         mat = adjoint(mat).transpose();
-
+        auto val = vol / coef - 1.0f; 
+        if (val >= 0)
+        {
+            tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = zs::vec<T, 12>::zeros(); 
+            tempCons("val", consInd, T_c) = 0; 
+            return; 
+        } 
         zs::vec<T, 3, 4> grad; 
         for (int d = 0; d < 3; d++)
-            grad(d, 3) = 0; 
+            grad(0, d) = 0; 
         for (int k = 1; k < 4; k++)
             for (int d = 0; d < 3; d++)
             {
-                grad(d, k) = mat(d, k); 
-                grad(d, 0) -= mat(d, k); 
+                grad(k, d) = mat(d, k); 
+                grad(0, d) -= mat(d, k); 
             }
         grad /= coef; 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
-        tempCons("val", consInd, T_c) = vol / coef - 1.0f; 
+        tempCons("val", consInd, T_c) = val; 
     }); 
 
     pol(range(nee), [vtemp = proxy<space>({}, vtemp), 
@@ -652,19 +682,26 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }
         auto coef = determinant(rMat);  
         mat = adjoint(mat).transpose();
+        auto val = vol / coef - 1.0f; 
+        if (val >= 0)
+        {
+            tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = zs::vec<T, 12>::zeros(); 
+            tempCons("val", consInd, T_c) = 0; 
+            return; 
+        } 
 
         zs::vec<T, 3, 4> grad; 
         for (int d = 0; d < 3; d++)
-            grad(d, 3) = 0; 
+            grad(0, d) = 0; 
         for (int k = 1; k < 4; k++)
             for (int d = 0; d < 3; d++)
             {
-                grad(d, k) = mat(d, k); 
-                grad(d, 0) -= mat(d, k); 
+                grad(k, d) = mat(d, k); 
+                grad(0, d) -= mat(d, k); 
             }
         grad /= coef; 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
-        tempCons("val", consInd, T_c) = vol / coef - 1.0f; 
+        tempCons("val", consInd, T_c) = val; 
     }); 
 
     // compute lcpMat = J * M^{-1} * J.T
@@ -740,7 +777,9 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                 [tempCons = proxy<space>({}, tempCons), 
                 lcpMat = proxy<space>(lcpMat), 
                 lcpConverged = proxy<space>(lcpConverged), 
-                lcpTol = lcpTol] __device__ (int i) mutable {
+                lcpTol = lcpTol, color] __device__ (int i) mutable {
+                    if (tempCons("color", i) != color)
+                        return; 
                     auto &ap = lcpMat._ptrs; 
                     auto &aj = lcpMat._inds; 
                     auto &ax = lcpMat._vals;
@@ -763,8 +802,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                         lcpConverged[0] = 0; 
                 }); 
         }
-    if (lcpConverged.getVal())
-        break;         
+        if (lcpConverged.getVal())
+            break;         
     }
 }      
 
