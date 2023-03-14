@@ -929,6 +929,7 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
         FEE.assignCounterFrom(EE);
 
         auto numFPP = FPP.getCount();
+        fricPP.resize(numFPP);
         pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = PP.port(),
                             FPP = FPP.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fppi) mutable {
             auto fpp = PP[fppi];
@@ -941,6 +942,7 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
             fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
         });
         auto numFPE = FPE.getCount();
+        fricPE.resize(numFPE);
         pol(range(numFPE), [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = PE.port(),
                             FPE = FPE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpei) mutable {
             auto fpe = PE[fpei];
@@ -955,6 +957,7 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
             fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
         });
         auto numFPT = FPT.getCount();
+        fricPT.resize(numFPT);
         pol(range(numFPT), [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = PT.port(),
                             FPT = FPT.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpti) mutable {
             auto fpt = PT[fpti];
@@ -970,6 +973,7 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
             fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
         });
         auto numFEE = FEE.getCount();
+        fricEE.resize(numFEE);
         pol(range(numFEE), [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = EE.port(),
                             FEE = FEE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int feei) mutable {
             auto fee = EE[feei];
@@ -2969,6 +2973,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     int newtonIter = 0;
     T res = limits<T>::max();
     for (; newtonIter != PNCap; ++newtonIter) {
+        zeno::log_info("\tentering new newton step. \n");
         // check constraints
         if (!BCsatisfied) {
             computeConstraints(pol);
@@ -2980,6 +2985,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
+        zeno::log_info("\tbefore precompute. \n");
         // PRECOMPUTE
         if (enableContact) {
             findCollisionConstraints(pol, dHat, xi);
@@ -2989,16 +2995,22 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 precomputeFrictions(pol, dHat, xi);
             }
         // GRAD, HESS, P
+        zeno::log_info("\tbefore hess/grad. \n");
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
             vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
         });
+        zeno::log_info("\tbefore inertial. \n");
         computeInertialAndGravityPotentialGradient(pol);
+        zeno::log_info("\tbefore elasticity. \n");
         computeElasticGradientAndHessian(pol, "grad");
+        zeno::log_info("\tbefore bending. \n");
         computeBendingGradientAndHessian(pol, "grad");
+        zeno::log_info("\tbefore ground. \n");
         if (enableGround)
             computeBoundaryBarrierGradientAndHessian(pol);
         if (enableContact) {
+        zeno::log_info("\tbefore ipc hess_grad. \n");
             computeBarrierGradientAndHessian(pol, "grad");
             if (s_enableFriction)
                 if (fricMu != 0) {
@@ -3006,6 +3018,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 }
         }
         // APPLY CONSTRAINTS, PROJ GRADIENT
+        zeno::log_info("\tbefore boundary hess_grad. \n");
         if (!BCsatisfied) {
             // grad
             pol(zs::range(numDofs),
@@ -3026,11 +3039,14 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             // hess (embedded in multiply)
         }
 
+        zeno::log_info("\tbefore inherent hess update. \n");
         /// prepare linsys.spmat
         updateInherentHessian(pol, "grad");
+        zeno::log_info("\tbefore dynamic hess update. \n");
         /// prepare linsys.hessx
         updateDynamicHessian(pol, "grad");
 
+        zeno::log_info("\tbefore preconditioner build (placeholder). \n");
         linsys.buildPreconditioner(pol, *this); // 1
 
         project(pol, "grad");
@@ -3083,6 +3099,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
+        zeno::log_info("\tbefore update rule. \n");
         // UPDATE RULE
         cons_res = constraintResidual(pol);
         if (res * dt < updateZoneTol && cons_res > consTol) {
