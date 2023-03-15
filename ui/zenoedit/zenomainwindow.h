@@ -126,6 +126,7 @@ public:
         ACTION_SELECT_NODE,
         ACTION_SNAPGRID,
         ACTION_SHOWGRID,
+        ACTION_GROUP,
     };
 signals:
     void recentFilesChanged();

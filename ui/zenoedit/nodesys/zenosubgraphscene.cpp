@@ -881,21 +881,24 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
-    //if (dynamic_cast<GroupNode *>(pNode)) {
 
-    //    QRectF rect;
-    //    for (auto item : selectedItems()) {
-    //        rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
-    //    }
-    //    if (rect.isValid()) {
-    //        int width = ZenoStyle::dpiScaled(50);
-    //        rect.adjust(-width, -width, width, width);
-    //        GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
-    //        pGroup->resize(rect.size());
-    //        pGroup->updateBlackboard();
-    //        pGroup->updateNodePos(rect.topLeft());
-    //    }
-    //}
+    if (dynamic_cast<GroupNode *>(pNode)) 
+    {
+        QRectF rect;
+        for (auto item : selectedItems()) 
+        {
+            rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
+        }
+        if (rect.isValid()) 
+        {
+            int width = ZenoStyle::dpiScaled(50);
+            rect.adjust(-width, -width, width, width);
+            GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
+            pGroup->resize(rect.size());
+            pGroup->updateBlackboard();
+            pGroup->updateNodePos(rect.topLeft());
+        }
+    }
 }
 
 void ZenoSubGraphScene::selectObjViaNodes() {

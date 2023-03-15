@@ -76,6 +76,7 @@ private:
     ZToolBarButton *pSnapGrid;
     ZToolBarButton *pShowGrid;
     ZToolBarButton *pBlackboard;
+    ZToolBarButton *pGroup;
     ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;

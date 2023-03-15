@@ -21,6 +21,7 @@
 #include "util/log.h"
 #include "settings/zsettings.h"
 #include "dialog/zeditparamlayoutdlg.h"
+#include <zenomodel/include/nodesmgr.h>
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -680,6 +681,15 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
                 ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_model, this);
                 dlg.exec();
             }
+        }
+    } 
+    else if (actionType == ZenoMainWindow::ACTION_GROUP) 
+    {
+        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
+        if (pView) 
+        {
+            ZenoSubGraphScene *pScene = pView->scene();
+            NodesMgr::createNewNode(m_model, pScene->subGraphIndex(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 

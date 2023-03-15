@@ -19,6 +19,7 @@ class GroupTextItem : public QGraphicsWidget {
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
   private:
@@ -33,7 +34,6 @@ class GroupNode : public ZenoNode {
     ~GroupNode();
     bool nodePosChanged(ZenoNode *);
     void onZoomed() override;
-    QRectF boundingRect() const override;
     void onUpdateParamsNotDesc() override;
     void appendChildItem(ZenoNode *item);
     void updateChildItemsPos();
@@ -69,6 +69,7 @@ class GroupNode : public ZenoNode {
     } resizeDir;
   private:
     bool m_bDragging;
+    bool m_bSelected;
     QVector<ZenoNode *> m_childItems;
     GroupTextItem *m_pTextItem;
     QMap<QString, QPointF> m_itemRelativePosMap;

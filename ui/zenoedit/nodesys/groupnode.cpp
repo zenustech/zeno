@@ -17,7 +17,8 @@
 GroupTextItem::GroupTextItem(QGraphicsItem *parent) : 
     QGraphicsWidget(parent)
 {
-    setFlags(ItemIsSelectable);    
+    setFlags(ItemIsSelectable);
+    setAcceptHoverEvents(true);
 }
 GroupTextItem ::~GroupTextItem() {
 }
@@ -34,9 +35,17 @@ void GroupTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void GroupTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) 
 {
     emit mouseMoveSignal(event);
+    setCursor(QCursor(Qt::ClosedHandCursor));
 }
-void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-        emit mouseReleaseSignal(event);
+void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
+{
+    emit mouseReleaseSignal(event);
+    setCursor(QCursor(Qt::OpenHandCursor));
+}
+
+void GroupTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event) 
+{
+    setCursor(QCursor(Qt::OpenHandCursor));
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -54,6 +63,7 @@ void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent), 
     m_bDragging(false),
+    m_bSelected(false),
     m_pTextItem(nullptr) 
 {
     setAutoFillBackground(false);
@@ -64,9 +74,11 @@ GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     });
     connect(m_pTextItem, &GroupTextItem::mouseReleaseSignal, this, [=](QGraphicsSceneMouseEvent *event) { 
         ZenoNode::mouseReleaseEvent(event);
+        m_bSelected = false;
     });
     connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=](QGraphicsSceneMouseEvent *event) {
         ZenoNode::mousePressEvent(event);
+        m_bSelected = true;
     });
     m_pTextItem->show();
     m_pTextItem->setZValue(0);
@@ -139,12 +151,6 @@ void GroupNode::onZoomed()
     m_pTextItem->setFont(font);
     QPointF pos = QPointF(0, -m_pTextItem->boundingRect().height());
     m_pTextItem->setPos(pos);
-}
-
-QRectF GroupNode::boundingRect() const {
-    QRectF rect = ZenoNode::boundingRect();
-    rect.adjust(0, rect.y() - m_pTextItem->boundingRect().height(), 0, 0);
-    return rect;
 }
 
 void GroupNode::onUpdateParamsNotDesc() 
@@ -324,8 +330,7 @@ void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
 }
 
 bool GroupNode::isDragArea(QPointF pos) {
-    QRectF rect = boundingRect();
-    rect.adjust(0, m_pTextItem->boundingRect().height(), 0, 0);
+    QRectF rect = boundingRect();    
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
     int diffTop = pos.y() - rect.top() ;
@@ -388,7 +393,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     
     //draw background
     QFontMetrics fm(this->font());
-    QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height() - m_pTextItem->boundingRect().height());
+    QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height());
     QColor background = blackboard.background.isValid() ? blackboard.background : QColor(0, 100, 168);
     painter->setOpacity(0.3);
     painter->fillRect(rect, background);
@@ -417,6 +422,12 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         setMoving(true);
         return value;
+    }
+    else if(change == QGraphicsItem::ItemSelectedHasChanged) 
+    {
+        QPainterPath path = scene()->selectionArea();
+        if (isSelected() && !m_bSelected && !path.contains(sceneBoundingRect()))
+            this->setSelected(false);
     }
     return ZenoNode::itemChange(change, value);
 }
