@@ -18,7 +18,6 @@ GroupTextItem::GroupTextItem(QGraphicsItem *parent) :
     QGraphicsWidget(parent)
 {
     setFlags(ItemIsSelectable);
-    setAcceptHoverEvents(true);
 }
 GroupTextItem ::~GroupTextItem() {
 }
@@ -35,29 +34,27 @@ void GroupTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void GroupTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) 
 {
     emit mouseMoveSignal(event);
-    setCursor(QCursor(Qt::ClosedHandCursor));
 }
 void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
 {
     emit mouseReleaseSignal(event);
-    setCursor(QCursor(Qt::OpenHandCursor));
-}
-
-void GroupTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event) 
-{
-    setCursor(QCursor(Qt::OpenHandCursor));
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    QColor color = this->palette().color(QPalette::WindowText);
-    painter->setPen(QPen(color));    
+    qreal width = ZenoStyle::dpiScaled(1);
+    painter->fillRect(boundingRect().adjusted(-width, -width, width, 0), palette().color(QPalette::Window));
+
+    QColor color("#FFFFFF");
+    painter->setPen(QPen(color));
     painter->setFont(font());
     QFontMetrics fontMetrics(font());
     QString text = m_text;
-    if (fontMetrics.width(text) > boundingRect().width()) {
-        text = fontMetrics.elidedText(text, Qt::ElideRight, boundingRect().width());
+    width = ZenoStyle::dpiScaled(4);
+    QRectF textRect = boundingRect().adjusted(width, 0, -width, 0);
+    if (fontMetrics.width(text) > textRect.width()) {
+        text = fontMetrics.elidedText(text, Qt::ElideRight, textRect.width());
     }
-    painter->drawText(this->boundingRect(), Qt::AlignVCenter, text);
+    painter->drawText(textRect, Qt::AlignVCenter, text);
 }
 
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -153,13 +150,19 @@ void GroupNode::onZoomed()
     m_pTextItem->setPos(pos);
 }
 
+QRectF GroupNode::boundingRect() const {
+    QRectF rect = ZenoNode::boundingRect();
+    rect.adjust(0, rect.y() - m_pTextItem->boundingRect().height(), 0, 0);
+    return rect;
+}
+
 void GroupNode::onUpdateParamsNotDesc() 
 {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     m_pTextItem->setText(blackboard.title);
     QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::WindowText, blackboard.background);
+    palette.setColor(QPalette::Window, blackboard.background);
     m_pTextItem->setPalette(palette);
     setSvgData(blackboard.background.name());
     if (blackboard.sz.isValid() && blackboard.sz != this->size()) {
@@ -227,7 +230,7 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
         m_pTextItem->resize(QSize(boundingRect().width(), m_pTextItem->boundingRect().height()));
     }
     QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::WindowText, blackboard.background);
+    palette.setColor(QPalette::Window, blackboard.background);
     m_pTextItem->setPalette(palette);
     m_pTextItem->setText(blackboard.title);
     setSvgData(blackboard.background.name());
@@ -331,6 +334,7 @@ void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
 
 bool GroupNode::isDragArea(QPointF pos) {
     QRectF rect = boundingRect();    
+    rect.adjust(0, m_pTextItem->boundingRect().height(), 0, 0);
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
     int diffTop = pos.y() - rect.top() ;
@@ -393,7 +397,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     
     //draw background
     QFontMetrics fm(this->font());
-    QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height());
+    QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height() - m_pTextItem->boundingRect().height());
     QColor background = blackboard.background.isValid() ? blackboard.background : QColor(0, 100, 168);
     painter->setOpacity(0.3);
     painter->fillRect(rect, background);

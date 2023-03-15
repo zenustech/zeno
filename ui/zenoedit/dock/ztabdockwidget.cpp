@@ -224,6 +224,8 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
+    if (nodes.count() <= 0)
+        return;
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
