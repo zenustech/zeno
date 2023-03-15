@@ -281,7 +281,7 @@ struct UnifiedIPCSystem : IObject {
     template <typename ValT>
     struct DynamicBuffer {
         DynamicBuffer(std::size_t n = 0)
-            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevSize{n} {
+            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevCount{0} {
             reset();
         }
         ~DynamicBuffer() = default;
@@ -289,35 +289,20 @@ struct UnifiedIPCSystem : IObject {
         std::size_t getCount() const {
             return cnt.getVal();
         }
-        std::size_t getBufferSize() const {
-            return buf.size();
-        }
         std::size_t getBufferCapacity() const {
             return buf.capacity();
         }
         void snapshot() {
-            prevSize = cnt.size();
-            iters = 0;
+            prevCount = cnt.size();
         }
         void resizeToCounter() {
-#if 0
-            buf.resize(getCount());
-#else
             auto c = getCount();
-            fmt::print("resizing from {} to {}\n", getBufferSize(), c);
+            if (c <= getBufferCapacity())
+                return;
             buf.resize(c);
-#endif
         }
         void restartCounter() {
-#if 0
-            cnt.setVal(prevSize);
-#else
-            fmt::print("reseting counter from {} to {}\n", getCount(), prevSize);
-            cnt.setVal(prevSize);
-#endif
-            if (++iters >= 2) {
-                throw std::runtime_error("should not rewind more than once!!!\n");
-            }
+            cnt.setVal(prevCount);
         }
         void reset() {
             cnt.setVal(0);
@@ -329,10 +314,10 @@ struct UnifiedIPCSystem : IObject {
         struct Port {
             ValT *buf;
             int *cnt;
-            std::size_t size;
+            std::size_t cap;
             __forceinline__ __device__ void try_push(ValT &&val) {
                 auto no = zs::atomic_add(zs::exec_cuda, cnt, 1);
-                if (no < size)
+                if (no < cap)
                     buf[no] = std::move(val);
             }
             __forceinline__ __device__ ValT &operator[](int i) {
@@ -343,14 +328,13 @@ struct UnifiedIPCSystem : IObject {
             }
         };
         Port port() {
-            return Port{buf.data(), cnt.data(), buf.size()};
+            return Port{buf.data(), cnt.data(), buf.capacity()}; // numDofs, tag;
         }
 
       protected:
         zs::Vector<ValT> buf;
         zs::Vector<int> cnt;
-        std::size_t prevSize;
-        int iters;
+        std::size_t prevCount;
     };
     template <typename... DynBufs>
     void snapshot(DynBufs &...dynBufs) {
@@ -358,14 +342,7 @@ struct UnifiedIPCSystem : IObject {
     }
     template <typename... DynBufs>
     bool allFit(DynBufs &...dynBufs) {
-#if 0
         return ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
-#else
-        auto fit = ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
-        if (!fit)
-            fmt::print(fg(fmt::color::pink), "not all fit, rewind!\n");
-        return fit;
-#endif
     }
     template <typename... DynBufs>
     void resizeAndRewind(DynBufs &...dynBufs) {
