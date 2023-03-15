@@ -101,6 +101,11 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     }
 }
 
+void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                                  const QModelIndex &index) const {
+    QStyledItemDelegate::paint(painter, option, index);
+}
+
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, IGraphsModel* pGraphsModel, QWidget* parent)
     : QDialog(parent)
@@ -250,36 +255,35 @@ void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem)
     for (int r = 0; r < pItem->rowCount(); r++) 
     {
         QStandardItem *newItem = pItem->child(r);
-        int type = newItem->data(ROLE_VPARAM_TYPE).toInt();
-        if (type == VPARAM_TAB) 
-        {
-            newItem->setData(QIcon(":/icons/parameter_control_tab.svg"), Qt::DecorationRole);
-        } 
-        else if (type == VPARAM_GROUP) 
-        {
-            newItem->setData(QIcon(":/icons/parameter_control_group.svg"), Qt::DecorationRole);
-        }
-        else if (type != VPARAM_ROOT) 
-        {
-            QString iconStr = getIcon(newItem->data(ROLE_PARAM_CTRL).toInt());
-            newItem->setData(QIcon(iconStr), Qt::DecorationRole);
-        }
+        newItem->setData(getIcon(newItem), Qt::DecorationRole);
         if (newItem->rowCount() > 0)
             initIcon(newItem);
     }
 }
 
-QString ZEditParamLayoutDlg::getIcon(int control) 
+QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem) 
 {
-    if (control == CONTROL_NONE)
-        return QString();
-
-    for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) {
-        if (control == controlList[i].ctrl) {
-            return controlList[i].icon;
+    int control = pItem->data(ROLE_PARAM_CTRL).toInt();
+    int type = pItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (type == VPARAM_TAB) 
+    {
+        return QIcon(":/icons/parameter_control_tab.svg");
+    } 
+    else if (type == VPARAM_GROUP) 
+    {
+        return QIcon(":/icons/parameter_control_group.svg");
+    } 
+    else if (type != VPARAM_ROOT) 
+    {
+        for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) 
+        {
+            if (control == controlList[i].ctrl) 
+            {
+                return QIcon(controlList[i].icon);
+            }
         }
     }
-    return QString();
+    return QIcon();
 }
 
 void ZEditParamLayoutDlg::initDescValueForProxy() {
@@ -508,7 +512,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
         QString objPath = pItem->data(ROLE_OBJPATH).toString();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
-        pNewItem->setData(QIcon(":/icons/parameter_control_tab.svg"), Qt::DecorationRole);
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
     else if (ctrlName == "Group")
     {
@@ -523,7 +527,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
         QString objPath = pItem->data(ROLE_OBJPATH).toString();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
-        pNewItem->setData(QIcon(": / icons / parameter_control_group.svg"), Qt::DecorationRole);
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
     else
     {
@@ -566,8 +570,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
             }
         }
         pItem->appendRow(pNewItem);
-        QString iconStr = getIcon(ctrl.ctrl);
-        pNewItem->setData(QIcon(iconStr), Qt::DecorationRole);
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
 }
 
@@ -815,8 +818,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         VParamItem *pItem = static_cast<VParamItem *>(m_proxyModel->itemFromIndex(layerIdx));
         switchStackProperties(ctrl, pItem);
-        QString iconStr = getIcon(ctrl);
-        pItem->setData(QIcon(iconStr), Qt::DecorationRole);
+        pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
 }
 
@@ -850,8 +852,7 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         switchStackProperties(pItem->m_ctrl, pItem);
-        QString iconStr = getIcon(pItem->m_ctrl);
-        pItem->setData(QIcon(iconStr), Qt::DecorationRole);
+        pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
     //update control list
     QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);

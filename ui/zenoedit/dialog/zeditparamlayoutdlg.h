@@ -31,6 +31,7 @@ public:
         const QModelIndex& index) const override;
 
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
   private:
     ViewParamModel *m_model;
@@ -65,7 +66,7 @@ private slots:
 private:
     void initUI();
     void initIcon(QStandardItem *item);
-    QString getIcon(int control);
+    QIcon getIcon(const QStandardItem *pItem);
     void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);

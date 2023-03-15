@@ -228,6 +228,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
     pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
+    pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
@@ -312,6 +313,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pSnapGrid);
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pBlackboard);
+    pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pFullPanel);
 
     pToolLayout->addStretch();
@@ -370,6 +372,11 @@ void DockContent_Editor::initConnections()
     connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
         QAction act("CustomUI");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_CUSTOM_UI);
+        m_pEditor->onAction(&act);
+    });
+    connect(pGroup, &ZToolBarButton::clicked, this, [=]() {
+        QAction act;
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_GROUP);
         m_pEditor->onAction(&act);
     });
     connect(pSnapGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {

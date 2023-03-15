@@ -69,6 +69,7 @@ class GroupNode : public ZenoNode {
     } resizeDir;
   private:
     bool m_bDragging;
+    bool m_bSelected;
     QVector<ZenoNode *> m_childItems;
     GroupTextItem *m_pTextItem;
     QMap<QString, QPointF> m_itemRelativePosMap;
