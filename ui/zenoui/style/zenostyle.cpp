@@ -295,6 +295,8 @@ int ZenoStyle::styleHint(StyleHint sh, const QStyleOption* opt, const QWidget* w
         return 0;
     if (QStyle::SH_Slider_AbsoluteSetButtons == sh)
         return Qt::LeftButton;
+    if (QStyle::SH_ComboBox_AllowWheelScrolling == sh)
+        return 0;
     return QProxyStyle::styleHint(sh, opt, w, shret);
 }
 
