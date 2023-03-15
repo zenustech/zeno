@@ -173,8 +173,8 @@ struct UnifiedIPCSystem : IObject {
     T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
     // contacts
     auto getCnts() const {
-        return zs::make_tuple(PP.getCount(), PE.getCount(), PT.getCount(), EE.getCount(), PPM.getCount(), PEM.getCount(),
-                              EEM.getCount(), csPT.getCount(), csEE.getCount());
+        return zs::make_tuple(PP.getCount(), PE.getCount(), PT.getCount(), EE.getCount(), PPM.getCount(),
+                              PEM.getCount(), EEM.getCount(), csPT.getCount(), csEE.getCount());
     }
     auto getCollisionCnts() const {
         return zs::make_tuple(csPT.getCount(), csEE.getCount());
@@ -277,7 +277,7 @@ struct UnifiedIPCSystem : IObject {
     dtiles_t vtemp;
     dtiles_t tempI;
 
-    /// @brief collision 
+    /// @brief collision
     template <typename ValT>
     struct DynamicBuffer {
         DynamicBuffer(std::size_t n = 0)
@@ -290,21 +290,39 @@ struct UnifiedIPCSystem : IObject {
             return cnt.getVal();
         }
         std::size_t getBufferSize() const {
-            return buf.size();  // capacity is alright
+            return buf.size();
+        }
+        std::size_t getBufferCapacity() const {
+            return buf.capacity();
         }
         void snapshot() {
             prevSize = cnt.size();
+            iters = 0;
         }
         void resizeToCounter() {
+#if 0
             buf.resize(getCount());
+#else
+            auto c = getCount();
+            fmt::print("resizing from {} to {}\n", getBufferSize(), c);
+            buf.resize(c);
+#endif
         }
         void restartCounter() {
+#if 0
             cnt.setVal(prevSize);
+#else
+            fmt::print("reseting counter from {} to {}\n", getCount(), prevSize);
+            cnt.setVal(prevSize);
+#endif
+            if (++iters >= 2) {
+                throw std::runtime_error("should not rewind more than once!!!\n");
+            }
         }
         void reset() {
             cnt.setVal(0);
         }
-        void assignCounterFrom(const DynamicBuffer&o) {
+        void assignCounterFrom(const DynamicBuffer &o) {
             cnt = o.cnt;
         }
 
@@ -317,10 +335,10 @@ struct UnifiedIPCSystem : IObject {
                 if (no < size)
                     buf[no] = std::move(val);
             }
-            __forceinline__ __device__ ValT& operator[](int i) {
+            __forceinline__ __device__ ValT &operator[](int i) {
                 return buf[i];
             }
-            __forceinline__ __device__ const ValT& operator[](int i) const {
+            __forceinline__ __device__ const ValT &operator[](int i) const {
                 return buf[i];
             }
         };
@@ -328,21 +346,29 @@ struct UnifiedIPCSystem : IObject {
             return Port{buf.data(), cnt.data(), buf.size()};
         }
 
-    protected:
+      protected:
         zs::Vector<ValT> buf;
         zs::Vector<int> cnt;
         std::size_t prevSize;
+        int iters;
     };
     template <typename... DynBufs>
-    void snapshot(DynBufs&... dynBufs) {
+    void snapshot(DynBufs &...dynBufs) {
         (void)((void)dynBufs.snapshot(), ...);
     }
     template <typename... DynBufs>
-    bool allFit(DynBufs&... dynBufs) {
-        return ((dynBufs.getCount() <= dynBufs.getBufferSize()) && ...);
+    bool allFit(DynBufs &...dynBufs) {
+#if 0
+        return ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
+#else
+        auto fit = ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
+        if (!fit)
+            fmt::print(fg(fmt::color::pink), "not all fit, rewind!\n");
+        return fit;
+#endif
     }
     template <typename... DynBufs>
-    void resizeAndRewind(DynBufs&... dynBufs) {
+    void resizeAndRewind(DynBufs &...dynBufs) {
         (void)((void)dynBufs.resizeToCounter(), ...);
         (void)((void)dynBufs.restartCounter(), ...);
     }

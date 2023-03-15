@@ -141,7 +141,6 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
         seBvh.refit(pol, bvs);
         findProximityPairs(pol, dHat, xi, false);
     }
-    zeno::log_info("after self proximity check, <{} pt, {} ee> pairs excluded\n", csPT.getCount(), csEE.getCount());
 
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -151,9 +150,6 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
         findProximityPairs(pol, dHat, xi, true);
-
-        zeno::log_info("after boundary proximity check, <{} pt, {} ee> pairs excluded\n", csPT.getCount(),
-                       csEE.getCount());
     }
     return;
 }
@@ -673,87 +669,85 @@ void UnifiedIPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, 
 
     /// pt
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
-    csPT.snapshot();
+    snapshot(csPT);
     do {
-    pol(range(svInds, "inds", dim_c<1>, int_c),
-        [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
-         exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts), vtemp = proxy<space>({}, vtemp),
-         bvh = proxy<space>(stbvh), csPT = csPT.port(), dHat, xi, thickness = xi + dHat,
-         voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
-            const auto dHat2 = zs::sqr(dHat + xi);
-            int BCorder0 = vtemp("BCorder", vi);
-            auto p = vtemp.pack(dim_c<3>, "xn", vi);
-            auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
-            auto f = [&](int stI) {
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
-                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
-                    return;
-                // all affected by sticky boundary conditions
-                if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
-                    vtemp("BCorder", tri[2]) == 3)
-                    return;
-                // ccd
-                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
-                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
-                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
-
-                if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2) {
-                    csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
-                    exclTris[stI] = 1;
-                }
-            };
-            bvh.iter_neighbors(bv, f);
-        });
-    if (csPT.getCount() <= csPT.getBufferSize())
-        break;
-    csPT.resizeToCounter();
-    csPT.restartCounter();
-    } while (true);
-    /// ee
-    if (enableContactEE) {
-    const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
-    csEE.snapshot();
-    do {
-        pol(Collapse{seInds.size()},
-            [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-             exclSes = proxy<space>(exclSes),
-             oExclSes = withBoundary ? proxy<space>(exclBouSes) : proxy<space>(exclSes),
-             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
-             //
-             csEE = csEE.port(), dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
-             voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
-                auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-                auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
-                auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
-                auto [mi, ma] = get_bounding_box(v0, v1);
-                auto bv = bv_t{mi - thickness, ma + thickness};
-                auto f = [&](int sej) {
-                    if (voffset == 0 && sei < sej)
-                        return;
-                    auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                    if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                        eiInds[1] == ejInds[1])
+        pol(range(svInds, "inds", dim_c<1>, int_c),
+            [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
+             exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts),
+             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), csPT = csPT.port(), dHat, xi,
+             thickness = xi + dHat, voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
+                const auto dHat2 = zs::sqr(dHat + xi);
+                int BCorder0 = vtemp("BCorder", vi);
+                auto p = vtemp.pack(dim_c<3>, "xn", vi);
+                auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+                auto f = [&](int stI) {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                    if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                         return;
                     // all affected by sticky boundary conditions
-                    if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                    if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
+                        vtemp("BCorder", tri[2]) == 3)
                         return;
-                    auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
-                    auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
+                    // ccd
+                    auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                    auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                    auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
-                    if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2) {
-                        csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
-                        exclSes[sei] = 1;
-                        oExclSes[sej] = 1;
+                    if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2) {
+                        csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        exclTris[stI] = 1;
                     }
                 };
                 bvh.iter_neighbors(bv, f);
             });
-        if (csEE.getCount() <= csEE.getBufferSize())
+        if (allFit(csPT))
             break;
-        csEE.resizeToCounter();
-        csEE.restartCounter();
+        resizeAndRewind(csPT);
     } while (true);
+    /// ee
+    if (enableContactEE) {
+        const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
+        snapshot(csEE);
+        do {
+            pol(Collapse{seInds.size()},
+                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                 exclSes = proxy<space>(exclSes),
+                 oExclSes = withBoundary ? proxy<space>(exclBouSes) : proxy<space>(exclSes),
+                 vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+                 //
+                 csEE = csEE.port(), dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
+                 voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                    auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                    bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                    auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                    auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                    auto [mi, ma] = get_bounding_box(v0, v1);
+                    auto bv = bv_t{mi - thickness, ma + thickness};
+                    auto f = [&](int sej) {
+                        if (voffset == 0 && sei < sej)
+                            return;
+                        auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                        if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                            eiInds[1] == ejInds[1])
+                            return;
+                        // all affected by sticky boundary conditions
+                        if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                            return;
+                        auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
+                        auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
+
+                        if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2) {
+                            csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                            exclSes[sei] = 1;
+                            oExclSes[sej] = 1;
+                        }
+                    };
+                    bvh.iter_neighbors(bv, f);
+                });
+            if (allFit(csEE))
+                break;
+            resizeAndRewind(csEE);
+        } while (true);
     }
 }
 void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) {
@@ -767,15 +761,14 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0, bvs);
         seBvh.refit(pol, bvs);
+
+        findCCDConstraintsImpl(pol, alpha, xi, false);
     }
 
 #if PROFILE_IPC
     zs::CppTimer timer;
     timer.tick();
 #endif
-
-    if (enableContactSelf)
-        findCCDConstraintsImpl(pol, alpha, xi, false);
 
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -912,7 +905,7 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
     using namespace zs;
 
     if (!needFricPrecompute)
-    return;
+        return;
     needFricPrecompute = false;
 
     constexpr auto space = execspace_e::cuda;
@@ -922,93 +915,98 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
     FPT.reset();
     FEE.reset();
     if (enableContact) {
-    if (s_enableSelfFriction) {
-        FPP.assignCounterFrom(PP);
-        FPE.assignCounterFrom(PE);
-        FPT.assignCounterFrom(PT);
-        FEE.assignCounterFrom(EE);
+        if (s_enableSelfFriction) {
+            FPP.assignCounterFrom(PP);
+            FPE.assignCounterFrom(PE);
+            FPT.assignCounterFrom(PT);
+            FEE.assignCounterFrom(EE);
 
-        auto numFPP = FPP.getCount();
-        fricPP.resize(numFPP);
-        pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = PP.port(),
-                            FPP = FPP.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fppi) mutable {
-            auto fpp = PP[fppi];
-            FPP[fppi] = fpp;
-            auto x0 = vtemp.pack<3>("xn", fpp[0]);
-            auto x1 = vtemp.pack<3>("xn", fpp[1]);
-            auto dist2 = dist2_pp(x0, x1);
-            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
-            fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
-        });
-        auto numFPE = FPE.getCount();
-        fricPE.resize(numFPE);
-        pol(range(numFPE), [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = PE.port(),
-                            FPE = FPE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpei) mutable {
-            auto fpe = PE[fpei];
-            FPE[fpei] = fpe;
-            auto p = vtemp.pack<3>("xn", fpe[0]);
-            auto e0 = vtemp.pack<3>("xn", fpe[1]);
-            auto e1 = vtemp.pack<3>("xn", fpe[2]);
-            auto dist2 = dist2_pe(p, e0, e1);
-            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
-            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
-            fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
-        });
-        auto numFPT = FPT.getCount();
-        fricPT.resize(numFPT);
-        pol(range(numFPT), [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = PT.port(),
-                            FPT = FPT.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpti) mutable {
-            auto fpt = PT[fpti];
-            FPT[fpti] = fpt;
-            auto p = vtemp.pack<3>("xn", fpt[0]);
-            auto t0 = vtemp.pack<3>("xn", fpt[1]);
-            auto t1 = vtemp.pack<3>("xn", fpt[2]);
-            auto t2 = vtemp.pack<3>("xn", fpt[3]);
-            auto dist2 = dist2_pt(p, t0, t1, t2);
-            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
-            fricPT.tuple<2>("beta", fpti) = point_triangle_closest_point(p, t0, t1, t2);
-            fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
-        });
-        auto numFEE = FEE.getCount();
-        fricEE.resize(numFEE);
-        pol(range(numFEE), [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = EE.port(),
-                            FEE = FEE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int feei) mutable {
-            auto fee = EE[feei];
-            FEE[feei] = fee;
-            auto ea0 = vtemp.pack<3>("xn", fee[0]);
-            auto ea1 = vtemp.pack<3>("xn", fee[1]);
-            auto eb0 = vtemp.pack<3>("xn", fee[2]);
-            auto eb1 = vtemp.pack<3>("xn", fee[3]);
-            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
-            fricEE.tuple<2>("gamma", feei) = edge_edge_closest_point(ea0, ea1, eb0, eb1);
-            fricEE.tuple<6>("basis", feei) = edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
-        });
-    }
+            auto numFPP = FPP.getCount();
+            fricPP.resize(numFPP);
+            pol(range(numFPP),
+                [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = PP.port(), FPP = FPP.port(),
+                 xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fppi) mutable {
+                    auto fpp = PP[fppi];
+                    FPP[fppi] = fpp;
+                    auto x0 = vtemp.pack<3>("xn", fpp[0]);
+                    auto x1 = vtemp.pack<3>("xn", fpp[1]);
+                    auto dist2 = dist2_pp(x0, x1);
+                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                    fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
+                    fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
+                });
+            auto numFPE = FPE.getCount();
+            fricPE.resize(numFPE);
+            pol(range(numFPE),
+                [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = PE.port(), FPE = FPE.port(),
+                 xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpei) mutable {
+                    auto fpe = PE[fpei];
+                    FPE[fpei] = fpe;
+                    auto p = vtemp.pack<3>("xn", fpe[0]);
+                    auto e0 = vtemp.pack<3>("xn", fpe[1]);
+                    auto e1 = vtemp.pack<3>("xn", fpe[2]);
+                    auto dist2 = dist2_pe(p, e0, e1);
+                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                    fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+                    fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+                    fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
+                });
+            auto numFPT = FPT.getCount();
+            fricPT.resize(numFPT);
+            pol(range(numFPT),
+                [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = PT.port(), FPT = FPT.port(),
+                 xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpti) mutable {
+                    auto fpt = PT[fpti];
+                    FPT[fpti] = fpt;
+                    auto p = vtemp.pack<3>("xn", fpt[0]);
+                    auto t0 = vtemp.pack<3>("xn", fpt[1]);
+                    auto t1 = vtemp.pack<3>("xn", fpt[2]);
+                    auto t2 = vtemp.pack<3>("xn", fpt[3]);
+                    auto dist2 = dist2_pt(p, t0, t1, t2);
+                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                    fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
+                    fricPT.tuple<2>("beta", fpti) = point_triangle_closest_point(p, t0, t1, t2);
+                    fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
+                });
+            auto numFEE = FEE.getCount();
+            fricEE.resize(numFEE);
+            pol(range(numFEE),
+                [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = EE.port(), FEE = FEE.port(),
+                 xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int feei) mutable {
+                    auto fee = EE[feei];
+                    FEE[feei] = fee;
+                    auto ea0 = vtemp.pack<3>("xn", fee[0]);
+                    auto ea1 = vtemp.pack<3>("xn", fee[1]);
+                    auto eb0 = vtemp.pack<3>("xn", fee[2]);
+                    auto eb1 = vtemp.pack<3>("xn", fee[3]);
+                    auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                    fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
+                    fricEE.tuple<2>("gamma", feei) = edge_edge_closest_point(ea0, ea1, eb0, eb1);
+                    fricEE.tuple<6>("basis", feei) = edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
+                });
+        }
     }
     if (enableGround) {
-    for (auto &primHandle : prims) {
-        if (primHandle.isBoundary()) // skip soft boundary
-            continue;
-        const auto &svs = primHandle.getSurfVerts();
-        pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
-                                svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
-                                gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-            const auto vi = svs("inds", svi, int_c) + svOffset;
-            auto x = vtemp.pack<3>("xn", vi);
-            auto dist = gn.dot(x);
-            auto dist2 = dist * dist;
-            if (dist2 < activeGap2) {
-                auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                svtemp("fn", svi) = -bGrad * 2 * dist;
-            } else
-                svtemp("fn", svi) = 0;
-        });
-    }
+        for (auto &primHandle : prims) {
+            if (primHandle.isBoundary()) // skip soft boundary
+                continue;
+            const auto &svs = primHandle.getSurfVerts();
+            pol(range(svs.size()),
+                [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
+                 svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
+                 gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                    auto x = vtemp.pack<3>("xn", vi);
+                    auto dist = gn.dot(x);
+                    auto dist2 = dist * dist;
+                    if (dist2 < activeGap2) {
+                        auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                        svtemp("fn", svi) = -bGrad * 2 * dist;
+                    } else
+                        svtemp("fn", svi) = 0;
+                });
+        }
     }
 }
 
@@ -2290,8 +2288,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             auto numPP = PP.getCount();
             es.resize(count_warps(numPP));
             es.reset(0);
-            pol(range(numPP), [vtemp = proxy<space>({}, vtemp), PP = PP.port(), es = proxy<space>(es),
-                               xi2 = xi * xi, dHat = dHat, activeGap2, n = numPP] __device__(int ppi) mutable {
+            pol(range(numPP), [vtemp = proxy<space>({}, vtemp), PP = PP.port(), es = proxy<space>(es), xi2 = xi * xi,
+                               dHat = dHat, activeGap2, n = numPP] __device__(int ppi) mutable {
                 auto pp = PP[ppi];
                 auto x0 = vtemp.pack<3>("xn", pp[0]);
                 auto x1 = vtemp.pack<3>("xn", pp[1]);
@@ -2312,8 +2310,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             auto numPE = PE.getCount();
             es.resize(count_warps(numPE));
             es.reset(0);
-            pol(range(numPE), [vtemp = proxy<space>({}, vtemp), PE = PE.port(), es = proxy<space>(es),
-                               xi2 = xi * xi, dHat = dHat, activeGap2, n = numPE] __device__(int pei) mutable {
+            pol(range(numPE), [vtemp = proxy<space>({}, vtemp), PE = PE.port(), es = proxy<space>(es), xi2 = xi * xi,
+                               dHat = dHat, activeGap2, n = numPE] __device__(int pei) mutable {
                 auto pe = PE[pei];
                 auto p = vtemp.pack<3>("xn", pe[0]);
                 auto e0 = vtemp.pack<3>("xn", pe[1]);
@@ -2336,8 +2334,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             auto numPT = PT.getCount();
             es.resize(count_warps(numPT));
             es.reset(0);
-            pol(range(numPT), [vtemp = proxy<space>({}, vtemp), PT = PT.port(), es = proxy<space>(es),
-                               xi2 = xi * xi, dHat = dHat, activeGap2, n = numPT] __device__(int pti) mutable {
+            pol(range(numPT), [vtemp = proxy<space>({}, vtemp), PT = PT.port(), es = proxy<space>(es), xi2 = xi * xi,
+                               dHat = dHat, activeGap2, n = numPT] __device__(int pti) mutable {
                 auto pt = PT[pti];
                 auto p = vtemp.pack<3>("xn", pt[0]);
                 auto t0 = vtemp.pack<3>("xn", pt[1]);
@@ -2361,8 +2359,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             auto numEE = EE.getCount();
             es.resize(count_warps(numEE));
             es.reset(0);
-            pol(range(numEE), [vtemp = proxy<space>({}, vtemp), EE = EE.port(), es = proxy<space>(es),
-                               xi2 = xi * xi, dHat = dHat, activeGap2, n = numEE] __device__(int eei) mutable {
+            pol(range(numEE), [vtemp = proxy<space>({}, vtemp), EE = EE.port(), es = proxy<space>(es), xi2 = xi * xi,
+                               dHat = dHat, activeGap2, n = numEE] __device__(int eei) mutable {
                 auto ee = EE[eei];
                 auto ea0 = vtemp.pack<3>("xn", ee[0]);
                 auto ea1 = vtemp.pack<3>("xn", ee[1]);
@@ -2485,85 +2483,85 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                         auto numFPP = FPP.getCount();
                         es.resize(count_warps(numFPP));
                         es.reset(0);
-                        pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
-                                            FPP = FPP.port(), es = proxy<space>(es), epsvh = epsv * dt,
-                                            n = numFPP] __device__(int fppi) mutable {
-                            auto fpp = FPP[fppi];
-                            auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
-                            auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
-                            auto basis = fricPP.template pack<3, 2>("basis", fppi);
-                            auto fn = fricPP("fn", fppi);
-                            auto relDX3D = point_point_rel_dx(p0, p1);
-                            auto relDX = basis.transpose() * relDX3D;
-                            auto relDXNorm2 = relDX.l2NormSqr();
-                            auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                            reduce_to(fppi, n, E, es[fppi / 32]);
-                        });
+                        pol(range(numFPP),
+                            [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = FPP.port(),
+                             es = proxy<space>(es), epsvh = epsv * dt, n = numFPP] __device__(int fppi) mutable {
+                                auto fpp = FPP[fppi];
+                                auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
+                                auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
+                                auto basis = fricPP.template pack<3, 2>("basis", fppi);
+                                auto fn = fricPP("fn", fppi);
+                                auto relDX3D = point_point_rel_dx(p0, p1);
+                                auto relDX = basis.transpose() * relDX3D;
+                                auto relDXNorm2 = relDX.l2NormSqr();
+                                auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                                reduce_to(fppi, n, E, es[fppi / 32]);
+                            });
                         Es.push_back(reduce(pol, es) * fricMu);
 
                         auto numFPE = FPE.getCount();
                         es.resize(count_warps(numFPE));
                         es.reset(0);
-                        pol(range(numFPE), [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
-                                            FPE = FPE.port(), es = proxy<space>(es), epsvh = epsv * dt,
-                                            n = numFPE] __device__(int fpei) mutable {
-                            auto fpe = FPE[fpei];
-                            auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
-                            auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
-                            auto e1 = vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
-                            auto basis = fricPE.template pack<3, 2>("basis", fpei);
-                            auto fn = fricPE("fn", fpei);
-                            auto yita = fricPE("yita", fpei);
-                            auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
-                            auto relDX = basis.transpose() * relDX3D;
-                            auto relDXNorm2 = relDX.l2NormSqr();
-                            auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                            reduce_to(fpei, n, E, es[fpei / 32]);
-                        });
+                        pol(range(numFPE),
+                            [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = FPE.port(),
+                             es = proxy<space>(es), epsvh = epsv * dt, n = numFPE] __device__(int fpei) mutable {
+                                auto fpe = FPE[fpei];
+                                auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
+                                auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
+                                auto e1 = vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
+                                auto basis = fricPE.template pack<3, 2>("basis", fpei);
+                                auto fn = fricPE("fn", fpei);
+                                auto yita = fricPE("yita", fpei);
+                                auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
+                                auto relDX = basis.transpose() * relDX3D;
+                                auto relDXNorm2 = relDX.l2NormSqr();
+                                auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                                reduce_to(fpei, n, E, es[fpei / 32]);
+                            });
                         Es.push_back(reduce(pol, es) * fricMu);
 
                         auto numFPT = FPT.getCount();
                         es.resize(count_warps(numFPT));
                         es.reset(0);
-                        pol(range(numFPT), [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
-                                            FPT = FPT.port(), es = proxy<space>(es), epsvh = epsv * dt,
-                                            n = numFPT] __device__(int fpti) mutable {
-                            auto fpt = FPT[fpti];
-                            auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
-                            auto v0 = vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
-                            auto v1 = vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
-                            auto v2 = vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
-                            auto basis = fricPT.template pack<3, 2>("basis", fpti);
-                            auto fn = fricPT("fn", fpti);
-                            auto betas = fricPT.pack(dim_c<2>, "beta", fpti);
-                            auto relDX3D = point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
-                            auto relDX = basis.transpose() * relDX3D;
-                            auto relDXNorm2 = relDX.l2NormSqr();
-                            auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                            reduce_to(fpti, n, E, es[fpti / 32]);
-                        });
+                        pol(range(numFPT),
+                            [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = FPT.port(),
+                             es = proxy<space>(es), epsvh = epsv * dt, n = numFPT] __device__(int fpti) mutable {
+                                auto fpt = FPT[fpti];
+                                auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
+                                auto v0 = vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
+                                auto v1 = vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
+                                auto v2 = vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
+                                auto basis = fricPT.template pack<3, 2>("basis", fpti);
+                                auto fn = fricPT("fn", fpti);
+                                auto betas = fricPT.pack(dim_c<2>, "beta", fpti);
+                                auto relDX3D = point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
+                                auto relDX = basis.transpose() * relDX3D;
+                                auto relDXNorm2 = relDX.l2NormSqr();
+                                auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                                reduce_to(fpti, n, E, es[fpti / 32]);
+                            });
                         Es.push_back(reduce(pol, es) * fricMu);
 
                         auto numFEE = FEE.getCount();
                         es.resize(count_warps(numFEE));
                         es.reset(0);
-                        pol(range(numFEE), [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE),
-                                            FEE = FEE.port(), es = proxy<space>(es), epsvh = epsv * dt,
-                                            n = numFEE] __device__(int feei) mutable {
-                            auto fee = FEE[feei];
-                            auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
-                            auto e1 = vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
-                            auto e2 = vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
-                            auto e3 = vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
-                            auto basis = fricEE.template pack<3, 2>("basis", feei);
-                            auto fn = fricEE("fn", feei);
-                            auto gammas = fricEE.pack(dim_c<2>, "gamma", feei);
-                            auto relDX3D = edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
-                            auto relDX = basis.transpose() * relDX3D;
-                            auto relDXNorm2 = relDX.l2NormSqr();
-                            auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                            reduce_to(feei, n, E, es[feei / 32]);
-                        });
+                        pol(range(numFEE),
+                            [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = FEE.port(),
+                             es = proxy<space>(es), epsvh = epsv * dt, n = numFEE] __device__(int feei) mutable {
+                                auto fee = FEE[feei];
+                                auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
+                                auto e1 = vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
+                                auto e2 = vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
+                                auto e3 = vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
+                                auto basis = fricEE.template pack<3, 2>("basis", feei);
+                                auto fn = fricEE("fn", feei);
+                                auto gammas = fricEE.pack(dim_c<2>, "gamma", feei);
+                                auto relDX3D = edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
+                                auto relDX = basis.transpose() * relDX3D;
+                                auto relDXNorm2 = relDX.l2NormSqr();
+                                auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                                reduce_to(feei, n, E, es[feei / 32]);
+                            });
                         Es.push_back(reduce(pol, es) * fricMu);
                     }
                 }
@@ -2871,8 +2869,8 @@ void UnifiedIPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T 
     timer.tick();
 #endif
     pol.profile(PROFILE_IPC);
-    pol(range(npt), [csPT = csPT.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
-                     xi, coOffset = (int)coOffset] __device__(int pti) {
+    pol(range(npt), [csPT = csPT.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize, xi,
+                     coOffset = (int)coOffset] __device__(int pti) {
         auto ids = csPT[pti];
         auto p = vtemp.pack(dim_c<3>, "xn", ids[0]);
         auto t0 = vtemp.pack(dim_c<3>, "xn", ids[1]);
@@ -2893,8 +2891,8 @@ void UnifiedIPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T 
             atomic_min(exec_cuda, &alpha[0], tmp);
     });
     auto nee = csEE.getCount();
-    pol(range(nee), [csEE = csEE.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
-                     xi, coOffset = (int)coOffset] __device__(int eei) {
+    pol(range(nee), [csEE = csEE.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize, xi,
+                     coOffset = (int)coOffset] __device__(int eei) {
         auto ids = csEE[eei];
         auto ea0 = vtemp.pack(dim_c<3>, "xn", ids[0]);
         auto ea1 = vtemp.pack(dim_c<3>, "xn", ids[1]);
@@ -2973,7 +2971,6 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     int newtonIter = 0;
     T res = limits<T>::max();
     for (; newtonIter != PNCap; ++newtonIter) {
-        zeno::log_info("\tentering new newton step. \n");
         // check constraints
         if (!BCsatisfied) {
             computeConstraints(pol);
@@ -2985,7 +2982,6 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
-        zeno::log_info("\tbefore precompute. \n");
         // PRECOMPUTE
         if (enableContact) {
             findCollisionConstraints(pol, dHat, xi);
@@ -2995,22 +2991,16 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 precomputeFrictions(pol, dHat, xi);
             }
         // GRAD, HESS, P
-        zeno::log_info("\tbefore hess/grad. \n");
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
             vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
         });
-        zeno::log_info("\tbefore inertial. \n");
         computeInertialAndGravityPotentialGradient(pol);
-        zeno::log_info("\tbefore elasticity. \n");
         computeElasticGradientAndHessian(pol, "grad");
-        zeno::log_info("\tbefore bending. \n");
         computeBendingGradientAndHessian(pol, "grad");
-        zeno::log_info("\tbefore ground. \n");
         if (enableGround)
             computeBoundaryBarrierGradientAndHessian(pol);
         if (enableContact) {
-        zeno::log_info("\tbefore ipc hess_grad. \n");
             computeBarrierGradientAndHessian(pol, "grad");
             if (s_enableFriction)
                 if (fricMu != 0) {
@@ -3018,7 +3008,6 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 }
         }
         // APPLY CONSTRAINTS, PROJ GRADIENT
-        zeno::log_info("\tbefore boundary hess_grad. \n");
         if (!BCsatisfied) {
             // grad
             pol(zs::range(numDofs),
@@ -3039,14 +3028,11 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             // hess (embedded in multiply)
         }
 
-        zeno::log_info("\tbefore inherent hess update. \n");
         /// prepare linsys.spmat
         updateInherentHessian(pol, "grad");
-        zeno::log_info("\tbefore dynamic hess update. \n");
         /// prepare linsys.hessx
         updateDynamicHessian(pol, "grad");
 
-        zeno::log_info("\tbefore preconditioner build (placeholder). \n");
         linsys.buildPreconditioner(pol, *this); // 1
 
         project(pol, "grad");
@@ -3095,11 +3081,9 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             intersectionFreeStepsize(pol, xi, alpha);
         }
         lineSearch(pol, alpha);
-        zeno::log_info("\tstepsize after line search: {}. \n", alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
             vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
-        zeno::log_info("\tbefore update rule. \n");
         // UPDATE RULE
         cons_res = constraintResidual(pol);
         if (res * dt < updateZoneTol && cons_res > consTol) {

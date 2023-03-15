@@ -336,9 +336,9 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
 
-    linsys.hess2.init(vtemp.get_allocator(), estNumCps);
-    linsys.hess3.init(vtemp.get_allocator(), estNumCps);
-    linsys.hess4.init(vtemp.get_allocator(), estNumCps);
+    linsys.hess2.init(vtemp.get_allocator(), 0);
+    linsys.hess3.init(vtemp.get_allocator(), 0);
+    linsys.hess4.init(vtemp.get_allocator(), 0);
     linsys.hess2.reset(false, 0);
     linsys.hess3.reset(false, 0);
     linsys.hess4.reset(false, 0);
@@ -455,20 +455,18 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
                                    T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
                                    T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
     : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps},
-      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::device, 0}, PE{estNumCps}, tempPE{{{"H", 81}},
-                                                                                 estNumCps,
-                                                                                 zs::memsrc_e::um,
-                                                                                 0},
-      PT{estNumCps}, tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, EE{estNumCps}, tempEE{{{"H", 144}},
-                                                                                                 estNumCps,
-                                                                                                 zs::memsrc_e::um,
-                                                                                                 0},
+      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::device, 0}, PE{estNumCps},
+      tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::device, 0}, PT{estNumCps},
+      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, EE{estNumCps}, tempEE{{{"H", 144}},
+                                                                                      estNumCps,
+                                                                                      zs::memsrc_e::device,
+                                                                                      0},
       // mollify
       PPM{estNumCps}, tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, PEM{estNumCps},
       tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, EEM{estNumCps}, tempEEM{{{"H", 144}},
-                                                                                     estNumCps,
-                                                                                     zs::memsrc_e::um,
-                                                                                     0},
+                                                                                         estNumCps,
+                                                                                         zs::memsrc_e::device,
+                                                                                         0},
       // friction
       FPP{estNumCps}, fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPE{estNumCps},
       fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPT{estNumCps},
