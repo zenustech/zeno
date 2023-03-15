@@ -14,7 +14,7 @@ public:
     };
     static ZenoSettingsManager& GetInstance();
     void setValue(ValueType type, const QVariant& value);
-    const QVariant& getValue(int type) const;
+    QVariant getValue(int type) const;
 signals:
     void valueChanged(int type);
 

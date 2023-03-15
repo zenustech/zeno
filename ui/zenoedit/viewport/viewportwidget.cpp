@@ -1377,7 +1377,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
         zenoApp->getMainWindow()->updateViewport();
     }
     if (node_id == "MakePrimitive") {
-        auto& picker = m_view->picker();
+        auto picker = m_view->picker();
         ZASSERT_EXIT(picker);
         if (select) {
             picker->switch_draw_mode();
