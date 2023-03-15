@@ -216,9 +216,11 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
 
     updateConstraintCnt(); 
     D = D_max; 
+    fmt::print("ne: {}, npp: {}, npe: {}, npt: {}, nee: {}, nCons: {}\n", 
+        ne, npp, npe, npt, nee, nCons); 
     // TODO: coloring for multi-color PGS 
     fmt::print("consColoring started\n"); 
-    consColoring(pol); 
+    consColoring(pol, consShrinking); 
 }
 
 
@@ -286,9 +288,9 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
         [tempPair = proxy<space>({}, tempPair), 
          vCons = proxy<space>({}, vCons), 
          tempCons = proxy<space>({}, tempCons), 
-         lcpMatIs = proxy<space>(lcpMatIs), 
-         lcpMatJs = proxy<space>(lcpMatJs), 
-         lcpMatSize = proxy<space>(lcpMatSize), 
+         lcpMatIs = view<space>(lcpMatIs, false_c, "lcpMatIs"), 
+         lcpMatJs = view<space>(lcpMatJs, false_c, "lcpMatJs"), 
+         lcpMatSize = view<space>(lcpMatSize, false_c, "lcpMatSize"), 
          pairSize, offset, shrinking, coOffset = coOffset] __device__ (int i) mutable {
             int degree = 0; 
             for (int k = 0; k < pairSize; k++)
@@ -304,7 +306,7 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
                 {
                     int aj = vCons("cons", j, vi); 
                     auto no = atomic_add(exec_cuda, &lcpMatSize[0], 1); 
-                    lcpMatIs[no] = i; 
+                    lcpMatIs[no] = i + offset; 
                     lcpMatJs[no] = aj; 
                 }
             }
@@ -319,9 +321,6 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
             tempCons("vN", i + offset) = pairSize; 
             tempCons("dist", i + offset, T_c) = tempPair("dist", i); 
          }); 
-    auto lcpSize = lcpMatSize.getVal();
-    lcpMatIs.resize(lcpSize); 
-    lcpMatJs.resize(lcpSize); 
 }
 
 static constexpr int simple_hash(int a)
@@ -340,7 +339,7 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
 
-    zs::Vector<int> correct; 
+    zs::Vector<int> correct {vtemp.get_allocator(), 1}; 
     correct.setVal(1); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
@@ -357,7 +356,7 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
                     continue; 
                 if (tempCons("color", j) == color)
                 {
-                    correct[k] = 0;  
+                    correct[0] = 0;  
                     return; 
                 }
             }
@@ -367,7 +366,8 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
 
 void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
 {
-    // TOOD: use SparseMatrix 
+    zs::CppTimer timer; 
+    timer.tick(); 
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     // clear vertex -> cons list size 
@@ -389,10 +389,16 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
     initPalettes(pol, tempPE, vCons, tempCons, npe, 3, ope, shrinking); 
     initPalettes(pol, tempPT, vCons, tempCons, npt, 4, opt, shrinking); 
     initPalettes(pol, tempEE, vCons, tempCons, nee, 4, oee, shrinking); 
-    lcpMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, wrapv<false>{}); 
-    lcpMat.localOrdering(pol); 
+
+    auto lcpSize = lcpMatSize.getVal();
+    lcpMatIs.resize(lcpSize); 
+    lcpMatJs.resize(lcpSize); 
+    lcpMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, wrapv<false>{});
+    lcpMat.localOrdering(pol, false_c);  
+    lcpMat._vals.resize(lcpMat.nnz());
+    
     // cons graph coloring 
-    zs::Vector<int> finished; 
+    zs::Vector<int> finished {vtemp.get_allocator(), 1}; 
     finished.setVal(0); 
     int seed = 0; 
     while (!finished.getVal())
@@ -417,7 +423,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                 }
                 if (curInd < ind)
                 {
-                    printf("err in coloring: palette exhausted in the random-picking phase!\n"); 
+                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!\n"); 
                     return; 
                 }
                 tempCons("color", i) = pos; 
@@ -442,7 +448,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                     if (neCons > i)
                         flagHigherInd = false; 
                     int neColor = tempCons("color", neCons); 
-                    if (neCons == color)
+                    if (neColor == color)
                         flagConflict = true; 
                     if (flagConflict && !flagHigherInd)
                         break; 
@@ -473,11 +479,10 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                     if (tempCons("tmp", neCons))
                     {
                         int neColor = tempCons("color", neCons); 
-                        if (neColor >= maxColor)
-                            continue; 
                         if ((colors >> neColor) % 2)
                         {
-                            numColor--; 
+                            if (neColor < maxColor)
+                                numColor--; 
                             colors -= (1 << neColor); 
                         }
                     }
@@ -494,11 +499,14 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                 if (tempCons("fixed", i))
                     return; 
                 finished[0] = 0; 
-                if (tempCons("num_color", i) == 0)
+                while (tempCons("num_color", i) == 0)
+                {
+                    if ((tempCons("colors", i) >> tempCons("max_color", i)) % 2)
+                        tempCons("num_color", i) += 1; 
                     tempCons("max_color", i) += 1; 
+                }
             }); 
     }
-
     consColorBits.reset(0); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
@@ -512,12 +520,13 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
             nConsColor = i; 
             break; 
         }
+    timer.tock("constraint coloring"); 
     fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor + 1); 
 
     if (checkConsColoring(pol))
         fmt::print("\t\t[graph coloring] The result is correct.\n");
     else 
-        fmt::print("\t\t[graph coloring] Wrong results!"); 
+        fmt::print("\t\t[graph coloring] Wrong results!\n"); 
 }
 
 
@@ -730,7 +739,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 int vi = tempCons("vi", j, i); 
                 if (vi > coOffset)
                     continue; 
-                int n = vCons("n", vi) + vCons("ne", vi); 
+                int n = vCons("n", vi) + vCons("nE", vi); 
                 for (int k = 0; k < n; k++)
                 {
                     int neCons = vCons("cons", k, vi); 
