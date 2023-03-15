@@ -173,11 +173,11 @@ struct UnifiedIPCSystem : IObject {
     T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
     // contacts
     auto getCnts() const {
-        return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nPPM.getVal(), nPEM.getVal(),
-                              nEEM.getVal(), ncsPT.getVal(), ncsEE.getVal());
+        return zs::make_tuple(PP.getCount(), PE.getCount(), PT.getCount(), EE.getCount(), PPM.getCount(), PEM.getCount(),
+                              EEM.getCount(), csPT.getCount(), csEE.getCount());
     }
     auto getCollisionCnts() const {
-        return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
+        return zs::make_tuple(csPT.getCount(), csEE.getCount());
     }
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
@@ -304,6 +304,9 @@ struct UnifiedIPCSystem : IObject {
         void reset() {
             cnt.setVal(0);
         }
+        void assignCounterFrom(const DynamicBuffer&o) {
+            cnt = o.cnt;
+        }
 
         struct Port {
             ValT *buf;
@@ -313,6 +316,12 @@ struct UnifiedIPCSystem : IObject {
                 auto no = zs::atomic_add(zs::exec_cuda, cnt, 1);
                 if (no < size)
                     buf[no] = std::move(val);
+            }
+            __forceinline__ __device__ ValT& operator[](int i) {
+                return buf[i];
+            }
+            __forceinline__ __device__ const ValT& operator[](int i) const {
+                return buf[i];
             }
         };
         Port port() {
@@ -324,41 +333,65 @@ struct UnifiedIPCSystem : IObject {
         zs::Vector<int> cnt;
         std::size_t prevSize;
     };
+    template <typename... DynBufs>
+    void snapshot(DynBufs&... dynBufs) {
+        (void)((void)dynBufs.snapshot(), ...);
+    }
+    template <typename... DynBufs>
+    bool allFit(DynBufs&... dynBufs) {
+        return ((dynBufs.getCount() <= dynBufs.getBufferSize()) && ...);
+    }
+    template <typename... DynBufs>
+    void resizeAndRewind(DynBufs&... dynBufs) {
+        (void)((void)dynBufs.resizeToCounter(), ...);
+        (void)((void)dynBufs.restartCounter(), ...);
+    }
     // self contacts
-    zs::Vector<pair_t> PP;
-    zs::Vector<int> nPP;
+    DynamicBuffer<pair_t> PP;
+    // zs::Vector<pair_t> PP;
+    // zs::Vector<int> nPP;
     dtiles_t tempPP;
-    zs::Vector<pair3_t> PE;
-    zs::Vector<int> nPE;
+    DynamicBuffer<pair3_t> PE;
+    // zs::Vector<pair3_t> PE;
+    // zs::Vector<int> nPE;
     dtiles_t tempPE;
-    zs::Vector<pair4_t> PT;
-    zs::Vector<int> nPT;
+    DynamicBuffer<pair4_t> PT;
+    // zs::Vector<pair4_t> PT;
+    // zs::Vector<int> nPT;
     dtiles_t tempPT;
-    zs::Vector<pair4_t> EE;
-    zs::Vector<int> nEE;
+    DynamicBuffer<pair4_t> EE;
+    // zs::Vector<pair4_t> EE;
+    // zs::Vector<int> nEE;
     dtiles_t tempEE;
     // mollifier
-    zs::Vector<pair4_t> PPM;
-    zs::Vector<int> nPPM;
+    DynamicBuffer<pair4_t> PPM;
+    // zs::Vector<pair4_t> PPM;
+    // zs::Vector<int> nPPM;
     dtiles_t tempPPM;
-    zs::Vector<pair4_t> PEM;
-    zs::Vector<int> nPEM;
+    DynamicBuffer<pair4_t> PEM;
+    // zs::Vector<pair4_t> PEM;
+    // zs::Vector<int> nPEM;
     dtiles_t tempPEM;
-    zs::Vector<pair4_t> EEM;
-    zs::Vector<int> nEEM;
+    DynamicBuffer<pair4_t> EEM;
+    // zs::Vector<pair4_t> EEM;
+    // zs::Vector<int> nEEM;
     dtiles_t tempEEM;
-    // friction
-    zs::Vector<pair_t> FPP;
-    zs::Vector<int> nFPP;
+    /// @brief friction
+    DynamicBuffer<pair_t> FPP;
+    // zs::Vector<pair_t> FPP;
+    // zs::Vector<int> nFPP;
     dtiles_t fricPP;
-    zs::Vector<pair3_t> FPE;
-    zs::Vector<int> nFPE;
+    DynamicBuffer<pair3_t> FPE;
+    // zs::Vector<pair3_t> FPE;
+    // zs::Vector<int> nFPE;
     dtiles_t fricPE;
-    zs::Vector<pair4_t> FPT;
-    zs::Vector<int> nFPT;
+    DynamicBuffer<pair4_t> FPT;
+    // zs::Vector<pair4_t> FPT;
+    // zs::Vector<int> nFPT;
     dtiles_t fricPT;
-    zs::Vector<pair4_t> FEE;
-    zs::Vector<int> nFEE;
+    DynamicBuffer<pair4_t> FEE;
+    // zs::Vector<pair4_t> FEE;
+    // zs::Vector<int> nFEE;
     dtiles_t fricEE;
 
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -367,8 +400,9 @@ struct UnifiedIPCSystem : IObject {
     zs::Vector<T> temp;   // generally 64-bit
     zs::Vector<bv_t> bvs; // as temporary buffer
 
-    zs::Vector<pair4_t> csPT, csEE;
-    zs::Vector<int> ncsPT, ncsEE;
+    DynamicBuffer<pair4_t> csPT, csEE;
+    // zs::Vector<pair4_t> csPT, csEE;
+    // zs::Vector<int> ncsPT, ncsEE;
 
     /// @brief solver state machine
     struct SolverState {

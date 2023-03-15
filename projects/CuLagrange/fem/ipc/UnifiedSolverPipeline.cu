@@ -128,8 +128,8 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
     exclBouSes.reset(0);
     exclBouSts.reset(0);
 
-    ncsPT.setVal(0);
-    ncsEE.setVal(0);
+    csPT.reset();
+    csEE.reset();
     // exclSes, exclSts, exclBouSes, exclBouSts
 
     if (enableContactSelf) {
@@ -141,7 +141,7 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
         seBvh.refit(pol, bvs);
         findProximityPairs(pol, dHat, xi, false);
     }
-    zeno::log_info("after self proximity check, <{} pt, {} ee> pairs excluded\n", ncsPT.getVal(), ncsEE.getVal());
+    zeno::log_info("after self proximity check, <{} pt, {} ee> pairs excluded\n", csPT.getCount(), csEE.getCount());
 
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -152,8 +152,8 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
         bouSeBvh.refit(pol, bvs);
         findProximityPairs(pol, dHat, xi, true);
 
-        zeno::log_info("after boundary proximity check, <{} pt, {} ee> pairs excluded\n", ncsPT.getVal(),
-                       ncsEE.getVal());
+        zeno::log_info("after boundary proximity check, <{} pt, {} ee> pairs excluded\n", csPT.getCount(),
+                       csEE.getCount());
     }
     return;
 }
@@ -274,18 +274,19 @@ void UnifiedIPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &p
 }
 
 void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi) {
-    nPP.setVal(0);
-    nPE.setVal(0);
-    nPT.setVal(0);
-    nEE.setVal(0);
-    if (enableMollification) {
-        nPPM.setVal(0);
-        nPEM.setVal(0);
-        nEEM.setVal(0);
+    PP.reset();
+    PE.reset();
+    PT.reset();
+    if (enableContactEE) {
+        EE.reset();
+        if (enableMollification) {
+            PPM.reset();
+            PEM.reset();
+            EEM.reset();
+        }
     }
-
-    ncsPT.setVal(0);
-    ncsEE.setVal(0);
+    csPT.reset();
+    csEE.reset();
 
 #if PROFILE_IPC
     zs::CppTimer timer;
@@ -331,86 +332,84 @@ void UnifiedIPCSystem::findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPol
 
     pol.profile(PROFILE_IPC);
     /// pt
-    pol(Collapse{numBouDofs},
-        [eles = proxy<space>({}, stInds), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
-         PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE), nPE = proxy<space>(nPE),
-         PT = proxy<space>(PT), nPT = proxy<space>(nPT), csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT),
-         dHat2 = zs::sqr(dHat + xi), thickness = xi + dHat, coOffset = coOffset] __device__(int i) mutable {
-            auto vi = coOffset + i;
-            auto p = vtemp.pack(dim_c<3>, "xn", vi);
-            auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
-            auto f = [&](int stI) {
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
-                // all affected by sticky boundary conditions
-                if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
-                    return;
-                // ccd
-                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
-                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
-                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+    snapshot(PP, PE, PT, csPT);
+    do {
+        pol(Collapse{numBouDofs},
+            [eles = proxy<space>({}, stInds), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
+             PP = PP.port(), PE = PE.port(), PT = PT.port(), csPT = csPT.port(), dHat2 = zs::sqr(dHat + xi),
+             thickness = xi + dHat, coOffset = coOffset] __device__(int i) mutable {
+                auto vi = coOffset + i;
+                auto p = vtemp.pack(dim_c<3>, "xn", vi);
+                auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+                auto f = [&](int stI) {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
+                    // all affected by sticky boundary conditions
+                    if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
+                        return;
+                    // ccd
+                    auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                    auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                    auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
-                switch (pt_distance_type(p, t0, t1, t2)) {
-                case 0: {
-                    if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[0]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    switch (pt_distance_type(p, t0, t1, t2)) {
+                    case 0: {
+                        if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[0]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 1: {
-                    if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[1]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 1: {
+                        if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[1]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 2: {
-                    if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 2: {
+                        if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 3: {
-                    if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[0], tri[1]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 3: {
+                        if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[0], tri[1]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 4: {
-                    if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[1], tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 4: {
+                        if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[1], tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 5: {
-                    if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[2], tri[0]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 5: {
+                        if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[2], tri[0]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 6: {
-                    if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPT[0], 1);
-                        PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 6: {
+                        if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                            PT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                default: break;
-                }
-            };
-            bvh.iter_neighbors(bv, f);
-        });
+                    default: break;
+                    }
+                };
+                bvh.iter_neighbors(bv, f);
+            });
+        if (allFit(PP, PE, PT, csPT))
+            break;
+        resizeAndRewind(PP, PE, PT, csPT);
+    } while (true);
     pol.profile(false);
 }
 void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary) {
@@ -420,295 +419,251 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
     pol.profile(PROFILE_IPC);
     /// pt
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
-    pol(range(svInds, "inds", dim_c<1>, int_c),
-        [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
-         exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts), vtemp = proxy<space>({}, vtemp),
-         bvh = proxy<space>(stbvh), PP = proxy<space>(PP), nPP = proxy<space>(nPP), PE = proxy<space>(PE),
-         nPE = proxy<space>(nPE), PT = proxy<space>(PT), nPT = proxy<space>(nPT), csPT = proxy<space>(csPT),
-         ncsPT = proxy<space>(ncsPT), dHat, xi, thickness = xi + dHat,
-         voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
-            // auto vi = front.prim(i);
-            // vi = svInds("inds", vi, int_c);
-            const auto dHat2 = zs::sqr(dHat + xi);
-            int BCorder0 = vtemp("BCorder", vi);
-            auto p = vtemp.pack(dim_c<3>, "xn", vi);
-            auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
-            auto f = [&](int stI) {
-                if (exclTris[stI])
-                    return;
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
-                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
-                    return;
-                // all affected by sticky boundary conditions
-                if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
-                    vtemp("BCorder", tri[2]) == 3)
-                    return;
-                // ccd
-                auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
-                auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
-                auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
+    snapshot(PP, PE, PT, csPT);
+    do {
+        pol(range(svInds, "inds", dim_c<1>, int_c),
+            [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
+             exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts),
+             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), PP = PP.port(), PE = PE.port(), PT = PT.port(),
+             csPT = csPT.port(), dHat, xi, thickness = xi + dHat,
+             voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
+                // auto vi = front.prim(i);
+                // vi = svInds("inds", vi, int_c);
+                const auto dHat2 = zs::sqr(dHat + xi);
+                int BCorder0 = vtemp("BCorder", vi);
+                auto p = vtemp.pack(dim_c<3>, "xn", vi);
+                auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
+                auto f = [&](int stI) {
+                    if (exclTris[stI])
+                        return;
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                    if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                        return;
+                    // all affected by sticky boundary conditions
+                    if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
+                        vtemp("BCorder", tri[2]) == 3)
+                        return;
+                    // ccd
+                    auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
+                    auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
+                    auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
-                switch (pt_distance_type(p, t0, t1, t2)) {
-                case 0: {
-                    if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[0]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    switch (pt_distance_type(p, t0, t1, t2)) {
+                    case 0: {
+                        if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[0]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 1: {
-                    if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[1]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 1: {
+                        if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[1]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 2: {
-                    if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                        PP[no] = pair_t{vi, tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 2: {
+                        if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
+                            PP.try_push(pair_t{vi, tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 3: {
-                    if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[0], tri[1]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 3: {
+                        if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[0], tri[1]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 4: {
-                    if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[1], tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 4: {
+                        if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[1], tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 5: {
-                    if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                        PE[no] = pair3_t{vi, tri[2], tri[0]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 5: {
+                        if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
+                            PE.try_push(pair3_t{vi, tri[2], tri[0]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 6: {
-                    if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPT[0], 1);
-                        PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
-                        csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    case 6: {
+                        if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                            PT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                            csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                        }
+                        break;
                     }
-                    break;
-                }
-                default: break;
-                }
-            };
-            bvh.iter_neighbors(bv, f);
-        });
+                    default: break;
+                    }
+                };
+                bvh.iter_neighbors(bv, f);
+            });
+        if (allFit(PP, PE, PT, csPT))
+            break;
+        resizeAndRewind(PP, PE, PT, csPT);
+    } while (true);
     /// ee
     if (enableContactEE) {
         const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
-        pol(Collapse{seInds.size()}, [seInds = proxy<space>({}, seInds),
-                                      sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-                                      exclSes = proxy<space>(exclSes), vtemp = proxy<space>({}, vtemp),
-                                      bvh = proxy<space>(sebvh), PP = proxy<space>(PP), nPP = proxy<space>(nPP),
-                                      PE = proxy<space>(PE), nPE = proxy<space>(nPE), EE = proxy<space>(EE),
-                                      nEE = proxy<space>(nEE),
-                                      // mollifier
-                                      PPM = proxy<space>(PPM), nPPM = proxy<space>(nPPM), PEM = proxy<space>(PEM),
-                                      nPEM = proxy<space>(nPEM), EEM = proxy<space>(EEM), nEEM = proxy<space>(nEEM),
-                                      enableMollification = enableMollification,
-                                      //
-                                      csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE),
-                                      dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
-                                      voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
-            if (exclSes[sei])
-                return;
-            auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+        snapshot(PP, PE, EE, PPM, PEM, EEM, csEE);
+        do {
+            pol(Collapse{seInds.size()},
+                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                 exclSes = proxy<space>(exclSes), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+                 PP = PP.port(), PE = PE.port(), EE = EE.port(),
+                 // mollifier
+                 PPM = PPM.port(), PEM = PEM.port(), EEM = EEM.port(), enableMollification = enableMollification,
+                 //
+                 csEE = csEE.port(), dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
+                 voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                    if (exclSes[sei])
+                        return;
+                    auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
 
-            bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-            auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
-            auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
-            auto rv0 = vtemp.pack(dim_c<3>, "x0", eiInds[0]);
-            auto rv1 = vtemp.pack(dim_c<3>, "x0", eiInds[1]);
-            auto [mi, ma] = get_bounding_box(v0, v1);
-            auto bv = bv_t{mi - thickness, ma + thickness};
-            auto f = [&](int sej) {
-                if (voffset == 0 && sei < sej)
-                    return;
-                auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                    eiInds[1] == ejInds[1])
-                    return;
-                // all affected by sticky boundary conditions
-                if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
-                    return;
-                auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
-                auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
-                auto rv2 = vtemp.pack(dim_c<3>, "x0", ejInds[0]);
-                auto rv3 = vtemp.pack(dim_c<3>, "x0", ejInds[1]);
+                    bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                    auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                    auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                    auto rv0 = vtemp.pack(dim_c<3>, "x0", eiInds[0]);
+                    auto rv1 = vtemp.pack(dim_c<3>, "x0", eiInds[1]);
+                    auto [mi, ma] = get_bounding_box(v0, v1);
+                    auto bv = bv_t{mi - thickness, ma + thickness};
+                    auto f = [&](int sej) {
+                        if (voffset == 0 && sei < sej)
+                            return;
+                        auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                        if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                            eiInds[1] == ejInds[1])
+                            return;
+                        // all affected by sticky boundary conditions
+                        if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                            return;
+                        auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
+                        auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
+                        auto rv2 = vtemp.pack(dim_c<3>, "x0", ejInds[0]);
+                        auto rv3 = vtemp.pack(dim_c<3>, "x0", ejInds[1]);
 
-                bool mollify = false;
-                if (enableMollification) {
-                    // IPC (24)
-                    T c = cn2_ee(v0, v1, v2, v3);
-                    T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
-                    mollify = c < epsX;
-                }
+                        bool mollify = false;
+                        if (enableMollification) {
+                            // IPC (24)
+                            T c = cn2_ee(v0, v1, v2, v3);
+                            T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                            mollify = c < epsX;
+                        }
 
-                switch (ee_distance_type(v0, v1, v2, v3)) {
-                case 0: {
-                    if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPPM[0], 1);
-                            PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        switch (ee_distance_type(v0, v1, v2, v3)) {
+                        case 0: {
+                            if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PPM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                    break;
+                                }
+                                PP.try_push(pair_t{eiInds[0], ejInds[0]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1);
-#if 0
-                printf("ee category 0: %d-th <%d, %d, %d, %d>, dist: %f (%f) < "
-                       "%f\n",
-                       (int)no, (int)eiInds[0], (int)eiInds[1], (int)ejInds[0],
-                       (int)ejInds[1], (float)zs::sqrt(d2),
-                       (float)(v0 - v2).norm(), (float)dHat);
-#endif
-                            PP[no] = pair_t{eiInds[0], ejInds[0]};
-                        }
-                    }
-                    break;
-                }
-                case 1: {
-                    if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPPM[0], 1);
-                            PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]};
+                        case 1: {
+                            if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PPM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]});
+                                    break;
+                                }
+                                PP.try_push(pair_t{eiInds[0], ejInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                            PP[no] = pair_t{eiInds[0], ejInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 2: {
-                    if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPEM[0], 1);
-                            PEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        case 2: {
+                            if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PEM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                    break;
+                                }
+                                PE.try_push(pair3_t{eiInds[0], ejInds[0], ejInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                            PE[no] = pair3_t{eiInds[0], ejInds[0], ejInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 3: {
-                    if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPPM[0], 1);
-                            PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                        case 3: {
+                            if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PPM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]});
+                                    break;
+                                }
+                                PP.try_push(pair_t{eiInds[1], ejInds[0]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                            PP[no] = pair_t{eiInds[1], ejInds[0]};
-                        }
-                    }
-                    break;
-                }
-                case 4: {
-                    if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPPM[0], 1);
-                            PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]};
+                        case 4: {
+                            if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PPM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]});
+                                    break;
+                                }
+                                PP.try_push(pair_t{eiInds[1], ejInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1);
-                            PP[no] = pair_t{eiInds[1], ejInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 5: {
-                    if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPEM[0], 1);
-                            PEM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                        case 5: {
+                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PEM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]});
+                                    break;
+                                }
+                                PE.try_push(pair3_t{eiInds[1], ejInds[0], ejInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                            PE[no] = pair3_t{eiInds[1], ejInds[0], ejInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 6: {
-                    if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPEM[0], 1);
-                            PEM[no] = pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]};
+                        case 6: {
+                            if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PEM.try_push(pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]});
+                                    break;
+                                }
+                                PE.try_push(pair3_t{ejInds[0], eiInds[0], eiInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                            PE[no] = pair3_t{ejInds[0], eiInds[0], eiInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 7: {
-                    if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nPEM[0], 1);
-                            PEM[no] = pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]};
+                        case 7: {
+                            if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    PEM.try_push(pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]});
+                                    break;
+                                }
+                                PE.try_push(pair3_t{ejInds[1], eiInds[0], eiInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1);
-                            PE[no] = pair3_t{ejInds[1], eiInds[0], eiInds[1]};
-                        }
-                    }
-                    break;
-                }
-                case 8: {
-                    if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                        if (mollify) {
-                            auto no = atomic_add(exec_cuda, &nEEM[0], 1);
-                            EEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        case 8: {
+                            if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                if (mollify) {
+                                    EEM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                                    break;
+                                }
+                                EE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                            }
                             break;
                         }
-                        {
-                            auto no = atomic_add(exec_cuda, &nEE[0], 1);
-                            EE[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        default: break;
                         }
-                    }
-                    break;
-                }
-                default: break;
-                }
-            };
-            bvh.iter_neighbors(bv, f);
-        });
+                    };
+                    bvh.iter_neighbors(bv, f);
+                });
+            if (allFit(PP, PE, EE, PPM, PEM, EEM, csEE))
+                break;
+            resizeAndRewind(PP, PE, EE, PPM, PEM, EEM, csEE);
+        } while (true);
     }
     pol.profile(false);
 }
@@ -718,11 +673,13 @@ void UnifiedIPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, 
 
     /// pt
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
+    csPT.snapshot();
+    do {
     pol(range(svInds, "inds", dim_c<1>, int_c),
         [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
          exclTris = withBoundary ? proxy<space>(exclBouSts) : proxy<space>(exclSts), vtemp = proxy<space>({}, vtemp),
-         bvh = proxy<space>(stbvh), csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT), dHat, xi,
-         thickness = xi + dHat, voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
+         bvh = proxy<space>(stbvh), csPT = csPT.port(), dHat, xi, thickness = xi + dHat,
+         voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
             const auto dHat2 = zs::sqr(dHat + xi);
             int BCorder0 = vtemp("BCorder", vi);
             auto p = vtemp.pack(dim_c<3>, "xn", vi);
@@ -741,23 +698,30 @@ void UnifiedIPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, 
                 auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
                 if (auto d2 = dist_pt_sqr(p, t0, t1, t2); d2 < dHat2) {
-                    csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                    csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                     exclTris[stI] = 1;
                 }
             };
             bvh.iter_neighbors(bv, f);
         });
+    if (csPT.getCount() <= csPT.getBufferSize())
+        break;
+    csPT.resizeToCounter();
+    csPT.restartCounter();
+    } while (true);
     /// ee
     if (enableContactEE) {
-        const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
+    const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
+    csEE.snapshot();
+    do {
         pol(Collapse{seInds.size()},
             [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
              exclSes = proxy<space>(exclSes),
              oExclSes = withBoundary ? proxy<space>(exclBouSes) : proxy<space>(exclSes),
              vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
              //
-             csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat2 = zs::sqr(dHat + xi), xi,
-             thickness = xi + dHat, voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+             csEE = csEE.port(), dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
+             voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
                 auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
                 bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
                 auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
@@ -778,18 +742,23 @@ void UnifiedIPCSystem::findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, 
                     auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
 
                     if (auto d2 = dist_ee_sqr(v0, v1, v2, v3); d2 < dHat2) {
-                        csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                         exclSes[sei] = 1;
                         oExclSes[sej] = 1;
                     }
                 };
                 bvh.iter_neighbors(bv, f);
             });
+        if (csEE.getCount() <= csEE.getBufferSize())
+            break;
+        csEE.resizeToCounter();
+        csEE.restartCounter();
+    } while (true);
     }
 }
 void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) {
-    ncsPT.setVal(0);
-    ncsEE.setVal(0);
+    csPT.reset();
+    csEE.reset();
 
     if (enableContactSelf) {
         bvs.resize(stInds.size());
@@ -808,13 +777,6 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
     if (enableContactSelf)
         findCCDConstraintsImpl(pol, alpha, xi, false);
 
-    auto checkSize = [this](const auto &cnt, std::string_view msg) {
-        if (auto c = cnt.getVal(); c >= estNumCps)
-            throw std::runtime_error(fmt::format("[{}] cp queue of size {} not enough for {} cps!", msg, estNumCps, c));
-    };
-    checkSize(ncsPT, "PT");
-    checkSize(ncsEE, "EE");
-
     if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, vtemp, "dir", alpha, coOffset, bvs);
@@ -825,9 +787,6 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bouSeBvh.refit(pol, bvs);
 
         findCCDConstraintsImpl(pol, alpha, xi, true);
-
-        checkSize(ncsPT, "PT");
-        checkSize(ncsEE, "EE");
 
         /// @note assume stBvh is already updated
         if (!enableContactSelf) {
@@ -851,23 +810,28 @@ void UnifiedIPCSystem::findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &p
 
     pol.profile(PROFILE_IPC);
     /// pt
-    pol(Collapse{numBouDofs}, [eles = proxy<space>({}, stInds), vtemp = proxy<space>({}, vtemp),
-                               bvh = proxy<space>(stBvh), csPT = proxy<space>(csPT), ncsPT = proxy<space>(ncsPT), xi,
-                               alpha, coOffset = coOffset] __device__(int i) mutable {
-        auto vi = coOffset + i;
-        auto p = vtemp.pack(dim_c<3>, "xn", vi);
-        auto dir = vtemp.pack(dim_c<3>, "dir", vi);
-        auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
-        bv._min -= xi;
-        bv._max += xi;
-        bvh.iter_neighbors(bv, [&](int stI) {
-            auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
-            if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
-                vtemp("BCorder", tri[2]) == 3)
-                return;
-            csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
-        });
-    });
+    snapshot(csPT);
+    do {
+        pol(Collapse{numBouDofs},
+            [eles = proxy<space>({}, stInds), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
+             csPT = csPT.port(), xi, alpha, coOffset = coOffset] __device__(int i) mutable {
+                auto vi = coOffset + i;
+                auto p = vtemp.pack(dim_c<3>, "xn", vi);
+                auto dir = vtemp.pack(dim_c<3>, "dir", vi);
+                auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
+                bv._min -= xi;
+                bv._max += xi;
+                bvh.iter_neighbors(bv, [&](int stI) {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
+                    if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
+                        return;
+                    csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                });
+            });
+        if (allFit(csPT))
+            break;
+        resizeAndRewind(csPT);
+    } while (true);
     pol.profile(false);
 }
 void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary) {
@@ -878,58 +842,69 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
     pol.profile(PROFILE_IPC);
     /// pt
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
-    pol(range(svInds, "inds", dim_c<1>, int_c),
-        [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds),
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), csPT = proxy<space>(csPT),
-         ncsPT = proxy<space>(ncsPT), xi, alpha, voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
-            auto p = vtemp.pack(dim_c<3>, "xn", vi);
-            auto dir = vtemp.pack(dim_c<3>, "dir", vi);
-            auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
-            bv._min -= xi;
-            bv._max += xi;
-            bvh.iter_neighbors(bv, [&](int stI) {
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
-                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
-                    return;
-                // all affected by sticky boundary conditions
-                if (vtemp("BCorder", vi) == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
-                    vtemp("BCorder", tri[2]) == 3)
-                    return;
-                csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair4_t{vi, tri[0], tri[1], tri[2]};
+    snapshot(csPT);
+    do {
+        pol(range(svInds, "inds", dim_c<1>, int_c),
+            [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds),
+             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), csPT = csPT.port(), xi, alpha,
+             voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
+                auto p = vtemp.pack(dim_c<3>, "xn", vi);
+                auto dir = vtemp.pack(dim_c<3>, "dir", vi);
+                auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
+                bv._min -= xi;
+                bv._max += xi;
+                bvh.iter_neighbors(bv, [&](int stI) {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                    if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                        return;
+                    // all affected by sticky boundary conditions
+                    if (vtemp("BCorder", vi) == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
+                        vtemp("BCorder", tri[2]) == 3)
+                        return;
+                    csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
+                });
             });
-        });
+        if (allFit(csPT))
+            break;
+        resizeAndRewind(csPT);
+    } while (true);
     /// ee
     if (enableContactEE) {
         const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
-        pol(Collapse{seInds.size()},
-            [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), csEE = proxy<space>(csEE),
-             ncsEE = proxy<space>(ncsEE), xi, alpha,
-             voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
-                auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-                auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
-                auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
-                auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
-                auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
-                auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
-                merge(bv, v1);
-                merge(bv, v1 + alpha * dir1);
-                bv._min -= xi;
-                bv._max += xi;
-                bvh.iter_neighbors(bv, [&](int sej) {
-                    if (voffset == 0 && sei < sej)
-                        return;
-                    auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                    if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                        eiInds[1] == ejInds[1])
-                        return;
-                    // all affected by sticky boundary conditions
-                    if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
-                        return;
-                    csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+        snapshot(csEE);
+        do {
+            pol(Collapse{seInds.size()},
+                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                 vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), csEE = csEE.port(), xi, alpha,
+                 voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                    auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                    bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                    auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                    auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                    auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
+                    auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
+                    auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
+                    merge(bv, v1);
+                    merge(bv, v1 + alpha * dir1);
+                    bv._min -= xi;
+                    bv._max += xi;
+                    bvh.iter_neighbors(bv, [&](int sej) {
+                        if (voffset == 0 && sei < sej)
+                            return;
+                        auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                        if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                            eiInds[1] == ejInds[1])
+                            return;
+                        // all affected by sticky boundary conditions
+                        if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                            return;
+                        csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                    });
                 });
-            });
+            if (allFit(csEE))
+                break;
+            resizeAndRewind(csEE);
+        } while (true);
     }
     pol.profile(false);
 }
@@ -937,104 +912,99 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
     using namespace zs;
 
     if (!needFricPrecompute)
-        return;
+    return;
     needFricPrecompute = false;
 
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
-    nFPP.setVal(0);
-    nFPE.setVal(0);
-    nFPT.setVal(0);
-    nFEE.setVal(0);
+    FPP.reset();
+    FPE.reset();
+    FPT.reset();
+    FEE.reset();
     if (enableContact) {
-        if (s_enableSelfFriction) {
-            nFPP = nPP;
-            nFPE = nPE;
-            nFPT = nPT;
-            nFEE = nEE;
+    if (s_enableSelfFriction) {
+        FPP.assignCounterFrom(PP);
+        FPE.assignCounterFrom(PE);
+        FPT.assignCounterFrom(PT);
+        FEE.assignCounterFrom(EE);
 
-            auto numFPP = nFPP.getVal();
-            pol(range(numFPP),
-                [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = proxy<space>(PP),
-                 FPP = proxy<space>(FPP), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fppi) mutable {
-                    auto fpp = PP[fppi];
-                    FPP[fppi] = fpp;
-                    auto x0 = vtemp.pack<3>("xn", fpp[0]);
-                    auto x1 = vtemp.pack<3>("xn", fpp[1]);
-                    auto dist2 = dist2_pp(x0, x1);
-                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                    fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
-                    fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
-                });
-            auto numFPE = nFPE.getVal();
-            pol(range(numFPE),
-                [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = proxy<space>(PE),
-                 FPE = proxy<space>(FPE), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpei) mutable {
-                    auto fpe = PE[fpei];
-                    FPE[fpei] = fpe;
-                    auto p = vtemp.pack<3>("xn", fpe[0]);
-                    auto e0 = vtemp.pack<3>("xn", fpe[1]);
-                    auto e1 = vtemp.pack<3>("xn", fpe[2]);
-                    auto dist2 = dist2_pe(p, e0, e1);
-                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                    fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
-                    fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
-                    fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
-                });
-            auto numFPT = nFPT.getVal();
-            pol(range(numFPT),
-                [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = proxy<space>(PT),
-                 FPT = proxy<space>(FPT), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpti) mutable {
-                    auto fpt = PT[fpti];
-                    FPT[fpti] = fpt;
-                    auto p = vtemp.pack<3>("xn", fpt[0]);
-                    auto t0 = vtemp.pack<3>("xn", fpt[1]);
-                    auto t1 = vtemp.pack<3>("xn", fpt[2]);
-                    auto t2 = vtemp.pack<3>("xn", fpt[3]);
-                    auto dist2 = dist2_pt(p, t0, t1, t2);
-                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                    fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
-                    fricPT.tuple<2>("beta", fpti) = point_triangle_closest_point(p, t0, t1, t2);
-                    fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
-                });
-            auto numFEE = nFEE.getVal();
-            pol(range(numFEE),
-                [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = proxy<space>(EE),
-                 FEE = proxy<space>(FEE), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int feei) mutable {
-                    auto fee = EE[feei];
-                    FEE[feei] = fee;
-                    auto ea0 = vtemp.pack<3>("xn", fee[0]);
-                    auto ea1 = vtemp.pack<3>("xn", fee[1]);
-                    auto eb0 = vtemp.pack<3>("xn", fee[2]);
-                    auto eb1 = vtemp.pack<3>("xn", fee[3]);
-                    auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-                    auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                    fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
-                    fricEE.tuple<2>("gamma", feei) = edge_edge_closest_point(ea0, ea1, eb0, eb1);
-                    fricEE.tuple<6>("basis", feei) = edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
-                });
-        }
+        auto numFPP = FPP.getCount();
+        pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = PP.port(),
+                            FPP = FPP.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fppi) mutable {
+            auto fpp = PP[fppi];
+            FPP[fppi] = fpp;
+            auto x0 = vtemp.pack<3>("xn", fpp[0]);
+            auto x1 = vtemp.pack<3>("xn", fpp[1]);
+            auto dist2 = dist2_pp(x0, x1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
+        });
+        auto numFPE = FPE.getCount();
+        pol(range(numFPE), [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = PE.port(),
+                            FPE = FPE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpei) mutable {
+            auto fpe = PE[fpei];
+            FPE[fpei] = fpe;
+            auto p = vtemp.pack<3>("xn", fpe[0]);
+            auto e0 = vtemp.pack<3>("xn", fpe[1]);
+            auto e1 = vtemp.pack<3>("xn", fpe[2]);
+            auto dist2 = dist2_pe(p, e0, e1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+            fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
+        });
+        auto numFPT = FPT.getCount();
+        pol(range(numFPT), [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = PT.port(),
+                            FPT = FPT.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int fpti) mutable {
+            auto fpt = PT[fpti];
+            FPT[fpti] = fpt;
+            auto p = vtemp.pack<3>("xn", fpt[0]);
+            auto t0 = vtemp.pack<3>("xn", fpt[1]);
+            auto t1 = vtemp.pack<3>("xn", fpt[2]);
+            auto t2 = vtemp.pack<3>("xn", fpt[3]);
+            auto dist2 = dist2_pt(p, t0, t1, t2);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPT.tuple<2>("beta", fpti) = point_triangle_closest_point(p, t0, t1, t2);
+            fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
+        });
+        auto numFEE = FEE.getCount();
+        pol(range(numFEE), [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = EE.port(),
+                            FEE = FEE.port(), xi2 = xi * xi, activeGap2, kappa = kappa] __device__(int feei) mutable {
+            auto fee = EE[feei];
+            FEE[feei] = fee;
+            auto ea0 = vtemp.pack<3>("xn", fee[0]);
+            auto ea1 = vtemp.pack<3>("xn", fee[1]);
+            auto eb0 = vtemp.pack<3>("xn", fee[2]);
+            auto eb1 = vtemp.pack<3>("xn", fee[3]);
+            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricEE.tuple<2>("gamma", feei) = edge_edge_closest_point(ea0, ea1, eb0, eb1);
+            fricEE.tuple<6>("basis", feei) = edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
+        });
+    }
     }
     if (enableGround) {
-        for (auto &primHandle : prims) {
-            if (primHandle.isBoundary()) // skip soft boundary
-                continue;
-            const auto &svs = primHandle.getSurfVerts();
-            pol(range(svs.size()),
-                [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
-                 svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
-                 gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
-                    auto x = vtemp.pack<3>("xn", vi);
-                    auto dist = gn.dot(x);
-                    auto dist2 = dist * dist;
-                    if (dist2 < activeGap2) {
-                        auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                        svtemp("fn", svi) = -bGrad * 2 * dist;
-                    } else
-                        svtemp("fn", svi) = 0;
-                });
-        }
+    for (auto &primHandle : prims) {
+        if (primHandle.isBoundary()) // skip soft boundary
+            continue;
+        const auto &svs = primHandle.getSurfVerts();
+        pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
+                                svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
+                                gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+            const auto vi = svs("inds", svi, int_c) + svOffset;
+            auto x = vtemp.pack<3>("xn", vi);
+            auto dist = gn.dot(x);
+            auto dist2 = dist * dist;
+            if (dist2 < activeGap2) {
+                auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                svtemp("fn", svi) = -bGrad * 2 * dist;
+            } else
+                svtemp("fn", svi) = 0;
+        });
+    }
     }
 }
 
@@ -1522,11 +1492,11 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
     /// collision (dynamic hessian)
     // contacts
     if (enableContact) {
-        auto numPP = nPP.getVal();
+        auto numPP = PP.getCount();
 #if 0
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
+                             PP = PP.port()] ZS_LAMBDA(int ppi) mutable {
             constexpr int dim = 3;
             auto pp = PP[ppi];
             zs::vec<T, dim * 2> temp{};
@@ -1547,7 +1517,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
           });
 #elif 1
         pol(Collapse{numPP, 32}, [execTag, tempPP = proxy<space>({}, tempPP), vtemp = proxy<space>({}, vtemp), dxTag,
-                                  bTag, PP = proxy<space>(PP)] ZS_LAMBDA(int ppi, int tid) mutable {
+                                  bTag, PP = PP.port()] ZS_LAMBDA(int ppi, int tid) mutable {
             int rowid = tid / 5;
             int colid = tid % 5;
             ;
@@ -1571,7 +1541,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
         });
 #else
         pol(range(numPP * 36), [execTag, tempPP = proxy<space>({}, tempPP), vtemp = proxy<space>({}, vtemp), dxTag,
-                                bTag, PP = proxy<space>(PP), n = numPP * 36] ZS_LAMBDA(int idx) mutable {
+                                bTag, PP = PP.port(), n = numPP * 36] ZS_LAMBDA(int idx) mutable {
             constexpr int dim = 3;
             __shared__ int offset;
             // directly use PCG_Solve_AX9_b2 from kemeng huang
@@ -1614,11 +1584,11 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                 atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
         });
 #endif
-        auto numPE = nPE.getVal();
+        auto numPE = PE.getCount();
 #if 0
           pol(range(numPE), [execTag, tempPE = proxy<space>({}, tempPE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
+                             PE = PE.port()] ZS_LAMBDA(int pei) mutable {
             constexpr int dim = 3;
             auto pe = PE[pei];
             zs::vec<T, dim * 3> temp{};
@@ -1641,7 +1611,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
             auto numRows = numPE * 9;
             auto numWarps = (numRows + 3) / 4; // 8 threads per row
             pol(Collapse{numWarps * 32}, [execTag, tempPE = proxy<space>({}, tempPE), vtemp = proxy<space>({}, vtemp),
-                                          dxTag, bTag, PE = proxy<space>(PE), numRows] ZS_LAMBDA(int tid) mutable {
+                                          dxTag, bTag, PE = PE.port(), numRows] ZS_LAMBDA(int tid) mutable {
                 int growid = tid / 8;
                 int rowid = growid % 9;
                 int pei = growid / 9;
@@ -1667,7 +1637,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
         }
 #else
         pol(range(numPE * 81), [execTag, tempPE = proxy<space>({}, tempPE), vtemp = proxy<space>({}, vtemp), dxTag,
-                                bTag, PE = proxy<space>(PE), n = numPE * 81] ZS_LAMBDA(int idx) mutable {
+                                bTag, PE = PE.port(), n = numPE * 81] ZS_LAMBDA(int idx) mutable {
             constexpr int dim = 3;
             __shared__ int offset;
             // directly use PCG_Solve_AX9_b2 from kemeng huang
@@ -1710,11 +1680,11 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                 atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
         });
 #endif
-        auto numPT = nPT.getVal();
+        auto numPT = PT.getCount();
 #if 0
           pol(range(numPT), [execTag, tempPT = proxy<space>({}, tempPT),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
+                             PT = PT.port()] ZS_LAMBDA(int pti) mutable {
             constexpr int dim = 3;
             auto pt = PT[pti];
             zs::vec<T, dim * 4> temp{};
@@ -1735,7 +1705,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
 #elif 1
         // 0, 1, ..., 7, 0, 1, 2, 3
         pol(Collapse{numPT, 32 * 3}, [execTag, tempPT = proxy<space>({}, tempPT), vtemp = proxy<space>({}, vtemp),
-                                      dxTag, bTag, PT = proxy<space>(PT)] ZS_LAMBDA(int pti, int tid) mutable {
+                                      dxTag, bTag, PT = PT.port()] ZS_LAMBDA(int pti, int tid) mutable {
             int rowid = tid / 8;
             int colid = tid % 8;
             ;
@@ -1760,7 +1730,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
         });
 #else
         pol(range(numPT * 144), [execTag, tempPT = proxy<space>({}, tempPT), vtemp = proxy<space>({}, vtemp), dxTag,
-                                 bTag, PT = proxy<space>(PT), n = numPT * 144] ZS_LAMBDA(int idx) mutable {
+                                 bTag, PT = PT.port(), n = numPT * 144] ZS_LAMBDA(int idx) mutable {
             constexpr int dim = 3;
             __shared__ int offset;
             // directly use PCG_Solve_AX9_b2 from kemeng huang
@@ -1803,11 +1773,11 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                 atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
         });
 #endif
-        auto numEE = nEE.getVal();
+        auto numEE = EE.getCount();
 #if 0
           pol(range(numEE), [execTag, tempEE = proxy<space>({}, tempEE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
+                             EE = EE.port()] ZS_LAMBDA(int eei) mutable {
             constexpr int dim = 3;
             auto ee = EE[eei];
             zs::vec<T, dim * 4> temp{};
@@ -1828,7 +1798,7 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
 #elif 1
         // 0, 1, ..., 7, 0, 1, 2, 3
         pol(Collapse{numEE, 32 * 3}, [execTag, tempEE = proxy<space>({}, tempEE), vtemp = proxy<space>({}, vtemp),
-                                      dxTag, bTag, EE = proxy<space>(EE)] ZS_LAMBDA(int eei, int tid) mutable {
+                                      dxTag, bTag, EE = EE.port()] ZS_LAMBDA(int eei, int tid) mutable {
             int rowid = tid / 8;
             int colid = tid % 8;
             ;
@@ -1897,10 +1867,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
         });
 #endif
         if (enableMollification) {
-            auto numEEM = nEEM.getVal();
+            auto numEEM = EEM.getCount();
             pol(Collapse{numEEM, 32 * 3},
                 [execTag, tempEEM = proxy<space>({}, tempEEM), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                 EEM = proxy<space>(EEM)] ZS_LAMBDA(int eemi, int tid) mutable {
+                 EEM = EEM.port()] ZS_LAMBDA(int eemi, int tid) mutable {
                     int rowid = tid / 8;
                     int colid = tid % 8;
 
@@ -1924,10 +1894,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                         atomic_add(execTag, &vtemp(bTag, rowid % 3, eem[rowid / 3]), entryG);
                 });
 
-            auto numPPM = nPPM.getVal();
+            auto numPPM = PPM.getCount();
             pol(Collapse{numPPM, 32 * 3},
                 [execTag, tempPPM = proxy<space>({}, tempPPM), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                 PPM = proxy<space>(PPM)] ZS_LAMBDA(int ppmi, int tid) mutable {
+                 PPM = PPM.port()] ZS_LAMBDA(int ppmi, int tid) mutable {
                     int rowid = tid / 8;
                     int colid = tid % 8;
 
@@ -1951,10 +1921,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                         atomic_add(execTag, &vtemp(bTag, rowid % 3, ppm[rowid / 3]), entryG);
                 });
 
-            auto numPEM = nPEM.getVal();
+            auto numPEM = PEM.getCount();
             pol(Collapse{numPEM, 32 * 3},
                 [execTag, tempPEM = proxy<space>({}, tempPEM), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                 PEM = proxy<space>(PEM)] ZS_LAMBDA(int pemi, int tid) mutable {
+                 PEM = PEM.port()] ZS_LAMBDA(int pemi, int tid) mutable {
                     int rowid = tid / 8;
                     int colid = tid % 8;
 
@@ -1982,10 +1952,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
         if (s_enableFriction) {
             if (s_enableSelfFriction) {
                 if (fricMu != 0) {
-                    auto numFPP = nFPP.getVal();
+                    auto numFPP = FPP.getCount();
                     pol(Collapse{numFPP, 32},
                         [execTag, fricPP = proxy<space>({}, fricPP), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                         FPP = proxy<space>(FPP)] ZS_LAMBDA(int fppi, int tid) mutable {
+                         FPP = FPP.port()] ZS_LAMBDA(int fppi, int tid) mutable {
                             int rowid = tid / 5;
                             int colid = tid % 5;
                             ;
@@ -2008,10 +1978,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                                 atomic_add(execTag, &vtemp(bTag, rowid % 3, fpp[rowid / 3]), entryG);
                         });
 
-                    auto numFPE = nFPE.getVal();
+                    auto numFPE = FPE.getCount();
                     pol(range(numFPE * 81),
                         [execTag, fricPE = proxy<space>({}, fricPE), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                         FPE = proxy<space>(FPE), n = numFPE * 81] ZS_LAMBDA(int idx) mutable {
+                         FPE = FPE.port(), n = numFPE * 81] ZS_LAMBDA(int idx) mutable {
                             constexpr int dim = 3;
                             __shared__ int offset;
                             // directly use PCG_Solve_AX9_b2 from kemeng huang
@@ -2054,10 +2024,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                                 atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
                         });
 
-                    auto numFPT = nFPT.getVal();
+                    auto numFPT = FPT.getCount();
                     pol(Collapse{numFPT, 32 * 3},
                         [execTag, fricPT = proxy<space>({}, fricPT), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                         FPT = proxy<space>(FPT)] ZS_LAMBDA(int fpti, int tid) mutable {
+                         FPT = FPT.port()] ZS_LAMBDA(int fpti, int tid) mutable {
                             int rowid = tid / 8;
                             int colid = tid % 8;
                             ;
@@ -2081,10 +2051,10 @@ void UnifiedIPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                                 atomic_add(execTag, &vtemp(bTag, rowid % 3, fpt[rowid / 3]), entryG);
                         });
 
-                    auto numFEE = nFEE.getVal();
+                    auto numFEE = FEE.getCount();
                     pol(Collapse{numFEE, 32 * 3},
                         [execTag, fricEE = proxy<space>({}, fricEE), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                         FEE = proxy<space>(FEE)] ZS_LAMBDA(int feei, int tid) mutable {
+                         FEE = FEE.port()] ZS_LAMBDA(int feei, int tid) mutable {
                             int rowid = tid / 8;
                             int colid = tid % 8;
                             ;
@@ -2313,10 +2283,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
     {
         if (enableContact) {
             auto activeGap2 = dHat * dHat + 2 * xi * dHat;
-            auto numPP = nPP.getVal();
+            auto numPP = PP.getCount();
             es.resize(count_warps(numPP));
             es.reset(0);
-            pol(range(numPP), [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP), es = proxy<space>(es),
+            pol(range(numPP), [vtemp = proxy<space>({}, vtemp), PP = PP.port(), es = proxy<space>(es),
                                xi2 = xi * xi, dHat = dHat, activeGap2, n = numPP] __device__(int ppi) mutable {
                 auto pp = PP[ppi];
                 auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -2335,10 +2305,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             });
             Es.push_back(reduce(pol, es) * kappa);
 
-            auto numPE = nPE.getVal();
+            auto numPE = PE.getCount();
             es.resize(count_warps(numPE));
             es.reset(0);
-            pol(range(numPE), [vtemp = proxy<space>({}, vtemp), PE = proxy<space>(PE), es = proxy<space>(es),
+            pol(range(numPE), [vtemp = proxy<space>({}, vtemp), PE = PE.port(), es = proxy<space>(es),
                                xi2 = xi * xi, dHat = dHat, activeGap2, n = numPE] __device__(int pei) mutable {
                 auto pe = PE[pei];
                 auto p = vtemp.pack<3>("xn", pe[0]);
@@ -2359,10 +2329,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             });
             Es.push_back(reduce(pol, es) * kappa);
 
-            auto numPT = nPT.getVal();
+            auto numPT = PT.getCount();
             es.resize(count_warps(numPT));
             es.reset(0);
-            pol(range(numPT), [vtemp = proxy<space>({}, vtemp), PT = proxy<space>(PT), es = proxy<space>(es),
+            pol(range(numPT), [vtemp = proxy<space>({}, vtemp), PT = PT.port(), es = proxy<space>(es),
                                xi2 = xi * xi, dHat = dHat, activeGap2, n = numPT] __device__(int pti) mutable {
                 auto pt = PT[pti];
                 auto p = vtemp.pack<3>("xn", pt[0]);
@@ -2384,10 +2354,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             });
             Es.push_back(reduce(pol, es) * kappa);
 
-            auto numEE = nEE.getVal();
+            auto numEE = EE.getCount();
             es.resize(count_warps(numEE));
             es.reset(0);
-            pol(range(numEE), [vtemp = proxy<space>({}, vtemp), EE = proxy<space>(EE), es = proxy<space>(es),
+            pol(range(numEE), [vtemp = proxy<space>({}, vtemp), EE = EE.port(), es = proxy<space>(es),
                                xi2 = xi * xi, dHat = dHat, activeGap2, n = numEE] __device__(int eei) mutable {
                 auto ee = EE[eei];
                 auto ea0 = vtemp.pack<3>("xn", ee[0]);
@@ -2410,10 +2380,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             Es.push_back(reduce(pol, es) * kappa);
 
             if (enableMollification) {
-                auto numEEM = nEEM.getVal();
+                auto numEEM = EEM.getCount();
                 es.resize(count_warps(numEEM));
                 es.reset(0);
-                pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), EEM = proxy<space>(EEM), es = proxy<space>(es),
+                pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), EEM = EEM.port(), es = proxy<space>(es),
                                     xi2 = xi * xi, dHat = dHat, activeGap2, n = numEEM] __device__(int eemi) mutable {
                     auto eem = EEM[eemi];
                     auto ea0 = vtemp.pack<3>("xn", eem[0]);
@@ -2443,10 +2413,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 });
                 Es.push_back(reduce(pol, es) * kappa);
 
-                auto numPPM = nPPM.getVal();
+                auto numPPM = PPM.getCount();
                 es.resize(count_warps(numPPM));
                 es.reset(0);
-                pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), PPM = proxy<space>(PPM), es = proxy<space>(es),
+                pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), PPM = PPM.port(), es = proxy<space>(es),
                                     xi2 = xi * xi, dHat = dHat, activeGap2, n = numPPM] __device__(int ppmi) mutable {
                     auto ppm = PPM[ppmi];
 
@@ -2472,10 +2442,10 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 });
                 Es.push_back(reduce(pol, es) * kappa);
 
-                auto numPEM = nPEM.getVal();
+                auto numPEM = PEM.getCount();
                 es.resize(count_warps(numPEM));
                 es.reset(0);
-                pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), PEM = proxy<space>(PEM), es = proxy<space>(es),
+                pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), PEM = PEM.port(), es = proxy<space>(es),
                                     xi2 = xi * xi, dHat = dHat, activeGap2, n = numPEM] __device__(int pemi) mutable {
                     auto pem = PEM[pemi];
 
@@ -2508,11 +2478,11 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
             if (s_enableFriction) {
                 if (fricMu != 0) {
                     if (s_enableSelfFriction) {
-                        auto numFPP = nFPP.getVal();
+                        auto numFPP = FPP.getCount();
                         es.resize(count_warps(numFPP));
                         es.reset(0);
                         pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
-                                            FPP = proxy<space>(FPP), es = proxy<space>(es), epsvh = epsv * dt,
+                                            FPP = FPP.port(), es = proxy<space>(es), epsvh = epsv * dt,
                                             n = numFPP] __device__(int fppi) mutable {
                             auto fpp = FPP[fppi];
                             auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
@@ -2527,11 +2497,11 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                         });
                         Es.push_back(reduce(pol, es) * fricMu);
 
-                        auto numFPE = nFPE.getVal();
+                        auto numFPE = FPE.getCount();
                         es.resize(count_warps(numFPE));
                         es.reset(0);
                         pol(range(numFPE), [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
-                                            FPE = proxy<space>(FPE), es = proxy<space>(es), epsvh = epsv * dt,
+                                            FPE = FPE.port(), es = proxy<space>(es), epsvh = epsv * dt,
                                             n = numFPE] __device__(int fpei) mutable {
                             auto fpe = FPE[fpei];
                             auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
@@ -2548,11 +2518,11 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                         });
                         Es.push_back(reduce(pol, es) * fricMu);
 
-                        auto numFPT = nFPT.getVal();
+                        auto numFPT = FPT.getCount();
                         es.resize(count_warps(numFPT));
                         es.reset(0);
                         pol(range(numFPT), [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
-                                            FPT = proxy<space>(FPT), es = proxy<space>(es), epsvh = epsv * dt,
+                                            FPT = FPT.port(), es = proxy<space>(es), epsvh = epsv * dt,
                                             n = numFPT] __device__(int fpti) mutable {
                             auto fpt = FPT[fpti];
                             auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
@@ -2570,11 +2540,11 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                         });
                         Es.push_back(reduce(pol, es) * fricMu);
 
-                        auto numFEE = nFEE.getVal();
+                        auto numFEE = FEE.getCount();
                         es.resize(count_warps(numFEE));
                         es.reset(0);
                         pol(range(numFEE), [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE),
-                                            FEE = proxy<space>(FEE), es = proxy<space>(es), epsvh = epsv * dt,
+                                            FEE = FEE.port(), es = proxy<space>(es), epsvh = epsv * dt,
                                             n = numFEE] __device__(int feei) mutable {
                             auto fee = FEE[feei];
                             auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
@@ -2891,13 +2861,13 @@ void UnifiedIPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T 
     // Vector<T> alpha{vtemp.get_allocator(), 1};
     auto &alpha = temp;
     alpha.setVal(stepSize);
-    auto npt = ncsPT.getVal();
+    auto npt = csPT.getCount();
 #if PROFILE_IPC
     CppTimer timer;
     timer.tick();
 #endif
     pol.profile(PROFILE_IPC);
-    pol(range(npt), [csPT = proxy<space>(csPT), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
+    pol(range(npt), [csPT = csPT.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
                      xi, coOffset = (int)coOffset] __device__(int pti) {
         auto ids = csPT[pti];
         auto p = vtemp.pack(dim_c<3>, "xn", ids[0]);
@@ -2918,8 +2888,8 @@ void UnifiedIPCSystem::intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T 
 #endif
             atomic_min(exec_cuda, &alpha[0], tmp);
     });
-    auto nee = ncsEE.getVal();
-    pol(range(nee), [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
+    auto nee = csEE.getCount();
+    pol(range(nee), [csEE = csEE.port(), vtemp = proxy<space>({}, vtemp), alpha = proxy<space>(alpha), stepSize,
                      xi, coOffset = (int)coOffset] __device__(int eei) {
         auto ids = csEE[eei];
         auto ea0 = vtemp.pack(dim_c<3>, "xn", ids[0]);

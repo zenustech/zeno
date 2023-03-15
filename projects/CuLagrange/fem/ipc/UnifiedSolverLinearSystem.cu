@@ -560,9 +560,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
     hess3.reset(false, 0);
     hess4.reset(false, 0);
     if (enableContact) {
-        auto numPP = nPP.getVal();
+        auto numPP = PP.getCount();
         auto offset = hess2.increaseCount(numPP);
-        pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), hess2 = proxy<space>(hess2),
+        pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = PP.port(), hess2 = proxy<space>(hess2),
                                offset] ZS_LAMBDA(int ppi) mutable {
             auto H = tempPP.pack(dim_c<6, 6>, "H", ppi);
             auto inds = PP[ppi];
@@ -570,9 +570,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
             hess2.inds[offset + ppi] = inds;
         });
 
-        auto numPE = nPE.getVal();
+        auto numPE = PE.getCount();
         offset = hess3.increaseCount(numPE);
-        pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), hess3 = proxy<space>(hess3),
+        pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = PE.port(), hess3 = proxy<space>(hess3),
                                offset] ZS_LAMBDA(int pei) mutable {
             auto H = tempPE.pack(dim_c<9, 9>, "H", pei);
             auto inds = PE[pei];
@@ -580,9 +580,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
             hess3.inds[offset + pei] = inds;
         });
 
-        auto numPT = nPT.getVal();
+        auto numPT = PT.getCount();
         offset = hess4.increaseCount(numPT);
-        pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), hess4 = proxy<space>(hess4),
+        pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = PT.port(), hess4 = proxy<space>(hess4),
                                offset] ZS_LAMBDA(int pti) mutable {
             auto H = tempPT.pack(dim_c<12, 12>, "H", pti);
             auto inds = PT[pti];
@@ -590,9 +590,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
             hess4.inds[offset + pti] = inds;
         });
 
-        auto numEE = nEE.getVal();
+        auto numEE = EE.getCount();
         offset = hess4.increaseCount(numEE);
-        pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), hess4 = proxy<space>(hess4),
+        pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = EE.port(), hess4 = proxy<space>(hess4),
                                offset] ZS_LAMBDA(int eei) mutable {
             auto H = tempEE.pack(dim_c<12, 12>, "H", eei);
             auto inds = EE[eei];
@@ -601,9 +601,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
         });
 
         if (enableMollification) {
-            auto numEEM = nEEM.getVal();
+            auto numEEM = EEM.getCount();
             offset = hess4.increaseCount(numEEM);
-            pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = proxy<space>(EEM),
+            pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = EEM.port(),
                                     hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eemi) mutable {
                 auto H = tempEEM.pack(dim_c<12, 12>, "H", eemi);
                 auto inds = EEM[eemi];
@@ -611,9 +611,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
                 hess4.inds[offset + eemi] = inds;
             });
 
-            auto numPPM = nPPM.getVal();
+            auto numPPM = PPM.getCount();
             offset = hess4.increaseCount(numPPM);
-            pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = proxy<space>(PPM),
+            pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = PPM.port(),
                                     hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int ppmi) mutable {
                 auto H = tempPPM.pack(dim_c<12, 12>, "H", ppmi);
                 auto inds = PPM[ppmi];
@@ -621,9 +621,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
                 hess4.inds[offset + ppmi] = inds;
             });
 
-            auto numPEM = nPEM.getVal();
+            auto numPEM = PEM.getCount();
             offset = hess4.increaseCount(numPEM);
-            pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = proxy<space>(PEM),
+            pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = PEM.port(),
                                     hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pemi) mutable {
                 auto H = tempPEM.pack(dim_c<12, 12>, "H", pemi);
                 auto inds = PEM[pemi];
@@ -635,9 +635,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
         if (s_enableFriction) {
             if (s_enableSelfFriction) {
                 if (fricMu != 0) {
-                    auto numFPP = nFPP.getVal();
+                    auto numFPP = FPP.getCount();
                     offset = hess2.increaseCount(numFPP);
-                    pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP),
+                    pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = FPP.port(),
                                             hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int fppi) mutable {
                         auto H = fricPP.pack(dim_c<6, 6>, "H", fppi);
                         auto inds = FPP[fppi];
@@ -645,9 +645,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
                         hess2.inds[offset + fppi] = inds;
                     });
 
-                    auto numFPE = nFPE.getVal();
+                    auto numFPE = FPE.getCount();
                     offset = hess3.increaseCount(numFPE);
-                    pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE),
+                    pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = FPE.port(),
                                             hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int fpei) mutable {
                         auto H = fricPE.pack(dim_c<9, 9>, "H", fpei);
                         auto inds = FPE[fpei];
@@ -655,9 +655,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
                         hess3.inds[offset + fpei] = inds;
                     });
 
-                    auto numFPT = nFPT.getVal();
+                    auto numFPT = FPT.getCount();
                     offset = hess4.increaseCount(numFPT);
-                    pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT),
+                    pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = FPT.port(),
                                             hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int fpti) mutable {
                         auto H = fricPT.pack(dim_c<12, 12>, "H", fpti);
                         auto inds = FPT[fpti];
@@ -665,9 +665,9 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
                         hess4.inds[offset + fpti] = inds;
                     });
 
-                    auto numFEE = nFEE.getVal();
+                    auto numFEE = FEE.getCount();
                     offset = hess4.increaseCount(numFEE);
-                    pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE),
+                    pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = FEE.port(),
                                             hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int feei) mutable {
                         auto H = fricEE.pack(dim_c<12, 12>, "H", feei);
                         auto inds = FEE[feei];

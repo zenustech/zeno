@@ -7,7 +7,7 @@
 namespace zeno {
 
 void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                                 bool includeHessian) {
+                                                        bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
@@ -16,9 +16,9 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
     using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
     using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
-    auto numPP = nPP.getVal();
+    auto numPP = PP.getCount();
     pol(range(numPP),
-        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = PP.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int ppi) mutable {
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -56,9 +56,9 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numPE = nPE.getVal();
+    auto numPE = PE.getCount();
     pol(range(numPE),
-        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = PE.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pei) mutable {
             auto pe = PE[pei];
             auto p = vtemp.pack<3>("xn", pe[0]);
@@ -98,9 +98,9 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numPT = nPT.getVal();
+    auto numPT = PT.getCount();
     pol(range(numPT),
-        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = PT.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pti) mutable {
             auto pt = PT[pti];
             auto p = vtemp.pack<3>("xn", pt[0]);
@@ -142,9 +142,9 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numEE = nEE.getVal();
+    auto numEE = EE.getCount();
     pol(range(numEE),
-        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = EE.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int eei) mutable {
             auto ee = EE[eei];
             auto ea0 = vtemp.pack<3>("xn", ee[0]);
@@ -195,10 +195,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             return zs::make_tuple(mollifier_ee(ea0, ea1, eb0, eb1, epsX), mollifier_grad_ee(ea0, ea1, eb0, eb1, epsX),
                                   mollifier_hess_ee(ea0, ea1, eb0, eb1, epsX));
         };
-        auto numEEM = nEEM.getVal();
-        pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM),
-                            EEM = proxy<space>(EEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int eemi) mutable {
+        auto numEEM = EEM.getCount();
+        pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM), EEM = EEM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int eemi) mutable {
             auto eem = EEM[eemi]; // <x, y, z, w>
             auto ea0Rest = vtemp.pack<3>("x0", eem[0]);
             auto ea1Rest = vtemp.pack<3>("x0", eem[1]);
@@ -253,10 +253,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-        auto numPPM = nPPM.getVal();
-        pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM),
-                            PPM = proxy<space>(PPM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int ppmi) mutable {
+        auto numPPM = PPM.getCount();
+        pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM), PPM = PPM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int ppmi) mutable {
             auto ppm = PPM[ppmi]; // <x, z, y, w>, <0, 2, 1, 3>
             auto ea0Rest = vtemp.pack<3>("x0", ppm[0]);
             auto ea1Rest = vtemp.pack<3>("x0", ppm[1]);
@@ -326,10 +326,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-        auto numPEM = nPEM.getVal();
-        pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM),
-                            PEM = proxy<space>(PEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int pemi) mutable {
+        auto numPEM = PEM.getCount();
+        pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM), PEM = PEM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int pemi) mutable {
             auto pem = PEM[pemi]; // <x, w, y, z>, <0, 2, 3, 1>
             auto ea0Rest = vtemp.pack<3>("x0", pem[0]);
             auto ea1Rest = vtemp.pack<3>("x0", pem[1]);
@@ -414,18 +414,18 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
     return;
 }
 
-void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                                         bool includeHessian) {
+void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol,
+                                                                const zs::SmallString &gTag, bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
     using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
-    auto numFPP = nFPP.getVal();
+    auto numFPP = FPP.getCount();
     pol(range(numFPP),
-        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = FPP.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
             auto fpp = FPP[fppi];
             auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
             auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
@@ -479,10 +479,10 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFPE = nFPE.getVal();
+    auto numFPE = FPE.getCount();
     pol(range(numFPE),
-        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = FPE.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
             auto fpe = FPE[fpei];
             auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
             auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
@@ -539,10 +539,10 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFPT = nFPT.getVal();
+    auto numFPT = FPT.getCount();
     pol(range(numFPT),
-        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = FPT.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
             auto fpt = FPT[fpti];
             auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
             auto v0 = vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
@@ -601,10 +601,10 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFEE = nFEE.getVal();
+    auto numFEE = FEE.getCount();
     pol(range(numFEE),
-        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = FEE.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
             auto fee = FEE[feei];
             auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
             auto e1 = vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);

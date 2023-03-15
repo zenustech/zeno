@@ -189,8 +189,8 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
-    zs::Vector<int> is{PP.get_allocator(), numDofs};
-    zs::Vector<int> js{PP.get_allocator(), numDofs};
+    zs::Vector<int> is{vtemp.get_allocator(), numDofs};
+    zs::Vector<int> js{vtemp.get_allocator(), numDofs};
     /// kinetic, potential (gravity, external force)
     pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
 
@@ -336,9 +336,9 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
 
-    linsys.hess2.init(PP.get_allocator(), estNumCps);
-    linsys.hess3.init(PP.get_allocator(), estNumCps);
-    linsys.hess4.init(PP.get_allocator(), estNumCps);
+    linsys.hess2.init(vtemp.get_allocator(), estNumCps);
+    linsys.hess3.init(vtemp.get_allocator(), estNumCps);
+    linsys.hess4.init(vtemp.get_allocator(), estNumCps);
     linsys.hess2.reset(false, 0);
     linsys.hess3.reset(false, 0);
     linsys.hess4.reset(false, 0);
@@ -454,34 +454,30 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
                                    std::size_t estNumCps, bool withGround, bool withContact, bool withMollification,
                                    T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
                                    T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
-    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
-      PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
-      nPE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
-      PT{estNumCps, zs::memsrc_e::um, 0}, nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EE{estNumCps, zs::memsrc_e::um, 0},
-      nEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps},
+      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps}, tempPE{{{"H", 81}},
+                                                                                 estNumCps,
+                                                                                 zs::memsrc_e::um,
+                                                                                 0},
+      PT{estNumCps}, tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EE{estNumCps}, tempEE{{{"H", 144}},
+                                                                                                 estNumCps,
+                                                                                                 zs::memsrc_e::um,
+                                                                                                 0},
       // mollify
-      PPM{estNumCps, zs::memsrc_e::um, 0}, nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, PEM{estNumCps, zs::memsrc_e::um, 0},
-      nPEM{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-      EEM{estNumCps, zs::memsrc_e::um, 0}, nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+      PPM{estNumCps}, tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, PEM{estNumCps},
+      tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EEM{estNumCps}, tempEEM{{{"H", 144}},
+                                                                                     estNumCps,
+                                                                                     zs::memsrc_e::um,
+                                                                                     0},
       // friction
-      FPP{estNumCps, zs::memsrc_e::um, 0}, nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0}, FPE{estNumCps, zs::memsrc_e::um, 0},
-      nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::um, 0},
-      FPT{estNumCps, zs::memsrc_e::um, 0}, nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::um, 0},
-      FEE{estNumCps, zs::memsrc_e::um, 0}, nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      FPP{estNumCps}, fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0}, FPE{estNumCps},
+      fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::um, 0}, FPT{estNumCps},
+      fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::um, 0}, FEE{estNumCps},
       fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::um, 0},
       // temporary buffer
       temp{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
-      csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps, zs::memsrc_e::um, 0},
-      ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      csPT{estNumCps}, csEE{estNumCps},
       //
       dt{dt}, framedt{dt}, estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
       enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
@@ -659,30 +655,6 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
 
     projectDBC = false;
     BCsatisfied = false;
-
-    /// @note reset collision counters
-    if (enableContact) {
-        nPP.setVal(0);
-        nPE.setVal(0);
-        nPT.setVal(0);
-        nEE.setVal(0);
-
-        if (enableMollification) {
-            nPPM.setVal(0);
-            nPEM.setVal(0);
-            nEEM.setVal(0);
-        }
-
-        if (s_enableFriction) {
-            nFPP.setVal(0);
-            nFPE.setVal(0);
-            nFPT.setVal(0);
-            nFEE.setVal(0);
-        }
-
-        ncsPT.setVal(0);
-        ncsEE.setVal(0);
-    }
 
     /// @note sort primhandle verts. Do this periodically for MAS
     if (state.getFrameNo() % 10 == 0) {
