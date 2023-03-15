@@ -6,7 +6,6 @@ QScrollArea[cssClass="proppanel"]
 QDialog
 {
     background: rgb(45,50,57);
-	border-radius:0;
 }
 
 QDialog QPushButton
@@ -15,6 +14,8 @@ QDialog QPushButton
 	color:#C3D2DF;
 	border:1px solid #191D21;
 	padding:6px 12px;
+	font:12px 'Alibaba PuHuiTi';
+    font-weight: 600;
 }
 
 QDialog QPushButton:hover
@@ -37,17 +38,20 @@ QDialog QPushButton:disabled
 
 QDialog QTreeView, QDialog QListWidget
 {
-    alternate-background-color: rgb(25,29,33);
-	background-color: rgb(34,37,44);
-	color:#8f9ba8;
-	font:12px 'Alibaba PuHuiTi';
+    alternate-background-color: #191D21;
+	background-color: #22252C;
+	font: 10px 'Alibaba PuHuiTi';
+	color: #A3B1C0;
+	letter-spacing: 0;
+	font-weight: 400;
 	border:1px solid #191d21;
 	show-decoration-selected: 1;
 }
 
 QDialog QTreeView::item, QDialog QListWidget::item
 {
-	min-height:22px;
+	min-height:16px;
+	border:1px solid transparent;
 }
 
 QDialog QTreeView::item:hover, QDialog QListWidget::item:hover
@@ -57,7 +61,7 @@ QDialog QTreeView::item:hover, QDialog QListWidget::item:hover
 
 QDialog QTreeView::item:selected, QDialog QListWidget::item:selected
 {
-	background-color: rgb(52,67,97);
+	background-color: #344361;
 	color:#8f9ba8;
 }
 
@@ -81,8 +85,8 @@ QDialog QTreeView::branch:selected
     background-color: rgb(52,67,97);
 }
 
-QDialog QTreeView::branch:hover,
-QDialog QTreeView::branch:hover  
+QDialog QTreeView::branch:hover:!selected,
+QDialog QTreeView::branch:hover:!selected  
 {
     background-color: rgba(52,67,97,0.8);	
 }
@@ -90,25 +94,28 @@ QDialog QTreeView::branch:hover
 
 QDialog QLabel
 {
-	font: 12px 'Alibaba PuHuiTi';
-	color: #909CAA;
-	background: rgb(45,50,57);
+	font: 10px 'Alibaba PuHuiTi';
+	color: #A3B1C0;
+	letter-spacing: 0;
+	font-weight: 600;
 }
 
 QDialog QLabel[cssClass = "bold"]
 {
-	font: 12px 'Alibaba PuHuiTi';
-	font-weight: bold;
-	color: #a3b1c0;
+	font: 10px 'Alibaba PuHuiTi';
+	font-weight: 700;
+	color: #A3B1C0;
+	letter-spacing: 0;
 }
 
 QDialog QLineEdit{
     border: 0;
     background-color: #191D21;
     selection-background-color: #4B9EF4;
-    color: #C3D2DF;
-	font: 12px 'Alibaba PuHuiTi';
+    color: #FFFFFF;
+	font: 10px 'Alibaba PuHuiTi';
 	padding: 3px 5px;
+	font-weight: 400;
 }
 
 QDialog QLineEdit:focus {
@@ -124,16 +131,17 @@ QDialog QComboBox {
     border: 0px;
     border-radius: 1px;
     padding: 3px 5px;
-	font: 12px 'Alibaba PuHuiTi';
-    color: #C3D2DF;
+	font: 10px 'Alibaba PuHuiTi';
+    color: #FFFFFF;
     background: #191D21;
+	font-weight: 400;
 }
 
 QDialog QComboBox:focus{
     border: 2px solid #4B9EF4;
 }
 
-QComboBox::drop-down {
+QDialog QComboBox::drop-down {
     subcontrol-position: center right;
     border: none;
     background: transparent;
@@ -159,23 +167,26 @@ QDialog QComboBox QAbstractItemView{
     border: 0px;
     background: rgb(34,37,44);
     selection-background-color: #4B9EF4;
-	font: 12px 'Alibaba PuHuiTi';
+	font: 10px 'Alibaba PuHuiTi';
 	color: #C3D2DF;
     outline: 0px;
 	padding-left:5px;
+	font-weight:400;
 }
 
 QDialog QCheckBox{
-    font: 12px 'Alibaba PuHuiTi';
-	color: #909CAA;
+    font:10px 'Alibaba PuHuiTi';
+	color:#909CAA;
+	font-weight:400;
 }
 
 QDialog QSpinBox
 {
-    font: 12px 'Alibaba PuHuiTi';
+    font: 10px 'Alibaba PuHuiTi';
+	font-weight: 400;
 	border: 0;
 	padding:3px 0px 3px 6px;
-	color: #C3D2DF;
+	color: #FFFFFF;
 	background-color: #191D21;
 }
 
@@ -196,8 +207,8 @@ QDialog QSpinBox::down-button
 QDialog QTableWidget
 {
 	background-color: #191D21;
-	color: #C3D2DF;
-	font: 12px 'Alibaba PuHuiTi';
+	color: #FFFFFF;
+	font: 10px 'Alibaba PuHuiTi';
 	gridline-color:rgb(115,123,133);
 }
 
@@ -208,7 +219,7 @@ QDialog QTableWidget::item
 
 QDialog QFrame#line
 {
-    color:rgb(115,123,133);
+    color:#737B85;
 
 }
 QWidget[cssClass="ZTimeline"]
