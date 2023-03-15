@@ -27,6 +27,10 @@
 #include <zenomodel/include/uihelper.h>
 #include <zeno/types/UserData.h>
 
+
+#define ENABLE_RECORD_PROGRESS_DIG
+
+
 using std::string;
 using std::unordered_set;
 using std::unordered_map;
@@ -845,6 +849,7 @@ void DisplayWidget::initRecordMgr()
         zeno::log_info("frame {} has been recorded", frameid);
     });
 
+#ifndef ENABLE_RECORD_PROGRESS_DIG
     connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString recPath) {
         VideoRecInfo _recInfo;
         _recInfo.record_path = recPath;
@@ -852,6 +857,7 @@ void DisplayWidget::initRecordMgr()
         dlgProc.onRecordFinished();
         dlgProc.exec();
     });
+#endif
 }
 
 void DisplayWidget::testCleanUp()
@@ -1277,6 +1283,19 @@ void DisplayWidget::onRecord()
             moveToFrame(recStartFrame);
             // and then play.
             mainWin->toggleTimelinePlay(true);
+
+#ifdef ENABLE_RECORD_PROGRESS_DIG
+            ZRecordProgressDlg dlgProc(recInfo);
+            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+            connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
+            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+
+            if (QDialog::Accepted == dlgProc.exec()) {
+
+            } else {
+                m_recordMgr.cancelRecord();
+            }
+#endif
         }
     }
 }

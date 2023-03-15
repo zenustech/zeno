@@ -150,7 +150,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             scene->drawOptions->num_samples = old_num_samples;
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;
-            emit frameFinished(m_currFrame);
+            emit frameFinished(currFrame);
         }
 
         if (currFrame == m_recordInfo.frameRange.second)

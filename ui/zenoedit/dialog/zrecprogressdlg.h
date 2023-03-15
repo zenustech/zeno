@@ -24,7 +24,7 @@ protected:
 
 public slots:
     void onFrameFinished(int frame);
-    void onRecordFinished();
+    void onRecordFinished(QString);
     void onRecordFailed(QString);
 
 private slots:

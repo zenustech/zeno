@@ -27,7 +27,7 @@ void ZRecordProgressDlg::onFrameFinished(int frame)
     m_ui->progressBar->setValue(frame);
 }
 
-void ZRecordProgressDlg::onRecordFinished()
+void ZRecordProgressDlg::onRecordFinished(QString)
 {
     m_bCompleted = true;
     m_ui->lblFrameHint->setText(tr("Record completed:"));
