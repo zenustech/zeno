@@ -126,29 +126,46 @@ void ZSlider::paintEvent(QPaintEvent* event)
     font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
     painter.setFont(font);
+    painter.setPen(QPen(QColor("#5A646F"), 1));
 
     int cellNum = ((m_to - m_from) / m_cellLength) + 1;
     int cellPixelLength = width() / cellNum;
     if (!(150 < cellPixelLength && cellPixelLength < 250)) {
         m_cellLength = getCellLength(m_to - m_from);
     } 
-    int frameNum;
     int flag;
     for (int i = 2; i > -1; i--) {
         if (m_cellLength % m_lengthUnit[i] == 0) {
             m_cellLength / m_lengthUnit[i];
-            //frameNum = ((m_to - m_from) / m_cellLength) * m_lengthUnit[i] + m_cellLength;
-            frameNum = (m_to - m_from) / (m_cellLength / m_lengthUnit[i]);
             flag = m_lengthUnit[i];
             break;
         }
     }
+    int frameNum;
+    int smallCellLength = m_cellLength / flag;
+    int offset = 0;
+    if (m_from % m_cellLength == 0) {
+        //frameNum = ((m_to - m_from) / m_cellLength) * m_lengthUnit[i] + m_cellLength;
+        frameNum = (m_to - m_from) / smallCellLength;
+    } else {
+        int firstCell = m_cellLength - m_from % m_cellLength + m_from;
+        int smallCellNum = (firstCell - m_from) / smallCellLength;
+        int h = ZenoStyle::dpiScaled(smallScaleH);
+        int y = height() - h;
+        for (int i = smallCellNum; i > 0; i--)
+        {
+            int x = _frameToPos(firstCell - smallCellLength * i - m_from);
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h));
+        }
+        offset = firstCell - m_from;
+        frameNum = (m_to - m_from) / smallCellLength - smallCellNum - 1;
+    }
+
     for (int i = 0; i <= frameNum; i++)
     {
-        int cellScaleValue = (i / flag) * m_cellLength;
+        int cellScaleValue = (i / flag) * m_cellLength + offset;
         QString scaleValue = QString::number(cellScaleValue);
-        int x = _frameToPos(m_cellLength * i / flag);
-        painter.setPen(QPen(QColor("#5A646F"), 1));
+        int x = _frameToPos(smallCellLength * i + offset);
 
         if (i % flag == 0)
         {

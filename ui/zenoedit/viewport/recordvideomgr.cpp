@@ -8,7 +8,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-
+#include <zenoedit/zenomainwindow.h>
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
@@ -35,6 +35,8 @@ void RecordVideoMgr::cancelRecord()
     disconnectSignal();
     //todo:
     //Zenovis::GetInstance().blockSignals(false);
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    mainWin->toggleTimelinePlay(false);
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)

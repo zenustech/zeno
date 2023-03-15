@@ -483,10 +483,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_background_clr = new ZToolBarButton(false, ":/icons/viewToolbar_background_idle.svg", ":/icons/viewToolbar_background_light.svg");
     m_background_clr->setToolTip(tr("Background Color"));
 
-    QFont fnt("Alibaba PuHuiTi", 10);
-    m_recordVideo = new ZToolRecordingButton(":/icons/viewToolbar_record_idle.svg", ":/icons/viewToolbar_record_light.svg",
-                                 ":/icons/viewToolbar_record_recording.svg", ":/icons/viewToolbar_record_recordOffHover.svg",
-                                 ":/icons/viewToolbar_record_recordOffClick.svg");
+    m_recordVideo = new ZToolBarButton(false, ":/icons/viewToolbar_record_idle.svg", ":/icons/viewToolbar_record_light.svg");
+    m_recordVideo->setToolTip(tr("Record Video"));
 
 
     m_screenshoot = new ZToolBarButton(false, ":/icons/viewToolbar_screenshot_idle.svg", ":/icons/viewToolbar_screenshot_light.svg");
@@ -642,7 +640,7 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_BACKGROUND_COLOR, true);
     });
 
-    connect(m_recordVideo, &ZToolRecordingButton::clicked, this, [=]() {
+    connect(m_recordVideo, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_RECORD_VIDEO, true);
     });
 

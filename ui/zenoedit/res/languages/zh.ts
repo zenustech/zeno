@@ -1036,6 +1036,10 @@
         <source>Record completed:</source>
         <translation>录制完成：</translation>
     </message>
+	<message>
+        <source>Record Aborted:</source>
+        <translation>录制中止：</translation>
+    </message>
     <message>
         <source>Open file location</source>
         <translation>打开文件位置</translation>
