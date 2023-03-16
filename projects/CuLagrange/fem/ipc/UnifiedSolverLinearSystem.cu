@@ -565,7 +565,6 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
     }
 }
 
-/// @note currently directly borrow results from computeBarrierGradientAndHessian and computeFrictionBarrierGradientAndHessian
 void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;

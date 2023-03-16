@@ -198,10 +198,8 @@ struct UnifiedIPCSystem : IObject {
     void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                                  bool includeHessian = true);
+    void computeBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
+    void computeFrictionBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
 
     /// @note build linsys.spmat
     void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
@@ -219,10 +217,8 @@ struct UnifiedIPCSystem : IObject {
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
 
-    void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
 
-    void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void systemSolve(zs::CudaExecutionPolicy &cudaPol);
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
@@ -354,50 +350,21 @@ struct UnifiedIPCSystem : IObject {
     }
     // self contacts
     DynamicBuffer<pair_t> PP;
-    // zs::Vector<pair_t> PP;
-    // zs::Vector<int> nPP;
-    dtiles_t tempPP;
     DynamicBuffer<pair3_t> PE;
-    // zs::Vector<pair3_t> PE;
-    // zs::Vector<int> nPE;
-    dtiles_t tempPE;
     DynamicBuffer<pair4_t> PT;
-    // zs::Vector<pair4_t> PT;
-    // zs::Vector<int> nPT;
-    dtiles_t tempPT;
     DynamicBuffer<pair4_t> EE;
-    // zs::Vector<pair4_t> EE;
-    // zs::Vector<int> nEE;
-    dtiles_t tempEE;
     // mollifier
     DynamicBuffer<pair4_t> PPM;
-    // zs::Vector<pair4_t> PPM;
-    // zs::Vector<int> nPPM;
-    dtiles_t tempPPM;
     DynamicBuffer<pair4_t> PEM;
-    // zs::Vector<pair4_t> PEM;
-    // zs::Vector<int> nPEM;
-    dtiles_t tempPEM;
     DynamicBuffer<pair4_t> EEM;
-    // zs::Vector<pair4_t> EEM;
-    // zs::Vector<int> nEEM;
-    dtiles_t tempEEM;
     /// @brief friction
     DynamicBuffer<pair_t> FPP;
-    // zs::Vector<pair_t> FPP;
-    // zs::Vector<int> nFPP;
     dtiles_t fricPP;
     DynamicBuffer<pair3_t> FPE;
-    // zs::Vector<pair3_t> FPE;
-    // zs::Vector<int> nFPE;
     dtiles_t fricPE;
     DynamicBuffer<pair4_t> FPT;
-    // zs::Vector<pair4_t> FPT;
-    // zs::Vector<int> nFPT;
     dtiles_t fricPT;
     DynamicBuffer<pair4_t> FEE;
-    // zs::Vector<pair4_t> FEE;
-    // zs::Vector<int> nFEE;
     dtiles_t fricEE;
 
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -407,8 +374,6 @@ struct UnifiedIPCSystem : IObject {
     zs::Vector<bv_t> bvs; // as temporary buffer
 
     DynamicBuffer<pair4_t> csPT, csEE;
-    // zs::Vector<pair4_t> csPT, csEE;
-    // zs::Vector<int> ncsPT, ncsEE;
 
     /// @brief solver state machine
     struct SolverState {

@@ -401,8 +401,8 @@ void UnifiedIPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
     findCollisionConstraints(pol, dHat, xi);
     auto prevKappa = kappa;
     kappa = 1;
-    computeBarrierGradientAndHessian(pol, "q", false);
-    // computeBoundaryBarrierGradientAndHessian(pol, "q", false);
+    computeBarrierGradient(pol, "q");
+    // computeBoundaryBarrierGradient(pol, "q");
     kappa = prevKappa;
     auto gsum = dot(pol, "p", "q");
     auto gsnorm = dot(pol, "q", "q");
@@ -454,24 +454,16 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
                                    std::size_t estNumCps, bool withGround, bool withContact, bool withMollification,
                                    T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
                                    T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
-    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps},
-      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::device, 0}, PE{estNumCps},
-      tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::device, 0}, PT{estNumCps},
-      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, EE{estNumCps}, tempEE{{{"H", 144}},
-                                                                                      estNumCps,
-                                                                                      zs::memsrc_e::device,
-                                                                                      0},
+    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
+      // collision pairs
+      PP{estNumCps}, PE{estNumCps}, PT{estNumCps}, EE{estNumCps},
       // mollify
-      PPM{estNumCps}, tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, PEM{estNumCps},
-      tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::device, 0}, EEM{estNumCps}, tempEEM{{{"H", 144}},
-                                                                                         estNumCps,
-                                                                                         zs::memsrc_e::device,
-                                                                                         0},
+      PPM{estNumCps}, PEM{estNumCps}, EEM{estNumCps},
       // friction
-      FPP{estNumCps}, fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPE{estNumCps},
-      fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPT{estNumCps},
-      fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::device, 0}, FEE{estNumCps},
-      fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::device, 0},
+      FPP{estNumCps}, fricPP{{{"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPE{estNumCps},
+      fricPE{{{"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPT{estNumCps},
+      fricPT{{{"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::device, 0}, FEE{estNumCps},
+      fricEE{{{"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::device, 0},
       // temporary buffer
       temp{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
