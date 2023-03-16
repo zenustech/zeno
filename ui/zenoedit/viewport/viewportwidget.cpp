@@ -1290,9 +1290,14 @@ void DisplayWidget::onRecord()
             connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
             connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
             connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
+            connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
+            connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
 
-            if (QDialog::Accepted == dlgProc.exec()) {
-
+            if (QDialog::Accepted == dlgProc.exec())
+            {
+            } else
+            {
+                m_recordMgr.cancelRecord();
             }
 #endif
         }
