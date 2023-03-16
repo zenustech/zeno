@@ -107,6 +107,8 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && !m_childItems.contains(item)) {
 
         GroupNode *pParentItem = item->getGroupNode();
+        if (getGroupNode() == item)
+            return false;
         if (pParentItem && pParentItem->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!pParentItem->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
             return false;
@@ -141,7 +143,8 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 void GroupNode::onZoomed() 
 {
     int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
-    QFont font("Alibaba PuHuiTi", fontSize);
+    QFont font = zenoApp->font();
+    font.setPointSize(fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);
     m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height() + ZenoStyle::dpiScaled(10)));
@@ -169,10 +172,16 @@ void GroupNode::onUpdateParamsNotDesc()
         resize(blackboard.sz);
         emit nodePosChangedSignal();
     }
+    if (blackboard.sz.width() != m_pTextItem->boundingRect().width())
+        m_pTextItem->resize(QSize(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
 {
+    if (item->getGroupNode()) 
+    {
+        item->getGroupNode()->removeChildItem(item);
+    }
     m_childItems << item;
     item->setGroupNode(this);
     if (item->zValue() <= zValue()) {

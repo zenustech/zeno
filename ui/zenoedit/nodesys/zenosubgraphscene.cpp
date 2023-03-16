@@ -555,14 +555,6 @@ void ZenoSubGraphScene::onNodePosChanged()
         GroupNode *currBlackboardNode = dynamic_cast<GroupNode *>(zenoNode);
         if (blackboardNode) 
         {
-            //if (blackboardNode->getChildItems().contains(zenoNode)) 
-            //{
-            //    if (currBlackboardNode) 
-            //    {
-            //        emit currBlackboardNode->nodePosChangedSignal();
-            //    }
-            //    continue;
-            //}
             if (currBlackboardNode) 
             {
                 currBlackboardNode->nodePosChanged(senderNode);
@@ -896,7 +888,13 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
             GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
             pGroup->resize(rect.size());
             pGroup->updateBlackboard();
-            pGroup->updateNodePos(rect.topLeft());
+            pGroup->setPos(rect.topLeft());
+            for (auto item : selectedItems()) 
+            {
+                ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);
+                if (pChildNode)
+                    pGroup->appendChildItem(pChildNode);
+            }
         }
     }
 }
