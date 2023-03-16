@@ -819,7 +819,6 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
             if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
             auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-#if 0
             auto grad = eeGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -828,7 +827,6 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[2]), grad(2, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[3]), grad(3, d));
             }
-#endif
             // hessian
             auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
             auto eeGrad_ = Vec12View{eeGrad.data()};
@@ -876,16 +874,14 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
-#if 0
-            auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
-            auto scaledEEGrad = mollifierEE * barrierDistGrad * eeGrad;
-            for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp(gTag, d, eem[0]), -(scaledMollifierGrad(0, d) + scaledEEGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, eem[1]), -(scaledMollifierGrad(1, d) + scaledEEGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, eem[2]), -(scaledMollifierGrad(2, d) + scaledEEGrad(2, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, eem[3]), -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
-            }
-#endif
+                auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+                auto scaledEEGrad = mollifierEE * barrierDistGrad * eeGrad;
+                for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &vtemp(gTag, d, eem[0]), -(scaledMollifierGrad(0, d) + scaledEEGrad(0, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, eem[1]), -(scaledMollifierGrad(1, d) + scaledEEGrad(1, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, eem[2]), -(scaledMollifierGrad(2, d) + scaledEEGrad(2, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, eem[3]), -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
+                }
 
                 // hessian
                 auto eeGrad_ = Vec12View{eeGrad.data()};
@@ -930,16 +926,14 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
-#if 0
-            auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
-            auto scaledPPGrad = mollifierEE * barrierDistGrad * ppGrad;
-            for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[0]), -(scaledMollifierGrad(0, d) + scaledPPGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[1]), -(scaledMollifierGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[2]), -(scaledMollifierGrad(2, d) + scaledPPGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[3]), -(scaledMollifierGrad(3, d)));
-            }
-#endif
+                auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+                auto scaledPPGrad = mollifierEE * barrierDistGrad * ppGrad;
+                for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &vtemp(gTag, d, ppm[0]), -(scaledMollifierGrad(0, d) + scaledPPGrad(0, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, ppm[1]), -(scaledMollifierGrad(1, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, ppm[2]), -(scaledMollifierGrad(2, d) + scaledPPGrad(1, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, ppm[3]), -(scaledMollifierGrad(3, d)));
+                }
 
                 // hessian
                 using GradT = zs::vec<T, 12>;
@@ -997,17 +991,15 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
-#if 0
-            auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
-            auto scaledPEGrad = mollifierEE * barrierDistGrad * peGrad;
+                auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+                auto scaledPEGrad = mollifierEE * barrierDistGrad * peGrad;
 
-            for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp(gTag, d, pem[0]), -(scaledMollifierGrad(0, d) + scaledPEGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, pem[1]), -(scaledMollifierGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, pem[2]), -(scaledMollifierGrad(2, d) + scaledPEGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp(gTag, d, pem[3]), -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
-            }
-#endif
+                for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &vtemp(gTag, d, pem[0]), -(scaledMollifierGrad(0, d) + scaledPEGrad(0, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, pem[1]), -(scaledMollifierGrad(1, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, pem[2]), -(scaledMollifierGrad(2, d) + scaledPEGrad(1, d)));
+                    atomic_add(exec_cuda, &vtemp(gTag, d, pem[3]), -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
+                }
 
                 // hessian
                 using GradT = zs::vec<T, 12>;
@@ -1081,7 +1073,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
             auto relDXNorm2 = relDX.l2NormSqr();
             auto relDXNorm = zs::sqrt(relDXNorm2);
             auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-#if 0
             relDX *= f1_div_relDXNorm * fricMu * fn;
             auto TTTDX = -point_point_rel_dx_tan_to_mesh(relDX, basis);
             // gradient
@@ -1090,7 +1081,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
                 atomic_add(exec_cuda, &vtemp(gTag, d, fpp[1]), TTTDX(1, d));
             }
             // hessian
-#endif
             relDX = basis.transpose() * relDX3D;
             auto TT = point_point_TT(basis); // 2x6
             auto f2_term = f2_SF_term(relDXNorm2, epsvh);
@@ -1135,7 +1125,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
             auto relDXNorm2 = relDX.l2NormSqr();
             auto relDXNorm = zs::sqrt(relDXNorm2);
             auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-#if 0
             relDX *= f1_div_relDXNorm * fricMu * fn;
             auto TTTDX = -point_edge_rel_dx_tan_to_mesh(relDX, basis, yita);
             // gradient
@@ -1144,7 +1133,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
                 atomic_add(exec_cuda, &vtemp(gTag, d, fpe[1]), TTTDX(1, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, fpe[2]), TTTDX(2, d));
             }
-#endif
             // hessian
             relDX = basis.transpose() * relDX3D;
             auto TT = point_edge_TT(basis, yita); // 2x9
@@ -1191,17 +1179,15 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
             auto relDXNorm2 = relDX.l2NormSqr();
             auto relDXNorm = zs::sqrt(relDXNorm2);
             auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-#if 0
-        relDX *= f1_div_relDXNorm * fricMu * fn;
-        auto TTTDX = -point_triangle_rel_dx_tan_to_mesh(relDX, basis, betas[0], betas[1]);
-        // gradient
-        for (int d = 0; d != 3; ++d) {
-            atomic_add(exec_cuda, &vtemp(gTag, d, fpt[0]), TTTDX(0, d));
-            atomic_add(exec_cuda, &vtemp(gTag, d, fpt[1]), TTTDX(1, d));
-            atomic_add(exec_cuda, &vtemp(gTag, d, fpt[2]), TTTDX(2, d));
-            atomic_add(exec_cuda, &vtemp(gTag, d, fpt[3]), TTTDX(3, d));
-        }
-#endif
+            relDX *= f1_div_relDXNorm * fricMu * fn;
+            auto TTTDX = -point_triangle_rel_dx_tan_to_mesh(relDX, basis, betas[0], betas[1]);
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[0]), TTTDX(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[1]), TTTDX(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[2]), TTTDX(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[3]), TTTDX(3, d));
+            }
             // hessian
             relDX = basis.transpose() * relDX3D;
             auto TT = point_triangle_TT(basis, betas[0], betas[1]); // 2x12
@@ -1248,7 +1234,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
             auto relDXNorm2 = relDX.l2NormSqr();
             auto relDXNorm = zs::sqrt(relDXNorm2);
             auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-#if 0
             relDX *= f1_div_relDXNorm * fricMu * fn;
             auto TTTDX = -edge_edge_rel_dx_tan_to_mesh(relDX, basis, gammas[0], gammas[1]);
             // gradient
@@ -1258,7 +1243,6 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
                 atomic_add(exec_cuda, &vtemp(gTag, d, fee[2]), TTTDX(2, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, fee[3]), TTTDX(3, d));
             }
-#endif
             // hessian
             relDX = basis.transpose() * relDX3D;
             auto TT = edge_edge_TT(basis, gammas[0], gammas[1]); // 2x12

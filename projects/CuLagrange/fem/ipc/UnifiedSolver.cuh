@@ -211,6 +211,7 @@ struct UnifiedIPCSystem : IObject {
     void updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
     void updateFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
     void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &pol);
 
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");

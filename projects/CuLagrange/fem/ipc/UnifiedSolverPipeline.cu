@@ -2995,44 +2995,15 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
             vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
         });
-        computeInertialAndGravityPotentialGradient(pol);
-        computeElasticGradientAndHessian(pol, "grad");
-        computeBendingGradientAndHessian(pol, "grad");
-        if (enableGround)
-            computeBoundaryBarrierGradientAndHessian(pol);
-        if (enableContact) {
-            computeBarrierGradientAndHessian(pol, "grad");
-            if (s_enableFriction)
-                if (fricMu != 0) {
-                    computeFrictionBarrierGradientAndHessian(pol, "grad");
-                }
-        }
-        // APPLY CONSTRAINTS, PROJ GRADIENT
-        if (!BCsatisfied) {
-            // grad
-            pol(zs::range(numDofs),
-                [vtemp = proxy<space>({}, vtemp), boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
-                    // computed during the previous constraint residual check
-                    int BCfixed = vtemp("BCfixed", i);
-                    if (!BCfixed) {
-                        auto cons = vtemp.pack<3>("cons", i);
-                        auto w = vtemp("ws", i);
-
-                        int BCorder = vtemp("BCorder", i);
-                        for (int d = 0; d != BCorder; ++d) {
-                            vtemp("grad", d, i) -= boundaryKappa * w * cons(d);
-                            vtemp("P", 4 * d, i) += boundaryKappa * w;
-                        }
-                    }
-                });
-            // hess (embedded in multiply)
-        }
 
         /// prepare linsys.spmat
         updateInherentHessian(pol, "grad");
         /// prepare linsys.hessx
         updateDynamicHessian(pol, "grad");
+        /// prepare diagonal block preconditioner
+        prepareDiagonalPreconditioner(pol);
 
+        /// MAS
         linsys.buildPreconditioner(pol, *this); // 1
 
         project(pol, "grad");
@@ -3046,11 +3017,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
         });
 
-#if 1
         systemSolve(pol);
-#else
-        cgsolve(pol);
-#endif
 
         // CHECK PN CONDITION
         res = infNorm(pol, "dir");
