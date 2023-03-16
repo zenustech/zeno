@@ -334,6 +334,7 @@ struct CURVE_DATA {
     int cycleType;
     CURVE_RANGE rg;
     bool visible;
+    bool timeline;
 };
 
 typedef QMap<QString, CURVE_DATA> CURVES_DATA;

@@ -119,7 +119,7 @@ private:
     ZToolBarButton* m_wire_frame;
     ZToolBarButton* m_show_grid;
     ZToolBarButton* m_background_clr;
-    ZToolRecordingButton *m_recordVideo;
+    ZToolBarButton *m_recordVideo;
     ZToolBarButton* m_screenshoot;
     ZToolBarButton* m_moveBtn;
     ZToolBarButton* m_scaleBtn;

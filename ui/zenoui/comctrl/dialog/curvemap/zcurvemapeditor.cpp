@@ -163,6 +163,7 @@ void ZCurveMapEditor::addCurves(const CURVES_DATA& curves)
         CurveModel* model = new CurveModel(key, curve.rg, this);
         model->initItems(curve);
         model->setVisible(curve.visible);
+        model->setTimeline(curve.timeline);
         addCurve(model);
     }
 }
@@ -309,6 +310,7 @@ CURVES_DATA ZCurveMapEditor::curves() const
     {
         CURVE_DATA data = m_models[key]->getItems();
         data.visible = m_models[key]->getVisible();
+        data.timeline = m_models[key]->isTimeline();
         curves.insert(key, data);
     }
     return curves;

@@ -1328,11 +1328,15 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
             curves.insert("x", xCurve);
         } else {
+            bool timeLine = false;
+            if (val.HasMember(key_timeline))
+            {
+                timeLine = val[key_timeline].GetBool();
+            }
             for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                 if (i->value.IsObject()) {
                     CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
-                    //todo: timeline reading
-                    //pModel->setTimeline(val[key_timeline].GetBool());
+                    curve.timeline = timeLine;
                     curves.insert(i->name.GetString(), curve);
                 }
             }
