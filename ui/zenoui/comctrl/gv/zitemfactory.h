@@ -14,8 +14,8 @@ namespace zenoui
         QGraphicsScene* scene,
         const QVariant& controlProps
     );
+    extern const qreal g_ctrlHeight;
 }
-
 
 
 

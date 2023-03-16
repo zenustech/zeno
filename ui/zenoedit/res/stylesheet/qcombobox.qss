@@ -1,55 +1,18 @@
-QComboBox QAbstractItemView {
-    border: 0px solid rgba(0,0,0,1);
-    background: #272727;
-    selection-background-color: #4B9EF4;
-	font: 14px 'Alibaba PuHuiTi';
-	color: #8A8A8C;
-    outline: 0px;
-	padding-left:5px;
-}
-
-QComboBox[cssClass="proppanel"] {
-    border: 0px solid gray;
-    border-radius: 0px;
-    padding: 1px 18px 1px 3px;
-    min-width: 6em;
-	font: 14px 'Alibaba PuHuiTi';
-    font-weight: 500;
-    color: rgba(255,255,255,0.40);
-    background: rgb(19,19,19);
-}
-
-QComboBox[cssClass="proppanel"]:editable {
-    background: rgb(19,19,19);
-}
-
-QComboBox[cssClass="proppanel"]:!editable, QComboBox::drop-down:editable {
-     background: rgb(19,19,19);
-}
-
-QComboBox[cssClass="proppanel"]:!editable:on, QComboBox::drop-down:editable:on {
-    background: rgb(19,19,19);
-}
-
-QComboBox[cssClass="proppanel"]::drop-down {
-    image: url(:/icons/ic_pop_down.svg);
-}
-
-
-QComboBox[cssClass="newstyle"] {
+QComboBox {
     border: 0px;
     border-radius: 1px;
-    padding: 3px 5px 3px 10px;
-	font: 14px 'Alibaba PuHuiTi';
-    font-weight: 500;
+    padding: 3px 5px;
+	font-size: 9pt;
     color: #FFFFFF;
-    background: rgb(25,29,33);
+    background: #191D21;
+	font-weight: 400;
 }
 
-QComboBox[cssClass="newstyle"]:focus{
+QComboBox:focus{
     border: 2px solid #4B9EF4;
 }
-QComboBox[cssClass="newstyle"]::drop-down {
+
+QComboBox::drop-down {
     subcontrol-position: center right;
     border: none;
     background: transparent;
@@ -57,42 +20,42 @@ QComboBox[cssClass="newstyle"]::drop-down {
 	min-height: 16px;
 }
 
-QComboBox[cssClass="newstyle"]::down-arrow {
+QComboBox::down-arrow {
     image: url(:/icons/combobox-dropdown.svg);
 	width: 16px;
 	height: 16px;
 }
 
-QComboBox[cssClass="newstyle"]::down-arrow:on, QComboBox[cssClass="newstyle"]::down-arrow:hover {
+QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
     image: url(:/icons/combobox-dropdown-on.svg);
 }
 
-QComboBox[cssClass="preset"] {
-    border: 0.5px solid rgba(0,0,0,1);
-    border-radius: 0px;
-    padding: 1px 18px 1px 3px;
-    min-width: 6em;
-    background: #2B2B2B;
-    color: #8A8A8C;
-    font: 14px 'Alibaba PuHuiTi';
-    font-weight: 500;
+QComboBox:disabled{
+    color: #8f9ba8;
 }
 
-QComboBox[cssClass="preset"]:!editable:on, QComboBox[cssClass="preset"]::drop-down:editable:on {
-    background: rgb(78,78,78);
+QComboBox QAbstractItemView{
+    border: 0px;
+    background: rgb(34,37,44);
+    selection-background-color: #4B9EF4;
+	font-size: 9pt;
+	color: #C3D2DF;
+    outline: 0px;
+	font-weight:400;
 }
 
-QComboBox[cssClass="preset"]::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 15px;
-    border-left-width: 0px;
-    border-left-color: darkgray;
-    border-left-style: solid;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
+
+QComboBox QAbstractItemView::item {
+    height: 25px;
 }
 
-QComboBox[cssClass="preset"]::down-arrow {
-    image: url(":/icons/ic_direction_pullDown.svg");
+
+QComboBox QAbstractItemView::item:hover {
+    color: #FFFFFF;
+    background-color: #4B9EF4;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    color: #FFFFFF;
+    background-color: #4B9EF4;
 }

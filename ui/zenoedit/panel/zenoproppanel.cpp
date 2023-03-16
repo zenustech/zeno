@@ -165,7 +165,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(false);
 
-    QFont font("Alibaba PuHuiTi", 10);
+    QFont font = zenoApp->font();
     font.setWeight(QFont::Medium);
 
     m_tabWidget->setFont(font); //bug in qss font setting.
@@ -324,7 +324,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
-    QFont font("Alibaba PuHuiTi", 12);
+    QFont font = zenoApp->font();
     font.setWeight(QFont::Medium);
     pLabel->setFont(font);
     pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
@@ -334,7 +334,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     //pLabel->setProperty("cssClass", "proppanel");
 
     ZIconLabel *pIcon = new ZIconLabel;
-    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg");
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg");
     pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
     pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);

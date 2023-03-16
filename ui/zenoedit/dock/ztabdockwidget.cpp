@@ -369,7 +369,7 @@ bool ZTabDockWidget::event(QEvent* event)
 void ZTabDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
 
@@ -449,7 +449,7 @@ void ZTabDockWidget::onFloatTriggered()
 void ZTabDockWidget::onAddTabClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
 

@@ -2,6 +2,7 @@
 #include "common_id.h"
 #include <stdexcept>
 #include <zenoui/style/zenostyle.h>
+#include <zenoedit/zenoapplication.h>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -456,7 +457,8 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
 
     //todo: parameterized.
-    QFont font("Alibaba PuHuiTi", 13);
+    QFont font = zenoApp->font();
+    font.setPointSize(13);
 
     param.nameFont = font;
     param.nameFont.setBold(true);
@@ -476,10 +478,12 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     clr.setAlphaF(0.7);
     param.paramClr = clr;
 
-    param.boardFont = QFont("Consolas", 17);
+    font.setPointSize(17);
+    param.boardFont = font;
     param.boardTextClr = QColor(255, 255, 255);
 
-    param.lineEditParam.font = QFont("HarmonyOS Sans SC", 10);
+    font.setPointSize(10);
+    param.lineEditParam.font = font;
     QPalette palette;
     palette.setColor(QPalette::Base, QColor(25, 29, 33));
     //palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
@@ -490,7 +494,8 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.lineEditParam.palette = palette;
     param.lineEditParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
 
-    param.comboboxParam.font = QFont("HarmonyOS Sans SC", 13);
+    font.setPointSize(13);
+    param.comboboxParam.font = font;
     param.comboboxParam.textColor = QColor(255, 255, 255);
     param.comboboxParam.itemBgNormal = QColor(58, 58, 58);
     param.comboboxParam.itemBgHovered = QColor(23, 160, 252);

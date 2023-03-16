@@ -168,7 +168,8 @@ void ZenoMainWindow::initMenu()
 
     m_ui->menubar->setProperty("cssClass", "mainWin");
     //qt bug: qss font is not valid on menubar.
-    QFont font("Alibaba PuHuiTi", 12);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setWeight(QFont::Medium);
     m_ui->menubar->setFont(font);
 

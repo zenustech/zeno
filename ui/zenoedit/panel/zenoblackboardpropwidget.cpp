@@ -49,12 +49,12 @@ void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const 
 
 void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTROL &ctrl, const QVariant &value, int row,QGridLayout *pGroupLayout) {    
     ZTextLabel *pLabel = new ZTextLabel(desc);
-    pLabel->setFont(QFont("Segoe UI Semibold", 12));
+    pLabel->setFont(zenoApp->font());
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
 
     ZIconLabel *pIcon = new ZIconLabel;
-    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/parameter_key-frame_idle.svg",
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/parameter_key-frame_idle.svg",
                     ":/icons/parameter_key-frame_hover.svg");
     pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 

@@ -578,7 +578,9 @@ void LayerPathWidget::setPath(const QString& path)
 
         ZTextLabel* pLabel = new ZTextLabel;
         pLabel->setText(item);
-        pLabel->setFont(QFont("HarmonyOS Sans", 11));
+        QFont font = zenoApp->font();
+        font.setPointSize(11);
+        pLabel->setFont(font);
         pLabel->setTextColor(QColor(129, 125, 123));
         connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
         pLayout->addWidget(pLabel);
@@ -587,7 +589,8 @@ void LayerPathWidget::setPath(const QString& path)
         {
             pLabel = new ZTextLabel;
             pLabel->setText(">");
-            QFont font("Consolas", 11);
+            QFont font = zenoApp->font();
+            font.setPointSize(11);
             font.setBold(true);
             pLabel->setFont(font);
             pLabel->setTextColor(QColor(129, 125, 123));

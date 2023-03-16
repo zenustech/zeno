@@ -32,7 +32,8 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
     const QModelIndex& index) const
 {
     QStyledItemDelegate::initStyleOption(option, index);
-    QFont font("Consolas", 10);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setBold(true);
     option->font = font;
 }
@@ -76,7 +77,8 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     QPen pen = painter->pen();
     pen.setColor(clr);
 
-    QFont font("Consolas", 10);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setBold(true);
     painter->setFont(font);
     painter->setPen(pen);

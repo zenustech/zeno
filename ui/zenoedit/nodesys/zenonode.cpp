@@ -190,7 +190,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor("#FFFFFF"));
-    QFont font2("Alibaba PuHuiTi", 16);
+    QFont font2 = zenoApp->font();
+    font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
     m_NameItem->updateBoundingRect();
@@ -200,7 +201,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     {
         ZSimpleTextItem *pCategoryItem = new ZSimpleTextItem(category);
         pCategoryItem->setBrush(QColor("#AB6E40"));
-        pCategoryItem->setFont(QFont("Segoe UI bold", 10));
+        QFont font = zenoApp->font();
+        pCategoryItem->setFont(font);
         pCategoryItem->updateBoundingRect();
         pCategoryItem->setAcceptHoverEvents(false);
         pNameLayout->addItem(pCategoryItem);

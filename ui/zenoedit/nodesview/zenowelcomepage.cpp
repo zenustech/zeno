@@ -23,27 +23,29 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblLogo->setProperty("cssClass", "welcomepage_name");
 
     m_ui->lblManual->setText(tr("ZENO Manual"));
-    m_ui->lblManual->setFont(QFont("HarmonyOS Sans", 11));
+    QFont font = zenoApp->font();
+    font.setPointSize(11);
+    m_ui->lblManual->setFont(font);
     m_ui->lblManual->setTextColor(QColor(133, 130, 128));
     m_ui->lblManual->setUnderlineOnHover(true);
 
     m_ui->lblVideos->setText(tr("ZENO Video Tutorials"));
-    m_ui->lblVideos->setFont(QFont("HarmonyOS Sans", 11));
+    m_ui->lblVideos->setFont(font);
     m_ui->lblVideos->setTextColor(QColor(133, 130, 128));
     m_ui->lblVideos->setUnderlineOnHover(true);
 
     m_ui->lblOfficialWeb->setText(tr("Zenus Official Web"));
-    m_ui->lblOfficialWeb->setFont(QFont("HarmonyOS Sans", 11));
+    m_ui->lblOfficialWeb->setFont(font);
     m_ui->lblOfficialWeb->setTextColor(QColor(133, 130, 128));
     m_ui->lblOfficialWeb->setUnderlineOnHover(true);
 
     m_ui->lblForum->setText(tr("Forum"));
-    m_ui->lblForum->setFont(QFont("HarmonyOS Sans", 11));
+    m_ui->lblForum->setFont(font);
     m_ui->lblForum->setTextColor(QColor(133, 130, 128));
     m_ui->lblForum->setUnderlineOnHover(true);
 
     m_ui->lblGithub->setText(tr("Project on GitHub"));
-    m_ui->lblGithub->setFont(QFont("HarmonyOS Sans", 11));
+    m_ui->lblGithub->setFont(font);
     m_ui->lblGithub->setTextColor(QColor(133, 130, 128));
     m_ui->lblGithub->setUnderlineOnHover(true);
 
@@ -102,7 +104,9 @@ void ZenoWelcomePage::initRecentFiles()
             else {
                 pLabel = new ZTextLabel(fn);
                 pLabel->setTextColor(QColor(133, 130, 128));
-                pLabel->setFont(QFont("HarmonyOS Sans", 11));
+                QFont font = zenoApp->font();
+                font.setPointSize(11);
+                pLabel->setFont(font);
                 pLabel->setToolTip(path);
 
                 m_ui->layoutFiles->addWidget(pLabel);

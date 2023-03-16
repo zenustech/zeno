@@ -1,5 +1,6 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
+#include <zenoedit/zenoapplication.h>
 
 
 ZSlider::ZSlider(QWidget* parent)
@@ -122,7 +123,8 @@ void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    QFont font("Segoe UI", 9);
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
     font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
     painter.setFont(font);
@@ -214,7 +216,8 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
                              QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
                       QColor(76, 159, 244));
 
-    QFont font("Segoe UI Bold", 10);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     QFontMetrics metrics(font);
     painter->setFont(font);
 
