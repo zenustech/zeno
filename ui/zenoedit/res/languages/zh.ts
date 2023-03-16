@@ -1032,6 +1032,14 @@
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
+	<message>
+        <source>Pause</source>
+        <translation>暂停</translation>
+    </message>
+	<message>
+        <source>Continue</source>
+        <translation>继续</translation>
+    </message>
     <message>
         <source>Record completed:</source>
         <translation>录制完成：</translation>
