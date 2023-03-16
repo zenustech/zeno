@@ -35,7 +35,7 @@ void ZComboBoxItemDelegate2::paint(QPainter* painter, const QStyleOptionViewItem
     if (bCurrent)
     {
         qreal icon_xmargin = ZenoStyle::dpiScaled(8);
-        qreal icon_ymargin = ZenoStyle::dpiScaled(6);
+        qreal icon_ymargin = ZenoStyle::dpiScaled(4);
         qreal iconSz = ZenoStyle::dpiScaled(16);
         QRect iconRect(opt.rect.x() + icon_xmargin, opt.rect.y() + icon_ymargin, iconSz, iconSz);
 
@@ -50,5 +50,5 @@ void ZComboBoxItemDelegate2::paint(QPainter* painter, const QStyleOptionViewItem
 QSize ZComboBoxItemDelegate2::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     int w = ((QWidget*)parent())->width();
-    return QSize(w, ZenoStyle::dpiScaled(28));
+    return QSize(w, ZenoStyle::dpiScaled(24));
 }

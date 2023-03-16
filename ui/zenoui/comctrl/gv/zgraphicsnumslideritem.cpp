@@ -2,6 +2,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
 #include "zgraphicstextitem.h"
+#include <zenoedit/zenoapplication.h>
 
 
 ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGraphicsItem* parent)
@@ -9,7 +10,7 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
     , m_steps(steps)
 {
     qreal maxWidth = 0, maxHeight = 0;
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     int padding = ZenoStyle::dpiScaled(5);
 
     for (int i = 0; i < m_steps.length(); i++)

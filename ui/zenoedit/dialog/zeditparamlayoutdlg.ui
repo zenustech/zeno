@@ -162,7 +162,7 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QComboBox" name="cbTypes"/>
+          <widget class="ZComboBox" name="cbTypes"/>
          </item>
          <item row="1" column="1">
           <widget class="QLineEdit" name="editLabel"/>
@@ -195,7 +195,7 @@
           <widget class="QLineEdit" name="editHint"/>
          </item>
          <item row="2" column="1">
-          <widget class="QComboBox" name="cbControl"/>
+          <widget class="ZComboBox" name="cbControl"/>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="lblDefaultValue">
@@ -317,7 +317,8 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset theme="://icons/more.svg"/>
+               <iconset theme="://icons/more.svg">
+                <normaloff>.</normaloff>.</iconset>
               </property>
               <property name="autoDefault">
                <bool>false</bool>
@@ -556,6 +557,11 @@
    <extends>QTreeView</extends>
    <header>zenoedit/itemview/customparamtreeview.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZComboBox</class>
+   <extends>QComboBox</extends>
+   <header>zenoui/comctrl/zcombobox.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

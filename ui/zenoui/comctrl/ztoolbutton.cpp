@@ -1,6 +1,7 @@
 #include "../style/zenostyle.h"
 #include "../style/zstyleoption.h"
 #include "ztoolbutton.h"
+#include <zenoedit/zenoapplication.h>
 
 
 ZToolButton::ZToolButton(QWidget* parent)
@@ -15,6 +16,7 @@ ZToolButton::ZToolButton(QWidget* parent)
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
 }
 
 ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, const QString& text, QWidget* parent)
@@ -28,12 +30,15 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_text(text)
     , m_icon(icon)
     , m_iconSize(iconSize)
-    , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
+    m_font = font;
 }
 
 ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn, const QSize& iconSize, const QString& text, QWidget* parent)
@@ -47,13 +52,16 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_text(text)
     , m_icon(QIcon(icon))
     , m_iconSize(iconSize)
-    , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
     initDefault();
     setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
+    m_font = font;
 }
 
 ZToolButton::~ZToolButton()

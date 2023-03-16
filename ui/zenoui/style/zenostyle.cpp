@@ -6,6 +6,7 @@
 #include "../comctrl/zdocktabwidget.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
+#include <zenoedit/zenoapplication.h>
 
 
 ZenoStyle::ZenoStyle()
@@ -157,7 +158,8 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
             painter->setClipRect(editRect);
-            painter->setFont(QFont("HarmonyOS Sans", 12));
+            QFont font = zenoApp->font();
+            painter->setFont(font);
             if (!cb->currentIcon.isNull()) {
                 //todo
             }

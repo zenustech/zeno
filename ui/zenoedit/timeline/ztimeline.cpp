@@ -26,7 +26,6 @@ ZTimeline::ZTimeline(QWidget* parent)
     QStringList items = { "23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps" };
     m_ui->comboBox->addItems(items);
     m_ui->comboBox->setItemDelegate(new ZComboBoxItemDelegate2(m_ui->comboBox));
-    m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(24));
     m_ui->comboBox->setProperty("cssClass", "newstyle");
  
     setFocusPolicy(Qt::ClickFocus);
@@ -119,8 +118,6 @@ void ZTimeline::initButtons()
 
     QColor hoverBg("#4F5963");
 
-    QFont fnt("Alibaba PuHuiTi", 12);
-
     m_ui->btnBackToStart->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackToStart->setIcon(
         ZenoStyle::dpiScaledSize(QSize(24, 24)),
@@ -143,7 +140,7 @@ void ZTimeline::initButtons()
 
     m_ui->btnPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnPlay->setIcon(
-        ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ZenoStyle::dpiScaledSize(QSize(26, 26)),
         ":/icons/timeline_pause_idle.svg",
         ":/icons/timeline_pause_hover.svg",
         ":/icons/timeline_play_idle.svg",
@@ -182,20 +179,15 @@ void ZTimeline::initButtons()
     //m_ui->btnRecycle->setMargins(QMargins(3, 2, 2, 3));
     //m_ui->btnRecycle->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
-    QFont font("Alibaba PuHuiTi", 10);
-    font.setWeight(QFont::DemiBold);
-
     ////m_ui->btnSimpleRender->setProperty("cssClass", "grayButton");
     //m_ui->btnSimpleRender->setFont(font);
-
-    QFont font2("Segoe UI", 10);
-    m_ui->editFrame->setFont(font2);
 }
 
 void ZTimeline::initSize()
 {
     m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaledSize(QSize(96, 20)));
     m_ui->editFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
+    m_ui->btnPlay->setFixedSize(ZenoStyle::dpiScaledSize(QSize(26, 26)));
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)

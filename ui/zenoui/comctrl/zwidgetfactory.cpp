@@ -18,7 +18,8 @@
 #include "zassert.h"
 #include "zspinboxslider.h"
 #include "zdicttableview.h"
-
+#include <zenoedit/zenoapplication.h>
+#include "gv/zitemfactory.h"
 
 namespace zenoui
 {
@@ -37,6 +38,7 @@ namespace zenoui
             case CONTROL_STRING:
             {
                 ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(value));
+                pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
@@ -59,6 +61,7 @@ namespace zenoui
             case CONTROL_WRITEPATH:
             {
                 ZLineEdit* pathLineEdit = new ZLineEdit(value.toString());
+                pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
                 pathLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pathLineEdit->setProperty("control", ctrl);
@@ -94,11 +97,12 @@ namespace zenoui
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
-                pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
+                QFont font = zenoApp->font();
+                font.setPointSize(9);
+                pTextEdit->setFont(font);
                 pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
                 QTextCharFormat format;
-                QFont font("HarmonyOS Sans", 12);
                 format.setFont(font);
                 pTextEdit->setCurrentFont(font);
                 pTextEdit->setText(value.toString());
@@ -168,6 +172,7 @@ namespace zenoui
                 }
 
                 ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
                     UI_VECTYPE vec = pVecEdit->vec();
                     const QVariant& newValue = QVariant::fromValue(vec);
@@ -190,7 +195,7 @@ namespace zenoui
                 }
 
                 QComboBox* pComboBox = new QComboBox;
-                pComboBox->setProperty("cssClass", "newstyle");
+                pComboBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pComboBox->addItems(items);
                 pComboBox->setCurrentText(value.toString());
                 pComboBox->setEditable(true);
@@ -291,6 +296,7 @@ namespace zenoui
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
                 pSpinBox->setValue(value.toInt());
+                pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 if (properties.type() == QMetaType::QVariantMap) {
                     QVariantMap props = properties.toMap();
@@ -312,6 +318,7 @@ namespace zenoui
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
                 pSpinBox->setValue(value.toDouble());
+                pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 if (properties.type() == QMetaType::QVariantMap) {
                     QVariantMap props = properties.toMap();

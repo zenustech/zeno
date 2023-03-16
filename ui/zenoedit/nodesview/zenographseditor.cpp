@@ -62,7 +62,9 @@ void ZenoGraphsEditor::initUI()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
-    m_ui->graphsViewTab->setFont(QFont("Segoe UI", 12));  //bug in qss font setting.
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+    m_ui->graphsViewTab->setFont(font);  //bug in qss font setting.
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
     m_ui->graphsViewTab->setIconSize(ZenoStyle::dpiScaledSize(QSize(20,20)));
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");

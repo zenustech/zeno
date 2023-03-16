@@ -94,7 +94,8 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
 
     m_plblName = new QLabel("");
-    m_plblName->setFont(QFont("Segoe UI Bold", 10));
+    QFont fnt = zenoApp->font();
+    m_plblName->setFont(fnt);
     m_plblName->setMinimumWidth(ZenoStyle::dpiScaled(128));
     QPalette palette = m_plblName->palette();
     palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
@@ -187,7 +188,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill = new ZToolButton;
     m_btnAlways = new ZToolButton;
 
-    QFont fnt("Alibaba PuHuiTi", 10);
+    QFont fnt = zenoApp->font();
 
     m_btnRun->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
     m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_run_thunder.svg",
@@ -490,7 +491,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pMenuBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     pMenuBar->setProperty("cssClass", "docktoolbar");
     pMenuBar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
-    QFont font("Alibaba PuHuiTi", 10);
+    QFont font = zenoApp->font();
     font.setWeight(QFont::Medium);
     pMenuBar->setFont(font);
 
