@@ -195,26 +195,11 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
-    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
+    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
-
-    auto deduce_node_cnt = [](std::size_t numLeaves) {
-        if (numLeaves <= 2)
-            return numLeaves;
-        return numLeaves * 2 - 1;
-    };
-    // TODO: add other fronts's initialization 
-    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-
-    if (hasBoundary()) {
-        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    }
+    ne = seInds.size(); 
+    tempE.resize(ne); 
+    nE.setVal(ne); 
 
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -231,13 +216,14 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 });
         }
         const auto &edges = primHandle.getSurfEdges();
-        constexpr int intHalfLen = sizeof(int) * 4;
         pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
-                                     verts = view<space>({}, verts), intHalfLen] __device__(int i) mutable {
+                                     tempE = proxy<space>({}, tempE), 
+                                     verts = view<space>({}, verts)] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
+            tempE.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge; 
         });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
@@ -246,19 +232,31 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
-    
     spInds = svInds; 
-    spInds.resize((std::size_t)numDofs); 
+    spInds.resize((std::size_t)(svInds.size() + coPoints->size())); 
+    fmt::print("spInds.size: {}\n", spInds.size()); 
     pol(range(coPoints->size()), 
         [spInds = proxy<space>({}, spInds), 
          svoffset = svInds.size(), 
          coOffset = coOffset] __device__ (int i) mutable {
             spInds("inds", i + svoffset, int_c) = coOffset + i; 
         }); 
-    pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp)] __device__ (int i) mutable {
-            vtemp("n_cons", i, int_c) = 0; 
-        }); 
+
+    auto deduce_node_cnt = [](std::size_t numLeaves) {
+        if (numLeaves <= 2)
+            return numLeaves;
+        return numLeaves * 2 - 1;
+    };
+    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    if (hasBoundary()) {
+        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        // boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    }
 
     /// WARN: ignore BC verts initialization here
     D = 0;  
@@ -273,7 +271,6 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     this->framedt = framedt;
     curRatio = 0;
     substep = -1;
-    projectDBC = false;
 
     /// cloth dynamics status
     for (auto &primHandle : prims) {
@@ -289,6 +286,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             vtemp("ws", vi) = verts("m", i);
             vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
             vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
             vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
         });
     }
@@ -299,11 +297,15 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                  augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
                     auto x = coverts.pack<3>("x", i);
                     auto v = coverts.pack<3>("v", i);
+                    int vi = coOffset + i; 
 
                     vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                    vtemp.tuple<3>("x[0]", coOffset + i) = x;
-                    vtemp.tuple<3>("x[k]", coOffset + i) = x;
-                    vtemp.tuple<3>("v[0]", coOffset + i) = v;
+                    vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
+                    vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
+                    vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
+                    vtemp.tuple(dim_c<3>, "y[k+1]", vi) = x + v * dt; 
+                    vtemp.tuple(dim_c<3>, "y(l)", vi) = x + v * dt; 
+                    vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
                 });
         }
 
@@ -334,13 +336,13 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "x[0]", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
-        init_front(spInds, selfStFront); // Previous WARNING: pt, what about coPoints' vert colliding with stInds' triangles
+        init_front(spInds, selfStFront); 
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "x[0]", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
         init_front(seInds, selfSeeFront);
-        init_front(spInds, selfSevFront); // Previous WARNING: pe
+        init_front(spInds, selfSevFront); 
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -358,15 +360,15 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, 
-                    T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, T BCStiffness)
-    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, 
+                    T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, T BCStiffness, T shrinkFactor)
+    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
         nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
-        dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
+        dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta * 2}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
-        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness} {
+        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, consShrinking{shrinkFactor} {
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -407,6 +409,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             // LCP
             {"lambda", 1},  // float, lambda in LCP  
             {"grad", 12},   // float, constraint gradient 
+            {"dist", 1}, 
             {"val", 1},     // float, constraint value
             {"b", 1},       // float, b in A*lambda+b, for LCP  
             {"diag", 1}     // float, diag element in the current row 
@@ -417,10 +420,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            // {"grad", 6}, 
-            {"dist", 1}, 
-            {"tmp", 1} // , 
-            // {"lambda", 1} // for LCP
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -428,10 +428,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
-            // {"grad", 9}, 
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -439,10 +436,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            // {"grad", 12},
-            {"dist", 1},  
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -450,21 +444,15 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            // {"grad", 12}, 
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
     tempE = tiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
-            {"inds", 2}, 
-            // {"grad", 6}, 
-            {"dist", 1}, 
-            {"tmp", 1}, 
-            {"lambda", 1}
+            {"inds", 2},  
+            {"dist", 1}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -475,16 +463,16 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"cons", maxVertCons}, 
                         {"ind", maxVertCons}    // its index in each constraint 
                     }, 
-                    (std::size_t)numDofs
+                    (std::size_t)coOffset       // stiff BC
     }; 
-    opp = ope = opt = oee = oe = 0;     // offsets
+    opp = ope = opt = oee = oe = 0;             // offsets
     npp = npe = npt = nee = ne = 0;
     vtemp = tiles_t{zsprims[0]->getParticles().get_allocator(),
                     {
                         // boundary
                         {"ws", 1},
                         {"cons", 3},
-                        {"isBC", 1},        // 0 or 1
+                        {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
                         // cloth dynamics
                         {"x[0]", 3},
@@ -492,30 +480,38 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"y[k+1]", 3}, 
                         {"v[0]", 3}, 
                         {"x(l)", 3}, 
+                        {"r(l)", 3}, 
                         {"y(l)", 3}, 
+                        {"disp", 1}, 
                         {"x_tilde", 3},
                         {"x_hat", 3}, 
                         // linear solver
                         {"dir", 3},
                         {"grad", 3},
-                        {"P", 9},           // implement Newton solver first 
+                        {"P", 9},               // implement Newton solver first 
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
+                        // forward step
+                        {"Di", 1}, 
                         // intermediate
                         {"temp", 3},
                     },
                     (std::size_t)numDofs};
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
-    consColorBits = {vtemp.get_allocator(), (std::size_t)maxVertCons}; 
+    consColorBits = zs::Vector<int>{(std::size_t)maxVertCons, zs::memsrc_e::um, 0}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
-    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
+    // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
+    // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
+    fmt::print("[container size] estNumCps: {}\n", estNumCps); 
+    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
+    fmt::print("lcpMatIs.size: {}, lcpMatJs.size(): {}\n", lcpMatIs.size(), lcpMatJs.size()); 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
     // average edge length (for CCD filtering)
     initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
                          // adaptive dhat, targetGRes, kappa
 }
-// TODO
+
 void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -525,7 +521,6 @@ void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     dt = framedt * ratio;
     curRatio += ratio;
 
-    projectDBC = false;
     pol(Collapse(coOffset), [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         auto xk = vtemp.pack(dim_c<3>, "x[k]", vi);
         vtemp.tuple(dim_c<3>, "x_hat", vi) = xk;
@@ -542,7 +537,7 @@ void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
                 vtemp.tuple(dim_c<3>, "x_tilde", coOffset + i) = newX;
             });
 }
-// TODO
+
 void RapidClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -554,7 +549,7 @@ void RapidClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple<3>("v[0]", vi) = vn;
     });
 }
-// TODO
+
 void RapidClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -627,6 +622,7 @@ struct MakeRapidClothSystem : INode {
         auto input_max_vert_cons = get_input2<int>("max_vert_cons");  
         auto input_lcp_tol = get_input2<int>("lcp_tol"); 
         auto input_lcp_cap = get_input2<int>("lcp_cap"); 
+        auto input_shrink_factor = get_input2<float>("shrink_factor"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
@@ -634,7 +630,7 @@ struct MakeRapidClothSystem : INode {
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
                                                    input_delta, input_sigma, input_gamma, input_eps, 
-                                                   input_max_vert_cons, input_BC_stiffness);
+                                                   input_max_vert_cons, input_BC_stiffness, input_shrink_factor);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -658,6 +654,7 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "gravity", "-9.8"},
                               {"int", "collision_iters", "512"}, 
                               {"float", "delta", "1"}, 
+                              {"float", "shrink_factor", "1.1"}, 
                               {"float", "edge_violation_ratio", "1.1"}, 
                               {"float", "stepping_limit", "0.9"},  
                               {"float", "term_thresh", "1e-4"}, 

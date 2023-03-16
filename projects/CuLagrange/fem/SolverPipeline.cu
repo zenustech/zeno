@@ -2288,7 +2288,6 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
             }     // self friction
         }         // enable friction
     }             // enable contact
-
 }
 
 template <typename Model>
@@ -3266,6 +3265,11 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
 bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+
+    if (!linsys.initialized) {
+        initializeSystemHessian(pol);
+        linsys.initialized = true;
+    }
 
     /// optimizer
     int newtonIter = 0;

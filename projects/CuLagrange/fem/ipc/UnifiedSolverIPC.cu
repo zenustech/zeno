@@ -1,5 +1,5 @@
-#include "Utils.hpp"
 #include "UnifiedSolver.cuh"
+#include "Utils.hpp"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
@@ -16,9 +16,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
     using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
     using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
-    auto numPP = nPP.getVal();
+    auto numPP = PP.getCount();
+    tempPP.resize(numPP);
     pol(range(numPP),
-        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = PP.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int ppi) mutable {
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -46,16 +47,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(ppHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[2];
-            int BCorder[2];
-            int BCfixed[2];
-            for (int i = 0; i != 2; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pp[i]);
-                BCorder[i] = vtemp("BCorder", pp[i]);
-                BCfixed[i] = vtemp("BCfixed", pp[i]);
-            }
-            rotate_hessian(ppHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pp[0], pp[1]
             tempPP.tuple<36>("H", ppi) = ppHess;
             /// construct P
@@ -66,9 +57,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numPE = nPE.getVal();
+    auto numPE = PE.getCount();
+    tempPE.resize(numPE);
     pol(range(numPE),
-        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = PE.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pei) mutable {
             auto pe = PE[pei];
             auto p = vtemp.pack<3>("xn", pe[0]);
@@ -98,16 +90,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(peHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[3];
-            int BCorder[3];
-            int BCfixed[3];
-            for (int i = 0; i != 3; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pe[i]);
-                BCorder[i] = vtemp("BCorder", pe[i]);
-                BCfixed[i] = vtemp("BCfixed", pe[i]);
-            }
-            rotate_hessian(peHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pe[0], pe[1], pe[2]
             tempPE.tuple<81>("H", pei) = peHess;
             /// construct P
@@ -118,9 +100,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numPT = nPT.getVal();
+    auto numPT = PT.getCount();
+    tempPT.resize(numPT);
     pol(range(numPT),
-        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = PT.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pti) mutable {
             auto pt = PT[pti];
             auto p = vtemp.pack<3>("xn", pt[0]);
@@ -152,16 +135,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(ptHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pt[i]);
-                BCorder[i] = vtemp("BCorder", pt[i]);
-                BCfixed[i] = vtemp("BCfixed", pt[i]);
-            }
-            rotate_hessian(ptHess, BCbasis, BCorder, BCfixed, projectDBC);
             // pt[0], pt[1], pt[2], pt[3]
             tempPT.tuple<144>("H", pti) = ptHess;
             /// construct P
@@ -172,9 +145,10 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-    auto numEE = nEE.getVal();
+    auto numEE = EE.getCount();
+    tempEE.resize(numEE);
     pol(range(numEE),
-        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), gTag, xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = EE.port(), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int eei) mutable {
             auto ee = EE[eei];
             auto ea0 = vtemp.pack<3>("xn", ee[0]);
@@ -206,16 +180,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(eeHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ee[i]);
-                BCorder[i] = vtemp("BCorder", ee[i]);
-                BCfixed[i] = vtemp("BCfixed", ee[i]);
-            }
-            rotate_hessian(eeHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempEE.tuple<144>("H", eei) = eeHess;
             /// construct P
@@ -235,10 +199,11 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             return zs::make_tuple(mollifier_ee(ea0, ea1, eb0, eb1, epsX), mollifier_grad_ee(ea0, ea1, eb0, eb1, epsX),
                                   mollifier_hess_ee(ea0, ea1, eb0, eb1, epsX));
         };
-        auto numEEM = nEEM.getVal();
-        pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM),
-                            EEM = proxy<space>(EEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int eemi) mutable {
+        auto numEEM = EEM.getCount();
+        tempEEM.resize(numEEM);
+        pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM), EEM = EEM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int eemi) mutable {
             auto eem = EEM[eemi]; // <x, y, z, w>
             auto ea0Rest = vtemp.pack<3>("x0", eem[0]);
             auto ea1Rest = vtemp.pack<3>("x0", eem[1]);
@@ -283,16 +248,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(eemHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", eem[i]);
-                BCorder[i] = vtemp("BCorder", eem[i]);
-                BCfixed[i] = vtemp("BCfixed", eem[i]);
-            }
-            rotate_hessian(eemHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempEEM.tuple<144>("H", eemi) = eemHess;
             /// construct P
@@ -303,10 +258,11 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-        auto numPPM = nPPM.getVal();
-        pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM),
-                            PPM = proxy<space>(PPM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int ppmi) mutable {
+        auto numPPM = PPM.getCount();
+        tempPPM.resize(numPPM);
+        pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM), PPM = PPM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int ppmi) mutable {
             auto ppm = PPM[ppmi]; // <x, z, y, w>, <0, 2, 1, 3>
             auto ea0Rest = vtemp.pack<3>("x0", ppm[0]);
             auto ea1Rest = vtemp.pack<3>("x0", ppm[1]);
@@ -366,16 +322,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(ppmHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ppm[i]);
-                BCorder[i] = vtemp("BCorder", ppm[i]);
-                BCfixed[i] = vtemp("BCfixed", ppm[i]);
-            }
-            rotate_hessian(ppmHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempPPM.tuple<144>("H", ppmi) = ppmHess;
             /// construct P
@@ -386,10 +332,11 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
                     }
             }
         });
-        auto numPEM = nPEM.getVal();
-        pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM),
-                            PEM = proxy<space>(PEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-                            projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int pemi) mutable {
+        auto numPEM = PEM.getCount();
+        tempPEM.resize(numPEM);
+        pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM), PEM = PEM.port(),
+                            gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC,
+                            includeHessian, get_mollifier] __device__(int pemi) mutable {
             auto pem = PEM[pemi]; // <x, w, y, z>, <0, 2, 3, 1>
             auto ea0Rest = vtemp.pack<3>("x0", pem[0]);
             auto ea1Rest = vtemp.pack<3>("x0", pem[1]);
@@ -460,16 +407,6 @@ void UnifiedIPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy 
             make_pd(pemHess);
 #else
 #endif
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pem[i]);
-                BCorder[i] = vtemp("BCorder", pem[i]);
-                BCfixed[i] = vtemp("BCfixed", pem[i]);
-            }
-            rotate_hessian(pemHess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             tempPEM.tuple<144>("H", pemi) = pemHess;
             /// construct P
@@ -492,10 +429,11 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
     using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
     using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
-    auto numFPP = nFPP.getVal();
+    auto numFPP = FPP.getCount();
+    fricPP.resize(numFPP);
     pol(range(numFPP),
-        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = FPP.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
             auto fpp = FPP[fppi];
             auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
             auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
@@ -539,16 +477,6 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[2];
-            int BCorder[2];
-            int BCfixed[2];
-            for (int i = 0; i != 2; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpp[i]);
-                BCorder[i] = vtemp("BCorder", fpp[i]);
-                BCfixed[i] = vtemp("BCfixed", fpp[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pp[0], pp[1]
             fricPP.tuple<36>("H", fppi) = hess;
             /// construct P
@@ -559,10 +487,11 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFPE = nFPE.getVal();
+    auto numFPE = FPE.getCount();
+    fricPE.resize(numFPE);
     pol(range(numFPE),
-        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = FPE.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
             auto fpe = FPE[fpei];
             auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
             auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
@@ -609,16 +538,6 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[3];
-            int BCorder[3];
-            int BCfixed[3];
-            for (int i = 0; i != 3; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpe[i]);
-                BCorder[i] = vtemp("BCorder", fpe[i]);
-                BCfixed[i] = vtemp("BCfixed", fpe[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pe[0], pe[1], pe[2]
             fricPE.tuple<81>("H", fpei) = hess;
             /// construct P
@@ -629,10 +548,11 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFPT = nFPT.getVal();
+    auto numFPT = FPT.getCount();
+    fricPT.resize(numFPT);
     pol(range(numFPT),
-        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = FPT.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
             auto fpt = FPT[fpti];
             auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
             auto v0 = vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
@@ -681,16 +601,6 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     hess = TT.transpose() * innerMtr * TT;
                 }
             }
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fpt[i]);
-                BCorder[i] = vtemp("BCorder", fpt[i]);
-                BCfixed[i] = vtemp("BCfixed", fpt[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // pt[0], pt[1], pt[2], pt[3]
             fricPT.tuple<144>("H", fpti) = hess;
             /// construct P
@@ -701,10 +611,11 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                     }
             }
         });
-    auto numFEE = nFEE.getVal();
+    auto numFEE = FEE.getCount();
+    fricEE.resize(numFEE);
     pol(range(numFEE),
-        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE), gTag,
-         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = FEE.port(), gTag, epsvh = epsv * dt,
+         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
             auto fee = FEE[feei];
             auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
             auto e1 = vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
@@ -754,16 +665,6 @@ void UnifiedIPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutio
                 }
             }
 
-            // rotate and project
-            mat3 BCbasis[4];
-            int BCorder[4];
-            int BCfixed[4];
-            for (int i = 0; i != 4; ++i) {
-                BCbasis[i] = vtemp.pack<3, 3>("BCbasis", fee[i]);
-                BCorder[i] = vtemp("BCorder", fee[i]);
-                BCfixed[i] = vtemp("BCfixed", fee[i]);
-            }
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
             // ee[0], ee[1], ee[2], ee[3]
             fricEE.tuple<144>("H", feei) = hess;
             /// construct P

@@ -9,7 +9,7 @@ namespace pmp {
 
 SurfaceCurvature::SurfaceCurvature(SurfaceMesh* mesh) : mesh_(mesh) {
     vertice_num_ = mesh_->prim_->verts.size();
-    edge_num_ = mesh_->prim_->edges.size();
+    edge_num_ = mesh_->prim_->lines.size();
     min_curvature_ = mesh_->prim_->verts.add_attr<float>("curv_min");
     max_curvature_ = mesh_->prim_->verts.add_attr<float>("curv_max");
 }
@@ -22,8 +22,8 @@ SurfaceCurvature::~SurfaceCurvature() {
 void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
     auto area = mesh_->prim_->verts.add_attr<float>("curv_area", 0.0);
     auto normal = mesh_->prim_->tris.add_attr<vec3f>("curv_normal");
-    auto evec = mesh_->prim_->edges.add_attr<vec3f>("curv_evec", vec3f(0, 0, 0));
-    auto angle = mesh_->prim_->edges.add_attr<float>("curv_angle", 0.0);
+    auto evec = mesh_->prim_->lines.add_attr<vec3f>("curv_evec", vec3f(0, 0, 0));
+    auto angle = mesh_->prim_->lines.add_attr<float>("curv_angle", 0.0);
 
     vec3f p0, p1, n0, n1, ev;
     float l, A, beta, a1, a2, a3;
@@ -53,10 +53,10 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
     }
 
     auto& pos = mesh_->prim_->attr<vec3f>("pos");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
     // precompute dihedralAngle*edge_length*edge per edge
-    for (int e = 0; e < mesh_->edges_size_; ++e) {
+    for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
         auto h0 = e << 1;
@@ -152,8 +152,8 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 
     // clean-up properties
     mesh_->prim_->verts.erase_attr("curv_area");
-    mesh_->prim_->edges.erase_attr("curv_evec");
-    mesh_->prim_->edges.erase_attr("curv_angle");
+    mesh_->prim_->lines.erase_attr("curv_evec");
+    mesh_->prim_->lines.erase_attr("curv_angle");
     mesh_->prim_->tris.erase_attr("curv_normal");
 
     // smooth curvature values
@@ -166,12 +166,12 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
 
     // properties
     auto vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto cotan = mesh_->prim_->edges.add_attr<float>("curv_cotan");
+    auto cotan = mesh_->prim_->lines.add_attr<float>("curv_cotan");
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
     // cotan weight per edge
-    for (int e = 0; e < mesh_->edges_size_; ++e) {
+    for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
         cotan[e] = mesh_->cotan_weight(e);
@@ -208,7 +208,7 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
     }
 
     // remove property
-    mesh_->prim_->edges.erase_attr("curv_cotan");
+    mesh_->prim_->lines.erase_attr("curv_cotan");
 }
 
 } // namespace pmp

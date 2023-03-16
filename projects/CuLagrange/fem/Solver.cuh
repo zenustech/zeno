@@ -371,6 +371,7 @@ struct IPCSystem : IObject {
         using hess4_t = HessianPiece<4, T>;
 
         /// @brief dynamic part, mainly for collision constraints
+        bool initialized = false;
         /// @note initialization: hess.init(allocator, size)
         /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
         HessianPiece<2, T> hess2;

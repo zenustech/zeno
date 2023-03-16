@@ -1069,13 +1069,13 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
             zeno::NodeLocation node_location(nodes[0], subgIdx);
             auto pick_callback = [nodes, node_location](float depth, int x, int y) {
                 auto scene = Zenovis::GetInstance().getSession()->get_scene();
-                auto near = scene->camera->m_near;
-                auto far = scene->camera->m_far;
+                auto _near = scene->camera->m_near;
+                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 1) {
                     depth = depth * 2 - 1;
-                    cz = 2 * near * far / ((far + near) - depth * (far - near));
+                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;

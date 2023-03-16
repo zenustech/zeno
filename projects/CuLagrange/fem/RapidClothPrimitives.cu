@@ -2,14 +2,14 @@
 
 namespace zeno{
 
-typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol) {
+typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString& tag, std::size_t maxInd) {
     using namespace zs;
     using T = typename RapidClothSystem::T;
     constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(numDofs);
+    auto nwarps = count_warps(maxInd);
     temp.resize(nwarps);
-    cudaPol(range(numDofs), [data = view<space>({}, vtemp), res = view<space>(temp), n = numDofs,
-                             offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
+    cudaPol(range(maxInd), [data = view<space>({}, vtemp), res = view<space>(temp), n = maxInd,
+                             offset = vtemp.getPropertyOffset(tag)] __device__(int pi) mutable {
         auto v = data.pack(dim_c<3>, offset, pi);
         auto val = v.abs().max();
 
@@ -26,19 +26,19 @@ typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &
     return reduce(cudaPol, temp, thrust::maximum<T>{});
 }
 
-typename RapidClothSystem::T RapidClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag) {
-    return zs::sqrt(dot(pol, tag, tag));
+typename RapidClothSystem::T RapidClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd) {
+    return zs::sqrt(dot(pol, tag, tag, maxInd));
 }
 
 typename RapidClothSystem::T RapidClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0,
-                                                 const zs::SmallString &tag1) {
+                                                 const zs::SmallString &tag1, std::size_t maxInd) {
     using namespace zs;
     using T = typename RapidClothSystem::T;
     constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(numDofs);
+    auto nwarps = count_warps(maxInd);
     temp.resize(nwarps);
     temp.reset(0);
-    cudaPol(range(numDofs), [data = view<space>({}, vtemp), res = view<space>(temp), n = numDofs,
+    cudaPol(range(maxInd), [data = view<space>({}, vtemp), res = view<space>(temp), n = maxInd,
                              offset0 = vtemp.getPropertyOffset(tag0),
                              offset1 = vtemp.getPropertyOffset(tag1)] __device__(int pi) mutable {
         auto v0 = data.pack(dim_c<3>, offset0, pi);

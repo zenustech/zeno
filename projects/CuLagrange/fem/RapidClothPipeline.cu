@@ -6,57 +6,6 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
-void RapidClothSystem::computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag) {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    pol(Collapse{numBouDofs}, [vtemp = view<space>({}, vtemp), 
-        coOffset = coOffset, tag] __device__(int vi) mutable {
-        vi += coOffset;
-        auto xtarget = vtemp.pack<3>("x_tilde", vi);
-        auto x = vtemp.pack<3>(tag, vi);
-        vtemp.tuple(dim_c<3>, "cons", vi) = x - xtarget;
-    });
-}
-bool RapidClothSystem::areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag) {
-    computeBoundaryConstraints(pol, tag);
-    auto res = boundaryConstraintResidual(pol, tag);
-    return res < s_constraint_residual;
-}
-typename RapidClothSystem::T RapidClothSystem::boundaryConstraintResidual(zs::CudaExecutionPolicy &pol, 
-    const zs::SmallString& tag) {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    if (projectDBC)
-        return 0;
-    temp.resize(numBouDofs * 2);
-    pol(Collapse{numBouDofs}, [vtemp = view<space>({}, vtemp), den = temp.data(), num = temp.data() + numBouDofs,
-                               coOffset = coOffset] __device__(int vi) mutable {
-        vi += coOffset;
-        auto cons = vtemp.pack<3>("cons", vi);
-        auto xt = vtemp.pack<3>("x_hat", vi);
-        auto xtarget = vtemp.pack<3>("x_tilde", vi);
-        T n = 0, d_ = 0;
-        // https://ipc-sim.github.io/file/IPC-supplement-A-technical.pdf Eq5
-        for (int d = 0; d != 3; ++d) {
-            n += zs::sqr(cons[d]);
-            d_ += zs::sqr(xt[d] - xtarget[d]);
-        }
-        num[vi] = n;
-        den[vi] = d_;
-    });
-    // denominator ... numerator ...
-    auto tot = reduce(pol, temp);
-    temp.resize(numBouDofs);
-    auto dsqr = reduce(pol, temp);
-    auto nsqr = tot - dsqr;
-    T ret = 0;
-    if (dsqr == 0)
-        ret = std::sqrt(nsqr);
-    else
-        ret = std::sqrt(nsqr / dsqr);
-    return ret < 1e-6 ? 0 : ret;
-}
-
 void RapidClothSystem::computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString& tag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -330,10 +279,42 @@ void RapidClothSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy 
 void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    // TODO
+    
+    newtonDynamicsStep(pol); 
+    // y(l) = y[k+1]
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x[k]", vi); 
+        }); 
+    for (int iters = 0; iters < L; iters++)
+    {
+        fmt::print("findConstraints...\n"); 
+        if (D < D_min)
+        {
+            findConstraints(pol, D_max); 
+            D = D_max; 
+        }
+        fmt::print("backwardStep...\n"); 
+        backwardStep(pol); 
+        fmt::print("forwardStep...\n"); 
+        forwardStep(pol); 
+        // update D
+        fmt::print("check termination criterion...\n"); 
+        auto disp = infNorm(pol, "disp", numDofs); 
+        D -= 2 * disp; 
+        // termination check 
+        auto res = infNorm(pol, "r(l)", numDofs); 
+        if (res < eps)
+            break; 
+    }
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "x(l)", vi); 
+        }); 
 }
 
-struct StepClothSystem : INode {
+struct StepRapidClothSystem : INode {
     using T = typename RapidClothSystem::T; 
 
     void apply() override {
@@ -358,7 +339,7 @@ struct StepClothSystem : INode {
     }
 };
 
-ZENDEFNODE(StepClothSystem, {{
+ZENDEFNODE(StepRapidClothSystem, {{
                                  "ZSRapidClothSystem",
                                  {"int", "num_substeps", "1"},
                                  {"float", "dt", "0.01"},

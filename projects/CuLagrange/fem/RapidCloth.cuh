@@ -146,7 +146,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness); 
+                    T BCStiffness, T shrinkFactor); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -154,12 +154,12 @@ struct RapidClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision; TODO
-    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 3);   
+    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
     void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
         itiles_t &tempCons, int pairNum, int pairSize, std::size_t offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
     void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
@@ -175,15 +175,10 @@ struct RapidClothSystem : IObject {
     void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
 
-    // boundary constraint
-    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    bool areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    T boundaryConstraintResidual(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
-    T infNorm(zs::CudaExecutionPolicy &pol);
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
@@ -213,7 +208,6 @@ struct RapidClothSystem : IObject {
     T armijoParam = 1e-4;
     bool enableContact = true;
     bool enableContactSelf = true;
-    bool projectDBC = false;
     T augLagCoeff = 1e4;
     vec3 gravAccel;
 
@@ -249,6 +243,7 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpConverged; 
     int maxVertCons = 32;
     int nConsColor = 0; 
+    T consShrinking = 1.1f; 
     int nCons = 0; 
     int consDegree = 32 * 3;
     spmat_t lcpMat{}; 

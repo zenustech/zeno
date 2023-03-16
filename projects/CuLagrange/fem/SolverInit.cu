@@ -297,8 +297,31 @@ void IPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
 
     linsys.spmat = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
-    linsys.spmat.localOrdering(pol, 128);
+    linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+#if 0
+    {
+        puts("begin ordering checking");
+        auto &spmat = linsys.spmat;
+        pol(range(spmat.outerSize()), [spmat = proxy<space>(spmat)] ZS_LAMBDA(int row) mutable {
+            int st = spmat._ptrs[row];
+            int ed = spmat._ptrs[row + 1];
+            for (int k = st + 1; k < ed; ++k) {
+                if (spmat._inds[k] <= spmat._inds[k - 1]) {
+                    auto entry = [&](int n) -> int {
+                        if (st + n >= ed)
+                            return -1;
+                        else
+                            return spmat._inds[st + n];
+                    };
+                    printf("row[%d]: %d, %d, %d, %d, %d; %d, %d, %d, %d, %d\n", row, entry(0), entry(1), entry(2),
+                           entry(3), entry(4), entry(5), entry(6), entry(7), entry(8), entry(9));
+                }
+            };
+        });
+        puts("done ordering checking");
+    }
+#endif
 
     linsys.hess2.init(PP.get_allocator(), estNumCps);
     linsys.hess3.init(PP.get_allocator(), estNumCps);
@@ -589,7 +612,8 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     targetGRes = (targetGRes + pnRel * std::sqrt(boxDiagSize2)) * 0.5f;
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 
-    initializeSystemHessian(pol);
+    /// do not initialize system hessian here!
+    /// because the one-time constraint setup later on may break the existing matrix sparsity pattern!
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {
