@@ -560,120 +560,12 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
     hess3.reset(false, 0);
     hess4.reset(false, 0);
     if (enableContact) {
-        auto numPP = PP.getCount();
-        auto offset = hess2.increaseCount(numPP);
-        pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = PP.port(), hess2 = proxy<space>(hess2),
-                               offset] ZS_LAMBDA(int ppi) mutable {
-            auto H = tempPP.pack(dim_c<6, 6>, "H", ppi);
-            auto inds = PP[ppi];
-            hess2.hess[offset + ppi] = H;
-            hess2.inds[offset + ppi] = inds;
-        });
-
-        auto numPE = PE.getCount();
-        offset = hess3.increaseCount(numPE);
-        pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = PE.port(), hess3 = proxy<space>(hess3),
-                               offset] ZS_LAMBDA(int pei) mutable {
-            auto H = tempPE.pack(dim_c<9, 9>, "H", pei);
-            auto inds = PE[pei];
-            hess3.hess[offset + pei] = H;
-            hess3.inds[offset + pei] = inds;
-        });
-
-        auto numPT = PT.getCount();
-        offset = hess4.increaseCount(numPT);
-        pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = PT.port(), hess4 = proxy<space>(hess4),
-                               offset] ZS_LAMBDA(int pti) mutable {
-            auto H = tempPT.pack(dim_c<12, 12>, "H", pti);
-            auto inds = PT[pti];
-            hess4.hess[offset + pti] = H;
-            hess4.inds[offset + pti] = inds;
-        });
-
-        auto numEE = EE.getCount();
-        offset = hess4.increaseCount(numEE);
-        pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = EE.port(), hess4 = proxy<space>(hess4),
-                               offset] ZS_LAMBDA(int eei) mutable {
-            auto H = tempEE.pack(dim_c<12, 12>, "H", eei);
-            auto inds = EE[eei];
-            hess4.hess[offset + eei] = H;
-            hess4.inds[offset + eei] = inds;
-        });
-
-        if (enableMollification) {
-            auto numEEM = EEM.getCount();
-            offset = hess4.increaseCount(numEEM);
-            pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = EEM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eemi) mutable {
-                auto H = tempEEM.pack(dim_c<12, 12>, "H", eemi);
-                auto inds = EEM[eemi];
-                hess4.hess[offset + eemi] = H;
-                hess4.inds[offset + eemi] = inds;
-            });
-
-            auto numPPM = PPM.getCount();
-            offset = hess4.increaseCount(numPPM);
-            pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = PPM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int ppmi) mutable {
-                auto H = tempPPM.pack(dim_c<12, 12>, "H", ppmi);
-                auto inds = PPM[ppmi];
-                hess4.hess[offset + ppmi] = H;
-                hess4.inds[offset + ppmi] = inds;
-            });
-
-            auto numPEM = PEM.getCount();
-            offset = hess4.increaseCount(numPEM);
-            pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = PEM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pemi) mutable {
-                auto H = tempPEM.pack(dim_c<12, 12>, "H", pemi);
-                auto inds = PEM[pemi];
-                hess4.hess[offset + pemi] = H;
-                hess4.inds[offset + pemi] = inds;
-            });
-        } // end mollification
+        updateBarrierGradientAndHessian(pol, gTag);
 
         if (s_enableFriction) {
             if (s_enableSelfFriction) {
                 if (fricMu != 0) {
-                    auto numFPP = FPP.getCount();
-                    offset = hess2.increaseCount(numFPP);
-                    pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = FPP.port(),
-                                            hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int fppi) mutable {
-                        auto H = fricPP.pack(dim_c<6, 6>, "H", fppi);
-                        auto inds = FPP[fppi];
-                        hess2.hess[offset + fppi] = H;
-                        hess2.inds[offset + fppi] = inds;
-                    });
-
-                    auto numFPE = FPE.getCount();
-                    offset = hess3.increaseCount(numFPE);
-                    pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = FPE.port(),
-                                            hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int fpei) mutable {
-                        auto H = fricPE.pack(dim_c<9, 9>, "H", fpei);
-                        auto inds = FPE[fpei];
-                        hess3.hess[offset + fpei] = H;
-                        hess3.inds[offset + fpei] = inds;
-                    });
-
-                    auto numFPT = FPT.getCount();
-                    offset = hess4.increaseCount(numFPT);
-                    pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = FPT.port(),
-                                            hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int fpti) mutable {
-                        auto H = fricPT.pack(dim_c<12, 12>, "H", fpti);
-                        auto inds = FPT[fpti];
-                        hess4.hess[offset + fpti] = H;
-                        hess4.inds[offset + fpti] = inds;
-                    });
-
-                    auto numFEE = FEE.getCount();
-                    offset = hess4.increaseCount(numFEE);
-                    pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = FEE.port(),
-                                            hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int feei) mutable {
-                        auto H = fricEE.pack(dim_c<12, 12>, "H", feei);
-                        auto inds = FEE[feei];
-                        hess4.hess[offset + feei] = H;
-                        hess4.inds[offset + feei] = inds;
-                    });
+                    updateFrictionBarrierGradientAndHessian(pol, gTag);
                 } //
             }     // enable self friction, fricmu
         }         // enable friction

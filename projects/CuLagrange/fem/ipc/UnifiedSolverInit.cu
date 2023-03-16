@@ -572,12 +572,12 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
         }
     }
 
-    {
+    if (enableContact) {
         // check initial self intersections
         // including proximity pairs
         // do once
-        markSelfIntersectionPrimitives(cudaPol);
-        // markSelfIntersectionPrimitives(cudaPol, zs::true_c);
+        // markSelfIntersectionPrimitives(cudaPol);
+        markSelfIntersectionPrimitives(cudaPol, zs::true_c);
     }
 
     // output adaptive setups

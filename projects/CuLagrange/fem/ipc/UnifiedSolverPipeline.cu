@@ -3086,6 +3086,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
         // UPDATE RULE
         cons_res = constraintResidual(pol);
+#if 0
         if (res * dt < updateZoneTol && cons_res > consTol) {
             if (boundaryKappa < kappaMax) {
                 boundaryKappa *= 2;
@@ -3108,6 +3109,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
 #endif
             }
         }
+#endif
     }
     zeno::log_warn("\t# substep {} newton optimizer ends in {} iters with residual {}\n", state.getSubstep(),
                    newtonIter, res);
