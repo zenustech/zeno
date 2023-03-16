@@ -188,9 +188,9 @@ namespace JsonHelper
                     writer.Key(key_timeline);
                     if (curves.size() == 0)
                     {
-                        writer.Bool(true);
+                        writer.Bool(false);
                     } else {
-                        writer.Bool(false);     //todo
+                        writer.Bool((*curves.begin()).timeline);
                     }
                     for (auto curve : curves) {
                         writer.Key(curve.key.toUtf8());

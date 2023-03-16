@@ -387,7 +387,7 @@ void ZsgReader::_parseSocket(
     if (sockObj.HasMember("property"))
     {
         ZASSERT_EXIT(sockObj["property"].IsString());
-        sockProp = QString::fromLocal8Bit(sockObj["property"].GetString());
+        sockProp = QString::fromUtf8(sockObj["property"].GetString());
     }
     pAcceptor->addSocket(bInput, id, inSock, sockProp);
 

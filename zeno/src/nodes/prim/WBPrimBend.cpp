@@ -1603,6 +1603,80 @@ ZENDEFNODE(erode_project,
         }, /* category: */ {
             "erode"
         } });
+
+struct HeightStarPattern : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto rotate = get_input2<float>("rotate");
+        auto anglerandom = get_input2<float>("anglerandom");
+        auto shapesize = get_input2<float>("shapesize");
+        auto posjitter = get_input2<float>("posjitter");
+        auto sharpness = get_input2<float>("sharpness");
+        auto starness = get_input2<float>("starness");
+        auto sides = get_input2<int>("sides");
+        prim->verts.add_attr<float>("result");
+
+        std::uniform_real_distribution<float> dist(0, 1);
+
+#pragma omp parallel for
+        for (int i = 0; i < prim->verts.size(); i++) {
+            auto coord = prim->verts.attr<vec3f>("res")[i];
+            vec2f coord2d = vec2f(coord[0], coord[1]);
+            vec2f cellcenter = vec2f(floor(coord2d[0]), floor(coord2d[1]));
+            float result = 0;
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    vec2f lcl_cellcenter = cellcenter;
+                    lcl_cellcenter[0] += dx;
+                    lcl_cellcenter[1] += dy;
+                    std::minstd_rand e((lcl_cellcenter[0]*100+dx)*(lcl_cellcenter[1]*100+dy));
+                    vec2f center = coord2d - lcl_cellcenter;
+
+                    float lcl_shapeangle = rotate + ((dist(e) - 0.5) * anglerandom) * M_PI * 2;
+                    center[0] += (dist(e) - 0.5) * posjitter;
+                    center[1] += (dist(e) - 0.5) * posjitter;
+
+                    center /= shapesize;
+
+                    //Evaluate star function
+                    float distance = lengthSquared(center);
+                    float curangle = atan2(center[0], center[1]) + lcl_shapeangle;
+                    float star = pow(abs(cos(curangle * sides / 2)), sharpness);
+                    star *= starness;
+
+                    int res = distance + star < 1 ? 1 : 0;
+                    result = max(result, res);
+                    if (result == 1) {
+                        break;
+                    }
+                }
+            }
+            prim->verts.attr<float>("result")[i] = result;
+        }
+        prim->verts.erase_attr("res");
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(HeightStarPattern, {/* inputs: */ {
+                                   {"PrimitiveObject", "prim"},
+                                   {"float", "rotate", "0"},
+                                   {"float", "anglerandom", "0"},
+                                   {"float", "shapesize", "0.5"},
+                                   {"float", "posjitter", "0"},
+                                   {"float", "sharpness", "0.5"},
+                                   {"float", "starness", "0.5"},
+                                   {"int", "sides", "5"},
+                               },
+                               /* outputs: */
+                               {
+                                   {"PrimitiveObject", "prim"},
+                               },
+                               /* params: */ {}, /* category: */
+                               {
+                                   "erode",
+                               }});
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

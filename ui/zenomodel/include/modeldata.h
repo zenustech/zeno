@@ -333,6 +333,8 @@ struct CURVE_DATA {
     QVector<CURVE_POINT> points;
     int cycleType;
     CURVE_RANGE rg;
+    bool visible;
+    bool timeline;
 };
 
 typedef QMap<QString, CURVE_DATA> CURVES_DATA;

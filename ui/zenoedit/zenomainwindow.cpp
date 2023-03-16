@@ -771,6 +771,7 @@ void ZenoMainWindow::onCloseDock()
     ZTabDockWidget *pDockWidget = qobject_cast<ZTabDockWidget *>(sender());
     ZASSERT_EXIT(pDockWidget);
     pDockWidget->close();
+    //pDockWidget->testCleanupGL();
 
     PtrLayoutNode spParent = findParent(m_layoutRoot, pDockWidget);
     if (spParent)

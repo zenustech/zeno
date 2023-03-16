@@ -116,7 +116,7 @@ struct ExtendList : zeno::INode {
 
 ZENDEFNODE(ExtendList, {
     {"list1", "list2"},
-    {"list1"},
+    {{"list", "list1"}},
     {},
     {"list"},
 });

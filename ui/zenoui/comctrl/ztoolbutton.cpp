@@ -154,7 +154,7 @@ QSize ZToolButton::sizeHint() const
             w = qMax(textWidth, m_iconSize.width());
             h = textHeight + m_iconSize.height();
         }
-        else if (m_options & Opt_TextRightToIcon)
+        else if (m_options & (Opt_TextRightToIcon | Opt_TextLeftToIcon))
         {
             w = textWidth + m_iconSize.width();
             w += style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, this);
@@ -293,21 +293,16 @@ void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QS
         QPixmap px(icon);
         m_iconSize = px.size();
     }
-    if (m_options & Opt_SwitchAnimation)
-    {
-        animInfo.icon = QPixmap(icon);
-    } else {
-        if (iconHover.isEmpty())
-            iconHover = icon;
-        if (iconOnHover.isEmpty())
-            iconOnHover = iconOn;
-        m_icon.addFile(icon, m_iconSize, QIcon::Normal, QIcon::Off);
-        m_icon.addFile(iconHover, m_iconSize, QIcon::Active, QIcon::Off);
-        m_icon.addFile(iconHover, m_iconSize, QIcon::Selected, QIcon::Off);
-        m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
-        m_icon.addFile(iconOnHover, m_iconSize, QIcon::Active, QIcon::On);
-        m_icon.addFile(iconOnHover, m_iconSize, QIcon::Selected, QIcon::On);
-    }
+    if (iconHover.isEmpty())
+        iconHover = icon;
+    if (iconOnHover.isEmpty())
+        iconOnHover = iconOn;
+    m_icon.addFile(icon, m_iconSize, QIcon::Normal, QIcon::Off);
+    m_icon.addFile(iconHover, m_iconSize, QIcon::Active, QIcon::Off);
+    m_icon.addFile(iconHover, m_iconSize, QIcon::Selected, QIcon::Off);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
+    m_icon.addFile(iconOnHover, m_iconSize, QIcon::Active, QIcon::On);
+    m_icon.addFile(iconOnHover, m_iconSize, QIcon::Selected, QIcon::On);
 }
 
 void ZToolButton::setFont(const QFont& font)
@@ -486,8 +481,7 @@ void ZToolButton::paintEvent(QPaintEvent* event)
         painter.setBrush(animInfo.mBackColor);
         painter.drawRoundedRect(this->rect(), m_radius, m_radius); //background
 
-        QRectF source(0.0, 0.0, animInfo.icon.height(), animInfo.icon.height());
-        painter.drawPixmap(animInfo.mButtonRect, animInfo.icon, source);
+        m_icon.paint(&painter, animInfo.mButtonRect.x(), animInfo.mButtonRect.y(), animInfo.mButtonRect.width(), animInfo.mButtonRect.height());
     } else {
         QStylePainter p(this);
         ZStyleOptionToolButton option;

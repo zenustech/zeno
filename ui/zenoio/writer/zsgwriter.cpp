@@ -192,11 +192,15 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         }
     }
 
+    const QString& sockType = socket.type;
+    writer.Key("type");
+    writer.String(sockType.toUtf8());
+
     if (bInput)
     {
         writer.Key("default-value");
         QVariant deflVal = socket.defaultValue;
-        const QString &sockType = socket.type;
+
         bool bValid = UiHelper::validateVariant(deflVal, sockType);
         if (!bValid)
             deflVal = QVariant();
@@ -204,10 +208,8 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
 
         writer.Key("control");
         JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
-
-        writer.Key("type");
-        writer.String(sockType.toUtf8());
     }
+
     if (!socket.toolTip.isEmpty()) 
     {
         writer.Key("tooltip");

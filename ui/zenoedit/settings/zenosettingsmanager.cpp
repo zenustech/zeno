@@ -34,7 +34,7 @@ void ZenoSettingsManager::setValue(ValueType type, const QVariant& value)
     emit valueChanged(type);
 }
 
-const QVariant& ZenoSettingsManager::getValue(int type) const
+QVariant ZenoSettingsManager::getValue(int type) const
 {
     switch (type) 
     {

@@ -7,6 +7,7 @@ ZComboBox::ZComboBox(bool bSysStyle, QWidget *parent)
     : QComboBox(parent)
     , m_bSysStyle(bSysStyle)
 {
+    setFocusPolicy(Qt::ClickFocus);
     connect(this, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
     setItemDelegate(new ZComboBoxItemDelegate2(this));
 }
@@ -28,6 +29,11 @@ void ZComboBox::onComboItemActivated(int index)
     // pay attention to the compatiblity of qt!!!
     QString text = itemText(index);
     emit _textActivated(text);
+}
+
+void ZComboBox::wheelEvent(QWheelEvent* event)
+{
+    QComboBox::wheelEvent(event);
 }
 
 void ZComboBox::showPopup()

@@ -6,6 +6,7 @@ ZRecordProgressDlg::ZRecordProgressDlg(const VideoRecInfo& info, QWidget* parent
     : QDialog(parent)
     , m_info(info)
     , m_bCompleted(false)
+    , m_bAborted(false)
 {
     m_ui = new Ui::RecProgressDlg;
     m_ui->setupUi(this);
@@ -27,7 +28,7 @@ void ZRecordProgressDlg::onFrameFinished(int frame)
     m_ui->progressBar->setValue(frame);
 }
 
-void ZRecordProgressDlg::onRecordFinished()
+void ZRecordProgressDlg::onRecordFinished(QString)
 {
     m_bCompleted = true;
     m_ui->lblFrameHint->setText(tr("Record completed:"));
@@ -47,8 +48,16 @@ void ZRecordProgressDlg::onBtnClicked()
         bool ok = QDesktopServices::openUrl(QUrl(m_info.record_path));
         accept();
     }
-    else {
+    else if(m_bAborted) {
+        bool ok = QDesktopServices::openUrl(QUrl(m_info.record_path));
         reject();
+    }
+    else {
+        m_ui->lblFrameHint->setText(tr("Record Aborted:"));
+        m_ui->btn->setText(tr("Open file location"));
+        m_bAborted = true;
+        update();
+        emit cancelTriggered();
     }
 }
 

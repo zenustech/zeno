@@ -24,7 +24,7 @@ protected:
 
 public slots:
     void onFrameFinished(int frame);
-    void onRecordFinished();
+    void onRecordFinished(QString);
     void onRecordFailed(QString);
 
 private slots:
@@ -34,6 +34,7 @@ private:
     VideoRecInfo m_info;
     Ui::RecProgressDlg* m_ui;
     bool m_bCompleted;
+    bool m_bAborted;
 };
 
 

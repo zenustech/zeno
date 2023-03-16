@@ -2,6 +2,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenoui/comctrl/zlabel.h>
+#include <zenoui/style/zstyleoption.h>
 #include "../panel/zenodatapanel.h"
 #include "../panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
@@ -38,6 +39,55 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
     setRadius(ZenoStyle::dpiScaled(2));
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
+}
+
+ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &iconHover, const QString &iconOn,const QString &iconOnHover, const QString &iconPressed)
+    : ZToolButton()
+{
+    setButtonOptions(ZToolButton::Opt_TextLeftToIcon | ZToolButton::Opt_Checkable);
+    setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), icon, iconHover, iconOn, iconOnHover);
+    QFont fnt("Alibaba PuHuiTi", 10);
+    setText(tr("REC"));
+    setMargins(ZenoStyle::dpiScaledMargins(QMargins(12, 5, 5, 5)));
+    setBackgroundClr(QColor("#383F47"), QColor("#383F47"), QColor("#191D21"), QColor("#191D21"));
+    setTextClr(QColor(), QColor(), QColor("#FFFFFF"), QColor("#FFFFFF"));
+    m_iconOnPressed = QIcon(iconPressed);
+}
+
+void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
+    QStylePainter p(this);
+    ZStyleOptionToolButton option;
+    option.initFrom(this);
+    if (!isChecked() && !isHovered())
+    {
+        option.icon = icon();
+        option.text = "";
+    }else if (!isChecked() && isHovered())
+    {
+        option.icon = icon();
+        option.text = "";
+    }else if (isChecked() && !isHovered() && !isPressed())
+    {
+        option.icon = icon();
+        option.text = tr("REC");
+        option.palette.setBrush(QPalette::All, QPalette::WindowText, QColor("#FFFFFF"));
+    }else if (isChecked() && isHovered() && !isPressed())
+    {
+        option.icon = icon();
+        option.text = tr("OFF");
+        option.palette.setBrush(QPalette::All, QPalette::WindowText, QColor("#A3B1C0"));
+    }else if (isChecked() && isHovered() && isPressed())
+    {
+        option.icon = m_iconOnPressed;
+        option.text = tr("OFF");
+        option.palette.setBrush(QPalette::All, QPalette::WindowText, QColor("#C3D2DF"));
+    }
+    option.iconSize = iconSize();
+    option.buttonOpts = buttonOption();
+    option.font = QFont ("Alibaba PuHuiTi", 10);
+    option.bgRadius = ZenoStyle::dpiScaled(2);
+    option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
+    p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
 }
 
 const int DockToolbarWidget::sToolbarHeight = 28;
@@ -437,6 +487,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_recordVideo = new ZToolBarButton(false, ":/icons/viewToolbar_record_idle.svg", ":/icons/viewToolbar_record_light.svg");
     m_recordVideo->setToolTip(tr("Record Video"));
 
+
     m_screenshoot = new ZToolBarButton(false, ":/icons/viewToolbar_screenshot_idle.svg", ":/icons/viewToolbar_screenshot_light.svg");
     m_screenshoot->setToolTip(tr("Screenshoot"));
 
@@ -536,6 +587,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor()));
     pToolLayout->addWidget(m_screenshoot);
+
     pToolLayout->addWidget(m_recordVideo);
 
     pToolLayout->addStretch(7);

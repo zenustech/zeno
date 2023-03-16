@@ -124,8 +124,8 @@ namespace zenomodel
             const rapidjson::Value& coreParam = paramVal["core-param"];
             ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), param);
 
-            param.refParamPath = QString::fromLocal8Bit(coreParam["name"].GetString());
-            const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
+            param.refParamPath = QString::fromUtf8(coreParam["name"].GetString());
+            const QString& cls = QString::fromUtf8(coreParam["class"].GetString());
 
             if (cls == "input")
             {
@@ -161,7 +161,7 @@ namespace zenomodel
         } 
         else 
         {
-            const QString &ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
+            const QString &ctrlName = QString::fromUtf8(controlObj["name"].GetString());
             param.m_info.control = UiHelper::getControlByDesc(ctrlName);
         }
         param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);

@@ -1,26 +1,31 @@
 #include "ui_zlogpanel.h"
 #include "zlogpanel.h"
 #include "zenoapplication.h"
+#include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/graphsmanagment.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/ztoolbutton.h>
+#include "zenomainwindow.h"
+#include "nodesview/zenographseditor.h"
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
     : _base(parent)
 {
-
+    m_view = qobject_cast<QAbstractItemView*>(parent);
 }
 
 QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QFontMetrics fm(option.font);
+    QFont font("Consolas", 10);
+    font.setBold(true);
+    QFontMetrics fm(font);
     const QAbstractItemModel* model = index.model();
     QString Text = model->data(index, Qt::DisplayRole).toString();
     QRect neededsize = fm.boundingRect(option.rect, Qt::TextWordWrap, Text);
     return QSize(option.rect.width(), neededsize.height());
-    //return _base::sizeHint(option, index);
 }
 
 void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
@@ -76,9 +81,29 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     font.setPointSize(10);
     font.setBold(true);
     painter->setFont(font);
-
     painter->setPen(pen);
-    painter->drawText(rc.adjusted(4,0,0,0), Qt::TextWrapAnywhere, opt.text);
+
+    QRect textRect = rc.adjusted(4, 0, 0, 0);
+    QPointF paintPosition = textRect.topLeft();
+
+    QVector<QTextLayout::FormatRange> selections;
+    QTextLayout textLayout;
+    initTextLayout(opt.text, font, rc, textLayout, selections);
+
+    selections.clear();
+
+    int rgStart = index.data(ROLE_RANGE_START).toInt();
+    int rgLen = index.data(ROLE_RANGE_LEN).toInt();
+    if (rgLen > 0 && (opt.state & QStyle::State_MouseOver))
+    {
+        QTextLayout::FormatRange rg;
+        rg.start = rgStart;
+        rg.length = rgLen;
+        rg.format.setFontUnderline(true);
+        selections.append(rg);
+    }
+
+    textLayout.draw(painter, paintPosition, selections);
 
     painter->setPen(QColor("#24282E"));
     painter->drawLine(rc.bottomLeft(), rc.bottomRight());
@@ -86,12 +111,152 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     painter->restore();
 }
 
+void LogItemDelegate::initTextLayout(
+                    const QString& text,
+                    const QFont& font,
+                    QRect r,
+                    QTextLayout& textLayout,
+                    QVector<QTextLayout::FormatRange>& selections) const
+{
+    QTextOption textOption;
+    textOption.setWrapMode(QTextOption::WrapAnywhere);
+    textOption.setTextDirection(Qt::LeftToRight);
 
+    QRect textRect = r.adjusted(ZenoStyle::dpiScaled(4), 0, 0, 0);
+
+    textLayout.setText(text);
+    textLayout.setFont(font);
+    textLayout.setTextOption(textOption);
+    UiHelper::viewItemTextLayout(textLayout, textRect.width());
+
+    selections = _getNodeIdentRgs(text);
+}
+
+QVector<QTextLayout::FormatRange> LogItemDelegate::_getNodeIdentRgs(const QString& content) const
+{
+    QVector<QTextLayout::FormatRange> selections;
+    QRegExp rx("[0-9a-z]+\\-[^/\\s`'\"\\]]+");
+    QString currText = content;
+
+    int index = -1;
+    while ((index = rx.indexIn(currText, index + 1)) >= 0) {
+        int capLen = rx.cap(0).length();
+        QString strIdent = currText.mid(index, capLen);
+
+        QTextLayout::FormatRange frg;
+        frg.start = index;
+        frg.length = strIdent.length();
+        frg.format.setFontUnderline(true);
+
+        selections.push_back(frg);
+        index += strIdent.length();
+    }
+    return selections;
+}
+
+QTextLayout::FormatRange LogItemDelegate::getHoverRange(const QString& text, qreal mouseX, qreal mouseY, QRect rc) const
+{
+    QVector<QTextLayout::FormatRange> selections = _getNodeIdentRgs(text);
+    if (!selections.isEmpty())
+    {
+        QFont font("Consolas", 10);
+        font.setBold(true);
+
+        QRect textRect = rc.adjusted(4, 0, 0, 0);
+
+        QVector<QTextLayout::FormatRange> selections;
+        QTextLayout textLayout;
+        initTextLayout(text, font, rc, textLayout, selections);
+
+        //calculate row and column of mousePos.
+        qreal h = 0;
+        int r = 0;
+        for (; r < textLayout.lineCount(); r++)
+        {
+            QTextLine line = textLayout.lineAt(r);
+            h += line.height();
+            if (mouseY < h) {
+                //in row r.
+                int cursor = line.xToCursor(mouseX);
+                for (QTextLayout::FormatRange rg : selections)
+                {
+                    if (rg.start <= cursor && cursor <= rg.start + rg.length)
+                    {
+                        return rg;
+                    }
+                }
+            }
+        }
+    }
+    return QTextLayout::FormatRange();
+}
+
+QWidget* LogItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    return _base::createEditor(parent, option, index);
+}
+
+bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+    if (event->type() == QEvent::MouseMove ||
+        event->type() == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent *pEvent = static_cast<QMouseEvent *>(event);
+        QPoint mousePos = pEvent->pos();
+        QString text = index.data().toString();
+        qreal mouseX = mousePos.x();
+        qreal mouseY = mousePos.y() - option.rect.top();
+        QTextLayout::FormatRange rg = getHoverRange(text, mouseX, mouseY, option.rect);
+
+        ZASSERT_EXIT(m_view, false);
+
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
+        ZASSERT_EXIT(pModel, false);
+        pModel->setData(index, rg.start, ROLE_RANGE_START);
+        pModel->setData(index, rg.length, ROLE_RANGE_LEN);
+
+        if (event->type() == QEvent::MouseMove)
+        {
+            if (rg.length > 0) {
+                m_view->setCursor(Qt::PointingHandCursor);
+            } else {
+                m_view->setCursor(Qt::ArrowCursor);
+            }
+        }
+        else {
+            if (rg.length > 0) {
+                QString ident = text.mid(rg.start, rg.length);
+                auto graphsMgm = zenoApp->graphsManagment();
+                ZASSERT_EXIT(graphsMgm, false);
+                IGraphsModel* pModel = graphsMgm->currentModel();
+                ZASSERT_EXIT(pModel, false);
+                QModelIndex idx = pModel->nodeIndex(ident);
+                if (idx.isValid())
+                {
+                    QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(pWin, false);
+                    ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+                    if (pEditor) {
+                        pEditor->activateTab(subgName, "", ident, false);
+                    }
+                }
+            }
+        }
+        m_view->update(index);
+    }
+    return QStyledItemDelegate::editorEvent(event, model, option, index);
+}
+
+
+////////////////////////////////////////////////////////////////
 LogListView::LogListView(QWidget* parent)
     : _base(parent)
 {
     setItemDelegate(new LogItemDelegate(this));
     setWordWrap(true);
+    setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onCustomContextMenu(const QPoint&)));
 }

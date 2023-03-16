@@ -96,8 +96,10 @@ void ZTabDockWidget::testCleanupGL()
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(0);
-        if (DisplayWidget *pDis = qobject_cast<DisplayWidget*>(wid)) {
-            pDis->testCleanUp();
+        if (DockContent_View* pDis = qobject_cast<DockContent_View*>(wid)) {
+            DisplayWidget* pWid = pDis->getDisplayWid();
+            if (pWid)
+                pWid->testCleanUp();
         }
     }
 }
@@ -236,7 +238,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-            if (select)
+            if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
                 QString nodeId = idx.data(ROLE_OBJID).toString();
@@ -479,9 +481,6 @@ void ZTabDockWidget::onAddTabClicked()
 
 void ZTabDockWidget::onAddTab(PANEL_TYPE type)
 {
-    if (getUniqueViewport())
-        return;     //because of the unsteadiness of create/delete viewport widget, we only allow to use the default one.
-
     QWidget *wid = createTabWidget(type);
     if (wid) {
         QString name = type2Title(type);
@@ -503,10 +502,9 @@ void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
         }
-        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
         {
-            //todo: translate.
-            pView->onCommandDispatched(actionType, bTriggered);
+            pView->onCommandDispatched(pAction, bTriggered);
         }
         if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
         {
