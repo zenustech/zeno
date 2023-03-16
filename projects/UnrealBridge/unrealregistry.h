@@ -100,13 +100,6 @@ public:
 
 // Subjects used by zeno node
 
-#define REGISTER_UNREAL_ZENO_SUBJECT(SubjectType, ApplyFuncBody) static struct STATIC_REGISTER_FOR_UNREAL_ZENO_SUBJECT_##SubjectType : ISubjectApplyable {  \
-        STATIC_REGISTER_FOR_UNREAL_ZENO_SUBJECT_##SubjectType() {                                                                                           \
-            IUnrealZenoSubject::SubjectApplyDispatchMap.insert_or_assign(EZenoSubjectType::SubjectType, this);                                              \
-        }                                                                                                                                                   \
-        void apply(std::shared_ptr<IUnrealZenoSubject> data, INode& context) override ApplyFuncBody                                                         \
-    } Instance_STATIC_REGISTER_FOR_UNREAL_ZENO_SUBJECT_##SubjectType;
-
 namespace zeno {
 
 struct IUnrealZenoSubject {
@@ -115,42 +108,13 @@ struct IUnrealZenoSubject {
     inline static std::unordered_map<EZenoSubjectType, struct ISubjectApplyable*> SubjectApplyDispatchMap {};
 };
 
-struct ISubjectApplyable {
-    virtual void apply(std::shared_ptr<IUnrealZenoSubject> data, INode& context) = 0;
-
-    template <typename T>
-    static T* cast_checked(const std::shared_ptr<IUnrealZenoSubject>& data) {
-        static_assert(std::is_base_of_v<IUnrealZenoSubject, T>, "T is not a subclass of IUnrealZenoSubject.");
-        if (data) {
-            IUnrealZenoSubject* subject = data.get();
-            T* target = dynamic_cast<T*>(subject);
-            return target;
-        }
-        throw std::exception("Bad cast.");
-    }
-};
-
 // HeightField data subject
 struct UnrealZenoHeightFieldSubject : IUnrealZenoSubject {
     std::vector<float> heights;
 
     EZenoSubjectType type() override { return EZenoSubjectType::HeightField; }
 };
-REGISTER_UNREAL_ZENO_SUBJECT(HeightField, {
-    auto* target = cast_checked<UnrealZenoHeightFieldSubject>(data);
-    std::shared_ptr<PrimitiveObject> prim = std::make_shared<PrimitiveObject>();
-    prim->verts.resize(target->heights.size());
-    prim->verts.add_attr<float>("height");
-    auto& heights = prim->verts.attr<float>("height");
-    for (size_t i = 0; i < target->heights.size(); ++i) {
-        heights[i] = target->heights[i];
-    }
-    context.outputs["prim"] = std::move(prim);
-});
-
 }
-
-#undef REGISTER_UNREAL_ZENO_SUBJECT
 
 enum class EZenoSubjectApplyResult : uint8_t {
     Success = 0,
@@ -163,9 +127,8 @@ enum class EZenoSubjectApplyResult : uint8_t {
 class ZenoSubjectRegistry {
 
 public:
-    EZenoSubjectApplyResult apply(const std::string& subjectName, const EZenoSubjectType inSubjectType, zeno::INode& context);
-
     void put(const std::string& subjectName, const std::shared_ptr<zeno::IUnrealZenoSubject>& subject);
+    [[nodiscard]] std::shared_ptr<zeno::IUnrealZenoSubject> get(const std::string& subjectName) const;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<zeno::IUnrealZenoSubject>> subjects;

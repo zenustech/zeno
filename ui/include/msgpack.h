@@ -59,7 +59,7 @@ struct UnpackerErrCategory : public std::error_category {
 const UnpackerErrCategory theUnpackerErrCategory{};
 
 inline
-    std::error_code make_error_code(msgpack::UnpackerError e) {
+std::error_code make_error_code(msgpack::UnpackerError e) {
     return {static_cast<int>(e), theUnpackerErrCategory};
 }
 }
@@ -292,7 +292,7 @@ class Packer {
 
 template<>
 inline
-    void Packer::pack_type(const int8_t &value) {
+void Packer::pack_type(const int8_t &value) {
     if (value > 31 || value < -32) {
         serialized_object.emplace_back(int8);
     }
@@ -301,7 +301,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const int16_t &value) {
+void Packer::pack_type(const int16_t &value) {
     if (abs(value) < abs(std::numeric_limits<int8_t>::min())) {
         pack_type(int8_t(value));
     } else {
@@ -315,7 +315,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const int32_t &value) {
+void Packer::pack_type(const int32_t &value) {
     if (abs(value) < abs(std::numeric_limits<int16_t>::min())) {
         pack_type(int16_t(value));
     } else {
@@ -329,7 +329,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const int64_t &value) {
+void Packer::pack_type(const int64_t &value) {
     if (llabs(value) < llabs(std::numeric_limits<int32_t>::min()) && value != std::numeric_limits<int64_t>::min()) {
         pack_type(int32_t(value));
     } else {
@@ -343,7 +343,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const uint8_t &value) {
+void Packer::pack_type(const uint8_t &value) {
     if (value <= 0x7f) {
         serialized_object.emplace_back(value);
     } else {
@@ -354,7 +354,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const uint16_t &value) {
+void Packer::pack_type(const uint16_t &value) {
     if (value > std::numeric_limits<uint8_t>::max()) {
         serialized_object.emplace_back(uint16);
         for (auto i = sizeof(value); i > 0U; --i) {
@@ -367,7 +367,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const uint32_t &value) {
+void Packer::pack_type(const uint32_t &value) {
     if (value > std::numeric_limits<uint16_t>::max()) {
         serialized_object.emplace_back(uint32);
         for (auto i = sizeof(value); i > 0U; --i) {
@@ -380,7 +380,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const uint64_t &value) {
+void Packer::pack_type(const uint64_t &value) {
     if (value > std::numeric_limits<uint32_t>::max()) {
         serialized_object.emplace_back(uint64);
         for (auto i = sizeof(value); i > 0U; --i) {
@@ -393,13 +393,13 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const std::nullptr_t &/*value*/) {
+void Packer::pack_type(const std::nullptr_t &/*value*/) {
     serialized_object.emplace_back(nil);
 }
 
 template<>
 inline
-    void Packer::pack_type(const bool &value) {
+void Packer::pack_type(const bool &value) {
     if (value) {
         serialized_object.emplace_back(true_bool);
     } else {
@@ -409,7 +409,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const float &value) {
+void Packer::pack_type(const float &value) {
     double integral_part;
     auto fractional_remainder = float(modf(value, &integral_part));
 
@@ -442,7 +442,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const double &value) {
+void Packer::pack_type(const double &value) {
     double integral_part;
     double fractional_remainder = modf(value, &integral_part);
 
@@ -475,7 +475,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const std::string &value) {
+void Packer::pack_type(const std::string &value) {
     if (value.size() < 32) {
         serialized_object.emplace_back(uint8_t(value.size()) | 0b10100000);
     } else if (value.size() < std::numeric_limits<uint8_t>::max()) {
@@ -501,7 +501,7 @@ inline
 
 template<>
 inline
-    void Packer::pack_type(const std::vector<uint8_t> &value) {
+void Packer::pack_type(const std::vector<uint8_t> &value) {
     if (value.size() < std::numeric_limits<uint8_t>::max()) {
         serialized_object.emplace_back(bin8);
         serialized_object.emplace_back(uint8_t(value.size()));
@@ -690,7 +690,7 @@ class Unpacker {
 
 template<>
 inline
-    void Unpacker::unpack_type(int8_t &value) {
+void Unpacker::unpack_type(int8_t &value) {
     if (safe_data() == int8) {
         safe_increment();
         value = safe_data();
@@ -703,7 +703,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(int16_t &value) {
+void Unpacker::unpack_type(int16_t &value) {
     if (safe_data() == int16) {
         safe_increment();
         std::bitset<16> bits;
@@ -728,7 +728,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(int32_t &value) {
+void Unpacker::unpack_type(int32_t &value) {
     if (safe_data() == int32) {
         safe_increment();
         std::bitset<32> bits;
@@ -757,7 +757,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(int64_t &value) {
+void Unpacker::unpack_type(int64_t &value) {
     if (safe_data() == int64) {
         safe_increment();
         std::bitset<64> bits;
@@ -790,7 +790,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(uint8_t &value) {
+void Unpacker::unpack_type(uint8_t &value) {
     if (safe_data() == uint8) {
         safe_increment();
         value = safe_data();
@@ -803,7 +803,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(uint16_t &value) {
+void Unpacker::unpack_type(uint16_t &value) {
     if (safe_data() == uint16) {
         safe_increment();
         for (auto i = sizeof(uint16_t); i > 0; --i) {
@@ -822,7 +822,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(uint32_t &value) {
+void Unpacker::unpack_type(uint32_t &value) {
     if (safe_data() == uint32) {
         safe_increment();
         for (auto i = sizeof(uint32_t); i > 0; --i) {
@@ -847,7 +847,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(uint64_t &value) {
+void Unpacker::unpack_type(uint64_t &value) {
     if (safe_data() == uint64) {
         safe_increment();
         for (auto i = sizeof(uint64_t); i > 0; --i) {
@@ -879,20 +879,20 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(std::nullptr_t &/*value*/) {
+void Unpacker::unpack_type(std::nullptr_t &/*value*/) {
     safe_increment();
 }
 
 template<>
 inline
-    void Unpacker::unpack_type(bool &value) {
+void Unpacker::unpack_type(bool &value) {
     value = safe_data() != 0xc2;
     safe_increment();
 }
 
 template<>
 inline
-    void Unpacker::unpack_type(float &value) {
+void Unpacker::unpack_type(float &value) {
     if (safe_data() == float32) {
         safe_increment();
         uint32_t data = 0;
@@ -910,7 +910,7 @@ inline
         if (bits[31]) {
             mantissa *= -1;
         }
-        uint8_t exponent = 0;
+        int8_t exponent = 0;
         for (auto i = 0U; i < 8; ++i) {
             exponent += bits[i + 23] << i;
         }
@@ -931,7 +931,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(double &value) {
+void Unpacker::unpack_type(double &value) {
     if (safe_data() == float64) {
         safe_increment();
         uint64_t data = 0;
@@ -949,7 +949,7 @@ inline
         if (bits[63]) {
             mantissa *= -1;
         }
-        uint16_t exponent = 0;
+        int16_t exponent = 0;
         for (auto i = 0U; i < 11; ++i) {
             exponent += bits[i + 52] << i;
         }
@@ -970,7 +970,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(std::string &value) {
+void Unpacker::unpack_type(std::string &value) {
     std::size_t str_size = 0;
     if (safe_data() == str32) {
         safe_increment();
@@ -1004,7 +1004,7 @@ inline
 
 template<>
 inline
-    void Unpacker::unpack_type(std::vector<uint8_t> &value) {
+void Unpacker::unpack_type(std::vector<uint8_t> &value) {
     std::size_t bin_size = 0;
     if (safe_data() == bin32) {
         safe_increment();

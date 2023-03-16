@@ -1,13 +1,14 @@
 #ifndef ZENO_UNREALUDPSERVER_H
 #define ZENO_UNREALUDPSERVER_H
 
+#include "include/msgpack.h"
+#include "model/networktypes.h"
 #include <QHostAddress>
 #include <QNetworkDatagram>
 #include <QObject>
 #include <QtEndian>
 #include <atomic>
-#include "include/msgpack.h"
-#include "model/networktypes.h"
+#include <mutex>
 
 class QUdpSocket;
 
@@ -55,11 +56,13 @@ signals:
 
 private slots:
     void onNewMessage();
-    void onNewFile(ZBFileType fileType, std::vector<uint8_t> data);
+    void onNewFile(ZBFileType fileType, const std::vector<uint8_t>& data);
+    void onError(QAbstractSocket::SocketError error);
 
 private:
     QUdpSocket* m_socket;
 
+    std::mutex m_lock;
     std::vector<ZBUFileMessage> m_msg_buffer;
 };
 

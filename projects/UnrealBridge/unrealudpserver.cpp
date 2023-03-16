@@ -27,7 +27,9 @@ void UnrealUdpServer::start(QThread *qThread, const QHostAddress& inAddress, int
         if (!m_socket->bind(inAddress, inPort)) {
             zeno::log_error("failed to bind unreal udp server at '{}:{}'", inAddress.toString().toStdString(), inPort);
         }
+        m_socket->setSocketOption(QAbstractSocket::ReceiveBufferSizeSocketOption, 409600);
         connect(m_socket, SIGNAL(readyRead()), this, SLOT(onNewMessage()));
+        connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
         connect(this, SIGNAL(newFile(ZBFileType,std::vector<uint8_t>)), this, SLOT(onNewFile(ZBFileType,std::vector<uint8_t>)));
     };
 
@@ -72,7 +74,8 @@ void UnrealUdpServer::onNewMessage() {
     // TODO: darc drop unauthorized message
     QNetworkDatagram datagram = m_socket->receiveDatagram();
 
-    unsigned char* rawData = reinterpret_cast<unsigned char*>(datagram.data().data());
+    QByteArray byteArray = datagram.data();
+    unsigned char* rawData = reinterpret_cast<unsigned char*>(byteArray.data());
     const uint16_t dataSize = datagram.data().size();
 
     if (dataSize < sizeof(ZBUFileMessageHeader)) {
@@ -100,7 +103,9 @@ void UnrealUdpServer::onNewMessage() {
         std::move(messageData),
     };
 
+    m_lock.lock();
     m_msg_buffer.push_back(std::move(message));
+    m_lock.unlock();
     tryMakeupFile(fileId);
 }
 
@@ -148,7 +153,7 @@ void UnrealUdpServer::tryMakeupFile(const uint32_t fileId) {
     }
 }
 
-void UnrealUdpServer::onNewFile(ZBFileType fileType, std::vector<uint8_t> data) {
+void UnrealUdpServer::onNewFile(ZBFileType fileType, const std::vector<uint8_t>& data) {
     if (fileType == ZBFileType::HeightField) {
         try {
             const auto subject = msgpack::unpack<UnrealHeightFieldSubject>(data);
@@ -161,6 +166,9 @@ void UnrealUdpServer::onNewFile(ZBFileType fileType, std::vector<uint8_t> data) 
         } catch (msgpack::UnpackerError) {
         }
     }
+}
+void UnrealUdpServer::onError(QAbstractSocket::SocketError error) {
+    zeno::log_error("Error %s", qt_getEnumName(error));
 }
 
 void zeno::startUnrealUdpServer(const QHostAddress &inAddress, int32_t inPort) {
