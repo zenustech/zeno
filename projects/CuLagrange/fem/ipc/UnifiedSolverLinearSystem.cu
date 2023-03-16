@@ -347,7 +347,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
         auto Hi = mat3::identity() * m;
         for (int d = 0; d != BCorder; ++d)
             Hi.val(d * 4) = 0;
-        auto loc = spmat.locate(i, i, true_c);
+        auto loc = spmat._ptrs[i];
         auto &mat = spmat._vals[loc];
         for (int r = 0; r != 3; ++r)
             for (int c = 0; c != 3; ++c)
@@ -370,7 +370,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
             if (!BCfixed) {
                 auto w = vtemp("ws", vi);
                 auto cons = vtemp.pack(dim_c<3>, "cons", vi);
-                auto loc = spmat.locate(vi, vi, true_c);
+                auto loc = spmat._ptrs[vi];
                 auto &mat = spmat._vals[loc];
                 int BCorder = vtemp("BCorder", vi);
                 for (int d = 0; d != BCorder; ++d) {
@@ -432,7 +432,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                         }
 
                         // make_pd(hess);
-                        auto loc = spmat.locate(vi, vi, true_c);
+                        auto loc = spmat._ptrs[vi];
                         auto &mat = spmat._vals[loc];
                         for (int r = 0; r != 3; ++r) {
                             for (int c = 0; c != 3; ++c) {
@@ -482,7 +482,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                                     hess(0, 0) = coeff / epsvh;
                                     hess(2, 2) = coeff / epsvh;
                                 }
-                                auto loc = spmat.locate(vi, vi, true_c);
+                                auto loc = spmat._ptrs[vi];
                                 auto &mat = spmat._vals[loc];
                                 for (int r = 0; r != 3; ++r) {
                                     for (int c = 0; c != 3; ++c) {
