@@ -1,13 +1,11 @@
 <RCC>
   <qresource prefix="/">
-    <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Black.ttf</file>
-    <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Bold.ttf</file>
-    <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Regular.ttf</file>
     <file>font/Segoe/SEGOEUI.TTF</file>
-    <file>font/PuHuiTi/Alibaba-PuHuiTi-Bold.ttf</file>
-    <file>font/PuHuiTi/Alibaba-PuHuiTi-Heavy.ttf</file>
-    <file>font/PuHuiTi/Alibaba-PuHuiTi-Light.ttf</file>
-    <file>font/PuHuiTi/Alibaba-PuHuiTi-Medium.ttf</file>
-    <file>font/PuHuiTi/Alibaba-PuHuiTi-Regular.ttf</file>
+    <file>font/Noto_Sans_SC/NotoSansSC-Black.otf</file>
+    <file>font/Noto_Sans_SC/NotoSansSC-Bold.otf</file>
+    <file>font/Noto_Sans_SC/NotoSansSC-Light.otf</file>
+    <file>font/Noto_Sans_SC/NotoSansSC-Medium.otf</file>
+    <file>font/Noto_Sans_SC/NotoSansSC-Regular.otf</file>
+	<file>font/Noto_Sans_SC/NotoSansSC-Thin.otf</file>
   </qresource>
 </RCC>

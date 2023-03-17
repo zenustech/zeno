@@ -110,7 +110,7 @@
                <widget class="QLabel" name="label">
                 <property name="styleSheet">
                  <string notr="true">color: #737B85;
-font: 12pt 'Segoe UI Bold';</string>
+font-size: 12pt;</string>
                 </property>
                 <property name="text">
                  <string>Subnet</string>
@@ -145,7 +145,7 @@ font: 12pt 'Segoe UI Bold';</string>
 {
 	background-color: transparent;
 	show-decoration-selected: 1;
-	font: 12pt 'Alibaba PuHuiTi';
+	font-size: 12pt;
     font-weight: bold;
 }</string>
               </property>
@@ -168,39 +168,6 @@ font: 12pt 'Segoe UI Bold';</string>
              <widget class="QTreeView" name="subnetTree">
               <property name="focusPolicy">
                <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QTreeView
-{
-	background-color: rgb(45,50,57);
-	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
-}
-
-QTreeView::item {
-	color: #858280;
-	border: 1px solid transparent;
-}
-
-QTreeView::item:hover {
-	background-color: transparent;
-}
-
-QTreeView::item:selected {
-	border: 1px solid #4B9EF4;
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:active{
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:!active {
-	background: #334960;
-	color: #ffffff;
-}</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
@@ -235,7 +202,7 @@ QTreeView::item:selected:!active {
                <widget class="QLabel" name="label_2">
                 <property name="styleSheet">
                  <string notr="true">color: #858280;
-font: 12pt 'HarmonyOS Sans';</string>
+font-size: 12pt;</string>
                 </property>
                 <property name="text">
                  <string>SEARCH</string>
@@ -271,39 +238,6 @@ font: 12pt 'HarmonyOS Sans';</string>
              <widget class="QTreeView" name="searchResView">
               <property name="focusPolicy">
                <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QTreeView
-{
-	background-color: rgb(66,70,76);
-	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
-}
-
-QTreeView::item {
-	color: #858280;
-	border: 1px solid transparent;
-}
-
-QTreeView::item:hover {
-	background-color: transparent;
-}
-
-QTreeView::item:selected {
-	border: 1px solid #4B9EF4;
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:active{
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:!active {
-	background: #334960;
-	color: #ffffff;
-}</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>

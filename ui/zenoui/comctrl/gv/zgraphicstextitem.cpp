@@ -357,6 +357,7 @@ ZSocketGroupItem::ZSocketGroupItem(
 
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
+    setPadding(0,ZenoStyle::dpiScaled(5), 0, 0);
 }
 
 QPointF ZSocketGroupItem::getPortPos()

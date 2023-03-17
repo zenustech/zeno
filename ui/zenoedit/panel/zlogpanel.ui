@@ -144,7 +144,7 @@
 {
 	background-color: #191D21;
 	show-decoration-selected: 1;
-	font: 12pt 'Consolas';
+	font-size: 12pt;
 }</string>
        </property>
        <property name="frameShape">

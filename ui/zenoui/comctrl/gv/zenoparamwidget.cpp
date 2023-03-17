@@ -478,7 +478,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
     pLineEdit->setTextMargins(param.margins);
     pLineEdit->setPalette(param.palette);
-    QFont font("HarmonyOS Sans", 10);
+    QFont font = zenoApp->font();
     pLineEdit->setFont(font);
     pLineEdit->setProperty("cssClass", "proppanel");
     pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);

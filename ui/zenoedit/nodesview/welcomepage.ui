@@ -346,7 +346,7 @@
              <property name="styleSheet">
               <string notr="true">QFrame
 {
-	font: 14px &quot;HarmonyOS Sans&quot;;
+	font-size: 12pt;
 	color: rgb(133, 130, 128);
 }</string>
              </property>

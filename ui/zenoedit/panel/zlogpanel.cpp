@@ -19,7 +19,7 @@ LogItemDelegate::LogItemDelegate(QObject* parent)
 
 QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QFont font("Consolas", 10);
+    QFont font = zenoApp->font();
     font.setBold(true);
     QFontMetrics fm(font);
     const QAbstractItemModel* model = index.model();
@@ -159,7 +159,7 @@ QTextLayout::FormatRange LogItemDelegate::getHoverRange(const QString& text, qre
     QVector<QTextLayout::FormatRange> selections = _getNodeIdentRgs(text);
     if (!selections.isEmpty())
     {
-        QFont font("Consolas", 10);
+        QFont font = zenoApp->font();
         font.setBold(true);
 
         QRect textRect = rc.adjusted(4, 0, 0, 0);
