@@ -1,54 +1,37 @@
 #include "zenosettingsmanager.h"
+#include "settings/zsettings.h"
 
 
-ZenoSettingsManager& ZenoSettingsManager::GetInstance() 
+ZenoSettingsManager& ZenoSettingsManager::GetInstance()
 {
     static ZenoSettingsManager instance;
     return instance;
 }
 
 ZenoSettingsManager::ZenoSettingsManager(QObject *parent) : 
-    QObject(parent),
-    m_bShowGrid(true), 
-    m_bSnapGrid(false) 
+    QObject(parent)
 {
+    QSettings settings(zsCompanyName, zsEditor);
+    if (settings.allKeys().indexOf(zsShowGrid) == -1) {
+        //show grid by default.
+        setValue(zsShowGrid, true);
+    }
 }
 
-void ZenoSettingsManager::setValue(ValueType type, const QVariant& value) 
+void ZenoSettingsManager::setValue(const QString& name, const QVariant& value) 
 {
-    switch (type) 
+    QSettings settings(zsCompanyName, zsEditor);
+    QVariant oldValue = settings.value(name);
+    if (oldValue != value)
     {
-    case VALUE_SHOWGRID: 
-    {
-        m_bShowGrid = value.toBool();
-        break;
+        settings.setValue(name, value);
+        emit valueChanged(name);
     }
-    case VALUE_SNAPGRID: 
-    {
-        m_bSnapGrid = value.toBool();
-        break;
-    }
-    default:
-    break;
-    }
-    emit valueChanged(type);
 }
 
-QVariant ZenoSettingsManager::getValue(int type) const
+QVariant ZenoSettingsManager::getValue(const QString& zsName) const
 {
-    switch (type) 
-    {
-    case VALUE_SHOWGRID: 
-    {
-        return m_bShowGrid;
-    }
-    case VALUE_SNAPGRID: 
-    {
-        return m_bSnapGrid;
-    }
-    default: 
-    {
-        return QVariant();
-    }
-    }
+    QSettings settings(zsCompanyName, zsEditor);
+    QVariant val = settings.value(zsName);
+    return val;
 }

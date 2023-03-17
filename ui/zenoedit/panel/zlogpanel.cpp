@@ -9,33 +9,50 @@
 #include <zenoui/comctrl/ztoolbutton.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
+#include "settings/zenosettingsmanager.h"
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
     : _base(parent)
 {
     m_view = qobject_cast<QAbstractItemView*>(parent);
+
+    m_textMargins.setLeft(ZenoStyle::dpiScaled(4));
+    m_textMargins.setRight(ZenoStyle::dpiScaled(4));
+    m_textMargins.setTop(ZenoStyle::dpiScaled(2));
+    m_textMargins.setBottom(ZenoStyle::dpiScaled(4));
 }
 
 QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QFont font("Consolas", 10);
-    font.setBold(true);
+    QFont font = getFont();
     QFontMetrics fm(font);
     const QAbstractItemModel* model = index.model();
     QString Text = model->data(index, Qt::DisplayRole).toString();
     QRect neededsize = fm.boundingRect(option.rect, Qt::TextWordWrap, Text);
-    return QSize(option.rect.width(), neededsize.height());
+
+    QVector<QTextLayout::FormatRange> selections;
+    QTextLayout textLayout;
+    initTextLayout(Text, font, m_view->width(), textLayout, selections);
+
+    qreal height = textLayout.boundingRect().height();
+
+    return QSize(option.rect.width(), height).grownBy(m_textMargins);
 }
 
 void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
     const QModelIndex& index) const
 {
     QStyledItemDelegate::initStyleOption(option, index);
-    QFont font = zenoApp->font();
-    font.setPointSize(10);
-    font.setBold(true);
+    QFont font = getFont();
     option->font = font;
+}
+
+QFont LogItemDelegate::getFont() const
+{
+    QFont font("Consolas", 10);
+    font.setBold(true);
+    return font;
 }
 
 void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -77,18 +94,16 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     QPen pen = painter->pen();
     pen.setColor(clr);
 
-    QFont font = zenoApp->font();
-    font.setPointSize(10);
-    font.setBold(true);
+    QFont font = getFont();
     painter->setFont(font);
     painter->setPen(pen);
 
-    QRect textRect = rc.adjusted(4, 0, 0, 0);
+    QRect textRect = rc.adjusted(m_textMargins.left(), m_textMargins.top(), 0, 0);
     QPointF paintPosition = textRect.topLeft();
 
     QVector<QTextLayout::FormatRange> selections;
     QTextLayout textLayout;
-    initTextLayout(opt.text, font, rc, textLayout, selections);
+    initTextLayout(opt.text, font, rc.width(), textLayout, selections);
 
     selections.clear();
 
@@ -114,7 +129,7 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 void LogItemDelegate::initTextLayout(
                     const QString& text,
                     const QFont& font,
-                    QRect r,
+                    qreal fixedWidth,
                     QTextLayout& textLayout,
                     QVector<QTextLayout::FormatRange>& selections) const
 {
@@ -122,12 +137,10 @@ void LogItemDelegate::initTextLayout(
     textOption.setWrapMode(QTextOption::WrapAnywhere);
     textOption.setTextDirection(Qt::LeftToRight);
 
-    QRect textRect = r.adjusted(ZenoStyle::dpiScaled(4), 0, 0, 0);
-
     textLayout.setText(text);
     textLayout.setFont(font);
     textLayout.setTextOption(textOption);
-    UiHelper::viewItemTextLayout(textLayout, textRect.width());
+    UiHelper::viewItemTextLayout(textLayout, fixedWidth);
 
     selections = _getNodeIdentRgs(text);
 }
@@ -159,14 +172,11 @@ QTextLayout::FormatRange LogItemDelegate::getHoverRange(const QString& text, qre
     QVector<QTextLayout::FormatRange> selections = _getNodeIdentRgs(text);
     if (!selections.isEmpty())
     {
-        QFont font("Consolas", 10);
-        font.setBold(true);
-
-        QRect textRect = rc.adjusted(4, 0, 0, 0);
+        QFont font = getFont();
 
         QVector<QTextLayout::FormatRange> selections;
         QTextLayout textLayout;
-        initTextLayout(text, font, rc, textLayout, selections);
+        initTextLayout(text, font, rc.width(), textLayout, selections);
 
         //calculate row and column of mousePos.
         qreal h = 0;
@@ -204,8 +214,8 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
         QMouseEvent *pEvent = static_cast<QMouseEvent *>(event);
         QPoint mousePos = pEvent->pos();
         QString text = index.data().toString();
-        qreal mouseX = mousePos.x();
-        qreal mouseY = mousePos.y() - option.rect.top();
+        qreal mouseX = mousePos.x() - m_textMargins.left();
+        qreal mouseY = mousePos.y() - option.rect.top() - m_textMargins.top();
         QTextLayout::FormatRange rg = getHoverRange(text, mouseX, mouseY, option.rect);
 
         ZASSERT_EXIT(m_view, false);
@@ -311,6 +321,7 @@ ZPlainLogPanel::ZPlainLogPanel(QWidget* parent)
 ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
     , m_pFilterModel(nullptr)
+    , m_pMenu(nullptr)
 {
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
@@ -385,6 +396,22 @@ void ZlogPanel::initModel()
     m_ui->listView->setModel(m_pFilterModel);
 }
 
+void ZlogPanel::onSettings()
+{
+    if (!m_pMenu)
+    {
+        m_pMenu = new QMenu(this);
+
+        QAction *pFocusError = new QAction(tr("Trace Error"));
+        pFocusError->setCheckable(true);
+        m_pMenu->addAction(pFocusError);
+        connect(pFocusError, &QAction::toggled, [=](bool bChecked) {
+            ZenoSettingsManager::GetInstance().setValue(zsTraceErrorNode, bChecked);
+        });
+    }
+    m_pMenu->exec(QCursor::pos());
+}
+
 void ZlogPanel::initSignals()
 {
     connect(m_ui->btnKey, &ZToolButton::toggled, this, [=](bool bOn) {
@@ -413,6 +440,10 @@ void ZlogPanel::initSignals()
 
     connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
         zenoApp->logModel()->clear();
+    });
+
+    connect(m_ui->btnSetting, &ZToolButton::clicked, this, [=]() {
+        onSettings();
     });
 }
 

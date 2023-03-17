@@ -1302,7 +1302,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SNAPGRID).toBool();
+        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool();
         if (pScene && isSnapGrid)
         {
             QPointF pos = value.toPointF();

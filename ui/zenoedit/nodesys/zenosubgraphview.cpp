@@ -88,9 +88,9 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     });
     addAction(mActZenoNewNode);
 
-    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](int type) {
-        if (type == ZenoSettingsManager::VALUE_SHOWGRID && isVisible()) {
-            showGrid(ZenoSettingsManager::GetInstance().getValue(type).toBool());
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
+        if (name == zsShowGrid && isVisible()) {
+            showGrid(ZenoSettingsManager::GetInstance().getValue(name).toBool());
         }
     });
 
@@ -501,7 +501,7 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
     painter->fillRect(rect, QColor("#13191f"));
-    bool showGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SHOWGRID).toBool();
+    bool showGrid = ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool();
     if (showGrid)
     {
         QTransform tf = transform();
