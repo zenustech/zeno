@@ -222,7 +222,9 @@ inline __device__ float transmittanceHDDA(
 extern "C" __global__ void __intersection__volume()
 {
     RadiancePRD* prd = getPRD();
-    //auto mask = optixGetRayVisibilityMask();
+    if (prd->test_distance) { return; }
+
+    auto mask = optixGetRayVisibilityMask();
     {
         const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
         const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->vdb_grids[0] );
@@ -234,7 +236,7 @@ extern "C" __global__ void __intersection__volume()
 
         auto bbox = grid->worldBBox(); //grid->indexBBox();
         float t0 = optixGetRayTmin();
-        float t1 = optixGetRayTmax();
+        float t1 = _FLT_MAX_; //optixGetRayTmax();
 
         auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
             reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
@@ -244,10 +246,16 @@ extern "C" __global__ void __intersection__volume()
             // report the entry-point as hit-point
             //auto kind = optixGetHitKind();
             t0 = fmaxf(t0, optixGetRayTmin());
-            prd->vol_t0 = t0; prd->vol_t1 = t1;
-            prd->inside_volume = (t0 == 0);
 
-            optixReportIntersection( t0, 0);
+            prd->vol_t0 = t0;
+            prd->origin_inside_vdb = (t0 == 0);
+
+            prd->vol_t1 = min(optixGetRayTmax(), t1);
+            prd->surface_inside_vdb = (optixGetRayTmax() < t1);
+
+            if (optixGetRayTmax() > 0) {
+                optixReportIntersection( t0, 0);
+            }
         }
     } 
 }
@@ -255,40 +263,40 @@ extern "C" __global__ void __intersection__volume()
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance==true)
-        return;
+    if(prd->test_distance) { return; }
     
     prd->countEmitted = false;
     prd->radiance = make_float3(0);
 
     prd->trace_tmin = 0;
-    
+    prd->_mask_ = EverythingMask;
+
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
 
     const float t0 = prd->vol_t0; // world space
-    float t1 = prd->vol_t1; // world space
+          float t1 = prd->vol_t1; // world space
 
-    RadiancePRD testPRD{};
-    testPRD.vol_t1 = CUDART_INF_F;
+    RadiancePRD testPRD {};
+    testPRD.vol_t1 = _FLT_MAX_;
     testPRD.test_distance = true;
-    testPRD.isSSS = false;
+    testPRD.isSS = false;
+    testPRD.opacity = 0.0f;
     traceRadianceMasked(
         params.handle,
         ray_orig,
         ray_dir,
-        t0,
-        t1,
+        0,
+        _FLT_MAX_,
         DefaultMatMask,
         &testPRD);
 
-    bool surface_inside_volume = false;
     if(testPRD.vol_t1 < t1)
     {
         t1 = testPRD.vol_t1;
-        surface_inside_volume = true;
+        prd->surface_inside_vdb = true;
     }
 
     const float t_max = max(0.f, t1 - t0); // world space
@@ -355,17 +363,17 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         if (t_ele >= t_max) {
 
-            if (surface_inside_volume) { // Hit other material
+            if (prd->surface_inside_vdb) { // Hit other material
 
                 prd->_mask_ = DefaultMatMask;
-                prd->trace_tmin = t0;
+                prd->trace_tmin = 0;
 
                 test_point = ray_orig;
 
             } else { // Volume edge
 
                 prd->_mask_ = EverythingMask;
-                prd->trace_tmin = 0;
+                prd->trace_tmin = 1e-5;
 
                 test_point = ray_orig + t1 * ray_dir;
                 test_point = rtgems::offset_ray(test_point, ray_dir);

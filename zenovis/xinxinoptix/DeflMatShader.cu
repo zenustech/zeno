@@ -356,7 +356,8 @@ extern "C" __global__ void __closesthit__radiance()
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-    prd->geometryNormal = N_0;
+        
+        prd->geometryNormal = N_0;
 
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
@@ -403,6 +404,13 @@ extern "C" __global__ void __closesthit__radiance()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
+
+    //  if(prd->test_distance)
+    // {
+    //     prd->vol_t1 = length(P - optixGetWorldRayOrigin());
+    //     return;
+    // }
+    // prd->test_distance = false;
 
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
     
@@ -483,45 +491,46 @@ extern "C" __global__ void __closesthit__radiance()
         ior = 1;
     }
 
-    // if(prd->isSS == true && prd->medium == DisneyBSDF::PhaseFunctions::isotropic && subsurface==0 )
-    // {
-    //     prd->passed = true;
-    //     prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    //     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    //     prd->origin = P + 1e-5 * ray_dir;
-    //     prd->direction = ray_dir;
-    //     return;
-    // }
+    if(prd->isSS == true && prd->medium == DisneyBSDF::PhaseFunctions::isotropic && subsurface==0 )
+    {
+        prd->passed = true;
+        prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+        prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+        //prd->origin = P + 1e-5 * ray_dir; 
+        prd->offsetUpdateRay(P, ray_dir); 
+
+        return;
+    }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-//     if(isLight==1)
-//     {
-//         prd->countEmitted = true;
-//         //hit light, emit
-// //        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-// //        float3 lv1 = v1-v0;
-// //        float3 lv2 = v2-v0;
-// //        float A = 0.5 * length(cross(lv1, lv2));
-// //        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-// //        float3 L     = normalize(P - optixGetWorldRayOrigin());
-// //        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-// //        float weight = LnDl * A / (M_PIf * dist);
-// //        prd->radiance = attrs.clr * weight;
-//         prd->origin = P + 1e-5 * ray_dir;
-//         prd->direction = ray_dir;
-//         return;
-//     }
+    if(isLight==1)
+    {
+        prd->countEmitted = true;
+        //hit light, emit
+//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
+//        float3 lv1 = v1-v0;
+//        float3 lv2 = v2-v0;
+//        float A = 0.5 * length(cross(lv1, lv2));
+//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
+//        float3 L     = normalize(P - optixGetWorldRayOrigin());
+//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
+//        float weight = LnDl * A / (M_PIf * dist);
+//        prd->radiance = attrs.clr * weight;
+        prd->offsetUpdateRay(P, ray_dir); 
+
+        return;
+    }
     prd->prob2 = prd->prob;
     prd->passed = false;
-    // if(opacity>0.99)
-    // {
-    //     prd->passed = true;
-    //     prd->radiance = make_float3(0.0f);
-    //     prd->origin = P + 1e-5 * ray_dir;
-    //     prd->direction = ray_dir;
-    //     return;
-    // }
+    if(opacity>0.99)
+    {
+        prd->passed = true;
+        prd->radiance = make_float3(0.0f);
+        //prd->origin = P + 1e-5 * ray_dir; 
+        prd->offsetUpdateRay(P, ray_dir); 
+        return;
+    }
 
     
     float is_refl;
@@ -600,25 +609,26 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
 
-    // if(opacity<=0.99)
-    // {
-    //     //we have some simple transparent thing
-    //     //roll a dice to see if just pass
-    //     if(rnd(prd->seed)<opacity)
-    //     {
-    //         prd->passed = true;
-    //         //you shall pass!
-    //         prd->radiance = make_float3(0.0f);
-    //         prd->origin = P + 1e-5 * ray_dir;
-    //         prd->direction = ray_dir;
-    //         prd->prob *= 1;
-    //         prd->countEmitted = false;
-    //         prd->attenuation *= 1;
-    //         return;
+    if(opacity<=0.99)
+    {
+        //we have some simple transparent thing
+        //roll a dice to see if just pass
+        if(rnd(prd->seed)<opacity)
+        {
+            prd->passed = true;
+            //you shall pass!
+            prd->radiance = make_float3(0.0f);
 
-    //     }
+            prd->origin = P;
+            prd->direction = ray_dir;
+            prd->offsetUpdateRay(P, ray_dir); 
 
-    // }
+            prd->prob *= 1;
+            prd->countEmitted = false;
+            prd->attenuation *= 1;
+            return;
+        }
+    }
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
@@ -675,8 +685,8 @@ extern "C" __global__ void __closesthit__radiance()
     //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
     //prd->prob *= pdf/clamp(dot(wi, vec3(N)),0.0f,1.0f);
     //prd->prob *= pdf;
+    prd->offsetUpdateRay(P, wi); 
 
-    prd->origin = P; prd->direction = wi;
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     prd->depth++;
@@ -684,13 +694,6 @@ extern "C" __global__ void __closesthit__radiance()
     //    return;
     //}
 
-    P = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-
-    wi = reflect(ray_dir, prd->geometryNormal);
-
-    //prd->geometryNormal = faceforward( prd->geometryNormal, wi, prd->geometryNormal );
-
-    prd->origin = rtgems::offset_ray(P, normalize(prd->geometryNormal));
 
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);

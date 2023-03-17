@@ -1,7 +1,7 @@
 # export CC=/usr/bin/clang
 # export CXX=/usr/bin/clang++
 
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release \
+cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DZENO_WITH_zenvdb:BOOL=ON \
     -DZENO_SYSTEM_OPENVDB=OFF \
     -DZENO_WITH_ZenoFX:BOOL=ON \

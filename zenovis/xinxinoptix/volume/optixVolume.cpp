@@ -339,7 +339,7 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
             sizeof( sutil::Aabb ), cudaMemcpyHostToDevice ) );
 
         // Make build input for this grid
-        uint32_t aabb_input_flags = OPTIX_GEOMETRY_FLAG_NONE;
+        uint32_t aabb_input_flags = OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL;
         OptixBuildInput build_input = {};
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
         build_input.customPrimitiveArray.aabbBuffers = &d_aabb;
@@ -351,7 +351,7 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
         build_input.customPrimitiveArray.primitiveIndexOffset = 0;
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
         accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
         OptixAccelBufferSizes gas_buffer_sizes;

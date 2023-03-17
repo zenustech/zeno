@@ -156,6 +156,10 @@ std::vector<Vertex> g_lightColor;
 struct PathTracerState
 {
     OptixDeviceContext context = 0;
+
+    OptixTraversableHandle         root_handle;
+    raii<CUdeviceptr>              root_output_buffer;
+
     OptixTraversableHandle         m_ias_handle;
     OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
     raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
@@ -413,7 +417,7 @@ static void initLaunchParams( PathTracerState& state )
     state.params.handle         = state.gas_handle;
 //#else
     } else {
-    state.params.handle         = state.m_ias_handle;
+    state.params.handle         = state.root_handle;
     }
 //#endif
     CUDA_CHECK( cudaMalloc(
@@ -598,7 +602,7 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes gas_buffer_sizes;
@@ -671,7 +675,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     //zeno::log_info("build IAS begin");
     std::cout<<"IAS begin"<<std::endl;
     timer.tick();
-    float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+    const float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
     std::size_t num_instances = g_staticAndDynamicMeshNum;
     for (const auto &[instID, instData] : g_instLUT)
@@ -688,6 +692,13 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     }
 
     std::vector<OptixInstance> optix_instances( num_instances );
+    memset( optix_instances.data(), 0, sizeof( OptixInstance ) * num_instances );
+
+    for (auto& ins : optix_instances ) {
+        ins.sbtOffset = 0;
+        ins.visibilityMask = DefaultMatMask;
+    }
+    
     std::vector<int> meshIdxs(num_instances);
     std::vector<float> meshMats(16 * num_instances);
     unsigned int sbt_offset = 0;
@@ -803,25 +814,6 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     std::cout<<"IAS middle\n";
     timer.tick();
 
-    // process volume
-    {  
-        for ( uint i=0; i<list_volume.size(); ++i ) {
-
-            OptixInstance optix_instance = {};
-
-            sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
-
-            optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
-            optix_instance.sbtOffset = sbt_offset;
-            optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
-            optix_instance.traversableHandle = list_volume_accel[i]->handle;
-            getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
-
-            optix_instances.push_back( optix_instance );
-        }
-    }
-
     const size_t instances_size_in_bytes = sizeof( OptixInstance ) * optix_instances.size();
     raii<CUdeviceptr>  d_instances;
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), instances_size_in_bytes ) );
@@ -838,7 +830,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     instance_input.instanceArray.numInstances = static_cast<unsigned int>( optix_instances.size() );
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags                  = OPTIX_BUILD_FLAG_NONE;
+    accel_options.buildFlags                  = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation                   = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes ias_buffer_sizes;
@@ -874,6 +866,89 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 nullptr,            // emitted property list
                 0                   // num emitted properties
                 ) );
+
+    OptixInstance bigger_instance {};
+        bigger_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+        bigger_instance.instanceId = 0;
+        bigger_instance.sbtOffset = 0;
+        bigger_instance.visibilityMask = DefaultMatMask;
+        bigger_instance.traversableHandle = state.m_ias_handle;
+        memcpy( bigger_instance.transform, mat4x4, sizeof( float ) * 12 );
+
+        auto _optix_instances = std::vector<OptixInstance>{bigger_instance};
+
+        // process volume
+        {  
+            for ( uint i=0; i<list_volume.size(); ++i ) {
+
+                OptixInstance optix_instance {};
+
+                sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
+
+                optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+                optix_instance.instanceId = static_cast<unsigned int>( optix_instances.size() );
+                optix_instance.sbtOffset = sbt_offset;
+                optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
+                optix_instance.traversableHandle = list_volume_accel[i]->handle;
+                getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+
+                _optix_instances.push_back( optix_instance );
+            }
+        }
+
+        const size_t _instances_size_in_bytes = sizeof( OptixInstance ) * _optix_instances.size();
+        raii<CUdeviceptr>  _d_instances;
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_d_instances.reset() ), _instances_size_in_bytes ) );
+        CUDA_CHECK( cudaMemcpy(
+                    reinterpret_cast<void*>( (CUdeviceptr)_d_instances ),
+                    _optix_instances.data(),
+                    _instances_size_in_bytes,
+                    cudaMemcpyHostToDevice
+                    ) );
+
+        OptixBuildInput _instance_input = {};
+        _instance_input.type                       = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+        _instance_input.instanceArray.instances    = _d_instances;
+        _instance_input.instanceArray.numInstances = static_cast<unsigned int>( _optix_instances.size() );
+
+        OptixAccelBuildOptions _accel_options = {};
+        _accel_options.buildFlags                  = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+        _accel_options.operation                   = OPTIX_BUILD_OPERATION_BUILD;
+
+        OptixAccelBufferSizes _ias_buffer_sizes;
+        OPTIX_CHECK( optixAccelComputeMemoryUsage(
+                    state.context,
+                    &_accel_options,
+                    &_instance_input,
+                    1, // num build inputs
+                    &_ias_buffer_sizes
+                    ) );
+
+        raii<CUdeviceptr> _d_temp_buffer;
+        CUDA_CHECK( cudaMalloc(
+                    reinterpret_cast<void**>( &_d_temp_buffer.reset() ),
+                    _ias_buffer_sizes.tempSizeInBytes
+                    ) );
+        CUDA_CHECK( cudaMalloc(
+                    reinterpret_cast<void**>( &state.root_output_buffer.reset() ),
+                    _ias_buffer_sizes.outputSizeInBytes
+                    ) );
+
+        OPTIX_CHECK( optixAccelBuild(
+                    state.context,
+                    nullptr,                  // CUDA stream
+                    &_accel_options,
+                    &_instance_input,
+                    1,                  // num build inputs
+                    _d_temp_buffer,
+                    _ias_buffer_sizes.tempSizeInBytes,
+                    state.root_output_buffer,
+                    _ias_buffer_sizes.outputSizeInBytes,
+                    &state.root_handle,
+                    nullptr,            // emitted property list
+                    0                   // num emitted properties
+                    ) );
+
     timer.tock("done IAS build");
     std::cout<<"IAS end\n";
     //zeno::log_info("build IAS end");
@@ -919,7 +994,7 @@ static void buildMeshAccel( PathTracerState& state )
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes gas_buffer_sizes;
