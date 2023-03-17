@@ -35,61 +35,6 @@ QDialog QPushButton:disabled
 	color:#9BAAB4;
 }
 
-QDialog QTreeView, QDialog QListWidget
-{
-    alternate-background-color: #191D21;
-	background-color: #22252C;
-	font-size: 9pt;
-	color: #A3B1C0;
-	font-weight: 400;
-	border:1px solid #191d21;
-	show-decoration-selected: 1;
-}
-
-QDialog QTreeView::item, QDialog QListWidget::item
-{
-	min-height:16px;
-	border:1px solid transparent;
-}
-
-QDialog QTreeView::item:hover, QDialog QListWidget::item:hover
-{
-	background-color: rgba(52,67,97,0.8);
-}
-
-QDialog QTreeView::item:selected, QDialog QListWidget::item:selected
-{
-	background-color: #344361;
-	color:#8f9ba8;
-}
-
-QDialog QTreeView::branch:has-children:!has-siblings:closed,
-QDialog QTreeView::branch:closed:has-children:has-siblings 
-{
-    border-image: none;
-    image: url(://icons/ic_parameter_fold.svg);
-}
-
-QDialog QTreeView::branch:open:has-children:!has-siblings,
-QDialog QTreeView::branch:open:has-children:has-siblings  
-{
-    border-image: none;
-    image: url(://icons/ic_parameter_unfold.svg);	
-}
-
-QDialog QTreeView::branch:selected,
-QDialog QTreeView::branch:selected 
-{
-    background-color: rgb(52,67,97);
-}
-
-QDialog QTreeView::branch:hover:!selected,
-QDialog QTreeView::branch:hover:!selected  
-{
-    background-color: rgba(52,67,97,0.8);	
-}
-
-
 QDialog QLabel
 {
 	font-size: 9pt;
@@ -166,6 +111,11 @@ QDialog QTableWidget::item
 	background-color: #191D21;
 }
 
+QDialog QTableWidget::item:selected
+{
+	background-color: #344361;
+}
+
 QDialog QFrame#line
 {
     color:#737B85;
@@ -179,4 +129,78 @@ QWidget[cssClass="ZTimeline"]
 QDialog[cssClass="F-Curve"]
 {
     background: rgb(45,50,57);
+}
+
+QDialog QTreeView, QDialog QListWidget
+{
+    alternate-background-color: #191D21;
+	background-color: #22252C;
+	font-size: 9pt;
+	color: #A3B1C0;
+	font-weight: 400;
+	border:1px solid #191d21;
+	show-decoration-selected: 1;
+}
+
+QTreeView, QListWidget
+{
+    alternate-background-color: #191D21;
+	background-color: rgb(45,50,57);
+	font-size: 9pt;
+	color: #A3B1C0;
+	font-weight: 400;
+	border:0;
+	show-decoration-selected: 1;
+}
+
+QTreeView::item, QListWidget::item
+{
+	min-height:16px;
+	border:1px solid transparent;
+}
+
+QTreeView::item:hover, QListWidget::item:hover
+{
+	background-color: rgba(52,67,97,0.8);
+}
+
+QTreeView::item:selected, QListWidget::item:selected
+{
+	background-color: #344361;
+	color:#8f9ba8;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings 
+{
+    border-image: none;
+    image: url(://icons/ic_parameter_fold.svg);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings  
+{
+    border-image: none;
+    image: url(://icons/ic_parameter_unfold.svg);	
+}
+
+QTreeView::branch:selected,
+QTreeView::branch:selected 
+{
+    background-color: rgb(52,67,97);
+}
+
+QTreeView::branch:hover:!selected,
+QTreeView::branch:hover:!selected  
+{
+    background-color: rgba(52,67,97,0.8);	
+}
+
+QWidget[cssClass = "welcomepage_link"]
+{
+	border:1px solid #24282E;
+    background: #24282E;
+    border-radius: 8px;
+	border:1px solid #24282E;
+	padding-left: 20px;
 }

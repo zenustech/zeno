@@ -47,7 +47,7 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
 {
     setButtonOptions(ZToolButton::Opt_TextLeftToIcon | ZToolButton::Opt_Checkable);
     setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), icon, iconHover, iconOn, iconOnHover);
-    QFont fnt("Alibaba PuHuiTi", 10);
+    QFont fnt = zenoApp->font();
     setText(tr("REC"));
     setMargins(ZenoStyle::dpiScaledMargins(QMargins(12, 5, 5, 5)));
     setBackgroundClr(QColor("#383F47"), QColor("#383F47"), QColor("#191D21"), QColor("#191D21"));
@@ -85,7 +85,7 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
     }
     option.iconSize = iconSize();
     option.buttonOpts = buttonOption();
-    option.font = QFont ("Alibaba PuHuiTi", 10);
+    option.font = zenoApp->font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
     p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);

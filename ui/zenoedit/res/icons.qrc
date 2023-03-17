@@ -332,5 +332,13 @@
     <file>icons/parameter_control_spinbox.svg</file>
     <file>icons/parameter_control_slider.svg</file>
 	<file>icons/parameter_control_divider.svg</file>
+	<file>icons/file_newfile.svg</file>
+    <file>icons/file_openfile.svg</file>
+    <file>icons/file_zsgfile.svg</file>
+    <file>icons/welcome_document.svg</file>
+    <file>icons/welcome_forum.svg</file>
+    <file>icons/welcome_github.svg</file>
+    <file>icons/welcome_website.svg</file>
+    <file>icons/welcome_Zeno_logo.svg</file>
 </qresource>
 </RCC>

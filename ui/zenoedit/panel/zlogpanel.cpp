@@ -51,7 +51,7 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
 
 QFont LogItemDelegate::getFont() const
 {
-    QFont font("Consolas", 10);
+    QFont font = zenoApp->font();
     font.setBold(true);
     return font;
 }

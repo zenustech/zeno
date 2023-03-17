@@ -34,11 +34,11 @@ QComboBox:disabled{
     color: #8f9ba8;
 }
 
-QComboBox QAbstractItemView{
+QAbstractItemView{
     border: 0px;
     background: rgb(34,37,44);
     selection-background-color: #4B9EF4;
-	font-size: 9pt;
+	font: 9pt 'Noto Sans SC';
 	color: #C3D2DF;
     outline: 0px;
 	font-weight:400;
