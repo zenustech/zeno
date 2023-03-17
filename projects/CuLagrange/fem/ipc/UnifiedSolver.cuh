@@ -411,6 +411,8 @@ struct UnifiedIPCSystem : IObject {
         using vec3 = zs::vec<T, 3>;
         using mat3 = zs::vec<T, 3, 3>;
         using spmat_t = zs::SparseMatrix<mat3, true>;
+        using dyn_hess_t = zs::tuple<pair_t, mat3>;
+
         using hess2_t = HessianPiece<2, T>;
         using hess3_t = HessianPiece<3, T>;
         using hess4_t = HessianPiece<4, T>;
@@ -422,6 +424,8 @@ struct UnifiedIPCSystem : IObject {
         HessianPiece<2, T> hess2;
         HessianPiece<3, T> hess3;
         HessianPiece<4, T> hess4;
+
+        DynamicBuffer<dyn_hess_t> dynHess;
         /// @brief inherent part
         spmat_t spmat{}; // _ptrs, _inds, _vals
         /// @brief preconditioner
@@ -436,25 +440,29 @@ struct UnifiedIPCSystem : IObject {
         void precondition(zs::CudaExecutionPolicy &pol, dtiles_t &vtemp, const zs::SmallString srcTag,
                           const zs::SmallString dstTag);
     };
-    /// probably useful for all possible hessian maintenance?
-    /// inherent + dynamic (discrete) 3x3 mat pieces?
     template <zs::execspace_e space, typename T_>
     struct SystemHessianView {
         using sys_hess_t = SystemHessian<T_>;
-        using vec3 = zs::vec<T, 3>;
-        using mat3 = zs::vec<T, 3, 3>;
-        using spmat_t = zs::SparseMatrix<mat3, true>;
-        using hess_t = HessianPiece<1, T>;
+        using vec3 = typename sys_hess_t::vec3;
+        using mat3 = typename sys_hess_t::mat3;
+        using spmat_t = typename sys_hess_t::spmat_t;
+        using dyn_hess_t = typename sys_hess_t::dyn_hess_t;
+        using dyn_buffer_t = DynamicBuffer<dyn_hess_t>;
 
-#if 0
+        using spmat_view_t = RM_CVREF_T(zs::view<space>(std::declval<spmat_t>(), zs::true_c));
+        using dyn_buffer_view_t = RM_CVREF_T(std::declval<dyn_buffer_t>().port());
+
         SystemHessianView(sys_hess_t &sys)
-            : spmat{view<space>(sys.spmat, true_c)}, hess2{proxy<space>(sys.hess2)}, hess3{proxy<space>(sys.hess3)},
-              hess4{proxy<space>(sys.hess4)} {
+            : spmat{zs::view<space>(sys.spmat, zs::true_c)}, dynHess{sys.dynHess.port()} {
         }
-#endif
-        zs::SparseMatrixView<space, spmat_t, true> spmat;
-        HessianView<hess_t> hess;
+
+        spmat_view_t spmat;
+        dyn_buffer_view_t dynHess;
     };
+    template <zs::execspace_e space, typename T_>
+    auto port(SystemHessian<T_> &sys) {
+        return SystemHessianView<space, T_>{sys};
+    }
     // for one-time static hessian topo build
     SystemHessian<T> linsys;
 
@@ -463,9 +471,7 @@ struct UnifiedIPCSystem : IObject {
     tiles_t stInds, seInds, svInds;
     using bvs_t = zs::LBvs<3, int, T>;
     bvh_t stBvh, seBvh;       // for simulated objects
-    bvs_t stBvs, seBvs;       // STQ
     bvh_t bouStBvh, bouSeBvh; // for collision objects
-    bvs_t bouStBvs, bouSeBvs; // STQ
     std::optional<bv_t> wholeBv;
     T dt, framedt;
 };
