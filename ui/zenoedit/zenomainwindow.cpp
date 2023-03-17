@@ -335,9 +335,6 @@ void ZenoMainWindow::saveDockLayout()
 
 void ZenoMainWindow::saveLayout2()
 {
-    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    QLayout* pLayout = this->layout();
-    //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
     writeLayout(m_layoutRoot, size(), path);
@@ -630,7 +627,8 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
     auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* pDock : docks)
     {
-        views.append(pDock->viewports());
+        if (pDock->isVisible())
+            views.append(pDock->viewports());
     }
 
     //top level floating windows.
@@ -750,6 +748,8 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
+        if (!dock->isVisible())
+            continue;
         ZenoGraphsEditor* pEditor = dock->getAnyEditor();
         if (pEditor)
             return pEditor;
@@ -1327,9 +1327,10 @@ QString ZenoMainWindow::getOpenFileByDialog() {
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
-    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZTabDockWidget* dock : docks2) {
-        dock->onNodesSelected(subgIdx, nodes, select);
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
+        if (dock->isVisible())
+            dock->onNodesSelected(subgIdx, nodes, select);
     }
 }
 
@@ -1337,14 +1338,16 @@ void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& 
     //dispatch to all property panel.
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* dock : docks) {
-        dock->onPrimitiveSelected(primids);
+        if (dock->isVisible())
+            dock->onPrimitiveSelected(primids);
     }
 }
 
 void ZenoMainWindow::updateLightList() {
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* dock : docks) {
-        dock->newFrameUpdate();
+        if (dock->isVisible())
+            dock->newFrameUpdate();
     }
 }
 void ZenoMainWindow::doFrameUpdate(int frame) {

@@ -8,11 +8,15 @@ ZSlider::ZSlider(QWidget* parent)
     , m_value(0)
     , m_from(0)
     , m_to(100)
+    , m_cellLength(0)
+    , m_sHMargin(ZenoStyle::dpiScaled(15))
+    , scaleH(ZenoStyle::dpiScaled(9))
+    , smallScaleH(ZenoStyle::dpiScaled(5))
+    , fontHeight(ZenoStyle::dpiScaled(15))
+    , fontScaleSpacing(ZenoStyle::dpiScaled(4))
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
-
-
 
 void ZSlider::mousePressEvent(QMouseEvent* event)
 {
@@ -191,8 +195,11 @@ void ZSlider::paintEvent(QPaintEvent* event)
         }
     }
 
-    painter.setPen(QPen(QColor("#335A646F"), 1));
-    //painter.drawLine(QPointF(_frameToPos(m_from), height() - 5 - 4), QPointF(_frameToPos(m_to), height() - 5 - 4));
+    painter.setPen(QPen(QColor("#5A646F"), 1));
+
+    int left = _frameToPos(m_from);
+    int right = width() - m_sHMargin;
+    painter.drawLine(QPointF(left, height() - 1), QPointF(right, height() - 1));
     drawSlideHandle(&painter, scaleH);
 }
 

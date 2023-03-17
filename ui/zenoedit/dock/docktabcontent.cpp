@@ -147,16 +147,11 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     m_plblName = new QLabel("");
     QFont fnt = zenoApp->font();
     m_plblName->setFont(fnt);
+    m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_plblName->setMinimumWidth(ZenoStyle::dpiScaled(128));
     QPalette palette = m_plblName->palette();
     palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
     m_plblName->setPalette(palette);
-
-    m_pLineEdit = new QLineEdit;
-    m_pLineEdit->setText("");
-    m_pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-    m_pLineEdit->setReadOnly(true);
-    m_pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(20));
 
     ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
@@ -164,7 +159,6 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addWidget(pIcon);
     pToolLayout->addWidget(m_plblName);
-    pToolLayout->addWidget(m_pLineEdit);
     pToolLayout->addStretch();
     pToolLayout->addWidget(pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
@@ -194,12 +188,10 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
         {
             const QModelIndex& idx = nodes[0];
             if (select) {
-                m_plblName->setText(idx.data(ROLE_OBJNAME).toString());
-                m_pLineEdit->setText(idx.data(ROLE_OBJID).toString());
+                m_plblName->setText(idx.data(ROLE_OBJID).toString());
             }
             else {
                 m_plblName->setText("");
-                m_pLineEdit->setText("");
             }
         }
     }
@@ -229,7 +221,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
     pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
-    pBlackboard = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
+    pCustomParam = new ZToolBarButton(false, ":/icons/nodeEditor_nodePara_unselected.svg", ":/icons/nodeEditor_nodePara_selected.svg");
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
@@ -314,7 +306,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pUnfold);
     pToolLayout->addWidget(pSnapGrid);
     pToolLayout->addWidget(pShowGrid);
-    pToolLayout->addWidget(pBlackboard);
+    pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pFullPanel);
 
@@ -371,7 +363,7 @@ void DockContent_Editor::initConnections()
         act.setProperty("ActionType", ZenoMainWindow::ACTION_EXPAND);
         m_pEditor->onAction(&act);
     });
-    connect(pBlackboard, &ZToolBarButton::clicked, this, [=]() {
+    connect(pCustomParam, &ZToolBarButton::clicked, this, [=]() {
         QAction act("CustomUI");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_CUSTOM_UI);
         m_pEditor->onAction(&act);
