@@ -488,7 +488,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
         {
             if (objId.indexOf('/') != -1)
             {
-                auto lst = objId.split('/', Qt::SkipEmptyParts);
+                auto lst = objId.split('/', QtSkipEmptyParts);
                 objId = lst.last();
             }
 

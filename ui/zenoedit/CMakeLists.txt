@@ -48,8 +48,10 @@ if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
 
+if (WIN32)
 add_custom_command(
     TARGET zenoedit
     PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E remove -f "qrc_icons.o" "qrc_font.o"
 )
+endif()

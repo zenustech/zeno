@@ -37,7 +37,8 @@ QSize LogItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModel
 
     qreal height = textLayout.boundingRect().height();
 
-    return QSize(option.rect.width(), height).grownBy(m_textMargins);
+    return QSize(option.rect.width() + m_textMargins.left() + m_textMargins.right(), 
+                 height + m_textMargins.top() + m_textMargins.bottom());
 }
 
 void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
