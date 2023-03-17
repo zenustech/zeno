@@ -51,7 +51,8 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
 
 QFont LogItemDelegate::getFont() const
 {
-    QFont font = getFont();
+    QFont font = zenoApp->font();
+    font.setBold(true);
     return font;
 }
 
@@ -172,8 +173,7 @@ QTextLayout::FormatRange LogItemDelegate::getHoverRange(const QString& text, qre
     QVector<QTextLayout::FormatRange> selections = _getNodeIdentRgs(text);
     if (!selections.isEmpty())
     {
-        QFont font = zenoApp->font();
-        font.setBold(true);
+        QFont font = getFont();
 
         QVector<QTextLayout::FormatRange> selections;
         QTextLayout textLayout;
