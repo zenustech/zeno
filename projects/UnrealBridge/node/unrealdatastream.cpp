@@ -1,5 +1,6 @@
 #include "model/subject.h"
 #include "unrealregistry.h"
+#include "ubipcclient.h"
 #include "zeno/core/INode.h"
 #include "zeno/core/defNode.h"
 #include "zeno/logger.h"
@@ -13,16 +14,15 @@ struct IUnrealDataStreamNode : public INode {
     void apply() override = 0;
 };
 
-struct UnrealHeightField : public INode {
+struct FetchUnrealHeightField : public INode {
 
 //    EZenoSubjectType type()  { return EZenoSubjectType::HeightField; }
 
     void apply() override {
         auto subjectName = get_input2<std::string>("subject");
-        std::shared_ptr<zeno::IUnrealZenoSubject> subject = ZenoSubjectRegistry::getStatic().get(subjectName);
-        if (subject) {
-            IUnrealZenoSubject* zenoSubject = subject.get();
-            UnrealZenoHeightFieldSubject* heightFieldSubject = dynamic_cast<UnrealZenoHeightFieldSubject*>(zenoSubject);
+        std::optional<UnrealZenoHeightFieldSubject> subject = ::UnrealBridge::IPCClient::fetchSubject<UnrealZenoHeightFieldSubject>(subjectName);
+        if (subject.has_value()) {
+            UnrealZenoHeightFieldSubject* heightFieldSubject = &subject.value();
             if (heightFieldSubject) {
                 std::shared_ptr<PrimitiveObject> prim = std::make_shared<PrimitiveObject>();
                 prim->verts.resize(heightFieldSubject->heights.size());
@@ -42,7 +42,7 @@ struct UnrealHeightField : public INode {
     }
 };
 
-ZENO_DEFNODE(UnrealHeightField)({
+ZENO_DEFNODE(FetchUnrealHeightField)({
     {
         {"string", "subject", ""},
     },

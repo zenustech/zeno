@@ -1,4 +1,5 @@
 #include "unrealregistry.h"
+#include <QSharedMemory>
 
 void UnrealSubjectRegistry::markDirty(bool flag) {
     m_bIsDirty = flag;
@@ -52,8 +53,11 @@ void ZenoSubjectRegistry::put(const std::string &subjectName, const std::shared_
 }
 
 std::shared_ptr<zeno::IUnrealZenoSubject> ZenoSubjectRegistry::get(const std::string &subjectName) const {
-    if (auto iter = subjects.find(subjectName); iter != subjects.end()) {
-        return iter->second;
+    if (subjects.find(subjectName) != subjects.end()) {
+        return subjects.at(subjectName);
     }
     return nullptr;
+}
+
+ZenoSubjectRegistry::ZenoSubjectRegistry() {
 }

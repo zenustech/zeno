@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <optional>
 #include <random>
+#include <type_traits>
 #include "model/subject.h"
 #include "zeno/core/INode.h"
 #include "zeno/types/PrimitiveObject.h"
@@ -113,16 +114,13 @@ struct UnrealZenoHeightFieldSubject : IUnrealZenoSubject {
     std::vector<float> heights;
 
     EZenoSubjectType type() override { return EZenoSubjectType::HeightField; }
+
+    template <typename T>
+    void pack(T& pack) {
+        pack(heights);
+    }
 };
 }
-
-enum class EZenoSubjectApplyResult : uint8_t {
-    Success = 0,
-    NotFound,
-    InvalidType,
-    UnregisterType,
-    TypeNotMatch,
-};
 
 class ZenoSubjectRegistry {
 
@@ -133,11 +131,29 @@ public:
 private:
     std::unordered_map<std::string, std::shared_ptr<zeno::IUnrealZenoSubject>> subjects;
 
+    ZenoSubjectRegistry();
+
 public:
     static ZenoSubjectRegistry& getStatic() {
         static ZenoSubjectRegistry sZenoSubjectRegistry;
 
         return sZenoSubjectRegistry;
+    }
+
+    template <typename T, typename U = std::remove_reference<T>::type>
+    static std::optional<U*> find(const std::string& subjectName) {
+        ZenoSubjectRegistry& registry = getStatic();
+        if (registry.subjects.find(subjectName) != registry.subjects.end()) {
+            std::shared_ptr<zeno::IUnrealZenoSubject> subject = registry.subjects.at(subjectName);
+            if (subject) {
+                zeno::IUnrealZenoSubject* subjectRaw = subject.get();
+                U* targetRaw = dynamic_cast<U*>(subjectRaw);
+                if (nullptr != targetRaw) {
+                    return std::make_optional<U*>(targetRaw);
+                }
+            }
+        }
+        return std::nullopt;
     }
 };
 
