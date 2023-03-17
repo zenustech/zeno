@@ -499,7 +499,7 @@ namespace DisneyBSDF{
             )
 
     {
-        float a2 = 0.0625; //0.25 * 0.25
+        float a2 = 0.0625; 
 
         float2 r01 = sobolRnd(seed);
         float r0 = r01.x;//rnd(seed);
@@ -529,12 +529,12 @@ namespace DisneyBSDF{
 
         //float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
         float d = BRDFBasics::GTR1(abs(NoH),(0.1f + clearcoatGloss * (0.001f-0.1f) ));
-        float f = BRDFBasics::fresnelSchlick(LoH,0.04f);
+        float f = BRDFBasics::fresnelSchlick(0.04f,LoH);
         float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, 0.25f, 0.25f);
 
         fPdf = d / (4.0f * dot(wo,wm));
         rPdf = d /(4.0f * LoH);
-        reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf;
+        reflectance = vec3(0.25f * clearCoat * g * f *d ) ;
 
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
