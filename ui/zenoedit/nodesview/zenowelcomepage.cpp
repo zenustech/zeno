@@ -5,6 +5,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
+#include <zenoui/style/zenostyle.h>
 
 
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
@@ -12,43 +13,60 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 {
 	m_ui = new Ui::WelcomePage;
 	m_ui->setupUi(this);
+    QPalette palette = this->palette();
+    palette.setColor(QPalette::Background, QColor(44,50,58));
+    setPalette(palette);
 
 	m_ui->btnNew->setProperty("cssClass", "welcomepage");
     m_ui->btnOpen->setProperty("cssClass", "welcomepage");
     m_ui->lblCurrVer->setProperty("cssClass", "welcomepage");
     m_ui->lblLink->setProperty("cssClass", "welcomepage");
-    m_ui->lblWhatsNew->setProperty("cssClass", "welcomepage");
+    m_ui->lblStart->setProperty("cssClass", "welcomepage");
     m_ui->lblRecentFiles->setProperty("cssClass", "welcomepage");
-    m_ui->label->setProperty("cssClass", "welcomepage_label");
     m_ui->lblLogo->setProperty("cssClass", "welcomepage_name");
+    m_ui->lblIogoIcon->setProperty("cssClass", "welcomepage_logo");
+    m_ui->widgetManual->setProperty("cssClass", "welcomepage_link");
+    m_ui->widgetVideos->setProperty("cssClass", "welcomepage_link");
+    m_ui->widgetFromNum->setProperty("cssClass", "welcomepage_link");
+    m_ui->widgetOfficialWeb->setProperty("cssClass", "welcomepage_link");
+    m_ui->widgetGitHub->setProperty("cssClass", "welcomepage_link");
+    m_ui->lblIogoIcon->setFixedSize(QSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24)));
+    QSize size(ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(20));
+    m_ui->iconManual->setFixedSize(size);
+    m_ui->iconVideos->setFixedSize(size);
+    m_ui->iconForum->setFixedSize(size);
+    m_ui->iconOfficialWeb->setFixedSize(size);
+    m_ui->iconGithub->setFixedSize(size);
+    QMargins margin(ZenoStyle::dpiScaled(10), ZenoStyle::dpiScaled(7), ZenoStyle::dpiScaled(10), ZenoStyle::dpiScaled(7));
+    m_ui->widgetManual->setContentsMargins(margin);
+    m_ui->widgetVideos->setContentsMargins(margin);
+    m_ui->widgetFromNum->setContentsMargins(margin);
+    m_ui->widgetOfficialWeb->setContentsMargins(margin);
+    m_ui->widgetGitHub->setContentsMargins(margin);
+    m_ui->widgetVideos->hide();
 
     m_ui->lblManual->setText(tr("ZENO Manual"));
-    QFont font = zenoApp->font();
-    font.setPointSize(11);
-    m_ui->lblManual->setFont(font);
-    m_ui->lblManual->setTextColor(QColor(133, 130, 128));
+    m_ui->lblManual->setProperty("cssClass", "welcomepage_label");
     m_ui->lblManual->setUnderlineOnHover(true);
 
     m_ui->lblVideos->setText(tr("ZENO Video Tutorials"));
-    m_ui->lblVideos->setFont(font);
-    m_ui->lblVideos->setTextColor(QColor(133, 130, 128));
+    m_ui->lblVideos->setProperty("cssClass", "welcomepage_label");
     m_ui->lblVideos->setUnderlineOnHover(true);
 
     m_ui->lblOfficialWeb->setText(tr("Zenus Official Web"));
-    m_ui->lblOfficialWeb->setFont(font);
-    m_ui->lblOfficialWeb->setTextColor(QColor(133, 130, 128));
+    m_ui->lblOfficialWeb->setProperty("cssClass", "welcomepage_label");
     m_ui->lblOfficialWeb->setUnderlineOnHover(true);
+ 
 
     m_ui->lblForum->setText(tr("Forum"));
-    m_ui->lblForum->setFont(font);
-    m_ui->lblForum->setTextColor(QColor(133, 130, 128));
+    m_ui->lblForum->setProperty("cssClass", "welcomepage_label");
     m_ui->lblForum->setUnderlineOnHover(true);
 
     m_ui->lblGithub->setText(tr("Project on GitHub"));
-    m_ui->lblGithub->setFont(font);
-    m_ui->lblGithub->setTextColor(QColor(133, 130, 128));
+    m_ui->lblGithub->setProperty("cssClass", "welcomepage_label");
     m_ui->lblGithub->setUnderlineOnHover(true);
 
+    m_ui->widgetCenter->setFixedWidth(ZenoStyle::dpiScaled(315));
 	initSignals();
 }
 
@@ -96,20 +114,27 @@ void ZenoWelcomePage::initRecentFiles()
             QLayoutItem *item;
             ZTextLabel *pLabel;
             if (item = m_ui->layoutFiles->itemAt(i)) {
-                QWidget *widget = item->widget();
+                QLayout *layout = item->layout();
+                if (!layout)
+                    return;
+                QWidget *widget = layout->itemAt(1)->widget();
                 pLabel = qobject_cast<ZTextLabel *>(widget);
                 if (pLabel)
                     pLabel->setText(fn);
             } 
             else {
+                QHBoxLayout *layout = new QHBoxLayout(this);
+                QLabel *iconLabel = new QLabel(this);
+                iconLabel->setFixedSize(QSize(ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(16)));
+                iconLabel->setPixmap(QPixmap(":/icons/file_zsgfile.svg"));
+                layout->addWidget(iconLabel);
                 pLabel = new ZTextLabel(fn);
-                pLabel->setTextColor(QColor(133, 130, 128));
-                QFont font = zenoApp->font();
-                font.setPointSize(11);
-                pLabel->setFont(font);
+                pLabel->setTextColor(QColor("#A3B1C0"));
+                pLabel->setProperty("cssClass", "welcomepage_label");
                 pLabel->setToolTip(path);
 
-                m_ui->layoutFiles->addWidget(pLabel);
+                 layout->addWidget(pLabel);
+                m_ui->layoutFiles->addLayout(layout);
             }
 
             connect(pLabel, &ZTextLabel::clicked, this, [=]() {

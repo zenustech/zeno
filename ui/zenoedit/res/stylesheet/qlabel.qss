@@ -35,23 +35,58 @@ QLabel[cssClass="numslider"]
 
 QLabel[cssClass = "welcomepage_name"]
 { 
-	font-size: 30pt;
-	font-weight: 500;
+	font-size: 16pt;
+	font-weight: 700;
 	color: rgb(255, 255, 255);
 }
 
 QLabel[cssClass = "welcomepage_label"]
 { 
-	font-size: 12pt;
+	font-size: 9pt;
 	font-weight: 500;
-	color: rgb(255, 255, 255);
+	color: #A3B1C0;
+}
+
+QLabel[cssClass = "welcomepage_label"]:hover
+{ 
+	color: #FFFFFF;
 }
 
 QLabel[cssClass = "welcomepage"]
 {
-	font-size: 12pt;
+	font-size: 10pt;
 	font-weight: 500;
-	color: rgb(133, 130, 128);
+	color:  #737B85;
+}
+
+QLabel[cssClass = "welcomepage_logo"]
+{
+	border-image:url(":/icons/welcome_Zeno_logo.svg");
+}
+
+QLabel#iconManual
+{
+	border-image:url(":/icons/welcome_document.svg");
+}
+
+QLabel#iconForum
+{
+	border-image:url(":/icons/welcome_forum.svg");
+}
+
+QLabel#iconGithub
+{
+	border-image:url(":/icons/welcome_github.svg");
+}
+
+QLabel#iconVideos
+{
+	border-image:url(":/icons/welcome_document.svg");
+}
+
+QLabel#iconOfficialWeb
+{
+	border-image:url(":/icons/welcome_website.svg");
 }
 
 ZCurveMapEditor QLabel

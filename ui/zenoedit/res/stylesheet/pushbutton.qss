@@ -56,19 +56,16 @@ QPushButton[cssClass="dictkeypanel"]:hover
 	color: #FFFFFF;
 }
 
-QPushButton[cssClass="welcomepage"]
+QToolButton[cssClass="welcomepage"]
 {
-	border-style: solid;
-    border-width: 1px;
-    border-radius: 0px;
-    border-color: rgba(133,130,128,1);
+    border: 0px;
 	background-color: transparent;
-	font-size: 10pt;;
+	font-size: 9pt;;
 	font-weight: 500;
-	color: rgb(156, 156, 156);
+	color: #4578AC;
 }
 
-QPushButton[cssClass="welcomepage"]:hover
+QToolButton[cssClass="welcomepage"]:hover
 {
     border-color: rgb(255,255,255);
 	color: rgb(255, 255, 255);

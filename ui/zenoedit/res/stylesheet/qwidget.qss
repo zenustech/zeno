@@ -196,3 +196,11 @@ QTreeView::branch:hover:!selected
     background-color: rgba(52,67,97,0.8);	
 }
 
+QWidget[cssClass = "welcomepage_link"]
+{
+	border:1px solid #24282E;
+    background: #24282E;
+    border-radius: 8px;
+	border:1px solid #24282E;
+	padding-left: 20px;
+}
