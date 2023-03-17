@@ -344,6 +344,8 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
     using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
 
+    auto &dynHess = linsys.dynHess;
+
     auto &hess2 = linsys.hess2;
     auto &hess3 = linsys.hess3;
     auto &hess4 = linsys.hess4;
@@ -362,15 +364,15 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
             if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
             auto barrierDistGrad = zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
-#if 0
+            /// gradient
             auto grad = ppGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp(gTag, d, pp[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, pp[1]), grad(1, d));
             }
-#endif
-            // hessian
+
+            /// hessian
             auto ppHess = dist_hess_pp(x0, x1);
             auto ppGrad_ = Vec6View{ppGrad.data()};
             ppHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) * dyadic_prod(ppGrad_, ppGrad_) +
@@ -398,7 +400,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
             if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
             auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-#if 0
+            /// gradient
             auto grad = peGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -406,8 +408,8 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 atomic_add(exec_cuda, &vtemp(gTag, d, pe[1]), grad(1, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, pe[2]), grad(2, d));
             }
-#endif
-            // hessian
+
+            /// hessian
             auto peHess = dist_hess_pe(p, e0, e1);
             auto peGrad_ = Vec9View{peGrad.data()};
             peHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) * dyadic_prod(peGrad_, peGrad_) +
@@ -436,17 +438,16 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
             if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
             auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-#if 0
             auto grad = ptGrad * (-barrierDistGrad);
-            // gradient
+            /// gradient
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp(gTag, d, pt[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, pt[1]), grad(1, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, pt[2]), grad(2, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, pt[3]), grad(3, d));
             }
-#endif
-            // hessian
+
+            /// hessian
             auto ptHess = dist_hess_pt(p, t0, t1, t2);
             auto ptGrad_ = Vec12View{ptGrad.data()};
             ptHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) * dyadic_prod(ptGrad_, ptGrad_) +
@@ -476,14 +477,14 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 printf("dist already smaller than xi!\n");
             auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
             auto grad = eeGrad * (-barrierDistGrad);
-            // gradient
+            /// gradient
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[1]), grad(1, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[2]), grad(2, d));
                 atomic_add(exec_cuda, &vtemp(gTag, d, ee[3]), grad(3, d));
             }
-            // hessian
+            /// hessian
             auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
             auto eeGrad_ = Vec12View{eeGrad.data()};
             eeHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) * dyadic_prod(eeGrad_, eeGrad_) +
@@ -530,6 +531,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
+                /// gradient
                 auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
                 auto scaledEEGrad = mollifierEE * barrierDistGrad * eeGrad;
                 for (int d = 0; d != 3; ++d) {
@@ -539,7 +541,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                     atomic_add(exec_cuda, &vtemp(gTag, d, eem[3]), -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
                 }
 
-                // hessian
+                /// hessian
                 auto eeGrad_ = Vec12View{eeGrad.data()};
                 auto eemHess = barrierDist2 * mollifierHessEE +
                                barrierDistGrad * (dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
@@ -582,6 +584,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
+                /// gradient
                 auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
                 auto scaledPPGrad = mollifierEE * barrierDistGrad * ppGrad;
                 for (int d = 0; d != 3; ++d) {
@@ -591,7 +594,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                     atomic_add(exec_cuda, &vtemp(gTag, d, ppm[3]), -(scaledMollifierGrad(3, d)));
                 }
 
-                // hessian
+                /// hessian
                 using GradT = zs::vec<T, 12>;
                 auto extendedPPGrad = GradT::zeros();
                 for (int d = 0; d != 3; ++d) {
@@ -647,6 +650,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                 auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
                     get_mollifier(ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
 
+                /// gradient
                 auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
                 auto scaledPEGrad = mollifierEE * barrierDistGrad * peGrad;
 
@@ -657,7 +661,7 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
                     atomic_add(exec_cuda, &vtemp(gTag, d, pem[3]), -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
                 }
 
-                // hessian
+                /// hessian
                 using GradT = zs::vec<T, 12>;
                 auto extendedPEGrad = GradT::zeros();
                 for (int d = 0; d != 3; ++d) {
