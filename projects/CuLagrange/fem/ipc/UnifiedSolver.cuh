@@ -198,17 +198,18 @@ struct UnifiedIPCSystem : IObject {
     void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
                                           bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                                  bool includeHessian = true);
+    void computeBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
+    void computeFrictionBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
 
     /// @note build linsys.spmat
     void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
     // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
-    void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
-    // mostly self-collision related
-    void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void updateInherentGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    // mostly collision (non-ground) related
+    void updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
+    void updateFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
+    void updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &pol);
 
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
@@ -216,10 +217,8 @@ struct UnifiedIPCSystem : IObject {
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
 
-    void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
 
-    void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void systemSolve(zs::CudaExecutionPolicy &cudaPol);
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
@@ -281,7 +280,7 @@ struct UnifiedIPCSystem : IObject {
     template <typename ValT>
     struct DynamicBuffer {
         DynamicBuffer(std::size_t n = 0)
-            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevSize{n} {
+            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevCount{0} {
             reset();
         }
         ~DynamicBuffer() = default;
@@ -289,35 +288,20 @@ struct UnifiedIPCSystem : IObject {
         std::size_t getCount() const {
             return cnt.getVal();
         }
-        std::size_t getBufferSize() const {
-            return buf.size();
-        }
         std::size_t getBufferCapacity() const {
             return buf.capacity();
         }
         void snapshot() {
-            prevSize = cnt.size();
-            iters = 0;
+            prevCount = cnt.size();
         }
         void resizeToCounter() {
-#if 0
-            buf.resize(getCount());
-#else
             auto c = getCount();
-            fmt::print("resizing from {} to {}\n", getBufferSize(), c);
+            if (c <= getBufferCapacity())
+                return;
             buf.resize(c);
-#endif
         }
         void restartCounter() {
-#if 0
-            cnt.setVal(prevSize);
-#else
-            fmt::print("reseting counter from {} to {}\n", getCount(), prevSize);
-            cnt.setVal(prevSize);
-#endif
-            if (++iters >= 2) {
-                throw std::runtime_error("should not rewind more than once!!!\n");
-            }
+            cnt.setVal(prevCount);
         }
         void reset() {
             cnt.setVal(0);
@@ -329,10 +313,10 @@ struct UnifiedIPCSystem : IObject {
         struct Port {
             ValT *buf;
             int *cnt;
-            std::size_t size;
+            std::size_t cap;
             __forceinline__ __device__ void try_push(ValT &&val) {
                 auto no = zs::atomic_add(zs::exec_cuda, cnt, 1);
-                if (no < size)
+                if (no < cap)
                     buf[no] = std::move(val);
             }
             __forceinline__ __device__ ValT &operator[](int i) {
@@ -343,14 +327,13 @@ struct UnifiedIPCSystem : IObject {
             }
         };
         Port port() {
-            return Port{buf.data(), cnt.data(), buf.size()};
+            return Port{buf.data(), cnt.data(), buf.capacity()}; // numDofs, tag;
         }
 
       protected:
         zs::Vector<ValT> buf;
         zs::Vector<int> cnt;
-        std::size_t prevSize;
-        int iters;
+        std::size_t prevCount;
     };
     template <typename... DynBufs>
     void snapshot(DynBufs &...dynBufs) {
@@ -358,14 +341,7 @@ struct UnifiedIPCSystem : IObject {
     }
     template <typename... DynBufs>
     bool allFit(DynBufs &...dynBufs) {
-#if 0
         return ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
-#else
-        auto fit = ((dynBufs.getCount() <= dynBufs.getBufferCapacity()) && ...);
-        if (!fit)
-            fmt::print(fg(fmt::color::pink), "not all fit, rewind!\n");
-        return fit;
-#endif
     }
     template <typename... DynBufs>
     void resizeAndRewind(DynBufs &...dynBufs) {
@@ -374,50 +350,21 @@ struct UnifiedIPCSystem : IObject {
     }
     // self contacts
     DynamicBuffer<pair_t> PP;
-    // zs::Vector<pair_t> PP;
-    // zs::Vector<int> nPP;
-    dtiles_t tempPP;
     DynamicBuffer<pair3_t> PE;
-    // zs::Vector<pair3_t> PE;
-    // zs::Vector<int> nPE;
-    dtiles_t tempPE;
     DynamicBuffer<pair4_t> PT;
-    // zs::Vector<pair4_t> PT;
-    // zs::Vector<int> nPT;
-    dtiles_t tempPT;
     DynamicBuffer<pair4_t> EE;
-    // zs::Vector<pair4_t> EE;
-    // zs::Vector<int> nEE;
-    dtiles_t tempEE;
     // mollifier
     DynamicBuffer<pair4_t> PPM;
-    // zs::Vector<pair4_t> PPM;
-    // zs::Vector<int> nPPM;
-    dtiles_t tempPPM;
     DynamicBuffer<pair4_t> PEM;
-    // zs::Vector<pair4_t> PEM;
-    // zs::Vector<int> nPEM;
-    dtiles_t tempPEM;
     DynamicBuffer<pair4_t> EEM;
-    // zs::Vector<pair4_t> EEM;
-    // zs::Vector<int> nEEM;
-    dtiles_t tempEEM;
     /// @brief friction
     DynamicBuffer<pair_t> FPP;
-    // zs::Vector<pair_t> FPP;
-    // zs::Vector<int> nFPP;
     dtiles_t fricPP;
     DynamicBuffer<pair3_t> FPE;
-    // zs::Vector<pair3_t> FPE;
-    // zs::Vector<int> nFPE;
     dtiles_t fricPE;
     DynamicBuffer<pair4_t> FPT;
-    // zs::Vector<pair4_t> FPT;
-    // zs::Vector<int> nFPT;
     dtiles_t fricPT;
     DynamicBuffer<pair4_t> FEE;
-    // zs::Vector<pair4_t> FEE;
-    // zs::Vector<int> nFEE;
     dtiles_t fricEE;
 
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
@@ -427,8 +374,6 @@ struct UnifiedIPCSystem : IObject {
     zs::Vector<bv_t> bvs; // as temporary buffer
 
     DynamicBuffer<pair4_t> csPT, csEE;
-    // zs::Vector<pair4_t> csPT, csEE;
-    // zs::Vector<int> ncsPT, ncsEE;
 
     /// @brief solver state machine
     struct SolverState {
@@ -466,6 +411,8 @@ struct UnifiedIPCSystem : IObject {
         using vec3 = zs::vec<T, 3>;
         using mat3 = zs::vec<T, 3, 3>;
         using spmat_t = zs::SparseMatrix<mat3, true>;
+        using dyn_hess_t = zs::tuple<pair_t, mat3>;
+
         using hess2_t = HessianPiece<2, T>;
         using hess3_t = HessianPiece<3, T>;
         using hess4_t = HessianPiece<4, T>;
@@ -477,6 +424,8 @@ struct UnifiedIPCSystem : IObject {
         HessianPiece<2, T> hess2;
         HessianPiece<3, T> hess3;
         HessianPiece<4, T> hess4;
+
+        DynamicBuffer<dyn_hess_t> dynHess;
         /// @brief inherent part
         spmat_t spmat{}; // _ptrs, _inds, _vals
         /// @brief preconditioner
@@ -491,25 +440,29 @@ struct UnifiedIPCSystem : IObject {
         void precondition(zs::CudaExecutionPolicy &pol, dtiles_t &vtemp, const zs::SmallString srcTag,
                           const zs::SmallString dstTag);
     };
-    /// probably useful for all possible hessian maintenance?
-    /// inherent + dynamic (discrete) 3x3 mat pieces?
     template <zs::execspace_e space, typename T_>
     struct SystemHessianView {
         using sys_hess_t = SystemHessian<T_>;
-        using vec3 = zs::vec<T, 3>;
-        using mat3 = zs::vec<T, 3, 3>;
-        using spmat_t = zs::SparseMatrix<mat3, true>;
-        using hess_t = HessianPiece<1, T>;
+        using vec3 = typename sys_hess_t::vec3;
+        using mat3 = typename sys_hess_t::mat3;
+        using spmat_t = typename sys_hess_t::spmat_t;
+        using dyn_hess_t = typename sys_hess_t::dyn_hess_t;
+        using dyn_buffer_t = DynamicBuffer<dyn_hess_t>;
 
-#if 0
+        using spmat_view_t = RM_CVREF_T(zs::view<space>(std::declval<spmat_t>(), zs::true_c));
+        using dyn_buffer_view_t = RM_CVREF_T(std::declval<dyn_buffer_t>().port());
+
         SystemHessianView(sys_hess_t &sys)
-            : spmat{view<space>(sys.spmat, true_c)}, hess2{proxy<space>(sys.hess2)}, hess3{proxy<space>(sys.hess3)},
-              hess4{proxy<space>(sys.hess4)} {
+            : spmat{zs::view<space>(sys.spmat, zs::true_c)}, dynHess{sys.dynHess.port()} {
         }
-#endif
-        zs::SparseMatrixView<space, spmat_t, true> spmat;
-        HessianView<hess_t> hess;
+
+        spmat_view_t spmat;
+        dyn_buffer_view_t dynHess;
     };
+    template <zs::execspace_e space, typename T_>
+    auto port(SystemHessian<T_> &sys) {
+        return SystemHessianView<space, T_>{sys};
+    }
     // for one-time static hessian topo build
     SystemHessian<T> linsys;
 
@@ -518,9 +471,7 @@ struct UnifiedIPCSystem : IObject {
     tiles_t stInds, seInds, svInds;
     using bvs_t = zs::LBvs<3, int, T>;
     bvh_t stBvh, seBvh;       // for simulated objects
-    bvs_t stBvs, seBvs;       // STQ
     bvh_t bouStBvh, bouSeBvh; // for collision objects
-    bvs_t bouStBvs, bouSeBvs; // STQ
     std::optional<bv_t> wholeBv;
     T dt, framedt;
 };

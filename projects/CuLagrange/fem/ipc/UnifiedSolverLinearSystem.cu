@@ -87,14 +87,12 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     auto dij = xij / lij;
                     auto gij = k * (lij - rl) * dij;
 
-#if 0
-                    // gradient
+                    /// gradient
                     auto vfdt2 = gij * (dt * dt) * vole;
                     for (int d = 0; d != 3; ++d) {
                         atomic_add(exec_cuda, &vtemp(gTag, d, inds[0]), (T)vfdt2(d));
                         atomic_add(exec_cuda, &vtemp(gTag, d, inds[1]), (T)-vfdt2(d));
                     }
-#endif
 
                     auto H = zs::vec<T, 6, 6>::zeros();
                     auto K = k * (mat3::identity() - rl / lij * (mat3::identity() - dyadic_prod(dij, dij)));
@@ -156,26 +154,27 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
             auto dFdXT = dFdX.transpose();
             auto f0 = col(F, 0);
             auto f1 = col(F, 1);
-#if 0
-                    auto f0Norm = zs::sqrt(f0.l2NormSqr());
-                    auto f1Norm = zs::sqrt(f1.l2NormSqr());
-                    auto f0Tf1 = f0.dot(f1);
-                    zs::vec<T, 3, 2> Pstretch, Pshear;
-                    for (int d = 0; d != 3; ++d) {
-                        Pstretch(d, 0) = 2 * (1 - 1 / f0Norm) * F(d, 0);
-                        Pstretch(d, 1) = 2 * (1 - 1 / f1Norm) * F(d, 1);
-                        Pshear(d, 0) = 2 * f0Tf1 * f1(d);
-                        Pshear(d, 1) = 2 * f0Tf1 * f0(d);
-                    }
-                    auto vecP = flatten(model.mu * Pstretch + (model.mu * 0.3) * Pshear);
-                    auto vfdt2 = -vole * (dFdXT * vecP) * (dt * dt);
 
-                    for (int i = 0; i != 3; ++i) {
-                        auto vi = inds[i];
-                        for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
-                    }
-#endif
+            /// gradient
+            auto f0Norm = zs::sqrt(f0.l2NormSqr());
+            auto f1Norm = zs::sqrt(f1.l2NormSqr());
+            auto f0Tf1 = f0.dot(f1);
+            zs::vec<T, 3, 2> Pstretch, Pshear;
+            for (int d = 0; d != 3; ++d) {
+                Pstretch(d, 0) = 2 * (1 - 1 / f0Norm) * F(d, 0);
+                Pstretch(d, 1) = 2 * (1 - 1 / f1Norm) * F(d, 1);
+                Pshear(d, 0) = 2 * f0Tf1 * f1(d);
+                Pshear(d, 1) = 2 * f0Tf1 * f0(d);
+            }
+            auto vecP = flatten(model.mu * Pstretch + (model.mu * 0.3) * Pshear);
+            auto vfdt2 = -vole * (dFdXT * vecP) * (dt * dt);
+
+            for (int i = 0; i != 3; ++i) {
+                auto vi = inds[i];
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
+            }
+            /// hessian
             /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
             // suggested by huang kemeng
             auto stretchHessian = [&F, &f0, &f1, &model]() {
@@ -292,7 +291,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     }
                     auto dFdX = dFdXMatrix(IB);
                     auto dFdXT = dFdX.transpose();
-#if 0
+                    /// gradient
                     auto P = model.first_piola(F);
                     auto vecP = flatten(P);
                     auto vfdt2 = -vole * (dFdXT * vecP) * dt * dt;
@@ -302,8 +301,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                         for (int d = 0; d != 3; ++d)
                             atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
                     }
-#endif
 
+                    /// hessian
                     auto Hq = model.first_piola_derivative(F, true_c);
                     H = dFdXT * Hq * dFdX * vole * dt * dt;
 
@@ -324,40 +323,62 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                 });
 }
 /// @brief inertial, kinetic, external force, elasticity, bending, boundary motion, ground collision
-void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
+void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
     auto &spmat = linsys.spmat;
     /// clear entry values
     spmat._vals.reset(0);
-    /// @note inertial, gravity, external force, boundary motion
-    cudaPol(zs::range(coOffset),
-            [spmat = view<space>(spmat), tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp),
-             boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
-                using mat3 = RM_CVREF_T(spmat)::value_type;
-                auto m = vtemp("ws", i);
-                int BCorder[1] = {(int)vtemp("BCorder", i)};
-                auto Hi = mat3::identity() * m;
-                for (int d = 0; d != BCorder[0]; ++d)
-                    Hi.val(d * 4) = 0;
-                auto loc = spmat.locate(i, i, true_c);
-                auto &mat = spmat._vals[loc];
-                for (int r = 0; r != 3; ++r)
-                    for (int c = 0; c != 3; ++c)
-                        mat(r, c) = Hi(r, c);
-            });
+    /// @note inertial, gravity
+    cudaPol(zs::range(coOffset), [spmat = view<space>(spmat), tempI = proxy<space>({}, tempI),
+                                  vtemp = proxy<space>({}, vtemp),
+                                  boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
+        using mat3 = RM_CVREF_T(spmat)::value_type;
+        auto m = vtemp("ws", i);
+        int BCorder = {(int)vtemp("BCorder", i)};
+
+        /// inertial gradient
+        if (BCorder == 0)
+            vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) -
+                                               m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
+
+        /// hesssian
+        auto Hi = mat3::identity() * m;
+        for (int d = 0; d != BCorder; ++d)
+            Hi.val(d * 4) = 0;
+        auto loc = spmat._ptrs[i];
+        auto &mat = spmat._vals[loc];
+        for (int r = 0; r != 3; ++r)
+            for (int c = 0; c != 3; ++c)
+                mat(r, c) = Hi(r, c);
+    });
+    /// @note force field gradient
+    if (vtemp.hasProperty("extf")) {
+        cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int vi) mutable {
+            int BCorder = vtemp("BCorder", vi);
+            if (BCorder == 0) // BCsoft == 0 &&
+                vtemp.tuple(dim_c<3>, "grad", vi) =
+                    vtemp.pack(dim_c<3>, "grad", vi) + vtemp.pack(dim_c<3>, "extf", vi) * dt * dt;
+        });
+    }
+    /// @note boundary motion
     if (!BCsatisfied) {
         cudaPol(zs::range(numDofs), [spmat = view<space>(spmat), vtemp = proxy<space>({}, vtemp),
                                      boundaryKappa = boundaryKappa] ZS_LAMBDA(int vi) mutable {
-            auto w = vtemp("ws", vi);
             int BCfixed = vtemp("BCfixed", vi);
             if (!BCfixed) {
-                auto loc = spmat.locate(vi, vi, true_c);
+                auto w = vtemp("ws", vi);
+                auto cons = vtemp.pack(dim_c<3>, "cons", vi);
+                auto loc = spmat._ptrs[vi];
                 auto &mat = spmat._vals[loc];
                 int BCorder = vtemp("BCorder", vi);
-                for (int d = 0; d != BCorder; ++d)
+                for (int d = 0; d != BCorder; ++d) {
+                    /// gradient
+                    vtemp("grad", d, vi) -= boundaryKappa * w * cons(d);
+                    /// hessian
                     mat.val(d * 4) += boundaryKappa * w;
+                }
             }
         });
     }
@@ -397,13 +418,11 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                         auto t = dist2 - dHat2;
                         auto g_b = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
                         auto H_b = (zs::log(dist2 / dHat2) * -2.0 - t * 4.0 / dist2) + 1.0 / (dist2 * dist2) * (t * t);
-#if 0
-                if (dist2 < dHat2) {
-                    auto grad = -gn * (kappa * g_b * 2 * dist);
-                    for (int d = 0; d != 3; ++d)
-                        atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
-                }
-#endif
+                        if (dist2 < dHat2) {
+                            auto grad = -gn * (kappa * g_b * 2 * dist);
+                            for (int d = 0; d != 3; ++d)
+                                atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
+                        }
 
                         auto param = 4 * H_b * dist2 + 2 * g_b;
                         auto hess = mat3::zeros();
@@ -413,7 +432,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                         }
 
                         // make_pd(hess);
-                        auto loc = spmat.locate(vi, vi, true_c);
+                        auto loc = spmat._ptrs[vi];
                         auto &mat = spmat._vals[loc];
                         for (int r = 0; r != 3; ++r) {
                             for (int c = 0; c != 3; ++c) {
@@ -439,15 +458,13 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                                 auto relDX = dx - gn.dot(dx) * gn;
                                 auto relDXNorm2 = relDX.l2NormSqr();
                                 auto relDXNorm = zs::sqrt(relDXNorm2);
-#if 0
-                    vec3 grad{};
-                    if (relDXNorm2 > epsvh * epsvh)
-                        grad = -relDX * (coeff / relDXNorm);
-                    else
-                        grad = -relDX * (coeff / epsvh);
-                    for (int d = 0; d != 3; ++d)
-                        atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
-#endif
+                                vec3 grad{};
+                                if (relDXNorm2 > epsvh * epsvh)
+                                    grad = -relDX * (coeff / relDXNorm);
+                                else
+                                    grad = -relDX * (coeff / epsvh);
+                                for (int d = 0; d != 3; ++d)
+                                    atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
 
                                 auto hess = mat3::zeros();
                                 if (relDXNorm2 > epsvh * epsvh) {
@@ -465,7 +482,7 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                                     hess(0, 0) = coeff / epsvh;
                                     hess(2, 2) = coeff / epsvh;
                                 }
-                                auto loc = spmat.locate(vi, vi, true_c);
+                                auto loc = spmat._ptrs[vi];
                                 auto &mat = spmat._vals[loc];
                                 for (int r = 0; r != 3; ++r) {
                                     for (int c = 0; c != 3; ++c) {
@@ -503,12 +520,11 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
                 auto theta = dihedral_angle(x0, x1, x2, x3);
 
                 auto localGrad = dihedral_angle_gradient(x0, x1, x2, x3);
-#if 0
                 auto grad = -localGrad * dt2 * k * 2 * (theta - ra) * e / h;
                 for (int j = 0; j != 4; ++j)
                     for (int d = 0; d != 3; ++d)
                         atomic_add(exec_cuda, &vtemp("grad", d, stcl[j]), grad(j * 3 + d));
-#endif
+
                 // rotate and project
                 auto H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) + dyadic_prod(localGrad, localGrad)) *
                          k * 2 * e / h;
@@ -549,10 +565,12 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
     }
 }
 
-/// @note currently directly borrow results from computeBarrierGradientAndHessian and computeFrictionBarrierGradientAndHessian
-void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
+void UnifiedIPCSystem::updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+
+    linsys.dynHess.reset();
+
     auto &hess2 = linsys.hess2;
     auto &hess3 = linsys.hess3;
     auto &hess4 = linsys.hess4;
@@ -560,124 +578,91 @@ void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const 
     hess3.reset(false, 0);
     hess4.reset(false, 0);
     if (enableContact) {
-        auto numPP = PP.getCount();
-        auto offset = hess2.increaseCount(numPP);
-        pol(zs::range(numPP), [tempPP = proxy<space>({}, tempPP), PP = PP.port(), hess2 = proxy<space>(hess2),
-                               offset] ZS_LAMBDA(int ppi) mutable {
-            auto H = tempPP.pack(dim_c<6, 6>, "H", ppi);
-            auto inds = PP[ppi];
-            hess2.hess[offset + ppi] = H;
-            hess2.inds[offset + ppi] = inds;
-        });
-
-        auto numPE = PE.getCount();
-        offset = hess3.increaseCount(numPE);
-        pol(zs::range(numPE), [tempPE = proxy<space>({}, tempPE), PE = PE.port(), hess3 = proxy<space>(hess3),
-                               offset] ZS_LAMBDA(int pei) mutable {
-            auto H = tempPE.pack(dim_c<9, 9>, "H", pei);
-            auto inds = PE[pei];
-            hess3.hess[offset + pei] = H;
-            hess3.inds[offset + pei] = inds;
-        });
-
-        auto numPT = PT.getCount();
-        offset = hess4.increaseCount(numPT);
-        pol(zs::range(numPT), [tempPT = proxy<space>({}, tempPT), PT = PT.port(), hess4 = proxy<space>(hess4),
-                               offset] ZS_LAMBDA(int pti) mutable {
-            auto H = tempPT.pack(dim_c<12, 12>, "H", pti);
-            auto inds = PT[pti];
-            hess4.hess[offset + pti] = H;
-            hess4.inds[offset + pti] = inds;
-        });
-
-        auto numEE = EE.getCount();
-        offset = hess4.increaseCount(numEE);
-        pol(zs::range(numEE), [tempEE = proxy<space>({}, tempEE), EE = EE.port(), hess4 = proxy<space>(hess4),
-                               offset] ZS_LAMBDA(int eei) mutable {
-            auto H = tempEE.pack(dim_c<12, 12>, "H", eei);
-            auto inds = EE[eei];
-            hess4.hess[offset + eei] = H;
-            hess4.inds[offset + eei] = inds;
-        });
-
-        if (enableMollification) {
-            auto numEEM = EEM.getCount();
-            offset = hess4.increaseCount(numEEM);
-            pol(zs::range(numEEM), [tempEEM = proxy<space>({}, tempEEM), EEM = EEM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int eemi) mutable {
-                auto H = tempEEM.pack(dim_c<12, 12>, "H", eemi);
-                auto inds = EEM[eemi];
-                hess4.hess[offset + eemi] = H;
-                hess4.inds[offset + eemi] = inds;
-            });
-
-            auto numPPM = PPM.getCount();
-            offset = hess4.increaseCount(numPPM);
-            pol(zs::range(numPPM), [tempPPM = proxy<space>({}, tempPPM), PPM = PPM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int ppmi) mutable {
-                auto H = tempPPM.pack(dim_c<12, 12>, "H", ppmi);
-                auto inds = PPM[ppmi];
-                hess4.hess[offset + ppmi] = H;
-                hess4.inds[offset + ppmi] = inds;
-            });
-
-            auto numPEM = PEM.getCount();
-            offset = hess4.increaseCount(numPEM);
-            pol(zs::range(numPEM), [tempPEM = proxy<space>({}, tempPEM), PEM = PEM.port(),
-                                    hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int pemi) mutable {
-                auto H = tempPEM.pack(dim_c<12, 12>, "H", pemi);
-                auto inds = PEM[pemi];
-                hess4.hess[offset + pemi] = H;
-                hess4.inds[offset + pemi] = inds;
-            });
-        } // end mollification
+        updateBarrierGradientAndHessian(pol, gTag);
 
         if (s_enableFriction) {
             if (s_enableSelfFriction) {
                 if (fricMu != 0) {
-                    auto numFPP = FPP.getCount();
-                    offset = hess2.increaseCount(numFPP);
-                    pol(zs::range(numFPP), [fricPP = proxy<space>({}, fricPP), FPP = FPP.port(),
-                                            hess2 = proxy<space>(hess2), offset] ZS_LAMBDA(int fppi) mutable {
-                        auto H = fricPP.pack(dim_c<6, 6>, "H", fppi);
-                        auto inds = FPP[fppi];
-                        hess2.hess[offset + fppi] = H;
-                        hess2.inds[offset + fppi] = inds;
-                    });
-
-                    auto numFPE = FPE.getCount();
-                    offset = hess3.increaseCount(numFPE);
-                    pol(zs::range(numFPE), [fricPE = proxy<space>({}, fricPE), FPE = FPE.port(),
-                                            hess3 = proxy<space>(hess3), offset] ZS_LAMBDA(int fpei) mutable {
-                        auto H = fricPE.pack(dim_c<9, 9>, "H", fpei);
-                        auto inds = FPE[fpei];
-                        hess3.hess[offset + fpei] = H;
-                        hess3.inds[offset + fpei] = inds;
-                    });
-
-                    auto numFPT = FPT.getCount();
-                    offset = hess4.increaseCount(numFPT);
-                    pol(zs::range(numFPT), [fricPT = proxy<space>({}, fricPT), FPT = FPT.port(),
-                                            hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int fpti) mutable {
-                        auto H = fricPT.pack(dim_c<12, 12>, "H", fpti);
-                        auto inds = FPT[fpti];
-                        hess4.hess[offset + fpti] = H;
-                        hess4.inds[offset + fpti] = inds;
-                    });
-
-                    auto numFEE = FEE.getCount();
-                    offset = hess4.increaseCount(numFEE);
-                    pol(zs::range(numFEE), [fricEE = proxy<space>({}, fricEE), FEE = FEE.port(),
-                                            hess4 = proxy<space>(hess4), offset] ZS_LAMBDA(int feei) mutable {
-                        auto H = fricEE.pack(dim_c<12, 12>, "H", feei);
-                        auto inds = FEE[feei];
-                        hess4.hess[offset + feei] = H;
-                        hess4.inds[offset + feei] = inds;
-                    });
+                    updateFrictionBarrierGradientAndHessian(pol, gTag);
                 } //
             }     // enable self friction, fricmu
         }         // enable friction
     }             // enable contact
+}
+
+void UnifiedIPCSystem::prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr execspace_e space = execspace_e::cuda;
+    constexpr auto execTag = wrapv<space>{};
+    using T = typename RM_CVREF_T(linsys)::T;
+    using vec3 = zs::vec<T, 3>;
+    {
+        const auto &spmat = linsys.spmat;
+        /// should group by 8, not 3
+        pol(range(spmat.outerSize() * 3), [vtemp = view<space>({}, vtemp), // dxOffset = vtemp.getPropertyOffset(dxTag),
+                                           spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
+            auto row = tid / 3;
+            auto d = tid % 3;
+            auto mat = spmat._vals[spmat._ptrs[row]];
+            vtemp("P", d, row) += mat(0, d);
+            vtemp("P", 3 + d, row) += mat(1, d);
+            vtemp("P", 6 + d, row) += mat(2, d);
+        });
+    }
+
+    // hess2
+    const auto &hess2 = linsys.hess2;
+    const auto &hess3 = linsys.hess3;
+    const auto &hess4 = linsys.hess4;
+    pol(Collapse{hess2.count() * 3},
+        [execTag, hess2 = proxy<space>(hess2), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
+            auto d = ei % 3;
+            ei /= 3;
+            auto inds = hess2.inds[ei];
+            auto mat = hess2.hess[ei];
+            for (int k = 0; k != 2; ++k) {
+                auto row = inds[k];
+                auto offset = k * 3;
+                atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
+                atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
+                atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
+            }
+        });
+    // hess3
+    {
+        pol(Collapse{hess3.count() * 3},
+            [execTag, hess3 = proxy<space>(hess3), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
+                auto d = ei % 3;
+                ei /= 3;
+                auto inds = hess3.inds[ei];
+                auto mat = hess3.hess[ei];
+                for (int k = 0; k != 3; ++k) {
+                    auto row = inds[k];
+                    auto offset = k * 3;
+                    atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
+                    atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
+                    atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
+                }
+            });
+    }
+    // hess4
+    {
+        pol(Collapse{hess4.count() * 3},
+            [execTag, hess4 = proxy<space>(hess4), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
+                auto d = ei % 3;
+                ei /= 3;
+                auto inds = hess4.inds[ei];
+                auto mat = hess4.hess[ei];
+                for (int k = 0; k != 4; ++k) {
+                    auto row = inds[k];
+                    auto offset = k * 3;
+                    atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
+                    atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
+                    atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
+                }
+            });
+    }
+    // timer.tock("multiply takes");
 }
 
 /// elasticity
