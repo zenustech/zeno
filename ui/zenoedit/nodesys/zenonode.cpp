@@ -1296,13 +1296,19 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_bodyWidget->toggle(bSelected);
 
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        mainWin->onNodesSelected(m_subGpIndex, { index() }, bSelected);
+
+        ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(scene());
+        ZASSERT_EXIT(pScene, value);
+        auto nodeIndice = pScene->selectNodesIndice();
+        if (!nodeIndice.contains(m_index))
+            nodeIndice.append(m_index);
+        mainWin->onNodesSelected(m_subGpIndex, nodeIndice, bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SNAPGRID).toBool();
+        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool();
         if (pScene && isSnapGrid)
         {
             QPointF pos = value.toPointF();

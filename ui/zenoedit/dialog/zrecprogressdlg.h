@@ -18,6 +18,8 @@ public:
 
 signals:
     void cancelTriggered();
+    void pauseTriggered();
+    void continueTriggered();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -29,12 +31,14 @@ public slots:
 
 private slots:
     void onBtnClicked();
+    void onPauseBtnClicked();
 
 private:
     VideoRecInfo m_info;
     Ui::RecProgressDlg* m_ui;
     bool m_bCompleted;
     bool m_bAborted;
+    bool m_bPause;
 };
 
 

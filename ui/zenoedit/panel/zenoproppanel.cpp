@@ -116,7 +116,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     clearLayout();
     QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
-    if (!pModel || !select || nodes.isEmpty())
+    if (!pModel || !select || nodes.size() != 1)
     {
         update();
         return;

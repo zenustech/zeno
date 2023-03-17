@@ -243,7 +243,6 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 const QModelIndex &idx = nodes[0];
                 QString nodeId = idx.data(ROLE_OBJID).toString();
 
-                //todo: dispatch to each panel?
                 ZenoMainWindow *pWin = zenoApp->getMainWindow();
                 ZASSERT_EXIT(pWin);
                 QVector<DisplayWidget *> views = pWin->viewports();

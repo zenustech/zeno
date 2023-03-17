@@ -60,7 +60,6 @@ protected:
 
 private:
     QLabel* m_plblName;
-    QLineEdit* m_pLineEdit;
     ZToolBarButton* m_pSettingBtn;
 };
 
@@ -86,7 +85,7 @@ private:
     ZToolBarButton *pUnfold;
     ZToolBarButton *pSnapGrid;
     ZToolBarButton *pShowGrid;
-    ZToolBarButton *pBlackboard;
+    ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;

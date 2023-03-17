@@ -3,27 +3,22 @@
 
 #include <QVariant>
 #include <QObject>
+#include <QSettings>
+#include "settings/zsettings.h"
+
 
 class ZenoSettingsManager : public QObject
 {
     Q_OBJECT
 public:
-    enum ValueType {
-    VALUE_SHOWGRID = 0,
-    VALUE_SNAPGRID
-    };
     static ZenoSettingsManager& GetInstance();
-    void setValue(ValueType type, const QVariant& value);
-    QVariant getValue(int type) const;
+    void setValue(const QString& name, const QVariant& value);
+    QVariant getValue(const QString& zsName) const;
 signals:
-    void valueChanged(int type);
-
-  private:
-    ZenoSettingsManager(QObject *parent = nullptr);
+    void valueChanged(QString zsName);
 
 private:
-    bool m_bShowGrid;
-    bool m_bSnapGrid;
+    ZenoSettingsManager(QObject *parent = nullptr);
 };
 
 

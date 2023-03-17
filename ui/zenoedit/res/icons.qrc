@@ -244,6 +244,8 @@
     <file>icons/nodeEditor_subnetManager_unselected.svg</file>
     <file>icons/nodeEditor_subnetPanel_selected.svg</file>
     <file>icons/nodeEditor_subnetPanel_unselected.svg</file>
+    <file>icons/nodeEditor_nodePara_selected.svg</file>
+    <file>icons/nodeEditor_nodePara_unselected.svg</file>
     <file>icons/timeline_always_off.svg</file>
     <file>icons/timeline_always_on.svg</file>
     <file>icons/timeline_endFrame_idle.svg</file>

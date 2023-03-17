@@ -7,14 +7,17 @@ ZRecordProgressDlg::ZRecordProgressDlg(const VideoRecInfo& info, QWidget* parent
     , m_info(info)
     , m_bCompleted(false)
     , m_bAborted(false)
+    , m_bPause(false)
 {
     m_ui = new Ui::RecProgressDlg;
     m_ui->setupUi(this);
     m_ui->progressBar->setRange(info.frameRange.first, info.frameRange.second);
     m_ui->progressBar->setValue(info.frameRange.first);
     m_ui->btn->setText(tr("Cancel"));
+    m_ui->pauseBtn->setText(tr("Pause"));
 
     connect(m_ui->btn, SIGNAL(clicked()), this, SLOT(onBtnClicked()));
+    connect(m_ui->pauseBtn, SIGNAL(clicked()), this, SLOT(onPauseBtnClicked()));
 }
 
 ZRecordProgressDlg::~ZRecordProgressDlg()
@@ -34,6 +37,7 @@ void ZRecordProgressDlg::onRecordFinished(QString)
     m_ui->lblFrameHint->setText(tr("Record completed:"));
     m_ui->progressBar->setValue(m_info.frameRange.second);
     m_ui->btn->setText(tr("Open file location"));
+    m_ui->pauseBtn->hide();
 }
 
 void ZRecordProgressDlg::onRecordFailed(QString msg)
@@ -55,9 +59,24 @@ void ZRecordProgressDlg::onBtnClicked()
     else {
         m_ui->lblFrameHint->setText(tr("Record Aborted:"));
         m_ui->btn->setText(tr("Open file location"));
+        m_ui->pauseBtn->hide();
         m_bAborted = true;
-        update();
         emit cancelTriggered();
+    }
+}
+
+void ZRecordProgressDlg::onPauseBtnClicked() {
+    if (m_bPause)
+    {
+        emit continueTriggered();
+        m_bPause = !m_bPause;
+        m_ui->pauseBtn->setText(tr("Pause"));
+    }
+    else
+    {
+        emit pauseTriggered();
+        m_bPause = !m_bPause;
+        m_ui->pauseBtn->setText(tr("Continue"));
     }
 }
 

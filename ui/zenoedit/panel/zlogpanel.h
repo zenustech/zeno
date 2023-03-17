@@ -25,13 +25,16 @@ private:
     void initTextLayout(
         const QString& text,
         const QFont& font,
-        QRect r,
+        qreal fixedWidth,
         QTextLayout& textLayout,
         QVector<QTextLayout::FormatRange>& selections
     ) const;
+    QFont getFont() const;
+
     QVector<QTextLayout::FormatRange> _getNodeIdentRgs(const QString& content) const;
     QTextLayout::FormatRange getHoverRange(const QString& text, qreal mouseX, qreal mouseY, QRect rc) const;
 
+    QMargins m_textMargins;
     QAbstractItemView *m_view;
 };
 
@@ -79,9 +82,11 @@ public slots:
 private:
     void initSignals();
     void initModel();
+    void onSettings();
 
     Ui::LogPanel* m_ui;
     CustomFilterProxyModel *m_pFilterModel;
+    QMenu* m_pMenu;
 };
 
 class ZPlainLogPanel : public QPlainTextEdit

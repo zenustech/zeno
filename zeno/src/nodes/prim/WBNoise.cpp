@@ -778,12 +778,6 @@ ZENDEFNODE(erode_noise_analytic_simplex_2d,
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Sparse Convolution Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-template <typename T>
-constexpr T PERM(T x) {
-    return perm[(x)&255];
-}
-
-#define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
 std::array<int, 256> perm = {
     225, 155, 210, 108, 175, 199, 221, 144, 203, 116, 70,  213, 69,  158, 33,  252, 5,   82,  173, 133, 222, 139,
@@ -798,6 +792,13 @@ std::array<int, 256> perm = {
     29,  59,  146, 61,  254, 107, 42,  86,  154, 4,   236, 232, 120, 21,  233, 209, 45,  98,  193, 114, 78,  19,
     206, 14,  118, 127, 48,  79,  147, 85,  30,  207, 219, 54,  88,  234, 190, 122, 95,  67,  143, 109, 137, 214,
     145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52};
+
+template <typename T>
+constexpr T PERM(T x) {
+    return perm[(x)&255];
+}
+
+#define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
 std::random_device rd;
 std::default_random_engine engine(rd());

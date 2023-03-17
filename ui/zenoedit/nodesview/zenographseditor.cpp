@@ -22,6 +22,7 @@
 #include "settings/zsettings.h"
 #include "dialog/zeditparamlayoutdlg.h"
 #include <zenomodel/include/nodesmgr.h>
+#include "settings/zenosettingsmanager.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -480,19 +481,24 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
     const QModelIndex& idx = logModel->index(first, 0, parent);
     if (idx.isValid())
     {
-        const QString& objId = idx.data(ROLE_NODE_IDENT).toString();
+        QString objId = idx.data(ROLE_NODE_IDENT).toString();
         const QString& msg = idx.data(Qt::DisplayRole).toString();
         QtMsgType type = (QtMsgType)idx.data(ROLE_LOGTYPE).toInt();
         if (!objId.isEmpty() && type == QtFatalMsg)
         {
+            if (objId.indexOf('/') != -1)
+            {
+                auto lst = objId.split('/', QtSkipEmptyParts);
+                objId = lst.last();
+            }
+
             QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID);
             for (int i = 0; i < results.length(); i++)
             {
                 const SEARCH_RESULT& res = results[i];
                 const QString &subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
-                const QString &objId = res.targetIdx.data(ROLE_OBJID).toString();
 
-                static bool bFocusOnError = false;
+                bool bFocusOnError = ZenoSettingsManager::GetInstance().getValue(zsTraceErrorNode).toBool();
                 if (bFocusOnError)
                 {
                     activateTab(subgName, "", objId, true);
