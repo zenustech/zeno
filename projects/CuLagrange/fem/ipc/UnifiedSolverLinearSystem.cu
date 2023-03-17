@@ -323,7 +323,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                 });
 }
 /// @brief inertial, kinetic, external force, elasticity, bending, boundary motion, ground collision
-void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
+void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
@@ -565,9 +565,12 @@ void UnifiedIPCSystem::updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, c
     }
 }
 
-void UnifiedIPCSystem::updateDynamicHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
+void UnifiedIPCSystem::updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+
+    linsys.dynHess.reset();
+
     auto &hess2 = linsys.hess2;
     auto &hess3 = linsys.hess3;
     auto &hess4 = linsys.hess4;

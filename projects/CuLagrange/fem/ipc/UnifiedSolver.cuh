@@ -204,11 +204,11 @@ struct UnifiedIPCSystem : IObject {
     /// @note build linsys.spmat
     void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
     // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
-    void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void updateInherentGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
     // mostly collision (non-ground) related
     void updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
     void updateFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
-    void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
     void prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &pol);
 
     // krylov solver

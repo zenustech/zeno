@@ -335,6 +335,7 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::false_c);
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+    // no need to initialize (resize) linsys.dynHess (DynamicBuffer) here
 
     linsys.hess2.init(vtemp.get_allocator(), 0);
     linsys.hess3.init(vtemp.get_allocator(), 0);

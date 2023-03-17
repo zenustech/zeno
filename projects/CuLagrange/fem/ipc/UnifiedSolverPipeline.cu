@@ -2037,9 +2037,9 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 
         /// prepare linsys.spmat
-        updateInherentHessian(pol, "grad");
+        updateInherentGradientAndHessian(pol, "grad");
         /// prepare linsys.hessx
-        updateDynamicHessian(pol, "grad");
+        updateDynamicGradientAndHessian(pol, "grad");
         /// prepare diagonal block preconditioner
         prepareDiagonalPreconditioner(pol);
 
