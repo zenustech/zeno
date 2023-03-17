@@ -147,6 +147,10 @@ static zeno::vec3f read_normalized_vec3f(std::ifstream &file, vec3f _min, vec3f 
 
 static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     std::ofstream file(path, std::ios::out | std::ios::binary);
+    file << 'Z';
+    file << 'E';
+    file << 'N';
+    file << 'O';
     vector<vec3f> temp_bboxs;
     for (const auto& i: v) {
         auto bbox = parallel_reduce_minmax(i.begin(), i.end());
@@ -240,6 +244,8 @@ struct VATTexture {
 static VATTexture read_vat_texture(const std::string &path) {
     VATTexture vat = {};
     std::ifstream file(path, std::ios::in | std::ios::binary);
+    char x;
+    file >> x >> x >> x >> x;
     auto _min = read_vec3f(file);
     auto _max = read_vec3f(file);
 
