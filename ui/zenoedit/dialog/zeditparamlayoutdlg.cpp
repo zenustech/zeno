@@ -14,29 +14,33 @@
 #include "variantptr.h"
 #include <zenomodel/include/command.h>
 #include "iotags.h"
+#include <zenoui/style/zenostyle.h>
 
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Contrl Group", CONTROL_GROUP_LINE, ""},
-    {"Integer",             CONTROL_INT,            "int"},
-    {"Float",               CONTROL_FLOAT,          "float"},
-    {"String",              CONTROL_STRING,         "string"},
-    {"Boolean",             CONTROL_BOOL,           "bool"},
-    {"Multiline String",    CONTROL_MULTILINE_STRING, "string"},
-    {"read path",           CONTROL_READPATH,       "string"},
-    {"write path",          CONTROL_WRITEPATH,      "string"},
-    {"Enum",                CONTROL_ENUM,           "string"},
-    {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f"},
-    {"Float Vector 3",      CONTROL_VEC3_FLOAT,     "vec3f"},
-    {"Float Vector 2",      CONTROL_VEC2_FLOAT,     "vec2f"},
-    {"Integer Vector 4",    CONTROL_VEC4_INT,       "vec4i"},
-    {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i"},
-    {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i"},
-    {"Color",               CONTROL_COLOR,          "color"},
-    {"Curve",               CONTROL_CURVE,          "curve"},
-    {"SpinBox",             CONTROL_HSPINBOX,       "int"},
-    {"Slider",              CONTROL_HSLIDER,        "int"},
-    {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int"},
+    {"Tab", CONTROL_NONE, "", ":/icons/parameter_control_tab.svg"},
+    {"Group", CONTROL_NONE, "", ":/icons/parameter_control_group.svg"},
+    {"Integer",             CONTROL_INT,            "int", ":/icons/parameter_control_integer.svg"},
+    {"Float",               CONTROL_FLOAT,          "float", ":/icons/parameter_control_float.svg"},
+    {"String",              CONTROL_STRING,         "string", ":/icons/parameter_control_string.svg"},
+    {"Boolean",             CONTROL_BOOL,           "bool", ":/icons/parameter_control_boolean.svg"},
+    {"Multiline String",    CONTROL_MULTILINE_STRING, "string", ":/icons/parameter_control_string.svg"},
+    {"read path",           CONTROL_READPATH,       "string", ":/icons/parameter_control_fold.svg"},
+    {"write path",          CONTROL_WRITEPATH,      "string", ":/icons/parameter_control_fold.svg"},
+    {"Enum",                CONTROL_ENUM,           "string", ":/icons/parameter_control_enum.svg"},
+    {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f", ":/icons/parameter_control_floatVector4.svg"},
+    {"Float Vector 3",      CONTROL_VEC3_FLOAT,     "vec3f", ":/icons/parameter_control_floatVector3.svg"},
+    {"Float Vector 2",      CONTROL_VEC2_FLOAT,     "vec2f", ":/icons/parameter_control_floatVector2.svg"},
+    {"Integer Vector 4",    CONTROL_VEC4_INT,       "vec4i", ":/icons/parameter_control_integerVector4.svg"},
+    {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i", ":/icons/parameter_control_integerVector3.svg"},
+    {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i", ":/icons/parameter_control_integerVector2.svg"},
+    {"Color",               CONTROL_COLOR,          "color", ":/icons/parameter_control_color.svg"},
+    {"Curve",               CONTROL_CURVE,          "curve", ":/icons/parameter_control_curve.svg"},
+    {"SpinBox",             CONTROL_HSPINBOX,       "int", ":/icons/parameter_control_spinbox.svg"},
+    {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float", ":/icons/parameter_control_spinbox.svg"},
+    {"Slider",              CONTROL_HSLIDER,        "int", ":/icons/parameter_control_slider.svg"},
+    {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int", ":/icons/parameter_control_slider.svg"},
+    {"Divider", CONTROL_GROUP_LINE, "", ":/icons/parameter_control_divider.svg"},
 };
 
 static CONTROL_ITEM_INFO getControl(PARAM_CONTROL ctrl)
@@ -76,7 +80,7 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    bool bEditable = index.data(ROLE_VAPRAM_EDITTABLE).toBool();
+    bool bEditable = m_model->isEditable(index);
     if (!bEditable)
         return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
@@ -87,12 +91,19 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
-        if (m_model->checkParamName(m_model->invisibleRootItem(), newName)) {
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(m_model->itemFromIndex(index.parent()));
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow)) {
             QStyledItemDelegate::setModelData(editor, model, index);
         } else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
         }
     }
+}
+
+void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                                  const QModelIndex &index) const {
+    QStyledItemDelegate::paint(painter, option, index);
 }
 
 
@@ -107,22 +118,22 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
+    initUI();
 
-    QStringList lstCtrls = {
-        "Tab",
-        "Group"
-    };
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         if (bNodeUI && (controlList[i].ctrl == CONTROL_HSLIDER || controlList[i].ctrl == CONTROL_SPINBOX_SLIDER))
             continue;
         else if (!bNodeUI && controlList[i].ctrl == CONTROL_GROUP_LINE)
             continue;
-        lstCtrls.append(controlList[i].name);
+        QListWidgetItem *item = new QListWidgetItem(controlList[i].name, m_ui->listConctrl);
+        item->setIcon(QIcon(controlList[i].icon));
+        m_ui->listConctrl->addItem(item);
+        if (controlList[i].ctrl == CONTROL_NONE)
+            continue;
         m_ui->cbControl->addItem(controlList[i].name);
     }
 
-    m_ui->listConctrl->addItems(lstCtrls);
     m_ui->cbTypes->addItems(UiHelper::getCoreTypeList());
 
     m_model = qobject_cast<ViewParamModel*>(pModel);
@@ -133,6 +144,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     if (bNodeUI)
     {
+        m_ui->m_coreMappingWidget->hide();
         m_proxyModel = new NodeParamModel(m_subgIdx, m_model->nodeIdx(), m_pGraphsModel, true, this);
     }
     else
@@ -141,21 +153,22 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     }
 
     m_proxyModel->clone(m_model);
-    if (!bNodeUI)
-        m_proxyModel->disableNodeParam(m_proxyModel->invisibleRootItem());
+    initDescValueForProxy();
+    initIcon(m_proxyModel->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_proxyModel);
     m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_proxyModel, m_ui->paramsView));
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
+    connect(selModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this,
+            SLOT(onTreeCurrentChanged(const QModelIndex &, const QModelIndex &)));
     QModelIndex selIdx = selModel->currentIndex();
     const QModelIndex& wtfIdx = m_proxyModel->index(0, 0);
     selModel->setCurrentIndex(wtfIdx, QItemSelectionModel::SelectCurrent);
     m_ui->paramsView->expandAll();
 
-    connect(selModel, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)),
-            this, SLOT(onTreeCurrentChanged(const QModelIndex&, const QModelIndex&)));
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
+    connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
     connect(m_ui->btnAdd, SIGNAL(clicked()), this, SLOT(onBtnAdd()));
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
@@ -209,6 +222,89 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     });
 }
 
+void ZEditParamLayoutDlg::initUI() 
+{
+    m_ui->labelCreateControl->setProperty("cssClass", "bold");
+    m_ui->labelPrameter->setProperty("cssClass", "bold");
+    m_ui->labelSetting->setProperty("cssClass", "bold");
+    m_ui->label_11->setProperty("cssClass", "bold");
+    m_ui->listConctrl->setFixedWidth(ZenoStyle::dpiScaled(296));
+    m_ui->paramsView->setFixedWidth(ZenoStyle::dpiScaled(296));
+    m_ui->labelSetting->setMinimumWidth(ZenoStyle::dpiScaled(296));
+    m_ui->btnAdd->setFixedSize(ZenoStyle::dpiScaled(66), ZenoStyle::dpiScaled(36));
+    QSize buttonSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(36));
+    m_ui->btnApply->setFixedSize(buttonSize);
+    m_ui->btnCancel->setFixedSize(buttonSize);
+    m_ui->btnOk->setFixedSize(buttonSize);
+    m_ui->line->setLineWidth(2);
+    m_ui->horizontalLayout_3->setSpacing(ZenoStyle::dpiScaled(20));
+    m_ui->horizontalLayout_3->setContentsMargins(0, ZenoStyle::dpiScaled(8), 0, ZenoStyle::dpiScaled(8));
+    m_ui->verticalLayout_2->setContentsMargins(ZenoStyle::dpiScaled(10), 0, 0, 0);
+    m_ui->gridLayout->setVerticalSpacing(ZenoStyle::dpiScaled(8));
+    m_ui->listConctrl->setAlternatingRowColors(true);
+    m_ui->paramsView->setAlternatingRowColors(true);
+    m_ui->listConctrl->setFocusPolicy(Qt::NoFocus);
+    m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
+    resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
+}
+
+void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem) 
+{
+    ZASSERT_EXIT(pItem);
+
+    for (int r = 0; r < pItem->rowCount(); r++) 
+    {
+        QStandardItem *newItem = pItem->child(r);
+        newItem->setData(getIcon(newItem), Qt::DecorationRole);
+        if (newItem->rowCount() > 0)
+            initIcon(newItem);
+    }
+}
+
+QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem) 
+{
+    int control = pItem->data(ROLE_PARAM_CTRL).toInt();
+    int type = pItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (type == VPARAM_TAB) 
+    {
+        return QIcon(":/icons/parameter_control_tab.svg");
+    } 
+    else if (type == VPARAM_GROUP) 
+    {
+        return QIcon(":/icons/parameter_control_group.svg");
+    } 
+    else if (type != VPARAM_ROOT) 
+    {
+        for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) 
+        {
+            if (control == controlList[i].ctrl) 
+            {
+                return QIcon(controlList[i].icon);
+            }
+        }
+    }
+    return QIcon();
+}
+
+void ZEditParamLayoutDlg::initDescValueForProxy() {
+    if (m_bNodeUI && m_bSubgraphNode)
+    {
+        NODE_DESC desc;
+        const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+        NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
+        ZASSERT_EXIT(nodeParams);
+        VParamItem* inputs = nodeParams->getInputs();
+
+        for (INPUT_SOCKET inSocket : desc.inputs)
+        {
+            VParamItem* pItem = inputs->getItem(inSocket.info.name);
+            ZASSERT_EXIT(pItem);
+            pItem->setData(inSocket.info.defaultValue, ROLE_PARAM_VALUE);
+        }
+    }
+}
+
 void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 {
     //dump to item.
@@ -259,11 +355,7 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
 {
-    //record this action first.
     const QString& objPath = index.data(ROLE_OBJPATH).toString();
-    //ViewParamSetDataCommand *pCommand =
-    //    new ViewParamSetDataCommand(m_pGraphsModel, objPath, newValue, ROLE_VPARAM_CTRL_PROPERTIES);
-    //m_commandSeq.append(pCommand);
     m_proxyModel->setData(index, newValue, role);
 }
 
@@ -275,13 +367,9 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
             m_ui->itemsTable->removeRow(row);
     } else {
         QModelIndex idx = m_ui->paramsView->currentIndex();
-        bool bEditable = idx.data(ROLE_VAPRAM_EDITTABLE).toBool();
+        bool bEditable = m_proxyModel->isEditable(idx);
         if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
             return;
-
-        //QString parentPath = idx.parent().data(ROLE_OBJPATH).toString();
-        //ViewParamRemoveCommand *pCommand = new ViewParamRemoveCommand(m_pGraphsModel, parentPath, idx.row());
-        //m_commandSeq.append(pCommand);
         m_proxyModel->removeRow(idx.row(), idx.parent());
     }
 }
@@ -293,8 +381,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
     const QString& name = pCurrentItem->data(ROLE_VPARAM_NAME).toString();
     m_ui->editName->setText(name);
-    bool bEditable = pCurrentItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+    bool bEditable = m_proxyModel->isEditable(current);
     m_ui->editName->setEnabled(bEditable);
+
+    m_ui->editLabel->setText(pCurrentItem->data(ROLE_VPARAM_TOOLTIP).toString());
 
     //delete old control.
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -316,49 +406,70 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->cbControl->setEnabled(false);
         m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
+        m_ui->cbControl->setCurrentText("");
+        m_ui->cbTypes->setCurrentText("");
     }
     else if (type == VPARAM_PARAM)
     {
-        const QString& paramName = name;
+        QStandardItem* parentItem = pCurrentItem->parent();
         PARAM_CONTROL ctrl = pCurrentItem->m_ctrl;
-        const QString& ctrlName = getControl(ctrl).name;
-        const QString& dataType = pCurrentItem->m_type;
-        QVariant deflVal = pCurrentItem->m_value;
-        bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
+        const QString &ctrlName = getControl(ctrl).name;
         QVariant controlProperties = pCurrentItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
+        const QString &dataType = pCurrentItem->data(ROLE_PARAM_TYPE).toString();
+        bool bCoreParam = pCurrentItem->data(ROLE_VPARAM_IS_COREPARAM).toBool();
+        if (m_bSubgraphNode || bCoreParam) 
+        {
+            const QString &parentName = parentItem->data(ROLE_PARAM_NAME).toString();
+            //ZASSERT_EXIT(parentName == iotags::params::node_inputs || parentName == iotags::params::node_outputs);
+            //bool bInput = parentName == iotags::params::node_inputs;
+
+            QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+
+            CallbackCollection cbSets;
+            cbSets.cbEditFinished = [=](QVariant newValue) {
+                proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
+            };
+            if (!deflVal.isValid())
+                deflVal = UiHelper::initVariantByControl(ctrl);
+
+            cbSets.cbGetIndexData = [=]() -> QVariant {
+                if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
+                    return UiHelper::initVariantByControl(ctrl);
+                }
+                return pCurrentItem->data(ROLE_PARAM_VALUE);
+            };
+            QWidget *valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
+            if (valueControl) {
+                valueControl->setEnabled(bEditable);
+                m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+            }
+        }
 
         {
             BlockSignalScope scope(m_ui->cbControl);
             BlockSignalScope scope2(m_ui->cbTypes);
 
-            m_ui->cbControl->setEnabled(true);
+            m_ui->cbControl->setEnabled(bEditable);
             m_ui->cbControl->clear();
             QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
             m_ui->cbControl->addItems(items);
             m_ui->cbControl->setCurrentText(ctrlName);
 
             m_ui->cbTypes->setCurrentText(dataType);
-            m_ui->cbTypes->setEnabled(bEditable && (!bCoreParam || m_pGraphsModel->IsSubGraphNode(m_nodeIdx)));
+            m_ui->cbTypes->setEnabled(bEditable);
         }
-
-        CallbackCollection cbSets;
-        cbSets.cbEditFinished = [=](QVariant newValue) {
-            proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
-        };
-        if (!deflVal.isValid())
-            deflVal = UiHelper::initVariantByControl(ctrl);
-
-        QWidget* valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
-        if (valueControl)
+        if (pCurrentItem->m_index.isValid()) 
         {
-            valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
-            m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+            const QString &refName = pCurrentItem->m_index.data(ROLE_PARAM_NAME).toString();
+            m_ui->editCoreParamName->setText(refName);
+            const QString &refType = pCurrentItem->m_index.data(ROLE_PARAM_TYPE).toString();
+            m_ui->editCoreParamType->setText(refType);
+        } 
+        else 
+        {
+            m_ui->editCoreParamName->setText(ctrlName);
+            m_ui->editCoreParamType->setText(dataType);
         }
-
-        const QString& coreName = pCurrentItem->data(ROLE_PARAM_NAME).toString();
-
-        m_ui->editCoreParamName->setText(coreName);
-        m_ui->editCoreParamType->setText(dataType);
         m_ui->itemsTable->setRowCount(0);
 
         switchStackProperties(ctrl, pCurrentItem);
@@ -401,8 +512,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
         QString objPath = pItem->data(ROLE_OBJPATH).toString();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
-        //ViewParamAddCommand *pCmd = new ViewParamAddCommand(m_pGraphsModel, objPath, vParam);
-        //m_commandSeq.append(pCmd);
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
     else if (ctrlName == "Group")
     {
@@ -417,8 +527,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
         QString objPath = pItem->data(ROLE_OBJPATH).toString();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
-        //ViewParamAddCommand *pCmd = new ViewParamAddCommand(m_pGraphsModel, objPath, vParam);
-        //m_commandSeq.append(pCmd);
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
     else
     {
@@ -427,7 +536,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
             QMessageBox::information(this, tr("Error "), tr("create control needs to place under the group"));
             return;
         }
-        bool bEditable = pItem->data(ROLE_VAPRAM_EDITTABLE).toBool();
+        bool bEditable = m_proxyModel->isEditable(layerIdx) || m_bSubgraphNode;
         if (!bEditable) {
             QMessageBox::information(this, tr("Error "), tr("The Group cannot be edited"));
             return;
@@ -435,15 +544,16 @@ void ZEditParamLayoutDlg::onBtnAdd()
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
         QString newItem = UiHelper::getUniqueName(existNames, ctrl.name);
         VParamItem* pNewItem = new VParamItem(VPARAM_PARAM, newItem);
-        pNewItem->m_ctrl = ctrl.ctrl;
-        pNewItem->m_type = ctrl.defaultType;
-        pNewItem->m_value = UiHelper::initVariantByControl(ctrl.ctrl);
-        
+        pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CTRL);
+        pNewItem->setData(ctrl.defaultType, ROLE_PARAM_TYPE);
+        pNewItem->setData(UiHelper::initVariantByControl(ctrl.ctrl), ROLE_PARAM_VALUE);
+
         //init properties.
         switch (ctrl.ctrl)
         {
             case CONTROL_SPINBOX_SLIDER:
             case CONTROL_HSPINBOX:
+            case CONTROL_HDOUBLESPINBOX:
             case CONTROL_HSLIDER:
             {
                 CONTROL_PROPERTIES properties;
@@ -455,73 +565,17 @@ void ZEditParamLayoutDlg::onBtnAdd()
             }
             case CONTROL_GROUP_LINE: 
             {
-                pNewItem->m_sockProp = SOCKPROP_GROUP;
+                pNewItem->m_sockProp = SOCKPROP_GROUP_LINE;
                 break;
             }
         }
-
         pItem->appendRow(pNewItem);
-
-        //record some command about SubInput/SubOutput.
-#if 0
-        QString objPath = pItem->data(ROLE_OBJPATH).toString();
-        VPARAM_INFO vParam = pNewItem->exportParamInfo();
-        ViewParamAddCommand *pCmd = new ViewParamAddCommand(m_pGraphsModel, objPath, vParam);
-        m_commandSeq.append(pCmd);
-#endif
+        pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
 }
 
 void ZEditParamLayoutDlg::recordSubInputCommands(bool bSubInput, VParamItem* pItem)
 {
-#if 0
-    if (!m_bSubgraphNode)
-        return;
-
-    const QString& subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    const QModelIndex& subgIdx = m_pGraphsModel->index(subgName);
-
-    const QString& vName = pItem->m_name;
-    QString coreName;
-    if (pItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
-        coreName = pItem->data(ROLE_PARAM_NAME).toString();
-    const QString& typeDesc = pItem->m_type;
-    const QVariant& deflVal = pItem->m_value;
-    const PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
-
-    //new added param.
-    const QVariant& defl = pItem->data(ROLE_PARAM_VALUE);
-
-    QPointF pos(0, 0);
-    //todo: node arrangement.
-
-    //QString subIO_ident = NodesMgr::createNewNode(m_pGraphsModel, subgIdx, bSubInput ? "SubInput" : "SubOutput", pos);
-    NODE_DATA newNodeData = NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
-    QString subIO_ident = newNodeData[ROLE_OBJID].toString();
-    AddNodeCommand *pNewNodeCmd = new AddNodeCommand(subIO_ident, newNodeData, m_pGraphsModel, subgIdx);
-    m_commandSeq.append(pNewNodeCmd);
-
-    QString m_namePath, m_typePath, m_deflPath; //todo: fill the target path for SubInput/SubOutput.
-
-
-    ViewParamSetDataCommand* pNameCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_namePath, vName, ROLE_PARAM_VALUE);
-    ViewParamSetDataCommand* pTypeCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_typePath, typeDesc, ROLE_PARAM_TYPE);
-    ViewParamSetDataCommand* pDeflTypeCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_deflPath, typeDesc, ROLE_PARAM_TYPE);
-    ViewParamSetDataCommand* pDeflValueCmd = new ViewParamSetDataCommand(m_pGraphsModel, m_deflPath, defl, ROLE_PARAM_VALUE);
-
-    //have to bind new param idx on subgraph node.
-    IParamModel* _subgnode_paramModel =
-        QVariantPtr<IParamModel>::asPtr(m_nodeIdx.data(bSubInput ? ROLE_INPUT_MODEL : ROLE_OUTPUT_MODEL));
-    ZASSERT_EXIT(_subgnode_paramModel);
-    const QModelIndex& newParamFromItem = _subgnode_paramModel->index(vName);
-
-    const QString& itemObjPath = pItem->data(ROLE_OBJPATH).toString();
-    const QString& targetPath = newParamFromItem.data(ROLE_OBJPATH).toString();
-
-    MapParamIndexCommand *pMappingCmd = new MapParamIndexCommand(m_pGraphsModel, itemObjPath, targetPath);
-
-    updateSubgParamControl(m_pGraphsModel, subgName, bSubInput, vName, ctrl);
-#endif
 }
 
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem) 
@@ -541,14 +595,15 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
                 m_ui->itemsTable->setRowCount(1);
         }
         m_ui->stackProperties->setCurrentIndex(1);
-    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX || ctrl == CONTROL_SPINBOX_SLIDER) {
+    } else if (ctrl == CONTROL_HSLIDER || ctrl == CONTROL_HSPINBOX 
+                || ctrl == CONTROL_SPINBOX_SLIDER || ctrl == CONTROL_HDOUBLESPINBOX) {
         m_ui->stackProperties->setCurrentIndex(2);
         QVariantMap map = controlProperties.toMap();
         SLIDER_INFO info;
         if (!map.isEmpty()) {
-                info.step = map["step"].toInt();
-                info.min = map["min"].toInt();
-                info.max = map["max"].toInt();
+                info.step = map["step"].toDouble();
+                info.min = map["min"].toDouble();
+                info.max = map["max"].toDouble();
         } else {
                 CONTROL_PROPERTIES properties;
                 properties["step"] = info.step;
@@ -573,7 +628,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
     info.control = ctrl;
     info.name = name;
     info.type = "group-line";
-    info.sockProp = SOCKPROP_GROUP;
+    info.sockProp = SOCKPROP_GROUP_LINE;
     if (bInput) {
         desc.inputs[name].info = info;
     } else {
@@ -670,7 +725,9 @@ void ZEditParamLayoutDlg::onNameEditFinished()
     QString newName = m_ui->editName->text();
     QString oldName = pItem->data(ROLE_VPARAM_NAME).toString();
     if (oldName != newName) {
-        if (m_proxyModel->checkParamName(m_proxyModel->invisibleRootItem(), newName)) 
+        int dstRow = 0;
+        VParamItem *pTargetGroup = static_cast<VParamItem *>(pItem->parent());
+        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow))
         {
             pItem->setData(newName, ROLE_VPARAM_NAME);
             onProxyItemNameChanged(pItem->index(), oldPath, newName);
@@ -687,7 +744,18 @@ void ZEditParamLayoutDlg::onNameEditFinished()
 
 void ZEditParamLayoutDlg::onLabelEditFinished()
 {
+    const QModelIndex &currIdx = m_ui->paramsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
 
+    QStandardItem *pItem = m_proxyModel->itemFromIndex(currIdx);
+
+    ZASSERT_EXIT(pItem);
+    QString oldText = pItem->data(ROLE_VPARAM_NAME).toString();
+    QString newText = m_ui->editLabel->text();
+    if (oldText == newText)
+        return;
+    pItem->setData(newText, ROLE_VPARAM_TOOLTIP);
 }
 
 void ZEditParamLayoutDlg::onHintEditFinished()
@@ -702,7 +770,7 @@ void ZEditParamLayoutDlg::onMinEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int from = m_ui->editMin->text().toInt();
+    qreal from = m_ui->editMin->text().toDouble();
     properties["min"] = from;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -714,7 +782,7 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int to = m_ui->editMax->text().toInt();
+    qreal to = m_ui->editMax->text().toDouble();
     properties["max"] = to;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
 }
@@ -743,12 +811,14 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     const QString &dataType = m_ui->cbTypes->itemText(idx);
     QVariant value = UiHelper::initVariantByControl(ctrl);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         VParamItem *pItem = static_cast<VParamItem *>(m_proxyModel->itemFromIndex(layerIdx));
         switchStackProperties(ctrl, pItem);
+        pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
 }
 
@@ -760,9 +830,9 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         return;
 
     VParamItem* pItem = static_cast<VParamItem*>(m_proxyModel->itemFromIndex(layerIdx));
-    pItem->m_type = dataType;
-    pItem->m_ctrl = UiHelper::getControlByType(dataType);
-    pItem->m_value = UiHelper::initVariantByControl(pItem->m_ctrl);
+    pItem->setData(dataType, ROLE_PARAM_TYPE);
+    pItem->setData(UiHelper::getControlByType(dataType), ROLE_PARAM_CTRL);
+    pItem->setData(UiHelper::initVariantByControl(pItem->m_ctrl), ROLE_PARAM_VALUE);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
     if (pLayoutItem)
@@ -776,11 +846,13 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
-    QWidget *valueControl = zenoui::createWidget(pItem->m_value, pItem->m_ctrl, dataType, cbSets, controlProperties);
+    cbSets.cbGetIndexData = [=]() -> QVariant { return pItem->data(ROLE_PARAM_VALUE); };
+    QWidget *valueControl = zenoui::createWidget(pItem->data(ROLE_PARAM_VALUE), pItem->m_ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         switchStackProperties(pItem->m_ctrl, pItem);
+        pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
     //update control list
     QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
@@ -795,7 +867,7 @@ void ZEditParamLayoutDlg::onStepEditFinished()
         return;
 
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    int step = m_ui->editStep->text().toInt();
+    qreal step = m_ui->editStep->text().toDouble();
     properties["step"] = step;
 
     const QString &objPath = layerIdx.data(ROLE_OBJPATH).toString();
@@ -861,10 +933,10 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
     {
         VParamItem* pCurrent = static_cast<VParamItem*>(proxyItem->child(r));
         uint uuid = pCurrent->m_uuid;
-        const QString name = pCurrent->m_name;
-        const QString typeDesc = pCurrent->m_type;
-        const QVariant value = pCurrent->m_value;
-        const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
+        const QString name = pCurrent->data(ROLE_PARAM_NAME).toString();
+        const QString typeDesc = pCurrent->data(ROLE_PARAM_TYPE).toString();
+        const QVariant value = pCurrent->data(ROLE_PARAM_VALUE);
+        const PARAM_CONTROL ctrl = (PARAM_CONTROL)pCurrent->data(ROLE_PARAM_CTRL).toInt();
         QVariant ctrlProperties;
         if (pCurrent->m_customData.find(ROLE_VPARAM_CTRL_PROPERTIES) != pCurrent->m_customData.end()) 
 		{
@@ -889,11 +961,42 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             if (targetRow != r)
             {
                 //move first.
-                QModelIndex parent = appliedItem->index();
-                bool ret = m_model->moveRow(parent, targetRow, parent, r);
-                ZASSERT_EXIT(ret);
+                const int srcRow = targetRow;
+                const int dstRow = r;
+
+                //update desc.
+                NODE_DESC desc;
+                bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+                if (bApplySubnetParam)
+                {
+                    if (bSubInput) {
+                        int sz = desc.inputs.size();
+                        if (sz > srcRow && sz > dstRow) {
+                            desc.inputs.move(srcRow, dstRow);
+                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                        }
+                    }
+                    else {
+                        int sz = desc.outputs.size();
+                        if (sz > srcRow && sz > dstRow) {
+                            desc.outputs.move(srcRow, dstRow);
+                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                        }
+                    }
+                }
+
+                //update the corresponding order for every subgraph node.
+                QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+                for (auto idx : subgNodes)
+                {
+                    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    VParamItem* pGroup = bSubInput ? nodeParams->getInputs() : nodeParams->getOutputs();
+                    ZASSERT_EXIT(pGroup);
+                    QModelIndex parent = pGroup->index();
+                    nodeParams->moveRow(parent, srcRow, parent, dstRow);
+                }
+
                 //reacquire pTarget, because the implementation of moveRow is simplily
-                //copy data, rather than insert/remove.
                 pTarget = static_cast<VParamItem*>(appliedItem->child(r));
             }
 
@@ -929,7 +1032,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             if (pCurrent->vType == VPARAM_PARAM)
             {
                 //check type
-                if (pTarget->m_type != typeDesc)
+                if (pTarget->data(ROLE_PARAM_TYPE) != typeDesc)
                 {
                     if (bApplySubnetParam) {
                         //get subinput type idx, update its value, and then sync to all subgraph node.
@@ -944,7 +1047,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 }
 
                 //check default value
-                if (pTarget->m_value != value)
+                if (pTarget->data(ROLE_PARAM_VALUE) != value)
                 {
                     if (bApplySubnetParam) {
                         //get subinput defl idx, update its value, and then sync to all subgraph node.
@@ -991,7 +1094,21 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     }
                     pTarget->setData(ctrlProperties, ROLE_VPARAM_CTRL_PROPERTIES);
                 }
-                //todo: other info, like mapping, etc.
+                //core mapping
+                if (pCurrent->m_index != pTarget->m_index) 
+                {
+                    pTarget->mapCoreParam(pCurrent->m_index);
+                }
+                //tool tip
+                QVariant newTip;
+                if (pCurrent->m_customData.find(ROLE_VPARAM_TOOLTIP) != pCurrent->m_customData.end()) {
+                    newTip = pCurrent->m_customData[ROLE_VPARAM_TOOLTIP];
+                }
+                QVariant oldTip = pTarget->m_customData[ROLE_VPARAM_TOOLTIP];
+                if (oldTip != newTip) 
+                {
+                    pTarget->setData(newTip, ROLE_VPARAM_TOOLTIP);
+                }
             }
             else
             {
@@ -1013,8 +1130,8 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     } 
                     else 
                     {
-                        const QVariant &defl = pCurrent->m_value;
-                        const QString &typeDesc = pCurrent->m_type;
+                        const QVariant &defl = pCurrent->data(ROLE_PARAM_VALUE);
+                        const QString &typeDesc = pCurrent->data(ROLE_PARAM_TYPE).toString();
                         const PARAM_CONTROL ctrl = pCurrent->m_ctrl;
 
                         QPointF pos(0, 0);
@@ -1026,6 +1143,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                             NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
                         PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
                         params["name"].value = name;
+                        params["name"].toolTip = m_ui->editLabel->text();
                         params["type"].value = typeDesc;
                         params["defl"].typeDesc = typeDesc;
                         params["defl"].value = defl;
@@ -1037,9 +1155,9 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
                         //the newItem is created just now, after adding the subgraph node.
                         int dstRow = 0;
-                        VParamItem *newItem = pTargetGroup->getItem(name, &dstRow);
-                        pCurrent->m_uuid = newItem->m_uuid;
+                        VParamItem* newItem = pTargetGroup->getItem(name, &dstRow);
                         ZASSERT_EXIT(newItem);
+                        pCurrent->m_uuid = newItem->m_uuid;
 
                         //move the new item to the r-th position.
                         QModelIndex parent = pTargetGroup->index();

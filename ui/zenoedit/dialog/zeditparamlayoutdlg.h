@@ -15,6 +15,7 @@ struct CONTROL_ITEM_INFO
     QString name;
     PARAM_CONTROL ctrl;
     QString defaultType;
+    QString icon;
 };
 
 class ParamTreeItemDelegate : public QStyledItemDelegate
@@ -30,6 +31,7 @@ public:
         const QModelIndex& index) const override;
 
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
   private:
     ViewParamModel *m_model;
@@ -62,6 +64,10 @@ private slots:
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 private:
+    void initUI();
+    void initIcon(QStandardItem *item);
+    QIcon getIcon(const QStandardItem *pItem);
+    void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void recordSubInputCommands(bool bSubInput, VParamItem* pItem);

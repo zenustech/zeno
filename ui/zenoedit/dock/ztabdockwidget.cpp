@@ -96,8 +96,10 @@ void ZTabDockWidget::testCleanupGL()
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(0);
-        if (DisplayWidget *pDis = qobject_cast<DisplayWidget*>(wid)) {
-            pDis->testCleanUp();
+        if (DockContent_View* pDis = qobject_cast<DockContent_View*>(wid)) {
+            DisplayWidget* pWid = pDis->getDisplayWid();
+            if (pWid)
+                pWid->testCleanUp();
         }
     }
 }
@@ -224,6 +226,8 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
+    if (nodes.count() <= 0)
+        return;
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
@@ -234,7 +238,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-            if (select)
+            if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
                 QString nodeId = idx.data(ROLE_OBJID).toString();
@@ -242,20 +246,22 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 //todo: dispatch to each panel?
                 ZenoMainWindow *pWin = zenoApp->getMainWindow();
                 ZASSERT_EXIT(pWin);
-                DisplayWidget *pWid = pWin->getDisplayWidget();
-                ZASSERT_EXIT(pWid);
-                ViewportWidget *pViewport = pWid->getViewportWidget();
-                ZASSERT_EXIT(pViewport);
+                QVector<DisplayWidget *> views = pWin->viewports();
+                for (auto pDisplay : views)
+                {
+                    ViewportWidget* pViewport = pDisplay->getViewportWidget();
+                    ZASSERT_EXIT(pViewport);
 
-                auto *scene = pViewport->getSession()->get_scene();
-                scene->selected.clear();
-                std::string nodeid = nodeId.toStdString();
-                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                    if (nodeid == key.substr(0, key.find_first_of(':'))) {
-                        scene->selected.insert(key);
+                    auto *scene = pViewport->getSession()->get_scene();
+                    scene->selected.clear();
+                    std::string nodeid = nodeId.toStdString();
+                    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                        if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                            scene->selected.insert(key);
+                        }
                     }
+                    onPrimitiveSelected(scene->selected);
                 }
-                onPrimitiveSelected(scene->selected);
             }
         } 
         else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {
@@ -363,7 +369,7 @@ bool ZTabDockWidget::event(QEvent* event)
 void ZTabDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
 
@@ -443,7 +449,7 @@ void ZTabDockWidget::onFloatTriggered()
 void ZTabDockWidget::onAddTabClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
 
@@ -475,9 +481,6 @@ void ZTabDockWidget::onAddTabClicked()
 
 void ZTabDockWidget::onAddTab(PANEL_TYPE type)
 {
-    if (getUniqueViewport())
-        return;     //because of the unsteadiness of create/delete viewport widget, we only allow to use the default one.
-
     QWidget *wid = createTabWidget(type);
     if (wid) {
         QString name = type2Title(type);
@@ -499,10 +502,9 @@ void ZTabDockWidget::onMenuActionTriggered(QAction* pAction, bool bTriggered)
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
         }
-        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(wid))
+        if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
         {
-            //todo: translate.
-            pView->onCommandDispatched(actionType, bTriggered);
+            pView->onCommandDispatched(pAction, bTriggered);
         }
         if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(wid))
         {

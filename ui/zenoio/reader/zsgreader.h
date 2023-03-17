@@ -28,7 +28,7 @@ private:
     void _parseParams(const QString& id, const QString& nodeName, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
     bool _parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor *pAcceptor);
     void _parseOutputs(const QString& id, const QString& nodeName,const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
-    void _parseCustomUI(const QString& id, const QString& nodeName, bool bNodeUI, const rapidjson::Value& jsonNodeObj, IAcceptor* pAcceptor);
+    void _parseCustomPanel(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor);
     void _parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor);
     void _parseCurvePoints(const QString& id, const rapidjson::Value& jsonPoints, IAcceptor* pAcceptor);
     void _parseCurveHandlers(const QString& id, const rapidjson::Value& jsonHandlers, IAcceptor* pAcceptor);
@@ -39,7 +39,7 @@ private:
     void _parseDictPanel(bool bInput, const rapidjson::Value& dictPanelObj, const QString& id, const QString& inSock, const QString& nodeName, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
-    NODE_DESCS _parseDescs(const rapidjson::Value& descs);
+    NODE_DESCS _parseDescs(const rapidjson::Value& descs, IAcceptor *pAcceptor);
 };
 
 #endif

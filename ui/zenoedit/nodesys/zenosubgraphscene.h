@@ -32,8 +32,6 @@ public:
     void markError(const QString& nodeid);
     void clearMark();
     QGraphicsItem* getNode(const QString& id);
-    void setSnapGrid(bool bChecked);
-    bool IsSnapGrid() const;
 
     // FIXME temp function for merge
     void selectObjViaNodes();
@@ -77,7 +75,6 @@ private:
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
-    bool m_bSnapGrid;
 };
 
 #endif

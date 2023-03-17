@@ -1,4 +1,5 @@
 #include "zlineedititem.h"
+#include <zenoedit/zenoapplication.h>
 
 
 ZLineEditItem::ZLineEditItem(QGraphicsItem* parent)
@@ -11,7 +12,8 @@ ZLineEditItem::ZLineEditItem(QGraphicsItem* parent)
     clr.setAlphaF(0.4);
     setDefaultTextColor(clr);
 
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     setFont(font);
     setMargins(15, 8, 15, 8);
 }
@@ -26,8 +28,9 @@ ZLineEditItem::ZLineEditItem(const QString& text, QGraphicsItem* parent)
     clr.setAlphaF(0.4);
     setDefaultTextColor(clr);
 
-    QFont font("HarmonyOS Sans", 12);
-    setFont(font);
+
+    QFont font = zenoApp->font();
+    font.setPointSize(10);    setFont(font);
     setMargins(15, 8, 15, 8);
 }
 

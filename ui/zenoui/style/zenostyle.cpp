@@ -6,6 +6,7 @@
 #include "../comctrl/zdocktabwidget.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
+#include <zenoedit/zenoapplication.h>
 
 
 ZenoStyle::ZenoStyle()
@@ -38,6 +39,12 @@ QSize ZenoStyle::dpiScaledSize(const QSize &value)
 QSizeF ZenoStyle::dpiScaledSize(const QSizeF& sz)
 {
     return QSizeF(ZenoStyle::dpiScaled(sz.width()), ZenoStyle::dpiScaled(sz.height()));
+}
+
+QMargins ZenoStyle::dpiScaledMargins(const QMargins& margins)
+{
+    return QMargins(ZenoStyle::dpiScaled(margins.left()), ZenoStyle::dpiScaled(margins.top()),
+                    ZenoStyle::dpiScaled(margins.right()), ZenoStyle::dpiScaled(margins.bottom()));
 }
 
 QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
@@ -151,7 +158,8 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
             painter->setClipRect(editRect);
-            painter->setFont(QFont("HarmonyOS Sans", 12));
+            QFont font = zenoApp->font();
+            painter->setFont(font);
             if (!cb->currentIcon.isNull()) {
                 //todo
             }
@@ -199,6 +207,7 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
     {
         const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
         Q_ASSERT(opt);
+        ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
 
         switch (sc)
         {
@@ -218,7 +227,21 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             }
             else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
             {
-                return QRect(); //todo
+                QMargins margins = pToolBtn->margins();
+                int xleft = margins.left();
+                int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
+                QRect rcIcon = QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+                return rcIcon;
+            }
+            else if (opt->buttonOpts & ZToolButton::Opt_TextLeftToIcon)
+            {
+                QMargins margins = pToolBtn->margins();
+                QRect rcText = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonText), widget);
+                int iconTextSpacing = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, widget);
+                int xleft = rcText.right() + iconTextSpacing;
+                int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
+                QRect rcIcon = QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+                return rcIcon;
             }
             else
             {
@@ -230,7 +253,6 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
         }
         case SC_ZenoToolButtonText:
         {
-            ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
             if (opt->buttonOpts & ZToolButton::Opt_UpRight)
             {
                 QFontMetrics fontMetrics(opt->font);
@@ -252,7 +274,25 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             }
             else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
             {
-                return QRect(); //todo
+                QFontMetrics fontMetrics(opt->font);
+                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonIcon), widget);
+                int iconTextSpacing = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, widget);
+                int textWidth = fontMetrics.horizontalAdvance(opt->text);
+                int textHeight = fontMetrics.height();
+                int xleft = rcIcon.right() + iconTextSpacing;
+                int ypos = opt->rect.height() / 2 - textHeight / 2;
+                return QRect(xleft, ypos, textWidth, textHeight);
+            }
+            else if (opt->buttonOpts & ZToolButton::Opt_TextLeftToIcon)
+            {
+                QFontMetrics fontMetrics(opt->font);
+                int textWidth = fontMetrics.horizontalAdvance(opt->text);
+                int textHeight = fontMetrics.height();
+                QMargins margins = pToolBtn->margins();
+                int xleft = margins.left();
+                int ytop = opt->rect.height() / 2 - textHeight / 2;
+                QRect rcText = QRect(xleft, ytop, textWidth, textHeight);
+                return rcText;
             }
             else if (opt->buttonOpts & ZToolButton::Opt_HasText)
             {
@@ -278,6 +318,8 @@ int ZenoStyle::styleHint(StyleHint sh, const QStyleOption* opt, const QWidget* w
         return 0;
     if (QStyle::SH_Slider_AbsoluteSetButtons == sh)
         return Qt::LeftButton;
+    if (QStyle::SH_ComboBox_AllowWheelScrolling == sh)
+        return 0;
     return QProxyStyle::styleHint(sh, opt, w, shret);
 }
 
@@ -301,6 +343,7 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         case PM_ButtonRightMargin:  return 9;
         case PM_ButtonTopMargin:
         case PM_ButtonBottomMargin: return 4;
+        case PM_IconTextSpacing:    return ZenoStyle::dpiScaled(6);
         }
     }
     switch (m)

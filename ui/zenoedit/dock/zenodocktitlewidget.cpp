@@ -104,7 +104,8 @@ QAction* ZenoDockTitleWidget::createAction(const QString& text)
 void ZenoDockTitleWidget::onDockSwitchClicked()
 {
 	QMenu* menu = new QMenu(this);
-	QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
 	font.setBold(false);
 	menu->setFont(font);
 	QAction* pSwitchEditor = new QAction("Editor");
@@ -176,7 +177,9 @@ void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
     QPalette pal = m_lblTitle->palette();
     pal.setColor(QPalette::WindowText, QColor(255, 255, 255, 128));
     m_lblTitle->setPalette(pal);
-    m_lblTitle->setFont(QFont("HarmonyOS Sans", 11));
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+    m_lblTitle->setFont(font);
 
     pHLayout->addWidget(m_lblTitle);
     pHLayout->addStretch();
@@ -553,7 +556,9 @@ void ZenoPropDockTitleWidget::paintEvent(QPaintEvent* event)
 
 	QPainter p(this);
 	p.setPen(QPen(QColor(255, 255, 255, 128)));
-	p.setFont(QFont("HarmonyOS Sans", 11));
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+	p.setFont(font);
 	p.drawText(rect(), Qt::AlignCenter, m_title);
 }
 

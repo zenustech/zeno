@@ -317,12 +317,27 @@ class ZenoParamSpinBoxSlider : public ZenoParamWidget
 class ZenoParamSpinBox : public ZenoParamWidget {
     Q_OBJECT
   public:
-    ZenoParamSpinBox(QGraphicsItem *parent = nullptr);
+    ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
     void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
   signals:
     void valueChanged(int);
   private:
     QSpinBox *m_pSpinBox;
+};
+
+class ZenoParamDoubleSpinBox : public ZenoParamWidget 
+{
+    Q_OBJECT
+  public:
+    ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(double value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(double);
+
+  private:
+    QDoubleSpinBox *m_pSpinBox;
 };
 
 class ZenoParamGroupLine : public QGraphicsItem

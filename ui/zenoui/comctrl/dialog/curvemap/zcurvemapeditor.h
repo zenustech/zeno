@@ -21,12 +21,14 @@ class ZCurveMapEditor : public QDialog
 	Q_OBJECT
 
 public:
-	ZCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
-	~ZCurveMapEditor();
+    ZCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
+    ~ZCurveMapEditor();
     void addCurve(CurveModel* model);
+    void addCurves(const CURVES_DATA& curves);
     int curveCount() const;
     CurveModel *getCurve(int i) const;
     CURVES_MODEL getModel() const;
+    CURVES_DATA curves() const;
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);

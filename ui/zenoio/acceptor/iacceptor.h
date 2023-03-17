@@ -60,6 +60,7 @@ public:
     ) = 0;
 
 	virtual void setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) = 0;
+    virtual void setToolTip(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& toolTip) = 0;
 
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
@@ -76,7 +77,7 @@ public:
         const QVector<QPointF>& pts,
         const QVector<QPair<QPointF, QPointF>>& hdls) = 0;
     virtual QObject* currGraphObj() = 0;
-    virtual void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) = 0;
+    virtual void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) = 0;
     virtual void setIOVersion(zenoio::ZSG_VERSION version) = 0;
     virtual ~IAcceptor() = default;
 };

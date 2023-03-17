@@ -6,7 +6,7 @@
 #include "variantptr.h"
 #include <zenomodel/include/curveutil.h>
 #include "zassert.h"
-
+#include "graphsmodel.h"
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
@@ -26,7 +26,7 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
     node[ROLE_NODETYPE] = nodeType(descName);
-    initInputSocks(pModel, nodeid, desc.inputs);
+    initInputSocks(pModel, nodeid, desc.inputs, desc.is_subgraph);
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     initOutputSocks(pModel, nodeid, desc.outputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
@@ -66,7 +66,7 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
     }
 }
 
-void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs)
+void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs, bool isSubgraph)
 {
     if (descInputs.find("SRC") == descInputs.end())
     {
@@ -75,24 +75,6 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
         srcSocket.info.control = CONTROL_NONE;
         srcSocket.info.nodeid = nodeid;
         descInputs.insert("SRC", srcSocket);
-    }
-
-    if (descInputs.find("curve") != descInputs.end())
-    {
-        INPUT_SOCKET& input = descInputs["curve"];
-        if (input.info.control == CONTROL_CURVE)
-        {
-            CURVES_MODEL curves;
-            QString ids[] = {"x", "y", "z"};
-            for (int i = 0; i < 3; i++) {
-                CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-                pModel->setData(pModel->index(0, 0), QVariant::fromValue(QPointF(0, i * 0.5)), ROLE_NODEPOS);
-                pModel->setData(pModel->index(1, 0), QVariant::fromValue(QPointF(1, 1 - i * 0.5)), ROLE_NODEPOS);
-                pModel->setId(ids[i]);
-                curves.insert(ids[i], pModel);
-            }
-            input.info.defaultValue = QVariant::fromValue(curves);
-        }
     }
 }
 

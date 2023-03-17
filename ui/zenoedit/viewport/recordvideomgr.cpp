@@ -8,7 +8,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-
+#include <zenoedit/zenomainwindow.h>
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
@@ -35,6 +35,8 @@ void RecordVideoMgr::cancelRecord()
     disconnectSignal();
     //todo:
     //Zenovis::GetInstance().blockSignals(false);
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    mainWin->toggleTimelinePlay(false);
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
@@ -138,7 +140,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             auto scene = pVis->getSession()->get_scene();
             auto old_num_samples = scene->drawOptions->num_samples;
-            scene->drawOptions->num_samples = m_recordInfo.numSamples;
+            scene->drawOptions->num_samples = m_recordInfo.numOptix;
             scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
 
             auto [x, y] = pVis->getSession()->get_window_size();
@@ -150,7 +152,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             scene->drawOptions->num_samples = old_num_samples;
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;
-            emit frameFinished(m_currFrame);
+            emit frameFinished(currFrame);
         }
 
         if (currFrame == m_recordInfo.frameRange.second)

@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1046</width>
+    <width>1053</width>
     <height>508</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>200</width>
+    <height>200</height>
+   </size>
   </property>
   <property name="focusPolicy">
    <enum>Qt::ClickFocus</enum>
@@ -59,39 +65,6 @@
        </property>
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QTreeView
-{
-	background-color: rgb(43,43,43);
-	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
-}
-
-QTreeView::item {
-	color: #858280;
-	border: 1px solid transparent;
-}
-
-QTreeView::item:hover {
-	background-color: transparent;
-}
-
-QTreeView::item:selected {
-	border: 1px solid #4B9EF4;
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:active{
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:!active {
-	background: #334960;
-	color: #ffffff;
-}</string>
        </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>

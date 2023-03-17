@@ -17,6 +17,17 @@ public:
     ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn);
 };
 
+class ZToolRecordingButton : public ZToolButton {
+    Q_OBJECT
+public:
+    ZToolRecordingButton(const QString &icon, const QString &iconHover, const QString &iconOn,
+                         const QString &iconOnHover, const QString &iconPressed);
+protected:
+    void paintEvent(QPaintEvent* event) override;
+private:
+    QIcon m_iconOnPressed;
+};
+
 class DockToolbarWidget : public QWidget
 {
     Q_OBJECT
@@ -76,9 +87,15 @@ private:
     ZToolBarButton *pSnapGrid;
     ZToolBarButton *pShowGrid;
     ZToolBarButton *pBlackboard;
+    ZToolBarButton *pGroup;
     ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
+
+    ZToolButton* m_btnRun;
+    ZToolButton* m_btnKill;
+    ZToolButton* m_btnAlways;
+
     QComboBox* cbZoom;
 };
 
@@ -102,7 +119,7 @@ private:
     ZToolBarButton* m_wire_frame;
     ZToolBarButton* m_show_grid;
     ZToolBarButton* m_background_clr;
-    ZToolBarButton* m_recordVideo;
+    ZToolBarButton *m_recordVideo;
     ZToolBarButton* m_screenshoot;
     ZToolBarButton* m_moveBtn;
     ZToolBarButton* m_scaleBtn;

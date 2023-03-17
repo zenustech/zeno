@@ -25,8 +25,15 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/uihelper.h>
+#include <zeno/types/UserData.h>
 
 
+#define ENABLE_RECORD_PROGRESS_DIG
+
+
+using std::string;
+using std::unordered_set;
+using std::unordered_map;
 CameraControl::CameraControl(ViewportWidget* parent)
     : QObject(parent)
     , m_mmb_pressed(false)
@@ -489,12 +496,18 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
             QPoint releasePos = event->pos();
             if (m_boundRectStartPos == releasePos) {
-                picker->pick(releasePos.x(), releasePos.y());
-                picker->sync_to_scene();
-                if (scene->select_mode == zenovis::PICK_OBJECT)
-                    onPrimSelected();
-                transformer->clear();
-                transformer->addObject(picker->get_picked_prims());
+                if (picker->is_draw_mode()) {
+                    // zeno::log_info("res_w: {}, res_h: {}", res()[0], res()[1]);
+                    picker->pick_depth(releasePos.x(), releasePos.y());
+                }
+                else {
+                    picker->pick(releasePos.x(), releasePos.y());
+                    picker->sync_to_scene();
+                    if (scene->select_mode == zenovis::PICK_OBJECT)
+                        onPrimSelected();
+                    transformer->clear();
+                    transformer->addObject(picker->get_picked_prims());
+                }
             } else {
                 int x0 = m_boundRectStartPos.x();
                 int y0 = m_boundRectStartPos.y();
@@ -836,6 +849,7 @@ void DisplayWidget::initRecordMgr()
         zeno::log_info("frame {} has been recorded", frameid);
     });
 
+#ifndef ENABLE_RECORD_PROGRESS_DIG
     connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString recPath) {
         VideoRecInfo _recInfo;
         _recInfo.record_path = recPath;
@@ -843,6 +857,7 @@ void DisplayWidget::initRecordMgr()
         dlgProc.onRecordFinished();
         dlgProc.exec();
     });
+#endif
 }
 
 void DisplayWidget::testCleanUp()
@@ -1025,7 +1040,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
-    if (timeline->isAlways())
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel* pModel = pGraphsMgr->currentModel();
@@ -1268,6 +1283,23 @@ void DisplayWidget::onRecord()
             moveToFrame(recStartFrame);
             // and then play.
             mainWin->toggleTimelinePlay(true);
+
+#ifdef ENABLE_RECORD_PROGRESS_DIG
+            ZRecordProgressDlg dlgProc(recInfo);
+            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+            connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
+            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+            connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
+            connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
+            connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
+
+            if (QDialog::Accepted == dlgProc.exec())
+            {
+            } else
+            {
+                m_recordMgr.cancelRecord();
+            }
+#endif
         }
     }
 }
@@ -1300,7 +1332,9 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
     auto node_id = nodes[0].data(ROLE_OBJNAME).toString();
     if (node_id == "PrimitiveAttrPicker") {
         auto scene = m_view->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
         auto picker = m_view->picker();
+        ZASSERT_EXIT(picker);
         if (select) {
             // check input nodes
             auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
@@ -1364,5 +1398,48 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
             }
         }
         zenoApp->getMainWindow()->updateViewport();
+    }
+    if (node_id == "MakePrimitive") {
+        auto picker = m_view->picker();
+        ZASSERT_EXIT(picker);
+        if (select) {
+            picker->switch_draw_mode();
+            zeno::NodeLocation node_location(nodes[0], subgIdx);
+            auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
+                Zenovis* pZenovis = m_view->getZenoVis();
+                ZASSERT_EXIT(pZenovis && pZenovis->getSession());
+                auto scene = pZenovis->getSession()->get_scene();
+                auto near_ = scene->camera->m_near;
+                auto far_ = scene->camera->m_far;
+                auto fov = scene->camera->m_fov;
+                auto cz = glm::length(scene->camera->m_lodcenter);
+                if (depth != 1) {
+                    depth = depth * 2 - 1;
+                    cz = 2 * near_ * far_ / ((far_ + near_) - depth * (far_ - near_));
+                }
+                auto w = scene->camera->m_nx;
+                auto h = scene->camera->m_ny;
+                // zeno::log_info("fov: {}", fov);
+                // zeno::log_info("w: {}, h: {}", w, h);
+                auto u = (2.0 * x / w) - 1;
+                auto v = 1 - (2.0 * y / h);
+                // zeno::log_info("u: {}, v: {}", u, v);
+                auto cy = v * tan(glm::radians(fov) / 2) * cz;
+                auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+                // zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
+                glm::vec4 cc = {cx, cy, -cz, 1};
+                auto wc = glm::inverse(scene->camera->m_view) * cc;
+                wc /= wc.w;
+                // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
+                auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
+                zeno::log_info("fetch {}", points.c_str());
+                points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
+                zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
+            };
+            picker->set_picked_depth_callback(pick_callback);
+        }
+        else {
+            picker->switch_draw_mode();
+        }
     }
 }

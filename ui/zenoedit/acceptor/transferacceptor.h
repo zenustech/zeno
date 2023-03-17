@@ -56,6 +56,7 @@ public:
     ) override;
 
 	void setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties);
+    void setToolTip(PARAM_CLASS cls, const QString &inNode, const QString &inSock, const QString &toolTip) override;
     void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) override;
     void setParamValue2(const QString &id, const QString &noCls, const PARAMS_INFO &params) override;
     void setPos(const QString &id, const QPointF &pos) override;
@@ -71,7 +72,7 @@ public:
     QObject *currGraphObj() override;
     void endInputs(const QString& id, const QString& nodeCls) override;
     void endParams(const QString& id, const QString& nodeCls) override;
-    void addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot) override;
+    void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
 
     //TransferAcceptor
     QMap<QString, NODE_DATA> nodes() const;

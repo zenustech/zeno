@@ -216,14 +216,21 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
     else if (sockProperty == "editable")
         prop = SOCKPROP_EDITABLE;
     else if (sockProperty == "group-line")
-        prop = SOCKPROP_GROUP;
+        prop = SOCKPROP_GROUP_LINE;
 
     //the layout should be standard inputs desc by latest descriptors.
     //so, we can only add dynamic key. for example, list and dict node.
     if (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict")
     {
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
-        nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+        if (prop == SOCKPROP_EDITABLE)
+        {
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+        }
+        else
+        {
+            nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName, "", QVariant(), CONTROL_NONE, QVariant(), prop);
+        }
     }
 }
 
@@ -397,7 +404,7 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     ZASSERT_EXIT(sockIdx.isValid());
 
     DictKeyModel *keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    ZASSERT_EXIT(keyModel);
+    ZERROR_EXIT(keyModel);
     keyModel->setCollasped(bCollasped);
 }
 
@@ -421,6 +428,22 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
     }
 }
 
+void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QString &inSock, const QString &toolTip) 
+{
+    if (!m_currentGraph)
+         return;
+    QString nodeCls;
+    if (cls == PARAM_INPUT)
+         nodeCls = "inputs";
+    else if (cls == PARAM_OUTPUT)
+         nodeCls = "outputs";
+    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(sockIdx, toolTip, ROLE_VPARAM_TOOLTIP);
+}
 void ModelAcceptor::addInnerDictKey(
             bool bInput,
             const QString& ident,
@@ -455,14 +478,13 @@ void ModelAcceptor::endInputs(const QString& id, const QString& nodeCls)
     //todo
 }
 
-void ModelAcceptor::addCustomUI(const QString& id, bool bNodeUI, const VPARAM_INFO& invisibleRoot)
+void ModelAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
 {
     if (!m_currentGraph)
         return;
 
     QModelIndex idx = m_currentGraph->index(id);
-    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot),
-        bNodeUI ? ROLE_CUSTOMUI_NODE_IO : ROLE_CUSTOMUI_PANEL_IO);
+    m_currentGraph->setData(idx, QVariant::fromValue(invisibleRoot), ROLE_CUSTOMUI_PANEL_IO);
 }
 
 void ModelAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
@@ -584,42 +606,6 @@ void ModelAcceptor::setParamValue2(const QString &id, const QString &noCls, cons
     ZASSERT_EXIT(idx.isValid());
 
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
-
-    if (noCls != "SubInput" && noCls != "SubOutput")
-        return;
-
-     //update desc.
-    QString sockName;
-    PARAM_CONTROL newCtrl;
-    QVariant ctrlProps;
-    for (auto paramInfo : params)
-    {
-        if (paramInfo.name == "name") 
-        {
-            sockName = paramInfo.value.toString();
-        }
-        else if (paramInfo.name == "defl") 
-        {
-            newCtrl = paramInfo.control;
-            ctrlProps = paramInfo.controlProps;
-        }
-    }
-    NODE_DESC desc;
-    QString subGraphName = m_currentGraph->name();
-    bool ret = m_pModel->getDescriptor(subGraphName, desc);
-    ZASSERT_EXIT(ret);
-    if (noCls == "SubInput") {
-        ZASSERT_EXIT(desc.inputs.find(sockName) != desc.inputs.end());
-        desc.inputs[sockName].info.ctrlProps = ctrlProps.toMap();
-        desc.inputs[sockName].info.control = newCtrl;
-    } else {
-        ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
-        desc.outputs[sockName].info.ctrlProps = ctrlProps.toMap();
-        desc.outputs[sockName].info.control = newCtrl;
-    }
-
-    //no control info stored on desc in zsg, have to reset control by SubInput/SubOutput
-    m_pModel->updateSubgDesc(subGraphName, desc);
 }
 
 void ModelAcceptor::setPos(const QString& id, const QPointF& pos)

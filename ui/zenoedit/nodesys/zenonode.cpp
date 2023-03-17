@@ -31,6 +31,7 @@
 #include "iotags.h"
 #include "groupnode.h"
 #include "dialog/zeditparamlayoutdlg.h"
+#include "settings/zenosettingsmanager.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -189,7 +190,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor("#FFFFFF"));
-    QFont font2("Alibaba PuHuiTi", 16);
+    QFont font2 = zenoApp->font();
+    font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
     m_NameItem->updateBoundingRect();
@@ -199,7 +201,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     {
         ZSimpleTextItem *pCategoryItem = new ZSimpleTextItem(category);
         pCategoryItem->setBrush(QColor("#AB6E40"));
-        pCategoryItem->setFont(QFont("Segoe UI bold", 10));
+        QFont font = zenoApp->font();
+        pCategoryItem->setFont(font);
         pCategoryItem->updateBoundingRect();
         pCategoryItem->setAcceptHoverEvents(false);
         pNameLayout->addItem(pCategoryItem);
@@ -409,7 +412,11 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     }
 
     int role = roles[0];
-    if (role != ROLE_PARAM_NAME && role != ROLE_PARAM_VALUE && role != ROLE_PARAM_CTRL && role != ROLE_VPARAM_CTRL_PROPERTIES)
+    if (role != ROLE_PARAM_NAME 
+        && role != ROLE_PARAM_VALUE 
+        && role != ROLE_PARAM_CTRL 
+        && role != ROLE_VPARAM_CTRL_PROPERTIES
+        && role != ROLE_VPARAM_TOOLTIP)
         return;
 
     QModelIndex viewParamIdx = pItem->index();
@@ -422,7 +429,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
     const QString& groupName = parentItem->text();
     const QString& paramName = pItem->data(ROLE_PARAM_NAME).toString();
 
-    if (role == ROLE_PARAM_NAME)
+    if (role == ROLE_PARAM_NAME || role == ROLE_VPARAM_TOOLTIP)
     {
         const int paramCtrl = pItem->data(ROLE_PARAM_CTRL).toInt();
         if (groupName == iotags::params::node_inputs)
@@ -433,7 +440,10 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == viewParamIdx)
                 {
-                    pSocketLayout->updateSockName(paramName);   //only update name on control.
+                    if (role == ROLE_PARAM_NAME)
+                        pSocketLayout->updateSockName(paramName);   //only update name on control.
+                    else if (role == ROLE_VPARAM_TOOLTIP)
+                        pSocketLayout->updateSockNameToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString()); 
                     break;
                 }
             }
@@ -444,9 +454,16 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             {
                 if (it->second.viewidx == viewParamIdx)
                 {
-                    QString oldName = it->first;
-                    it->first = paramName;
-                    it->second.param_name->setText(paramName);
+                    if (role == ROLE_PARAM_NAME) 
+                    {
+                        QString oldName = it->first;
+                        it->first = paramName;
+                        it->second.param_name->setText(paramName);
+                    }
+                    else if (role == ROLE_VPARAM_TOOLTIP) 
+                    {
+                        it->second.param_name->setToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString());
+                    }
                     break;
                 }
             }
@@ -459,7 +476,10 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == viewParamIdx)
                 {
-                    pSocketLayout->updateSockName(paramName);
+                    if (role == ROLE_PARAM_NAME)
+                        pSocketLayout->updateSockName(paramName);
+                    else if (role == ROLE_VPARAM_TOOLTIP)
+                        pSocketLayout->updateSockNameToolTip(pItem->data(ROLE_VPARAM_TOOLTIP).toString()); 
                 }
             }
         }
@@ -776,7 +796,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
     } 
-    else if (sockProp & SOCKPROP_GROUP) {
+    else if (sockProp & SOCKPROP_GROUP_LINE) {
         pMiniLayout = new ZGroupSocketLayout(pModel, viewSockIdx, bInput);
     }
     else {
@@ -845,6 +865,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
     textItem->setBrush(m_renderParams.socketClr.color());
     textItem->setFont(m_renderParams.socketFont);
     textItem->updateBoundingRect();
+    textItem->setToolTip(viewparamIdx.data(ROLE_VPARAM_TOOLTIP).toString());
     paramCtrl.param_name = textItem;
     paramCtrl.viewidx = viewparamIdx;
     paramCtrl.ctrl_layout->addItem(paramCtrl.param_name, Qt::AlignVCenter);
@@ -868,6 +889,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_CURVE:
         case CONTROL_HSLIDER:
         case CONTROL_HSPINBOX:
+        case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
         {
             QGraphicsItem* pWidget = initParamWidget(pScene, viewparamIdx);
@@ -906,7 +928,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     auto cbGetIndexData = [=]() -> QVariant { 
-        return paramIdx.data(ROLE_PARAM_VALUE);
+        return perIdx.data(ROLE_PARAM_VALUE);
     };
 
     CallbackCollection cbSet;
@@ -1206,10 +1228,11 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         // for temp support to show handler via transform node
         else if (name.contains("TransformPrimitive"))
         {
-            auto displayWid = zenoApp->getMainWindow()->getDisplayWidget();
-            if (displayWid)
+            QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+            for (auto pDisplay : views)
             {
-                auto viewport = displayWid->getViewportWidget();
+                ZASSERT_EXIT(pDisplay);
+                auto viewport = pDisplay->getViewportWidget();
                 if (viewport)
                     viewport->changeTransformOperation(nodeId());
             }
@@ -1279,7 +1302,8 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-        if (pScene && pScene->IsSnapGrid())
+        bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SNAPGRID).toBool();
+        if (pScene && isSnapGrid)
         {
             QPointF pos = value.toPointF();
             int x = pos.x(), y = pos.y();

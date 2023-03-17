@@ -38,7 +38,6 @@ public:
 	virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
 	QString title() const;
-	void updateGeo();
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -49,6 +48,7 @@ signals:
 public slots:
 	void toggle(bool collasped);
 	void setCollasped(bool bOn);
+	void updateGeo();
 
 private:
 	QWidget* initTitleWidget(const QString& title/* other ui params*/);

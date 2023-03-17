@@ -73,6 +73,14 @@ namespace zenomodel
                 }
             }
 
+            QVariant deflVal = pItem->data(ROLE_PARAM_VALUE);
+            const QString &type = pItem->data(ROLE_PARAM_TYPE).toString();
+            bool bValid = UiHelper::validateVariant(deflVal, type);
+            if (bValid && !pItem->m_index.isValid()) {
+                writer.Key("value");
+                JsonHelper::AddVariant(deflVal, type, writer, true);
+            }
+
             PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();
             CONTROL_PROPERTIES pros = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
 
@@ -83,6 +91,13 @@ namespace zenomodel
             writer.Key("uuid");
             writer.Uint(pItem->m_uuid);
             //todo: link.
+
+            if (pItem->m_customData.contains(ROLE_VPARAM_TOOLTIP)
+                && !pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().isEmpty())
+            {
+                writer.Key("tooltip");
+                writer.String(pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().toUtf8());
+            }
         }
     }
 
@@ -109,8 +124,8 @@ namespace zenomodel
             const rapidjson::Value& coreParam = paramVal["core-param"];
             ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), param);
 
-            param.refParamPath = QString::fromLocal8Bit(coreParam["name"].GetString());
-            const QString& cls = QString::fromLocal8Bit(coreParam["class"].GetString());
+            param.refParamPath = QString::fromUtf8(coreParam["name"].GetString());
+            const QString& cls = QString::fromUtf8(coreParam["class"].GetString());
 
             if (cls == "input")
             {
@@ -140,32 +155,26 @@ namespace zenomodel
         ZASSERT_EXIT(paramVal.HasMember("control"), param);
         const rapidjson::Value& controlObj = paramVal["control"];
 
-        const QString& ctrlName = QString::fromLocal8Bit(controlObj["name"].GetString());
-        param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        if (controlObj.HasMember("items") || (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max")))
+        {
+            JsonHelper::importControl(controlObj, param.m_info.control, param.controlInfos);
+        } 
+        else 
+        {
+            const QString &ctrlName = QString::fromUtf8(controlObj["name"].GetString());
+            param.m_info.control = UiHelper::getControlByDesc(ctrlName);
+        }
         param.m_info.typeDesc = UiHelper::getTypeByControl(param.m_info.control);
         param.m_info.name = paramName;
 
-        if (controlObj.HasMember("value"))
+        if (paramVal.HasMember("value"))
         {
-            param.m_info.value = UiHelper::parseJson(controlObj["value"], nullptr);
+            param.m_info.value = UiHelper::parseJson(paramVal["value"], nullptr);
         }
-        if (controlObj.HasMember("items"))
+
+        if (paramVal.HasMember("tooltip")) 
         {
-            //combobox
-            ZASSERT_EXIT(controlObj["items"].IsArray(), param);
-            QStringList lstItems = UiHelper::parseJson(controlObj["items"]).toStringList();
-            param.controlInfos = lstItems;
-        }
-        if (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max"))
-        {
-            int step = controlObj["step"].GetInt();
-            int min = controlObj["min"].GetInt();
-            int max = controlObj["max"].GetInt();
-            SLIDER_INFO sliderInfo;
-            sliderInfo.max = max;
-            sliderInfo.min = min;
-            sliderInfo.step = step;
-            param.controlInfos = QVariant::fromValue(sliderInfo);
+            param.m_info.toolTip = QString::fromUtf8(paramVal["tooltip"].GetString());
         }
 
         return param;

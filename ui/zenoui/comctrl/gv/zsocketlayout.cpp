@@ -10,6 +10,7 @@
 #include "variantptr.h"
 #include "render/common_id.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "zitemfactory.h"
 
 
 ZSocketLayout::ZSocketLayout(
@@ -34,6 +35,7 @@ ZSocketLayout::~ZSocketLayout()
 void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock)
 {
     QString sockName;
+    QString toolTip;
     int sockProp = 0;
     if (!m_viewSockIdx.isValid())
     {
@@ -45,6 +47,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
+        toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
     }
 
     QSizeF szSocket(10, 20);
@@ -67,6 +70,9 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
+    m_text->setToolTip(toolTip);
+    m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
+    m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 
     if (m_bInput)
     {
@@ -146,6 +152,12 @@ void ZSocketLayout::updateSockName(const QString& name)
     }
 }
 
+void ZSocketLayout::updateSockNameToolTip(const QString &tip) 
+{
+    if (m_text)
+        m_text->setToolTip(tip);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZDictSocketLayout::ZDictSocketLayout(
@@ -176,8 +188,11 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
 
     m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
+    m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());
+    m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
+    m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 
-    QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(28, 28));
+    QSizeF iconSz = ZenoStyle::dpiScaledSize(QSizeF(zenoui::g_ctrlHeight, zenoui::g_ctrlHeight));
     m_collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
     m_collaspeBtn->setCheckable(true);
 

@@ -244,7 +244,6 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_READPATH:
     case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
-    case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
     case CONTROL_VEC2_FLOAT:
@@ -271,6 +270,13 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
             vec.resize(3);
         }
         return QVariant::fromValue(vec);
+    }
+    case CONTROL_CURVE:
+    {
+        if (defaultValue.isEmpty())
+        {
+            return QVariant::fromValue(curve_util::deflCurves());
+        }
     }
     default:
         return defaultValue;
@@ -377,6 +383,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_COLOR:             return "Color";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
+    case CONTROL_HDOUBLESPINBOX: return "DoubleSpinBox";
     case CONTROL_HSLIDER:           return "Slider";
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
@@ -455,6 +462,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "SpinBox")
     {
         return CONTROL_HSPINBOX;
+    } 
+    else if (descName == "DoubleSpinBox") 
+    {
+        return CONTROL_HDOUBLESPINBOX;
     }
     else if (descName == "Slider")
     {
@@ -506,7 +517,7 @@ QStringList UiHelper::getAllControls()
 {
     return { "Integer", "Float", "String", "Boolean", "Multiline String", "read path", "write path", "Enum",
         "Float Vector 4", "Float Vector 3", "Float Vector 2","Integer Vector 4", "Integer Vector 3",
-        "Integer Vector 2", "Color", "Curve", "SpinBox", "Slider", "SpinBoxSlider" };
+        "Integer Vector 2", "Color", "Curve", "SpinBox", "DoubleSpinBox", "Slider", "SpinBoxSlider" };
 }
 
 QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
@@ -520,7 +531,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
             ctrls = {CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; 
     }
     else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
-    else if (type == "float") { ctrls = { CONTROL_FLOAT }; }    //todo: slider/spinbox for float.
+    else if (type == "float") { ctrls = { CONTROL_FLOAT, CONTROL_HDOUBLESPINBOX}; }    //todo: slider/spinbox for float.
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
@@ -618,7 +629,9 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
 {
     switch (ctrl) {
     case CONTROL_INT: return "int";
-    case CONTROL_FLOAT: return "float";
+    case CONTROL_FLOAT: 
+    case CONTROL_HDOUBLESPINBOX:
+        return "float";
     case CONTROL_BOOL:  return "bool";
     case CONTROL_MULTILINE_STRING:
     case CONTROL_STRING: return "string";
@@ -795,6 +808,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_FLOAT:
         case CONTROL_HSLIDER:
         case CONTROL_HSPINBOX:
+        case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
             return 0;
         case CONTROL_BOOL:
@@ -811,8 +825,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         case CONTROL_CURVE:
         {
-            CurveModel* pModel = curve_util::deflModel(nullptr);    //todo: how to set parent?
-            return QVariantPtr<CurveModel>::asVariant(pModel);
+            return QVariant::fromValue(curve_util::deflCurves());
         }
         case CONTROL_VEC4_FLOAT:
         case CONTROL_VEC4_INT:
@@ -834,7 +847,6 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         default:
         {
-            zeno::log_warn("unknown control");
             return QVariant();
         }
     }
@@ -1067,80 +1079,6 @@ QString UiHelper::nthSerialNumName(QString name)
         ZASSERT_EXIT(bConvert, "");
         return name + "(" + QString::number(ith + 1) + ")";
     }
-}
-
-void UiHelper::reAllocIdents(
-            QMap<QString, NODE_DATA>& nodes,
-            QList<EdgeInfo>& links,
-            const QMap<QString, NODE_DATA>& oldGraphsToNew)
-{
-    QMap<QString, QString> old2new;
-    QMap<QString, NODE_DATA> newNodes;
-    for (QString key : nodes.keys())
-    {
-        const NODE_DATA data = nodes[key];
-        const QString& oldId = data[ROLE_OBJID].toString();
-        const QString& name = data[ROLE_OBJNAME].toString();
-        QString newId;
-
-        if (oldGraphsToNew.find(oldId) != oldGraphsToNew.end())
-        {
-            //fork case.
-            NODE_DATA newData = oldGraphsToNew[oldId];
-            newId = newData[ROLE_OBJID].toString();
-            newNodes.insert(newId, newData);
-        }
-        else
-        {
-            newId = UiHelper::generateUuid(name);
-            NODE_DATA newData = data;
-            newData[ROLE_OBJID] = newId;
-            newNodes.insert(newId, newData);
-        }
-        old2new.insert(oldId, newId);
-    }
-    //replace all the old-id in newNodes.
-    for (QString newId : newNodes.keys()) {
-        NODE_DATA& data = newNodes[newId];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inputSocket : inputs) {
-            inputSocket.info.nodeid = newId;
-            inputSocket.info.links.clear();
-        }
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET& outputSocket : outputs) {
-            outputSocket.info.nodeid = newId;
-            outputSocket.info.links.clear();
-        }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    }
-
-    for (EdgeInfo& link : links)
-    {
-        QString outputNode = UiHelper::getSockNode(link.outSockPath);
-        QString outputSock = UiHelper::getSockName(link.outSockPath);
-        QString inputNode = UiHelper::getSockNode(link.inSockPath);
-        QString inputSock = UiHelper::getSockName(link.inSockPath);
-
-        QString newInputNode = old2new[inputNode];
-        QString newOutputNode = old2new[outputNode];
-
-        //todo: how to set this new node ident into link?
-        QString inSubg = UiHelper::getSockSubgraph(link.inSockPath);
-        QString outSubg = UiHelper::getSockSubgraph(link.outSockPath);
-
-        const QString& outSockPath = UiHelper::constructObjPath(outSubg, newOutputNode, "[node]/outputs/", outputSock);
-        const QString& inSockPath = UiHelper::constructObjPath(inSubg, newInputNode, "[node]/inputs/", inputSock);
-
-        EdgeInfo newLink(outSockPath, inSockPath);
-        link.inSockPath = newLink.inSockPath;
-        link.outSockPath = newLink.outSockPath;
-    }
-
-    nodes = newNodes;
 }
 
 QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
@@ -1385,15 +1323,21 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         if (type != "curve") {
             return QVariant();
         }
-        CURVES_MODEL curves;
+        CURVES_DATA curves;
         if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-            CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
-            curves.insert("x", xModel);
+            CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
+            curves.insert("x", xCurve);
         } else {
+            bool timeLine = false;
+            if (val.HasMember(key_timeline))
+            {
+                timeLine = val[key_timeline].GetBool();
+            }
             for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                 if (i->value.IsObject()) {
-                    CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
-                    curves.insert(i->name.GetString(), pModel);
+                    CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
+                    curve.timeline = timeLine;
+                    curves.insert(i->name.GetString(), curve);
                 }
             }
         }
@@ -1466,15 +1410,16 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
             if (type != "curve") {
                 return QVariant();
             }
-            CURVES_MODEL curves;
+            CURVES_DATA curves;
             if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-                CurveModel *xModel = JsonHelper::_parseCurveModel("x", val, parentRef);
-                curves.insert("x", xModel);
+                CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
+                curves.insert("x", xCurve);
             } else {
                 for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
                     if (i->value.IsObject()) {
-                        CurveModel *pModel = JsonHelper::_parseCurveModel(i->name.GetString(), i->value, parentRef);
-                        curves.insert(i->name.GetString(), pModel);
+                        CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
+                        //pModel->setTimeline(val[key_timeline].GetBool()); //todo: timeline
+                        curves.insert(i->name.GetString(), curve);
                     }
                 }
             }
@@ -1555,7 +1500,7 @@ QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
                     lst.append(QString::number(obj.GetFloat()));
                 }
                 else if (obj.IsString()) {
-                    lst.append(QString::fromLocal8Bit(obj.GetString()));
+                    lst.append(QString::fromUtf8(obj.GetString()));
                 }
             }
             return lst;
@@ -1780,7 +1725,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
     return QPair<NODES_DATA, LINKS_DATA>(nodes, links);
 }
 
-void UiHelper::reAllocIdents2(const QString& targetSubgraph,
+void UiHelper::reAllocIdents(const QString& targetSubgraph,
                               const NODES_DATA& inNodes,
                               const LINKS_DATA& inLinks,
                               NODES_DATA& outNodes,

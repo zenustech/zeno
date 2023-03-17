@@ -17,7 +17,7 @@
 GroupTextItem::GroupTextItem(QGraphicsItem *parent) : 
     QGraphicsWidget(parent)
 {
-    setFlags(ItemIsSelectable);    
+    setFlags(ItemIsSelectable);
 }
 GroupTextItem ::~GroupTextItem() {
 }
@@ -35,25 +35,32 @@ void GroupTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     emit mouseMoveSignal(event);
 }
-void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-        emit mouseReleaseSignal(event);
+void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
+{
+    emit mouseReleaseSignal(event);
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    QColor color = this->palette().color(QPalette::WindowText);
-    painter->setPen(QPen(color));    
+    qreal width = ZenoStyle::dpiScaled(1);
+    painter->fillRect(boundingRect().adjusted(-width, -width, width, 0), palette().color(QPalette::Window));
+
+    QColor color("#FFFFFF");
+    painter->setPen(QPen(color));
     painter->setFont(font());
     QFontMetrics fontMetrics(font());
     QString text = m_text;
-    if (fontMetrics.width(text) > boundingRect().width()) {
-        text = fontMetrics.elidedText(text, Qt::ElideRight, boundingRect().width());
+    width = ZenoStyle::dpiScaled(4);
+    QRectF textRect = boundingRect().adjusted(width, 0, -width, 0);
+    if (fontMetrics.width(text) > textRect.width()) {
+        text = fontMetrics.elidedText(text, Qt::ElideRight, textRect.width());
     }
-    painter->drawText(this->boundingRect(), Qt::AlignVCenter, text);
+    painter->drawText(textRect, Qt::AlignVCenter, text);
 }
 
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent), 
     m_bDragging(false),
+    m_bSelected(false),
     m_pTextItem(nullptr) 
 {
     setAutoFillBackground(false);
@@ -64,9 +71,11 @@ GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     });
     connect(m_pTextItem, &GroupTextItem::mouseReleaseSignal, this, [=](QGraphicsSceneMouseEvent *event) { 
         ZenoNode::mouseReleaseEvent(event);
+        m_bSelected = false;
     });
     connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=](QGraphicsSceneMouseEvent *event) {
         ZenoNode::mousePressEvent(event);
+        m_bSelected = true;
     });
     m_pTextItem->show();
     m_pTextItem->setZValue(0);
@@ -98,6 +107,8 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && !m_childItems.contains(item)) {
 
         GroupNode *pParentItem = item->getGroupNode();
+        if (getGroupNode() == item)
+            return false;
         if (pParentItem && pParentItem->sceneBoundingRect().contains(item->sceneBoundingRect()) &&
             (!pParentItem->sceneBoundingRect().contains(this->sceneBoundingRect()))) {
             return false;
@@ -132,7 +143,8 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 void GroupNode::onZoomed() 
 {
     int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
-    QFont font("Alibaba PuHuiTi", fontSize);
+    QFont font = zenoApp->font();
+    font.setPointSize(fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);
     m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height() + ZenoStyle::dpiScaled(10)));
@@ -153,17 +165,23 @@ void GroupNode::onUpdateParamsNotDesc()
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     m_pTextItem->setText(blackboard.title);
     QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::WindowText, blackboard.background);
+    palette.setColor(QPalette::Window, blackboard.background);
     m_pTextItem->setPalette(palette);
     setSvgData(blackboard.background.name());
     if (blackboard.sz.isValid() && blackboard.sz != this->size()) {
         resize(blackboard.sz);
         emit nodePosChangedSignal();
     }
+    if (blackboard.sz.width() != m_pTextItem->boundingRect().width())
+        m_pTextItem->resize(QSize(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
 {
+    if (item->getGroupNode()) 
+    {
+        item->getGroupNode()->removeChildItem(item);
+    }
     m_childItems << item;
     item->setGroupNode(this);
     if (item->zValue() <= zValue()) {
@@ -221,7 +239,7 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
         m_pTextItem->resize(QSize(boundingRect().width(), m_pTextItem->boundingRect().height()));
     }
     QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::WindowText, blackboard.background);
+    palette.setColor(QPalette::Window, blackboard.background);
     m_pTextItem->setPalette(palette);
     m_pTextItem->setText(blackboard.title);
     setSvgData(blackboard.background.name());
@@ -324,7 +342,7 @@ void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
 }
 
 bool GroupNode::isDragArea(QPointF pos) {
-    QRectF rect = boundingRect();
+    QRectF rect = boundingRect();    
     rect.adjust(0, m_pTextItem->boundingRect().height(), 0, 0);
     int diffLeft = pos.x() - rect.left(); 
     int diffRight = pos.x() - rect.right();
@@ -417,6 +435,12 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         setMoving(true);
         return value;
+    }
+    else if(change == QGraphicsItem::ItemSelectedHasChanged) 
+    {
+        QPainterPath path = scene()->selectionArea();
+        if (isSelected() && !m_bSelected && !path.contains(sceneBoundingRect()))
+            this->setSelected(false);
     }
     return ZenoNode::itemChange(change, value);
 }

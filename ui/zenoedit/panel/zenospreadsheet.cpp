@@ -99,9 +99,13 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget *pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget *pViewport = pWid->getViewportWidget();
+
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    if (views.isEmpty())
+        return;
+
+    ZASSERT_EXIT(views[0]);
+    ViewportWidget *pViewport = views[0]->getViewportWidget();
     ZASSERT_EXIT(pViewport);
     auto scene = pViewport->getSession()->get_scene();
     ZASSERT_EXIT(scene);

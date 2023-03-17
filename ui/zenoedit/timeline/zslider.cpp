@@ -1,5 +1,6 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
+#include <zenoedit/zenoapplication.h>
 
 
 ZSlider::ZSlider(QWidget* parent)
@@ -60,8 +61,8 @@ int ZSlider::_posToFrame(int x)
 int ZSlider::_frameToPos(int frame)
 {
     qreal W = width() - 2 * m_sHMargin;
-    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / (m_to - m_from + 1);
-    return m_sHMargin + (frame - m_from) * distPerFrame;
+    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
+    return m_sHMargin + (frame ) * distPerFrame;
 }
 
 void ZSlider::setFromTo(int from, int to)
@@ -78,6 +79,7 @@ void ZSlider::setFromTo(int from, int to)
         m_value = m_to;
         emit sliderValueChange(m_value);
     }
+    m_cellLength = getCellLength(m_to - m_from);
     update();
 }
 
@@ -121,32 +123,62 @@ void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    int n = m_to - m_from + 1;
-    int frames = _getframes();
-
-    QFont font("Segoe UI", 9);
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
     font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
-    int hh = metrics.height();
-
     painter.setFont(font);
+    painter.setPen(QPen(QColor("#5A646F"), 1));
 
-    for (int i = m_from; i <= m_to; i++)
+    int cellNum = ((m_to - m_from) / m_cellLength) + 1;
+    int cellPixelLength = width() / cellNum;
+    if (!(150 < cellPixelLength && cellPixelLength < 250)) {
+        m_cellLength = getCellLength(m_to - m_from);
+    } 
+    int flag;
+    for (int i = 2; i > -1; i--) {
+        if (m_cellLength % m_lengthUnit[i] == 0) {
+            m_cellLength / m_lengthUnit[i];
+            flag = m_lengthUnit[i];
+            break;
+        }
+    }
+    int frameNum;
+    int smallCellLength = m_cellLength / flag;
+    int offset = 0;
+    if (m_from % m_cellLength == 0) {
+        //frameNum = ((m_to - m_from) / m_cellLength) * m_lengthUnit[i] + m_cellLength;
+        frameNum = (m_to - m_from) / smallCellLength;
+    } else {
+        int firstCell = m_cellLength - m_from % m_cellLength + m_from;
+        int smallCellNum = (firstCell - m_from) / smallCellLength;
+        int h = ZenoStyle::dpiScaled(smallScaleH);
+        int y = height() - h;
+        for (int i = smallCellNum; i > 0; i--)
+        {
+            int x = _frameToPos(firstCell - smallCellLength * i - m_from);
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h));
+        }
+        offset = firstCell - m_from;
+        frameNum = (m_to - m_from) / smallCellLength - smallCellNum - 1;
+    }
+
+    for (int i = 0; i <= frameNum; i++)
     {
-        int x = _frameToPos(i);
-        QString scaleValue = QString::number(i);
-        painter.setPen(QPen(QColor("#5A646F"), 1));
+        int cellScaleValue = (i / flag) * m_cellLength + offset;
+        QString scaleValue = QString::number(cellScaleValue);
+        int x = _frameToPos(smallCellLength * i + offset);
 
-        if (i % 5 == 0)
+        if (i % flag == 0)
         {
             //draw time tick
             int h = ZenoStyle::dpiScaled(scaleH);
-            int xpos = _frameToPos(i);
+            int xpos = _frameToPos(scaleValue.toInt());
             int textWidth = metrics.horizontalAdvance(scaleValue);
             //don't know the y value.
             int yText = height() * 0.4;
-            if (m_value != i)
-                painter.drawText(QPoint(xpos - textWidth / 2, yText), scaleValue);
+            if (m_value != (cellScaleValue + m_from))
+                painter.drawText(QPoint(xpos - textWidth / 2, yText), QString::number(cellScaleValue + m_from));
 
             int y = height() - h;
             painter.drawLine(QPointF(x, y), QPointF(x, y + h));
@@ -167,9 +199,9 @@ void ZSlider::paintEvent(QPaintEvent* event)
 void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
 {
     //draw time slider
-    qreal xleftmost = _frameToPos(m_from);
-    qreal xrightmost = _frameToPos(m_to);
-    qreal xarrow_pos = _frameToPos(m_value);
+    qreal xleftmost = _frameToPos(0);
+    qreal xrightmost = _frameToPos(m_to - m_from);
+    qreal xarrow_pos = _frameToPos(m_value - m_from);
 
     painter->setPen(Qt::NoPen);
     int y = height() - scaleH;
@@ -184,7 +216,8 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
                              QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
                       QColor(76, 159, 244));
 
-    QFont font("Segoe UI Bold", 10);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     QFontMetrics metrics(font);
     painter->setFont(font);
 
@@ -192,4 +225,32 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
     int w = metrics.horizontalAdvance(numText);
     painter->setPen(QColor(76, 159, 244));
     painter->drawText(QPointF(xarrow_pos - w / 2, height() * 0.4), numText);
+}
+
+int ZSlider::getCellLength(int total) {
+    if (total < 20)
+    {
+        return 1;
+    }
+    int cellPixelLength = 0;
+    int times = 1;
+    int last = 0;
+    int len;
+    while (true)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            len = m_lengthUnit[i] * times;
+            cellPixelLength = width() / ((total / len) + 1);
+            if (150 < cellPixelLength && cellPixelLength <= 250)
+            {
+                return len;
+            } else if (cellPixelLength > 250)
+            {
+                return last;
+            }
+            last = len;
+        }
+        times *= 10;
+    }
 }

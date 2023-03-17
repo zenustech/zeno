@@ -28,7 +28,6 @@ enum MODEL_ROLE
 	ROLE_PANEL_PARAMS,	// all viewed panel parameters.
 	ROLE_CUSTOMUI_PANEL_IO,	// temp storage for custom panel io. see VARAM_INFO
 	ROLE_NODE_PARAMS,		// all viewed node parameters.
-	ROLE_CUSTOMUI_NODE_IO,
 
 	//synchronize link change, param
 	ROLE_ADDLINK,
@@ -66,6 +65,7 @@ enum MODEL_ROLE
     ROLE_VPARAM_COLLASPED,      // whether group is collasped.
 	ROLE_VPARAM_CTRL_PROPERTIES,
 	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
+    ROLE_VPARAM_TOOLTIP,
 };
 
 enum LOG_ROLE
@@ -75,6 +75,8 @@ enum LOG_ROLE
 	ROLE_FILENAME,
 	ROLE_LINENO,
 	ROLE_NODE_IDENT,
+	ROLE_RANGE_START,
+	ROLE_RANGE_LEN
 };
 
 #endif

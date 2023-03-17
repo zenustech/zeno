@@ -68,7 +68,6 @@ private:
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
-    bool m_bShowGrid;
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;
@@ -107,7 +106,6 @@ public:
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
-    void showGrid(bool bShow);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

@@ -104,7 +104,8 @@ void SearchItemDelegate::paint(QPainter* p, const QStyleOptionViewItem& option, 
 			p->drawRect(textRect.adjusted(0, 0, -1, -1));
 		}
 
-		QTextLayout textLayout(opt.text, QFont("HarmonyOS Sans", 10));
+        QFont font = zenoApp->font();
+		QTextLayout textLayout(opt.text, font);
 
 		textLayout.beginLayout();
 		QTextLine line = textLayout.createLine();

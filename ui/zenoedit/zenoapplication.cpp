@@ -84,6 +84,9 @@ void ZenoApplication::initFonts()
     QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Light.ttf");
     QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Medium.ttf");
     QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Regular.ttf");
+
+    QFont font("Alibaba PuHuiTi", 10);
+    setFont(font);
 }
 
 GraphsManagment *ZenoApplication::graphsManagment() const

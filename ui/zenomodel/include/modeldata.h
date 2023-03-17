@@ -20,6 +20,7 @@ enum PARAM_CONTROL {
     CONTROL_CURVE,
     CONTROL_HSLIDER,
     CONTROL_HSPINBOX,
+    CONTROL_HDOUBLESPINBOX,
     CONTROL_SPINBOX_SLIDER,
     CONTROL_VEC4_INT,
     CONTROL_VEC4_FLOAT,
@@ -75,11 +76,12 @@ enum SOCKET_PROPERTY {
     SOCKPROP_EDITABLE = 1 << 1,
     SOCKPROP_MULTILINK = 1 << 2,
     SOCKPROP_DICTLIST_PANEL = 1 << 3,
-    SOCKPROP_GROUP = 1 << 4,
+    SOCKPROP_GROUP_LINE = 1 << 4,
 };
 
 struct PARAM_INFO {
     QString name;
+    QString toolTip;
     QVariant defaultValue;
     QVariant value;
     PARAM_CONTROL control;
@@ -150,6 +152,7 @@ struct DICTPANEL_INFO
 struct SOCKET_INFO {
     QString nodeid;
     QString name;
+    QString toolTip;
     PARAM_CONTROL control;
     QString type;
 
@@ -169,8 +172,8 @@ struct SOCKET_INFO {
         , control(CONTROL_NONE)
         , sockProp(SOCKPROP_NORMAL)
     {}
-    SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl)
-        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL)
+    SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl, const QString& tip)
+        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL), toolTip(tip)
     {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {
@@ -195,6 +198,7 @@ struct INPUT_SOCKET
 {
     SOCKET_INFO info;
 };
+Q_DECLARE_METATYPE(INPUT_SOCKET)
 typedef FuckQMap<QString, INPUT_SOCKET> INPUT_SOCKETS;
 Q_DECLARE_METATYPE(INPUT_SOCKETS)
 
@@ -203,6 +207,7 @@ struct OUTPUT_SOCKET
 {
     SOCKET_INFO info;
 };
+Q_DECLARE_METATYPE(OUTPUT_SOCKET)
 typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
 Q_DECLARE_METATYPE(OUTPUT_SOCKETS)
 
@@ -328,7 +333,13 @@ struct CURVE_DATA {
     QVector<CURVE_POINT> points;
     int cycleType;
     CURVE_RANGE rg;
+    bool visible;
+    bool timeline;
 };
+
+typedef QMap<QString, CURVE_DATA> CURVES_DATA;
+Q_DECLARE_METATYPE(CURVES_DATA);
+
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)

@@ -17,6 +17,10 @@
 #include <regex>
 #include <utility>
 
+using std::string;
+using std::unordered_map;
+using std::unordered_set;
+using std::function;
 namespace zeno {
 
 //void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
@@ -79,6 +83,7 @@ namespace zeno {
 Picker::Picker(ViewportWidget *pViewport) 
     : select_mode_context(-1)
     , m_pViewport(pViewport)
+    , draw_mode(false)
 {
 }
 
@@ -152,6 +157,12 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
         load_from_str(selected, scene->select_mode);
         if (picked_elems_callback) picked_elems_callback(selected_elements);
     }
+}
+
+void Picker::pick_depth(int x, int y) {
+    auto depth = picker->getDepth(x, y);
+    picked_depth_callback(depth, x, y);
+    qDebug() << "picker: " << depth;
 }
 
 void Picker::add(const string& prim_name) {
@@ -261,8 +272,19 @@ void Picker::clear() {
     selected_elements.clear();
 }
 
+void Picker::set_picked_depth_callback(std::function<void(float, int, int)> callback) {
+    picked_depth_callback = std::move(callback);
+}
+
 void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
     picked_elems_callback = std::move(callback);
+}
+
+bool Picker::is_draw_mode() {
+    return draw_mode;
+}
+void Picker::switch_draw_mode() {
+    draw_mode = !draw_mode;
 }
 
 const unordered_set<string>& Picker::get_picked_prims() {

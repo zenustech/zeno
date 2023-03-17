@@ -6,6 +6,7 @@
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
+#include "zenoedit/zenoapplication.h"
 
 
 qreal editor_factor = 1.0;
@@ -348,7 +349,8 @@ ZSocketGroupItem::ZSocketGroupItem(
 {
     setBrush(QColor("#C3D2DF"));
     //QFont font("Segoe UI Bold", 14);
-    QFont font("Alibaba PuHuiTi", 14);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setWeight(QFont::Medium);
     setFont(font);
     updateBoundingRect();
@@ -395,7 +397,7 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     painter->setBrush(QColor("#191D21"));
-    qreal width = 2;
+    qreal width = ZenoStyle::dpiScaled(2);
     QPen pen(QColor(75, 158, 244), width);
     QRectF rc = boundingRect();
     if (m_bFocusIn || m_bShowSlider) {
@@ -413,7 +415,8 @@ void ZEditableTextItem::initUI(const QString& text)
     setDefaultTextColor(QColor("#C3D2DF"));
     setCursor(Qt::IBeamCursor);
 
-    QFont font("Alibaba PuHuiTi", 11);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setWeight(QFont::Medium);
     setFont(font);
 
@@ -618,7 +621,8 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font("Alibaba PuHuiTi", 11);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setWeight(QFont::Bold);
     setFont(font);
 

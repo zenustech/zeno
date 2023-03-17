@@ -21,6 +21,7 @@
 #include "util/log.h"
 #include "settings/zsettings.h"
 #include "dialog/zeditparamlayoutdlg.h"
+#include <zenomodel/include/nodesmgr.h>
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -61,7 +62,9 @@ void ZenoGraphsEditor::initUI()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
-    m_ui->graphsViewTab->setFont(QFont("Segoe UI", 12));  //bug in qss font setting.
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+    m_ui->graphsViewTab->setFont(font);  //bug in qss font setting.
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
     m_ui->graphsViewTab->setIconSize(ZenoStyle::dpiScaledSize(QSize(20,20)));
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
@@ -424,6 +427,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
     pView->resetPath(path, subGraphName, objId, isError);
+
+    m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
 }
 
 void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
@@ -656,22 +661,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_CLEAR_VIEW) 
     {
         toggleViewForSelected(false);
-    }
-    else if (actionType == ZenoMainWindow::ACTION_SNAPGRID)
-    {
-        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZenoSubGraphScene* pScene = pView->scene();
-        if (pScene)
-        {
-            pScene->setSnapGrid(bChecked);
-        }
-    }
-    else if (actionType == ZenoMainWindow::ACTION_SHOWGRID)
-    {
-        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
-        pView->showGrid(bChecked);
-    }
+    }    
     else if (actionType == ZenoMainWindow::ACTION_CUSTOM_UI) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
@@ -682,11 +672,26 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             if (nodes.size() == 1)
             {
                 QModelIndex nodeIdx = nodes[0];
+                //only subgraph node
+                if (!m_model->IsSubGraphNode(nodeIdx)) 
+                {
+                    QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
+                    return;
+                }
                 QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
                 ZASSERT_EXIT(viewParams);
                 ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_model, this);
                 dlg.exec();
             }
+        }
+    } 
+    else if (actionType == ZenoMainWindow::ACTION_GROUP) 
+    {
+        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
+        if (pView) 
+        {
+            ZenoSubGraphScene *pScene = pView->scene();
+            NodesMgr::createNewNode(m_model, pScene->subGraphIndex(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 
@@ -740,7 +745,6 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
 
         ZLineEdit* pathLineEdit = new ZLineEdit(cacheRootDir);
         pathLineEdit->setFocusPolicy(Qt::ClickFocus);
-        pathLineEdit->setProperty("cssClass", "proppanel");
         pathLineEdit->setFixedWidth(256);
         QAction* pAction = new QAction;
         QIcon icon;

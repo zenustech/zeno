@@ -366,11 +366,6 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
             const QString& path = subgPath + cPathSeperator + item.objid;
             return path;
         }
-        case ROLE_CUSTOMUI_NODE_IO:
-        {
-            VPARAM_INFO root = item.nodeParams->exportParams();
-            return QVariant::fromValue(root);
-        }
         case ROLE_CUSTOMUI_PANEL_IO:
         {
             VPARAM_INFO root = item.panelParams->exportParams();
@@ -422,9 +417,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 inSocket.info.defaultValue,
                                 inSocket.info.control,
                                 inSocket.info.ctrlProps,
-                                (SOCKET_PROPERTY)inSocket.info.sockProp
+                                (SOCKET_PROPERTY)inSocket.info.sockProp,
+                                inSocket.info.dictpanel,
+                                inSocket.info.toolTip
                     );
-                    }
+                }
                 break;
             }
             case ROLE_OUTPUTS:
@@ -444,7 +441,9 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 outSocket.info.defaultValue,
                                 outSocket.info.control,
                                 outSocket.info.ctrlProps,
-                                (SOCKET_PROPERTY)outSocket.info.sockProp
+                                (SOCKET_PROPERTY)outSocket.info.sockProp, 
+                                outSocket.info.dictpanel,
+                                outSocket.info.toolTip
                     );
                     }
                 break;
@@ -466,7 +465,9 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 param.value,
                                 param.control,
                                 param.controlProps,
-                                SOCKPROP_UNKNOWN);
+                                SOCKPROP_UNKNOWN,
+                                DICTPANEL_INFO(),
+                                param.toolTip);
                     }
                 break;
             }
@@ -474,14 +475,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             {
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
                 ZASSERT_EXIT(item.panelParams, false);
-                item.panelParams->importParamInfo(invisibleRoot);
-                break;
-            }
-            case ROLE_CUSTOMUI_NODE_IO:
-            {
-                const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
-                ZASSERT_EXIT(item.nodeParams, false);
-                item.nodeParams->importParamInfo(invisibleRoot);
+                item.panelParams->importPanelParam(invisibleRoot);
                 break;
             }
             case ROLE_COLLASPED:

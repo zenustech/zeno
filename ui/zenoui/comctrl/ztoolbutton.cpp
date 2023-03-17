@@ -1,6 +1,7 @@
 #include "../style/zenostyle.h"
 #include "../style/zstyleoption.h"
 #include "ztoolbutton.h"
+#include <zenoedit/zenoapplication.h>
 
 
 ZToolButton::ZToolButton(QWidget* parent)
@@ -15,6 +16,7 @@ ZToolButton::ZToolButton(QWidget* parent)
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
 }
 
 ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, const QString& text, QWidget* parent)
@@ -28,12 +30,15 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_text(text)
     , m_icon(icon)
     , m_iconSize(iconSize)
-    , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
+    m_font = font;
 }
 
 ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn, const QSize& iconSize, const QString& text, QWidget* parent)
@@ -47,13 +52,16 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_text(text)
     , m_icon(QIcon(icon))
     , m_iconSize(iconSize)
-    , m_font(QFont("Microsoft YaHei", 9))
     , m_radius(0)
 {
     initDefault();
     setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setCursor(QCursor(Qt::PointingHandCursor));
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
+    m_font = font;
 }
 
 ZToolButton::~ZToolButton()
@@ -124,20 +132,10 @@ QSize ZToolButton::sizeHint() const
 
     int marginLeft = 0, marginRight = 0, marginTop = 0, marginBottom = 0;
 
-    if (false && m_margins.isNull())
-    {
-        marginLeft = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonLeftMargin), 0, this);
-        marginRight = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonRightMargin), 0, this);
-        marginTop = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, this);
-        marginBottom = style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, this);
-    }
-    else
-    {
-        marginLeft = m_margins.left();
-        marginRight = m_margins.right();
-        marginTop = m_margins.top();
-        marginBottom = m_margins.bottom();
-    }
+    marginLeft = m_margins.left();
+    marginRight = m_margins.right();
+    marginTop = m_margins.top();
+    marginBottom = m_margins.bottom();
 
     if (!m_text.isEmpty())
     {
@@ -156,9 +154,10 @@ QSize ZToolButton::sizeHint() const
             w = qMax(textWidth, m_iconSize.width());
             h = textHeight + m_iconSize.height();
         }
-        else if (m_options & Opt_TextRightToIcon)
+        else if (m_options & (Opt_TextRightToIcon | Opt_TextLeftToIcon))
         {
             w = textWidth + m_iconSize.width();
+            w += style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, this);
             h = qMax(textHeight, m_iconSize.height());
         }
         else
@@ -294,7 +293,6 @@ void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QS
         QPixmap px(icon);
         m_iconSize = px.size();
     }
-
     if (iconHover.isEmpty())
         iconHover = icon;
     if (iconOnHover.isEmpty())
@@ -310,6 +308,27 @@ void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QS
 void ZToolButton::setFont(const QFont& font)
 {
     m_font = font;
+}
+
+void ZToolButton::initAnimation() {
+    m_radius = this->height() / 2;
+    animInfo.BtnWidth = m_iconSize.width();
+    float border = (this->height() - animInfo.BtnWidth) / 2;
+    animInfo.mOnOff = false;
+    animInfo.m_LeftPos = QPoint(border, border);
+    animInfo.m_RightPos = QPoint(this->width() - 4 * border - animInfo.BtnWidth, border);
+    animInfo.mButtonRect.setWidth(animInfo.BtnWidth);
+    animInfo.mButtonRect.setHeight(animInfo.BtnWidth);
+    animInfo.mButtonRect.moveTo(animInfo.mOnOff ? animInfo.m_RightPos : animInfo.m_LeftPos);
+
+    animInfo.mBackColor = animInfo.mOnOff ? m_clrBgOn : m_clrBgNormal;
+    animInfo.mAnimationPeriod = 100;
+    animInfo.posAnimation = new QVariantAnimation(this);
+    animInfo.posAnimation->setDuration(animInfo.mAnimationPeriod);
+    connect(animInfo.posAnimation, &QVariantAnimation::valueChanged, [=](const QVariant &value) {
+        animInfo.mButtonRect.moveTo(value.toPointF());
+        update();
+    });
 }
 
 void ZToolButton::setIconSize(const QSize& size)
@@ -337,7 +356,8 @@ void ZToolButton::setChecked(bool bChecked)
 
 void ZToolButton::setShortcut(QKeySequence text)
 {
-    //todo
+    QShortcut *shortcut = new QShortcut(text, this);
+    connect(shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
 }
 
 void ZToolButton::setDown(bool bDown)
@@ -388,6 +408,17 @@ void ZToolButton::mouseReleaseEvent(QMouseEvent* e)
         setChecked(!m_bChecked);
         emit toggled(m_bChecked);
     }
+    else if (m_options & Opt_SwitchAnimation)
+    {
+        animInfo.posAnimation->setStartValue(animInfo.mOnOff ? animInfo.m_RightPos
+                                                                       : animInfo.m_LeftPos);
+        animInfo.posAnimation->setEndValue(animInfo.mOnOff ? animInfo.m_LeftPos
+                                                                     : animInfo.m_RightPos);
+        animInfo.posAnimation->start(QAbstractAnimation::DeletionPolicy::KeepWhenStopped); //Í£Ö¹ºóÉ¾³ý
+        animInfo.mOnOff = !animInfo.mOnOff;
+        animInfo.mBackColor = animInfo.mOnOff ? m_clrBgOn : m_clrBgNormal;
+        emit toggled(animInfo.mOnOff);
+    }
     emit clicked();
 }
 
@@ -436,8 +467,25 @@ void ZToolButton::updateIcon()
 
 void ZToolButton::paintEvent(QPaintEvent* event)
 {
-    QStylePainter p(this);
-    ZStyleOptionToolButton option;
-    initStyleOption(&option);
-    p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
+    if (m_options & Opt_SwitchAnimation)
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(Qt::NoPen);
+
+        QPainterPath path;
+        path.addRoundedRect(this->rect(), m_radius, m_radius);
+        path.setFillRule(Qt::OddEvenFill);
+        painter.drawPath(path); //border
+
+        painter.setBrush(animInfo.mBackColor);
+        painter.drawRoundedRect(this->rect(), m_radius, m_radius); //background
+
+        m_icon.paint(&painter, animInfo.mButtonRect.x(), animInfo.mButtonRect.y(), animInfo.mButtonRect.width(), animInfo.mButtonRect.height());
+    } else {
+        QStylePainter p(this);
+        ZStyleOptionToolButton option;
+        initStyleOption(&option);
+        p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
+    }
 }

@@ -15,6 +15,7 @@
 #include "viewport/viewportwidget.h"
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
+#include "settings/zenosettingsmanager.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -25,7 +26,6 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     , m_dragMove(false)
     , m_menu(nullptr)
     , m_pSearcher(nullptr)
-    , m_bShowGrid(true)
 {
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -88,6 +88,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     });
     addAction(mActZenoNewNode);
 
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](int type) {
+        if (type == ZenoSettingsManager::VALUE_SHOWGRID && isVisible()) {
+            showGrid(ZenoSettingsManager::GetInstance().getValue(type).toBool());
+        }
+    });
+
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
 
@@ -96,8 +102,7 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 
 void _ZenoSubGraphView::showGrid(bool bShow)
 {
-    m_bShowGrid = bShow;
-    update();
+    scene()->invalidate(rect());
 }
 
 void _ZenoSubGraphView::redo()
@@ -163,17 +168,20 @@ void _ZenoSubGraphView::cameraFocus()
 
         ZenoMainWindow *pWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pWin);
-        DisplayWidget *pWid = pWin->getDisplayWidget();
-        ZASSERT_EXIT(pWid);
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto pZenovis = pViewport->getZenoVis();
-        ZASSERT_EXIT(pZenovis);
+        QVector<DisplayWidget*> views = pWin->viewports();
+        for (auto pDisplay : views)
+        {
+            ZASSERT_EXIT(pDisplay);
+            ViewportWidget *pViewport = pDisplay->getViewportWidget();
+            ZASSERT_EXIT(pViewport);
+            auto pZenovis = pViewport->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
 
-        bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);
-        if (found) {
-            pZenovis->m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
-            zenoApp->getMainWindow()->updateViewport();
+            bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);
+            if (found) {
+                pZenovis->m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+                zenoApp->getMainWindow()->updateViewport();
+            }
         }
     }
 }
@@ -493,7 +501,8 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
     painter->fillRect(rect, QColor("#13191f"));
-    if (m_bShowGrid)
+    bool showGrid = ZenoSettingsManager::GetInstance().getValue(ZenoSettingsManager::VALUE_SHOWGRID).toBool();
+    if (showGrid)
     {
         QTransform tf = transform();
         qreal scale = tf.m11();
@@ -569,7 +578,9 @@ void LayerPathWidget::setPath(const QString& path)
 
         ZTextLabel* pLabel = new ZTextLabel;
         pLabel->setText(item);
-        pLabel->setFont(QFont("HarmonyOS Sans", 11));
+        QFont font = zenoApp->font();
+        font.setPointSize(11);
+        pLabel->setFont(font);
         pLabel->setTextColor(QColor(129, 125, 123));
         connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
         pLayout->addWidget(pLabel);
@@ -578,7 +589,8 @@ void LayerPathWidget::setPath(const QString& path)
         {
             pLabel = new ZTextLabel;
             pLabel->setText(">");
-            QFont font("Consolas", 11);
+            QFont font = zenoApp->font();
+            font.setPointSize(11);
             font.setBold(true);
             pLabel->setFont(font);
             pLabel->setTextColor(QColor(129, 125, 123));
@@ -676,11 +688,6 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 void ZenoSubGraphView::setZoom(const qreal& scale)
 {
     m_view->setScale(scale);
-}
-
-void ZenoSubGraphView::showGrid(bool bShow)
-{
-    m_view->showGrid(bShow);
 }
 
 void ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)

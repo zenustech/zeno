@@ -72,6 +72,7 @@ namespace zenoui
         return nullptr;
     }
 
+    const qreal g_ctrlHeight = 24;
 
     QGraphicsItem* createItemWidget(
         const QVariant& value,
@@ -97,7 +98,7 @@ namespace zenoui
                 ZenoParamLineEdit *pLineEdit = new ZenoParamLineEdit(text, ctrl, m_nodeParams.lineEditParam);
                 pLineEdit->setValidator(validateForSockets(ctrl));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pLineEdit->setData(GVKEY_TYPE, type);
                 QObject::connect(pLineEdit, &ZenoParamLineEdit::editingFinished, [=]() {
@@ -108,7 +109,7 @@ namespace zenoui
                 pItemWidget = pLineEdit;
 #else
                 ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 28)));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
@@ -155,7 +156,7 @@ namespace zenoui
                 const QString& path = UiHelper::variantToString(value);
                 ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam);
 
-                pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, 32)));
+                pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, zenoui::g_ctrlHeight)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
 
@@ -206,7 +207,7 @@ namespace zenoui
                 QLinearGradient grad = value.value<QLinearGradient>();
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
 
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
 
@@ -252,7 +253,7 @@ namespace zenoui
                 }
 
                 ZVecEditorItem* pVecEditor = new ZVecEditorItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
-                pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
@@ -280,8 +281,8 @@ namespace zenoui
                 }
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
-                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
-                pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+                pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pComboBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pComboBox->setData(GVKEY_TYPE, type);
 
                 QString val = value.toString();
@@ -299,31 +300,21 @@ namespace zenoui
             case CONTROL_CURVE:
             {
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    static bool editBtnShowed = false;
-                    if (!editBtnShowed)
-                    {
-                        ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
-                        pEditor->setAttribute(Qt::WA_DeleteOnClose);
-                        pEditor->setWindowFlag(Qt::WindowStaysOnTopHint);
+                    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
 
-                        // what if value changed? removed?
-                        const CURVES_MODEL &curves = cbSet.cbGetIndexData().value<CURVES_MODEL>();
-                        for (CURVES_MODEL::ConstIterator it = curves.begin(); it != curves.end(); it++) {
-                            pEditor->addCurve(*it);
-                        }
-                        pEditor->show();
-                        editBtnShowed = true;
+                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                        cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
+                    });
 
-                        QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                            CURVES_MODEL curves = pEditor->getModel();
-                            cbSet.cbEditFinished(QVariant::fromValue(curves));
-                            editBtnShowed = false;
-                        });
-                    }
+                    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+
+                    CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    pEditor->addCurves(curves);
+                    pEditor->exec();
                 });
                 pItemWidget = pEditBtn;
                 break;
@@ -340,6 +331,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
+                pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
 					cbSet.cbEditFinished(value);
 				});
@@ -348,11 +341,45 @@ namespace zenoui
 			}
             case CONTROL_HSPINBOX: 
 			{
-                ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox;
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
+                        sliderInfo.min = props["min"].toInt();
+                        sliderInfo.max = props["max"].toInt();
+                        sliderInfo.step = props["step"].toInt();
+                    }
+                }
+                ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
 					cbSet.cbEditFinished(value); 
 				});
+                pItemWidget = pSpinBox;
+                break;
+            }
+            case CONTROL_HDOUBLESPINBOX: 
+            {
+                SLIDER_INFO sliderInfo;
+                if (controlProps.type() == QMetaType::QVariantMap) 
+                {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.contains("min") && props.contains("max") && props.contains("step")) 
+                    {
+                        sliderInfo.min = props["min"].toDouble();
+                        sliderInfo.max = props["max"].toDouble();
+                        sliderInfo.step = props["step"].toDouble();
+                    }
+                }
+                ZenoParamDoubleSpinBox *pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pSpinBox->setValue(value.toDouble());
+                QObject::connect(pSpinBox, &ZenoParamDoubleSpinBox::valueChanged, [=](double value) { 
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSpinBox;
                 break;
             }
@@ -368,6 +395,8 @@ namespace zenoui
                     }
                 }
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
+                pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
+                pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
 					cbSet.cbEditFinished(value); 

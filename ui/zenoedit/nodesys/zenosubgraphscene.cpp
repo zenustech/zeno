@@ -36,7 +36,6 @@
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
-    , m_bSnapGrid(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -400,16 +399,6 @@ void ZenoSubGraphScene::clearMark()
     m_errNodes.clear();
 }
 
-void ZenoSubGraphScene::setSnapGrid(bool bChecked)
-{
-    m_bSnapGrid = bChecked;
-}
-
-bool ZenoSubGraphScene::IsSnapGrid() const
-{
-    return m_bSnapGrid;
-}
-
 void ZenoSubGraphScene::undo()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -477,7 +466,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;
         QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-        UiHelper::reAllocIdents2(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
+        UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
 
         //todo: ret value for api.
         pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
@@ -566,14 +555,6 @@ void ZenoSubGraphScene::onNodePosChanged()
         GroupNode *currBlackboardNode = dynamic_cast<GroupNode *>(zenoNode);
         if (blackboardNode) 
         {
-            //if (blackboardNode->getChildItems().contains(zenoNode)) 
-            //{
-            //    if (currBlackboardNode) 
-            //    {
-            //        emit currBlackboardNode->nodePosChangedSignal();
-            //    }
-            //    continue;
-            //}
             if (currBlackboardNode) 
             {
                 currBlackboardNode->nodePosChanged(senderNode);
@@ -892,21 +873,30 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
-    //if (dynamic_cast<GroupNode *>(pNode)) {
 
-    //    QRectF rect;
-    //    for (auto item : selectedItems()) {
-    //        rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
-    //    }
-    //    if (rect.isValid()) {
-    //        int width = ZenoStyle::dpiScaled(50);
-    //        rect.adjust(-width, -width, width, width);
-    //        GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
-    //        pGroup->resize(rect.size());
-    //        pGroup->updateBlackboard();
-    //        pGroup->updateNodePos(rect.topLeft());
-    //    }
-    //}
+    if (dynamic_cast<GroupNode *>(pNode)) 
+    {
+        QRectF rect;
+        for (auto item : selectedItems()) 
+        {
+            rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
+        }
+        if (rect.isValid()) 
+        {
+            int width = ZenoStyle::dpiScaled(50);
+            rect.adjust(-width, -width, width, width);
+            GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
+            pGroup->resize(rect.size());
+            pGroup->updateBlackboard();
+            pGroup->setPos(rect.topLeft());
+            for (auto item : selectedItems()) 
+            {
+                ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);
+                if (pChildNode)
+                    pGroup->appendChildItem(pChildNode);
+            }
+        }
+    }
 }
 
 void ZenoSubGraphScene::selectObjViaNodes() {
@@ -914,28 +904,30 @@ void ZenoSubGraphScene::selectObjViaNodes() {
     // for selecting objects in viewport via selected nodes
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
-    DisplayWidget* pWid = pWin->getDisplayWidget();
-    ZASSERT_EXIT(pWid);
-    ViewportWidget* pViewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
-    auto scene = pViewport->getSession()->get_scene();
-    ZASSERT_EXIT(scene);
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto pDisplay : views) {
+        ZASSERT_EXIT(pDisplay);
+        ViewportWidget *pViewport = pDisplay->getViewportWidget();
+        ZASSERT_EXIT(pViewport);
+        auto scene = pViewport->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
 
-    QList<QGraphicsItem*> selItems = this->selectedItems();
-    auto picker = pViewport->picker();
-    ZASSERT_EXIT(picker);
-    picker->clear();
-    for (auto item : selItems) {
-        if (auto* pNode = qgraphicsitem_cast<ZenoNode*>(item)) {
-            auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-            for (const auto& [prim_name, _] : scene->objectsMan->pairsShared()) {
-                if (prim_name.find(node_id) != std::string::npos)
-                    picker->add(prim_name);
+        QList<QGraphicsItem *> selItems = this->selectedItems();
+        auto picker = pViewport->picker();
+        ZASSERT_EXIT(picker);
+        picker->clear();
+        for (auto item : selItems) {
+            if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+                auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
+                for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
+                    if (prim_name.find(node_id) != std::string::npos)
+                        picker->add(prim_name);
+                }
             }
         }
+        picker->sync_to_scene();
+        zenoApp->getMainWindow()->updateViewport();
     }
-    picker->sync_to_scene();
-    zenoApp->getMainWindow()->updateViewport();
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

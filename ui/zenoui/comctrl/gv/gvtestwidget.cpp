@@ -6,6 +6,7 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/ztfutil.h>
+#include <zenoedit/zenoapplication.h>
 
 ZSocketLayout* socket4 = nullptr;
 ZSocketLayout* socket1 = nullptr;
@@ -26,7 +27,8 @@ TestGraphicsView::TestGraphicsView(QWidget* parent)
 
     ZSimpleTextItem* pTitleItem = new ZSimpleTextItem("ExtractDict");
     pTitleItem->setBrush(QColor(226, 226, 226));
-    QFont font2("HarmonyOS Sans Bold", 14);
+    QFont font2 = zenoApp->font();
+    font2.setPointSize(14);
     font2.setBold(true);
     pTitleItem->setFont(font2);
     pTitleItem->updateBoundingRect();

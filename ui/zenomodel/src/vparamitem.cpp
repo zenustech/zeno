@@ -37,25 +37,30 @@ void ProxySlotObject::onDataChanged(const QModelIndex& topLeft, const QModelInde
         {
             const QString &newType = topLeft.data(ROLE_PARAM_TYPE).toString();
             PARAM_CONTROL newCtrl = UiHelper::getControlByType(newType);
-            m_pItem->m_ctrl = newCtrl;
-            m_pItem->m_type = newType;
+            m_pItem->setData(newCtrl, ROLE_PARAM_CTRL);
+            m_pItem->setData(newType, ROLE_PARAM_TYPE);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_PARAM_CTRL});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
         else if (ROLE_PARAM_NAME == role)
         {
-            m_pItem->m_name = topLeft.data(ROLE_PARAM_NAME).toString();
+            m_pItem->setData(topLeft.data(ROLE_PARAM_NAME), ROLE_PARAM_NAME);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, {ROLE_VPARAM_NAME});
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
         else if (ROLE_PARAM_VALUE == role)
         {
-            m_pItem->m_value = topLeft.data(ROLE_PARAM_VALUE);
+            m_pItem->setData(topLeft.data(ROLE_PARAM_VALUE), ROLE_PARAM_VALUE);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         } 
 		else if (ROLE_VPARAM_CTRL_PROPERTIES == role) 
 		{
             m_pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES] = topLeft.data(ROLE_VPARAM_CTRL_PROPERTIES);
+            emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
+        }
+        else if (ROLE_VPARAM_TOOLTIP == role) 
+        {
+            m_pItem->m_customData[ROLE_VPARAM_TOOLTIP] = topLeft.data(ROLE_VPARAM_TOOLTIP);
             emit m_pItem->model()->dataChanged(viewIdx, viewIdx, roles);
         }
     }
@@ -119,12 +124,6 @@ VParamItem::VParamItem(const VParamItem& other)
 
 VParamItem::~VParamItem()
 {
-    for (const QPersistentModelIndex& linkIdx : m_links)
-    {
-        ViewParamModel* pModel = qobject_cast<ViewParamModel*>(this->model());
-        //IGraphsModel* pGraphsModel = pModel->graphsModel(); 
-        //pGraphsModel->removeLink(linkIdx, true);
-    }
 }
 
 QVariant VParamItem::data(int role) const
@@ -215,6 +214,16 @@ QVariant VParamItem::data(int role) const
             return true;
         }
     }
+    case ROLE_VPARAM_TOOLTIP: 
+    {
+        if (m_customData.find(role) != m_customData.end()) 
+        {
+            return m_customData[role];
+        } else 
+        {
+            return "";
+        }
+    }
     default:
         return QStandardItem::data(role);
     }
@@ -237,22 +246,17 @@ void VParamItem::setData(const QVariant& value, int role)
             m_name = value.toString();
 
             QString newPath = model()->data(idx, ROLE_OBJPATH).toString();
-            if (role == Qt::EditRole && oldPath != newPath)
+            if (role == Qt::EditRole && oldPath != newPath && pModel)
             {
                 emit pModel->editNameChanged(idx, oldPath, m_name);
             }
-            pModel->markDirty();
+            if (pModel && !m_index.isValid())
+                pModel->markDirty();
             break;
         }
         case ROLE_PARAM_NAME:
         {
-            if (m_index.isValid())
-            {
-                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                pModel->setData(m_index, value, role);
-            }
             m_name = value.toString();
-            //QStandardItem::setData(value, Qt::DisplayRole); //will emit signal, take care!
             break;
         }
         case ROLE_PARAM_CTRL:
@@ -260,19 +264,15 @@ void VParamItem::setData(const QVariant& value, int role)
             if (value == m_ctrl)
                 return;
             m_ctrl = (PARAM_CONTROL)value.toInt();
-            qobject_cast<ViewParamModel*>(model())->markDirty();
+            auto viewModel = qobject_cast<ViewParamModel*>(model());
+            if (viewModel && !m_index.isValid())
+                viewModel->markDirty();
             break;
         }
         case ROLE_PARAM_TYPE:
         {
             if (m_type == value.toString())
                 return;
-
-            if (m_index.isValid())
-            {
-                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-                bool ret = pModel->setData(m_index, value, role);
-            }
             m_type = value.toString();
             break;
         }
@@ -287,7 +287,9 @@ void VParamItem::setData(const QVariant& value, int role)
                 pModel->setData(m_index, value, role);
             }
             m_value = value;
-            qobject_cast<ViewParamModel*>(model())->markDirty();
+            auto viewModel = qobject_cast<ViewParamModel*>(model());
+            if (viewModel && !m_index.isValid())
+                viewModel->markDirty();
             break;
         }
         case ROLE_PARAM_COREIDX:
@@ -320,6 +322,7 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_VPARAM_CTRL_PROPERTIES:
         case ROLE_VAPRAM_EDITTABLE: 
+        case ROLE_VPARAM_TOOLTIP: 
         {
             m_customData[role] = value;
             break;
@@ -379,6 +382,10 @@ VParamItem* VParamItem::findItem(uint uuid, int* targetIdx) const
             if (targetIdx)
                 *targetIdx = r;
             return pChild;
+        }
+        else if (VParamItem* pTarget = pChild->findItem(uuid, targetIdx))
+        {
+            return pTarget;
         }
     }
     return nullptr;

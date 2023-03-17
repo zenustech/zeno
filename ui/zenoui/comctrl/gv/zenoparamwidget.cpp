@@ -6,6 +6,7 @@
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
+#include "zenoedit/zenoapplication.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -470,8 +471,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
 {
     m_combobox = new ZComboBox(true);
     m_combobox->addItems(items);
-    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_combobox->setItemDelegate(new ZComboBoxItemDelegate2(m_combobox));
+    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);    
     m_combobox->setEditable(true);
 
 #if 0
@@ -643,7 +643,8 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit->setText(value);
 
 	//QTextCharFormat format;
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setFont(font);
 
@@ -816,12 +817,15 @@ void ZenoParamSpinBoxSlider::updateStyleSheet() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(parent) 
+ZenoParamSpinBox::ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent) : ZenoParamWidget(parent) 
 {
     m_pSpinBox = new QSpinBox;
     m_pSpinBox->setProperty("cssClass", "control");
     m_pSpinBox->setAlignment(Qt::AlignCenter);
-    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+    m_pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(24));
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
     setWidget(m_pSpinBox);
     connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
 }
@@ -829,6 +833,36 @@ ZenoParamSpinBox::ZenoParamSpinBox(QGraphicsItem *parent) : ZenoParamWidget(pare
 void ZenoParamSpinBox::setValue(int value) 
 {
     m_pSpinBox->setValue(value);
+}
+
+void ZenoParamSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamDoubleSpinBox::ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent)
+{
+    m_pSpinBox = new QDoubleSpinBox;
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(24));
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged(double)));
+}
+
+void ZenoParamDoubleSpinBox::setValue(double value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+void ZenoParamDoubleSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -847,7 +881,7 @@ QRectF ZenoParamGroupLine::boundingRect() const
 void ZenoParamGroupLine::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
 {
     //draw text
-    QFont font("Alibaba PuHuiTi", 12);
+    QFont font = zenoApp->font();
     QFontMetrics fm(font);
     qreal width = fm.width(m_text);
     QPen pen;

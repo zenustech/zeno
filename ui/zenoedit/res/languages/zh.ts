@@ -54,6 +54,25 @@
         <source>Run the graph before recording</source>
         <translation>开始录制前请先点一下“运行”按钮</translation>
     </message>
+    <message>
+        <source>Path to Save</source>
+        <translation>截图储存路径</translation>
+    </message>
+    <message>
+        <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
+        <translation>PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
+    </message>
+</context>
+<context>
+    <name>DockContent_Editor</name>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+    <message>
+        <source>Kill</source>
+        <translation>终止</translation>
+    </message>
 </context>
 <context>
     <name>DockContent_View</name>
@@ -92,6 +111,82 @@
     <message>
         <source>Record Video</source>
         <translation>录制视频</translation>
+    </message>
+    <message>
+        <source>Move Object</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Scale Object</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate Object</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Screenshoot</source>
+        <translation type="unfinished">截屏</translation>
+    </message>
+    <message>
+        <source>View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Focus</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Viewport</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Origin</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Front</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Top</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bottom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Transform</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Move</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Scale</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -654,6 +749,17 @@
     </message>
 </context>
 <context>
+    <name>ParamTreeItemDelegate</name>
+    <message>
+        <source>Info</source>
+        <translation>信息</translation>
+    </message>
+    <message>
+        <source>The param name already exists</source>
+        <translation>参数名字已存在</translation>
+    </message>
+</context>
+<context>
     <name>RecProgressDlg</name>
     <message>
         <source>Dialog</source>
@@ -751,11 +857,11 @@
     </message>
     <message>
         <source>RUN</source>
-        <translation>运行</translation>
+        <translation type="vanished">运行</translation>
     </message>
     <message>
         <source>Kill</source>
-        <translation>终止</translation>
+        <translation type="vanished">终止</translation>
     </message>
     <message>
         <source>ALWAYS</source>
@@ -768,10 +874,6 @@
     <message>
         <source>30 fpbs</source>
         <translation type="vanished">30帧/秒</translation>
-    </message>
-    <message>
-        <source>SR</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -869,6 +971,22 @@
         <source>Item Name</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Info</source>
+        <translation type="unfinished">信息</translation>
+    </message>
+    <message>
+        <source>The %1 item already exists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The Group cannot be edited</source>
+        <translation>分组不可被编辑</translation>
+    </message>
+    <message>
+        <source>The param name already exists</source>
+        <translation>参数名字已存在</translation>
+    </message>
 </context>
 <context>
     <name>ZLayoutMangeDlg</name>
@@ -914,9 +1032,21 @@
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
+	<message>
+        <source>Pause</source>
+        <translation>暂停</translation>
+    </message>
+	<message>
+        <source>Continue</source>
+        <translation>继续</translation>
+    </message>
     <message>
         <source>Record completed:</source>
         <translation>录制完成：</translation>
+    </message>
+	<message>
+        <source>Record Aborted:</source>
+        <translation>录制中止：</translation>
     </message>
     <message>
         <source>Open file location</source>
@@ -1002,6 +1132,10 @@
     <message>
         <source>main graph is not allowed to be deleted</source>
         <translation>不允许删除main图</translation>
+    </message>
+    <message>
+        <source>subgraph name:</source>
+        <translation>子图名称：</translation>
     </message>
 </context>
 <context>
@@ -1098,6 +1232,10 @@
     <message>
         <source>Kill</source>
         <translation type="vanished">终止</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation type="vanished">运行</translation>
     </message>
 </context>
 <context>
@@ -1496,6 +1634,10 @@
     <message>
         <source>All Files(*);;</source>
         <translation type="vanished">所有文件(*);;</translation>
+    </message>
+    <message>
+        <source>Custom Param</source>
+        <translation>自定义参数</translation>
     </message>
 </context>
 <context>

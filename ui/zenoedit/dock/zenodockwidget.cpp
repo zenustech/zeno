@@ -199,7 +199,7 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
     QAction* pSplitHor = new QAction("Split Left/Right");

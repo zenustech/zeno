@@ -25,6 +25,7 @@ public:
     virtual void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock);
     void setControl(QGraphicsItem* pControl);
     virtual void updateSockName(const QString &name);
+    void updateSockNameToolTip(const QString &tip);
     QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;
     virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;

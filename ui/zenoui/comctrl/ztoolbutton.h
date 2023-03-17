@@ -9,6 +9,18 @@ class ZToolButton : public QWidget
 {
     Q_OBJECT
 public:
+    struct AnimationInfo {
+      QColor mBackColor;
+
+      bool mOnOff;
+      int mAnimationPeriod;
+      QVariantAnimation *posAnimation;
+
+      QPointF m_RightPos;
+      QPointF m_LeftPos; 
+      QRectF mButtonRect;
+      float BtnWidth;
+    };
     enum ButtonOption
     {
         Opt_Undefined = 0x0000,
@@ -18,9 +30,11 @@ public:
         Opt_RightArrow = 0x0001 << 3,
         Opt_TextUnderIcon = 0x0001 << 4,
         Opt_TextRightToIcon = 0x0001 << 5,
-        Opt_Checkable = 0x0001 << 6,
-        Opt_NoBackground = 0x0001 << 7,
-        Opt_UpRight = 0x0001 << 8
+        Opt_TextLeftToIcon = 0x0001 << 6,
+        Opt_Checkable = 0x0001 << 7,
+        Opt_NoBackground = 0x0001 << 8,
+        Opt_UpRight = 0x0001 << 9,
+        Opt_SwitchAnimation = 0x0001 << 10
     };
     ZToolButton(QWidget* parent = nullptr);
     ZToolButton(
@@ -56,6 +70,7 @@ public:
     void setMargins(const QMargins& margins);
     void setRadius(int radius);
     void setFont(const QFont& font);
+    void initAnimation();
 
 public slots:
     void setText(const QString& text);
@@ -118,6 +133,8 @@ private:
     bool m_bChecked;
     bool m_bDown;
     bool m_bPressed;
+
+    AnimationInfo animInfo;
 };
 
 #endif
