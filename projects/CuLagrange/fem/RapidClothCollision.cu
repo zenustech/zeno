@@ -45,7 +45,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     auto no = atomic_add(exec_cuda, &nPT[0], 1); 
                     auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
                     tempPT.tuple(dim_c<4>, "inds", no, int_c) = inds; 
-                    tempPT("dist", no) = zs::sqrt(d2); 
+                    tempPT("dist", no) = (float)zs::sqrt(d2); 
                 }
             }; 
 
@@ -84,11 +84,11 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
 
                 if (ee_distance_type(v0, v1, v2, v3) != 8)
                     return; 
-                if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+                if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nEE[0], 1); 
                     auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
                     tempEE.tuple(dim_c<4>, "inds", no, int_c) = inds; 
-                    tempEE("dist", no) = zs::sqrt(d2); 
+                    tempEE("dist", no) = (float)zs::sqrt(d2); 
                 }
             };
             if (frontManageRequired)
@@ -126,7 +126,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                     auto inds = pair3_t{vi, ejInds[0], ejInds[1]};
                     tempPE.tuple(dim_c<3>, "inds", no, int_c) = inds; 
-                    tempPE("dist", no) = zs::sqrt(d2); 
+                    tempPE("dist", no) = (float)zs::sqrt(d2); 
                 }
             };
             if (frontManageRequired)
@@ -163,7 +163,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                         auto no = atomic_add(exec_cuda, &nPP[0], 1); 
                         auto inds = pair_t{vi, vj};
                         tempPP.tuple(dim_c<2>, "inds", no, int_c) = inds; 
-                        tempPP("dist", no) = zs::sqrt(d2); 
+                        tempPP("dist", no) = (float)zs::sqrt(d2); 
                     }
                 }; 
 
@@ -396,6 +396,8 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
     lcpMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, wrapv<false>{});
     lcpMat.localOrdering(pol, false_c);  
     lcpMat._vals.resize(lcpMat.nnz());
+    lcpMatIs.resize(estNumCps); 
+    lcpMatJs.resize(estNumCps); 
     
     // cons graph coloring 
     zs::Vector<int> finished {vtemp.get_allocator(), 1}; 
@@ -793,6 +795,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                 lcpMat = proxy<space>(lcpMat), 
                 lcpConverged = proxy<space>(lcpConverged), 
                 lcpTol = lcpTol, color] __device__ (int i) mutable {
+                    if (tempCons("val", i, T_c) == 0)
+                        return; 
                     if (tempCons("color", i) != color)
                         return; 
                     auto &ap = lcpMat._ptrs; 
@@ -841,10 +845,13 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
          coOffset = coOffset] __device__ (int ci) mutable {
+            if (tempCons("val", ci, T_c) == 0)
+                return; 
             int n = tempCons("vN", ci); 
             for (int k = 0; k < n; k++)
             {
                 int vi = tempCons("vi", k, ci); 
+                printf("lcp cons ci: %d, vi: %d\n", ci, vi); 
                 if (vi > coOffset)
                     continue; 
                 auto m = vtemp("ws", vi); 
@@ -869,12 +876,13 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
     pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp), maxDi = D_max * 2] __device__ (int vi) mutable {
+        [vtemp = proxy<space>({}, vtemp), maxDi = D_max] __device__ (int vi) mutable {
             vtemp("Di", vi) = maxDi; 
         }); 
-    pol(range(nCons), 
+    pol(range(nCons - ne), 
         [tempCons = proxy<space>({}, tempCons), 
-         vtemp = proxy<space>({}, vtemp)] __device__ (int ci) mutable {
+         vtemp = proxy<space>({}, vtemp), ne = ne] __device__ (int i) mutable {
+            int ci = i + ne; 
             auto dist = tempCons("dist", ci, T_c); 
             auto vN = tempCons("vN", ci); 
             for (int k = 0; k < vN; k++)

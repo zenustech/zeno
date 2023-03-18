@@ -503,9 +503,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     lcpMat = spmat_t{zs::memsrc_e::device}; 
     // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
     // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
-    fmt::print("[container size] estNumCps: {}\n", estNumCps); 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
-    fmt::print("lcpMatIs.size: {}, lcpMatJs.size(): {}\n", lcpMatIs.size(), lcpMatJs.size()); 
+    fmt::print("init lcpMatIs size: {}\n", lcpMatIs.size()); 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
     // average edge length (for CCD filtering)
     initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes

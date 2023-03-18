@@ -271,6 +271,23 @@ struct RapidClothSystem : IObject {
     T BCStiffness = 1e6f; 
 };
 
+    template <
+        typename VecTA, typename VecTB,
+        zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+    constexpr auto safe_dist2_ee(const zs::VecInterface<VecTA> &ea0, const zs::VecInterface<VecTA> &ea1,
+                            const zs::VecInterface<VecTB> &eb0, const zs::VecInterface<VecTB> &eb1) noexcept {
+        using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+        auto b = (ea1 - ea0).cross(eb1 - eb0);
+        auto b2 = b.l2NormSqr(); 
+        if (b2 < zs::limits<T>::epsilon()) // PE
+            if (auto aLen2 = (ea0 - ea1).l2NormSqr(), bLen2 = (eb0 - eb1).l2NormSqr(); aLen2 < bLen2)
+                return (ea0 - eb0).cross(ea0 - eb1).l2NormSqr() / bLen2;  
+            else 
+                return (eb0 - ea0).cross(eb0 - ea1).l2NormSqr() / aLen2; 
+        T aTb = (eb0 - ea0).dot(b);
+        return aTb * aTb / b.l2NormSqr();
+    }
+
 } // namespace zeno
 
 #include "SolverUtils.cuh"

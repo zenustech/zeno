@@ -285,7 +285,7 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     // fix the boundary 
     pol(range(coOffset), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y[k+1]", 3) = 
+            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = 
                 vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
         }); 
 }
