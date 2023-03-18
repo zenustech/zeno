@@ -136,18 +136,16 @@ private:
 
 class ZenoSocketItem;
 
-class ZSocketGroupItem : public ZSimpleTextItem
+class ZSocketPlainTextItem : public ZSimpleTextItem
 {
     typedef ZSimpleTextItem _base;
 public:
-    explicit ZSocketGroupItem(
+    explicit ZSocketPlainTextItem(
         const QPersistentModelIndex& viewSockIdx,
         const QString& text,
         bool bInput,
         Callback_OnSockClicked cbSockOnClick,
         QGraphicsItem* parent = nullptr);
-
-    QPointF getPortPos();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;

@@ -325,7 +325,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
     QFont font = zenoApp->font();
-    font.setWeight(QFont::Medium);
+    font.setWeight(QFont::DemiBold);
     pLabel->setFont(font);
     pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
 

@@ -335,7 +335,7 @@ void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 }
 
 
-ZSocketGroupItem::ZSocketGroupItem(
+ZSocketPlainTextItem::ZSocketPlainTextItem(
         const QPersistentModelIndex& viewSockIdx,
         const QString& sockName, 
         bool bInput,
@@ -348,27 +348,17 @@ ZSocketGroupItem::ZSocketGroupItem(
     , m_socket(nullptr)
 {
     setBrush(QColor("#C3D2DF"));
-    //QFont font("Segoe UI Bold", 14);
     QFont font = zenoApp->font();
-    font.setPointSize(10);
-    font.setWeight(QFont::Medium);
+    font.setPointSize(12);
+    font.setWeight(QFont::DemiBold);
     setFont(font);
     updateBoundingRect();
 
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
-    setPadding(0,ZenoStyle::dpiScaled(5), 0, 0);
 }
 
-QPointF ZSocketGroupItem::getPortPos()
-{
-    if (m_socket)
-        return m_socket->sceneBoundingRect().center();
-    else
-        return QPointF();
-}
-
-QVariant ZSocketGroupItem::itemChange(GraphicsItemChange change, const QVariant& value)
+QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
     return _base::itemChange(change, value);
 }

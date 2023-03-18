@@ -52,7 +52,7 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
 QFont LogItemDelegate::getFont() const
 {
     QFont font = zenoApp->font();
-    font.setBold(true);
+    font.setWeight(QFont::DemiBold);
     return font;
 }
 

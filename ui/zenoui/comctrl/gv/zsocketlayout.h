@@ -7,7 +7,7 @@
 
 class ZenoSocketItem;
 class ZSimpleTextItem;
-class ZSocketGroupItem;
+class ZSocketPlainTextItem;
 class ZDictPanel;
 class ZenoImageItem;
 class IGraphsModel;

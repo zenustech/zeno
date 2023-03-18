@@ -67,7 +67,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     }
     else
     {
-        m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
+        m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
         setSpacing(ZenoStyle::dpiScaled(32));
     }
     m_text->setToolTip(toolTip);
@@ -146,7 +146,7 @@ void ZSocketLayout::updateSockName(const QString& name)
     }
     else
     {
-        ZSocketGroupItem* pGroup = static_cast<ZSocketGroupItem*>(m_text);
+        ZSocketPlainTextItem* pGroup = static_cast<ZSocketPlainTextItem*>(m_text);
         if (pGroup)
             pGroup->setText(name);
     }
@@ -187,7 +187,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
 
-    m_text = new ZSocketGroupItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
+    m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
     m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());
     m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
     m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
@@ -260,7 +260,7 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 {
     if (m_viewSockIdx == sockIdx)
     {
-        ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem *>(m_text);
+        ZSocketPlainTextItem *pEdit = static_cast<ZSocketPlainTextItem *>(m_text);
         exist = true;
         return m_socket->center();
     }
@@ -273,7 +273,7 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
         }
         else
         {
-            ZSocketGroupItem *pEdit = static_cast<ZSocketGroupItem*>(m_text);
+            ZSocketPlainTextItem *pEdit = static_cast<ZSocketPlainTextItem*>(m_text);
             exist = true;
             return m_socket->center();
         }

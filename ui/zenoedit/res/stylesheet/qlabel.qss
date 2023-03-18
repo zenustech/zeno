@@ -14,7 +14,7 @@ QLabel[cssClass="proppanel-nodename"]
 
 QLabel[cssClass="proppanel-sectionname"]
 {
-	font-weight: bold;
+	font-weight: 500;
 	color: rgba(187, 206, 220, 1.0);
 }
 

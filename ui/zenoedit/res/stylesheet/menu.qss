@@ -6,7 +6,6 @@ QMenu {
 }
 
 QMenu::item {
-    font: 9pt 'Noto Sans SC';
     font-weight: 400;
     padding: 4px 28px;
     color: #8A939E;
