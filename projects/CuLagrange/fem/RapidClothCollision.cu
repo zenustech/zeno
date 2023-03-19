@@ -84,6 +84,8 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
 
                 if (ee_distance_type(v0, v1, v2, v3) != 8)
                     return; 
+                if ((v0 - v1).cross(v2 - v3).l2NormSqr() < limits<T>::epsilon())
+                    return; // PE
                 if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
                     auto no = atomic_add(exec_cuda, &nEE[0], 1); 
                     auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
@@ -617,7 +619,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             return; 
         } 
         grad /= (2.0f * area * coef + limits<T>::epsilon()); 
-        tempCons.tuple(dim_c<9>, "grad", consInd, T_c) = grad; 
+        // tempCons.tuple(dim_c<9>, "grad", consInd, T_c) = grad; 
+        for (int d = 0; d < 9; d++)
+            tempCons("grad", d, consInd, T_c) = grad(d); 
         tempCons("val", consInd, T_c) = val; 
     }); 
 
@@ -652,14 +656,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("val", consInd, T_c) = 0; 
             return; 
         } 
-        zs::vec<T, 3, 4> grad; 
+        zs::vec<T, 4, 3> grad; 
         for (int d = 0; d < 3; d++)
             grad(0, d) = 0; 
         for (int k = 1; k < 4; k++)
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k); 
-                grad(0, d) -= mat(d, k); 
+                grad(k, d) = mat(d, k - 1); 
+                grad(0, d) -= mat(d, k - 1); 
             }
         grad /= coef; 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
@@ -697,10 +701,20 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int d = 0; d < 3; d++)
         {
             rMat(d, 0) = ri1(d) - ri0(d); 
-            rMat(d, 1) = ri1(d) - ri0(d); 
+            rMat(d, 1) = rj0(d) - ri0(d); 
             rMat(d, 2) = rj1(d) - ri0(d); 
         }
-        auto coef = determinant(rMat);  
+        auto coef = determinant(rMat);
+        // DEBUG OUTPUT
+        {  
+            if (zs::abs(coef) < limits<T>::epsilon())
+            {
+                printf("tiny coef in ee: coef = %f, ei = %d, inds: %d, %d, %d, %d, ei0: %f, %f, %f, ei1: %f, %f, %f, ej0: %f, %f, %f, ej1: %f, %f, %f\n", 
+                    coef, i, inds[0], inds[1], inds[2], inds[3], 
+                    ei0(0), ei0(1), ei0(2), ei1(0), ei1(1), ei1(2), 
+                    ej0(0), ej0(1), ej0(2), ej1(0), ej1(1), ej1(2)); 
+            }
+        }
         mat = adjoint(mat).transpose();
         auto val = vol / coef - 1.0f; 
         if (val >= 0)
@@ -710,14 +724,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             return; 
         } 
 
-        zs::vec<T, 3, 4> grad; 
+        zs::vec<T, 4, 3> grad; 
         for (int d = 0; d < 3; d++)
             grad(0, d) = 0; 
         for (int k = 1; k < 4; k++)
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k); 
-                grad(0, d) -= mat(d, k); 
+                grad(k, d) = mat(d, k - 1); 
+                grad(0, d) -= mat(d, k - 1); 
             }
         grad /= coef; 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
@@ -749,15 +763,15 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 {
                     int neCons = vCons("cons", k, vi); 
                     int neV = vCons("ind", k, vi); 
-                    auto m = vtemp("ws", k, vi); 
+                    auto m = vtemp("ws", vi); // TODO: no ofb information when typing vtemp("ws", k, vi)? 
                     if (m <= 0.f)
                         m = limits<T>::epsilon(); 
                     auto mInv = 1.0f / m;  
                     // cons.grad(j) * m_inv * neCons.grad(neV)
-                    T val = 0; 
+                    T val = 0.f; 
                     for (int d = 0; d < 3; d++)
-                        val += tempCons("grad", j * 3 + d, i) * mInv * 
-                            tempCons("grad", neV * 3 + d, neCons); 
+                        val += tempCons("grad", j * 3 + d, i, T_c) * mInv * 
+                            tempCons("grad", neV * 3 + d, neCons, T_c); 
                     auto spInd = lcpMat.locate(i, neCons, true_c); 
                     atomic_add(exec_cuda, &ax[spInd], val); 
                 }
@@ -786,6 +800,7 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                         (vtemp("y[k+1]", d, i) - vtemp("x(l)", d, i)); 
             }
             tempCons("b", ci, T_c) = val; 
+            tempCons("lambda", ci, T_c) = 0.f; 
          }); 
     
     for (int iter = 0; iter < lcpCap; iter++)
@@ -813,11 +828,25 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                         auto j = aj[k]; 
                         if (j == i)
                         {
+                            // DEBUG OUTPUT
+                            {
+                                printf("A(%d, %d) += %f\n", 
+                                    i, j, (float)ax[k]); 
+                            }
                             maj += ax[k]; 
                             continue; 
                         }
                         rhs -= ax[k] * tempCons("lambda", j, T_c); 
                     } 
+                    // DEBUG OUTPUT
+                    {
+                        // check maj 
+                        if (zs::abs(maj) < limits<T>::epsilon())
+                        {
+                            printf("\t\ttiny maj!: maj at ci = %d: %f\n", i, (float)maj); 
+                            return; 
+                        }
+                    }
                     auto newLam = rhs / maj; 
                     tempCons("lambda", i, T_c) = newLam > 0.f ? newLam: 0.f;
                     if (zs::abs(newLam - oldLam) > lcpTol)
