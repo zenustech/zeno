@@ -6,6 +6,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
+#include <map>
 #include "./BoundingBox.h"
 
 namespace zeno {
@@ -334,7 +335,7 @@ public:
         return vertices_size_ - 1;
     }
 
-    int new_edge(int start, int end, bool add_lines = true) {
+    int new_edge(int start, int end) {
         assert(start != end);
 
         if (halfedges_size_ == PMP_MAX_INDEX - 1) {
@@ -342,12 +343,10 @@ public:
             return PMP_MAX_INDEX;
         }
 
-        if (add_lines) {
-            prim_->lines.push_back(vec2i(start, end));
-            auto& edeleted = prim_->lines.attr<int>("e_deleted");
-            edeleted.push_back(0);
-            ++lines_size_;
-        }
+        prim_->lines.push_back(vec2i(start, end));
+        auto& edeleted = prim_->lines.attr<int>("e_deleted");
+        edeleted.push_back(0);
+        ++lines_size_;
         
         halfedges_size_+=2;
 
@@ -357,6 +356,18 @@ public:
         if (halfedges_size_ > hconn_.size()) {
             hconn_.resize(halfedges_size_);
         }
+        hconn_[h0].vertex_ = end;
+        hconn_[h1].vertex_ = start;
+
+        return h0;
+    }
+
+    int new_halfedge(int start, int end, int line_id) {
+        assert(start != end);
+        
+        int h0 = line_id << 1;
+        int h1 = line_id << 1 | 1;
+
         hconn_[h0].vertex_ = end;
         hconn_[h1].vertex_ = start;
 
@@ -391,6 +402,7 @@ public:
     size_t lines_size_;
     size_t faces_size_;
 
+    std::map<std::pair<int, int>, int> line_map_{};
     std::string line_pick_tag_;
 
     // connectivity information
