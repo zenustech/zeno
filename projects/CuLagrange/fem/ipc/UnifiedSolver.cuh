@@ -291,6 +291,7 @@ struct UnifiedIPCSystem : IObject {
         std::size_t getBufferCapacity() const {
             return buf.capacity();
         }
+        ///
         void snapshot() {
             prevCount = cnt.size();
         }
@@ -306,8 +307,15 @@ struct UnifiedIPCSystem : IObject {
         void reset() {
             cnt.setVal(0);
         }
+        ///
         void assignCounterFrom(const DynamicBuffer &o) {
             cnt = o.cnt;
+        }
+        ///
+        int reserveFor(int inc) {
+            int v = cnt.getVal();
+            buf.resize((std::size_t)(v + inc));
+            return v;
         }
 
         struct Port {
@@ -410,6 +418,7 @@ struct UnifiedIPCSystem : IObject {
         using T = T_;
         using vec3 = zs::vec<T, 3>;
         using mat3 = zs::vec<T, 3, 3>;
+        using pair_t = pair_t;
         using spmat_t = zs::SparseMatrix<mat3, true>;
         using dyn_hess_t = zs::tuple<pair_t, mat3>;
 
@@ -445,12 +454,13 @@ struct UnifiedIPCSystem : IObject {
         using sys_hess_t = SystemHessian<T_>;
         using vec3 = typename sys_hess_t::vec3;
         using mat3 = typename sys_hess_t::mat3;
+        using pair_t = typename sys_hess_t::pair_t;
         using spmat_t = typename sys_hess_t::spmat_t;
         using dyn_hess_t = typename sys_hess_t::dyn_hess_t;
         using dyn_buffer_t = DynamicBuffer<dyn_hess_t>;
 
-        using spmat_view_t = RM_CVREF_T(zs::view<space>(std::declval<spmat_t>(), zs::true_c));
-        using dyn_buffer_view_t = RM_CVREF_T(std::declval<dyn_buffer_t>().port());
+        using spmat_view_t = RM_CVREF_T(zs::view<space>(std::declval<spmat_t &>(), zs::true_c));
+        using dyn_buffer_view_t = RM_CVREF_T(std::declval<dyn_buffer_t &>().port());
 
         SystemHessianView(sys_hess_t &sys)
             : spmat{zs::view<space>(sys.spmat, zs::true_c)}, dynHess{sys.dynHess.port()} {

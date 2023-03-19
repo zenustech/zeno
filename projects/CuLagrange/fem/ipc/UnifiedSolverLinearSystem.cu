@@ -571,12 +571,6 @@ void UnifiedIPCSystem::updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &
 
     linsys.dynHess.reset();
 
-    auto &hess2 = linsys.hess2;
-    auto &hess3 = linsys.hess3;
-    auto &hess4 = linsys.hess4;
-    hess2.reset(false, 0); // overwrite style
-    hess3.reset(false, 0);
-    hess4.reset(false, 0);
     if (enableContact) {
         updateBarrierGradientAndHessian(pol, gTag);
 
@@ -608,59 +602,6 @@ void UnifiedIPCSystem::prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &po
             vtemp("P", 3 + d, row) += mat(1, d);
             vtemp("P", 6 + d, row) += mat(2, d);
         });
-    }
-
-    // hess2
-    const auto &hess2 = linsys.hess2;
-    const auto &hess3 = linsys.hess3;
-    const auto &hess4 = linsys.hess4;
-    pol(Collapse{hess2.count() * 3},
-        [execTag, hess2 = proxy<space>(hess2), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
-            auto d = ei % 3;
-            ei /= 3;
-            auto inds = hess2.inds[ei];
-            auto mat = hess2.hess[ei];
-            for (int k = 0; k != 2; ++k) {
-                auto row = inds[k];
-                auto offset = k * 3;
-                atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
-                atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
-                atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
-            }
-        });
-    // hess3
-    {
-        pol(Collapse{hess3.count() * 3},
-            [execTag, hess3 = proxy<space>(hess3), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
-                auto d = ei % 3;
-                ei /= 3;
-                auto inds = hess3.inds[ei];
-                auto mat = hess3.hess[ei];
-                for (int k = 0; k != 3; ++k) {
-                    auto row = inds[k];
-                    auto offset = k * 3;
-                    atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
-                    atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
-                    atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
-                }
-            });
-    }
-    // hess4
-    {
-        pol(Collapse{hess4.count() * 3},
-            [execTag, hess4 = proxy<space>(hess4), vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int ei) mutable {
-                auto d = ei % 3;
-                ei /= 3;
-                auto inds = hess4.inds[ei];
-                auto mat = hess4.hess[ei];
-                for (int k = 0; k != 4; ++k) {
-                    auto row = inds[k];
-                    auto offset = k * 3;
-                    atomic_add(execTag, &vtemp("P", d, row), mat(offset + 0, offset + d));
-                    atomic_add(execTag, &vtemp("P", 3 + d, row), mat(offset + 1, offset + d));
-                    atomic_add(execTag, &vtemp("P", 6 + d, row), mat(offset + 2, offset + d));
-                }
-            });
     }
     // timer.tock("multiply takes");
 }
