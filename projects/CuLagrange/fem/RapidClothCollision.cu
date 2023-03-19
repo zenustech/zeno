@@ -18,11 +18,11 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
     auto &stfront = withBoundary ? boundaryStFront : selfStFront;
     opt = ne; 
     pol(Collapse{stfront.size()},
-        [spInds = proxy<space>({}, spInds), svOffset = svOffset, coOffset = coOffset, 
-         eles = proxy<space>({}, withBoundary ? *coEles : stInds),
-         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), 
-         front = proxy<space>(stfront), tempPT = proxy<space>({}, tempPT),
-         vCons = proxy<space>({}, vCons), 
+        [spInds = view<space>({}, spInds, false_c, "spInds"), svOffset = svOffset, coOffset = coOffset, 
+         eles = view<space>({}, withBoundary ? *coEles : stInds, false_c, "eles"),
+         vtemp = view<space>({}, vtemp, false_c, "vtemp"), bvh = view<space>(stbvh, false_c), 
+         front = proxy<space>(stfront), tempPT = view<space>({}, tempPT, false_c, "tempPT"),
+         vCons = view<space>({}, vCons, false_c, "vCons"), 
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
@@ -296,12 +296,12 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
             for (int k = 0; k < pairSize; k++)
             {
                 auto vi = tempPair("inds", k, i, int_c); 
+                tempCons("vi", k, i + offset) = vi;  
                 if (vi > coOffset)
                     continue; 
                 auto nE = vCons("nE", vi); 
                 auto n = vCons("n", vi); 
                 degree += nE + n; 
-                tempCons("vi", k, i + offset) = vi; 
                 for (int j = 0; j < nE + n; j++)
                 {
                     int aj = vCons("cons", j, vi); 
