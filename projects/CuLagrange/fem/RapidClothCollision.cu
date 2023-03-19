@@ -232,19 +232,20 @@ static void constructVertexConsList(zs::CudaExecutionPolicy &pol,
     int pairNum, 
     int pairSize, 
     int offset, 
-    int coOffset)
+    int coOffset, 
+    const zs::SmallString& tag = "tempPair")
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
 
     pol(range(pairNum), 
-        [tempPair = proxy<space>({}, tempPair), 
-         vCons = proxy<space>({}, vCons), 
+        [tempPair = view<space>({}, tempPair, false_c, tag), 
+         vCons = view<space>({}, vCons, false_c, "vCons"), 
          offset, pairSize, coOffset] __device__ (int i) mutable {
             for (int k = 0; k < pairSize; k++)
             {
                 auto vi = tempPair("inds", k, i, int_c); 
-                if (vi > coOffset)
+                if (vi >= coOffset)
                     continue; 
                 auto n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
                 auto nE = vCons("nE", vi); 
@@ -269,7 +270,7 @@ static void constructEEVertexConsList(zs::CudaExecutionPolicy &pol,
             for (int k = 0; k < 2; k++)
             {
                 auto vi = tempE("inds", k, i, int_c); 
-                if (vi > coOffset)
+                if (vi >= coOffset)
                     continue; 
                 auto nE = atomic_add(exec_cuda, &vCons("nE", vi), 1); 
                 vCons("cons", nE, vi) = i; 
@@ -302,7 +303,7 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
             {
                 auto vi = tempPair("inds", k, i, int_c); 
                 tempCons("vi", k, i + offset) = vi; 
-                if (vi > coOffset)
+                if (vi >= coOffset)
                     continue; 
                 auto nE = vCons("nE", vi); 
                 auto n = vCons("n", vi); 
@@ -383,10 +384,10 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
         }); 
     // construct vertex -> cons list 
     constructEEVertexConsList(pol, tempE, vCons, ne, coOffset); 
-    constructVertexConsList(pol, tempPP, vCons, npp, 2, opp, coOffset); 
-    constructVertexConsList(pol, tempPE, vCons, npe, 3, ope, coOffset); 
-    constructVertexConsList(pol, tempPT, vCons, npt, 4, opt, coOffset); 
-    constructVertexConsList(pol, tempEE, vCons, nee, 4, oee, coOffset); 
+    constructVertexConsList(pol, tempPP, vCons, npp, 2, opp, coOffset, "tempPP"); 
+    constructVertexConsList(pol, tempPE, vCons, npe, 3, ope, coOffset, "tempPE"); 
+    constructVertexConsList(pol, tempPT, vCons, npt, 4, opt, coOffset, "tempPT"); 
+    constructVertexConsList(pol, tempEE, vCons, nee, 4, oee, coOffset, "tempEE"); 
     // construct cons adj list 
     lcpMatSize.setVal(0); 
     initPalettes(pol, tempE, vCons, tempCons, ne, 2, 0, shrinking); 
@@ -430,7 +431,8 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                 }
                 if (curInd < ind)
                 {
-                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!\n"); 
+                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, colors: %d, max_color: %d\n", 
+                        tempCons("num_color", i), tempCons("colors", i), tempCons("max_color", i)); 
                     return; 
                 }
                 tempCons("color", i) = pos; 
@@ -511,6 +513,11 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                     if ((tempCons("colors", i) >> tempCons("max_color", i)) % 2)
                         tempCons("num_color", i) += 1; 
                     tempCons("max_color", i) += 1; 
+                    if (tempCons("max_color", i) == 32)
+                    {
+                        printf("max_color exceeded threshold 32!\n"); 
+                        return; 
+                    }
                 }
             }); 
     }
@@ -756,7 +763,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             for (int j = 0; j < vN; j++)                        // this V
             {
                 int vi = tempCons("vi", j, i); 
-                if (vi > coOffset)
+                if (vi >= coOffset)
                     continue; 
                 int n = vCons("n", vi) + vCons("nE", vi); 
                 for (int k = 0; k < n; k++)
@@ -793,11 +800,12 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
             int val = tempCons("val", ci, T_c); 
             for (int i = 0; i < tempCons("vN", ci); i++)
             {
-                if (i > coOffset)
+                int vi = tempCons("vi", i, ci); 
+                if (vi >= coOffset)
                     continue; 
                 for (int d = 0; d < 3; d++)
-                    val -= vtemp("grad", i * 3 + d) * 
-                        (vtemp("y[k+1]", d, i) - vtemp("x(l)", d, i)); 
+                    val -= tempCons("grad", i * 3 + d, ci, T_c) * 
+                        (vtemp("y[k+1]", d, vi) - vtemp("x(l)", d, vi)); 
             }
             tempCons("b", ci, T_c) = val; 
             tempCons("lambda", ci, T_c) = 0.f; 
@@ -829,23 +837,23 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                         if (j == i)
                         {
                             // DEBUG OUTPUT
-                            {
-                                printf("A(%d, %d) += %f\n", 
-                                    i, j, (float)ax[k]); 
-                            }
+                            // {
+                            //     printf("A(%d, %d) += %f\n", 
+                            //         i, j, (float)ax[k]); 
+                            // }
                             maj += ax[k]; 
                             continue; 
                         }
                         rhs -= ax[k] * tempCons("lambda", j, T_c); 
                     } 
-                    // DEBUG OUTPUT
+                    // check maj 
+                    if (zs::abs(maj) < limits<T>::epsilon())
                     {
-                        // check maj 
-                        if (zs::abs(maj) < limits<T>::epsilon())
-                        {
-                            printf("\t\ttiny maj!: maj at ci = %d: %f\n", i, (float)maj); 
-                            return; 
-                        }
+                        // DEBUG OUTPUT
+                        // {
+                        //     printf("\t\ttiny maj!: maj at ci = %d: %f\n", i, (float)maj); 
+                        // }
+                        return; 
                     }
                     auto newLam = rhs / maj; 
                     tempCons("lambda", i, T_c) = newLam > 0.f ? newLam: 0.f;
@@ -880,17 +888,17 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
             if (tempCons("val", ci, T_c) == 0)
                 return; 
             int n = tempCons("vN", ci); 
+            auto lambda = tempCons("lambda", ci, T_c); 
             for (int k = 0; k < n; k++)
             {
                 int vi = tempCons("vi", k, ci); 
                 printf("lcp cons ci: %d, vi: %d\n", ci, vi); 
-                if (vi > coOffset)
+                if (vi >= coOffset)
                     continue; 
                 auto m = vtemp("ws", vi); 
                 if (m <= 0.f)
                     m = limits<T>::epsilon(); 
                 auto mInv = 1.0f / m; 
-                auto lambda = tempCons("lambda", ci, T_c); 
                 for (int d = 0; d < 3; d++)
                 {
                     atomic_add(exec_cuda, &vtemp("y(l)", d, vi), 
