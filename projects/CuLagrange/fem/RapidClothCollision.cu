@@ -229,8 +229,8 @@ static void constructVertexConsList(zs::CudaExecutionPolicy &pol,
     typename RapidClothSystem::itiles_t& vCons, 
     int pairNum, 
     int pairSize, 
-    std::size_t offset, 
-    std::size_t coOffset)
+    int offset, 
+    int coOffset)
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
@@ -247,7 +247,7 @@ static void constructVertexConsList(zs::CudaExecutionPolicy &pol,
                 auto n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
                 auto nE = vCons("nE", vi); 
                 vCons("cons", n + nE, vi) = i + offset; 
-                vCons("cons", n + nE, vi) = k; 
+                vCons("ind", n + nE, vi) = k; 
             }
         }); 
 }
@@ -255,17 +255,20 @@ static void constructVertexConsList(zs::CudaExecutionPolicy &pol,
 static void constructEEVertexConsList(zs::CudaExecutionPolicy &pol, 
     typename RapidClothSystem::tiles_t& tempE, 
     typename RapidClothSystem::itiles_t& vCons, 
-    int pairNum)
+    int pairNum, 
+    int coOffset)
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
 
     pol(range(pairNum), 
         [tempE = proxy<space>({}, tempE), 
-         vCons = proxy<space>({}, vCons)] __device__ (int i) mutable {
+         vCons = proxy<space>({}, vCons), coOffset] __device__ (int i) mutable {
             for (int k = 0; k < 2; k++)
             {
                 auto vi = tempE("inds", k, i, int_c); 
+                if (vi > coOffset)
+                    continue; 
                 auto nE = atomic_add(exec_cuda, &vCons("nE", vi), 1); 
                 vCons("cons", nE, vi) = i; 
                 vCons("ind", nE, vi) = k; 
@@ -279,7 +282,7 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
     typename RapidClothSystem::itiles_t &tempCons, 
     int pairNum, 
     int pairSize, 
-    std::size_t offset, 
+    int offset, 
     typename RapidClothSystem::T shrinking)
 {
     using namespace zs; 
@@ -296,7 +299,7 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
             for (int k = 0; k < pairSize; k++)
             {
                 auto vi = tempPair("inds", k, i, int_c); 
-                tempCons("vi", k, i + offset) = vi;  
+                tempCons("vi", k, i + offset) = vi; 
                 if (vi > coOffset)
                     continue; 
                 auto nE = vCons("nE", vi); 
@@ -377,7 +380,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
             vCons("nE", i) = 0; 
         }); 
     // construct vertex -> cons list 
-    constructEEVertexConsList(pol, tempE, vCons, ne); 
+    constructEEVertexConsList(pol, tempE, vCons, ne, coOffset); 
     constructVertexConsList(pol, tempPP, vCons, npp, 2, opp, coOffset); 
     constructVertexConsList(pol, tempPE, vCons, npe, 3, ope, coOffset); 
     constructVertexConsList(pol, tempPT, vCons, npt, 4, opt, coOffset); 

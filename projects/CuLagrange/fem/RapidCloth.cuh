@@ -156,7 +156,7 @@ struct RapidClothSystem : IObject {
     /// collision; TODO
     void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
     void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
-        itiles_t &tempCons, int pairNum, int pairSize, std::size_t offset, T shrinking);
+        itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
