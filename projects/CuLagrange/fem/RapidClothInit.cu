@@ -400,7 +400,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"tmp", 1}, 
             // use its bits, e.g. 110 means 
             // color-0: not available, color-1: okay, color-2: okay
-            {"colors", 1}, 
+            // {"colors", 1}, use tempColors which is a zs::Vector
             {"color", 1}, 
             // topology
             {"vi", 4}, 
@@ -414,6 +414,10 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"b", 1},       // float, b in A*lambda+b, for LCP  
             {"diag", 1}     // float, diag element in the current row 
         }, 
+        (std::size_t)estNumCps
+    }; 
+    tempColors = {
+        zsprims[0]->getParticles().get_allocator(), 
         (std::size_t)estNumCps
     }; 
     tempPP = tiles_t{

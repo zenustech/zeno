@@ -294,6 +294,7 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
         [tempPair = proxy<space>({}, tempPair), 
          vCons = proxy<space>({}, vCons), 
          tempCons = proxy<space>({}, tempCons), 
+         tempColors = proxy<space>(tempColors), 
          lcpMatIs = view<space>(lcpMatIs, false_c, "lcpMatIs"), 
          lcpMatJs = view<space>(lcpMatJs, false_c, "lcpMatJs"), 
          lcpMatSize = view<space>(lcpMatSize, false_c, "lcpMatSize"), 
@@ -322,8 +323,9 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
             tempCons("fixed", i + offset) = 0; 
             tempCons("max_color", i + offset) = max_color; 
             tempCons("num_color", i + offset) = max_color; 
-            constexpr int len = sizeof(int) * 8; 
-            tempCons("colors", i + offset) = (1 << (len - 2)) - 1 + (1 << (len - 2)); 
+            constexpr int len = sizeof(zs::i64) * 8; 
+            // tempCons("colors", i + offset) = (1 << (len - 2)) - 1 + (1 << (len - 2)); 
+            tempColors[i + offset] = (((zs::i64)1) << (len - 2)) - ((zs::i64)1) + (((zs::i64)1) << (len - 2)); 
             tempCons("vN", i + offset) = pairSize; 
             tempCons("dist", i + offset, T_c) = tempPair("dist", i); 
          }); 
@@ -413,12 +415,15 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
     { 
         // pick random color for unfixed constraints
         pol(range(nCons), 
-            [tempCons = proxy<space>({}, tempCons), seed = seed++] __device__ (int i) mutable {
+            [tempCons = proxy<space>({}, tempCons), 
+             tempColors = proxy<space>(tempColors), 
+             seed = seed++] __device__ (int i) mutable {
                 tempCons("tmp", i) = 0; 
                 if (tempCons("fixed", i))
                     return; 
                 int ind = simple_hash(simple_hash(seed) + simple_hash(i)) % tempCons("num_color", i);
-                int colors = tempCons("colors", i); 
+                // int colors = tempCons("colors", i); 
+                zs::i64 colors = tempColors[i]; 
                 int maxColor = tempCons("max_color", i); 
                 int curInd = -1; 
                 int pos = -1;  
@@ -431,8 +436,10 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                 }
                 if (curInd < ind)
                 {
-                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, colors: %d, max_color: %d\n", 
-                        tempCons("num_color", i), tempCons("colors", i), tempCons("max_color", i)); 
+                    // printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, colors: %d, max_color: %d\n", 
+                    //     tempCons("num_color", i), tempCons("colors", i), tempCons("max_color", i)); 
+                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, max_color: %d\n", 
+                        tempCons("num_color", i), tempCons("max_color", i)); 
                     return; 
                 }
                 tempCons("color", i) = pos; 
@@ -471,13 +478,15 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
 
         pol(range(nCons), 
             [tempCons = proxy<space>({}, tempCons), 
+             tempColors = proxy<space>(tempColors), 
              lcpMat = proxy<space>(lcpMat), 
              vCons = proxy<space>({}, vCons)] __device__ (int i) mutable {
                 if (tempCons("fixed", i))
                     return; 
                 int maxColor = tempCons("max_color", i); 
                 int numColor = tempCons("num_color", i); 
-                int colors = tempCons("colors", i); 
+                // int colors = tempCons("colors", i); 
+                zs::i64 colors = tempColors[i]; 
                 auto &ap = lcpMat._ptrs; 
                 auto &aj = lcpMat._inds; 
                 for (int k = ap[i]; k < ap[i + 1]; k++)
@@ -492,11 +501,13 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                         {
                             if (neColor < maxColor)
                                 numColor--; 
-                            colors -= (1 << neColor); 
+                            // colors -= (1 << neColor); 
+                            colors -= (((zs::i64)1) << neColor); 
                         }
                     }
                 }
-                tempCons("colors", i) = colors; 
+                // tempCons("colors", i) = colors; 
+                tempColors[i] = colors; 
                 tempCons("num_color", i) = numColor; 
              }); 
 
@@ -504,13 +515,15 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
         finished.setVal(1); 
         pol(range(nCons), 
             [tempCons = proxy<space>({}, tempCons), 
+            tempColors = proxy<space>(tempColors), 
             finished = proxy<space>(finished)] __device__ (int i) mutable {
                 if (tempCons("fixed", i))
                     return; 
                 finished[0] = 0; 
                 while (tempCons("num_color", i) == 0)
                 {
-                    if ((tempCons("colors", i) >> tempCons("max_color", i)) % 2)
+                    // if ((tempCons("colors", i) >> tempCons("max_color", i)) % 2)
+                    if ((tempColors[i] >> tempCons("max_color", i)) % 2)
                         tempCons("num_color", i) += 1; 
                     tempCons("max_color", i) += 1; 
                     if (tempCons("max_color", i) == 32)

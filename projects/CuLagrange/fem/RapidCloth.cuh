@@ -251,6 +251,7 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpMatSize; 
     zs::Vector<int> consColorBits; 
     itiles_t tempCons;       // LCP constraint matrix storing
+    zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
