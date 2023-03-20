@@ -50,6 +50,16 @@ public:
         }
         return std::nullopt;
     }
+
+    template <typename T, typename U = std::remove_reference<T>::type>
+    static void sendSubject(const std::string& subjectName, U& subject) {}
+
+    template <>
+    static void sendSubject<UnrealHeightFieldSubject>(const std::string& subjectName, UnrealHeightFieldSubject& subject) {
+        IPCClient& client = getStatic();
+        auto data = msgpack::pack(subject);
+        auto res = client.m_client.Post("/livelink/heightfield", reinterpret_cast<const char *>(data.data()), data.size(), subjectName);
+    }
 };
 
 class IPCServer : public QObject{
@@ -77,6 +87,7 @@ public:
 
 struct IPCHandler {
     static void heightField(const httplib::Request& req, httplib::Response& res);
+    static void addHeightFieldSubject(const httplib::Request& req, httplib::Response& res);
 };
 
 }

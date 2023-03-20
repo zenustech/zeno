@@ -52,4 +52,44 @@ ZENO_DEFNODE(FetchUnrealHeightField)({
     {"unreal"},
 });
 
+struct PushHeightFieldToUnreal : public INode {
+    void apply() override {
+        auto subjectName = get_input2<std::string>("subject");
+        if (subjectName.empty()) {
+            log_error("Subject name should not be empty.");
+            return;
+        }
+        auto prim = get_input2<PrimitiveObject>("prim");
+        if (!prim) {
+            log_error("Primitive should not be empty.");
+            return;
+        }
+        if (!prim->has_attr("height")) {
+            log_error("Primitive input should have height attribute.");
+            return;
+        }
+        auto& heightAttrs = prim->verts.attr<float>("height");
+        UnrealHeightFieldSubject subject {
+            subjectName,
+            static_cast<int64_t>(prim->verts.size()),
+            heightAttrs,
+        };
+        ::UnrealBridge::IPCClient::sendSubject<UnrealHeightFieldSubject>(subjectName, subject);
+        set_output2("subject", subjectName);
+        set_output2("prim", prim);
+    }
+};
+ZENO_DEFNODE(PushHeightFieldToUnreal)({
+    {
+        {"prim"},
+        {"string", "subject", "DefaultSubject"},
+    },
+    {
+        { "prim" },
+        {"string", "subject", "DefaultSubject"},
+    },
+    {},
+    {"unreal"},
+});
+
 }
