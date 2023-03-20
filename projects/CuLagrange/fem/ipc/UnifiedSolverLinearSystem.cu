@@ -8,6 +8,85 @@
 
 namespace zeno {
 
+/// tile version
+template <typename SpmatT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void
+update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, SpmatT &spmat,
+               const VecTI &inds, const VecTM &hess) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+    using mat3 = typename SpmatT::value_type;
+    const auto nnz = spmat.nnz();
+    const int cap = __popc(tile.ballot(1)); // assume active pattern 0...001111 [15, 14, ..., 0]
+    auto laneId = tile.thread_rank();
+#pragma unroll
+    for (int i = 0; i != codim; ++i) {
+        auto subOffsetI = i * 3;
+        auto row = inds[i];
+        // diagonal
+        auto loc = spmat._ptrs[row];
+        auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+
+        for (int d = laneId; d < 9; d += cap) {
+            atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffsetI + d / 3, subOffsetI + d % 3));
+        }
+        // non-diagonal
+        for (int j = i + 1; j < codim; ++j) {
+            auto subOffsetJ = j * 3;
+            auto col = inds[j];
+            if (row < col) {
+                auto loc = spmat.locate(row, col, zs::true_c);
+                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                for (int d = laneId; d < 9; d += cap)
+                    atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d / 3, subOffsetJ + d % 3));
+            } else {
+                auto loc = spmat.locate(col, row, zs::true_c);
+                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                for (int d = laneId; d < 9; d += cap)
+                    atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d % 3, subOffsetJ + d / 3));
+            }
+        }
+    }
+}
+template <typename T, zs::enable_if_t<std::is_fundamental_v<T>> = 0>
+__forceinline__ __device__ T tile_shfl(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile,
+                                       T var, int srcLane) {
+    return tile.shfl(var, srcLane);
+}
+template <typename VecT, zs::enable_if_t<zs::is_vec<VecT>::value> = 0>
+__forceinline__ __device__ VecT tile_shfl(
+    cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, const VecT &var, int srcLane) {
+    VecT ret{};
+    for (typename VecT::index_type i = 0; i != VecT::extent; ++i)
+        ret.val(i) = tile_shfl(tile, var.val(i), srcLane);
+    return ret;
+}
+template <typename SpmatT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+    auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+
+    bool has_work = true; // is this visible to rest threads in tile cuz of __forceinline__ ??
+
+    u32 work_queue = tile.ballot(has_work);
+    while (work_queue) {
+        auto cur_rank = __ffs(work_queue) - 1;
+        auto cur_work = tile_shfl(tile, hess, cur_rank);
+        auto cur_index = tile.shfl(inds, cur_rank); // gather index as well
+        update_hessian(tile, spmat, cur_index, cur_work);
+
+        if (tile.thread_rank() == cur_rank)
+            has_work = false;
+        work_queue = tile.ballot(has_work);
+    }
+    return;
+}
+
 /// inertia
 void UnifiedIPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol) {
     using namespace zs;
@@ -108,20 +187,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                         }
                     H *= dt * dt * vole;
 
-                    for (int vi = 0; vi != 2; ++vi) {
-                        auto i = inds[vi];
-                        for (int vj = 0; vj != 2; ++vj) {
-                            auto j = inds[vj];
-                            if (i > j)
-                                continue;
-                            auto loc = spmat.locate(i, j, true_c);
-                            auto &mat = spmat._vals[loc];
-                            for (int r = 0; r != 3; ++r)
-                                for (int c = 0; c != 3; ++c) {
-                                    atomic_add(exec_cuda, &mat(r, c), H(vi * 3 + r, vj * 3 + c));
-                                }
-                        }
-                    }
+                    update_hessian(spmat, inds, H);
                 });
     } else if (primHandle.category == ZenoParticles::surface) {
         if (primHandle.isBoundary())
@@ -247,20 +313,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
             H = dFdXT * He * dFdX;
             H *= dt * dt * vole;
 
-            for (int vi = 0; vi != 3; ++vi) {
-                auto i = inds[vi];
-                for (int vj = 0; vj != 3; ++vj) {
-                    auto j = inds[vj];
-                    if (i > j)
-                        continue;
-                    auto loc = spmat.locate(i, j, true_c);
-                    auto &mat = spmat._vals[loc];
-                    for (int r = 0; r != 3; ++r)
-                        for (int c = 0; c != 3; ++c) {
-                            atomic_add(exec_cuda, &mat(r, c), H(vi * 3 + r, vj * 3 + c));
-                        }
-                }
-            }
+            update_hessian(spmat, inds, H);
         });
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
@@ -306,20 +359,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
                     auto Hq = model.first_piola_derivative(F, true_c);
                     H = dFdXT * Hq * dFdX * vole * dt * dt;
 
-                    for (int vi = 0; vi != 4; ++vi) {
-                        auto i = inds[vi];
-                        for (int vj = 0; vj != 4; ++vj) {
-                            auto j = inds[vj];
-                            if (i > j)
-                                continue;
-                            auto loc = spmat.locate(i, j, true_c);
-                            auto &mat = spmat._vals[loc];
-                            for (int r = 0; r != 3; ++r)
-                                for (int c = 0; c != 3; ++c) {
-                                    atomic_add(exec_cuda, &mat(r, c), H(vi * 3 + r, vj * 3 + c));
-                                }
-                        }
-                    }
+                    update_hessian(spmat, inds, H);
                 });
 }
 /// @brief inertial, kinetic, external force, elasticity, bending, boundary motion, ground collision
@@ -347,11 +387,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
         auto Hi = mat3::identity() * m;
         for (int d = 0; d != BCorder; ++d)
             Hi.val(d * 4) = 0;
-        auto loc = spmat._ptrs[i];
-        auto &mat = spmat._vals[loc];
-        for (int r = 0; r != 3; ++r)
-            for (int c = 0; c != 3; ++c)
-                mat(r, c) = Hi(r, c);
+        update_hessian(spmat, zs::vec<int, 1>{i}, Hi);
     });
     /// @note force field gradient
     if (vtemp.hasProperty("extf")) {
@@ -432,13 +468,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                         }
 
                         // make_pd(hess);
-                        auto loc = spmat._ptrs[vi];
-                        auto &mat = spmat._vals[loc];
-                        for (int r = 0; r != 3; ++r) {
-                            for (int c = 0; c != 3; ++c) {
-                                mat(r, c) += hess(r, c);
-                            }
-                        }
+                        update_hessian(spmat, zs::vec<int, 1>{vi}, hess);
                     });
 
             if (s_enableFriction)
@@ -482,13 +512,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                                     hess(0, 0) = coeff / epsvh;
                                     hess(2, 2) = coeff / epsvh;
                                 }
-                                auto loc = spmat._ptrs[vi];
-                                auto &mat = spmat._vals[loc];
-                                for (int r = 0; r != 3; ++r) {
-                                    for (int c = 0; c != 3; ++c) {
-                                        mat(r, c) += hess(r, c);
-                                    }
-                                }
+                                update_hessian(spmat, zs::vec<int, 1>{vi}, hess);
                             });
                 }
         }
@@ -532,21 +556,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                 H *= dt2;
 
                 // 12 * 12 = 16 * 9
-                for (int vi = 0; vi < 4; ++vi) {
-                    auto i = stcl[vi];
-                    for (int vj = 0; vj < 4; ++vj) {
-                        auto j = stcl[vj];
-                        if (i > j)
-                            continue;
-                        auto loc = spmat.locate(i, j, true_c);
-                        auto &mat = spmat._vals[loc];
-                        for (int r = 0; r != 3; ++r) {
-                            for (int c = 0; c != 3; ++c) {
-                                atomic_add(exec_cuda, &mat(r, c), H(vi * 3 + r, vj * 3 + c));
-                            }
-                        }
-                    }
-                }
+                update_hessian(spmat, stcl, H);
             });
         }
     }
