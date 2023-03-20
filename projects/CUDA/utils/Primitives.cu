@@ -251,7 +251,7 @@ struct zs_erode_smooth_flow : INode {
         auto &pos = terrain->verts;
         float cellSize = std::abs(pos[0][0] - pos[1][0]);
         // 获取面板参数
-        auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
+        auto smooth_rate = get_input2<float>("smoothRate");
         auto flowName = get_input2<std::string>("flowName");
         // 初始化网格属性
         auto &flow = terrain->verts.attr<float>(flowName);
