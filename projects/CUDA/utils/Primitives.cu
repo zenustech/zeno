@@ -204,8 +204,6 @@ struct zs_erode_value2cond : INode {
         pol(range((std::size_t)nz * (std::size_t)nx),
             [zscond = view<space>(zscond), value, seed, nx,
              nxnz = (std::size_t)nz * (std::size_t)nx] __device__(std::size_t idx) mutable {
-                auto z = idx / nx; // outer index
-                auto x = idx % nx; // inner index
                 if (value >= 1.0f) {
                     zscond[idx] = 1;
                 } else {
@@ -235,5 +233,93 @@ ZENDEFNODE(zs_erode_value2cond, {/* inputs: */ {
                                  {
                                      "erode",
                                  }});
+
+struct zs_erode_smooth_flow : INode {
+    void apply() override {
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        // 获取面板参数
+        auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
+        auto flowName = get_input2<std::string>("flowName");
+        // 初始化网格属性
+        auto &flow = terrain->verts.attr<float>(flowName);
+        auto &_lap = terrain->verts.add_attr<float>("_lap");
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief  accelerate cond computation using cuda
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        zs::Vector<float> zsflow{flow.size(), memsrc_e::device, 0};
+        zs::Vector<float> zslap{_lap.size(), memsrc_e::device, 0};
+        /// @brief  copy host-side attribute [flow]
+        Resource::copy(MemoryEntity{zsflow.memoryLocation(), (void *)zsflow.data()},
+                       MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)flow.data()},
+                       flow.size() * sizeof(float));
+        ///
+        pol(range((std::size_t)nz * (std::size_t)nx),
+            [flow = view<space>(zsflow), lap = view<space>(zslap), nx, nz] __device__(std::size_t idx) mutable {
+                auto id_z = idx / nx; // outer index
+                auto id_x = idx % nx; // inner index
+                float net_diff = 0.0f;
+                net_diff += flow[idx - 1 * (id_x > 0)];
+                net_diff += flow[idx + 1 * (id_x < nx - 1)];
+                net_diff += flow[idx - nx * (id_z > 0)];
+                net_diff += flow[idx + nx * (id_z < nz - 1)];
+                net_diff *= 0.25f;
+                net_diff -= flow[idx];
+                lap[idx] = net_diff;
+            });
+
+        pol(range((std::size_t)nz * (std::size_t)nx), [flow = view<space>(zsflow), lap = view<space>(zslap),
+                                                       smooth_rate, nx, nz] __device__(std::size_t idx) mutable {
+            auto id_z = idx / nx; // outer index
+            auto id_x = idx % nx; // inner index
+            float net_diff = 0.0f;
+            net_diff += lap[idx - 1 * (id_x > 0)];
+            net_diff += lap[idx + 1 * (id_x < nx - 1)];
+            net_diff += lap[idx - nx * (id_z > 0)];
+            net_diff += lap[idx + nx * (id_z < nz - 1)];
+            net_diff *= 0.25f;
+            net_diff -= lap[idx];
+            flow[idx] -= smooth_rate * 0.5f * net_diff;
+        });
+        /// @brief  write back to host-side attribute
+        Resource::copy(MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)flow.data()},
+                       MemoryEntity{zsflow.memoryLocation(), (void *)zsflow.data()}, zsflow.size() * sizeof(float));
+        Resource::copy(MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)_lap.data()},
+                       MemoryEntity{zslap.memoryLocation(), (void *)zslap.data()}, zslap.size() * sizeof(float));
+
+        terrain->verts.erase_attr("_lap");
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(zs_erode_smooth_flow, {/* inputs: */ {
+                                      "prim_2DGrid",
+                                      {"float", "smoothRate", "1.0"},
+                                      {"string", "flowName", "flow"},
+                                  },
+                                  /* outputs: */
+                                  {
+                                      "prim_2DGrid",
+                                  },
+                                  /* params: */ {}, /* category: */
+                                  {
+                                      "erode",
+                                  }});
 
 } // namespace zeno
