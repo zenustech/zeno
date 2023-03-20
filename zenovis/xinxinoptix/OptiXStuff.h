@@ -406,30 +406,32 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
     size_t elements = size.width*size.height*size.depth;
 
     // tofix: use vector
-    float *volumeData = (float *)malloc(elements*nc*sizeof(float));
-    float *ptr = volumeData;
+    std::vector<float4> data;
+    data.resize(elements);
 
     for (size_t idx=0; idx<elements; idx++)
     {
-        *ptr++ = nc>=1?(float)(img[idx*nc + 0])/255.0f:0;
-        *ptr++ = nc>=2?(float)(img[idx*nc + 0])/255.0f:0;
-        *ptr++ = nc>=3?(float)(img[idx*nc + 0])/255.0f:0;
-        *ptr++ = nc>=4?(float)(img[idx*nc + 0])/255.0f:0;
+        data[idx] = {
+            nc>=1?(float)(img[idx*nc + 0])/255.0f:0,
+            nc>=2?(float)(img[idx*nc + 1])/255.0f:0,
+            nc>=3?(float)(img[idx*nc + 2])/255.0f:0,
+            nc>=4?(float)(img[idx*nc + 3])/255.0f:0
+        };
     }
-    // debug
-    zeno::log_error(
-        "volumeData[0,1,2,3]:({},{},{},{})", 
-        *(volumeData+0),
-        *(volumeData+1),
-        *(volumeData+2),
-        *(volumeData+3)
-    );
+    // // debug
+    // zeno::log_error(
+    //     "volumeData[0,1,2,3]:({},{},{},{})", 
+    //     data[0].x,
+    //     data[0].y,
+    //     data[0].z,
+    //     data[0].w
+    // );
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
     cudaError_t rc = cudaMalloc3DArray(&texture->gpuImageArray, &channelDesc, size);
 
     cudaMemcpy3DParms copyParams = { 0 };
-    copyParams.srcPtr   = make_cudaPitchedPtr((void *)volumeData, size.width*sizeof(float4), size.width, size.height);
+    copyParams.srcPtr   = make_cudaPitchedPtr(data.data(), size.width*sizeof(float4), size.width, size.height);
     copyParams.dstArray = texture->gpuImageArray;
     copyParams.extent   = size;
     copyParams.kind     = cudaMemcpyHostToDevice;
@@ -438,10 +440,8 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
         std::cout<<"texture data copy failed\n";
         cudaFreeArray(texture->gpuImageArray);
         texture->gpuImageArray = nullptr;
-        free(volumeData);
         return 0;
     }
-    free(volumeData);
 
     cudaResourceDesc            texRes;
     memset(&texRes,0,sizeof(cudaResourceDesc));
@@ -470,8 +470,10 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
 inline void addNoiseTexture(std::string directoryPath)
 {
     zeno::log_debug("loading noise texture from directory:{}", directoryPath);
+
     //debug
     zeno::log_error("map_size: {}", n_tex.size());
+
     // tofix: hardcode first
     if(n_tex.count(directoryPath)) {
         return;
@@ -496,7 +498,7 @@ inline void addNoiseTexture(std::string directoryPath)
 	memset(texture3DPixels, 0, Image3DSize);
 
 // #pragma omp parallel for
-	for (int z = 0; z<nz; z++)
+	for (int z=0; z<nz; z++)
 	{
 		std::string imageIdentifier = directoryPath + textureBaseName + "(" + std::to_string(z + 1) + ")" + fileExtension;
 		const char* imagePath = imageIdentifier.c_str();

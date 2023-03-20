@@ -1096,8 +1096,7 @@ static __inline__ __device__ float sampleLowFrequency(
 
     //debug
     // return lowFrequencyNoises.x;
-    return lowFrequencyFBM * 0.2;
-
+    // return lowFrequencyFBM * 0.2;
 
     float baseCloud = saturate(remap( 
             lowFrequencyNoises.x, 
@@ -1118,17 +1117,19 @@ static __inline__ __device__ float sampleLowFrequency(
 
 static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float time, float freq = 1.0f, int layer = 6)
 {
-    // tofix: try 3Dtexture approach
+    // try 3Dtexture approach
     // no more real-time calculation of noise and fbm
 
-    // tofix: how to properly sample noise with pos
+    // tofix: 
+    // access noise sampler succeed
+
     // float relativeHeight = getRelativeHeightInAtmosphere(pos, earthCenter, startPos, ray.direction, ray.origin);
     // vec3 skewedSamplePoint = skewSamplePointWithWind(samplePoint, relativeHeight);
-
     // vec3 p = mod(pos, 1.0f);
-
     float baseDensity = sampleLowFrequency(
-            normalize(pos + windDir * time), 
+            (pos+windDir*time)/256, 
+            // scale causing problem?
+            // how to properly sample noise with pos?
             coverage
         );
 
@@ -1153,7 +1154,8 @@ static __inline__ __device__ float light(
     float coverage,
     float absorption,
     float time,
-    float freq = 1.0
+    float freq = 1.0f,
+    float heightFract = 1.0f
 ){
 	const int steps = 4;
 	float march_step = 0.5;
@@ -1178,6 +1180,7 @@ static __inline__ __device__ float light(
 #define SIMULATE_LIGHT
 #define FAKE_LIGHT
 #define max_dist 1e8
+
 static __inline__ __device__ vec4 render_clouds(
     ray r, 
     vec3 sunLightDir,
@@ -1189,47 +1192,74 @@ static __inline__ __device__ vec4 render_clouds(
     float time
 ){
     //r.direction.x = r.direction.x * 2.0f;
-    vec3 C = vec3(0, 0, 0);
     float alpha = 0.;
     float s = mix(30, 10, sqrtf(r.direction.y));
     float march_step = thickness / floor(s) / 2;
     vec3 dir_step = r.direction / sqrtf(r.direction.y)  * march_step ;
 
     // tofix: need to have two layer now
-    sphere atmosphere_lower = {
-        vec3(0,-350., 0),
-        500., 
+    sphere atmosphere_inner = {
+        vec3(0,-60350., 0),
+        60500., 
         0
     };
-    hit_record hit = {
+
+    sphere atmosphere_outer = {
+        vec3(0,-60350., 0),
+        62000., // tofix: need to decide altitude range
+        0
+    };
+
+    hit_record hit_in = {
         float(max_dist + 1e1),  // 'infinite' distance
         -1,                     // material id
         vec3(0., 0., 0.),       // normal
         vec3(0., 0., 0.)        // origin
     };
 
-    intersect_sphere(r, atmosphere_lower, hit);
-	vec3 pos = hit.origin;
+    hit_record hit_out = {
+        float(max_dist + 1e1),  // 'infinite' distance
+        -1,                     // material id
+        vec3(0., 0., 0.),       // normal
+        vec3(0., 0., 0.)        // origin
+    };
+
+    // tofix: raymarching with 2 spheres
+    intersect_sphere(r, atmosphere_inner, hit_in);
+    intersect_sphere(r, atmosphere_outer, hit_out);
+	vec3 pos = hit_in.origin;
     float talpha = 0;
     float T = 1.; // transmitance
     float coef = 1.0;
-    for (int i =0; i < int(s)/2; i++)
+
+    // tofix: try a new version
+    float proj_dot = dot(r.direction, vec3(0.0f, 1.0f, 0.0f));
+    const float maxSteps = floor(mix(35.0f, 60.0f, 1.0f - proj_dot));
+    const float stepSize = (hit_in.t - hit_out.t) / maxSteps;
+
+    for (int i=0; i < maxSteps; i++)
     {
         float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
-        float dens = density(pos, windDir, coverage, time, freq);
+
+        // float heightFract = cloudHeightFract(length(p));
+        float dens = density(pos, windDir, coverage, time, freq
+            // ,heightFract
+        );
+
         dens = mix(0.0f,dens, smoothstep(0.0f, 0.2f, r.direction.y));
-        float T_i = exp(-absorption * dens * coef *  2.0* march_step);
+        float T_i = exp(-absorption * dens * maxSteps);
         T *= T_i;
         if (T < .01)
             break;
         talpha += (1. - T_i) * (1. - talpha);
-        pos += coef * 2.0* dir_step.x;
-        coef *= 1.0f;
-        if (length(pos) > 1e3) break;
+        pos += stepSize;
     }
 
+
+    // tofix: change to an advanced lighting model
+    vec3 C = vec3(0, 0, 0);
     //vec3 pos = r.direction * 500.0f;
-    pos = hit.origin;
+    pos = hit_in.origin;
     alpha = 0;
     T = 1.; // transmitance
     coef = 1.0;
@@ -1239,30 +1269,53 @@ static __inline__ __device__ vec4 render_clouds(
             float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
             float dens = density(pos, windDir, coverage, time, freq);
             dens = mix(0.0f, dens, smoothstep(0.0f, 0.2f, r.direction.y));
-            float T_i = 
-                exp(-absorption * dens * coef * march_step);
+            float T_i = exp(-absorption * dens * march_step);
             T *= T_i;
             if (T < .01)
                 break;
             float C_i;
-
             C_i = T *
 #ifdef SIMULATE_LIGHT
                 light(pos, sunLightDir, windDir, coverage, absorption, time, freq) *
 #endif
 // #ifdef FAKE_LIGHT
-// 			    (exp(h) / 1.75) *
+			    // (exp(h) / 1.75) *
 // #endif
                 dens * march_step;
 
             C += C_i;
             alpha += (1. - T_i) * (1. - alpha);
-            pos += coef * dir_step;
-            coef *= 1.0f;
-            if (length(pos) > 1e3)
-                break;
+            pos += dir_step;
         }
     }
+
+    // pos = hit_in.origin;
+    // alpha = 0;
+    // T = 1.; // transmitance
+    // coef = 1.0;
+//     if (talpha > 1e-3) {
+//         for (int i = 0; i < maxSteps; i++) {
+//             float h = float(i) / float(maxSteps);
+//             float dens = density(pos, windDir, coverage, time, freq);
+//             dens = mix(0.0f, dens, smoothstep(0.0f, 0.2f, r.direction.y));
+//             float T_i = exp(-absorption * dens * stepSize);
+//             T *= T_i;
+//             if (T < .01)
+//                 break;
+//             float C_i;
+//             C_i = T *
+// // #ifdef SIMULATE_LIGHT
+// //                 light(pos, sunLightDir, windDir, coverage, absorption, time, freq) *
+// // #endif
+// 			    (exp(h) / 1.75) *
+//                 dens * maxSteps;
+
+//             C += C_i;
+//             alpha += (1. - T_i) * (1. - alpha);
+//             pos += stepSize;
+//         }
+//     }
+
     return vec4(C.x, C.y, C.z, alpha);
 }
 
@@ -1285,7 +1338,7 @@ static __inline__ __device__ vec3 proceduralSky(
     if(r_dir.y<-0.001) return sky; // just being lazy
 
     // debug
-    // return (vec3)texture3D(params.cloudBaseShapeSampler, r_dir);
+    // return (vec3)texture3D(params.cloudBaseShapeSampler, r_dir*10);
 
     vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, time);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
