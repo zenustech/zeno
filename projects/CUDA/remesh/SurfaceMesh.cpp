@@ -25,8 +25,18 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     bool add_lines = (lines_size_ == 0);
 
     vconn_.resize(vertices_size_);
-    hconn_.resize(prim_->tris.size() * 6);
     fconn_.resize(prim_->tris.size());
+    if (add_lines) {
+        hconn_.resize(prim_->tris.size() * 6);
+    } else {
+        auto& lines = prim_->lines;
+        for (int i = 0; i < lines_size_; ++i) {
+            auto line = std::make_pair(lines[i][0], lines[i][1]);
+            line_map_[line] = i;
+        }
+        halfedges_size_ = lines_size_ * 2;
+        hconn_.resize(halfedges_size_);
+    }
 
     auto vdeleted = prim_->verts.add_attr<int>("v_deleted", 0);
     auto edeleted = prim_->lines.add_attr<int>("e_deleted", 0);
@@ -35,7 +45,9 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     for (auto& it : prim_->tris) {
         add_tri(it, add_lines);
     }
-    hconn_.resize(prim_->lines.size() * 2);
+    if (add_lines) {
+        hconn_.resize(lines_size_ * 2);
+    }
 
     deleted_vertices_ = 0;
     deleted_lines_ = 0;
@@ -177,7 +189,17 @@ int SurfaceMesh::add_tri(const vec3i& vertices, bool add_lines){
     // create missing edges
     for (i = 0, ii = 1; i < 3; ++i, ++ii, ii %= 3) {
         if (isNew[i]) {
-            halfedges[i] = new_edge(vertices[i], vertices[ii], add_lines);
+            if (!add_lines) {
+                int line_id;
+                if (line_map_.count(std::make_pair(vertices[i], vertices[ii])) > 0) {
+                    line_id = line_map_[std::make_pair(vertices[i], vertices[ii])];
+                } else {
+                    line_id = line_map_[std::make_pair(vertices[ii], vertices[i])];
+                }
+                halfedges[i] = new_halfedge(vertices[i], vertices[ii], line_id);
+            } else {
+                halfedges[i] = new_edge(vertices[i], vertices[ii]);
+            }
         }
     }
 

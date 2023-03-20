@@ -247,15 +247,18 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
             return numLeaves;
         return numLeaves * 2 - 1;
     };
-    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+    selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+    selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+    if constexpr (enablePE_c)
+        selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+    if constexpr (enablePP_c)
+        selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
     if (hasBoundary()) {
-        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-        // boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
+        boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+        boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+        if constexpr (enablePE_c)
+            boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
+        // boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
     }
 
     /// WARN: ignore BC verts initialization here
@@ -328,10 +331,13 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         }                                                                                                  \
     }
     {
-        bvs.resize(svInds.size()); 
-        retrieve_bounding_volumes(pol, vtemp, "x[0]", svInds, zs::wrapv<1>{}, 0, bvs);
-        svBvh.build(pol, bvs); 
-        init_front(spInds, selfSvFront); 
+        if constexpr (enablePP_c)
+        {
+            bvs.resize(svInds.size()); 
+            retrieve_bounding_volumes(pol, vtemp, "x[0]", svInds, zs::wrapv<1>{}, 0, bvs);
+            svBvh.build(pol, bvs); 
+            init_front(spInds, selfSvFront);             
+        }
 
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "x[0]", stInds, zs::wrapv<3>{}, 0, bvs);
@@ -342,7 +348,8 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         retrieve_bounding_volumes(pol, vtemp, "x[0]", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
         init_front(seInds, selfSeeFront);
-        init_front(spInds, selfSevFront); 
+        if constexpr (enablePE_c)
+            init_front(spInds, selfSevFront); 
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
@@ -354,14 +361,16 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         retrieve_bounding_volumes(pol, vtemp, "x[0]", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
         init_front(seInds, boundarySeeFront);
-        init_front(svInds, boundarySevFront);
+        if constexpr (enablePE_c)
+            init_front(svInds, boundarySevFront);
     }
 }
 
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, 
-                    T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, T BCStiffness, T shrinkFactor)
-    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, 
+                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
+                    T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
+                    T BCStiffness, T shrinkFactor)
+    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
         nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
@@ -400,7 +409,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"tmp", 1}, 
             // use its bits, e.g. 110 means 
             // color-0: not available, color-1: okay, color-2: okay
-            {"colors", 1}, 
+            // {"colors", 1}, use tempColors which is a zs::Vector
             {"color", 1}, 
             // topology
             {"vi", 4}, 
@@ -414,6 +423,10 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"b", 1},       // float, b in A*lambda+b, for LCP  
             {"diag", 1}     // float, diag element in the current row 
         }, 
+        (std::size_t)estNumCps
+    }; 
+    tempColors = {
+        zsprims[0]->getParticles().get_allocator(), 
         (std::size_t)estNumCps
     }; 
     tempPP = tiles_t{
@@ -499,13 +512,12 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                     },
                     (std::size_t)numDofs};
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
-    consColorBits = zs::Vector<int>{(std::size_t)maxVertCons, zs::memsrc_e::um, 0}; 
+    consColorBits = zs::Vector<int>{(std::size_t)sizeof(zs::i64) * 8, zs::memsrc_e::um, 0}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
     // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
     // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
-    fmt::print("[container size] estNumCps: {}\n", estNumCps); 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
-    fmt::print("lcpMatIs.size: {}, lcpMatJs.size(): {}\n", lcpMatIs.size(), lcpMatJs.size()); 
+    fmt::print("init lcpMatIs size: {}\n", lcpMatIs.size()); 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
     // average edge length (for CCD filtering)
     initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
@@ -604,6 +616,7 @@ struct MakeRapidClothSystem : INode {
 
         /// solver parameters
         auto input_est_num_cps = get_input2<int>("est_num_cps");
+        auto input_bvh_front_cps = get_input2<int>("bvh_front_cps"); 
         auto input_withContact = get_input2<bool>("with_contact");
         auto input_contactEE = get_input2<bool>("contact_with_ee");
         auto input_contactSelf = get_input2<bool>("contact_with_self");
@@ -626,7 +639,8 @@ struct MakeRapidClothSystem : INode {
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
-                                                   (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
+                                                   (std::size_t)(input_est_num_cps ? input_est_num_cps : 100000),
+                                                   (std::size_t)(input_bvh_front_cps ? input_bvh_front_cps : 10000000), 
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
                                                    input_delta, input_sigma, input_gamma, input_eps, 
@@ -639,7 +653,8 @@ struct MakeRapidClothSystem : INode {
 
 ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               "ZSBoundaryPrimitives",
-                              {"int", "est_num_cps", "500000"},
+                              {"int", "est_num_cps", "100000"},
+                              {"int", "bvh_front_cps", "10000000"}, 
                               {"int", "max_vert_cons", "32"}, 
                               {"bool", "with_contact", "1"},
                               {"bool", "contact_with_ee", "1"},

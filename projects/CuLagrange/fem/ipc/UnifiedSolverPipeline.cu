@@ -1108,6 +1108,22 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
                 }
             });
     }
+    {
+        auto &dynHess = linsys.dynHess;
+        auto n = dynHess.getCount();
+        pol(range(n), [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+                       bOffset = vtemp.getPropertyOffset(bTag), dynHess = dynHess.port()] __device__(int i) mutable {
+            auto [inds, H] = dynHess[i];
+            ///
+            auto delta = H * vtemp.pack(dim_c<3>, dxOffset, inds[1]);
+            for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &vtemp(bOffset + d, inds[0]), delta(d));
+            ///
+            delta = H.transpose() * vtemp.pack(dim_c<3>, dxOffset, inds[0]);
+            for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &vtemp(bOffset + d, inds[1]), delta(d));
+        });
+    }
 #if 0
     // hess1
     pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
@@ -1121,97 +1137,6 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
             atomic_add(execTag, &cgtemp(bOffset + d, i), dx(d));
     });
 #endif
-
-    // hess2
-    const auto &hess2 = linsys.hess2;
-    const auto &hess3 = linsys.hess3;
-    const auto &hess4 = linsys.hess4;
-    pol(Collapse{hess2.count(), 32},
-        [execTag, hess2 = proxy<space>(hess2), vtemp = proxy<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
-         bOffset = vtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int ei, int tid) mutable {
-            int rowid = tid / 5;
-            int colid = tid % 5;
-            auto inds = hess2.inds[ei];
-            auto H = hess2.hess[ei];
-            T entryH = 0, entryDx = 0, entryG = 0;
-            if (tid < 30) {
-                entryH = H.val(rowid * 6 + colid);
-                entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
-                entryG = entryH * entryDx;
-                if (colid == 0) {
-                    entryG += H.val(rowid * 6 + 5) * vtemp(dxOffset + 2, inds[1]);
-                }
-            }
-            for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 5 && tid < 30)
-                    entryG += tmp;
-            }
-            if (colid == 0 && rowid < 6)
-                atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-        });
-    // hess3
-    {
-        auto numRows = hess3.count() * 9;
-        auto numWarps = (numRows + 3) / 4; // 8 threads per row
-        pol(Collapse{numWarps * 32}, [execTag, hess3 = proxy<space>(hess3), vtemp = proxy<space>({}, vtemp),
-                                      dxOffset = vtemp.getPropertyOffset(dxTag),
-                                      bOffset = vtemp.getPropertyOffset(bTag), numRows] ZS_LAMBDA(int tid) mutable {
-            int growid = tid / 8;
-            int rowid = growid % 9;
-            int i = growid / 9;
-            int colid = tid % 8;
-
-            auto inds = hess3.inds[i];
-            auto H = hess3.hess[i];
-            T entryG = 0;
-            if (growid < numRows) {
-                entryG = H.val(rowid * 9 + colid) * vtemp(dxOffset + colid % 3, inds[colid / 3]);
-                if (colid == 0) {
-                    auto cid = colid + 8;
-                    entryG += H.val(rowid * 9 + cid) * vtemp(dxOffset + cid % 3, inds[cid / 3]);
-                }
-            }
-            for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 8 && growid < numRows)
-                    entryG += tmp;
-            }
-            if (colid == 0 && growid < numRows)
-                atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-        });
-    }
-    // hess4
-    {
-        // 0, 1, ..., 7, 0, 1, 2, 3
-        pol(Collapse{hess4.count(), 32 * 3},
-            [execTag, hess4 = proxy<space>(hess4), vtemp = proxy<space>({}, vtemp),
-             dxOffset = vtemp.getPropertyOffset(dxTag),
-             bOffset = vtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int i, int tid) mutable {
-                int rowid = tid / 8;
-                int colid = tid % 8;
-
-                auto inds = hess4.inds[i];
-                auto H = hess4.hess[i];
-                T entryH = 0, entryDx = 0, entryG = 0;
-                {
-                    entryH = H.val(rowid * 12 + colid);
-                    entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
-                    entryG = entryH * entryDx;
-                    if (colid < 4) {
-                        auto cid = colid + 8;
-                        entryG += H.val(rowid * 12 + cid) * vtemp(dxOffset + cid % 3, inds[cid / 3]);
-                    }
-                }
-                for (int iter = 1; iter <= 4; iter <<= 1) {
-                    T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                    if (colid + iter < 8)
-                        entryG += tmp;
-                }
-                if (colid == 0)
-                    atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
-            });
-    }
     // timer.tock("multiply takes");
 }
 
@@ -2037,9 +1962,9 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
 
         /// prepare linsys.spmat
-        updateInherentHessian(pol, "grad");
+        updateInherentGradientAndHessian(pol, "grad");
         /// prepare linsys.hessx
-        updateDynamicHessian(pol, "grad");
+        updateDynamicGradientAndHessian(pol, "grad");
         /// prepare diagonal block preconditioner
         prepareDiagonalPreconditioner(pol);
 

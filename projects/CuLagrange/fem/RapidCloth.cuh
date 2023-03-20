@@ -16,6 +16,8 @@ struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
     constexpr static auto T_c = zs::float_c; 
+    constexpr static auto enablePE_c = false; 
+    constexpr static auto enablePP_c = false; 
 
     using tiles_t = typename ZenoParticles::particles_t;
     using itiles_t = zs::TileVector<int, 32>; 
@@ -144,7 +146,7 @@ struct RapidClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
+                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, T shrinkFactor); 
 
@@ -156,7 +158,7 @@ struct RapidClothSystem : IObject {
     /// collision; TODO
     void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
     void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
-        itiles_t &tempCons, int pairNum, int pairSize, std::size_t offset, T shrinking);
+        itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
@@ -201,7 +203,8 @@ struct RapidClothSystem : IObject {
 
     // sim params
     int substep = -1;
-    std::size_t estNumCps = 1000000;
+    std::size_t estNumCps = 100000;
+    std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
     int PNCap = 1000;
     int CGCap = 500;
@@ -251,6 +254,7 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpMatSize; 
     zs::Vector<int> consColorBits; 
     itiles_t tempCons;       // LCP constraint matrix storing
+    zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
@@ -270,6 +274,23 @@ struct RapidClothSystem : IObject {
     // boundary condition param 
     T BCStiffness = 1e6f; 
 };
+
+    template <
+        typename VecTA, typename VecTB,
+        zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+    constexpr auto safe_dist2_ee(const zs::VecInterface<VecTA> &ea0, const zs::VecInterface<VecTA> &ea1,
+                            const zs::VecInterface<VecTB> &eb0, const zs::VecInterface<VecTB> &eb1) noexcept {
+        using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+        auto b = (ea1 - ea0).cross(eb1 - eb0);
+        auto b2 = b.l2NormSqr(); 
+        if (b2 < zs::limits<T>::epsilon()) // PE
+            if (auto aLen2 = (ea0 - ea1).l2NormSqr(), bLen2 = (eb0 - eb1).l2NormSqr(); aLen2 < bLen2)
+                return (ea0 - eb0).cross(ea0 - eb1).l2NormSqr() / bLen2;  
+            else 
+                return (eb0 - ea0).cross(eb0 - ea1).l2NormSqr() / aLen2; 
+        T aTb = (eb0 - ea0).dot(b);
+        return aTb * aTb / b.l2NormSqr();
+    }
 
 } // namespace zeno
 
