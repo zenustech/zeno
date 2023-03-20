@@ -72,6 +72,8 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
         }
     }
 
+    tempStyle.replace("FontFamily", zenoApp->font().family());
+
     return tempStyle;
 }
 

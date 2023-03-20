@@ -13,7 +13,7 @@ QDialog QPushButton
     background: #596270;
 	color:#C3D2DF;
 	border:1px solid #191D21;
-	padding:6px 12px;
+	padding:3px 12px;
     font-weight: 600;
 }
 
@@ -39,7 +39,7 @@ QDialog QLabel
 {
 	font-size: 9pt;
 	color: #A3B1C0;
-	font-weight: 600;
+	font-weight: 500;
 }
 
 QDialog QLabel[cssClass = "bold"]

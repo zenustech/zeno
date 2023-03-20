@@ -85,7 +85,7 @@
           <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
-          <string>增加曲线</string>
+          <string>Add Curve</string>
          </property>
         </widget>
        </item>
@@ -108,7 +108,7 @@
           <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
-          <string>删除曲线</string>
+          <string>Delete Curve</string>
          </property>
         </widget>
        </item>
