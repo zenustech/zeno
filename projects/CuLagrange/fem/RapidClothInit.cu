@@ -493,7 +493,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"y[k+1]", 3}, 
                         {"v[0]", 3}, 
                         {"x(l)", 3}, 
-                        {"r(l)", 3}, 
+                        {"r(l)", 1}, 
                         {"y(l)", 3}, 
                         {"disp", 1}, 
                         {"x_tilde", 3},

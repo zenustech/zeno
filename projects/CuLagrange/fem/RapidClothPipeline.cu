@@ -286,14 +286,21 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
             vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x[k]", vi); 
+            vtemp("r(l)", vi) = 1.f; 
         }); 
     for (int iters = 0; iters < L; iters++)
     {
         fmt::print("findConstraints...\n"); 
+        fmt::print("D: {}, D_min: {}, D_max: {}, delta: {}\n", 
+            D, D_min, D_max, delta); 
         if (D < D_min)
         {
+            fmt::print("[proximity] tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
+                D, D_min, D_max); 
             findConstraints(pol, D_max); 
             D = D_max; 
+            fmt::print("[proximity] proximity search finished, current D: {}\n", 
+                D); 
         }
         fmt::print("backwardStep...\n"); 
         backwardStep(pol); 
@@ -301,12 +308,23 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         forwardStep(pol); 
         // update D
         fmt::print("check termination criterion...\n"); 
-        auto disp = infNorm(pol, "disp", numDofs); 
+        auto disp = infNorm(pol, "disp", numDofs, wrapv<1>{}); 
         D -= 2 * disp; 
         // termination check 
-        auto res = infNorm(pol, "r(l)", numDofs); 
+        auto res = infNorm(pol, "r(l)", numDofs, wrapv<1>{}); 
+        fmt::print("disp: {}, D: {}, res * 1e6: {}\n", 
+            disp, D, res * 1e6f); 
         if (res < eps)
             break; 
+        // DEBUGGING
+        // if (iters > 10)
+        // {
+        //     fmt::print("[debug] using lcp result as x(l) \n"); 
+        //     pol(range(vtemp.size()), 
+        //         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+        //             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "y(l)", vi); 
+        //         }); 
+        // }
     }
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
