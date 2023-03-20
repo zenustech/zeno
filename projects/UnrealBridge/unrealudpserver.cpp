@@ -156,11 +156,12 @@ void UnrealUdpServer::tryMakeupFile(const uint32_t fileId) {
 void UnrealUdpServer::onNewFile(ZBFileType fileType, const std::vector<uint8_t>& data) {
     if (fileType == ZBFileType::HeightField) {
         try {
-            const auto subject = msgpack::unpack<UnrealHeightFieldSubject>(data);
+            auto subject = msgpack::unpack<UnrealHeightFieldSubject>(data);
 
             std::shared_ptr<zeno::UnrealZenoHeightFieldSubject> heightFieldSubject = std::make_shared<zeno::UnrealZenoHeightFieldSubject>();
-            heightFieldSubject->heights.resize(data.size());
-            std::memmove(heightFieldSubject->heights.data(), data.data(), data.size() * sizeof(float));
+            heightFieldSubject->heights.swap(subject.m_height);
+//            heightFieldSubject->heights.resize(subject.m_height.size());
+//            std::memmove(heightFieldSubject->heights.data(), subject.m_height.data(), data.size() * sizeof(float));
 
             ZenoSubjectRegistry::getStatic().put(subject.m_name, heightFieldSubject);
         } catch (msgpack::UnpackerError) {

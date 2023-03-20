@@ -31,6 +31,7 @@ struct FetchUnrealHeightField : public INode {
                 for (size_t i = 0; i < heightFieldSubject->heights.size(); ++i) {
                     heights[i] = heightFieldSubject->heights[i];
                 }
+
                 set_output2("prim", prim);
             } else {
                 log_error("Subject '%s' isn't a height field", subjectName);
