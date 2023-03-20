@@ -16,6 +16,8 @@ struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
     constexpr static auto T_c = zs::float_c; 
+    constexpr static auto enablePE_c = false; 
+    constexpr static auto enablePP_c = false; 
 
     using tiles_t = typename ZenoParticles::particles_t;
     using itiles_t = zs::TileVector<int, 32>; 
@@ -144,7 +146,7 @@ struct RapidClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
+                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, T shrinkFactor); 
 
@@ -201,7 +203,8 @@ struct RapidClothSystem : IObject {
 
     // sim params
     int substep = -1;
-    std::size_t estNumCps = 1000000;
+    std::size_t estNumCps = 100000;
+    std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
     int PNCap = 1000;
     int CGCap = 500;

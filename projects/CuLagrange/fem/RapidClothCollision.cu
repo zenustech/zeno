@@ -16,7 +16,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
     // p -> t
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
     auto &stfront = withBoundary ? boundaryStFront : selfStFront;
-    opt = ne; 
     pol(Collapse{stfront.size()},
         [spInds = view<space>({}, spInds, false_c, "spInds"), svOffset = svOffset, coOffset = coOffset, 
          eles = view<space>({}, withBoundary ? *coEles : stInds, false_c, "eles"),
@@ -102,81 +101,88 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
         seefront.reorder(pol);
 
     // e -> p 
-    auto &sevfront = withBoundary ? boundarySevFront : selfSevFront;
-    pol(Collapse{sevfront.size()},
-        [spInds = proxy<space>({}, spInds), svOffset = svOffset, coOffset = coOffset, 
-            sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-            vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), front = proxy<space>(sevfront),
-            tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), dHat2 = zs::sqr(radius),
-            radius, voffset = withBoundary ? coOffset : 0,
-            frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
-            auto vi = front.prim(i);
-            vi = spInds("inds", vi, int_c); 
-            const auto dHat2 = zs::sqr(radius);
-            auto p = vtemp.pack(dim_c<3>, tag, vi);
-            auto bv = bv_t{get_bounding_box(p - radius, p + radius)};
-            auto f = [&](int sej) {
-                auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                if (vi == ejInds[0] || vi == ejInds[1])
-                    return; 
-                auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
-                auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
-
-                if (pe_distance_type(p, v2, v3) != 2)
-                    return; 
-                if (auto d2 = dist2_pe(p, v2, v3); d2 < dHat2) {
-                    auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                    auto inds = pair3_t{vi, ejInds[0], ejInds[1]};
-                    tempPE.tuple(dim_c<3>, "inds", no, int_c) = inds; 
-                    tempPE("dist", no) = (float)zs::sqrt(d2); 
-                }
-            };
-            if (frontManageRequired)
-                bvh.iter_neighbors(bv, i, front, f);
-            else
-                bvh.iter_neighbors(bv, front.node(i), f);
-        });
-    if (frontManageRequired)
-        sevfront.reorder(pol);
-    // v-> v
-    if (!withBoundary)
+    if constexpr (enablePE_c)
     {
-        const auto &svbvh = svBvh;
-        auto &svfront = selfSvFront;
-        pol(Collapse{svfront.size()},
+        auto &sevfront = withBoundary ? boundarySevFront : selfSevFront;
+        pol(Collapse{sevfront.size()},
             [spInds = proxy<space>({}, spInds), svOffset = svOffset, coOffset = coOffset, 
-            bvh = proxy<space>(svbvh), front = proxy<space>(svfront), tempPP = proxy<space>({}, tempPP),
-            eles = proxy<space>({}, svInds), 
-            vCons = proxy<space>({}, vCons), 
-            vtemp = proxy<space>({}, vtemp), 
-            nPP = proxy<space>(nPP), radius, voffset = withBoundary ? coOffset : 0,
-            frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
-                auto svI = front.prim(i);
-                auto vi = spInds("inds", svI, int_c); 
+                sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), front = proxy<space>(sevfront),
+                tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), dHat2 = zs::sqr(radius),
+                radius, voffset = withBoundary ? coOffset : 0,
+                frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
+                auto vi = front.prim(i);
+                vi = spInds("inds", vi, int_c); 
                 const auto dHat2 = zs::sqr(radius);
-                auto pi = vtemp.pack(dim_c<3>, tag, vi);
-                auto bv = bv_t{get_bounding_box(pi - radius, pi + radius)};
-                auto f = [&](int svJ) {
-                    if (voffset == 0 && svI <= svJ)
+                auto p = vtemp.pack(dim_c<3>, tag, vi);
+                auto bv = bv_t{get_bounding_box(p - radius, p + radius)};
+                auto f = [&](int sej) {
+                    auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                    if (vi == ejInds[0] || vi == ejInds[1])
                         return; 
-                    auto vj = eles("inds", svJ, int_c) + voffset; 
-                    auto pj = vtemp.pack(dim_c<3>, tag, vj); 
-                    if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
-                        auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                        auto inds = pair_t{vi, vj};
-                        tempPP.tuple(dim_c<2>, "inds", no, int_c) = inds; 
-                        tempPP("dist", no) = (float)zs::sqrt(d2); 
-                    }
-                }; 
+                    auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
+                    auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
 
+                    if (pe_distance_type(p, v2, v3) != 2)
+                        return; 
+                    if (auto d2 = dist2_pe(p, v2, v3); d2 < dHat2) {
+                        auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                        auto inds = pair3_t{vi, ejInds[0], ejInds[1]};
+                        tempPE.tuple(dim_c<3>, "inds", no, int_c) = inds; 
+                        tempPE("dist", no) = (float)zs::sqrt(d2); 
+                    }
+                };
                 if (frontManageRequired)
                     bvh.iter_neighbors(bv, i, front, f);
                 else
                     bvh.iter_neighbors(bv, front.node(i), f);
-            });     
+            });
         if (frontManageRequired)
-            svfront.reorder(pol);   
+            sevfront.reorder(pol);
     }
+    // v-> v
+    if constexpr (enablePP_c)
+    {
+        if (!withBoundary)
+        {
+            const auto &svbvh = svBvh;
+            auto &svfront = selfSvFront;
+            pol(Collapse{svfront.size()},
+                [spInds = proxy<space>({}, spInds), svOffset = svOffset, coOffset = coOffset, 
+                bvh = proxy<space>(svbvh), front = proxy<space>(svfront), tempPP = proxy<space>({}, tempPP),
+                eles = proxy<space>({}, svInds), 
+                vCons = proxy<space>({}, vCons), 
+                vtemp = proxy<space>({}, vtemp), 
+                nPP = proxy<space>(nPP), radius, voffset = withBoundary ? coOffset : 0,
+                frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
+                    auto svI = front.prim(i);
+                    auto vi = spInds("inds", svI, int_c); 
+                    const auto dHat2 = zs::sqr(radius);
+                    auto pi = vtemp.pack(dim_c<3>, tag, vi);
+                    auto bv = bv_t{get_bounding_box(pi - radius, pi + radius)};
+                    auto f = [&](int svJ) {
+                        if (voffset == 0 && svI <= svJ)
+                            return; 
+                        auto vj = eles("inds", svJ, int_c) + voffset; 
+                        auto pj = vtemp.pack(dim_c<3>, tag, vj); 
+                        if (auto d2 = dist2_pp(pi, pj); d2 < dHat2) {
+                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                            auto inds = pair_t{vi, vj};
+                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = inds; 
+                            tempPP("dist", no) = (float)zs::sqrt(d2); 
+                        }
+                    }; 
+
+                    if (frontManageRequired)
+                        bvh.iter_neighbors(bv, i, front, f);
+                    else
+                        bvh.iter_neighbors(bv, front.node(i), f);
+                });     
+            if (frontManageRequired)
+                svfront.reorder(pol);   
+        }        
+    }
+
 }
 
 void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag)
@@ -193,9 +199,12 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     // nE.setVal(0); TODO: put into findEdgeConstraints(bool init = false) and calls it in every iteration 
 
     // collect PP, PE, PT, EE, E constraints from bvh 
-    bvs.resize(svInds.size()); 
-    retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0, bvs);
-    svBvh.refit(pol, bvs); 
+    if constexpr (enablePP_c)
+    {
+        bvs.resize(svInds.size()); 
+        retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0, bvs);
+        svBvh.refit(pol, bvs);         
+    }
     bvs.resize(stInds.size());
     retrieve_bounding_volumes(pol, vtemp, tag, stInds, zs::wrapv<3>{}, 0, bvs);
     stBvh.refit(pol, bvs);
@@ -318,8 +327,13 @@ void RapidClothSystem::initPalettes(zs::CudaExecutionPolicy &pol,
                 }
             }
             int max_color = (int)zs::ceil(((T)degree) / shrinking); 
-            if (max_color < 2)
-                max_color = 2;
+            if (max_color < 10)
+                max_color = 10;
+            if (max_color > 63)
+            {
+                printf("init max_color %d exceeded 63 at i = %d, clamped to 63\n", max_color, i); 
+                max_color = 63; 
+            }
             tempCons("fixed", i + offset) = 0; 
             tempCons("max_color", i + offset) = max_color; 
             tempCons("num_color", i + offset) = max_color; 
@@ -436,10 +450,13 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                 }
                 if (curInd < ind)
                 {
+                    colors = tempColors[i]; 
+                    int colors_high = colors >> 32;
+                    int colors_low = (int)(colors - (((zs::i64)colors_high) << 32)); 
                     // printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, colors: %d, max_color: %d\n", 
                     //     tempCons("num_color", i), tempCons("colors", i), tempCons("max_color", i)); 
-                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, max_color: %d\n", 
-                        tempCons("num_color", i), tempCons("max_color", i)); 
+                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, max_color: %d, colors-high: %d, colors-low: %d\n", 
+                        tempCons("num_color", i), tempCons("max_color", i), colors_high, colors_low); 
                     return; 
                 }
                 tempCons("color", i) = pos; 
@@ -526,7 +543,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
                     if ((tempColors[i] >> tempCons("max_color", i)) % 2)
                         tempCons("num_color", i) += 1; 
                     tempCons("max_color", i) += 1; 
-                    if (tempCons("max_color", i) == 32)
+                    if (tempCons("max_color", i) == 64)
                     {
                         printf("max_color exceeded threshold 32!\n"); 
                         return; 
@@ -905,7 +922,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
             for (int k = 0; k < n; k++)
             {
                 int vi = tempCons("vi", k, ci); 
-                printf("lcp cons ci: %d, vi: %d\n", ci, vi); 
                 if (vi >= coOffset)
                     continue; 
                 auto m = vtemp("ws", vi); 
