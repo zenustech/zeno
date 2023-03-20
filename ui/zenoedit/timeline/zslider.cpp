@@ -197,7 +197,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
 
     painter.setPen(QPen(QColor("#5A646F"), 1));
 
-    int left = _frameToPos(m_from);
+    int left = _frameToPos(0);
     int right = width() - m_sHMargin;
     painter.drawLine(QPointF(left, height() - 1), QPointF(right, height() - 1));
     drawSlideHandle(&painter, scaleH);
