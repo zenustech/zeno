@@ -6,9 +6,15 @@
 #include "util/log.h"
 #include "util/apphelper.h"
 #include "variantptr.h"
+#include "settings/zsettings.h"
+#include <QSet>
 
 using namespace JsonHelper;
 
+QSet<QString> renderNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera", "MakeCamera", 
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky"
+    });
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
@@ -250,6 +256,11 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
+                QSettings settings(zsCompanyName, zsEditor);
+                if (settings.value("cacheLightCameraOnly").toBool() && !renderNodes.contains(name))
+                {
+                    continue;
+                }
                 for (OUTPUT_SOCKET output : outputs)
                 {
                     //if (output.info.name == "DST" && outputs.size() > 1)
