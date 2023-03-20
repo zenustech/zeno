@@ -412,21 +412,24 @@ add_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_
     auto laneId = tile.thread_rank();
 #pragma unroll
     for (int i = 0; i != codim; ++i) {
-        auto subOffset = i * 3;
+        auto subOffsetI = i * 3;
         auto row = inds[i];
         // diagonal
         auto loc = spmat._ptrs[row];
         auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
 
         for (int d = laneId; d < 9; d += cap) {
-            atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffset + d / 3, subOffset + d % 3));
+            atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffsetI + d / 3, subOffsetI + d % 3));
         }
         // non-diagonal
         for (int j = i + 1; j < codim; ++j) {
+            auto subOffsetJ = j * 3;
+#if 0
             mat3 subBlock;
             for (int r = 0; r != 3; ++r)
                 for (int c = 0; c != 3; ++c)
-                    subBlock(r, c) = hess(subOffset + r, j * 3 + c);
+                    subBlock(r, c) = hess(subOffsetI + r, subOffsetJ + c);
+#endif
 
             auto col = inds[j];
             if (row < col) {
@@ -435,14 +438,16 @@ add_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_
                     auto no = dynHess.next_index(tile);
                     auto &[inds, mat] = dynHess[no];
                     for (int d = laneId; d < 9; d += cap)
-                        mat.val(d) = subBlock.val(d);
+                        // mat.val(d) = subBlock.val(d);
+                        mat.val(d) = hess(subOffsetI + d / 3, subOffsetJ + d % 3);
                     if (laneId == 0)
                         inds = pair_t{row, col};
                 } else {
                     // exist in spmat
                     auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
                     for (int d = laneId; d < 9; d += cap)
-                        atomic_add(exec_cuda, &mat.val(d), subBlock(d / 3, d % 3));
+                        // atomic_add(exec_cuda, &mat.val(d), subBlock(d / 3, d % 3));
+                        atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d / 3, subOffsetJ + d % 3));
                 }
             } else {
                 if (auto loc = spmat.locate(col, row, zs::true_c); loc >= nnz) {
@@ -450,14 +455,16 @@ add_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_
                     auto no = dynHess.next_index(tile);
                     auto &[inds, mat] = dynHess[no];
                     for (int d = laneId; d < 9; d += cap)
-                        mat.val(d) = subBlock.val(d);
+                        // mat.val(d) = subBlock.val(d);
+                        mat.val(d) = hess(subOffsetI + d / 3, subOffsetJ + d % 3);
                     if (laneId == 0)
                         inds = pair_t{row, col};
                 } else {
                     // exist in spmat
                     auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
                     for (int d = laneId; d < 9; d += cap)
-                        atomic_add(exec_cuda, &mat.val(d), subBlock(d % 3, d / 3));
+                        // atomic_add(exec_cuda, &mat.val(d), subBlock(d % 3, d / 3));
+                        atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d % 3, subOffsetJ + d / 3));
                 }
             }
         }
