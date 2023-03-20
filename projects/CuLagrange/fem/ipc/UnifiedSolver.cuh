@@ -327,6 +327,13 @@ struct UnifiedIPCSystem : IObject {
                 if (no < cap)
                     buf[no] = std::move(val);
             }
+            __forceinline__ __device__ int next_index(zs::cg::thread_block_tile<8, zs::cg::thread_block> &tile) {
+                int no = -1;
+                if (tile.thread_rank() == 0)
+                    no = zs::atomic_add(zs::exec_cuda, cnt, 1);
+                no = tile.shfl(no, 0);
+                return (no < cap ? no : -1);
+            }
             __forceinline__ __device__ ValT &operator[](int i) {
                 return buf[i];
             }

@@ -337,7 +337,7 @@ void UnifiedIPCSystem::computeFrictionBarrierGradient(zs::CudaExecutionPolicy &p
 template <typename LinSysT, typename VecTM, typename VecTI,
           zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
                             VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
-__forceinline__ __device__ void add_hessian(LinSysT &sys, const VecTI &inds, const VecTM &hess) {
+__forceinline__ __device__ void add_hessian_slow(LinSysT &sys, const VecTI &inds, const VecTM &hess) {
     using namespace zs;
     constexpr int codim = VecTI::extent;
     using mat3 = typename LinSysT::mat3;
@@ -394,6 +394,116 @@ __forceinline__ __device__ void add_hessian(LinSysT &sys, const VecTI &inds, con
     }
 }
 /// tile version
+template <typename LinSysT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void
+add_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, LinSysT &sys,
+            const VecTI &inds, const VecTM &hess) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+    using mat3 = typename LinSysT::mat3;
+    using pair_t = typename LinSysT::pair_t;
+    using dyn_hess_t = typename LinSysT::dyn_hess_t;
+    auto &spmat = sys.spmat;
+    const auto nnz = spmat.nnz();
+    auto &dynHess = sys.dynHess;
+    const int cap = __popc(tile.ballot(1)); // assume active pattern 0...001111 [15, 14, ..., 0]
+    auto laneId = tile.thread_rank();
+#pragma unroll
+    for (int i = 0; i != codim; ++i) {
+        auto subOffset = i * 3;
+        auto row = inds[i];
+        // diagonal
+        auto loc = spmat._ptrs[row];
+        auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+
+        for (int d = laneId; d < 9; d += cap) {
+            atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffset + d / 3, subOffset + d % 3));
+        }
+        // non-diagonal
+        for (int j = i + 1; j < codim; ++j) {
+            mat3 subBlock;
+            for (int r = 0; r != 3; ++r)
+                for (int c = 0; c != 3; ++c)
+                    subBlock(r, c) = hess(subOffset + r, j * 3 + c);
+
+            auto col = inds[j];
+            if (row < col) {
+                if (auto loc = spmat.locate(row, col, zs::true_c); loc >= nnz) {
+                    // not exist in spmat
+                    auto no = dynHess.next_index(tile);
+                    auto &[inds, mat] = dynHess[no];
+                    for (int d = laneId; d < 9; d += cap)
+                        mat.val(d) = subBlock.val(d);
+                    if (laneId == 0)
+                        inds = pair_t{row, col};
+                } else {
+                    // exist in spmat
+                    auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                    for (int d = laneId; d < 9; d += cap)
+                        atomic_add(exec_cuda, &mat.val(d), subBlock(d / 3, d % 3));
+                }
+            } else {
+                if (auto loc = spmat.locate(col, row, zs::true_c); loc >= nnz) {
+                    // not exist in spmat
+                    auto no = dynHess.next_index(tile);
+                    auto &[inds, mat] = dynHess[no];
+                    for (int d = laneId; d < 9; d += cap)
+                        mat.val(d) = subBlock.val(d);
+                    if (laneId == 0)
+                        inds = pair_t{row, col};
+                } else {
+                    // exist in spmat
+                    auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                    for (int d = laneId; d < 9; d += cap)
+                        atomic_add(exec_cuda, &mat.val(d), subBlock(d % 3, d / 3));
+                }
+            }
+        }
+    }
+}
+template <typename T, zs::enable_if_t<std::is_fundamental_v<T>> = 0>
+__forceinline__ __device__ T tile_shfl(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile,
+                                       T var, int srcLane) {
+    return tile.shfl(var, srcLane);
+}
+template <typename VecT, zs::enable_if_t<zs::is_vec<VecT>::value> = 0>
+__forceinline__ __device__ VecT tile_shfl(
+    cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, const VecT &var, int srcLane) {
+    VecT ret{};
+    for (typename VecT::index_type i = 0; i != VecT::extent; ++i)
+        ret.val(i) = tile_shfl(tile, var.val(i), srcLane);
+    return ret;
+}
+template <typename LinSysT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void add_hessian(LinSysT &sys, const VecTI &inds, const VecTM &hess) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+    using mat3 = typename LinSysT::mat3;
+    using pair_t = typename LinSysT::pair_t;
+    using dyn_hess_t = typename LinSysT::dyn_hess_t;
+    auto &spmat = sys.spmat;
+    auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+
+    bool has_work = true; // is this visible to rest threads in tile cuz of __forceinline__ ??
+
+    u32 work_queue = tile.ballot(has_work);
+    while (work_queue) {
+        auto cur_rank = __ffs(work_queue) - 1;
+        auto cur_work = tile_shfl(tile, hess, cur_rank);
+        auto cur_index = tile.shfl(inds, cur_rank); // gather index as well
+        add_hessian(tile, sys, cur_index, cur_work);
+        // add_hessian0(sys, cur_index, cur_work);
+
+        if (tile.thread_rank() == cur_rank)
+            has_work = false;
+        work_queue = tile.ballot(has_work);
+    }
+    return;
+}
 
 void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
     using namespace zs;
