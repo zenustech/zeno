@@ -227,8 +227,8 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
 
     updateConstraintCnt(); 
     D = D_max; 
-    fmt::print("ne: {}, npp: {}, npe: {}, npt: {}, nee: {}, nCons: {}\n", 
-        ne, npp, npe, npt, nee, nCons); 
+    fmt::print("ne: {}, npp: {}, npe: {}, npt: {}, nee: {}, nCons: {}, oe: {}, opp: {}, ope: {}, opt: {}, oee: {}\n", 
+        ne, npp, npe, npt, nee, nCons, oe, opp, ope, opt, oee); 
     // TODO: coloring for multi-color PGS 
     fmt::print("consColoring started\n"); 
     consColoring(pol, consShrinking); 
@@ -561,7 +561,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol, T shrinking)
     for (int i = consColorBits.size() - 1; i >= 0; i--)
         if (consColorBits[i] == 1)
         {
-            nConsColor = i; 
+            nConsColor = i + 1; 
             break; 
         }
     timer.tock("constraint coloring"); 
@@ -704,26 +704,15 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         grad /= coef; 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
-        // DEBUG
-        // {
-        //     if (inds[0] == 919)
-        //     {
-        //         printf("[debug] p = 919, pt cons val: %f, vol: %f, coef: %d, grad: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", 
-        //             val, vol, coef, grad(0, 0), grad(0, 1), grad(0, 2), 
-        //             grad(1, 0), grad(1, 1), grad(1, 2), 
-        //             grad(2, 0), grad(2, 1), grad(2, 2), 
-        //             grad(3, 0), grad(3, 1), grad(3, 2)); 
-        //     }            
-        // }
 
     }); 
 
     pol(range(nee), [vtemp = proxy<space>({}, vtemp), 
                     tempEE = proxy<space>({}, tempEE), 
                     tempCons = proxy<space>({}, tempCons), 
-                    opt = opt, delta = delta, tag] __device__ (int i) mutable {
+                    oee = oee, delta = delta, tag] __device__ (int i) mutable {
         // calculate grad 
-        int consInd = i + opt; 
+        int consInd = i + oee; 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
         auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
@@ -733,7 +722,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int d = 0; d < 3; d++)
         {
             mat(d, 0) = ei1(d) - ei0(d); 
-            mat(d, 1) = ei1(d) - ei0(d); 
+            mat(d, 1) = ej0(d) - ei0(d); 
             mat(d, 2) = ej1(d) - ei0(d); 
         }
         auto vol = determinant(mat); 
@@ -972,13 +961,6 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             {
                 auto vi = tempCons("vi", k, ci); 
                 atomic_min(exec_cuda, &vtemp("Di", vi), dist); 
-                // DEBUG
-                // if (dist < 0.01f)
-                // {
-                //     auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
-                //     printf("tiny cons: vi(%d) = %d, verts: %f, %f, %f, vN: %d, dist: %f at ci = %d\n", 
-                //         k, vi, x(0), x(1), x(2), vN, dist, ci); 
-                // } 
             }
         }); 
     // calculate alpha, update x(l), r(l)
@@ -990,6 +972,7 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
             if ((y - x).l2NormSqr() < limits<T>::epsilon())
             {
+                vtemp("disp", vi) = 0.f;
                 vtemp("r(l)", vi) = 0.f; 
                 return; 
             }
@@ -1003,8 +986,9 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             // DEBUG
             // if (alpha < 0.01f)
             // {
-            //     printf("tiny alpha %f at vi = %d, coOffset = %d, x: %f, %f, %f, y: %f, %f, %f, Di: %f, (y-x).norm: %f\n", 
-            //         alpha, vi, coOffset, x(0), x(1), x(2), y(0), y(1), y(2), vtemp("Di", vi), (y - x).norm());       
+            //     auto yk = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
+            //     printf("tiny alpha %f at vi = %d, coOffset = %d, x: %f, %f, %f, y: %f, %f, %f, y[k+1]: %f, %f, %f, Di: %f, (y-x).norm: %f\n", 
+            //         alpha, vi, coOffset, x(0), x(1), x(2), y(0), y(1), y(2), yk(0), yk(1), yk(2), vtemp("Di", vi), (y - x).norm());       
             // }
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
