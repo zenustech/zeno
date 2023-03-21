@@ -924,11 +924,16 @@ bool ZenoMainWindow::event(QEvent* event)
             QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
             if (isSeparator(pMouse->pos())) {
                 m_bMovingSeparator = true;
+                emit dockSeparatorMoving(true);
             }
         }
         else if (m_bMovingSeparator && event->type() == QEvent::Timer)
         {
             emit dockSeparatorMoving(true);
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::MouseButtonRelease)
+        {
+            emit dockSeparatorMoving(false);
         }
     }
 }
@@ -953,7 +958,21 @@ void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget *pDock : docks)
     {
-        //TODO:
+        for (int i = 0; i < pDock->count(); i++)
+        {
+            DockContent_View* pView = qobject_cast<DockContent_View*>(pDock->widget(i));
+            if (!pView)
+                continue;
+            QSize sz = pView->viewportSize();
+            QString str = QString("size: %1x%2").arg(QString::number(sz.width())).arg(QString::number(sz.height()));
+            QPoint pt = pView->mapToGlobal(QPoint(0, 10));
+            if (bMoving) {
+                QToolTip::showText(pt, str);
+            }
+            else {
+                QToolTip::hideText();
+            }
+        }
     }
 
     QVector<DisplayWidget*> displays = viewports();

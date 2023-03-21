@@ -105,6 +105,7 @@ public:
     explicit DockContent_View(QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     DisplayWidget* getDisplayWid() const;
+    QSize viewportSize() const;
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
@@ -123,6 +124,7 @@ private:
     ZToolBarButton* m_moveBtn;
     ZToolBarButton* m_scaleBtn;
     ZToolBarButton* m_rotateBtn;
+    ZToolBarButton* m_resizeViewport;
 
     QComboBox* m_cbRenderWay;
     QAction* m_pFocus;

@@ -447,6 +447,7 @@ DockContent_View::DockContent_View(QWidget* parent)
     , m_background_clr(nullptr)
     , m_recordVideo(nullptr)
     , m_screenshoot(nullptr)
+    , m_resizeViewport(nullptr)
 {
 }
 
@@ -483,6 +484,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     m_screenshoot = new ZToolBarButton(false, ":/icons/viewToolbar_screenshot_idle.svg", ":/icons/viewToolbar_screenshot_light.svg");
     m_screenshoot->setToolTip(tr("Screenshoot"));
+
+    m_resizeViewport = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
+    m_resizeViewport->setToolTip(tr("resize viewport"));
 
     QMenu *pView = new QMenu(tr("View"));
     {
@@ -580,8 +584,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor()));
     pToolLayout->addWidget(m_screenshoot);
-
     pToolLayout->addWidget(m_recordVideo);
+    pToolLayout->addWidget(m_resizeViewport);
 
     pToolLayout->addStretch(7);
 
@@ -641,6 +645,12 @@ void DockContent_View::initConnections()
     connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
+
+    connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
+        //ViewportWidget* pViewport = m_pDisplay->getViewportWidget();
+        //pViewport->resizeGL(500, 340);
+        //pViewport->updateGL();
+    });
 }
 
 void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)
@@ -656,6 +666,10 @@ DisplayWidget* DockContent_View::getDisplayWid() const
     return m_pDisplay;
 }
 
+QSize DockContent_View::viewportSize() const
+{
+    return m_pDisplay->getViewportWidget()->size();
+}
 
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
