@@ -65,6 +65,7 @@ target_sources(zeno PRIVATE
   fem/ipc/UnifiedSolverInit.cu
   fem/ipc/UnifiedSolverPipeline.cu
   fem/ipc/UnifiedSolverLinearSystem.cu
+  fem/ipc/UnifiedSolverUtilities.cu
   fem/ipc/UnifiedSolverIPC.cu
 
   fem/BoundaryCondition.cu
