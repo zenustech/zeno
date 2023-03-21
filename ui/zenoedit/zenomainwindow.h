@@ -135,6 +135,7 @@ signals:
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(int);
     void alwaysModeChanged(bool bAlways);
+    void dockSeparatorMoving(bool bMoving);
 
 public slots:
     void openFileDialog();
@@ -164,11 +165,15 @@ public slots:
     void onRunTriggered(bool applyLightAndCameraOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
+    void onDockSeparatorMoving(bool bMoving);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 private:
     void init();
@@ -200,6 +205,7 @@ private:
     bool m_bInDlgEventloop;
     bool m_bAlways;
     int m_nResizeTimes;
+    bool m_bMovingSeparator;    //dock separator.
     Ui::MainWindow* m_ui;
 
     std::shared_ptr<ZCacheMgr> m_spCacheMgr;

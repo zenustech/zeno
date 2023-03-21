@@ -49,6 +49,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
     , m_spCacheMgr(nullptr)
+    , m_bMovingSeparator(false)
 {
     liveTcpServer = new LiveTcpServer;
     liveHttpServer = new LiveHttpServer;
@@ -122,6 +123,7 @@ void ZenoMainWindow::initWindowProperty()
         QString title = UiHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
+    connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -933,7 +935,50 @@ bool ZenoMainWindow::event(QEvent* event)
             }
         }
     }
-    return QMainWindow::event(event);
+    bool ret = QMainWindow::event(event);
+    if (ret) {
+        if (event->type() == QEvent::MouseMove && event->isAccepted()) {
+            QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
+            if (isSeparator(pMouse->pos())) {
+                m_bMovingSeparator = true;
+            }
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::Timer)
+        {
+            emit dockSeparatorMoving(true);
+        }
+    }
+}
+
+void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
+{
+    QMainWindow::mousePressEvent(event);
+}
+
+void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseMoveEvent(event);
+}
+
+void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
+{
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget *pDock : docks)
+    {
+        //TODO:
+    }
+
+    QVector<DisplayWidget*> displays = viewports();
+    for (auto wid : displays)
+    {
+        ViewportWidget* pViewport = wid->getViewportWidget();
+        //TODO
+    }
 }
 
 void ZenoMainWindow::importGraph() {
