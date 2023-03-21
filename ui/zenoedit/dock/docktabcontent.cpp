@@ -264,7 +264,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnAlways->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_btnAlways->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
     m_btnAlways->initAnimation();
-    if (zeno::envconfig::get("ALWAYS"))
+    if (zenoApp->getMainWindow()->isAlways())
         m_btnAlways->setChecked(true);
 
     pListView->setChecked(false);

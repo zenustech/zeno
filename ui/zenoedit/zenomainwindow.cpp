@@ -55,6 +55,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
+    setFocusPolicy(Qt::ClickFocus);
 
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
@@ -598,7 +599,10 @@ void ZenoMainWindow::initTimelineDock()
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         if (m_bAlways) {
-            killProgram();
+            QVector<DisplayWidget *> views = viewports();
+            for (DisplayWidget *view : views) {
+                view->onRun();
+            }
         }
     });
 }

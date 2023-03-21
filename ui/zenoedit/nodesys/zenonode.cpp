@@ -522,6 +522,8 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
 			{
                 QVariant value = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
                 ZenoGvHelper::setCtrlProperties(pControl, value);
+                const QVariant &deflValue = pItem->data(ROLE_PARAM_VALUE);
+                ZenoGvHelper::setValue(pControl, ctrl, deflValue, pScene);
                 break;
             }
         }

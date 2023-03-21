@@ -278,7 +278,7 @@ void VParamItem::setData(const QVariant& value, int role)
         }
         case ROLE_PARAM_VALUE:
         {
-            if (value == m_value)
+            if (value == m_value && m_value.type() == value.type())
                 return;
 
             if (m_index.isValid())

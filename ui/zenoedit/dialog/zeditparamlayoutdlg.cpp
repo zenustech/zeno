@@ -246,6 +246,7 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->listConctrl->setFocusPolicy(Qt::NoFocus);
     m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
     resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
+    setFocusPolicy(Qt::ClickFocus);
 }
 
 void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem) 
@@ -275,6 +276,8 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
     } 
     else if (type != VPARAM_ROOT) 
     {
+        if (control == CONTROL_NONE)
+            return QIcon();
         for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) 
         {
             if (control == controlList[i].ctrl) 

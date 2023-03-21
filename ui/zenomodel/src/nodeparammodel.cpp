@@ -611,7 +611,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             ZERROR_EXIT(pItem, false);
             QVariant oldValue = pItem->data(ROLE_PARAM_VALUE);
-            if (oldValue == value)
+            if (oldValue == value && oldValue.type() == value.type())
                 return false;
 
             pItem->setData(value, role);
