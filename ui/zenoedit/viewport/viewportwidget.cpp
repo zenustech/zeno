@@ -1194,6 +1194,11 @@ void DisplayWidget::onScreenShoot()
         nullptr, tr("Path to Save"), "",
         tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
     QString ext = QFileInfo(path).suffix();
+    if (ext.isEmpty()) {
+        //qt bug: won't fill extension automatically.
+        ext = "png";
+        path.append(".png");
+    }
     if (!path.isEmpty())
     {
         ZASSERT_EXIT(m_view);
