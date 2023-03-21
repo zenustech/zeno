@@ -351,6 +351,14 @@ void ZToolButton::setChecked(bool bChecked)
     if (bChecked == m_bChecked)
         return;
     m_bChecked = bChecked;
+    if (animInfo.posAnimation) 
+    {
+        animInfo.posAnimation->setStartValue(animInfo.mOnOff ? animInfo.m_RightPos : animInfo.m_LeftPos);
+        animInfo.posAnimation->setEndValue(animInfo.mOnOff ? animInfo.m_LeftPos : animInfo.m_RightPos);
+        animInfo.posAnimation->start(QAbstractAnimation::DeletionPolicy::KeepWhenStopped); //Í£Ö¹ºóÉ¾³ý
+        animInfo.mOnOff = !animInfo.mOnOff;
+        animInfo.mBackColor = animInfo.mOnOff ? m_clrBgOn : m_clrBgNormal;
+    }
     update();
 }
 
@@ -410,14 +418,7 @@ void ZToolButton::mouseReleaseEvent(QMouseEvent* e)
     }
     else if (m_options & Opt_SwitchAnimation)
     {
-        animInfo.posAnimation->setStartValue(animInfo.mOnOff ? animInfo.m_RightPos
-                                                                       : animInfo.m_LeftPos);
-        animInfo.posAnimation->setEndValue(animInfo.mOnOff ? animInfo.m_LeftPos
-                                                                     : animInfo.m_RightPos);
-        animInfo.posAnimation->start(QAbstractAnimation::DeletionPolicy::KeepWhenStopped); //Í£Ö¹ºóÉ¾³ý
-        animInfo.mOnOff = !animInfo.mOnOff;
-        animInfo.mBackColor = animInfo.mOnOff ? m_clrBgOn : m_clrBgNormal;
-        emit toggled(animInfo.mOnOff);
+        emit toggled(!animInfo.mOnOff);
     }
     emit clicked();
 }

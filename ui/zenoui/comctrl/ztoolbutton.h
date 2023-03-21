@@ -14,7 +14,7 @@ public:
 
       bool mOnOff;
       int mAnimationPeriod;
-      QVariantAnimation *posAnimation;
+      QVariantAnimation *posAnimation = nullptr;
 
       QPointF m_RightPos;
       QPointF m_LeftPos; 
