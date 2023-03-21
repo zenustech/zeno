@@ -676,9 +676,36 @@ void DockContent_View::initConnections()
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
-        //ViewportWidget* pViewport = m_pDisplay->getViewportWidget();
-        //pViewport->resizeGL(500, 340);
-        //pViewport->updateGL();
+        QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+        QDialog dlg(this);
+        QGridLayout *pLayout = new QGridLayout;
+
+        QLineEdit* pWidthEdit = new QLineEdit;
+        pWidthEdit->setValidator(new QIntValidator);
+
+        QLineEdit* pHeightEdit = new QLineEdit;
+        pHeightEdit->setValidator(new QIntValidator);
+
+        pLayout->addWidget(new QLabel("width"), 0, 0);
+        pLayout->addWidget(pWidthEdit, 0, 1);
+        pLayout->addWidget(new QLabel("height"), 1, 0);
+        pLayout->addWidget(pHeightEdit, 1, 1);
+        pLayout->addWidget(pButtonBox, 2, 1);
+        dlg.setLayout(pLayout);
+
+        connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+        connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+
+        if (QDialog::Accepted == dlg.exec())
+        {
+            ViewportWidget* pViewport = m_pDisplay->getViewportWidget();
+            int w = pWidthEdit->text().toInt();
+            int h = pHeightEdit->text().toInt();
+            pViewport->resizeGL(w, h);
+            pViewport->updateGL();
+        }
+
     });
 }
 
