@@ -944,6 +944,82 @@ ZENDEFNODE(CreateTube, {
     {"create"},
 });
 
+struct CreateTorus : zeno::INode {
+    virtual void apply() override {
+        auto majorSegment = get_input2<int>("MajorSegment");
+        auto minorSegment = get_input2<int>("MinorSegment");
+        auto majorRadius = get_input2<float>("MajorRadius");
+        auto minorRadius = get_input2<float>("MinorRadius");
+
+        if (majorSegment < 3) {
+            majorSegment = 3;
+        }
+        if (minorSegment < 3) {
+            minorSegment = 3;
+        }
+
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        prim->verts.resize(majorSegment * minorSegment);
+        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        for (auto j = 0; j < minorSegment; j++) {
+            float theta = M_PI * 2.0 * j / minorSegment - M_PI;
+            float y = sin(theta) * minorRadius;
+            auto radius = majorRadius + cos(theta) * minorRadius;
+            for (auto i = 0; i < majorSegment; i++) {
+                int index = j * majorSegment + i;
+                float phi = M_PI * 2.0 * i / majorSegment;
+                vec3f pos = {cos(phi) * radius, y, sin(phi) * radius};
+                vec3f refCenter = {cos(phi) * majorRadius, 0, sin(phi) * majorRadius};
+                prim->verts[index] = pos;
+                nrm[index] = zeno::normalize(pos - refCenter);
+            }
+        }
+
+        prim->uvs.resize((majorSegment + 1) * (minorSegment + 1));
+        for (auto j = 0; j < minorSegment + 1; j++) {
+            for (auto i = 0; i < majorSegment + 1; i++) {
+                int index = j * (majorSegment + 1) + i;
+                prim->uvs[index] = { float(j) / (majorSegment + 1), float(i) / (minorSegment + 1) };
+            }
+        }
+
+        prim->loops.resize(minorSegment * majorSegment * 4);
+        auto &uvs = prim->loops.add_attr<int>("uvs");
+        for (auto j = 0; j < minorSegment; j++) {
+            for (auto i = 0; i < majorSegment; i++) {
+                int index = j * majorSegment + i;
+                prim->loops[index * 4 + 0] = j * majorSegment + i;
+                prim->loops[index * 4 + 1] = ((j + 1) * majorSegment + i) % (minorSegment * majorSegment);
+                prim->loops[index * 4 + 2] = ((j + 1) * majorSegment + (i + 1) % majorSegment) % (minorSegment * majorSegment);
+                prim->loops[index * 4 + 3] = j * majorSegment + (i + 1) % majorSegment;
+                uvs[index * 4 + 0] = j * (majorSegment + 1) + i;
+                uvs[index * 4 + 1] = (j + 1) * (majorSegment + 1) + i;
+                uvs[index * 4 + 2] = (j + 1) * (majorSegment + 1) + i + 1;
+                uvs[index * 4 + 3] = j * (majorSegment + 1) + i + 1;
+            }
+        }
+
+        prim->polys.resize(minorSegment * majorSegment);
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            prim->polys[i] = {i * 4, 4};
+        }
+
+        set_output("prim",std::move(prim));
+    }
+};
+
+ZENDEFNODE(CreateTorus, {
+{
+        {"int", "MajorSegment", "48"},
+        {"int", "MinorSegment", "12"},
+        {"float", "MajorRadius", "1"},
+        {"float", "MinorRadius", "0.25"},
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
+
 struct CreateSphere : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
