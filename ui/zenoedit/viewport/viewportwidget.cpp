@@ -458,7 +458,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , updateLightOnce(true)
     , m_pauseRenderDally(new QTimer)
     , m_wheelEventDally(new QTimer)
-    , simpleRenderChecked(false)
+    , simpleRenderTime(0)
     , m_bMovingCamera(false)
 {
     QGLFormat fmt;
@@ -490,13 +490,13 @@ ViewportWidget::ViewportWidget(QWidget* parent)
 }
 
 void ViewportWidget::setSimpleRenderOption() {
-    if(simpleRenderChecked)
-        return;
+    //if(simpleRenderChecked)
+    //    return;
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
     m_pauseRenderDally->stop();
-    m_pauseRenderDally->start(4000);
+    m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
 }
 
 ViewportWidget::~ViewportWidget()

@@ -51,12 +51,17 @@ void ZTimeline::initSignals()
         if (bChecked)
             emit alwaysChecked();
     });
-    connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
-        //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
+    connect(m_ui->editSR, &QLineEdit::editingFinished, this, [=]() {
+        auto srTime = std::abs(m_ui->editSR->text().toInt());  // Avoid negative
+        //std::cout << "SR: SimpleRender " << srTime << "\n";
         auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        viewport->simpleRenderChecked = bChecked;
-        scene->drawOptions->simpleRender = bChecked;
+        viewport->simpleRenderTime = srTime;
+        if(srTime == 0){
+            scene->drawOptions->simpleRender = false;
+        }else{
+            scene->drawOptions->simpleRender = true;
+        }
         scene->drawOptions->needRefresh = true;
     });
     m_ui->btnAlways->setShortcut(QKeySequence("F1"));

@@ -428,7 +428,9 @@ struct LiveMeshNode : INode {
     }
 
     virtual void apply() override {
-        auto prims = std::make_shared<zeno::ListObject>();
+        auto outDict = get_input2<bool>("outDict");
+        auto prims_list = std::make_shared<zeno::ListObject>();
+        auto prims_dict = std::make_shared<zeno::DictObject>();
         auto vertSrc = get_input2<std::string>("vertSrc");
 
         int frameid;
@@ -560,13 +562,21 @@ struct LiveMeshNode : INode {
                     ingredient.vertexList = _vi;
                     auto prim = std::make_shared<zeno::PrimitiveObject>();
                     GeneratePrimitiveObject(ingredient, prim);
-                    prims->arr.emplace_back(prim);
+                    if(outDict) {
+                        prims_dict->lut[key] = prim;
+                    }else{
+                        prims_list->arr.emplace_back(prim);
+                    }
                 }
             }else{
                 std::cout << "not parsed frame " << frameid << "\n";
             }
         }
-        set_output("prims", std::move(prims));
+        if(outDict) {
+            set_output("prims", std::move(prims_dict));
+        }else{
+            set_output("prims", std::move(prims_list));
+        }
     }
 };
 
@@ -574,6 +584,7 @@ ZENO_DEFNODE(LiveMeshNode)({
     {
         {"frameid"},
         {"string", "vertSrc", ""},
+        {"bool", "outDict", "false"}
     },
     {
         "prims"
