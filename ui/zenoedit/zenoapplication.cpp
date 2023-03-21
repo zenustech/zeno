@@ -84,8 +84,8 @@ void ZenoApplication::initFonts()
     QVariant use_chinese = settings.value("use_chinese");
     bool bCN = !use_chinese.isNull() && use_chinese.toBool();
     if (bCN) {
-        //QFont font("Alibaba PuHuiTi", 10);
-        QFont font("Noto Sans SC", 10);
+        QFont font("Alibaba PuHuiTi", 10);
+        //QFont font("Noto Sans SC", 10);
         setFont(font);
     } else {
         QFont font("Segoe UI", 10);

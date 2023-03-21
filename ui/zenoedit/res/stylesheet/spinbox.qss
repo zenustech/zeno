@@ -47,7 +47,7 @@ QSpinBox[cssClass = "control"]::down-button
     subcontrol-position: center left;
     image: url(:/icons/leftArrow.svg);
     background-color: #191D21;
-    height: 24px;
+    height: 20px;
     width: 20px;
     margin-left:2px;
 }
@@ -63,7 +63,7 @@ QSpinBox[cssClass = "control"]::up-button
      subcontrol-position: center right;
      image: url(:/icons/rightArrow.svg);
      background-color: #191D21;
-     height: 24px;
+     height: 20px;
      width: 20px;
      margin-right:2px;
 }
@@ -93,7 +93,7 @@ QDoubleSpinBox::down-button
     subcontrol-position: center left;
     image: url(:/icons/leftArrow.svg);
     background-color: #191D21;
-    height: 24px;
+    height: 20px;
     width: 20px;
     margin-left:2px;
 }
@@ -109,7 +109,7 @@ QDoubleSpinBox::up-button
      subcontrol-position: center right;
      image: url(:/icons/rightArrow.svg);
      background-color: #191D21;
-     height: 24px;
+     height: 20px;
      width: 20px;
      margin-right:2px;
 }
