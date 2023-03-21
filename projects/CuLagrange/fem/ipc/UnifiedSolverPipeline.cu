@@ -1072,57 +1072,125 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
     // timer.tick();
     {
         const auto &spmat = linsys.spmat;
+#if 0
         /// upper part (with diagonal)
-        pol(range(spmat.outerSize() * 32),
+        pol(range(spmat.outerSize() * 8),
             [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
              bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
-                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+                auto laneId = tile.thread_rank();
+                auto laneR = laneId / 3;
+                auto laneC = laneId % 3;
                 auto row = tid / tile.num_threads();
                 auto bg = spmat._ptrs[row];
                 auto ed = spmat._ptrs[row + 1];
-                auto sum = vec3::zeros();
-                for (auto i = bg + tile.thread_rank(); i < ed; i += tile.num_threads())
-                    sum += spmat._vals[i] * vtemp.pack(dim_c<3>, dxOffset, spmat._inds[i]);
-                T sumx = zs::cg::reduce(tile, sum[0], zs::cg::plus<T>());
-                T sumy = zs::cg::reduce(tile, sum[1], zs::cg::plus<T>());
-                T sumz = zs::cg::reduce(tile, sum[2], zs::cg::plus<T>());
-                if (tile.thread_rank() == 0)
-                    vtemp.tuple(dim_c<3>, bOffset, row) = vtemp.pack(dim_c<3>, bOffset, row) + vec3f{sumx, sumy, sumz};
+                typename RM_CVREF_T(spmat)::value_type::value_type sum = 0;
+                for (auto i = bg; i < ed; ++i) {
+                    sum += spmat._vals[i](laneR, laneC) * vtemp(dxOffset + laneC, spmat._inds[i]);
+                    if (laneId == 7)
+                        sum += spmat._vals[i].val(8) * vtemp(dxOffset + 2, spmat._inds[i]);
+                }
+                auto v1 = tile.shfl_down(sum, 1);
+                if (laneC == 0)
+                    sum += v1;
+                auto v2 = tile.shfl_down(sum, 2);
+                if (laneC == 0 && laneR != 2)
+                    sum += v2;
+                if (laneC == 0)
+                    vtemp(bOffset + laneR, row) += sum;
             });
 
         /// lower part (without diagonal)
-        pol(range(spmat.outerSize() * 32),
+        pol(range(spmat.outerSize() * 8),
             [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
              bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
-                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto tile = zs::cg::tiled_partition<8>(zs::cg::this_thread_block());
+                auto laneId = tile.thread_rank();
+                auto laneR = laneId / 3;
+                auto laneC = laneId % 3;
                 auto col = tid / tile.num_threads();
                 auto bg = spmat._ptrs[col] + 1; // skip the diagonal part
                 auto ed = spmat._ptrs[col + 1];
 
-                auto dx = vtemp.pack(dim_c<3>, dxOffset, col);
-                for (auto k = bg + tile.thread_rank(); k < ed; k += tile.num_threads()) {
+                auto dx = vtemp(dxOffset + laneR, col);
+                for (auto k = bg; k < ed; ++k) {
                     auto row = spmat._inds[k];
-                    auto inc = spmat._vals[k].transpose() * dx;
-                    for (int d = 0; d != 3; ++d)
-                        atomic_add(exec_cuda, &vtemp(bOffset + d, row), inc(d));
+                    auto inc = spmat._vals[k](laneR, laneC) * dx;
+                    atomic_add(exec_cuda, &vtemp(bOffset + laneC, row), inc);
+                    if (laneId == 7) {
+                        inc = spmat._vals[k].val(8) * dx;
+                        atomic_add(exec_cuda, &vtemp(bOffset + 2, row), inc);
+                    }
                 }
             });
+#else
+        pol(range(spmat.outerSize() * 8),
+            [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
+                auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+                auto laneId = tile.thread_rank();
+                auto laneR = laneId / 3;
+                auto laneC = laneId % 3;
+                auto row = tid / tile.num_threads();
+                auto bg = spmat._ptrs[row];
+                auto ed = spmat._ptrs[row + 1];
+                // for upper part
+                typename RM_CVREF_T(spmat)::value_type::value_type rowSum = 0;
+                // for lower part
+                auto dx = vtemp(dxOffset + laneR, row);
+                for (auto i = bg; i < ed; ++i) {
+                    auto col = spmat._inds[i];
+                    auto He = spmat._vals[i](laneR, laneC);
+                    // upper part
+                    rowSum += He * vtemp(dxOffset + laneC, col);
+                    // lower part
+                    if (i != bg)
+                        atomic_add(exec_cuda, &vtemp(bOffset + laneC, col), He * dx);
+                    if (laneId == 7) {
+                        He = spmat._vals[i].val(8);
+                        // upper part
+                        rowSum += He * vtemp(dxOffset + 2, col);
+                        // lower part
+                        if (i != bg)
+                            atomic_add(exec_cuda, &vtemp(bOffset + 2, col), He * dx);
+                    }
+                }
+                auto v1 = tile.shfl_down(rowSum, 1);
+                if (laneC == 0)
+                    rowSum += v1;
+                auto v2 = tile.shfl_down(rowSum, 2);
+                if (laneC == 0 && laneR != 2)
+                    rowSum += v2;
+                /// @note must use atomic version now that it's all mixed up
+                if (laneC == 0)
+                    atomic_add(exec_cuda, &vtemp(bOffset + laneR, row), rowSum);
+            });
+#endif
     }
     {
         auto &dynHess = linsys.dynHess;
         auto n = dynHess.getCount();
-        pol(range(n), [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
-                       bOffset = vtemp.getPropertyOffset(bTag), dynHess = dynHess.port()] __device__(int i) mutable {
-            auto [inds, H] = dynHess[i];
-            ///
-            auto delta = H * vtemp.pack(dim_c<3>, dxOffset, inds[1]);
-            for (int d = 0; d != 3; ++d)
-                atomic_add(exec_cuda, &vtemp(bOffset + d, inds[0]), delta(d));
-            ///
-            delta = H.transpose() * vtemp.pack(dim_c<3>, dxOffset, inds[0]);
-            for (int d = 0; d != 3; ++d)
-                atomic_add(exec_cuda, &vtemp(bOffset + d, inds[1]), delta(d));
-        });
+        pol(range(n * 8),
+            [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag), dynHess = dynHess.port()] __device__(int i_) mutable {
+                auto tile = zs::cg::tiled_partition<8>(zs::cg::this_thread_block());
+                auto laneId = tile.thread_rank();
+                auto laneR = laneId / 3;
+                auto laneC = laneId % 3;
+                auto [inds, H] = dynHess[i_ / tile.num_threads()];
+                auto He = H.val(laneId);
+                // upper
+                atomic_add(exec_cuda, &vtemp(bOffset + laneR, inds[0]), He * vtemp(dxOffset + laneC, inds[1]));
+                // lower
+                atomic_add(exec_cuda, &vtemp(bOffset + laneC, inds[1]), He * vtemp(dxOffset + laneR, inds[0]));
+                if (laneId == 7) {
+                    He = H.val(8);
+                    // upper
+                    atomic_add(exec_cuda, &vtemp(bOffset + 2, inds[0]), He * vtemp(dxOffset + 2, inds[1]));
+                    // lower
+                    atomic_add(exec_cuda, &vtemp(bOffset + 2, inds[1]), He * vtemp(dxOffset + 2, inds[0]));
+                }
+            });
     }
 #if 0
     // hess1
