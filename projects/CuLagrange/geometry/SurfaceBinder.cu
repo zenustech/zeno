@@ -52,15 +52,18 @@ struct ZSSurfaceBind : zeno::INode {
         auto zssurf = get_input<ZenoParticles>("zssurf");
         auto kboundary = get_input<ZenoParticles>("kboundary");
         auto &verts = zssurf->getParticles();
-        auto &tris = zssurf->getQuadraturePoints();
-        const auto& kb_verts = kboundary->getParticles();
+        auto &tris = zssurf->category == ZenoParticles::category_e::tet ? (*zssurf)[ZenoParticles::s_surfTriTag] : zssurf->getQuadraturePoints();
+
+        auto markTag = get_param<std::string>("mark_tag");
+        auto& kb_verts = kboundary->getParticles();
 
         dtiles_t kverts{kb_verts.get_allocator(),
             {
                 {"x",3},
                 {"inds",1},
                 {"nrm",3},
-                {"tag",1}
+                {"tag",1},
+                {"binderFailTag",1}
             },kb_verts.size()};
         TILEVEC_OPS::copy(cudaPol,kb_verts,"x",kverts,"x");
         TILEVEC_OPS::copy(cudaPol,kb_verts,"nrm",kverts,"nrm");
@@ -72,20 +75,27 @@ struct ZSSurfaceBind : zeno::INode {
             [kverts = proxy<space>({},kverts)] ZS_LAMBDA(int vi) mutable {
                 kverts("inds",vi) = reinterpret_bits<T>(vi);
         }); 
+        if(kb_verts.hasProperty("binderFailTag"))
+            TILEVEC_OPS::copy(cudaPol,kb_verts,"binderFailTag",kverts,"binderFailTag");
+        else
+            TILEVEC_OPS::fill(cudaPol,kverts,"binderFailTag",(T)0.0);            
 
         auto max_nm_binders = get_param<int>("max_nm_binders");
         auto binder_tag = get_param<std::string>("binder_tag");
         auto thickness_tag = get_param<std::string>("thickness_tag");
         auto inversion_tag = get_param<std::string>("inversion_tag");
 
+
         tris.append_channels(cudaPol,{
             {binder_tag,max_nm_binders},
             {thickness_tag,max_nm_binders},
             {inversion_tag,max_nm_binders},
+            {"nm_binders",1}
         });
         TILEVEC_OPS::fill(cudaPol,tris,binder_tag,zs::reinterpret_bits<T>((int)-1));
         TILEVEC_OPS::fill(cudaPol,tris,thickness_tag,(T)0.0);
         TILEVEC_OPS::fill(cudaPol,tris,inversion_tag,(T)-1.0);
+        TILEVEC_OPS::fill(cudaPol,tris,"nm_binders",reinterpret_bits<T>((int)0));
 
         auto kpBvh = bvh_t{};
         auto bvs = retrieve_bounding_volumes(cudaPol,kverts,kverts,wrapv<1>{},(T)0.0,"x");
@@ -122,8 +132,10 @@ struct ZSSurfaceBind : zeno::INode {
         cudaPol(zs::range(tris.size()),
             [tris = proxy<space>({},tris),
                 verts = proxy<space>({},verts),
+                kb_verts = proxy<space>({},kb_verts),
                 kverts = proxy<space>({},kverts),
                 kpBvh = proxy<space>(kpBvh),
+                markTag = zs::SmallString(markTag),
                 binder_tag = zs::SmallString(binder_tag),
                 thickness_tag = zs::SmallString(thickness_tag),
                 inversion_tag = zs::SmallString(inversion_tag),
@@ -137,6 +149,12 @@ struct ZSSurfaceBind : zeno::INode {
                 p += verts.pack(dim_c<3>,"x",tri[i])/(T)3.0;
             auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
 
+            if(verts.hasProperty("binderFailTag")){
+                for(int i = 0;i != 3;++i)
+                    if(verts("binderFailTag",tri[i]) > (T)0.5)
+                        return;
+            }
+
             // printf("testing tri[%d] : %f %f %f\n",ti,(float)p[0],(float)p[1],(float)p[2]);
 
             int nm_binders = 0;
@@ -144,6 +162,9 @@ struct ZSSurfaceBind : zeno::INode {
             auto binder_tags_vec = zs::vec<T,16>::uniform((T)-1.0);
             auto process_vertex_facet_binding_pairs = [&](int kpi) {
                 // printf("testing %d tri and %d kp\n",ti,kpi);
+                // if(kverts.hasProperty("binderFailTag"))
+                if(kverts("binderFailTag",kpi) > (T)0.5)
+                    return;
                 if(nm_binders >= max_nm_binders)
                     return;
                 auto kp = kverts.pack(dim_c<3>,"x",kpi);
@@ -171,7 +192,7 @@ struct ZSSurfaceBind : zeno::INode {
                 for(int i = 0;i != 3;++i){
                     auto nti = ntris[i];
                     if(nti < 0){
-                        printf("negative ff_inds detected\n");
+                        // printf("negative ff_inds detected\n");
                         return;
                     }
                     auto edge_normal = tris.pack(dim_c<3>,"nrm",ti) + tris.pack(dim_c<3>,"nrm",nti);
@@ -198,12 +219,14 @@ struct ZSSurfaceBind : zeno::INode {
                 tris(thickness_tag,nm_binders,ti) = distance;
                 tris(inversion_tag,nm_binders,ti) = dist < 0 ? (T)1.0 : (T)-1.0;
                 nm_binders++;
+                kb_verts(markTag,kpi) = (T)1.0;
             };
             kpBvh.iter_neighbors(bv,process_vertex_facet_binding_pairs);
 
             if(nm_tag > 1)
                 for(int i = 0;i != nm_binders;++i)
                     tris(binder_tag,i,ti) = reinterpret_bits<T>((int)-1);
+            tris("nm_binders",ti) = reinterpret_bits<T>(nm_tag);
         });
 
 
@@ -221,7 +244,8 @@ ZENDEFNODE(ZSSurfaceBind, {{"zssurf","kboundary",
                                     {"int","max_nm_binders","4"},
                                     {"string","binder_tag","binderTag"},
                                     {"string","thickness_tag","thicknessTag"},
-                                    {"string","inversion_tag","inversionTag"}
+                                    {"string","inversion_tag","inversionTag"},
+                                    {"string","mark_tag","markTag"}
                                   },
                                   {"ZSGeometry"}});
 
@@ -254,7 +278,8 @@ struct VisualizeSurfaceBinder : zeno::INode {
         auto kboundary = get_input<ZenoParticles>("kboundary");
 
         const auto& verts = zssurf->getParticles();
-        const auto& tris = zssurf->getQuadraturePoints();
+        // const auto& tris = zssurf->getQuadraturePoints();
+        const auto &tris = zssurf->category == ZenoParticles::category_e::tet ? (*zssurf)[ZenoParticles::s_surfTriTag] : zssurf->getQuadraturePoints();
 
         const auto& kb_verts = kboundary->getParticles();
         auto binder_tag = get_param<std::string>("binder_tag");
@@ -265,8 +290,7 @@ struct VisualizeSurfaceBinder : zeno::INode {
                 {"x",3},
                 {"binder_inds",max_nm_binders}
         },tris.size()};
-        dtiles_t kverts_buffer{kb_verts.get_allocator(),
-            {
+        dtiles_t kverts_buffer{kb_verts.get_allocator(),{
                 {"x",3}
         },kb_verts.size()};
 
@@ -315,6 +339,733 @@ ZENDEFNODE(VisualizeSurfaceBinder, {{"zssurf","kboundary"},
                                   {"binder_vis"},
                                   {
                                     {"string","binder_tag","binderTag"}
+                                  },
+                                  {"ZSGeometry"}});
+
+// one kinematic points can only collide with one tris
+struct ZSDynamicSurfaceBind : zeno::INode {
+
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>;
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto cudaPol = cuda_exec();
+        
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        auto& verts = zsparticles->getParticles();
+        auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
+
+
+        if(!tris.hasProperty("nrm"))
+            tris.append_channels(cudaPol,{{"nrm",3}});
+        cudaPol(zs::range(tris.size()),
+            [tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) {
+            auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
+            auto v0 = verts.template pack<3>("x",tri[0]);
+            auto v1 = verts.template pack<3>("x",tri[1]);
+            auto v2 = verts.template pack<3>("x",tri[2]);
+
+            auto e01 = v1 - v0;
+            auto e02 = v2 - v0;
+
+            auto nrm = e01.cross(e02);
+            auto nrm_norm = nrm.norm();
+            if(nrm_norm < 1e-6)
+                nrm = zs::vec<T,3>::zeros();
+            else
+                nrm = nrm / (nrm_norm + 1e-5);
+
+            tris.tuple(dim_c<3>,"nrm",ti) = nrm;
+        });     
+
+        auto& kverts = kboundary->getParticles();
+        dtiles_t kverts_tmp{kverts.get_allocator(),
+            {
+                {"x",3},
+                {"inds",1},
+            },kverts.size()};
+        TILEVEC_OPS::copy(cudaPol,kverts,"x",kverts,"x");
+        cudaPol(zs::range(kverts_tmp.size()),
+            [kverts_tmp = proxy<space>({},kverts_tmp)] ZS_LAMBDA(int vi) mutable {
+                kverts_tmp("inds",vi) = reinterpret_bits<T>(vi);
+        }); 
+
+        auto binder_tag = get_param<std::string>("binder_tag");
+        auto thickness_tag = get_param<std::string>("thickness_tag");
+        auto inversion_tag = get_param<std::string>("inversion_tag");
+
+        if(!kverts.hasProperty(binder_tag)){
+            kverts.append_channels(cudaPol,{{binder_tag,1}});
+            TILEVEC_OPS::fill(cudaPol,kverts,binder_tag,zs::reinterpret_bits<T>((int)-1));
+        }
+        if(!kverts.hasProperty(thickness_tag)){
+            kverts.append_channels(cudaPol,{{thickness_tag,1}});
+            TILEVEC_OPS::fill(cudaPol,kverts,thickness_tag,(T)0.0);
+        }
+        if(!kverts.hasProperty(inversion_tag)){
+            kverts.append_channels(cudaPol,{{inversion_tag,1}});
+            TILEVEC_OPS::fill(cudaPol,kverts,inversion_tag,(T)0.0);
+        }
+
+
+// unleash the binder which is no longer active
+        auto force_tag = get_param<std::string>("force_tag");
+        cudaPol(zs::range(kverts.size()),
+            [kverts = proxy<space>({},kverts),
+                verts = proxy<space>({},verts),
+                tris = proxy<space>({},tris),
+                binder_tag = zs::SmallString(binder_tag),
+                inversion_tag = zs::SmallString(inversion_tag),
+                force_tag = zs::SmallString(force_tag)] ZS_LAMBDA(int kvi) mutable {
+            auto binder_idx = reinterpret_bits<int>(kverts(binder_tag,kvi));
+            if(binder_idx < 0)
+                return;
+
+            auto tri = tris.pack(dim_c<3>,"inds",binder_idx).reinterpret_bits(int_c);
+
+            // if the kvert and tri are in close contact
+            // a. they are in penertration
+            auto seg = kverts.pack(dim_c<3>,"x",kvi) - verts.pack(dim_c<3>,"x",tri[0]);
+            auto nrm = tris.pack(dim_c<3>,"nrm",binder_idx);
+            auto orient = dot(seg,nrm);
+
+            auto inversion = kverts(inversion_tag,kvi);
+            if(inversion*orient > 0)
+                return;
+            //b. they are not in penertration but the elastic force try to stick them together
+            auto f = vec3::zeros();
+            for(int i = 0;i != 3;++i)
+                f += verts.pack(dim_c<3>,force_tag,tri[i]);
+            auto tcenter = vec3::zeros();
+            for(int i = 0;i != 3;++i)
+                tcenter += verts.pack(dim_c<3>,"x",tri[0])/(T)3.0;
+            
+            seg = kverts.pack(dim_c<3>,"x",kvi) - tcenter;
+            if(seg.dot(f) > 1e-6)
+                return;
+            
+            // the kvert and tri are separating
+            kverts(binder_tag,kvi) = reinterpret_bits<T>((int)-1);
+        });
+        
+        auto dt = get_input2<float>("dt");
+        auto outCollisionEps = get_input2<float>("outCollisionEps");
+        // auto max_v = TILEVEC_OPS::max_norm<3>(cudaPol,kb_verts,"v");
+        // auto bvh_thickness = max_v * dt * (T)1.2;
+
+        auto triBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,verts,tris,wrapv<3>{},(T)0.0,"x");
+        triBvh.build(cudaPol,bvs);  
+
+        cudaPol(zs::range(kverts.size()),
+            [kverts = proxy<space>({},kverts),
+                triBvh = proxy<space>(triBvh),
+                verts = proxy<space>({},verts),
+                tris = proxy<space>({},tris),
+                dt = dt,outCollisionEps = outCollisionEps,
+                binder_tag = zs::SmallString(binder_tag),
+                thickness_tag = zs::SmallString(thickness_tag),
+                inversion_tag = zs::SmallString(inversion_tag)] ZS_LAMBDA(int kpi) mutable {
+
+            auto ori_bind_idx = reinterpret_bits<int>(kverts(binder_tag,kpi));
+            if(ori_bind_idx > -1)
+                return;
+
+            auto kp  = kverts.pack(dim_c<3>,"x",kpi);
+            auto kv = kverts.pack(dim_c<3>,"v",kpi);
+            auto bvh_thickness = kv.norm() * dt * (T)1.2;
+            auto bv = bv_t{get_bounding_box(kp - bvh_thickness,kp + bvh_thickness)};
+            auto kpt = kp + dt * kv;
+
+            auto min_r = (T)1e8;
+            int min_ti = -1;
+            vec3 min_rd{};
+            vec3 min_vs[3] = {};
+
+            auto process_raytrace_pairs = [&](int ti) {
+                auto nrm = tris.pack(dim_c<3>,"nrm",ti);
+                auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+
+                vec3 vs[3] = {};
+
+                vs[0] = verts.pack(dim_c<3>,"x",tri[0]);
+                vs[1] = verts.pack(dim_c<3>,"x",tri[1]);
+                vs[2] = verts.pack(dim_c<3>,"x",tri[2]);
+
+                // auto kpv0 = kp - vs[0];
+                // auto kptv0 = kpt - vs[0];
+                // auto kpv0n = kpv0.dot(nrm);
+                // auto kptv0n = kptv0.dot(nrm);
+                // if(kpv0n.dot(kptv0n) > (T)0.0)
+                //     return;
+
+                // vec3 vols[3] = {};
+                // mat3 ms = {};
+                // for(int i = 0;i != 3;++i) {
+                //     auto e01 = vs[(i+0)%3] - kp;
+                //     auto e02 = vs[(i+1)%3] - kp;
+                //     auto e03 = kpt - kp;
+                //     vols[i] = e01.cross(e02).dot(e03);
+                // }
+
+                // bool intersect = false;
+                // if(vols[0] > 0 && vols[1] > 0 && vols[2] > 0)
+                //     intersect = true;
+                // if(vols[0] < 0 && vols[1] < 0 && vols[2] < 0)
+                //     intersect = true;                
+
+                auto rd = kv/ (kv.norm() + (T)1e-6);
+                auto b = (T)0.0;
+                auto rtmp = (T)0.0;
+                auto dtmp = (T)0.0;
+                auto stmp = (T)0.0;
+                auto ttmp = (T)0.0;
+                auto bary = vec3::zeros();
+                auto ip_dist = (T)0.0;
+                auto r = LSL_GEO::tri_intersect(kp,rd,vs[0],vs[1],vs[2],b,rtmp,dtmp,stmp,ttmp,bary,ip_dist);
+
+                // if(r < 1e6) {
+                //     printf("testing raytracing pairs : %d %d with r = %f b = %f rtmp = %f dtmp = %f stmp = %f ttmp = %f bary = %f %f %f dist = %f\n",
+                //         kpi,ti,(float)r,(float)b,(float)rtmp,(float)dtmp,(float)stmp,(float)ttmp,
+                //         (float)bary[0],(float)bary[1],(float)bary[2],(float)ip_dist);
+                // }
+
+                if(r < min_r){
+                    min_r = r;
+                    min_ti = ti;
+                    min_vs[0] = vs[0];
+                    min_vs[1] = vs[1];
+                    min_vs[2] = vs[2];
+                    min_rd = rd;
+                }
+            };
+            triBvh.iter_neighbors(bv,process_raytrace_pairs);
+
+            if(min_ti > -1) {
+                auto rd = kv/ (kv.norm() + (T)1e-6);
+                if(kv.norm() * dt < (min_r - outCollisionEps))
+                    return;
+
+                auto intersect_point = kp + rd * (min_r - outCollisionEps);
+                T barySum = (T)0.0;
+                T distance = LSL_GEO::pointTriangleDistance(min_vs[0],min_vs[1],min_vs[2],intersect_point,barySum);            
+
+                auto seg = intersect_point - min_vs[0];
+                auto nrm = tris.pack(dim_c<3>,"nrm",min_ti);
+                auto orient = seg.dot(nrm);
+
+                // printf("find binder %d %d\n",kpi,min_ti);
+
+                kverts(binder_tag,kpi) = reinterpret_bits<T>(min_ti);
+                kverts(thickness_tag,kpi) = distance;
+                kverts(inversion_tag,kpi) = orient < 0 ? (T)1.0 : (T)-1.0;
+            }
+        });
+
+        set_output("zsparticles",zsparticles);
+        set_output("kboundary",kboundary);
+
+    }
+};
+
+ZENDEFNODE(ZSDynamicSurfaceBind, {{"zsparticles","kboundary",
+                                    {"float","outCollisionEps","0.01"},
+                                    {"float","dt","1.0"}
+                                    },
+                                  {"zsparticles","kboundary"},
+                                  {
+                                    {"string","binder_tag","binderTag"},
+                                    {"string","thickness_tag","thicknessTag"},
+                                    {"string","inversion_tag","inversionTag"},
+                                    {"string","force_tag","forceTag"}
+                                  },
+                                  {"ZSGeometry"}});
+
+struct VisualZSDynamicBinder : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>;    
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto cudaPol = cuda_exec();
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        const auto &verts = zsparticles->getParticles();
+        const auto &tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
+        const auto& kverts = kboundary->getParticles();
+
+        dtiles_t tverts_buffer{tris.get_allocator(),
+            {
+                {"x",3},
+        },tris.size()};
+
+        dtiles_t kverts_buffer{kverts.get_allocator(),
+            {
+                {"x",3},
+                {"binder_idx",1}
+        },kverts.size()};
+        auto binder_tag = get_param<std::string>("binder_tag");
+        // evaluate the center of the tris
+        cudaPol(zs::range(tris.size()),
+            [tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts),
+                tverts_buffer = proxy<space>({},tverts_buffer)] ZS_LAMBDA(int ti) mutable {
+            auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            tverts_buffer.tuple(dim_c<3>,"x",ti) = vec3::zeros();
+            for(int i = 0;i != 3;++i)
+                tverts_buffer.tuple(dim_c<3>,"x",ti) = tverts_buffer.pack(dim_c<3>,"x",ti) + verts.pack(dim_c<3>,"x",tri[i])/(T)3.0;
+        });
+        TILEVEC_OPS::copy(cudaPol,kverts,"x",kverts_buffer,"x");
+        TILEVEC_OPS::copy(cudaPol,kverts,binder_tag,kverts_buffer,"binder_idx");
+        // cudaPol(zs::range(kverts_buffer.size()),
+        //     [kverts_buffer = proxy<space>({},kverts_buffer)] ZS_LAMBDA(int kvi) mutable {
+        //         printf("kverts_idx : %d\n",reinterpret_bits<int>(kverts_buffer("binder_idx",kvi)));
+        // });        
+
+        tverts_buffer = tverts_buffer.clone({zs::memsrc_e::host});
+        kverts_buffer = kverts_buffer.clone({zs::memsrc_e::host});
+
+        auto binder_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& binder_verts = binder_vis->verts;
+        auto& binder_lines = binder_vis->lines;
+
+        binder_verts.resize(kverts.size() * 2);
+        binder_lines.resize(kverts.size());
+
+        constexpr auto omp_space = execspace_e::openmp;
+        auto ompPol = omp_exec();
+
+        ompPol(zs::range(kverts_buffer.size()),
+            [tverts_buffer = proxy<omp_space>({},tverts_buffer),
+                kverts_buffer = proxy<omp_space>({},kverts_buffer),
+                &binder_verts,&binder_lines] (int vi) mutable {
+            binder_verts[vi * 2 + 0] = kverts_buffer.pack(dim_c<3>,"x",vi).to_array();
+            auto ti = reinterpret_bits<int>(kverts_buffer("binder_idx",vi));
+            if(ti < 0)
+                binder_verts[vi * 2 + 1] = binder_verts[vi * 2 + 0];
+            else
+                binder_verts[vi * 2 + 1] = tverts_buffer.pack(dim_c<3>,"x",ti).to_array();
+            binder_lines[vi] = zeno::vec2i{vi * 2 + 0,vi * 2 + 1};
+        });       
+
+        set_output("binder_vis",std::move(binder_vis)); 
+    }
+};
+
+ZENDEFNODE(VisualZSDynamicBinder, {{"zsparticles","kboundary"},
+                                  {"binder_vis"},
+                                  {
+                                    {"string","binder_tag","binderTag"}
+                                  },
+                                  {"ZSGeometry"}});
+
+
+struct ZSSurfaceClosestPoints : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>;    
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        auto& verts = zsparticles->getParticles();
+        auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? 
+            (*zsparticles)[ZenoParticles::s_surfTriTag] : 
+            zsparticles->getQuadraturePoints();
+        
+        // every vertex can only bind to one triangle
+        auto& kverts = kboundary->getParticles();
+        auto& ktris = kboundary->getQuadraturePoints();
+
+        // auto max_nm_binder = get_input2<int>("nm_max_binders");
+        auto project_pos_tag = get_param<std::string>("project_pos_tag");
+        auto project_nrm_tag = get_param<std::string>("project_nrm_tag");
+        auto project_idx_tag = get_param<std::string>("project_idx_tag");
+
+        // for each vertex of zsparticles, find a potential closest point on kboundary surface
+        // add a plane constraint
+        if(!verts.hasProperty(project_pos_tag) || !verts.hasProperty(project_nrm_tag) || !verts.hasProperty(project_idx_tag)) {
+            verts.append_channels(cudaPol,{
+                {project_pos_tag,3},// the idx of triangle of kboudary
+                {project_nrm_tag,3},
+                {project_idx_tag,1}
+            });
+        }
+
+        TILEVEC_OPS::fill(cudaPol,verts,project_idx_tag,zs::reinterpret_bits<T>((int)-1));
+        
+        auto ktBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},(T)0.0,"x");
+        ktBvh.build(cudaPol,bvs);
+
+        auto kinInCollisionEps = get_input2<float>("kinInColEps");
+        auto kinOutCollisionEps = get_input2<float>("kinOutColEps");
+        auto thickness = kinInCollisionEps + kinOutCollisionEps;
+
+        // evaluate nodal-wise normal of kboundary
+        if(!ktris.hasProperty("nrm"))
+            ktris.append_channels(cudaPol,{{"nrm",3}});
+        cudaPol(zs::range(ktris.size()),
+            [ktris = proxy<space>({},ktris),
+                kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kti) {
+            auto ktri = ktris.template pack<3>("inds",kti).reinterpret_bits(int_c);
+            auto kv0 = kverts.template pack<3>("x",ktri[0]);
+            auto kv1 = kverts.template pack<3>("x",ktri[1]);
+            auto kv2 = kverts.template pack<3>("x",ktri[2]);
+
+            auto e01 = kv1 - kv0;
+            auto e02 = kv2 - kv0;
+
+            auto nrm = e01.cross(e02);
+            auto nrm_norm = nrm.norm();
+            if(nrm_norm < 1e-8)
+                nrm = zs::vec<T,3>::zeros();
+            else
+                nrm = nrm / nrm_norm;
+
+            ktris.tuple(dim_c<3>,"nrm",kti) = nrm;
+        });  
+
+        // if(!kverts.hasProperty("valence")){
+        //     kverts.append_channels(cudaPol,{{"valence",1}});
+        //     TILEVEC_OPS::fill(cudaPol,kverts,"valence",(T)0);
+        //     cudaPol(zs::range(ktris.size()),[
+        //             ktris = proxy<space>({},ktris),
+        //             kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kti) mutable {
+        //         auto ktri = ktris.pack(dim_c<3>,"inds",kti).reinterpret_bits(int_c);
+        //         for(int i = 0;i != 3;++i)
+        //             atomic_add(exec_cuda,&kverts("valence",ktri[i]),(T)1);
+        //     });
+        // }
+        if(!kverts.hasProperty("nrm"))
+            kverts.append_channels(cudaPol,{{"nrm",3}});
+        TILEVEC_OPS::fill(cudaPol,kverts,"nrm",(T)0.0);
+        cudaPol(zs::range(ktris.size()),[
+                ktris = proxy<space>({},ktris),
+                kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kti) mutable {
+            auto ktri = ktris.pack(dim_c<3>,"inds",kti).reinterpret_bits(int_c);
+            auto nrm = ktris.pack(dim_c<3>,"nrm",kti);
+            for(int i = 0;i != 3;++i)
+                for(int d = 0;d != 3;++d)
+                    atomic_add(exec_cuda,&kverts("nrm",d,ktri[i]),nrm[d]/*/(T)kverts("valence",ktri[i])*/);
+        });
+        cudaPol(zs::range(kverts.size()),[kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kvi) mutable {
+            auto nrm = kverts.pack(dim_c<3>,"nrm",kvi);
+            nrm = nrm / (nrm.norm() + (T)1e-6);
+            kverts.tuple(dim_c<3>,"nrm",kvi) = nrm;
+        });   
+
+        if(!tris.hasProperty("nrm"))
+            tris.append_channels(cudaPol,{{"nrm",3}});
+        cudaPol(zs::range(tris.size()),
+            [tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) {
+            auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
+            auto v0 = verts.template pack<3>("x",tri[0]);
+            auto v1 = verts.template pack<3>("x",tri[1]);
+            auto v2 = verts.template pack<3>("x",tri[2]);
+
+            auto e01 = v1 - v0;
+            auto e02 = v2 - v0;
+
+            auto nrm = e01.cross(e02);
+            auto nrm_norm = nrm.norm();
+            if(nrm_norm < 1e-8)
+                nrm = zs::vec<T,3>::zeros();
+            else
+                nrm = nrm / nrm_norm;
+
+            tris.tuple(dim_c<3>,"nrm",ti) = nrm;
+        });
+        if(!verts.hasProperty("nrm"))
+            verts.append_channels(cudaPol,{{"nrm",3}});
+        TILEVEC_OPS::fill(cudaPol,verts,"nrm",(T)0.0);     
+        cudaPol(zs::range(tris.size()),[
+                tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) mutable {
+            auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            auto nrm = tris.pack(dim_c<3>,"nrm",ti);
+            for(int i = 0;i != 3;++i)
+                for(int d = 0;d != 3;++d)
+                    atomic_add(exec_cuda,&verts("nrm",d,tri[i]),nrm[d]/*/(T)kverts("valence",ktri[i])*/);
+        });           
+        cudaPol(zs::range(verts.size()),[verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
+            auto nrm = verts.pack(dim_c<3>,"nrm",vi);
+            nrm = nrm / (nrm.norm() + (T)1e-6);
+            verts.tuple(dim_c<3>,"nrm",vi) = nrm;
+        });   
+
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            ktBvh = proxy<space>(ktBvh),
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris),
+            project_pos_tag = zs::SmallString(project_pos_tag),
+            project_nrm_tag = zs::SmallString(project_nrm_tag),
+            project_idx_tag = zs::SmallString(project_idx_tag),
+            kinInCollisionEps = kinInCollisionEps,
+            kinOutCollisionEps = kinOutCollisionEps,
+            thickness = thickness] ZS_LAMBDA(int vi) mutable {
+                if(verts.hasProperty("is_surf"))
+                    if(verts("is_surf",vi) < (T)0.5)
+                        return;
+                if(verts.hasProperty("k_active"))
+                    if(verts("k_active",vi) < (T)0.5)
+                        return;
+                auto p = verts.pack(dim_c<3>,"x",vi);
+                auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
+
+                auto min_dist = std::numeric_limits<T>::infinity();
+                int min_tri_idx = -1;
+                auto min_bary = vec3::zeros();
+
+                auto pnrm = verts.pack(dim_c<3>,"nrm",vi);
+
+                auto process_potential_closest_tris = [&](int kti) {
+                    auto ktri = ktris.pack(dim_c<3>,"inds",kti).reinterpret_bits(int_c);
+                    if(kverts.hasProperty("k_active"))
+                        for(int i = 0;i != 3;++i)
+                            if(kverts("k_active",ktri[i]) < (T)0.5)
+                                return;
+                    auto kv0 = kverts.pack(dim_c<3>,"x",ktri[0]);
+                    auto kv1 = kverts.pack(dim_c<3>,"x",ktri[1]);
+                    auto kv2 = kverts.pack(dim_c<3>,"x",ktri[2]);
+
+                    vec3 bary{};
+                    T distance = LSL_GEO::pointTriangleDistance(kv0,kv1,kv2,p,bary);
+                    if(distance > min_dist)
+                        return;
+                    
+                    auto seg = p - kv0;
+                    auto knrm = ktris.pack(dim_c<3>,"nrm",kti);
+                    auto dist = seg.dot(knrm);
+
+                    auto align = knrm.dot(pnrm);
+                    if(align > 0.5){
+                        // printf("failed of %d %d due to aligh = %f\n",vi,kti,(float)align);
+                        return;
+                    }
+
+                    auto collisionEps = dist < 0 ? kinOutCollisionEps : kinInCollisionEps;
+                    if(distance > collisionEps)
+                        return;
+                    
+                    auto ntris = ktris.pack(dim_c<3>,"ff_inds",kti).reinterpret_bits(int_c);
+                    for(int i = 0;i != 3;++i){
+                        auto nti = ntris[i];
+                        auto edge_normal = vec3::zeros();
+                        if(nti < 0){
+                            edge_normal = knrm;
+                        }else {
+                            edge_normal = ktris.pack(dim_c<3>,"nrm",nti) + knrm;
+                            edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
+                        }
+                        auto ke0 = kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
+                        auto ke1 = kverts.pack(dim_c<3>,"x",ktri[(i + 1) % 3]);  
+                        auto ke10 = ke1 - ke0;
+                        auto bisector_normal = edge_normal.cross(ke10).normalized();
+
+                        seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
+                        if(bisector_normal.dot(seg) < 0)
+                            return;
+                    }
+
+                    min_dist = distance;
+                    min_tri_idx = kti;
+                    min_bary = bary;
+                };
+                ktBvh.iter_neighbors(bv,process_potential_closest_tris);
+
+                if(min_tri_idx == -1)
+                    return;
+
+                auto ori_bary = min_bary;
+
+                min_bary[0] = min_bary[0] < 0 ? (T)0 : min_bary[0];
+                min_bary[1] = min_bary[1] < 0 ? (T)0 : min_bary[1];
+                min_bary[2] = min_bary[2] < 0 ? (T)0 : min_bary[2];
+                min_bary = min_bary/min_bary.sum();
+
+                auto closest_ktri = ktris.pack(dim_c<3>,"inds",min_tri_idx).reinterpret_bits(int_c);
+                auto project_kv = vec3::zeros();
+                for(int i = 0;i != 3;++i)
+                    project_kv += kverts.pack(dim_c<3>,"x",closest_ktri[i]) * min_bary[i];
+                auto project_knrm = vec3::zeros();
+                for(int i = 0;i != 3;++i)
+                    project_knrm += kverts.pack(dim_c<3>,"nrm",closest_ktri[i]) * min_bary[i];
+                project_knrm /= (project_knrm.norm() + 1e-6);
+
+                // printf("find closest pairs : %d %d\n",vi,min_tri_idx);
+
+                // printf("vert[%d] = %f %f %f closest to ktri[%d] = %f %f %f bary = %f %f %f\n",vi,
+                //     (float)p[0],(float)p[1],(float)p[2],
+                //     min_tri_idx,
+                //     (float)project_kv[0],(float)project_kv[1],(float)project_kv[2],
+                //     (float)ori_bary[0],(float)ori_bary[1],(float)ori_bary[2]
+                // );
+
+                verts.tuple(dim_c<3>,project_pos_tag,vi) = project_kv;
+                verts.tuple(dim_c<3>,project_nrm_tag,vi) = project_knrm;
+                verts(project_idx_tag,vi) = reinterpret_bits<T>(min_tri_idx);
+        });
+
+        set_output("zsparticles",zsparticles);
+        set_output("kboundary",kboundary);
+    }
+};
+
+ZENDEFNODE(ZSSurfaceClosestPoints, {
+                                  {
+                                    "zsparticles",
+                                    "kboundary",
+                                    {"float","kinInColEps","0.001"},
+                                    {"float","kinOutColEps","0.001"},
+                                  },
+                                  {"zsparticles","kboundary"},
+                                  {
+                                    {"string","project_pos_tag","project_pos_tag"},
+                                    {"string","project_nrm_tag","project_nrm_tag"},
+                                    {"string","project_idx_tag","project_idx_tag"},
+                                  },
+                                  {"ZSGeometry"}});
+
+
+struct ZSVisualizeClosestPoints : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>;    
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        constexpr auto omp_space = execspace_e::openmp;
+        auto ompPol = omp_exec();       
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        const auto& verts = zsparticles->getParticles();
+        
+        const auto& kverts = kboundary->getParticles();
+        const auto& ktris = kboundary->getQuadraturePoints();
+
+        auto project_pos_tag = get_param<std::string>("project_pos_tag");
+        auto project_nrm_tag = get_param<std::string>("project_nrm_tag");
+        auto project_idx_tag = get_param<std::string>("project_idx_tag");
+
+        dtiles_t verts_buffer{verts.get_allocator(),{
+            {"x",3},
+            {"xp",3}
+        },verts.size()};
+
+        cudaPol(zs::range(verts.size()),[
+                verts = proxy<space>({},verts),
+                verts_buffer = proxy<space>({},verts_buffer),
+                project_idx_tag = zs::SmallString(project_idx_tag),
+                project_pos_tag = zs::SmallString(project_pos_tag)
+            ] ZS_LAMBDA(int vi) mutable {
+                verts_buffer.tuple(dim_c<3>,"x",vi) = verts.pack(dim_c<3>,"x",vi);
+                auto pidx = reinterpret_bits<int>(verts(project_idx_tag,vi));
+                if(pidx < 0)
+                    verts_buffer.tuple(dim_c<3>,"xp",vi) = verts.pack(dim_c<3>,"x",vi);
+                else{
+                    verts_buffer.tuple(dim_c<3>,"xp",vi) = verts.pack(dim_c<3>,project_pos_tag,vi);
+                }
+        });
+
+        verts_buffer = verts_buffer.clone({zs::memsrc_e::host});
+
+        auto closest_points_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& pverts = closest_points_vis->verts;
+        auto& plines = closest_points_vis->lines;
+        pverts.resize(verts_buffer.size() * 2);
+        plines.resize(verts_buffer.size());
+
+        ompPol(zs::range(verts_buffer.size()),
+            [verts_buffer = proxy<omp_space>({},verts_buffer),
+                &pverts,&plines] (int vi) mutable {
+            pverts[vi * 2 + 0] = verts_buffer.pack(dim_c<3>,"x",vi).to_array();
+            pverts[vi * 2 + 1] = verts_buffer.pack(dim_c<3>,"xp",vi).to_array();
+            plines[vi] = zeno::vec2i{vi * 2 + 0,vi * 2 + 1};
+        });     
+
+        set_output("closest_vis",std::move(closest_points_vis));   
+    }
+};
+
+ZENDEFNODE(ZSVisualizeClosestPoints, {{"zsparticles","kboundary"},
+                                  {"closest_vis"},
+                                  {
+                                    {"string","project_pos_tag","project_pos_tag"},
+                                    {"string","project_nrm_tag","project_nrm_tag"},
+                                    {"string","project_idx_tag","project_idx_tag"},
                                   },
                                   {"ZSGeometry"}});
 

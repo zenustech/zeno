@@ -111,4 +111,5 @@ target_sources(zeno PRIVATE
   geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
+  geometry/MarkInversion.cu
 )

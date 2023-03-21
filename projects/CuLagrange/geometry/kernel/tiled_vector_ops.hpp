@@ -371,6 +371,24 @@ namespace zeno { namespace TILEVEC_OPS {
         return res.getVal();
     }    
 
+
+    template<int space_dim,typename Pol,typename VTileVec>
+    T max_norm(Pol &cudaPol, VTileVec &vtemp,const zs::SmallString tag) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        Vector<T> res{vtemp.get_allocator(), 1};
+        res.setVal(0);
+        bool shouldSync = cudaPol.shouldSync();
+        cudaPol.sync(true);
+        cudaPol(range(vtemp.size()),
+            [data = proxy<space>({}, vtemp), res = proxy<space>(res),tag] __device__(int pi) mutable {
+                auto v = data.template pack<space_dim>(tag, pi);
+                atomic_max(exec_cuda, res.data(), v.norm());
+        });
+        cudaPol.sync(shouldSync);
+        return res.getVal();
+    }        
+
     // template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
     // void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
     //     using namespace zs;

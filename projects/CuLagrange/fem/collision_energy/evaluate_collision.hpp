@@ -688,18 +688,20 @@ void evaluate_fp_collision_grad_and_hessian(
                 
                 
                 // adding rayleigh damping term
-                vec3 v0[4] = {verts.pack(dim_c<3>,vtag, inds[0]),
-                verts.pack(dim_c<3>,vtag, inds[1]),
-                verts.pack(dim_c<3>,vtag, inds[2]),
-                verts.pack(dim_c<3>,vtag, inds[3])}; 
-                auto vel = COLLISION_UTILS::flatten(v0); 
+                // vec3 v0[4] = {verts.pack(dim_c<3>,vtag, inds[0]),
+                // verts.pack(dim_c<3>,vtag, inds[1]),
+                // verts.pack(dim_c<3>,vtag, inds[2]),
+                // verts.pack(dim_c<3>,vtag, inds[3])}; 
+                // auto vel = COLLISION_UTILS::flatten(v0); 
 
-                auto C = K * kd_theta;
-                auto dforce = -C * vel;
-                gh_buffer.template tuple<12>("grad",cpi + start) = cforce + dforce;
-                gh_buffer.template tuple<12*12>("H",cpi + start) = K + C/dt;
+                // auto C = K * kd_theta;
+                // auto dforce = -C * vel;
+                gh_buffer.template tuple<12>("grad",cpi + start) = cforce/* + dforce*/;
+                gh_buffer.template tuple<12*12>("H",cpi + start) = K/* + C/dt*/;
+                if(isnan(K.norm())){
+                    printf("nan cK detected : %d\n",cpi);
+                }
         });
-
 }
 
 // TODO: add damping collision term

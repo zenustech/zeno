@@ -206,7 +206,7 @@ struct ZSRetrieveVectorField : zeno::INode {
                         }else if(elm_dim == 3){
                             auto inds = eles.pack<3>("inds",i).reinterpret_bits<int>();
                             for(int j= 0;j != 3;++j)
-                                bx += verts.pack<3>("xtag",inds[j]) / 3;
+                                bx += verts.pack<3>(xtag,inds[j]) / 3;
                         }
                         vec_buffer.tuple<3>("x",i) = bx;
                         vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i)/* / eles.pack<3>(gtag,i).norm()*/;
@@ -840,9 +840,10 @@ struct ZSGaussianSampler : zeno::INode {
         if(dstType == std::string("vert"))
             dst_dim = dstVerts.getChannelSize(srcAttr);
         else
-            dst_dim = srcQuads.getChannelSize(dstAttr);
+            dst_dim = dstQuads.getChannelSize(dstAttr);
         if(source_dim != dst_dim){
-            fmt::print("the dst's {} channel and src's {} channel do not match in size\n",dstAttr,srcAttr);
+            fmt::print("the dst's {} channel and src's {} channel do not match in size [{} {}]\n",
+                dstAttr,srcAttr,source_dim,dst_dim);
             throw std::runtime_error("the dst's {} channel and src's {} channel do not match in size");
         }
         int dim = source_dim;

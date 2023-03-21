@@ -102,7 +102,7 @@ namespace zeno { namespace PCG {
     }    
 
     template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
-    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
+    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool take_inverse = true,bool use_block = true) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // pol(zs::range(vtemp.size()),
@@ -110,7 +110,7 @@ namespace zeno { namespace PCG {
         //         constexpr int block_size = space_dim * space_dim;
         //         vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
         // });
-        TILEVEC_OPS::fill(pol,vtemp,PTag,(T)0.0);
+        // TILEVEC_OPS::fill(pol,vtemp,PTag,(T)0.0);
 
         pol(zs::range(etemp.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
@@ -132,10 +132,12 @@ namespace zeno { namespace PCG {
                         atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + j));
                 }
         });
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
-                vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
-        });            
+        if(take_inverse) {
+            pol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
+                    vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
+            });       
+        }     
     }
 
 
@@ -291,15 +293,8 @@ namespace zeno { namespace PCG {
         constexpr auto space = execspace_e::cuda;
         constexpr auto execTag = wrapv<space>{};
 
-        // pol(range(vtemp.size()),
-        //     [vtemp = proxy<space>({},vtemp),y_tag] __device__(int vi) mutable {
-        //         vtemp.template tuple<space_dim>(y_tag,vi) = zs::vec<T,space_dim>::zeros();
-        // });
-        fill<space_dim>(pol,vtemp,y_tag,zs::vec<T,space_dim>::zeros());
-        // zs::memset(zs::mem_device, res.data(), 0,
-        //             sizeof(T) * count_warps(vtemp.size() * space_dim));
+        // fill<space_dim>(pol,vtemp,y_tag,zs::vec<T,space_dim>::zeros());
 
-        // pol.profile(true);
 #if 0
         pol(Collapse{etemp.size(), 32 * 4},
               [execTag, etemp = proxy<space>({}, etemp),
@@ -627,6 +622,8 @@ namespace zeno { namespace PCG {
             {"temp",space_dim},
             {"p",space_dim},
             {"q",space_dim},
+            {"H",space_dim * space_dim},
+            {"inds",1}
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
@@ -636,6 +633,8 @@ namespace zeno { namespace PCG {
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
+        copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
         // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
@@ -645,6 +644,7 @@ namespace zeno { namespace PCG {
         copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
         copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
 
+        
         multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
         // compute initial residual : b - Hx -> r
         add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
@@ -677,7 +677,9 @@ namespace zeno { namespace PCG {
             // pol.profile(true);
             // CppTimer timer;
             // timer.tick();
+            TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
             multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp");
+            multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","p","temp");
             // timer.tock("multiply time");
             // timer.tick();
             project<space_dim>(pol,vtemp,"temp","btag");
@@ -695,7 +697,9 @@ namespace zeno { namespace PCG {
             // recalculate the residual to fix floating point error accumulation
             if(iter % (recal_iter + 1) == recal_iter){
                 // r = b - Hx
+                TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
                 multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+                multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
                 add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
                 project<space_dim>(pol,vtemp,"r","btag");
             }
@@ -754,6 +758,7 @@ namespace zeno { namespace PCG {
             {"temp",space_dim},
             {"p",space_dim},
             {"q",space_dim},
+            {"H",space_dim * space_dim}
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
@@ -763,6 +768,7 @@ namespace zeno { namespace PCG {
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
         // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},

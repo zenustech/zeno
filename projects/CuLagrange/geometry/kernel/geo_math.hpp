@@ -29,7 +29,7 @@ namespace zeno { namespace LSL_GEO {
         return 2*zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }    
 
-    // using T = float;
+    // using T = REAL;
     template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
     constexpr auto area(const zs::VecInterface<VecT>& p0,const zs::VecInterface<VecT>& p1,const zs::VecInterface<VecT>& p2){
         auto a = (p0 - p1).norm();
@@ -169,6 +169,14 @@ namespace zeno { namespace LSL_GEO {
     }
 
 
+    template<typename T>
+    constexpr void deformation_xform(
+        const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3,
+        const zs::vec<T,3>& X0,const zs::vec<T,3,3>& IB,
+        zs::vec<T,3,3>& F,zs::vec<T,3>& b) {
+            F = deformation_gradient(x0,x1,x2,x3,IB);
+            b = x0 - F * X0;
+    }
 
     template<typename T>
     constexpr void deformation_xform(
@@ -187,14 +195,7 @@ namespace zeno { namespace LSL_GEO {
         deformation_xform(x0,x1,x2,x3,X0,IB,F,b);
     }
 
-    template<typename T>
-    constexpr void deformation_xform(
-        const zs::vec<T,3>& x0,const zs::vec<T,3>& x1,const zs::vec<T,3>& x2,const zs::vec<T,3>& x3,
-        const zs::vec<T,3>& X0,const zs::vec<T,3,3>& IB,
-        zs::vec<T,3,3>& F,zs::vec<T,3>& b) {
-            F = deformation_gradient(x0,x1,x2,x3,IB);
-            b = x0 - F * X0;
-    }
+
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -574,5 +575,56 @@ namespace zeno { namespace LSL_GEO {
         return false;
     }
 
+
+    constexpr REAL tri_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2,
+             REAL& b,REAL& rtmp,REAL& dtmp,REAL& stmp, REAL& ttmp,VECTOR3 &bary,REAL& ip_dist) {
+        const REAL eps = (REAL)1e-6;
+        VECTOR3 u = v1 - v0;
+        VECTOR3 v = v2 - v0;
+        VECTOR3 n = cross(u, v);
+        n = n/n.norm();
+        // REAL b = dot(n, rd);
+        b = dot(n,rd);
+        if (zs::abs(b) > eps) {
+            REAL a = n.dot(v0 - ro);
+            REAL r = a / b;
+            rtmp = r;
+            if (r > eps) {
+                VECTOR3 ip = ro + r * rd;
+                ip_dist = dot(ip - v0,n);
+                REAL uu = dot(u, u);
+                REAL uv = dot(u, v);
+                REAL vv = dot(v, v);
+                VECTOR3 w = ip - v0;
+                REAL wu = dot(w, u);
+                REAL wv = dot(w, v);
+                REAL ww = dot(w, w);
+                REAL d = uv * uv - uu * vv;
+                REAL s = uv * wv - vv * wu;
+                REAL t = uv * wu - uu * wv;
+                // REAL d = zs::sqrt(uu * vv - uv * uv);
+                // REAL s = zs::sqrt(uu * ww - wu * wu);
+                // real t = zs::sqrt(ww * vv - wv * wv);
+
+                // area[0] = d;
+                // area[1] = s;
+                // area[2] = t;
+
+                d = (REAL)1.0 / d;
+                s *= d;
+                t *= d;
+                dtmp = d;
+                stmp = s;
+                ttmp = t;
+
+                bary[0] = (REAL)1.0 - s - t;
+                bary[1] = s;
+                bary[2] = t;
+                if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2)
+                    return r;
+            }
+        }
+        return std::numeric_limits<REAL>::infinity();
+    }
 };
 };
