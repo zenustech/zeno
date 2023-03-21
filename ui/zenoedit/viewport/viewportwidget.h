@@ -78,7 +78,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
-    void setPickTarget(const string& prim_name);
+    void setPickTarget(const std::string& prim_name);
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNodeFromPicker();
     void setSimpleRenderOption();
