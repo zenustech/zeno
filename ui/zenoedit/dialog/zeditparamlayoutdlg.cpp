@@ -827,7 +827,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
     const QString &dataType = m_ui->cbTypes->itemText(idx);
-    QVariant value = UiHelper::initVariantByControl(ctrl);
+    QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
@@ -1013,9 +1013,15 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     QModelIndex parent = pGroup->index();
                     nodeParams->moveRow(parent, srcRow, parent, dstRow);
                 }
-
-                //reacquire pTarget, because the implementation of moveRow is simplily
-                pTarget = static_cast<VParamItem*>(appliedItem->child(r));
+                if (!m_model->isNodeModel()) 
+                {
+                    PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_model->nodeIdx().data(ROLE_PANEL_PARAMS));
+                    ZASSERT_EXIT(panelParams);
+                    QModelIndex parent = pTarget->parent()->index();
+                    panelParams->moveRow(parent, srcRow, parent, dstRow);
+                }
+               //reacquire pTarget, because the implementation of moveRow is simplily
+                pTarget = static_cast<VParamItem *>(appliedItem->child(r));
             }
 
             //the corresponding item exists.

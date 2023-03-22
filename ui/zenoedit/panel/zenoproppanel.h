@@ -36,6 +36,7 @@ public slots:
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow);
     void onSettings();
 
 private:

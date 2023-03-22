@@ -100,6 +100,7 @@ void ZenoPropPanel::clearLayout()
             disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
             disconnect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
             disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+            disconnect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
         }
     }
 
@@ -134,6 +135,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     connect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
     connect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
     connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
         if (m_tabWidget)
@@ -685,6 +687,45 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
         }
     }
+}
+
+void ZenoPropPanel::onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow) 
+{
+    QStandardItemModel *viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItem *parentItem = viewParams->itemFromIndex(parent);
+    ZASSERT_EXIT(parentItem);
+    ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+    if (parent != destination || start == destRow)
+        return;
+
+    const QString &groupName = parentItem->text();
+    QStandardItem *pTabItem = parentItem->parent();
+    ZASSERT_EXIT(pTabItem);
+    const QString &tabName = pTabItem->text();
+    const QString &paramName = parentItem->child(start)->text();
+    QGridLayout *pGridLayout = qobject_cast<QGridLayout *>(m_controls[tabName][groupName][paramName].controlLayout);
+    ZASSERT_EXIT(pGridLayout);
+    for (int row = 0; row < pGridLayout->rowCount(); row++) 
+    {
+        const QString &name = parentItem->child(row)->text();
+        _PANEL_CONTROL control = m_controls[tabName][groupName][name];
+        QWidget *labelWidget = nullptr;
+        if (pGridLayout->itemAtPosition(row, 1))
+            labelWidget = pGridLayout->itemAtPosition(row, 1)->widget();
+        if (control.pLabel != labelWidget) 
+        {
+            pGridLayout->addWidget(control.pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
+        }
+        QWidget *controlWidget = nullptr;
+        if (pGridLayout->itemAtPosition(row, 2))
+            controlWidget = pGridLayout->itemAtPosition(row, 2)->widget();
+        if (control.pControl != controlWidget) 
+        {
+            pGridLayout->addWidget(control.pControl, row, 2, Qt::AlignVCenter);
+        }
+    }
+    
+
 }
 
 ZExpandableSection* ZenoPropPanel::findGroup(const QString& tabName, const QString& groupName)
