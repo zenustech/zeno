@@ -220,6 +220,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
             m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
         }
     });
+
+    connect(m_proxyModel, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onViewParamDataChanged);
 }
 
 void ZEditParamLayoutDlg::initUI() 
@@ -452,7 +454,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             BlockSignalScope scope(m_ui->cbControl);
             BlockSignalScope scope2(m_ui->cbTypes);
 
-            m_ui->cbControl->setEnabled(bEditable);
+            m_ui->cbControl->setEnabled(true);
             m_ui->cbControl->clear();
             QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
             m_ui->cbControl->addItems(items);
@@ -715,6 +717,19 @@ void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, con
     //m_commandSeq.append(pCmd);
     if (m_ui->editName->text() != newName)
         m_ui->editName->setText(newName);
+}
+
+void ZEditParamLayoutDlg::onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) 
+{
+    if (roles.isEmpty())
+        return;
+    int role = roles[0];
+    if (role == ROLE_PARAM_CTRL) 
+    {
+        QStandardItem *item = m_proxyModel->itemFromIndex(topLeft);
+        QIcon icon = getIcon(item);
+        item->setData(icon, Qt::DecorationRole);
+    }
 }
 
 void ZEditParamLayoutDlg::onNameEditFinished()

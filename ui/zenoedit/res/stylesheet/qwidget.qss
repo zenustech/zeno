@@ -153,6 +153,11 @@ QTreeView, QListWidget
 	show-decoration-selected: 1;
 }
 
+QTreeView QLineEdit, QListWidget QLineEdit
+{
+	padding:0;
+}
+
 QTreeView::item, QListWidget::item
 {
 	min-height:16px;
