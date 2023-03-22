@@ -291,8 +291,8 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     for (int iters = 0; iters < L; iters++)
     {
         fmt::print("findConstraints...\n"); 
-        fmt::print("D: {}, D_min: {}, D_max: {}, delta: {}\n", 
-            D, D_min, D_max, delta); 
+        fmt::print(fg(fmt::color::orange_red), "iters: {}, D: {}, D_min: {}, D_max: {}, delta: {}\n", 
+            iters, D, D_min, D_max, delta); 
         if (D < D_min)
         {
             fmt::print("[proximity] tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 

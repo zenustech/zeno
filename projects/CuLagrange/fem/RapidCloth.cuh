@@ -156,13 +156,13 @@ struct RapidClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision; TODO
-    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
+    void consColoring(zs::CudaExecutionPolicy &pol);   
     void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
         itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
-    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
+    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag, T shrinking = 1.1f); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
     void forwardStep(zs::CudaExecutionPolicy &pol);     // async stepping  
@@ -194,12 +194,6 @@ struct RapidClothSystem : IObject {
     void updateConstraintCnt() {
         std::tie(npp, npe, npt, nee, ne) = 
             std::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nE.getVal());
-        oe = 0; 
-        opp = ne; 
-        ope = opp + npp; 
-        opt = ope + npe; 
-        oee = opt + npt; 
-        nCons = oee + nee; 
     }
 
     // sim params
@@ -257,8 +251,10 @@ struct RapidClothSystem : IObject {
     itiles_t tempCons;       // LCP constraint matrix storing
     zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
+    zs::Vector<int> oPP, oPE, oPT, oEE, oE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
+    int napp, nape, napt, naee, nae; 
     int npp, npe, npt, nee, ne;
 
     // auxiliary data (spatial acceleration)
@@ -292,6 +288,49 @@ struct RapidClothSystem : IObject {
         T aTb = (eb0 - ea0).dot(b);
         return aTb * aTb / b.l2NormSqr();
     }
+
+  template <
+      typename VecTA, typename VecTB,
+      zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+  constexpr auto safe_dist2_ee_unclassified(const zs::VecInterface<VecTA> &ea0,
+                                       const zs::VecInterface<VecTA> &ea1,
+                                       const zs::VecInterface<VecTB> &eb0,
+                                       const zs::VecInterface<VecTB> &eb1) noexcept {
+    using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+    T dist2{zs::limits<T>::max()};
+    switch (ee_distance_type(ea0, ea1, eb0, eb1)) {
+      case 0:
+        dist2 = dist2_pp(ea0, eb0);
+        break;
+      case 1:
+        dist2 = dist2_pp(ea0, eb1);
+        break;
+      case 2:
+        dist2 = dist2_pe(ea0, eb0, eb1);
+        break;
+      case 3:
+        dist2 = dist2_pp(ea1, eb0);
+        break;
+      case 4:
+        dist2 = dist2_pp(ea1, eb1);
+        break;
+      case 5:
+        dist2 = dist2_pe(ea1, eb0, eb1);
+        break;
+      case 6:
+        dist2 = dist2_pe(eb0, ea0, ea1);
+        break;
+      case 7:
+        dist2 = dist2_pe(eb1, ea0, ea1);
+        break;
+      case 8:
+        dist2 = safe_dist2_ee(ea0, ea1, eb0, eb1);
+        break;
+      default:
+        break;
+    }
+    return dist2;
+  }
 
 } // namespace zeno
 
