@@ -62,6 +62,7 @@ private slots:
     void onTypeItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
+    void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
 private:
     void initUI();

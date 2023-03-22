@@ -220,6 +220,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
             m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
         }
     });
+
+    connect(m_proxyModel, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onViewParamDataChanged);
 }
 
 void ZEditParamLayoutDlg::initUI() 
@@ -452,7 +454,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             BlockSignalScope scope(m_ui->cbControl);
             BlockSignalScope scope2(m_ui->cbTypes);
 
-            m_ui->cbControl->setEnabled(bEditable);
+            m_ui->cbControl->setEnabled(true);
             m_ui->cbControl->clear();
             QStringList items = UiHelper::getControlLists(dataType, m_bNodeUI);
             m_ui->cbControl->addItems(items);
@@ -717,6 +719,19 @@ void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, con
         m_ui->editName->setText(newName);
 }
 
+void ZEditParamLayoutDlg::onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) 
+{
+    if (roles.isEmpty())
+        return;
+    int role = roles[0];
+    if (role == ROLE_PARAM_CTRL) 
+    {
+        QStandardItem *item = m_proxyModel->itemFromIndex(topLeft);
+        QIcon icon = getIcon(item);
+        item->setData(icon, Qt::DecorationRole);
+    }
+}
+
 void ZEditParamLayoutDlg::onNameEditFinished()
 {
     const QModelIndex& currIdx = m_ui->paramsView->currentIndex();
@@ -812,7 +827,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
     const QString &dataType = m_ui->cbTypes->itemText(idx);
-    QVariant value = UiHelper::initVariantByControl(ctrl);
+    QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
@@ -998,9 +1013,15 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     QModelIndex parent = pGroup->index();
                     nodeParams->moveRow(parent, srcRow, parent, dstRow);
                 }
-
-                //reacquire pTarget, because the implementation of moveRow is simplily
-                pTarget = static_cast<VParamItem*>(appliedItem->child(r));
+                if (!m_model->isNodeModel()) 
+                {
+                    PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_model->nodeIdx().data(ROLE_PANEL_PARAMS));
+                    ZASSERT_EXIT(panelParams);
+                    QModelIndex parent = pTarget->parent()->index();
+                    panelParams->moveRow(parent, srcRow, parent, dstRow);
+                }
+               //reacquire pTarget, because the implementation of moveRow is simplily
+                pTarget = static_cast<VParamItem *>(appliedItem->child(r));
             }
 
             //the corresponding item exists.
