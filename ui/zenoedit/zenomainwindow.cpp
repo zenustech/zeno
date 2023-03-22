@@ -1295,11 +1295,11 @@ void ZenoMainWindow::clearErrorMark()
     for (const QModelIndex& idx : lst)
     {
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
-        if (!pScene) {
-            pScene = new ZenoSubGraphScene(graphsMgm);
-            graphsMgm->addScene(idx, pScene);
-            pScene->initModel(idx);
-        }
+//         if (!pScene) {
+//             pScene = new ZenoSubGraphScene(graphsMgm);
+//             graphsMgm->addScene(idx, pScene);
+//             pScene->initModel(idx);
+//         }
 
         if (pScene) {
             pScene->clearMark();

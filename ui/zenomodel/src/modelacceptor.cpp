@@ -386,7 +386,11 @@ void ModelAcceptor::setInputSocket2(
             //the layout should be standard inputs desc by latest descriptors.
 
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
-            nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+            if (prop == SOCKPROP_EDITABLE) {
+                nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
+            } else {
+                nodeParams->setAddParam(PARAM_INPUT, sockName, "", QVariant(), CONTROL_NONE,  QVariant(), prop);
+            }
         }
         else
         {
