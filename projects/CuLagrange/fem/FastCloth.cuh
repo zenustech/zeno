@@ -166,7 +166,7 @@ struct FastClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T pnRel, T cgRel,
-                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn, T BCStiffness);
+                    int PNCap, int CGCap, T dHat, T gravity, int K, int IDyn, T BCStiffness, T mu, T LRef, T rho);
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);

@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"
+#include <zenoui/style/zenostyle.h>
 
 
 BlackboardNode::BlackboardNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -228,5 +229,6 @@ bool BlackboardNode::isDragArea(QPointF pos)
 {
     QPointF bottomright = boundingRect().bottomRight();
     QPointF offset = pos - bottomright;
-    return (offset.manhattanLength() < 100);
+    qreal manhatdist = offset.manhattanLength();
+    return (manhatdist < ZenoStyle::dpiScaled(100));
 }

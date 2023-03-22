@@ -14,14 +14,13 @@ void RapidClothSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // only project boundary (character)
-    if (projectDBC)
-        pol(zs::range(numBouDofs), [vtemp = view<space>({}, vtemp), tagOffset = vtemp.getPropertyOffset(tag),
-                                    coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
-            vi += coOffset;
+    pol(zs::range(numBouDofs), [vtemp = view<space>({}, vtemp), tagOffset = vtemp.getPropertyOffset(tag),
+                                coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
+        vi += coOffset;
 #pragma unroll
-            for (int d = 0; d != 3; ++d)
-                vtemp(tagOffset + d, vi) = 0;
-        });
+        for (int d = 0; d != 3; ++d)
+            vtemp(tagOffset + d, vi) = 0;
+    });
 }
 
 void RapidClothSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag,
@@ -29,7 +28,7 @@ void RapidClothSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::Smal
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // precondition
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), srcOffset = vtemp.getPropertyOffset(srcTag),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), srcOffset = vtemp.getPropertyOffset(srcTag),
                              dstOffset = vtemp.getPropertyOffset(dstTag)] ZS_LAMBDA(int vi) mutable {
         vtemp.tuple(dim_c<3>, dstOffset, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcOffset, vi);
     });
@@ -45,7 +44,7 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
     auto bOffset = vtemp.getPropertyOffset(bTag);
 
     /// @brief initialize
-    pol(range(numDofs), [execTag, vtemp = view<space>({}, vtemp), bOffset] ZS_LAMBDA(int vi) mutable {
+    pol(range(coOffset), [execTag, vtemp = view<space>({}, vtemp), bOffset] ZS_LAMBDA(int vi) mutable {
         vtemp.tuple(dim_c<3>, bOffset, vi) = vec3::zeros();
     });
     /// @brief inertial and coupling
@@ -185,17 +184,6 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                         atomic_add(exec_cuda, &vtemp(bOffset + MRid % 3, inds[MRid / 3]), rdata);
                 });
     }
-    /// @brief boundary constraint
-    if (!projectDBC) {
-        pol(range(numBouDofs), [execTag, vtemp = view<space>(vtemp), dxOffset, bOffset, wsOffset, coOffset = coOffset,
-                                boundaryKappa = BCStiffness] ZS_LAMBDA(int vi) mutable {
-            vi += coOffset;
-            auto dx = vtemp.pack(dim_c<3>, dxOffset, vi);
-            auto w = vtemp(wsOffset, vi);
-            for (int d = 0; d != 3; ++d)
-                atomic_add(execTag, &vtemp(bOffset + d, vi), boundaryKappa * w * dx(d));
-        });
-    }
 }
 
 void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
@@ -206,7 +194,7 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     pol.sync(false);
     /// solve for A dir = grad;
     // initial guess for hard boundary constraints
-    pol(zs::range(numDofs),
+    pol(zs::range(coOffset),
         [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt, dirOffset = vtemp.getPropertyOffset("dir"),
          xtildeOffset = vtemp.getPropertyOffset("x_tilde"),
          xkOffset = vtemp.getPropertyOffset("x[k]")] ZS_LAMBDA(int i) mutable {
@@ -221,18 +209,18 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     // temp = A * dir
     multiply(pol, "dir", "temp");
     // r = grad - temp
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
                              gradOffset = vtemp.getPropertyOffset("grad"),
                              tempOffset = vtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, rOffset, i) = vtemp.pack(dim_c<3>, gradOffset, i) - vtemp.pack(dim_c<3>, tempOffset, i);
     });
     project(pol, "r");
     precondition(pol, "r", "q");
-    pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3>, pOffset, i) = vtemp.pack(dim_c<3>, qOffset, i);
     });
-    T zTrk = dot(pol, "r", "q");
+    T zTrk = dot(pol, "r", "q", coOffset);
     T residualPreconditionedNorm2 = zTrk;
     T localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
     int iter = 0;
@@ -248,8 +236,8 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
         multiply(pol, "p", "temp");
         project(pol, "temp"); // need further checking hessian!
 
-        T alpha = zTrk / dot(pol, "temp", "p");
-        pol(range(numDofs), [vtemp = view<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
+        T alpha = zTrk / dot(pol, "temp", "p", coOffset);
+        pol(range(coOffset), [vtemp = view<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
                              pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
                              tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
             vtemp.tuple(dim_c<3>, dirOffset, vi) =
@@ -260,9 +248,9 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
 
         precondition(pol, "r", "q");
         T zTrkLast = zTrk;
-        zTrk = dot(pol, "q", "r");
+        zTrk = dot(pol, "q", "r", coOffset);
         T beta = zTrk / zTrkLast;
-        pol(range(numDofs), [vtemp = view<space>({}, vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
+        pol(range(coOffset), [vtemp = view<space>({}, vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
                              qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
             vtemp.tuple(dim_c<3>, pOffset, vi) =
                 vtemp.pack(dim_c<3>, qOffset, vi) + beta * vtemp.pack(dim_c<3>, pOffset, vi);
@@ -282,35 +270,24 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
         vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
     });
-    computeInertialAndCouplingAndForceGradient(pol);
-    computeElasticGradientAndHessian(pol);
-
+    computeInertialAndForceGradient(pol, "x[k]");
+    computeElasticGradientAndHessian(pol, "x[k]");
     // APPLY BOUNDARY CONSTRAINTS, PROJ GRADIENT
-    if (!projectDBC) {
-        // grad
-        pol(zs::range(numBouDofs), [vtemp = view<space>({}, vtemp), boundaryKappa = BCStiffness,
-                                    coOffset = coOffset] ZS_LAMBDA(int i) mutable {
-            i += coOffset;
-            // computed during the previous constraint residual check
-            auto cons = vtemp.pack(dim_c<3>, "cons", i);
-            auto w = vtemp("ws", i);
-            vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) - boundaryKappa * w * cons;
-            {
-                for (int d = 0; d != 3; ++d)
-                    vtemp("P", 4 * d, i) += boundaryKappa * w;
-            }
-        });
-        // hess (embedded in multiply)
-    }
+    // TODO: revise codes for BC 
     project(pol, "grad");
-
     // PREPARE P
     pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple<9>("P", i) = inverse(vtemp.template pack<3, 3>("P", i));
     });
-
     // CG SOLVE
+    // TODO: use sparse matrix 
     cgsolve(pol);
+    // fix the boundary 
+    pol(range(coOffset), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = 
+                vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
+        }); 
 }
 
 void RapidClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy &pol) {
@@ -445,15 +422,6 @@ typename RapidClothSystem::T RapidClothSystem::dynamicsEnergy(zs::CudaExecutionP
             reduce_to(vi, n, E, energy[0]);
         });
 
-    // constraint energy
-    if (!projectDBC)
-        pol(range(numBouDofs), [vtemp = view<space>({}, vtemp), off = coOffset, kappa = BCStiffness,
-                                energy = view<space>(temp), n = numBouDofs] __device__(int i) mutable {
-            auto vi = i + off;
-            auto w = vtemp("ws", vi);
-            auto cons = vtemp.pack(dim_c<3>, "cons", vi);
-            reduce_to(i, n, 0.5f * kappa * w * cons.l2NormSqr(), energy[0]);
-        });
     return temp.getVal() + elasticE;
 }
 } // namespace zeno

@@ -1414,13 +1414,13 @@ void DisplayWidget::onNodeSelected(const QModelIndex& subgIdx, const QModelIndex
                 Zenovis* pZenovis = m_view->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
-                auto near_ = scene->camera->m_near;
-                auto far_ = scene->camera->m_far;
+                auto _near = scene->camera->m_near;
+                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 1) {
                     depth = depth * 2 - 1;
-                    cz = 2 * near_ * far_ / ((far_ + near_) - depth * (far_ - near_));
+                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
