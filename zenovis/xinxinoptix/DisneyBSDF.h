@@ -529,7 +529,7 @@ namespace DisneyBSDF{
 
         //float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
         float d = BRDFBasics::GTR1(abs(NoH),mix(0.1f, 0.001f, clearcoatGloss));
-        //previous: float f = BRDFBasics::fresnelSchlick(fLoH, 0.04); wrong
+        //previous: float f = BRDFBasics::fresnelSchlick(LoH, 0.04); wrong
         float f = BRDFBasics::fresnelSchlick(0.04f, LoH);
         float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, 0.25f, 0.25f);
 
