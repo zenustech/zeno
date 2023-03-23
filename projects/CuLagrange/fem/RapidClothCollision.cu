@@ -188,7 +188,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     case 5: {
                         if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[0]}; 
+                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
                             tempPE("dist", no) = (float)zs::sqrt(d2); 
                         }
                         break; 
@@ -210,6 +210,33 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                         break; 
                     }
                     case 8: {
+                        if ((v1 - v0).cross(v3 - v2).l2NormSqr() < limits<T>::epsilon())
+                        {
+                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                                break; 
+                            }
+                            if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], ejInds[0], ejInds[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                                break; 
+                            }
+                            if (auto d2 = dist2_pe(v0, v1, v2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[0]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                                break; 
+                            }
+                            if (auto d2 = dist2_pe(v0, v1, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                                break; 
+                            }
+                        }
                         if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nEE[0], 1); 
                             auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
@@ -362,36 +389,6 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     D = D_max; 
     fmt::print("[CD] ne: {}, npp: {}, npe: {}, npt: {}, nee: {}\n", 
         ne, npp, npe, npt, nee); 
-}
-
-
-static void constructVertexConsList(zs::CudaExecutionPolicy &pol, 
-    typename RapidClothSystem::tiles_t& tempPair, 
-    typename RapidClothSystem::itiles_t& vCons, 
-    int pairNum, 
-    int pairSize, 
-    int offset, 
-    int coOffset, 
-    const zs::SmallString& tag = "tempPair")
-{
-    using namespace zs; 
-    constexpr auto space = execspace_e::cuda; 
-
-    pol(range(pairNum), 
-        [tempPair = view<space>({}, tempPair, false_c, tag), 
-         vCons = view<space>({}, vCons, false_c, "vCons"), 
-         offset, pairSize, coOffset] __device__ (int i) mutable {
-            for (int k = 0; k < pairSize; k++)
-            {
-                auto vi = tempPair("inds", k, i, int_c); 
-                if (vi >= coOffset)
-                    continue; 
-                auto n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
-                auto nE = vCons("nE", vi); 
-                vCons("cons", n + nE, vi) = i + offset; 
-                vCons("ind", n + nE, vi) = k; 
-            }
-        }); 
 }
 
 static constexpr int simple_hash(int a)
@@ -715,10 +712,10 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto coef = sgn * (t1 - t0).cross(t2 - t0).norm() * delta; 
         if (zs::abs(coef) < limits<T>::epsilon())
             coef = sgn * limits<T>::epsilon(); 
-        mat = adjoint(mat).transpose();
         auto val = vol / coef - 1.0f; 
         if (val >= 0)
             return; 
+        mat = adjoint(mat).transpose();
         auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         zs::vec<T, 4, 3> grad; 
         for (int d = 0; d < 3; d++)
@@ -1051,8 +1048,9 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     constexpr auto space = execspace_e::cuda; 
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
+    // TODO: calculate an upper-bound of maxDi when doing findConstraints
     pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp), maxDi = D] __device__ (int vi) mutable {
+        [vtemp = proxy<space>({}, vtemp), maxDi = delta] __device__ (int vi) mutable {
             vtemp("Di", vi) = maxDi; 
         }); 
     pol(range(nCons - nae), 
