@@ -541,10 +541,12 @@ void ViewportWidget::paintGL()
     Zenovis::GetInstance().paintGL();
     if(updateLightOnce){
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-
         if(scene->objectsMan->lightObjects.size() > 0){
             zenoApp->getMainWindow()->updateLightList();
             updateLightOnce = false;
+        }
+        if (!scene->uiLayou.empty()) {
+            zenoApp->getMainWindow()->getDisplayWidget()->initNodeUI(scene->uiLayou);
         }
     }
 }
@@ -853,6 +855,173 @@ void DisplayWidget::runAndRecord(const VideoRecInfo& recInfo)
     }
 }
 
+void DisplayWidget::initNodeUI(const std::string &info) {
+
+    //zeno::log_info("initNodeUI {}", info);
+
+    if (m_sUILayout == info)
+        return;
+
+    QString tmpInfo = QString::fromStdString(info);
+    tmpInfo = tmpInfo.replace("\\\\", "");
+    tmpInfo = tmpInfo.replace("\\", "");
+    tmpInfo = tmpInfo.replace("\"{", "{");
+    tmpInfo = tmpInfo.replace("}\"", "}");
+
+    QJsonParseError e;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(tmpInfo.toUtf8(), &e);
+    if (e.error != QJsonParseError::NoError && jsonDoc.isNull()) {
+        zeno::log_info("parse error: {} {}", e.errorString().toStdString(), tmpInfo.toStdString());
+        return;
+    }
+    QJsonObject jsonObj = jsonDoc.object();
+    QString componentType = jsonObj.value("component").toString();
+    if (componentType == "HLayout" || componentType == "VLayout") {
+        QBoxLayout* tmpLayout = parseUILayout(jsonObj);        
+        if (tmpLayout != nullptr) {
+            if (m_pUILayoutWidget != nullptr) {
+                delete m_pUILayoutWidget;
+                m_pUILayoutWidget = nullptr;
+            }
+            m_pUILayoutWidget = new QWidget(this);
+            m_pUILayoutWidget->setObjectName("UILayoutWidget");
+            //m_pUILayoutWidget->setMask(QRegion(childrenRegion()));
+            //m_pUILayoutWidget->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+            m_pUILayoutWidget->setAttribute(Qt::WA_TranslucentBackground, true);
+
+            //m_pUILayoutWidget->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+            //m_pUILayoutWidget->setMouseTracking(true);
+            //m_pUILayoutWidget->setWindowOpacity(0.1);
+            //m_pUILayoutWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+            m_pUILayoutWidget->setGeometry(m_view->rect());
+            //m_pUILayoutWidget->setStyleSheet("QWidget{background-color:rgba(234, 82, 160, 1);}");transparent
+            m_pUILayoutWidget->setStyleSheet("#UILayoutWidget{background-color:transparent;}");
+            m_pUILayoutWidget->setLayout(tmpLayout);
+        }
+    } /*else if (componentType == "Button" || componentType == "Slide") {
+        m_pUILayoutWidget = parseUIComponent(jsonObj);
+    }*/
+    
+    if (m_pUILayoutWidget != nullptr) {
+        m_pUILayoutWidget->move(mapFromParent(m_view->rect().topLeft()));
+        m_pUILayoutWidget->show();
+        //m_pUILayoutWidget->raise();
+
+        m_sUILayout = info;
+    }
+}
+
+QBoxLayout *DisplayWidget::parseUILayout(QJsonObject jsonObj) {
+    QString componentType = jsonObj.value("component").toString();
+    QBoxLayout *lay = nullptr;
+    if (componentType == "HLayout")
+        lay = new QHBoxLayout;
+    else if (componentType == "VLayout")
+        lay = new QVBoxLayout;
+    
+    QJsonArray jsonArray = jsonObj.value("uiList").toArray();
+    for (int i = 0; i < jsonArray.size(); i++) {
+        QBoxLayout *subLay = nullptr;
+        QWidget *subWidget = nullptr;
+
+        QJsonObject temObj = jsonArray.at(i).toObject();
+        QString subComponentType = temObj.value("component").toString();
+        if (subComponentType == "HLayout" || subComponentType == "VLayout") {
+            subLay = parseUILayout(temObj);
+        } else if (subComponentType == "Button" || subComponentType == "Slide") {
+            subWidget = parseUIComponent(temObj);
+        }
+        if (subLay != nullptr)
+            lay->addItem(subLay);
+        lay->setMargin(temObj.value("margin").toInt());
+        lay->setSpacing(temObj.value("layoutSpacing").toInt());
+        lay->insertSpacing(temObj.value("spacingIndex").toInt(), temObj.value("spacing").toInt());
+        lay->insertStretch(temObj.value("stretchIndex").toInt(), temObj.value("stretch").toInt());
+        if (subWidget != nullptr)
+            lay->insertWidget(subWidget->objectName().split(",").last().toInt(), subWidget);
+    }
+    return lay;
+}
+
+QWidget *DisplayWidget::parseUIComponent(QJsonObject jsonObj) {
+    QString componentType = jsonObj.value("component").toString();
+    QWidget *tmpWidget = nullptr;
+
+    QString name = jsonObj.value("name").toString();
+    QString tips = jsonObj.value("tips").toString();
+    QString id = jsonObj.value("id").toString();
+    int length = jsonObj.value("length").toInt();
+    int width = jsonObj.value("width").toInt();
+    int layoutIndex = jsonObj.value("layoutIndex").toInt();
+    int maxValue = jsonObj.value("maxValue").toInt();
+    int minValue = jsonObj.value("minValue").toInt();
+    if (componentType == "Button") {
+        QPushButton *tmpBtn = new QPushButton(name);
+        tmpBtn->setToolTip(tips);
+        tmpBtn->setFixedSize(width, length);
+        tmpBtn->setObjectName(QString("%1,%2").arg(id).arg(layoutIndex));
+        tmpWidget = tmpBtn;
+    } else if (componentType == "Slide") {
+        QSlider *tmpSlider = new QSlider;
+        tmpSlider->setToolTip(tips);
+        tmpSlider->setFixedSize(width, length);
+        tmpSlider->setObjectName(QString("%1,%2").arg(id).arg(layoutIndex));
+        tmpSlider->setMaximum(maxValue);
+        tmpSlider->setMinimum(minValue);
+        tmpWidget = tmpSlider;
+    }
+
+    return tmpWidget;
+}
+
+#if 0
+QLayout *DisplayWidget::parseLayout(rapidjson::Value &info, QMap<int, QWidget> components) {
+    
+    rapidjson::Value &componentName = info["component"];
+    if (componentName.GetString() == "HLayout" || componentName.GetString() == "VLayout") {
+        rapidjson::Value &uiList = info["uiList"];
+        int tmpCount = uiList.Size();
+        if (tmpCount > 0) {
+            QMap<int, QLayout*> tmpComponents;
+            for (int i = 0; i < tmpCount; i++) {
+                //tmpComponents[i] = parseLayout(uiList);
+            }
+
+            //parseLayout(info);
+        }
+        //parseLayout(info);
+    }
+
+    /*QLayout *tmpLay = nullptr;
+
+    rapidjson::Value &value = info["component"];    
+    if (value == "HLayout")
+        tmpLay = new QVBoxLayout;
+    else if (value == "VLayout")
+        tmpLay = new QVBoxLayout;
+    
+    value = jsonObj["margin"];
+    tmpLay->setMargin(value.GetInt());
+    value = jsonObj["layoutSpacing"];
+    tmpLay->setSpacing(value.GetInt());
+
+    value = jsonObj["spacing"];
+    value = jsonObj["spacingIndex"];
+    value = jsonObj["stretch"];
+    value = jsonObj["stretchIndex"];*/
+}
+
+QWidget *DisplayWidget::parseComponent(rapidjson::Value &info) {
+    QWidget *tmpComponnt = nullptr;
+    rapidjson::Value &value = info["component"];
+    if (value.GetString() == "Button")
+        tmpComponnt = new QPushButton;
+    else if (value.GetString() == "Slide")
+        tmpComponnt = new QSlider;
+
+    return tmpComponnt;
+}
+#endif
 void ViewportWidget::keyPressEvent(QKeyEvent* event) {
     _base::keyPressEvent(event);
     //qInfo() << event->key();

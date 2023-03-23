@@ -53,7 +53,7 @@ struct MakeViewCompnent : zeno::INode {
         rapidjson::Writer<rapidjson::StringBuffer> writer{strBuffer};
         document.Accept(writer);
 
-        zeno::log_info("{} json:{}", component, strBuffer.GetString());
+        //zeno::log_info("{} json:{}", component, strBuffer.GetString());
 
         std::string out = strBuffer.GetString();
         set_output2("ui", out);
@@ -111,6 +111,36 @@ struct MakeViewUILayout : zeno::INode {
         auto stretch = get_param<int>("stretch");
         auto stretchIndex = get_param<int>("stretchIndex");
 
+#if 0
+        rapidjson::StringBuffer s;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(s);
+        writer.StartObject();
+        writer.Key("component");
+        writer.String(component.c_str());
+        writer.Key("margin");
+        writer.Int(margin);
+        writer.Key("layoutSpacing");
+        writer.Int(layoutSpacing);
+        writer.Key("spacing");
+        writer.Int(spacing);
+        writer.Key("spacingIndex");
+        writer.Int(spacingIndex);
+        writer.Key("stretch");
+        writer.Int(stretch);
+        writer.Key("stretchIndex");
+        writer.Int(stretchIndex);
+        writer.Key("uiList");
+        writer.StartArray();
+        auto list = get_input<zeno::ListObject>("uiList").get();
+        for (int i = 0; i < list->arr.size(); i++) {
+            std::string str = ((zeno::StringObject *)(list->arr[i].get()))->get();
+            //str = str.replace(str.begin(),str.end(),"\\\"", "");
+            writer.String(str.c_str());
+        }
+        writer.EndArray();
+        writer.EndObject();
+        std::string out = s.GetString();
+#else
         rapidjson::Document document;
         document.SetObject();
         rapidjson::Value component_r(rapidjson::kStringType);
@@ -124,25 +154,48 @@ struct MakeViewUILayout : zeno::INode {
         document.AddMember("stretchIndex", stretchIndex, document.GetAllocator());
 
         auto list = get_input<zeno::ListObject>("uiList").get();
-        zeno::log_info("UI List size {}", int(list->arr.size()));
+        //zeno::log_info("UI List size {}", int(list->arr.size()));
         rapidjson::Value arr(rapidjson::kArrayType);
         for (int i = 0; i < list->arr.size(); i++)
         {
             std::string str = ((zeno::StringObject *)(list->arr[i].get()))->get();
             //zeno::log_info("Subjson:{}", str);
+#if 1
             rapidjson::Value str_r(rapidjson::kStringType);
             str_r.SetString(str.data(), str.size(), document.GetAllocator());
 
             arr.PushBack(str_r, document.GetAllocator());
+#else
+            rapidjson::Document tmpDocument;
+            tmpDocument.SetObject();
+            tmpDocument.Parse(str.c_str());
+
+            #if 1
+            rapidjson::Value tmpValue(rapidjson::kObjectType);
+            tmpValue.SetObject();
+            tmpValue.CopyFrom(tmpDocument, tmpDocument.GetAllocator());
+
+            /*rapidjson::StringBuffer strBuffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
+            tmpValue.Accept(writer);
+            zeno::log_info("Parse json:{}", strBuffer.GetString());*/
+            
+            arr.PushBack(tmpValue, document.GetAllocator());
+            #else
+            arr.PushBack(tmpDocument, document.GetAllocator());
+            #endif
+#endif
         }        
         document.AddMember("uiList", arr, document.GetAllocator());
 
         rapidjson::StringBuffer strBuffer;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
         document.Accept(writer);
-        zeno::log_info("Subjson json:{}", strBuffer.GetString());
+        
 
         std::string out = strBuffer.GetString();
+#endif
+        //zeno::log_info("Subjson json:{}", out);
         set_output2("ui", out);
     }
 };

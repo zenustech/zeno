@@ -29,6 +29,7 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<ObjectsManager> objectsMan;
     std::unique_ptr<RenderManager> renderMan;
+    std::string uiLayou;
 
     Scene();
     ~Scene();

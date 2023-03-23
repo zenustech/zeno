@@ -121,6 +121,11 @@ public:
     ViewportWidget* getViewportWidget();
     void runAndRecord(const VideoRecInfo& info);
 
+    void initNodeUI(const std::string &info);
+    //QMap<int, QWidget> parseArray();
+    QBoxLayout *parseUILayout(QJsonObject jsonObj);
+    QWidget *parseUIComponent(QJsonObject jsonObj);
+
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
@@ -147,6 +152,9 @@ private:
     bool m_bRecordRun;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
+
+    std::string m_sUILayout;
+    QWidget *m_pUILayoutWidget = nullptr;
 };
 
 #endif

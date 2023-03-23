@@ -44,6 +44,15 @@ struct GraphicsManager {
         realtime_graphics.clear();
         for (auto const &[key, obj] : objs) {
             if (load_realtime_object(key, obj)) continue;
+            std::string::size_type idx1 = key.find("MakeViewUILayout");
+            std::string::size_type idx2 = key.find("MakeViewCompnent");
+            if (idx1 != std::string::npos) {
+                scene->uiLayou = ((zeno::StringObject *)obj.get())->get();
+                continue;
+            }
+            if (idx2 != std::string::npos) {
+                continue;
+            }
             if (ins.may_emplace(key)) {
                 zeno::log_debug("load_object: loading graphics [{}]", key);
                 auto ig = makeGraphic(scene, obj.get());
