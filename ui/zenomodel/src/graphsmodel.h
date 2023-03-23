@@ -155,6 +155,7 @@ public slots:
 
 private:
     NODE_DESCS getCoreDescs();
+    void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
     bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);

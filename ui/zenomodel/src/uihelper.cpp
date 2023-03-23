@@ -237,7 +237,10 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     }
     case CONTROL_FLOAT:
     {
-        return defaultValue.toFloat();
+        bool bOk = false;
+        float fVal = defaultValue.toFloat(&bOk);
+        //TODO: need to check OK?
+        return fVal;
     }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:

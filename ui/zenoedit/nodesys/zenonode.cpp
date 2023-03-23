@@ -977,7 +977,7 @@ void ZenoNode::markError(bool isError)
     if (m_bError)
         m_headerWidget->setColors(false, QColor(200, 84, 79), QColor(), QColor());
     else
-        m_headerWidget->setColors(false, QColor(83, 96, 147), QColor(), QColor());
+        m_headerWidget->setColors(false, m_renderParams.headerBg.clr_normal, QColor(), QColor());
     update();
 }
 

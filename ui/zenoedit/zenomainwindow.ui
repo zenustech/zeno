@@ -49,8 +49,8 @@
     <addaction name="action_Save_As"/>
     <addaction name="action_Import"/>
     <addaction name="menu_Export"/>
-    <addaction name="action_Close"/>
     <addaction name="menuRecent_Files"/>
+    <addaction name="action_Close"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">

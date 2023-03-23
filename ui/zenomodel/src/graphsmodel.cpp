@@ -372,10 +372,35 @@ void GraphsModel::revert(const QModelIndex& idx)
 	}
 }
 
+void GraphsModel::parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl)
+{
+    auto _arr = descStr.split('@', Qt::SkipEmptyParts);
+    ZASSERT_EXIT(!_arr.isEmpty());
+
+    if (_arr.size() == 1)
+    {
+        name = _arr[0];
+    }
+    else if (_arr.size() == 2)
+    {
+        type = _arr[0];
+        name = _arr[1];
+        if (type == "string")
+            defl = UiHelper::parseStringByType("", type);
+    }
+    else if (_arr.size() == 3)
+    {
+        type = _arr[0];
+        name = _arr[1];
+        QString strDefl = _arr[2];
+        defl = UiHelper::parseStringByType(strDefl, type);
+    }
+}
+
 NODE_DESCS GraphsModel::getCoreDescs()
 {
-	NODE_DESCS descs;
-	QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
+    NODE_DESCS descs;
+    QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
     //zeno::log_critical("EEEE {}", strDescs.toStdString());
     //ZENO_P(strDescs.toStdString());
 	QStringList L = strDescs.split("\n");
@@ -396,67 +421,64 @@ NODE_DESCS GraphsModel::getCoreDescs()
 			QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
 			QStringList z_categories = categories.split('%', QtSkipEmptyParts);
 
-			NODE_DESC desc;
-			for (QString input : inputs.split("%", QtSkipEmptyParts))
-			{
-				QString type, name, defl;
-				auto _arr = input.split('@');
-				ZASSERT_EXIT(_arr.size() == 3, descs);
-				type = _arr[0];
-				name = _arr[1];
-				defl = _arr[2];
-				INPUT_SOCKET socket;
-				socket.info.type = type;
-				socket.info.name = name;
+            NODE_DESC desc;
+            for (QString input : inputs.split("%", QtSkipEmptyParts))
+            {
+                QString type, name;
+                QVariant defl;
+
+                parseDescStr(input, name, type, defl);
+
+                INPUT_SOCKET socket;
+                socket.info.type = type;
+                socket.info.name = name;
                 CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_INPUT, name, type);
                 socket.info.control = ctrlInfo.control;
                 socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
-				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
-				desc.inputs[name] = socket;
-			}
-			for (QString output : outputs.split("%", QtSkipEmptyParts))
-			{
-				QString type, name, defl;
-				auto _arr = output.split('@');
-				ZASSERT_EXIT(_arr.size() == 3, descs);
-				type = _arr[0];
-				name = _arr[1];
-				defl = _arr[2];
-				OUTPUT_SOCKET socket;
-				socket.info.type = type;
-				socket.info.name = name;
+                socket.info.defaultValue = defl;
+                desc.inputs[name] = socket;
+            }
+            for (QString output : outputs.split("%", QtSkipEmptyParts))
+            {
+                QString type, name;
+                QVariant defl;
+
+                parseDescStr(output, name, type, defl);
+
+                OUTPUT_SOCKET socket;
+                socket.info.type = type;
+                socket.info.name = name;
                 CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_OUTPUT, name, type);
                 socket.info.control = ctrlInfo.control;
                 socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
-				socket.info.defaultValue = UiHelper::parseStringByType(defl, type);
-				desc.outputs[name] = socket;
-			}
-			for (QString param : params.split("%", QtSkipEmptyParts))
-			{
-				QString type, name, defl;
-				auto _arr = param.split('@');
-				type = _arr[0];
-				name = _arr[1];
-				defl = _arr[2];
+                socket.info.defaultValue = defl;
+                desc.outputs[name] = socket;
+            }
+            for (QString param : params.split("%", QtSkipEmptyParts))
+            {
+                QString type, name;
+                QVariant defl;
 
-				PARAM_INFO paramInfo;
-				paramInfo.bEnableConnect = false;
-				paramInfo.name = name;
-				paramInfo.typeDesc = type;
+                parseDescStr(param, name, type, defl);
+
+                PARAM_INFO paramInfo;
+                paramInfo.bEnableConnect = false;
+                paramInfo.name = name;
+                paramInfo.typeDesc = type;
                 CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_PARAM, name, type);
                 paramInfo.control = ctrlInfo.control;
                 paramInfo.controlProps = ctrlInfo.controlProps;
-				paramInfo.defaultValue = UiHelper::parseStringByType(defl, type);
-				//thers is no "value" in descriptor, but it's convient to initialize param value. 
-				paramInfo.value = paramInfo.defaultValue;
-				desc.params[name] = paramInfo;
-			}
-			desc.categories = z_categories;
+                paramInfo.defaultValue = defl;
+                //thers is no "value" in descriptor, but it's convient to initialize param value. 
+                paramInfo.value = paramInfo.defaultValue;
+                desc.params[name] = paramInfo;
+            }
+            desc.categories = z_categories;
             desc.name = z_name;
 
-			descs.insert(z_name, desc);
-		}
-	}
+            descs.insert(z_name, desc);
+        }
+    }
     return descs;
 }
 
