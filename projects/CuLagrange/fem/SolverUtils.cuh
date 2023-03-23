@@ -61,13 +61,13 @@ struct HessianView {
     zs::conditional_t<is_const_structure, const IT *, IT *> inds;
     zs::conditional_t<is_const_structure, const int *, int *> cnt;
 };
-template <zs::execspace_e space, int n>
-inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
-    return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+template <zs::execspace_e space, int n, typename T>
+inline HessianView<HessianPiece<n, T>> proxy(HessianPiece<n, T> &hp) {
+    return HessianView<HessianPiece<n, T>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
-template <zs::execspace_e space, int n>
-inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
-    return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+template <zs::execspace_e space, int n, typename T>
+inline HessianView<const HessianPiece<n, T>> proxy(const HessianPiece<n, T> &hp) {
+    return HessianView<const HessianPiece<n, T>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
 
 /// utilities

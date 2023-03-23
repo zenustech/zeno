@@ -223,7 +223,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
     pCustomParam = new ZToolBarButton(false, ":/icons/nodeEditor_nodePara_unselected.svg", ":/icons/nodeEditor_nodePara_selected.svg");
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
-    pFullPanel = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
 
@@ -244,6 +243,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     m_btnRun->setShortcut(QKeySequence("F2"));
+    m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
 
     //kill
     m_btnKill->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
@@ -257,6 +257,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
     m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     m_btnKill->setShortcut(QKeySequence("Shift+F2"));
+    m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
 
     m_btnAlways->setFixedSize(ZenoStyle::dpiScaledSize(QSize(34, 22)));
     m_btnAlways->setButtonOptions(ZToolButton::Opt_SwitchAnimation);
@@ -308,15 +309,14 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
-    pToolLayout->addWidget(pFullPanel);
 
-    pToolLayout->addStretch();
+    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
 
     pToolLayout->addWidget(m_btnAlways);
     pToolLayout->addWidget(m_btnRun);
     pToolLayout->addWidget(m_btnKill);
 
-    pToolLayout->addSpacing(ZenoStyle::dpiScaled(100));
+    pToolLayout->addStretch();
 
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
@@ -570,7 +570,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_rotateBtn);
     pToolLayout->addWidget(m_scaleBtn);
 
-    pToolLayout->addWidget(new ZLineWidget(false, QColor()));
+    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
 
     pToolLayout->addWidget(m_show_grid);
     pToolLayout->addWidget(m_background_clr);
@@ -578,7 +578,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
 
-    pToolLayout->addWidget(new ZLineWidget(false, QColor()));
+    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
 
     pToolLayout->addWidget(m_recordVideo);

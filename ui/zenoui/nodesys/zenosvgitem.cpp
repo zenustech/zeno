@@ -115,6 +115,11 @@ bool ZenoImageItem::isHovered() const
     return m_bHovered;
 }
 
+bool ZenoImageItem::isToggled() const
+{
+    return m_bToggled;
+}
+
 void ZenoImageItem::setCheckable(bool bCheckable)
 {
     m_bCheckable = bCheckable;

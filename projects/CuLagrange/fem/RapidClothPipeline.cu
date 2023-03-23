@@ -6,103 +6,6 @@
 #include <zeno/zeno.h>
 
 namespace zeno {
-
-typename RapidClothSystem::T RapidClothSystem::infNorm(zs::CudaExecutionPolicy &cudaPol) {
-    using namespace zs;
-    using T = typename RapidClothSystem::T;
-    constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(numDofs);
-    temp.resize(nwarps);
-    cudaPol(range(numDofs), [data = view<space>({}, vtemp), res = view<space>(temp), n = numDofs,
-                             offset = vtemp.getPropertyOffset("dir")] __device__(int pi) mutable {
-        auto v = data.pack(dim_c<3>, offset, pi);
-        auto val = v.abs().max();
-
-        auto [mask, numValid] = warp_mask(pi, n);
-        auto locid = threadIdx.x & 31;
-        for (int stride = 1; stride < 32; stride <<= 1) {
-            auto tmp = __shfl_down_sync(mask, val, stride);
-            if (locid + stride < numValid)
-                val = zs::max(val, tmp);
-        }
-        if (locid == 0)
-            res[pi / 32] = val;
-    });
-    return reduce(cudaPol, temp, thrust::maximum<T>{});
-}
-
-typename RapidClothSystem::T RapidClothSystem::l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag) {
-    return zs::sqrt(dot(pol, tag, tag));
-}
-
-typename RapidClothSystem::T RapidClothSystem::dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0,
-                                                 const zs::SmallString &tag1) {
-    using namespace zs;
-    using T = typename RapidClothSystem::T;
-    constexpr auto space = execspace_e::cuda;
-    auto nwarps = count_warps(numDofs);
-    temp.resize(nwarps);
-    temp.reset(0);
-    cudaPol(range(numDofs), [data = view<space>({}, vtemp), res = view<space>(temp), n = numDofs,
-                             offset0 = vtemp.getPropertyOffset(tag0),
-                             offset1 = vtemp.getPropertyOffset(tag1)] __device__(int pi) mutable {
-        auto v0 = data.pack(dim_c<3>, offset0, pi);
-        auto v1 = data.pack(dim_c<3>, offset1, pi);
-        reduce_to(pi, n, v0.dot(v1), res[pi / 32]);
-    });
-    return reduce(cudaPol, temp, thrust::plus<T>{});
-}
-
-void RapidClothSystem::computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag) {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    pol(Collapse{numBouDofs}, [vtemp = view<space>({}, vtemp), coOffset = coOffset] __device__(int vi) mutable {
-        vi += coOffset;
-        auto xtarget = vtemp.pack<3>("x_tilde", vi);
-        auto x = vtemp.pack<3>(tag, vi);
-        vtemp.tuple(dim_c<3>, "cons", vi) = x - xtarget;
-    });
-}
-bool RapidClothSystem::areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol) {
-    using namespace zs;
-    computeBoundaryConstraints(pol);
-    auto res = boundaryConstraintResidual(pol);
-    return res < s_constraint_residual;
-}
-typename RapidClothSystem::T RapidClothSystem::boundaryConstraintResidual(zs::CudaExecutionPolicy &pol) {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    if (projectDBC)
-        return 0;
-    temp.resize(numBouDofs * 2);
-    pol(Collapse{numBouDofs}, [vtemp = view<space>({}, vtemp), den = temp.data(), num = temp.data() + numBouDofs,
-                               coOffset = coOffset] __device__(int vi) mutable {
-        vi += coOffset;
-        auto cons = vtemp.pack<3>("cons", vi);
-        auto xt = vtemp.pack<3>("x_hat", vi);
-        auto xtarget = vtemp.pack<3>("x_tilde", vi);
-        T n = 0, d_ = 0;
-        // https://ipc-sim.github.io/file/IPC-supplement-A-technical.pdf Eq5
-        for (int d = 0; d != 3; ++d) {
-            n += zs::sqr(cons[d]);
-            d_ += zs::sqr(xt[d] - xtarget[d]);
-        }
-        num[vi] = n;
-        den[vi] = d_;
-    });
-    // denominator ... numerator ...
-    auto tot = reduce(pol, temp);
-    temp.resize(numBouDofs);
-    auto dsqr = reduce(pol, temp);
-    auto nsqr = tot - dsqr;
-    T ret = 0;
-    if (dsqr == 0)
-        ret = std::sqrt(nsqr);
-    else
-        ret = std::sqrt(nsqr / dsqr);
-    return ret < 1e-6 ? 0 : ret;
-}
-
 void RapidClothSystem::computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString& tag) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -126,11 +29,11 @@ void RapidClothSystem::computeInertialAndForceGradient(zs::CudaExecutionPolicy &
     for (auto &primHandle : prims) {
         if (primHandle.isBoundary()) // skip soft boundary
             continue;
-        cudaPol(zs::range(primHandle.getVerts().size()), [vtemp = view<space>({}, vtemp), extAccel = extAccel, dt = dt,
+        cudaPol(zs::range(primHandle.getVerts().size()), [vtemp = view<space>({}, vtemp), gravAccel = gravAccel, dt = dt,
                                                           vOffset = primHandle.vOffset] ZS_LAMBDA(int vi) mutable {
             vi += vOffset;
             auto m = vtemp("ws", vi);
-            vtemp.tuple(dim_c<3>, "grad", vi) = vtemp.pack(dim_c<3>, "grad", vi) + m * extAccel * dt * dt;
+            vtemp.tuple(dim_c<3>, "grad", vi) = vtemp.pack(dim_c<3>, "grad", vi) + m * gravAccel * dt * dt;
         });
     }
     if (vtemp.hasProperty("extf")) {
@@ -247,7 +150,6 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
 
             /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
             // suggested by huang kemeng
-#if 1
                     auto stretchHessian = [&F, &model]() {
                         auto H = zs::vec<T, 6, 6>::zeros();
                         const zs::vec<T, 2> u{1, 0};
@@ -319,42 +221,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                                 atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), H(vi * 3 + i, vi * 3 + j));
                             }
                     }
-#else 
-                    // diag hess 
-                    // vole * model.mu, s_clothShearingCoeff(0.1) for shear energy 
-                    mat3 H0, H1, H01, H10; 
-                    zs::vec<T, 6, 6> He;  
-                    auto f0f0T = dyadic_prod(f0, f0); 
-                    auto f1f1T = dyadic_prod(f1, f1); 
-                    auto f0f1T = dyadic_prod(f0, f1); 
-                    auto f1f0T = f0f1T.transpose(); 
-                    auto id3 = mat3::identity(); 
-                    H0 = 2.0f / (f0Norm * f0Norm * f0Norm) * f0f0T
-                         + 2.0f * (1 - 1.0f / (f0Norm)) * id3 + 2.0f * f1f1T * s_clothShearingCoeff;
-                    H1 = 2.0f / (f1Norm * f1Norm * f1Norm) * f1f1T
-                         + 2.0f * (1 - 1.0f / (f1Norm)) * id3 + 2.0f * f0f0T * s_clothShearingCoeff;
-                    H01 = 2.0f * s_clothShearingCoeff * (f1f0T + f0Tf1 * id3); 
-                    H10 = H01.transpose(); 
-                    for (int di = 0; di < 3; di++)
-                        for (int dj = 0; dj < 3; dj++)
-                        {
-                            He(di, dj) = H0(di, dj); 
-                            He(di + 3, dj) = H10(di, dj); 
-                            He(di, dj + 3) = H01(di, dj); 
-                            He(di + 3, dj + 3) = H1(di, dj); 
-                        }
-                    auto H = model.mu * dFdXT * He * dFdX * (dt * dt * vole);
-#pragma unroll
-                    for (int vi = 0; vi != 3; ++vi) {
-                        for (int i = 0; i != 3; ++i)
-                        {
-                            auto v = H(vi * 3 + i, vi * 3 + i); 
-                            if (v > 0)
-                                atomic_add(exec_cuda, &vtemp("P", i, inds[vi]), v);
-                        }
-                    }
-                });
-#endif
+            }); 
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = view<space>({}, vtemp), etemp = view<space>({}, primHandle.etemp),
@@ -407,22 +274,65 @@ void RapidClothSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy 
             computeElasticGradientAndHessianImpl(cudaPol, vtemp, tag, seInds, primHandle, elasticModel, dt);
         })(primHandle.getModels().getElasticModel());
     }
-    for (auto &primHandle : auxPrims) {
-        using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
-        const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
-        match([&](auto &elasticModel) {
-            computeElasticGradientAndHessianImpl(cudaPol, vtemp, tag, seInds, primHandle, elasticModel, dt);
-        })(model);
-    }
 }
 
 void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    // TODO
+    
+    newtonDynamicsStep(pol); 
+    // y(l) = y[k+1]
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x[k]", vi); 
+            vtemp("r(l)", vi) = 1.f; 
+        }); 
+    for (int iters = 0; iters < L; iters++)
+    {
+        fmt::print("findConstraints...\n"); 
+        fmt::print("D: {}, D_min: {}, D_max: {}, delta: {}\n", 
+            D, D_min, D_max, delta); 
+        if (D < D_min)
+        {
+            fmt::print("[proximity] tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
+                D, D_min, D_max); 
+            findConstraints(pol, D_max); 
+            D = D_max; 
+            fmt::print("[proximity] proximity search finished, current D: {}\n", 
+                D); 
+        }
+        fmt::print("backwardStep...\n"); 
+        backwardStep(pol); 
+        fmt::print("forwardStep...\n"); 
+        forwardStep(pol); 
+        // update D
+        fmt::print("check termination criterion...\n"); 
+        auto disp = infNorm(pol, "disp", numDofs, wrapv<1>{}); 
+        D -= 2 * disp; 
+        // termination check 
+        auto res = infNorm(pol, "r(l)", numDofs, wrapv<1>{}); 
+        fmt::print("disp: {}, D: {}, res * 1e6: {}\n", 
+            disp, D, res * 1e6f); 
+        if (res < eps)
+            break; 
+        // DEBUGGING
+        // if (iters > 10)
+        // {
+        //     fmt::print("[debug] using lcp result as x(l) \n"); 
+        //     pol(range(vtemp.size()), 
+        //         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+        //             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "y(l)", vi); 
+        //         }); 
+        // }
+    }
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "x(l)", vi); 
+        }); 
 }
 
-struct StepClothSystem : INode {
+struct StepRapidClothSystem : INode {
     using T = typename RapidClothSystem::T; 
 
     void apply() override {
@@ -447,7 +357,7 @@ struct StepClothSystem : INode {
     }
 };
 
-ZENDEFNODE(StepClothSystem, {{
+ZENDEFNODE(StepRapidClothSystem, {{
                                  "ZSRapidClothSystem",
                                  {"int", "num_substeps", "1"},
                                  {"float", "dt", "0.01"},

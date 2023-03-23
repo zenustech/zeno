@@ -240,9 +240,6 @@ void ZDictPanel::onKeysMoved(const QModelIndex& parent, int start, int end, cons
 
 void ZDictPanel::onKeysInserted(const QModelIndex& parent, int first, int last)
 {
-    //expand the dict panel anyway.
-    m_pDictLayout->setCollasped(false);
-
     QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
     pKeyObjModel->setData(QModelIndex(), false, ROLE_COLLASPED);
 

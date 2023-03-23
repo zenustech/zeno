@@ -7,6 +7,7 @@
 #include "zensim/container/Vector.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
+#include "zensim/math/matrix/SparseMatrix.hpp"
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
@@ -14,9 +15,12 @@ namespace zeno {
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
+    constexpr static auto T_c = zs::float_c; 
+    constexpr static auto enablePE_c = false; 
+    constexpr static auto enablePP_c = false; 
 
     using tiles_t = typename ZenoParticles::particles_t;
-    using tiles_i = zs::TileVector<int, 32>; 
+    using itiles_t = zs::TileVector<int, 32>; 
     using vec3 = zs::vec<T, 3>;
     using vec3f = zs::vec<float, 3>;
     using ivec3 = zs::vec<int, 3>;
@@ -31,7 +35,7 @@ struct RapidClothSystem : IObject {
     using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
-    using sh_t = zs::SpatialHash<3, int, T>;
+    using spmat_t = zs::SparseMatrix<T, true>;
     using bv_t = typename bvh_t::Box;
 
     static constexpr T s_constraint_residual = 1e-3;
@@ -142,9 +146,9 @@ struct RapidClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, bool withContact, T augLagCoeff, T cgRel,
-                    int PNCap, int CGCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness); 
+                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
+                    int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
+                    T BCStiffness, T shrinkFactor); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -152,8 +156,13 @@ struct RapidClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision; TODO
-    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "xl");
-    void computeConstraints(zs::CudaExecutionPolicy &pol); // xl, cons -> c(xl), J(xl)     
+    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
+    void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
+        itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
+    bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
+    void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
+    void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
+    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
     void forwardStep(zs::CudaExecutionPolicy &pol);     // async stepping  
@@ -168,15 +177,11 @@ struct RapidClothSystem : IObject {
     void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
 
-    // boundary constraint
-    void computeBoundaryConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
-    bool areBoundaryConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
-    T boundaryConstraintResidual(zs::CudaExecutionPolicy &pol);
-
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1);
-    T infNorm(zs::CudaExecutionPolicy &pol);
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
+    template <int codim = 3>
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd, zs::wrapv<codim> = {});
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
@@ -190,22 +195,23 @@ struct RapidClothSystem : IObject {
         std::tie(npp, npe, npt, nee, ne) = 
             std::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nE.getVal());
         oe = 0; 
-        opt = oe + ne; 
+        opp = ne; 
+        ope = opp + npp; 
+        opt = ope + npe; 
         oee = opt + npt; 
-        ope = oee + nee; 
-        opp = ope + npe;
+        nCons = oee + nee; 
     }
 
     // sim params
     int substep = -1;
-    std::size_t estNumCps = 1000000;
+    std::size_t estNumCps = 100000;
+    std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
     int PNCap = 1000;
     int CGCap = 500;
     T armijoParam = 1e-4;
     bool enableContact = true;
     bool enableContactSelf = true;
-    bool projectDBC = false;
     T augLagCoeff = 1e4;
     vec3 gravAccel;
 
@@ -230,14 +236,26 @@ struct RapidClothSystem : IObject {
     tiles_t *coVerts, *coPoints, *coEdges, *coEles;
 
     // buffer
-    tiles_i vCons;          // vertex -> constraint indices & constraints num 
+    itiles_t vCons;          // vertex -> constraint indices & constraints num 
     tiles_t vtemp;          // solver data
     zs::Vector<T> temp;     // as temporary buffer
     zs::Vector<bv_t> bvs;   // as temporary buffer
 
     // collision constraints (edge / non-edge)
+    int lcpCap = 256; 
+    T lcpTol = 1e-3; 
+    zs::Vector<int> lcpConverged; 
     int maxVertCons = 32;
+    int nConsColor = 0; 
+    T consShrinking = 1.1f; 
+    int nCons = 0; 
     int consDegree = 32 * 3;
+    spmat_t lcpMat{}; 
+    zs::Vector<int> lcpMatIs, lcpMatJs; 
+    zs::Vector<int> lcpMatSize; 
+    zs::Vector<int> consColorBits; 
+    itiles_t tempCons;       // LCP constraint matrix storing
+    zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
@@ -257,6 +275,23 @@ struct RapidClothSystem : IObject {
     // boundary condition param 
     T BCStiffness = 1e6f; 
 };
+
+    template <
+        typename VecTA, typename VecTB,
+        zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+    constexpr auto safe_dist2_ee(const zs::VecInterface<VecTA> &ea0, const zs::VecInterface<VecTA> &ea1,
+                            const zs::VecInterface<VecTB> &eb0, const zs::VecInterface<VecTB> &eb1) noexcept {
+        using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+        auto b = (ea1 - ea0).cross(eb1 - eb0);
+        auto b2 = b.l2NormSqr(); 
+        if (b2 < zs::limits<T>::epsilon()) // PE
+            if (auto aLen2 = (ea0 - ea1).l2NormSqr(), bLen2 = (eb0 - eb1).l2NormSqr(); aLen2 < bLen2)
+                return (ea0 - eb0).cross(ea0 - eb1).l2NormSqr() / bLen2;  
+            else 
+                return (eb0 - ea0).cross(eb0 - ea1).l2NormSqr() / aLen2; 
+        T aTb = (eb0 - ea0).dot(b);
+        return aTb * aTb / b.l2NormSqr();
+    }
 
 } // namespace zeno
 

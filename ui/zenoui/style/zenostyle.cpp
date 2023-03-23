@@ -52,12 +52,14 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
         return sheet;
     }
 
+    QString tempStyle = sheet;
+    tempStyle.replace("FontFamily", zenoApp->font().family());
+
     qreal scale = ZenoStyle::dpiScaled(1);
     if (scale == 1.0) {
-        return sheet;
+        return tempStyle;
     }
 
-    QString tempStyle = sheet;
     QRegExp rx("\\d+px", Qt::CaseInsensitive);
     rx.setMinimal(true);
     int index = -1;
@@ -71,9 +73,6 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
             break;
         }
     }
-
-    tempStyle.replace("FontFamily", zenoApp->font().family());
-
     return tempStyle;
 }
 

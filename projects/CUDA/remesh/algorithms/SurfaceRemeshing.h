@@ -17,18 +17,21 @@ class TriangleKdTree;
 class SurfaceRemeshing {
 public:
     //! Construct with mesh to be remeshed.
-    SurfaceRemeshing(SurfaceMesh* mesh);
+    SurfaceRemeshing(SurfaceMesh* mesh, std::string line_pick_tag);
 
     // destructor
     ~SurfaceRemeshing();
 
     //! uniform remeshing with target edge length
-    void uniform_remeshing(float edge_length, unsigned int iterations = 10,
+    void uniform_remeshing(float edge_length,
+                           unsigned int iterations = 10,
                            bool use_projection = true);
 
     //! adaptive remeshing with min/max edge length and approximation error
-    void adaptive_remeshing(float min_edge_length, float max_edge_length,
-                            float approx_error, unsigned int iterations = 10,
+    void adaptive_remeshing(float min_edge_length,
+                            float max_edge_length,
+                            float approx_error,
+                            unsigned int iterations = 10,
                             bool use_projection = true);
 
 
@@ -72,6 +75,7 @@ private:
     float min_edge_length_;
     float max_edge_length_;
     float approx_error_;
+    std::string line_pick_tag_;
 
 
     AttrVector<vec3f> refpoints_;

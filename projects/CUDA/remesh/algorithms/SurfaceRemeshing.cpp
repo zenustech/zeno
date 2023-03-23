@@ -4,6 +4,7 @@
 #include "./SurfaceRemeshing.h"
 #include <Eigen/LU>
 #include <cmath>
+#include <set>
 #include <algorithm>
 
 #include "./TriangleKdTree.h"
@@ -74,8 +75,9 @@ const vec3f barycentric_coordinates(const vec3f& p, const vec3f& u,
     return result;
 }
 
-SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh* mesh)
-    : mesh_(mesh), refmesh_(nullptr), kd_tree_(nullptr) {
+SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh* mesh,
+                                   std::string line_pick_tag)
+    : mesh_(mesh), line_pick_tag_(line_pick_tag), refmesh_(nullptr), kd_tree_(nullptr) {
 
     auto vnormal = mesh_->prim_->verts.add_attr<vec3f>("v_normal");
 
@@ -109,24 +111,6 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length,
     remove_caps();
     postprocessing();
 
-    auto& pos = mesh_->prim_->attr<vec3f>("pos");
-    float min_edge, max_edge;
-    bool flag = false;
-    float l1, l2, l3;
-    for (auto it : mesh_->prim_->tris) {
-        l1 = length(pos[it[0]] - pos[it[1]]);
-        l2 = length(pos[it[1]] - pos[it[2]]);
-        l3 = length(pos[it[2]] - pos[it[0]]);
-        if (!flag || min_edge > l1) min_edge = l1;
-        if (!flag || min_edge > l2) min_edge = l2;
-        if (!flag || min_edge > l3) min_edge = l3;
-        if (!flag || max_edge < l1) max_edge = l1;
-        if (!flag || max_edge < l2) max_edge = l2;
-        if (!flag || max_edge < l3) max_edge = l3;
-
-        flag = true;
-    }
-    zeno::log_warn("{} {}/{}={}", target_edge_length_, min_edge, max_edge, min_edge/max_edge);
 }
 
 void SurfaceRemeshing::adaptive_remeshing(float min_edge_length,
@@ -162,11 +146,25 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length,
 void SurfaceRemeshing::preprocessing() {
     // properties
     auto& vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
-    auto& efeature = mesh_->prim_->edges.add_attr<int>("e_feature", 0);
-    auto& vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
-    auto& elocked = mesh_->prim_->edges.add_attr<int>("e_locked", 0);
+    auto& efeature = mesh_->prim_->lines.add_attr<int>("e_feature", 0);
     auto& vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
+    auto& vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
+    if (!mesh_->prim_->lines.has_attr(line_pick_tag_)) {
+        mesh_->prim_->lines.add_attr<int>(line_pick_tag_, 0);
+    }
+    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+
+    // lock vertices
+    for (int e = 0; e < mesh_->lines_size_; ++e) {
+        if (mesh_->has_garbage_ && edeleted[e])
+            continue;
+        if (elocked[e] == 1) {
+            vlocked[mesh_->prim_->lines[e][0]] = 1;
+            vlocked[mesh_->prim_->lines[e][1]] = 1;
+        }
+    }
 
     // lock feature corners
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -301,9 +299,8 @@ void SurfaceRemeshing::postprocessing() {
 
     // remove properties
     mesh_->prim_->verts.erase_attr("v_feature");
-    mesh_->prim_->edges.erase_attr("e_feature");
+    mesh_->prim_->lines.erase_attr("e_feature");
     mesh_->prim_->verts.erase_attr("v_locked");
-    mesh_->prim_->edges.erase_attr("e_locked");
     mesh_->prim_->verts.erase_attr("v_sizing");
 }
 
@@ -369,22 +366,21 @@ void SurfaceRemeshing::split_long_edges() {
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->edges.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->edges.attr<int>("e_locked");
+    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
-        int edges = mesh_->edges_size_;
-        for (int e = 0; e < edges; ++e) {
+        int lines = mesh_->lines_size_;
+        for (int e = 0; e < lines; ++e) {
             if (mesh_->has_garbage_ && edeleted[e])
                 continue;
-            
-            v0 = mesh_->prim_->edges[e][0];
-            v1 = mesh_->prim_->edges[e][1];
+            v0 = mesh_->prim_->lines[e][0];
+            v1 = mesh_->prim_->lines[e][1];
 
             if (!elocked[e] && is_too_long(v0, v1)) {
                 const vec3f& p0 = points[v0];
@@ -394,9 +390,9 @@ void SurfaceRemeshing::split_long_edges() {
                 is_boundary = mesh_->is_boundary_e(e);
 
                 vnew = mesh_->new_vertex((p0 + p1) * 0.5f);
-                int new_edges;
-                mesh_->split(e, vnew, new_edges);
-                for (int ii = 1; ii <= new_edges; ++ii) {
+                int new_lines;
+                mesh_->split(e, vnew, new_lines);
+                for (int ii = 1; ii <= new_lines; ++ii) {
                     efeature.push_back(0);
                     elocked.push_back(0);
                 }
@@ -409,7 +405,7 @@ void SurfaceRemeshing::split_long_edges() {
                 vdeleted.push_back(0);
 
                 if (is_feature) {
-                    enew = is_boundary ? mesh_->edges_size_ - 2 : mesh_->edges_size_ - 3;
+                    enew = is_boundary ? mesh_->lines_size_ - 2 : mesh_->lines_size_ - 3;
                     efeature[enew] = 1;
                     vfeature[vnew] = 1;
                 } else {
@@ -430,15 +426,15 @@ void SurfaceRemeshing::collapse_short_edges() {
     bool hcol01, hcol10;
 
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->edges.attr<int>("e_feature");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
+    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->edges.attr<int>("e_locked");
+    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
-        int edges = mesh_->edges_size_;
-        for (int e = 0; e < edges; ++e) {
+        int lines = mesh_->lines_size_;
+        for (int e = 0; e < lines; ++e) {
             if (mesh_->has_garbage_ && edeleted[e])
                 continue;
             if (!edeleted[e] && !elocked[e]) {
@@ -560,11 +556,11 @@ void SurfaceRemeshing::flip_edges() {
     bool ok;
     int i;
 
-    auto& efeature = mesh_->prim_->edges.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->edges.attr<int>("e_locked");
+    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     // precompute valences
     auto valence = mesh_->prim_->verts.add_attr<int>("valence");
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -575,8 +571,8 @@ void SurfaceRemeshing::flip_edges() {
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
-        int edges = mesh_->edges_size_;
-        for (int e = 0; e < edges; ++e) {
+        int lines = mesh_->lines_size_;
+        for (int e = 0; e < lines; ++e) {
             if (mesh_->has_garbage_ && edeleted[e])
                 continue;
             if (!elocked[e] && !efeature[e]) {
@@ -652,7 +648,7 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->edges.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
     auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
@@ -766,11 +762,11 @@ void SurfaceRemeshing::remove_caps() {
 
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->edges.attr<int>("e_feature");
-    auto& edeleted = mesh_->prim_->edges.attr<int>("e_deleted");
-    auto& elocked = mesh_->prim_->edges.attr<int>("e_locked");
+    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
 
-    for (int e = 0; e < mesh_->edges_size_; ++e) {
+    for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
         if (!elocked[e] && mesh_->is_flip_ok(e)) {

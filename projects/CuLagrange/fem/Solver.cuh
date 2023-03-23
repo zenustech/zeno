@@ -204,7 +204,12 @@ struct IPCSystem : IObject {
 
     void convertHessian(zs::CudaExecutionPolicy &pol);
 
+    /// @note build linsys.spmat
+    void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
+    // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
     void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    // mostly self-collision related
+    void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
 
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
@@ -218,11 +223,11 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
-    // void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
 
     void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
-    // void systemSolve(zs::CudaExecutionPolicy &cudaPol);
+    void systemSolve(zs::CudaExecutionPolicy &cudaPol);
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
@@ -366,6 +371,7 @@ struct IPCSystem : IObject {
         using hess4_t = HessianPiece<4, T>;
 
         /// @brief dynamic part, mainly for collision constraints
+        bool initialized = false;
         /// @note initialization: hess.init(allocator, size)
         /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
         HessianPiece<2, T> hess2;
@@ -396,8 +402,6 @@ struct IPCSystem : IObject {
     };
     // for one-time static hessian topo build
     SystemHessian<T> linsys;
-    /// @note build linsys.spmat, using is, js as temp
-    void initializeStaticMatrixSparsity(zs::CudaExecutionPolicy &pol);
 
     // for faster linear system solve
     HessianPiece<1> hess1;
@@ -406,7 +410,7 @@ struct IPCSystem : IObject {
     HessianPiece<4> hess4;
     tiles_t cgtemp;
 
-    zs::SparseMatrix<mat3f, true> spmat{};
+    // zs::SparseMatrix<mat3f, true> spmat{};
 
     // boundary contacts
     // auxiliary data (spatial acceleration)

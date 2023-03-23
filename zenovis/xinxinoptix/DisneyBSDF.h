@@ -535,7 +535,7 @@ namespace DisneyBSDF{
 
         fPdf = d / (4.0f * dot(wo,wm));
         rPdf = d /(4.0f * LoH);
-        reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf;
+        reflectance = vec3(0.25f * clearCoat * g * f *d )/fPdf ;
 
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;

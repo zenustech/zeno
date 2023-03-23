@@ -1282,6 +1282,144 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs:
     // timer.tock("multiply takes");
 }
 
+void IPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag) {
+    using namespace zs;
+    constexpr execspace_e space = execspace_e::cuda;
+    constexpr auto execTag = wrapv<space>{};
+    using T = typename RM_CVREF_T(linsys)::T;
+    using vec3 = zs::vec<T, 3>;
+    // dx -> b
+    pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(int vi) mutable {
+        vtemp.tuple(dim_c<3>, bTag, vi) = vec3::zeros();
+    });
+    // CppTimer timer;
+    // timer.tick();
+    {
+        const auto &spmat = linsys.spmat;
+        pol(range(spmat.outerSize() * 32),
+            [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
+                auto tile = zs::cg::tiled_partition<32>(zs::cg::this_thread_block());
+                auto row = tid / tile.num_threads();
+                auto bg = spmat._ptrs[row];
+                auto ed = spmat._ptrs[row + 1];
+                auto sum = vec3::zeros();
+                for (auto i = bg + tile.thread_rank(); i < ed; i += tile.num_threads())
+                    sum += spmat._vals[i] * vtemp.pack(dim_c<3>, dxOffset, spmat._inds[i]);
+                T sumx = zs::cg::reduce(tile, sum[0], zs::cg::plus<T>());
+                T sumy = zs::cg::reduce(tile, sum[1], zs::cg::plus<T>());
+                T sumz = zs::cg::reduce(tile, sum[2], zs::cg::plus<T>());
+                if (tile.thread_rank() == 0)
+                    vtemp.tuple(dim_c<3>, bOffset, row) = vtemp.pack(dim_c<3>, bOffset, row) + vec3f{sumx, sumy, sumz};
+            });
+    }
+#if 0
+    // hess1
+    pol(zs::range(numDofs), [execTag, hess1 = proxy<space>(hess1), cgtemp = proxy<space>({}, cgtemp),
+                             dxOffset = cgtemp.getPropertyOffset(dxTag),
+                             bOffset = cgtemp.getPropertyOffset(bTag)] __device__(int i) mutable {
+        auto H = hess1.hess[i];
+        zs::vec<float, 3> dx{cgtemp(dxOffset, i), cgtemp(dxOffset + 1, i), cgtemp(dxOffset + 2, i)};
+        // auto dx = cgtemp.pack(dim_c<3>, dxTag, i);
+        dx = H * dx;
+        for (int d = 0; d != 3; ++d)
+            atomic_add(execTag, &cgtemp(bOffset + d, i), dx(d));
+    });
+#endif
+
+    // hess2
+    const auto &hess2 = linsys.hess2;
+    const auto &hess3 = linsys.hess3;
+    const auto &hess4 = linsys.hess4;
+    pol(Collapse{hess2.count(), 32},
+        [execTag, hess2 = proxy<space>(hess2), vtemp = proxy<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+         bOffset = vtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int ei, int tid) mutable {
+            int rowid = tid / 5;
+            int colid = tid % 5;
+            auto inds = hess2.inds[ei];
+            auto H = hess2.hess[ei];
+            T entryH = 0, entryDx = 0, entryG = 0;
+            if (tid < 30) {
+                entryH = H.val(rowid * 6 + colid);
+                entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
+                entryG = entryH * entryDx;
+                if (colid == 0) {
+                    entryG += H.val(rowid * 6 + 5) * vtemp(dxOffset + 2, inds[1]);
+                }
+            }
+            for (int iter = 1; iter <= 4; iter <<= 1) {
+                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                if (colid + iter < 5 && tid < 30)
+                    entryG += tmp;
+            }
+            if (colid == 0 && rowid < 6)
+                atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
+        });
+    // hess3
+    {
+        auto numRows = hess3.count() * 9;
+        auto numWarps = (numRows + 3) / 4; // 8 threads per row
+        pol(Collapse{numWarps * 32}, [execTag, hess3 = proxy<space>(hess3), vtemp = proxy<space>({}, vtemp),
+                                      dxOffset = vtemp.getPropertyOffset(dxTag),
+                                      bOffset = vtemp.getPropertyOffset(bTag), numRows] ZS_LAMBDA(int tid) mutable {
+            int growid = tid / 8;
+            int rowid = growid % 9;
+            int i = growid / 9;
+            int colid = tid % 8;
+
+            auto inds = hess3.inds[i];
+            auto H = hess3.hess[i];
+            T entryG = 0;
+            if (growid < numRows) {
+                entryG = H.val(rowid * 9 + colid) * vtemp(dxOffset + colid % 3, inds[colid / 3]);
+                if (colid == 0) {
+                    auto cid = colid + 8;
+                    entryG += H.val(rowid * 9 + cid) * vtemp(dxOffset + cid % 3, inds[cid / 3]);
+                }
+            }
+            for (int iter = 1; iter <= 4; iter <<= 1) {
+                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                if (colid + iter < 8 && growid < numRows)
+                    entryG += tmp;
+            }
+            if (colid == 0 && growid < numRows)
+                atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
+        });
+    }
+    // hess4
+    {
+        // 0, 1, ..., 7, 0, 1, 2, 3
+        pol(Collapse{hess4.count(), 32 * 3},
+            [execTag, hess4 = proxy<space>(hess4), vtemp = proxy<space>({}, vtemp),
+             dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag)] ZS_LAMBDA(int i, int tid) mutable {
+                int rowid = tid / 8;
+                int colid = tid % 8;
+
+                auto inds = hess4.inds[i];
+                auto H = hess4.hess[i];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                    entryH = H.val(rowid * 12 + colid);
+                    entryDx = vtemp(dxOffset + colid % 3, inds[colid / 3]);
+                    entryG = entryH * entryDx;
+                    if (colid < 4) {
+                        auto cid = colid + 8;
+                        entryG += H.val(rowid * 12 + cid) * vtemp(dxOffset + cid % 3, inds[cid / 3]);
+                    }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                    T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                    if (colid + iter < 8)
+                        entryG += tmp;
+                }
+                if (colid == 0)
+                    atomic_add(execTag, &vtemp(bOffset + rowid % 3, inds[rowid / 3]), entryG);
+            });
+    }
+    // timer.tock("multiply takes");
+}
+
 void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
@@ -1290,6 +1428,8 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
     pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(int vi) mutable {
         vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
     });
+
+    /// inherent hessian
     // inertial
     pol(zs::range(coOffset), [execTag, tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp), dxTag,
                               bTag] __device__(int i) mutable {
@@ -1299,6 +1439,40 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
         for (int d = 0; d != 3; ++d)
             atomic_add(execTag, &vtemp(bTag, d, i), dx(d));
     });
+
+    // constraint hessian
+    if (!BCsatisfied) {
+        pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                             boundaryKappa = boundaryKappa] ZS_LAMBDA(int vi) mutable {
+            auto dx = vtemp.pack(dim_c<3>, dxTag, vi);
+            auto w = vtemp("ws", vi);
+            int BCfixed = vtemp("BCfixed", vi);
+            if (!BCfixed) {
+                int BCorder = vtemp("BCorder", vi);
+                for (int d = 0; d != BCorder; ++d)
+                    atomic_add(execTag, &vtemp(bTag, d, vi), boundaryKappa * w * dx(d));
+            }
+        });
+    }
+
+    // ground contact
+    if (enableGround) {
+        for (auto &primHandle : prims) {
+            if (primHandle.isBoundary()) // skip soft boundary
+                continue;
+            const auto &svs = primHandle.getSurfVerts();
+            pol(range(svs.size()),
+                [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag, svtemp = proxy<space>({}, primHandle.svtemp),
+                 svs = proxy<space>({}, svs), svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                    auto dx = vtemp.pack(dim_c<3>, dxTag, vi);
+                    auto pbHess = svtemp.pack(dim_c<3, 3>, "H", svi);
+                    dx = pbHess * dx;
+                    for (int d = 0; d != 3; ++d)
+                        atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+                });
+        }
+    }
 
     // elasticity
     for (auto &primHandle : prims) {
@@ -1522,6 +1696,7 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
         }
     }
 
+    /// collision (dynamic hessian)
     // contacts
     if (enableContact) {
         auto numPP = nPP.getVal();
@@ -1982,8 +2157,8 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
         } // end mollification
 
         if (s_enableFriction) {
-            if (fricMu != 0) {
-                if (s_enableSelfFriction) {
+            if (s_enableSelfFriction) {
+                if (fricMu != 0) {
                     auto numFPP = nFPP.getVal();
                     pol(Collapse{numFPP, 32},
                         [execTag, fricPP = proxy<space>({}, fricPP), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -2109,44 +2284,10 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
                             if (colid == 0)
                                 atomic_add(execTag, &vtemp(bTag, rowid % 3, fee[rowid / 3]), entryG);
                         });
-                } // self friction
-            }     //fricmu
-        }         //enable friction
-    }             //enable contact
-
-    // ground contact
-    if (enableGround) {
-        for (auto &primHandle : prims) {
-            if (primHandle.isBoundary()) // skip soft boundary
-                continue;
-            const auto &svs = primHandle.getSurfVerts();
-            pol(range(svs.size()),
-                [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag, svtemp = proxy<space>({}, primHandle.svtemp),
-                 svs = proxy<space>({}, svs), svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
-                    auto dx = vtemp.pack(dim_c<3>, dxTag, vi);
-                    auto pbHess = svtemp.pack(dim_c<3, 3>, "H", svi);
-                    dx = pbHess * dx;
-                    for (int d = 0; d != 3; ++d)
-                        atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-                });
-        }
-    }
-
-    // constraint hessian
-    if (!BCsatisfied) {
-        pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             boundaryKappa = boundaryKappa] ZS_LAMBDA(int vi) mutable {
-            auto dx = vtemp.pack(dim_c<3>, dxTag, vi);
-            auto w = vtemp("ws", vi);
-            int BCfixed = vtemp("BCfixed", vi);
-            if (!BCfixed) {
-                int BCorder = vtemp("BCorder", vi);
-                for (int d = 0; d != BCorder; ++d)
-                    atomic_add(execTag, &vtemp(bTag, d, vi), boundaryKappa * w * dx(d));
-            }
-        });
-    }
+                } // fricmu
+            }     // self friction
+        }         // enable friction
+    }             // enable contact
 }
 
 template <typename Model>
@@ -2273,13 +2414,13 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, dt = this->dt,
                           n = coOffset] __device__(int vi) mutable {
         auto m = vtemp("ws", vi);
-        auto x = vtemp.pack<3>(tag, vi);
-        auto xt = vtemp.pack<3>("xhat", vi);
+        auto x = vtemp.pack(dim_c<3>, tag, vi);
+        auto xt = vtemp.pack(dim_c<3>, "xhat", vi);
         int BCorder = vtemp("BCorder", vi);
         T E = 0;
-        {
+        if (BCorder == 0) {
             // inertia
-            E = (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
+            E = (T)0.5 * m * (x - vtemp.pack(dim_c<3>, "xtilde", vi)).l2NormSqr();
         }
         reduce_to(vi, n, E, es[vi / 32]);
     });
@@ -2813,6 +2954,93 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
     cudaPol.sync(true);
     timer.tock(fmt::format("{} cgiters", iter));
 }
+void IPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
+    // input "grad", multiply, constraints
+    // output "dir"
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+
+    /// @note assume right-hand side is already projected
+    /// copy diagonal block preconditioners
+    cudaPol.sync(false);
+    /// solve for A dir = grad;
+    // initial guess for hard boundary constraints
+    cudaPol(zs::range(numDofs),
+            [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, dirOffset = vtemp.getPropertyOffset("dir"),
+             xtildeOffset = vtemp.getPropertyOffset("xtilde"),
+             xnOffset = vtemp.getPropertyOffset("xn")] ZS_LAMBDA(int i) mutable {
+                vtemp.tuple<3>(dirOffset, i) = vec3::zeros();
+            });
+    // temp = A * dir
+    systemMultiply(cudaPol, "dir", "temp");
+    project(cudaPol, "temp"); // project production
+    // r = grad - temp
+    cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), rOffset = vtemp.getPropertyOffset("r"),
+                                 gradOffset = vtemp.getPropertyOffset("grad"),
+                                 tempOffset = vtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
+        vtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - vtemp.pack<3>(tempOffset, i);
+    });
+    // project(cudaPol, "r"); // project right hand side
+    precondition(cudaPol, "r", "q");
+    cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
+                                 qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
+        vtemp.tuple<3>(pOffset, i) = vtemp.pack<3>(qOffset, i);
+    });
+    double zTrk = dot(cudaPol, "r", "q");
+    double residualPreconditionedNorm2 = zTrk;
+    double localTol2 = cgRel * cgRel * residualPreconditionedNorm2;
+    int iter = 0;
+
+    CppTimer timer;
+    timer.tick();
+    for (; iter != CGCap; ++iter) {
+        if (iter % 50 == 0)
+            fmt::print("cg iter: {}, norm2: {} (zTrk: {})\n", iter, residualPreconditionedNorm2, zTrk);
+
+        if (residualPreconditionedNorm2 <= localTol2)
+            break;
+        systemMultiply(cudaPol, "p", "temp");
+        project(cudaPol, "temp"); // project production
+
+        double alpha = zTrk / dot(cudaPol, "temp", "p");
+        cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
+                                 pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
+                                 tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
+            vtemp.tuple(dim_c<3>, dirOffset, vi) =
+                vtemp.pack(dim_c<3>, dirOffset, vi) + alpha * vtemp.pack<3>(pOffset, vi);
+            vtemp.tuple(dim_c<3>, rOffset, vi) =
+                vtemp.pack(dim_c<3>, rOffset, vi) - alpha * vtemp.pack<3>(tempOffset, vi);
+        });
+
+        precondition(cudaPol, "r", "q");
+        double zTrkLast = zTrk;
+        zTrk = dot(cudaPol, "q", "r");
+        if (zs::isnan(zTrk, zs::exec_seq)) {
+            iter = CGCap;
+            residualPreconditionedNorm2 = (localTol2 / (cgRel * cgRel)) + std::max((localTol2 / (cgRel * cgRel)), (T)1);
+            continue;
+        }
+        double beta = zTrk / zTrkLast;
+        cudaPol(range(numDofs), [vtemp = proxy<space>(vtemp), beta, pOffset = vtemp.getPropertyOffset("p"),
+                                 qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int vi) mutable {
+            vtemp.tuple<3>(pOffset, vi) = vtemp.pack<3>(qOffset, vi) + beta * vtemp.pack<3>(pOffset, vi);
+        });
+
+        residualPreconditionedNorm2 = zTrk;
+    } // end cg step
+    /// copy back results
+    if (iter == CGCap && residualPreconditionedNorm2 > (localTol2 / (cgRel * cgRel))) {
+        // r = grad - temp
+        cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), tempOffset = vtemp.getPropertyOffset("temp"),
+                                     gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
+            vtemp.tuple<3>(tempOffset, i) = vtemp.pack<3>(gradOffset, i);
+        });
+        precondition(cudaPol, "grad", "dir");
+        zeno::log_warn("falling back to gradient descent.");
+    }
+    cudaPol.sync(true);
+    timer.tock(fmt::format("{} cgiters", iter));
+}
 void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
     // input "grad", multiply, constraints
     // output "dir"
@@ -3038,6 +3266,11 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
+    if (!linsys.initialized) {
+        initializeSystemHessian(pol);
+        linsys.initialized = true;
+    }
+
     /// optimizer
     int newtonIter = 0;
     T res = limits<T>::max();
@@ -3106,6 +3339,12 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                 });
             // hess (embedded in multiply)
         }
+
+        /// prepare linsys.spmat
+        updateInherentHessian(pol, "grad");
+        /// prepare linsys.hessx
+        updateDynamicHessian(pol, "grad");
+
         project(pol, "grad");
 
         // PREPARE P (INVERSION)
@@ -3144,11 +3383,13 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             else
                 vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
         });
-#if 1
+#if 0
         // prepare float edition
         convertHessian(pol);
         // CG SOLVE
         cgsolve(pol, true_c);
+#elif 1
+        systemSolve(pol);
 #else
         cgsolve(pol);
 #endif
