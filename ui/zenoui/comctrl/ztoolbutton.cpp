@@ -16,7 +16,6 @@ ZToolButton::ZToolButton(QWidget* parent)
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setCursor(QCursor(Qt::PointingHandCursor));
 }
 
 ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, const QString& text, QWidget* parent)
@@ -35,7 +34,6 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setCursor(QCursor(Qt::PointingHandCursor));
     QFont font = zenoApp->font();
     font.setPointSize(9);
     m_font = font;
@@ -58,7 +56,6 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setCursor(QCursor(Qt::PointingHandCursor));
     QFont font = zenoApp->font();
     font.setPointSize(9);
     m_font = font;

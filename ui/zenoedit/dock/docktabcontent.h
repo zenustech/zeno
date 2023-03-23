@@ -87,7 +87,6 @@ private:
     ZToolBarButton *pShowGrid;
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
-    ZToolBarButton *pFullPanel;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
