@@ -504,7 +504,13 @@ void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
 
 void ZEditableTextItem::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Shift)
+    if (event->key() == Qt::Key_Return)
+    {
+        event->accept();
+        clearFocus();
+        return;
+    }
+    else if (event->key() == Qt::Key_Shift)
     {
         if (m_pSlider)
         {
