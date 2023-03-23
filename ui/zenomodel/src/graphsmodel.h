@@ -112,7 +112,7 @@ public:
     LinkModel* linkModel() const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QRectF viewRect(const QModelIndex& subgIdx) override;
-    QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
+    QList<SEARCH_RESULT> search(const QString &content, int searchOpts, QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
 

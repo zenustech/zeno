@@ -149,7 +149,7 @@ void LogItemDelegate::initTextLayout(
 QVector<QTextLayout::FormatRange> LogItemDelegate::_getNodeIdentRgs(const QString& content) const
 {
     QVector<QTextLayout::FormatRange> selections;
-    QRegExp rx("[0-9a-z]+\\-[^/\\s`'\"\\],]+");
+    QRegExp rx("[0-9a-z]+\\-[^/\\s`'\"\\],:]+");
     QString currText = content;
 
     int index = -1;
