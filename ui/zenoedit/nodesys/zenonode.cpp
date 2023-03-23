@@ -504,6 +504,7 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 {
                     QGraphicsItem* pNewControl = initSocketWidget(pScene, pItem->index());
                     pControlLayout->setControl(pNewControl);
+                    pNewControl->setVisible(pControlLayout->socketItem()->sockStatus() != ZenoSocketItem::STATUS_CONNECTED);
                     pControl = pNewControl;
                     updateWhole();
                 }

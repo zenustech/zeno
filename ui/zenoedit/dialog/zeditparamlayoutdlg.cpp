@@ -828,6 +828,8 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     };
     const QString &dataType = m_ui->cbTypes->itemText(idx);
     QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
+    if (!value.isValid())
+        value = UiHelper::initDefaultValue(dataType);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);

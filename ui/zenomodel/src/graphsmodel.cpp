@@ -1404,51 +1404,13 @@ void GraphsModel::clear()
 QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
 {
     SubGraphModel* pModel = subGraph(subgIdx.row());
+    QVector<SubGraphModel *> vec;
+    vec << pModel;
+    QList<SEARCH_RESULT> results = search(objName, SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID, vec);
     QModelIndexList list;
-    auto count = pModel->rowCount();
-
-    for (auto i = 0; i < count; i++) {
-        auto index = pModel->index(i, 0);
-        auto item = pModel->nodeData(index);
-        if (item[ROLE_OBJID].toString().contains(objName, Qt::CaseInsensitive)) {
-            list.append(index);
-        }
-        else {
-            QString _type("string");
-            bool inserted = false;
-            {
-                auto params = item[ROLE_PARAMETERS].value<PARAMS_INFO>();
-                auto iter = params.begin();
-                while (iter != params.end()) {
-                    if (iter.value().typeDesc == _type) {
-                        if (iter.value().value.toString().contains(objName, Qt::CaseInsensitive)) {
-                            list.append(index);
-                            inserted = true;
-                            break;
-                        }
-                    }
-                    ++iter;
-                }
-            }
-            if (inserted) {
-                continue;
-            }
-            {
-                auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
-                auto iter = inputs.begin();
-                while (iter != inputs.end()) {
-                    if (iter->value().info.type == _type) {
-                        if (iter->value().info.defaultValue.toString().contains(objName, Qt::CaseInsensitive)) {
-                            list.append(index);
-                            inserted = true;
-                            break;
-                        }
-                    }
-                    ++iter;
-                }
-
-            }
-        }
+    for (auto res : results) 
+    {
+        list.append(res.targetIdx);
     }
     return list;
 }
@@ -1720,7 +1682,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     }
 }
 
-QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
+QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts, QVector<SubGraphModel *> vec)
 {
     QList<SEARCH_RESULT> results;
     if (content.isEmpty())
@@ -1740,46 +1702,35 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
     }
     /* start match len*/
     static int sStartMatch = 2;
-    if ((searchOpts & SEARCH_ARGS) && content.size() >= sStartMatch)
-    {
-        for (auto subgInfo : m_subGraphs)
-        {
-            SubGraphModel* pModel = subgInfo;
-            QModelIndex subgIdx = indexBySubModel(pModel);
-            for (int r = 0; r < pModel->rowCount(); r++)
-            {
+    if (vec.isEmpty())
+        vec = m_subGraphs;
+    for (auto subgInfo : vec) {
+        SubGraphModel *pModel = subgInfo;
+        QModelIndex subgIdx = indexBySubModel(pModel);
+        if ((searchOpts & SEARCH_ARGS) && content.size() >= sStartMatch) {
+            for (int r = 0; r < pModel->rowCount(); r++) {
                 QModelIndex nodeIdx = pModel->index(r, 0);
                 INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
                 PARAMS_INFO params = nodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-                for (INPUT_SOCKET inputSock : inputs)
-                {
-                    if (inputSock.info.type == "string" ||
-                        inputSock.info.type == "multiline_string" ||
-                        inputSock.info.type == "readpath" ||
-                        inputSock.info.type == "writepath")
-                    {
-                        const QString& textValue = inputSock.info.defaultValue.toString();
-                        if (textValue.contains(content, Qt::CaseInsensitive))
-                        {
-                SEARCH_RESULT result;
-                result.targetIdx = nodeIdx;
-                result.subgIdx = subgIdx;
+                for (INPUT_SOCKET inputSock : inputs) {
+                    if (inputSock.info.type == "string" || inputSock.info.type == "multiline_string" ||
+                        inputSock.info.type == "readpath" || inputSock.info.type == "writepath") {
+                        const QString &textValue = inputSock.info.defaultValue.toString();
+                        if (textValue.contains(content, Qt::CaseInsensitive)) {
+                            SEARCH_RESULT result;
+                            result.targetIdx = nodeIdx;
+                            result.subgIdx = subgIdx;
                             result.type = SEARCH_ARGS;
                             result.socket = inputSock.info.name;
-                results.append(result);
-            }
-        }
-    }
-                for (PARAM_INFO param : params)
-                {
-                    if (param.typeDesc == "string" ||
-                        param.typeDesc == "multiline_string" ||
-                        param.typeDesc == "readpath" ||
-                        param.typeDesc == "writepath")
-                    {
-                        const QString& textValue = param.value.toString();
-                        if (textValue.contains(content, Qt::CaseInsensitive))
-                        {
+                            results.append(result);
+                        }
+                    }
+                }
+                for (PARAM_INFO param : params) {
+                    if (param.typeDesc == "string" || param.typeDesc == "multiline_string" ||
+                        param.typeDesc == "readpath" || param.typeDesc == "writepath") {
+                        const QString &textValue = param.value.toString();
+                        if (textValue.contains(content, Qt::CaseInsensitive)) {
                             SEARCH_RESULT result;
                             result.targetIdx = nodeIdx;
                             result.subgIdx = subgIdx;
@@ -1791,18 +1742,10 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
                 }
             }
         }
-    }
-    if (searchOpts & SEARCH_NODEID)
-    {
-        for (auto subgInfo : m_subGraphs)
-        {
-            SubGraphModel* pModel = subgInfo;
-            QModelIndex subgIdx = indexBySubModel(pModel);
+        if (searchOpts & SEARCH_NODEID) {
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
-            if (!lst.isEmpty())
-            {
-                for (QModelIndex nodeIdx : lst)
-                {
+            if (!lst.isEmpty()) {
+                for (QModelIndex nodeIdx : lst) {
                     SEARCH_RESULT result;
                     result.targetIdx = nodeIdx;
                     result.subgIdx = subgIdx;
@@ -1812,19 +1755,10 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
                 }
             }
         }
-    }
-    if (searchOpts & SEARCH_NODECLS)
-    {
-        for (auto subgInfo : m_subGraphs)
-        {
-            SubGraphModel* pModel = subgInfo;
-            QModelIndex subgIdx = indexBySubModel(pModel);
-            //todo: searching by key.
+        if (searchOpts & SEARCH_NODECLS) {
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
-            for (QModelIndex nodeIdx : lst)
-            {
-                if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString()))
-                {
+            for (QModelIndex nodeIdx : lst) {
+                if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
                     continue;
                 }
                 SEARCH_RESULT result;
@@ -1834,30 +1768,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
                 results.append(result);
                 nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
             }
-        }
-    }
-    if (searchOpts & SEARCH_NODECLS)
-    {
-        for (auto subgInfo : m_subGraphs)
-        {
-            SubGraphModel* pModel = subgInfo;
-            QModelIndex subgIdx = indexBySubModel(pModel);
-            //todo: searching by key.
-            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
-            for (QModelIndex nodeIdx : lst)
-            {
-                if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString()))
-                {
-                    continue;
-                }
-                SEARCH_RESULT result;
-                result.targetIdx = nodeIdx;
-                result.subgIdx = subgIdx;
-                result.type = SEARCH_NODECLS;
-                results.append(result);
-                nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
-            }
-        }
+        }        
     }
     return results;
 }
