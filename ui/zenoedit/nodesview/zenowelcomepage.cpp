@@ -30,7 +30,7 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->widgetFromNum->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetOfficialWeb->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetGitHub->setProperty("cssClass", "welcomepage_link");
-    m_ui->lblIogoIcon->setFixedSize(QSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24)));
+    m_ui->lblIogoIcon->setFixedSize(QSize(ZenoStyle::dpiScaled(36), ZenoStyle::dpiScaled(36)));
     QSize size(ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(20));
     m_ui->iconManual->setFixedSize(size);
     m_ui->iconVideos->setFixedSize(size);
@@ -66,7 +66,6 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblGithub->setProperty("cssClass", "welcomepage_label");
     m_ui->lblGithub->setUnderlineOnHover(true);
 
-    m_ui->widgetCenter->setFixedWidth(ZenoStyle::dpiScaled(315));
 	initSignals();
 }
 
@@ -123,7 +122,7 @@ void ZenoWelcomePage::initRecentFiles()
                     pLabel->setText(fn);
             } 
             else {
-                QHBoxLayout *layout = new QHBoxLayout(this);
+                QHBoxLayout *layout = new QHBoxLayout;
                 QLabel *iconLabel = new QLabel(this);
                 iconLabel->setFixedSize(QSize(ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(16)));
                 iconLabel->setPixmap(QPixmap(":/icons/file_zsgfile.svg"));
