@@ -15,6 +15,7 @@ namespace zeno {
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
+    constexpr static auto eps_c = zs::limits<T>::epsilon() * 10.0f; 
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
@@ -280,7 +281,7 @@ struct RapidClothSystem : IObject {
         using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
         auto b = (ea1 - ea0).cross(eb1 - eb0);
         auto b2 = b.l2NormSqr(); 
-        if (b2 < zs::limits<T>::epsilon()) // PE
+        if (b2 < zs::limits<T>::epsilon() * 10.0f) // PE
             if (auto aLen2 = (ea0 - ea1).l2NormSqr(), bLen2 = (eb0 - eb1).l2NormSqr(); aLen2 < bLen2)
                 return (ea0 - eb0).cross(ea0 - eb1).l2NormSqr() / bLen2;  
             else 
