@@ -155,13 +155,34 @@ void ZenoWelcomePage::initRecentFiles()
             connect(pLabel, &ZTextLabel::rightClicked, this, [=]() {
                 QMenu* pMenu = new QMenu(this);
                 QAction *pDelete = new QAction(tr("Remove"));
+                QAction *pOpen= new QAction(tr("Open file location"));
                 pMenu->addAction(pDelete);
+                pMenu->addAction(pOpen);
                 connect(pDelete, &QAction::triggered, this, [=]() {
                     QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     _settings.beginGroup("Recent File List");
                     _settings.remove(key);
                     m_ui->layoutFiles->removeWidget(pLabel);
                     pLabel->deleteLater();
+                });
+
+                connect(pOpen, &QAction::triggered, this, [=]() {
+                    if (!QFileInfo::exists(path)) 
+                    {
+                        QMessageBox::information(this, "", tr("The file does not exist!"));
+                        return;
+                    }
+                    QString filePath = path;
+                    QString cmd;
+                    #ifdef _WIN32
+                    filePath = filePath.replace("/", "\\");
+                    cmd = QString("explorer.exe /select,%1").arg(filePath);
+                    #else
+                    filePath = filePath.replace("\\", "/");
+                    cmd = QString("open -R %1").arg(filePath);
+                    #endif
+                    QProcess process;
+                    process.startDetached(cmd);
                 });
                 pMenu->exec(QCursor::pos());
                 pMenu->deleteLater();

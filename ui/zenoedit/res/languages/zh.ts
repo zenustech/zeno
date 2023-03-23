@@ -1157,7 +1157,7 @@
     </message>
     <message>
         <source>Open File</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">打开文件</translation>
     </message>
 </context>
 <context>
@@ -2071,6 +2071,14 @@ All Files (*)</source>
     <message>
         <source>Remove</source>
         <translation>移除</translation>
+    </message>
+    <message>
+        <source>Open file location</source>
+        <translation type="unfinished">打开文件位置</translation>
+    </message>
+    <message>
+        <source>The file does not exist!</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
