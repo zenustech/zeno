@@ -94,8 +94,10 @@ void ZenoWelcomePage::initSignals()
         QDesktopServices::openUrl(QUrl("https://github.com/zenustech/zeno"));
     });
 
-    connect(zenoApp->getMainWindow(), &ZenoMainWindow::recentFilesChanged, this, [=]() {
-        initRecentFiles();
+    connect(zenoApp->getMainWindow(), &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
+        if (sender != this) {
+            initRecentFiles();
+        }
     });
 }
 
@@ -105,7 +107,11 @@ void ZenoWelcomePage::initRecentFiles()
     settings.beginGroup("Recent File List");
     QStringList lst = settings.childKeys();
     zenoApp->getMainWindow()->sortRecentFile(lst);
-
+    while (m_ui->layoutFiles->count() > 0) {
+        QLayoutItem *item = m_ui->layoutFiles->itemAt(0);
+        deleteItem(item->layout());
+        m_ui->layoutFiles->removeItem(item);
+    }
     for (int i = 0; i < lst.size(); i++)
     {
         const QString& key = lst[i];
@@ -116,8 +122,9 @@ void ZenoWelcomePage::initRecentFiles()
             const QString& fn = info.fileName();
             QLayoutItem *item;
             ZTextLabel *pLabel;
+            QLayout *layout = nullptr;
             if (item = m_ui->layoutFiles->itemAt(i)) {
-                QLayout *layout = item->layout();
+                layout = item->layout();
                 if (!layout)
                     return;
                 QWidget *widget = layout->itemAt(1)->widget();
@@ -126,7 +133,7 @@ void ZenoWelcomePage::initRecentFiles()
                     pLabel->setText(fn);
             } 
             else {
-                QHBoxLayout *layout = new QHBoxLayout;
+                layout = new QHBoxLayout;
                 QSvgWidget* iconLabel = new QSvgWidget(":/icons/file_zsgfile.svg");
                 iconLabel->setFixedSize(QSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24)));
                 layout->addWidget(iconLabel);
@@ -140,17 +147,20 @@ void ZenoWelcomePage::initRecentFiles()
             }
 
             connect(pLabel, &ZTextLabel::clicked, this, [=]() {
-                bool ret = zenoApp->getMainWindow()->openFile(path);
-                if (!ret) {
+
+                if (!QFileInfo::exists(path)) {
                     int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
                     if (flag & QMessageBox::Yes)
                     {
                         QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
                         _settings.beginGroup("Recent File List");
                         _settings.remove(key);
-                        m_ui->layoutFiles->removeWidget(pLabel);
-                        pLabel->deleteLater();
+                        deleteItem(layout);
+                        m_ui->layoutFiles->removeItem(layout);
+                        emit zenoApp->getMainWindow() ->recentFilesChanged(this);
                     }
+                } else {
+                    zenoApp->getMainWindow()->openFile(path);
                 }
             });
 
@@ -164,8 +174,9 @@ void ZenoWelcomePage::initRecentFiles()
                     QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     _settings.beginGroup("Recent File List");
                     _settings.remove(key);
-                    m_ui->layoutFiles->removeWidget(pLabel);
-                    pLabel->deleteLater();
+                    deleteItem(layout);
+                    m_ui->layoutFiles->removeItem(layout);
+                    emit zenoApp->getMainWindow()->recentFilesChanged(this);
                 });
 
                 connect(pOpen, &QAction::triggered, this, [=]() {
@@ -190,5 +201,19 @@ void ZenoWelcomePage::initRecentFiles()
                 pMenu->deleteLater();
             });
         }
+    }
+}
+
+void ZenoWelcomePage::deleteItem(QLayout *layout) {
+    QLayoutItem *child;
+    while ((child = layout->takeAt(0)) != nullptr) {
+        if (child->widget()) {
+            child->widget()->setParent(nullptr);
+            child->widget()->deleteLater();
+        } else if (child->layout()) {
+            deleteItem(child->layout());
+            child->layout()->deleteLater();
+        }
+        delete child;
     }
 }
