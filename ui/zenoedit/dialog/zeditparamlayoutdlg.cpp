@@ -406,7 +406,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
     }
-    else if (type == VPARAM_GROUP || pCurrentItem->m_ctrl == CONTROL_GROUP_LINE)
+    else if (type == VPARAM_GROUP)
     {
         m_ui->cbControl->setEnabled(false);
         m_ui->cbTypes->setEnabled(false);
@@ -462,6 +462,11 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
             m_ui->cbTypes->setCurrentText(dataType);
             m_ui->cbTypes->setEnabled(bEditable);
+            if (ctrl == CONTROL_GROUP_LINE) 
+            {
+                m_ui->cbControl->setEnabled(false);
+                m_ui->cbTypes->setEnabled(false);
+            }
         }
         if (pCurrentItem->m_index.isValid()) 
         {
