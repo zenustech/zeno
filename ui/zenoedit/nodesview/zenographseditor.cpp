@@ -242,46 +242,49 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 	pOptionsMenu->deleteLater();
 }
 
+void ZenoGraphsEditor::onNewSubgraph()
+{
+    bool bOk = false;
+    QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:")
+        , QLineEdit::Normal, "SubgraphName", &bOk);
+
+    if (newSubgName.compare("main", Qt::CaseInsensitive) == 0)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be created"));
+        msg.exec();
+        return;
+    }
+
+    if (bOk) {
+        m_model->newSubgraph(newSubgName);
+    }
+}
+
 void ZenoGraphsEditor::onSubnetOptionClicked()
 {
     QMenu* pOptionsMenu = new QMenu;
 
-	QAction* pCreate = new QAction(tr("create subnet"));
-	QAction* pSubnetMap = new QAction(tr("subnet map"));
-	QAction* pImpFromFile = new QAction(tr("import from local file"));
-	QAction* pImpFromSys = new QAction(tr("import system subnet"));
+    QAction* pNewSubg = new QAction(tr("create subnet"));
+    QAction* pSubnetMap = new QAction(tr("subnet map"));
+    QAction* pImpFromFile = new QAction(tr("import from local file"));
+    QAction* pImpFromSys = new QAction(tr("import system subnet"));
 
-    pOptionsMenu->addAction(pCreate);
+    pOptionsMenu->addAction(pNewSubg);
     pOptionsMenu->addAction(pSubnetMap);
     pOptionsMenu->addSeparator();
     pOptionsMenu->addAction(pImpFromFile);
     pOptionsMenu->addAction(pImpFromSys);
 
-    connect(pCreate, &QAction::triggered, this, [=]() {
-        bool bOk = false;
-        QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:")
-            , QLineEdit::Normal, "SubgraphName", &bOk);
+    connect(pNewSubg, &QAction::triggered, this, &ZenoGraphsEditor::onNewSubgraph);
+    connect(pSubnetMap, &QAction::triggered, this, [=]() {
 
-        if (newSubgName.compare("main", Qt::CaseInsensitive) == 0)
-        {
-            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be created"));
-            msg.exec();
-            return;
-        }
-
-        if (bOk) {
-            m_model->newSubgraph(newSubgName);
-        }
-	});
-	connect(pSubnetMap, &QAction::triggered, this, [=]() {
-
-		});
-	connect(pImpFromFile, &QAction::triggered, this, [=]() {
+    });
+    connect(pImpFromFile, &QAction::triggered, this, [=]() {
         m_mainWin->importGraph();
     });
-	connect(pImpFromSys, &QAction::triggered, this, [=]() {
+    connect(pImpFromSys, &QAction::triggered, this, [=]() {
 
-	});
+    });
 
     pOptionsMenu->exec(QCursor::pos());
     pOptionsMenu->deleteLater();
@@ -829,5 +832,9 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QModelIndex nodeIdx = pAction->data().toModelIndex();
         if (pView && nodeIdx.isValid())
             pView->focusOn(nodeIdx.data(ROLE_OBJID).toString());
+    }
+    else if (actionType == ZenoMainWindow::ACTION_NEW_SUBGRAPH)
+    {
+        onNewSubgraph();
     }
 }

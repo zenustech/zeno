@@ -85,11 +85,12 @@ void ProxySlotObject::mapCoreIndex(const QPersistentModelIndex& idx)
 }
 
 
-
 VParamItem::VParamItem(VPARAM_TYPE type, const QString& text, bool bMapCore)
     : QStandardItem(text)
     , vType(type)
     , m_proxySlot(this)
+    , m_sockProp(SOCKPROP_UNKNOWN)
+    , m_uuid(0)
 {
     m_ctrl = CONTROL_NONE;
     m_name = text;
@@ -100,6 +101,8 @@ VParamItem::VParamItem(VPARAM_TYPE type, const QIcon& icon, const QString& text,
     : QStandardItem(icon, text)
     , vType(type)
     , m_proxySlot(this)
+    , m_sockProp(SOCKPROP_UNKNOWN)
+    , m_uuid(0)
 {
     m_ctrl = CONTROL_NONE;
     m_name = text;

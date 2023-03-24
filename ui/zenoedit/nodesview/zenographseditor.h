@@ -57,6 +57,7 @@ private slots:
 	void onSubGraphRename(const QString& oldName, const QString& newName);
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);
+    void onNewSubgraph();
 
 private:
     void initUI();
