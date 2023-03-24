@@ -381,6 +381,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     
     pItem->setData(pItem->m_tempInfo.controlInfos, ROLE_VPARAM_CTRL_PROPERTIES);
     pItem->setData(pItem->m_tempInfo.m_info.toolTip, ROLE_VPARAM_TOOLTIP);
+    pItem->m_sockProp = pItem->m_tempInfo.m_info.sockProp;
     return true;
 }
 

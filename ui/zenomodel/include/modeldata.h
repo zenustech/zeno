@@ -88,8 +88,9 @@ struct PARAM_INFO {
     QString typeDesc;
     QVariant controlProps;
     bool bEnableConnect;     //enable connection with other out socket.
+    SOCKET_PROPERTY sockProp;
 
-    PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false) {}
+    PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false), sockProp(SOCKPROP_NORMAL) {}
 };
 Q_DECLARE_METATYPE(PARAM_INFO)
 
