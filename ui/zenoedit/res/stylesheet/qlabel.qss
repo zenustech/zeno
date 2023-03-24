@@ -35,14 +35,14 @@ QLabel[cssClass="numslider"]
 
 QLabel[cssClass = "welcomepage_name"]
 { 
-	font-size: 16pt;
-	font-weight: 700;
-	color: rgb(255, 255, 255);
+	font: 24pt 'FontFamily';
+	font-weight: 500;
+	color: rgb(160, 178, 194);
 }
 
 QLabel[cssClass = "welcomepage_label"]
 { 
-	font-size: 9pt;
+	font-size: 10pt;
 	font-weight: 500;
 	color: #A3B1C0;
 }
@@ -54,8 +54,15 @@ QLabel[cssClass = "welcomepage_label"]:hover
 
 QLabel[cssClass = "welcomepage"]
 {
-	font-size: 10pt;
+	font: 12pt 'FontFamily';
 	font-weight: 500;
+	color:  #737B85;
+}
+
+QLabel[cssClass = "welcomepage_version"]
+{
+	font-size: 12pt;
+	font-weight: 600;
 	color:  #737B85;
 }
 

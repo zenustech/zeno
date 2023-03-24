@@ -6,6 +6,7 @@
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
 #include <zenoui/style/zenostyle.h>
+#include <QtSvg/QSvgWidget>
 
 
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
@@ -24,13 +25,16 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblStart->setProperty("cssClass", "welcomepage");
     m_ui->lblRecentFiles->setProperty("cssClass", "welcomepage");
     m_ui->lblLogo->setProperty("cssClass", "welcomepage_name");
-    m_ui->lblIogoIcon->setProperty("cssClass", "welcomepage_logo");
+
     m_ui->widgetManual->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetVideos->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetFromNum->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetOfficialWeb->setProperty("cssClass", "welcomepage_link");
     m_ui->widgetGitHub->setProperty("cssClass", "welcomepage_link");
-    m_ui->lblIogoIcon->setFixedSize(QSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24)));
+
+    m_ui->lblLogoIcon->load(QString(":/icons/welcome_Zeno_logo.svg"));
+    m_ui->lblLogoIcon->setFixedSize(QSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(60)));
+
     QSize size(ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(20));
     m_ui->iconManual->setFixedSize(size);
     m_ui->iconVideos->setFixedSize(size);
@@ -66,7 +70,6 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblGithub->setProperty("cssClass", "welcomepage_label");
     m_ui->lblGithub->setUnderlineOnHover(true);
 
-    m_ui->widgetCenter->setFixedWidth(ZenoStyle::dpiScaled(315));
 	initSignals();
 }
 
@@ -130,17 +133,16 @@ void ZenoWelcomePage::initRecentFiles()
                     pLabel->setText(fn);
             } 
             else {
-                layout = new QHBoxLayout(this);
-                QLabel *iconLabel = new QLabel(this);
-                iconLabel->setFixedSize(QSize(ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(16)));
-                iconLabel->setPixmap(QPixmap(":/icons/file_zsgfile.svg"));
+                layout = new QHBoxLayout;
+                QSvgWidget* iconLabel = new QSvgWidget(":/icons/file_zsgfile.svg");
+                iconLabel->setFixedSize(QSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24)));
                 layout->addWidget(iconLabel);
                 pLabel = new ZTextLabel(fn);
                 pLabel->setTextColor(QColor("#A3B1C0"));
                 pLabel->setProperty("cssClass", "welcomepage_label");
                 pLabel->setToolTip(path);
 
-                 layout->addWidget(pLabel);
+                layout->addWidget(pLabel);
                 m_ui->layoutFiles->addLayout(layout);
             }
 
