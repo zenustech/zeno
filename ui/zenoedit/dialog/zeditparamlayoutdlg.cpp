@@ -1153,6 +1153,10 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         addControlGroup(bSubInput, name, ctrl);
                         QStandardItem *pNewItem = pCurrent->clone();
                         appliedItem->appendRow(pNewItem);
+                        //move the new item to the r-th position.
+                        QModelIndex parent = appliedItem->index();
+                        int dstRow = appliedItem->rowCount() - 1;
+                        m_model->moveRow(parent, dstRow, parent, r);
                     } 
                     else 
                     {

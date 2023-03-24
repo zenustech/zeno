@@ -98,6 +98,22 @@ namespace zenomodel
                 writer.Key("tooltip");
                 writer.String(pItem->m_customData[ROLE_VPARAM_TOOLTIP].toString().toUtf8());
             }
+
+            //property
+            if (pItem->m_sockProp != SOCKPROP_NORMAL) {
+                writer.Key("property");
+                {
+                    if (pItem->m_sockProp & SOCKPROP_DICTLIST_PANEL) {
+                        writer.String("dict-panel");
+                    } else if (pItem->m_sockProp & SOCKPROP_EDITABLE) {
+                        writer.String("editable");
+                    } else if (pItem->m_sockProp & SOCKPROP_GROUP_LINE) {
+                        writer.String("group-line");
+                    } else {
+                        writer.String("normal");
+                    }
+                }
+            }
         }
     }
 
@@ -177,6 +193,17 @@ namespace zenomodel
             param.m_info.toolTip = QString::fromUtf8(paramVal["tooltip"].GetString());
         }
 
+        if (paramVal.HasMember("property")) 
+        {
+            ZASSERT_EXIT(paramVal["property"].IsString(), param);
+            QString sockProperty = QString::fromUtf8(paramVal["property"].GetString());
+            if (sockProperty == "dict-panel")
+                param.m_info.sockProp = SOCKPROP_DICTLIST_PANEL;
+            else if (sockProperty == "editable")
+                param.m_info.sockProp = SOCKPROP_EDITABLE;
+            else if (sockProperty == "group-line")
+                param.m_info.sockProp = SOCKPROP_GROUP_LINE;
+        }
         return param;
     }
 
