@@ -258,11 +258,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(thin == false && ior>1.0f)
+                if(thin == 0.0f && ior>1.0f)
                 {
                     prd->nonThinTransHit++;
                 }
-                if(rnd(prd->seed)<1-specTrans||prd->nonThinTransHit>1)
+                if(rnd(prd->seed)<(1-specTrans)||prd->nonThinTransHit>1)
                 {
                     prd->shadowAttanuation = vec3(1e-6f,1e-6f,1e-6f);
                     optixTerminateRay();
@@ -276,8 +276,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 optixIgnoreIntersection();
             }
         }
-
-
 
         prd->shadowAttanuation = vec3(1e-6f);
         optixTerminateRay();
@@ -716,6 +714,12 @@ extern "C" __global__ void __closesthit__radiance()
     }
     if(prd->depth>=3)
         roughness = clamp(roughness, 0.5,0.99);
+
+    RadiancePRD shadow_prd {};
+    shadow_prd.seed = prd->seed;
+    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+
     if(rnd(prd->seed)<=0.5) {
         bool computed = false;
         float ppl = 0;
@@ -743,9 +747,6 @@ extern "C" __global__ void __closesthit__radiance()
                 float weight = 0.0f;
                 if (nDl > 0.0f && LnDl > 0.0f) {
 
-                    RadiancePRD shadow_prd;
-                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
                     traceOcclusion(params.handle, P, L,
                                    1e-5f,         // tmin
                                    Ldist - 1e-5f, // tmax,
@@ -774,7 +775,7 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }
     } else {
-        RadiancePRD shadow_prd2;
+    
         float3 lbrdf;
         vec3 env_dir;
         bool inside = false;
@@ -787,18 +788,17 @@ extern "C" __global__ void __closesthit__radiance()
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
         prd->Lweight = 1.0;
-        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+
         traceOcclusion(params.handle, P, sun_dir,
                        1e-5f, // tmin
                        1e16f, // tmax,
-                       &shadow_prd2);
+                       &shadow_prd);
         lbrdf = DisneyBSDF::EvaluateDisney(
             basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
-        light_attenuation = shadow_prd2.shadowAttanuation;
+        light_attenuation = shadow_prd.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
             prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *
                             float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),

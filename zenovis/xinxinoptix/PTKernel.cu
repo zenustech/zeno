@@ -92,15 +92,14 @@ extern "C" __global__ void __raygen__rg()
         float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
 
-        float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
-        float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
+        // float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
+        // float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
    
         float3 eye_shake     = r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up); // Camera local space
 
-        ray_origin           = cam.eye + eye_shake;
-        ray_direction        = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
-
-        ray_direction = normalize(ray_direction);
+        float3 ray_origin    = cam.eye + eye_shake;
+        float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
+               ray_direction = normalize(ray_direction);
 
         RadiancePRD prd; 
         prd.emission     = make_float3(0.f);
@@ -181,8 +180,9 @@ extern "C" __global__ void __raygen__rg()
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
                 if(rnd(prd.seed) > RRprob || prd.depth>16){
                     prd.done=true;
+                } else {
+                    prd.attenuation = prd.attenuation / (RRprob + 1e-5);
                 }
-                prd.attenuation = prd.attenuation / (RRprob + 1e-5);
             }
             if(prd.countEmitted == true)
                 prd.passed = true;

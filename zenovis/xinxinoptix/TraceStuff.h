@@ -96,6 +96,8 @@ struct RadiancePRD
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
+    float3 vol_tr = make_float3(1.0f);
+    unsigned int vol_depth = 0;
     bool test_distance = false;
     bool origin_inside_vdb = false;
     bool surface_inside_vdb = false; 
@@ -104,12 +106,11 @@ struct RadiancePRD
     float3 geometryNormal;
 
     void offsetRay() {
-        float forward = dot(geometryNormal, direction) > 0;
-        origin = rtgems::offset_ray(origin, forward? geometryNormal:-geometryNormal);
+        offsetRay(this->origin, this->direction);
     }
 
-    void offsetRay(float3& P, float3& new_dir) {
-        float forward = dot(geometryNormal, new_dir) > 0;
+    void offsetRay(float3& P, const float3& new_dir) {
+        bool forward = dot(geometryNormal, new_dir) > 0;
         P = rtgems::offset_ray(P, forward? geometryNormal:-geometryNormal);
     }
 

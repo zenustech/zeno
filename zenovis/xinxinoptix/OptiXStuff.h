@@ -117,9 +117,13 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-
+#if defined(NDEBUG)
+    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+#else
+    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
 
     char log[2048];
     size_t sizeof_log = sizeof( log );
@@ -642,7 +646,11 @@ inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#if defined(NDEBUG)
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+#else
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];

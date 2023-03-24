@@ -1,7 +1,7 @@
 # export CC=/usr/bin/clang
 # export CXX=/usr/bin/clang++
 
-cmake -B build -DCMAKE_BUILD_TYPE=Release \
+cmake -B build -DCMAKE_BUILD_TYPE=Debug \
     -DZENO_WITH_zenvdb:BOOL=ON \
     -DZENO_SYSTEM_OPENVDB=OFF \
     -DZENO_WITH_ZenoFX:BOOL=ON \
@@ -12,4 +12,5 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release \
 
 cmake --build build --parallel $(nproc) \
 
-ln -s ./build/compile_commands.json ./
+# ln -s ./build/compile_commands.json ./
+cp ./build/compile_commands.json ./

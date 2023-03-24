@@ -70,6 +70,7 @@ struct ShaderFinalize : INode {
             {1,"mat_isCamera"},
             {1,"mat_isVoxelDomain"},
 
+            {1, "vol_depth"},
             {1, "vol_absorption"},
             {1, "vol_scattering"},
             {1, "vol_anisotropy"},
@@ -123,6 +124,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
             
+            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
             get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_anisotropy", std::make_shared<NumericObject>(float(0))),
@@ -133,9 +135,13 @@ struct ShaderFinalize : INode {
         });
         auto commonCode = em.getCommonCode();
 
+        int   vol_depth = (int)get_input2<float>("vol_depth");
         float vol_absorption = get_input2<float>("vol_absorption");
         float vol_scattering = get_input2<float>("vol_scattering");
 
+        vol_depth = clamp(vol_depth, 9, 99);
+
+        commonCode += "static const int _vol_depth = " + std::to_string(vol_depth) + ";\n";
         commonCode += "static const float _vol_absorption = " + std::to_string(vol_absorption) + ";\n";
         commonCode += "static const float _vol_scattering = " + std::to_string(vol_scattering) + ";\n";
 
@@ -255,6 +261,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"list", "tex2dList"},//TODO: bate's asset manager
         {"list", "tex3dList"},
 
+        {"float", "vol_depth",     "99"},
         {"float", "vol_absorption", "1"},
         {"float", "vol_scattering", "1"},
         {"float", "vol_anisotropy", "0"},
