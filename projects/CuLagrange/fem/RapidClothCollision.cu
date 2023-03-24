@@ -655,7 +655,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempPE = proxy<space>({}, tempPE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oPE = proxy<space>(oPE), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = (double)delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPE.pack(dim_c<3>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -689,11 +689,19 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     delta = delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
-        auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
-        auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
-        auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
-        auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        zs::vec<T, 3, 3> mat;
+        auto fl_p = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto fl_t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto fl_t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto fl_t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        auto fl3_to_db3 = [](const auto& v)
+        {
+            return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
+        }; 
+        auto p = fl3_to_db3(fl_p); 
+        auto t0 = fl3_to_db3(fl_t0); 
+        auto t1 = fl3_to_db3(fl_t1); 
+        auto t2 = fl3_to_db3(fl_t2); 
+        zs::vec<double, 3, 3> mat;
         for (int d = 0; d < 3; d++)
         {
             mat(d, 0) = t0(d) - p(d); 
@@ -734,14 +742,23 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempEE = proxy<space>({}, tempEE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = (double)delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
-        auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
-        auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
-        auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
-        auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        zs::vec<T, 3, 3> mat, rMat;
+        using dvec3 = zs::vec<double, 3>; 
+        auto fl_ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto fl_ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto fl_ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto fl_ej1 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        auto fl3_to_db3 = [](const auto& v)
+        {
+            return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
+        }; 
+        auto ei0 = fl3_to_db3(fl_ei0); 
+        auto ei1 = fl3_to_db3(fl_ei1); 
+        auto ej0 = fl3_to_db3(fl_ej0); 
+        auto ej1 = fl3_to_db3(fl_ej1); 
+        zs::vec<double, 3, 3> mat, rMat;
         for (int d = 0; d < 3; d++)
         {
             mat(d, 0) = ei1(d) - ei0(d); 
@@ -754,11 +771,11 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto pj = gammas[1] * (ej1 - ej0) + ej0; 
         auto dij = pj - pi; 
         auto dist = dij.norm(); 
-        auto safeDist = dist + eps_c; 
-        auto ri0 = ei0 + (dist - delta) * 0.5f * dij / safeDist; 
-        auto ri1 = ei1 + (dist - delta) * 0.5f * dij / safeDist; 
-        auto rj0 = ej0 - (dist - delta) * 0.5f * dij / safeDist;
-        auto rj1 = ej1 - (dist - delta) * 0.5f * dij / safeDist; 
+        auto dijNrm = dij / (dist + eps_c);  
+        auto ri0 = ei0 + (dist - delta) * 0.5f * dijNrm;  
+        auto ri1 = ei1 + (dist - delta) * 0.5f * dijNrm; 
+        auto rj0 = ej0 - (dist - delta) * 0.5f * dijNrm; 
+        auto rj1 = ej1 - (dist - delta) * 0.5f * dijNrm; 
         for (int d = 0; d < 3; d++)
         {
             rMat(d, 0) = ri1(d) - ri0(d); 
@@ -766,7 +783,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             rMat(d, 2) = rj1(d) - ri0(d); 
         }
         auto coef = determinant(rMat);
-        auto val = vol / coef - 1.0f; 
+        auto val = vol / coef - 1.0f;
         if (val >= 0)
             return; 
         auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
@@ -805,14 +822,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         [tempCons = view<space>({}, tempCons, false_c, "tempCons"), 
          vCons = view<space>({}, vCons, false_c, "vCons"), 
          coOffset = coOffset] __device__ (int ci) mutable {
-            auto vN = tempCons("vN", ci); 
+            int vN = tempCons("vN", ci); 
             for (int k = 0; k < vN; k++)
             {
-                auto vi = tempCons("vi", k, ci); 
+                int vi = tempCons("vi", k, ci); 
                 if (vi >= coOffset)
                     continue; 
-                auto n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
-                auto nE = vCons("nE", vi); 
+                int n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
+                int nE = vCons("nE", vi); 
                 vCons("cons", n + nE, vi) = ci; 
                 vCons("ind", n + nE, vi) = k; 
             }
@@ -828,14 +845,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
          lcpMatSize = view<space>(lcpMatSize, false_c, "lcpMatSize"), 
          shrinking, coOffset = coOffset] __device__ (int ci) mutable {
             int degree = 0; 
-            auto vN = tempCons("vN", ci); 
+            int vN = tempCons("vN", ci); 
             for (int k = 0; k < vN; k++)
             {
-                auto vi = tempCons("vi", k, ci); 
+                int vi = tempCons("vi", k, ci); 
                 if (vi >= coOffset)
                     continue; 
-                auto nE = vCons("nE", vi); 
-                auto n = vCons("n", vi); 
+                int nE = vCons("nE", vi); 
+                int n = vCons("n", vi); 
                 degree += nE + n; 
                 for (int j = 0; j < nE + n; j++)
                 {
@@ -883,7 +900,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         lcpMat = proxy<space>(lcpMat), 
         coOffset = coOffset] __device__ (int i) mutable {
             auto &ax = lcpMat._vals; 
-            auto vN = tempCons("vN", i); 
+            int vN = tempCons("vN", i); 
             for (int j = 0; j < vN; j++)                        // this V
             {
                 int vi = tempCons("vi", j, i); 
@@ -916,7 +933,6 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
     // PGS solver 
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
-
     // b = c(x(l)) + J(x(l)) * (y[k+1] - x(l))
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
@@ -929,7 +945,7 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     continue; 
                 for (int d = 0; d < 3; d++)
                     val += tempCons("grad", i * 3 + d, ci, T_c) * 
-                        (vtemp("y[k+1]", d, vi) - vtemp("x(l)", d, vi)); 
+                        (vtemp("y(l)", d, vi) - vtemp("x(l)", d, vi)); 
             }
             tempCons("b", ci, T_c) = -val; 
             tempCons("lambda", ci, T_c) = 0.f; 
@@ -960,11 +976,6 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                         auto j = aj[k]; 
                         if (j == i)
                         {
-                            // DEBUG OUTPUT
-                            // {
-                            //     printf("A(%d, %d) += %f\n", 
-                            //         i, j, (float)ax[k]); 
-                            // }
                             maj += ax[k]; 
                             continue; 
                         }
@@ -973,12 +984,6 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     // check maj 
                     if (zs::abs(maj) < eps_c)
                     {
-                        // // DEBUG OUTPUT
-                        // {
-                        //     printf("\t\ttiny maj!: maj at ci = %d: %f, vi: %d, %d, %d, %d, vN: %d\n", i, (float)maj, 
-                        //         tempCons("vi", 0, i), tempCons("vi", 1, i), tempCons("vi", 2, i), tempCons("vi", 3, i), 
-                        //         tempCons("vN", i)); 
-                        // }
                         return; 
                     }
                     auto newLam = zs::max(rhs / maj, 0.f); 
@@ -1004,10 +1009,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
     // TODO: project dof on boundaries? 
     solveLCP(pol); 
     // y(l+1) = M^{-1} * (J(l)).T * lambda + y[k+1]
-    pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
-        }); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
@@ -1032,10 +1033,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                 }
             }
         }); 
-    pol(range(coOffset), 
-        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = vtemp.pack(dim_c<3>, "y(l)", vi); 
-        }); 
 }   
 
 // async stepping  
@@ -1055,20 +1052,27 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
          vtemp = proxy<space>({}, vtemp), nae = nae] __device__ (int i) mutable {
             int ci = i + nae; 
             auto dist = tempCons("dist", ci, T_c); 
-            auto vN = tempCons("vN", ci); 
+            int vN = tempCons("vN", ci); 
             for (int k = 0; k < vN; k++)
             {
-                auto vi = tempCons("vi", k, ci); 
+                int vi = tempCons("vi", k, ci); 
                 atomic_min(exec_cuda, &vtemp("Di", vi), dist); 
             }
         }); 
-    // calculate alpha, update x(l), r(l)
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
          gamma = gamma] __device__ (int vi) mutable {
-            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
-            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+            auto fl3_to_db3 = [](const auto& v)
+            {
+                return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
+            }; 
+            auto db3_to_fl3 = [](const auto& v)
+            {
+                return zs::vec<float, 3>{(float)v(0), (float)v(1), (float)v(2)}; 
+            }; 
+            auto y = fl3_to_db3(vtemp.pack(dim_c<3>, "y(l)", vi)); 
+            auto x = fl3_to_db3(vtemp.pack(dim_c<3>, "x(l)", vi)); 
             if ((y - x).l2NormSqr() < eps_c)
             {
                 vtemp("disp", vi) = 0.f;
@@ -1079,16 +1083,9 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 ((y - x).norm() + eps_c);
             if (alpha > 1.0f)
                 alpha = 1.0f; 
-            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
-                alpha * (y - x); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = db3_to_fl3(fl3_to_db3(vtemp.pack(dim_c<3>, "x(l)", vi)) + 
+                ((double)alpha) * (y - x)); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
-            // DEBUG
-            // if (alpha < 0.01f)
-            // {
-            //     auto yk = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
-            //     printf("tiny alpha %f at vi = %d, coOffset = %d, x: %f, %f, %f, y: %f, %f, %f, y[k+1]: %f, %f, %f, Di: %f, (y-x).norm: %f\n", 
-            //         alpha, vi, coOffset, x(0), x(1), x(2), y(0), y(1), y(2), yk(0), yk(1), yk(2), vtemp("Di", vi), (y - x).norm());       
-            // }
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
     // check infnorm of r(l) after calling forwardStep

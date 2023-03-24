@@ -15,7 +15,7 @@ namespace zeno {
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
-    constexpr static auto eps_c = zs::limits<T>::epsilon() * 10.0f; 
+    constexpr static auto eps_c = zs::limits<T>::epsilon() * 1.0f; 
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
@@ -268,7 +268,6 @@ struct RapidClothSystem : IObject {
     bvfront_t selfSvFront, boundarySvFront; 
     bool frontManageRequired; 
     T dt, framedt, curRatio;
-
     // boundary condition param 
     T BCStiffness = 1e6f; 
 };
