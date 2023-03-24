@@ -33,6 +33,7 @@ public:
     bool isDirty() const;
     void markDirty();
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
+    bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,

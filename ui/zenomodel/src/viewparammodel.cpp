@@ -165,10 +165,23 @@ QModelIndex ViewParamModel::indexFromName(PARAM_CLASS cls, const QString &corePa
     return QModelIndex();
 }
 
-QMimeData *ViewParamModel::mimeData(const QModelIndexList &indexes) const
+bool ViewParamModel::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+{
+    const QString& groupname = parent.data(ROLE_PARAM_NAME).toString();
+    const QString& movingItemGroup = data->data("group");
+    //zeno::log_info("groupname: {}", groupname.toStdString());
+    //zeno::log_info("row: {}", row);
+    if (groupname.isEmpty() || movingItemGroup != groupname || row < 0 || !parent.isValid()) {
+        return false;
+    }
+    return QStandardItemModel::canDropMimeData(data, action, row, column, parent);
+}
+
+QMimeData* ViewParamModel::mimeData(const QModelIndexList &indexes) const
 {
     QMimeData* mimeD = new QMimeData();// QAbstractItemModel::mimeData(indexes);
-    if (indexes.size() > 0) {
+    if (indexes.size() > 0)
+    {
         QModelIndex index = indexes.at(0);
         VParamItem *node = (VParamItem *)itemFromIndex(index);
         QByteArray encoded;
@@ -180,7 +193,16 @@ QMimeData *ViewParamModel::mimeData(const QModelIndexList &indexes) const
         node->write(stream);
         const QString format = QStringLiteral("application/x-qstandarditemmodeldatalist");
         mimeD->setData(format, encoded);
-    } else {
+
+        QStandardItem* parentItem = node->parent();
+        if (parentItem)
+        {
+            const QString& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
+            mimeD->setData("group", groupName.toUtf8());
+        }
+    }
+    else
+    {
         mimeD->setData("Node/NodePtr", "NULL");
     }
     return mimeD;
@@ -488,7 +510,7 @@ bool ViewParamModel::isEditable(const QModelIndex &current)
     if (bCoreParam)
         return false;
     int type = current.data(ROLE_VPARAM_TYPE).toInt();
-    if (current.data(ROLE_VPARAM_TYPE) == VPARAM_GROUP) 
+    if (type == VPARAM_GROUP) 
     {
         QString groupName = current.data(ROLE_VPARAM_NAME).toString();
         if (!m_bNodeUI) 
@@ -505,7 +527,7 @@ bool ViewParamModel::isEditable(const QModelIndex &current)
             return false;
         }
     } 
-    else if (current.data(ROLE_VPARAM_TYPE) == VPARAM_PARAM) 
+    else if (type == VPARAM_PARAM) 
     {
         if (!m_model->IsSubGraphNode(m_nodeIdx))
             return isEditable(current.parent());
