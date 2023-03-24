@@ -19,6 +19,8 @@ signals:
 	void newRequest();
 	void openRequest();
 
+ private:
+    void deleteItem(QLayout *layout);
 private:
 	void initSignals();
 	Ui::WelcomePage* m_ui;

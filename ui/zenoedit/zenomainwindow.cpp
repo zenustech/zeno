@@ -94,6 +94,10 @@ void ZenoMainWindow::init()
     setPalette(pal);
 
     m_ui->statusbar->showMessage(tr("Status Bar"));
+    connect(this, &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
+        if (sender != this)
+            loadRecentFiles();
+    });
 }
 
 void ZenoMainWindow::initWindowProperty()
@@ -1002,14 +1006,18 @@ void ZenoMainWindow::loadRecentFiles()
             QAction *action = new QAction(path);
             m_ui->menuRecent_Files->addAction(action);
             connect(action, &QAction::triggered, this, [=]() {
-                bool ret = openFile(path);
-                if (!ret) {
-                    int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-                    if (flag & QMessageBox::Yes) {
-                        QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                        _settings.beginGroup("Recent File List");
-                        _settings.remove(key);
-                        m_ui->menuRecent_Files->removeAction(action);
+                if (saveQuit()) {
+                    if (!QFileInfo::exists(path)) {
+                        int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                        if (flag & QMessageBox::Yes) {
+                            QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
+                            _settings.beginGroup("Recent File List");
+                            _settings.remove(key);
+                            m_ui->menuRecent_Files->removeAction(action);
+                            emit recentFilesChanged(this);
+                        }
+                    } else {
+                        openFile(path);
                     }
                 }
             });
@@ -1081,7 +1089,7 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
         keys.removeLast();
     }
     loadRecentFiles();
-    emit recentFilesChanged();
+    emit recentFilesChanged(this);
 }
 
 void ZenoMainWindow::setActionProperty() 

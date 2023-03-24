@@ -129,7 +129,7 @@ public:
         ACTION_GROUP,
     };
 signals:
-    void recentFilesChanged();
+    void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(int);
     void alwaysModeChanged(bool bAlways);
