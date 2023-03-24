@@ -35,7 +35,7 @@ QLabel[cssClass="numslider"]
 
 QLabel[cssClass = "welcomepage_name"]
 { 
-	font: 26pt 'FontFamily';
+	font: 24pt 'FontFamily';
 	font-weight: 500;
 	color: rgb(160, 178, 194);
 }
