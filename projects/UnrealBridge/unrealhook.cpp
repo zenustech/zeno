@@ -23,15 +23,15 @@ void zeno::UnrealHook::fetchViewObject(const std::string const &inObjKey, const 
         return it != nodeName.end();
     };
 
-    if (hasLabel(unreal::gHeightFieldLabel) && data->verts.has_attr("height")) {
-        auto& heightAttrs = data->verts.attr<float>("height");
-        UnrealHeightFieldSubject subject {
-            inObjKey,
-            static_cast<int64_t>(data->verts.size()),
-            heightAttrs,
-        };
-        UnrealSubjectRegistry::getStatic().put(nodeName, subject);
-        UnrealSubjectRegistry::getStatic().markDirty(true);
-    }
+//    if (hasLabel(unreal::gHeightFieldLabel) && data->verts.has_attr("height")) {
+//        auto& heightAttrs = data->verts.attr<float>("height");
+//        UnrealHeightFieldSubject subject {
+//            inObjKey,
+//            static_cast<int64_t>(data->verts.size()),
+//            heightAttrs,
+//        };
+//        UnrealSubjectRegistry::getStatic().put(nodeName, subject);
+//        UnrealSubjectRegistry::getStatic().markDirty(true);
+//    }
 }
 
