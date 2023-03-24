@@ -1087,9 +1087,11 @@ extern "C" __global__ void __closesthit__radiance()
         light_attenuation = shadow_prd2.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
             prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *
-                            float3(envSky(sun_dir, sunLightDir, make_float3(4., 1., 1.),
+                            float3(envSky(sun_dir, sunLightDir, 
+                                          make_float3(10., 0., 0.), // debug
                                           10, // be careful
-                                          .60, 15., 1.030725 * 0.3, params.elapsedTime)) *
+                                          .70, 
+                                          15., 1.030725 * 0.3, params.elapsedTime)) *
                             lbrdf;
         //}
     }
