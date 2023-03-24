@@ -43,7 +43,14 @@
       <string>Recent Files</string>
      </property>
     </widget>
-    <addaction name="action_New"/>
+    <widget class="QMenu" name="menu_New">
+     <property name="title">
+      <string>&amp;New</string>
+     </property>
+     <addaction name="actionNew_File"/>
+     <addaction name="actionNew_Subgraph"/>
+    </widget>
+    <addaction name="menu_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
     <addaction name="action_Save_As"/>
@@ -169,14 +176,6 @@ border-top: 1px solid black;</string>
   <action name="actionDefault_layout">
    <property name="text">
     <string>Default layout</string>
-   </property>
-  </action>
-  <action name="action_New">
-   <property name="text">
-    <string>&amp;New</string>
-   </property>
-   <property name="shortcut">
-    <string notr="true">Ctrl+N</string>
    </property>
   </action>
   <action name="action_Open">
@@ -447,6 +446,22 @@ border-top: 1px solid black;</string>
   <action name="actionShortcutList">
    <property name="text">
     <string>Shortcut List</string>
+   </property>
+  </action>
+  <action name="actionNew_File">
+   <property name="text">
+    <string>New File</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionNew_Subgraph">
+   <property name="text">
+    <string>New Subgraph</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
    </property>
   </action>
  </widget>

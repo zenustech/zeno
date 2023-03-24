@@ -200,7 +200,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     switch (actionType)
     {
-    case ACTION_NEW: {
+    case ACTION_NEWFILE: {
         onNewFile();
         break;
     }
@@ -1086,7 +1086,8 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
 
 void ZenoMainWindow::setActionProperty() 
 {
-    m_ui->action_New->setProperty("ActionType", ACTION_NEW);
+    m_ui->actionNew_File->setProperty("ActionType", ACTION_NEWFILE);
+    m_ui->actionNew_Subgraph->setProperty("ActionType", ACTION_NEW_SUBGRAPH);
     m_ui->action_Open->setProperty("ActionType", ACTION_OPEN);
     m_ui->action_Save->setProperty("ActionType", ACTION_SAVE);
     m_ui->action_Save_As->setProperty("ActionType", ACTION_SAVE_AS);

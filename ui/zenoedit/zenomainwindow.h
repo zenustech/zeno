@@ -70,7 +70,8 @@ public:
 
     enum ActionType {
         //File
-        ACTION_NEW = 0,
+        ACTION_NEWFILE = 0,
+        ACTION_NEW_SUBGRAPH,
         ACTION_OPEN,
         ACTION_SAVE,
         ACTION_SAVE_AS,
@@ -92,6 +93,7 @@ public:
         ACTION_EASY_GRAPH,
         ACTION_OPEN_VIEW,
         ACTION_CLEAR_VIEW,
+
         //Render
         ACTION_SMOOTH_SHADING,
         ACTION_NORMAL_CHECK,
