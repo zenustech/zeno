@@ -121,7 +121,6 @@ struct UnifiedIPCSystem : IObject {
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
-        typename ZenoParticles::dtiles_t etemp, btemp; // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
@@ -179,9 +178,6 @@ struct UnifiedIPCSystem : IObject {
     auto getCollisionCnts() const {
         return zs::make_tuple(csPT.getCount(), csEE.getCount());
     }
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
-    void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi);
@@ -190,14 +186,10 @@ struct UnifiedIPCSystem : IObject {
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
     void findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi);
     // linear system setup
-    void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
     void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
                                           const zs::SmallString &gTag); // for kappaMin
-    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+    void computeElasticGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &pol);
     void computeBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
     void computeFrictionBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
 
@@ -274,7 +266,6 @@ struct UnifiedIPCSystem : IObject {
     const dtiles_t *coVerts;
     const tiles_t *coLowResVerts, *coEdges, *coEles;
     dtiles_t vtemp;
-    dtiles_t tempI;
 
     /// @brief collision
     template <typename ValT>
@@ -327,6 +318,13 @@ struct UnifiedIPCSystem : IObject {
                 if (no < cap)
                     buf[no] = std::move(val);
             }
+            __forceinline__ __device__ int next_index(zs::cg::thread_block_tile<8, zs::cg::thread_block> &tile) {
+                int no = -1;
+                if (tile.thread_rank() == 0)
+                    no = zs::atomic_add(zs::exec_cuda, cnt, 1);
+                no = tile.shfl(no, 0);
+                return (no < cap ? no : -1);
+            }
             __forceinline__ __device__ ValT &operator[](int i) {
                 return buf[i];
             }
@@ -375,6 +373,7 @@ struct UnifiedIPCSystem : IObject {
     DynamicBuffer<pair4_t> FEE;
     dtiles_t fricEE;
 
+    zs::Vector<zs::u8> exclDofs;                                 // mark dof collision exclusion
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
