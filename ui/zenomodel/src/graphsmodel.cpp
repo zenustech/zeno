@@ -374,7 +374,7 @@ void GraphsModel::revert(const QModelIndex& idx)
 
 void GraphsModel::parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl)
 {
-    auto _arr = descStr.split('@', Qt::SkipEmptyParts);
+    auto _arr = descStr.split('@', QtSkipEmptyParts);
     ZASSERT_EXIT(!_arr.isEmpty());
 
     if (_arr.size() == 1)
