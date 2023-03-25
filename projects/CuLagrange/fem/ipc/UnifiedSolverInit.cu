@@ -9,8 +9,7 @@ namespace zeno {
 ///
 UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_,
                                                    ZenoParticles::category_e category)
-    : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_},
-      surfTrisPtr{}, surfEdgesPtr{},
+    : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_}, surfTrisPtr{}, surfEdgesPtr{},
       surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{category} {
     ;
 }
@@ -687,7 +686,8 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
                 if (!asBoundary) {
                     BCorder = verts("BCorder", i);
                     BCtarget = verts.pack(dim_c<3>, "BCtarget", i);
-                    BCfixed = verts("BCfixed", i);
+                    if (verts.hasProperty("BCfixed"))
+                        BCfixed = verts("BCfixed", i);
                 }
                 vtemp("BCorder", voffset + i) = BCorder;
                 vtemp.tuple(dim_c<3>, "BCtarget", voffset + i) = BCtarget;

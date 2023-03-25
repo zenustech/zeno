@@ -296,22 +296,21 @@ struct UnifiedIPCSystemMarkExclusion : INode {
                        int numDofs, SdfViewT sdfv, typename UnifiedIPCSystem::dtiles_t &vtemp,
                        zs::Vector<zs::u8> &marks) {
         using namespace zs;
-        cudaPol(range(numDofs),
-                [sdfv, vtemp = proxy<execspace_e::cuda>({}, vtemp), marks = proxy<execspace_e::cuda>(marks),
-                 includeObject, includeBoundary, coOffset] ZS_LAMBDA(int vi) mutable {
-                    auto pos = vtemp.pack(dim_c<3>, "xn", vi);
-                    auto sdf = sdfv.getSignedDistance(pos);
-                    if (sdf < 0) {
-                        if (includeObject && vi < coOffset)
-                            marks[vi] = 1;
-                        if (includeBoundary && vi >= coOffset)
-                            marks[vi] = 1;
-                    }
-                });
+        constexpr auto space = execspace_e::cuda;
+        cudaPol(range(numDofs), [sdfv, vtemp = proxy<space>({}, vtemp), marks = proxy<space>(marks), includeObject,
+                                 includeBoundary, coOffset] ZS_LAMBDA(int vi) mutable {
+            auto pos = vtemp.pack(dim_c<3>, "xn", vi);
+            auto sdf = sdfv.getSignedDistance(pos);
+            if (sdf < 0) {
+                if (includeObject && vi < coOffset)
+                    marks[vi] = 1;
+                if (includeBoundary && vi >= coOffset)
+                    marks[vi] = 1;
+            }
+        });
     }
     void apply() override {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
 
         auto A = get_input<UnifiedIPCSystem>("ZSUnifiedIPCSystem");
         auto &vtemp = A->vtemp;
