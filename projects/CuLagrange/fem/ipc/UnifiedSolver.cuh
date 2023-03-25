@@ -423,17 +423,17 @@ struct UnifiedIPCSystem : IObject {
         using spmat_t = zs::SparseMatrix<mat3, true>;
         using dyn_hess_t = zs::tuple<pair_t, mat3>;
 
-        using hess2_t = HessianPiece<2, T>;
-        using hess3_t = HessianPiece<3, T>;
-        using hess4_t = HessianPiece<4, T>;
-
         /// @brief dynamic part, mainly for collision constraints
         bool initialized = false;
+
+        // using hess2_t = HessianPiece<2, T>;
+        // using hess3_t = HessianPiece<3, T>;
+        // using hess4_t = HessianPiece<4, T>;
         /// @note initialization: hess.init(allocator, size)
         /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
-        HessianPiece<2, T> hess2;
-        HessianPiece<3, T> hess3;
-        HessianPiece<4, T> hess4;
+        // HessianPiece<2, T> hess2;
+        // HessianPiece<3, T> hess3;
+        // HessianPiece<4, T> hess4;
 
         DynamicBuffer<dyn_hess_t> dynHess;
         /// @brief inherent part
@@ -484,7 +484,7 @@ struct UnifiedIPCSystem : IObject {
         void ComputeNextLevel(int level);
         void AggregationKernel();
 
-        int ReorderRealtime(zs::CudaExecutionPolicy &pol, int cpNum);
+        int ReorderRealtime(zs::CudaExecutionPolicy &pol, int dynNum);
         void PrepareHessian();
 
         void BuildCollisionConnection(zs::CudaExecutionPolicy &pol, zs::Vector<unsigned int> &connectionMsk,

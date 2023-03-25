@@ -60,6 +60,7 @@ void UnifiedIPCSystem::SystemHessian<T>::BuildCollisionConnection(zs::CudaExecut
                                                                   zs::Vector<int> &m_coarseTableSpace, int level) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+#if 0
     pol(range(hess2.count()), [hess2 = proxy<space>(hess2), _pConnect = proxy<space>(m_connectionMsk),
                                _pCoarseSpaceTable = proxy<space>(m_coarseTableSpace), level = level,
                                totalNodes = totalNodes] __device__(int idx) mutable {
@@ -146,10 +147,11 @@ void UnifiedIPCSystem::SystemHessian<T>::BuildCollisionConnection(zs::CudaExecut
         for (int i = 0; i < 4; i++)
             atomicOr(&_connectionMsk[nodeInex[i]], connMsk[i]);
     });
+#endif
 }
 
 template <typename T>
-int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy &pol, int cpNum) {
+int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy &pol, int dynNum) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     //(cudaMemset(d_levelSize, 0, levelnum * sizeof(int2)));
@@ -187,7 +189,7 @@ int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy 
         _fineConnectedMsk[idx] = connectMsk;
     });
 
-    if (cpNum) {
+    if (dynNum) {
         zs::Vector<int> tmp{};
         BuildCollisionConnection(pol, d_fineConnectMask, tmp, -1);
     }
@@ -349,7 +351,7 @@ int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy 
                 }
             });
 
-        if (cpNum)
+        if (dynNum)
             BuildCollisionConnection(pol, d_nextConnectMask, d_coarseSpaceTables, level);
 
         // (cudaMemcpy(&h_clevelSize, d_levelSize.data() + level, sizeof(zs::vec<int, 2>), cudaMemcpyDeviceToHost));
@@ -503,8 +505,8 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
     constexpr auto space = execspace_e::cuda;
     traversed = neighbors._ptrs;
     neighbors._inds = neighborInds;
-    int cpNum = hess2.count() + hess3.count() + hess4.count();
-    ReorderRealtime(pol, cpNum);
+    int dynNum = dynHess.getCount();
+    ReorderRealtime(pol, dynNum);
 
     //(cudaMemset(Pm, 0, totalNumberClusters / BANKSIZE * sizeof(zs::vec<T, 96, 96>)));
     Pm.reset(0);
@@ -538,7 +540,6 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                     atomicAdd(&P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[j][t]);
                 }
             }
-#if 1
             while (levelId < levelnum - 1) {
                 levelId++;
                 row = _goingNext[row];
@@ -551,8 +552,6 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                     }
                 }
             }
-#endif
-#if 1
             if (i != bg) {
                 /// lower half
                 row = spmat._inds[i];
@@ -588,21 +587,22 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                     }
                 }
             }
-#endif
         }
     });
 
     int blockSize = DEFAULT_BLOCKSIZE;
-    int number = hess2.count() * 36;
+    int number = dynNum;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    pol(Collapse{numBlocks, blockSize},
-        [hess2 = proxy<space>(hess2), _goingNext = proxy<space>(d_goingNext), P96 = proxy<space>(Pm), number = number,
-         levelNum = levelnum] __device__(int bro, int trid) mutable {
-            int idx = blockIdx.x * blockDim.x + threadIdx.x;
-            if (idx >= number)
-                return;
+    pol(Collapse{number}, [dynHess = dynHess.port(), _goingNext = proxy<space>(d_goingNext), P96 = proxy<space>(Pm),
+                           number = number, levelNum = levelnum] __device__(int idx) mutable {
+#if 0
+            auto [inds, mat] = dynHess[idx];
+            inds[0], inds[1]
+            mat
+#endif
 
+#if 0
             int Hid = idx / 36;
             int qid = idx % 36;
 
@@ -644,112 +644,8 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                 cPid = vertCid / 32;
                 atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
             }
-        });
-
-    number = hess3.count() * 81;
-    numBlocks = (number + blockSize - 1) / blockSize;
-
-    pol(Collapse{numBlocks, blockSize},
-        [hess3 = proxy<space>(hess3), _goingNext = proxy<space>(d_goingNext), P96 = proxy<space>(Pm), number = number,
-         levelNum = levelnum] __device__(int bro, int trid) mutable {
-            int idx = blockIdx.x * blockDim.x + threadIdx.x;
-            if (idx >= number)
-                return;
-
-            int Hid = idx / 81;
-            int qid = idx % 81;
-
-            int qrid = qid / 9;
-            int qcid = qid % 9;
-
-            int vcid = qcid / 3;
-            int vrid = qrid / 3;
-
-            auto nodeInex = hess3.inds[Hid]; //&(D2Index[Hid].x);
-
-            int vertCid = nodeInex[vcid];
-            int vertRid = nodeInex[vrid];
-            //int Pid = vertCid / 12;
-            int cha = vertCid - vertRid;
-
-            int roffset = qrid % 3;
-            int coffset = qcid % 3;
-
-            double Hval = hess3.hess[Hid][qrid][qcid];
-
-            int cPid = vertCid / 32;
-            int level = 0;
-            while (vertCid / 32 != vertRid / 32 && level < levelNum) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
-            }
-            if (level >= levelNum) {
-                return;
-            }
-            atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
-
-            while (level < levelNum - 1) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
-                atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
-            }
-        });
-
-    number = hess4.count() * 144;
-    numBlocks = (number + blockSize - 1) / blockSize;
-
-    pol(Collapse{numBlocks, blockSize},
-        [hess4 = proxy<space>(hess4), _goingNext = proxy<space>(d_goingNext), P96 = proxy<space>(Pm), number = number,
-         levelNum = levelnum] __device__(int bro, int trid) mutable {
-            int idx = blockIdx.x * blockDim.x + threadIdx.x;
-            if (idx >= number)
-                return;
-
-            int Hid = idx / 144;
-            int qid = idx % 144;
-            int qrid = qid / 12;
-            int qcid = qid % 12;
-
-            int vcid = qcid / 3;
-            int vrid = qrid / 3;
-
-            auto nodeInex = hess4.inds[Hid]; //&(D2Index[Hid].x);
-
-            int vertCid = nodeInex[vcid];
-            int vertRid = nodeInex[vrid];
-            //int Pid = vertCid / 12;
-            int cha = vertCid - vertRid;
-
-            int roffset = qrid % 3;
-            int coffset = qcid % 3;
-
-            double Hval = hess4.hess[Hid][qrid][qcid];
-
-            int cPid = vertCid / 32;
-            int level = 0;
-            while (vertCid / 32 != vertRid / 32 && level < levelNum) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
-            }
-            if (level >= levelNum) {
-                return;
-            }
-            atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
-
-            while (level < levelNum - 1) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
-                atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
-            }
-        });
+#endif
+    });
 
     blockSize = 96 * 3;
     number = totalNumberClusters / BANKSIZE;
