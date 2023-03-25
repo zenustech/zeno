@@ -60,6 +60,28 @@ void UnifiedIPCSystem::SystemHessian<T>::BuildCollisionConnection(zs::CudaExecut
                                                                   zs::Vector<int> &m_coarseTableSpace, int level) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+    pol(Collapse{dynHess.getCount()}, [dynHess = dynHess.port(), _pConnect = proxy<space>(m_connectionMsk),
+                                       _pCoarseSpaceTable = proxy<space>(m_coarseTableSpace), level = level,
+                                       totalNodes = totalNodes] __device__(int idx) mutable {
+        auto nodeInex = zs::get<0>(dynHess[idx]);
+        if (_pCoarseSpaceTable.data() != nullptr) {
+            for (int i = 0; i < 2; i++)
+                nodeInex[i] = _pCoarseSpaceTable[nodeInex[i] + (level - 1) * totalNodes];
+        }
+        unsigned int connMsk[2] = {0};
+
+        unsigned int myId = nodeInex[0];
+        unsigned int otId = nodeInex[1];
+
+        if (myId / BANKSIZE == otId / BANKSIZE) {
+            connMsk[0] = (1U << (otId % BANKSIZE));
+            connMsk[1] = (1U << (myId % BANKSIZE));
+        }
+
+        for (int i = 0; i < 2; i++)
+            atomicOr(&_pConnect[nodeInex[i]], connMsk[i]);
+    });
+
 #if 0
     pol(range(hess2.count()), [hess2 = proxy<space>(hess2), _pConnect = proxy<space>(m_connectionMsk),
                                _pCoarseSpaceTable = proxy<space>(m_coarseTableSpace), level = level,
@@ -594,57 +616,44 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
     int number = dynNum;
     int numBlocks = (number + blockSize - 1) / blockSize;
 
-    pol(Collapse{number}, [dynHess = dynHess.port(), _goingNext = proxy<space>(d_goingNext), P96 = proxy<space>(Pm),
+    pol(Collapse{number}, [dynHess = dynHess.port(), _goingNext = proxy<space>(d_goingNext), Pm = proxy<space>(Pm),
                            number = number, levelNum = levelnum] __device__(int idx) mutable {
-#if 0
-            auto [inds, mat] = dynHess[idx];
-            inds[0], inds[1]
-            mat
-#endif
+        auto [inds, mat] = dynHess[idx];
+        int row = inds[0];
+        int col = inds[1];
 
-#if 0
-            int Hid = idx / 36;
-            int qid = idx % 36;
+        int levelId = 0;
+        while (row / 32 != col / 32 && levelId < levelNum) {
+            levelId++;
+            row = _goingNext[row];
+            col = _goingNext[col];
+        }
+        if (levelId >= levelNum) {
+            return;
+        }
+        int Pid = row / 32;
 
-            int qrid = qid / 6;
-            int qcid = qid % 6;
-
-            int vcid = qcid / 3;
-            int vrid = qrid / 3;
-
-            auto nodeInex = hess2.inds[Hid]; //&(D2Index[Hid].x);
-
-            int vertCid = nodeInex[vcid];
-            int vertRid = nodeInex[vrid];
-            //int Pid = vertCid / 12;
-            int cha = vertCid - vertRid;
-
-            int roffset = qrid % 3;
-            int coffset = qcid % 3;
-
-            double Hval = hess2.hess[Hid][qrid][qcid];
-
-            int cPid = vertCid / 32;
-            int level = 0;
-            while (vertCid / 32 != vertRid / 32 && level < levelNum) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
+        auto &P = Pm[Pid];
+        for (int t = 0; t < 3; t++) {
+            for (int j = 0; j < 3; j++) {
+                atomicAdd(&P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
+                atomicAdd(&P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
             }
-            if (level >= levelNum) {
-                return;
-            }
-            atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
+        }
 
-            while (level < levelNum - 1) {
-                level++;
-                vertCid = _goingNext[vertCid];
-                vertRid = _goingNext[vertRid];
-                cPid = vertCid / 32;
-                atomicAdd(&(P96[cPid][(vertRid % 32) * 3 + roffset][(vertCid % 32) * 3 + coffset]), Hval);
+        while (levelId < levelNum - 1) {
+            levelId++;
+            row = _goingNext[row];
+            col = _goingNext[col];
+            Pid = row / 32;
+            auto &P = Pm[Pid];
+            for (int t = 0; t < 3; t++) {
+                for (int j = 0; j < 3; j++) {
+                    atomicAdd(&P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
+                    atomicAdd(&P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
+                }
             }
-#endif
+        }
     });
 
     blockSize = 96 * 3;
