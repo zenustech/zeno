@@ -182,11 +182,12 @@ void UnifiedIPCSystem::findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPol
     snapshot(PP, PE, PT, csPT);
     do {
         pol(Collapse{numBouDofs},
-            [eles = proxy<space>({}, stInds), exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
-             PP = PP.port(), PE = PE.port(), PT = PT.port(), csPT = csPT.port(), dHat2 = zs::sqr(dHat + xi),
-             thickness = xi + dHat, coOffset = coOffset] __device__(int i) mutable {
+            [eles = proxy<space>({}, stInds), exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp),
+             bvh = proxy<space>(stBvh), PP = PP.port(), PE = PE.port(), PT = PT.port(), csPT = csPT.port(),
+             dHat2 = zs::sqr(dHat + xi), thickness = xi + dHat, coOffset = coOffset] __device__(int i) mutable {
                 auto vi = coOffset + i;
-                if (exclDofs[vi]) return;
+                if (exclDofs[vi])
+                    return;
                 auto p = vtemp.pack(dim_c<3>, "xn", vi);
                 auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
                 auto f = [&](int stI) {
@@ -194,7 +195,8 @@ void UnifiedIPCSystem::findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPol
                     // all affected by sticky boundary conditions
                     if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
                         return;
-                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]]) return;
+                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]])
+                        return;
 
                     auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
                     auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
@@ -271,12 +273,12 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
     snapshot(PP, PE, PT, csPT);
     do {
         pol(range(svInds, "inds", dim_c<1>, int_c),
-            [eles = proxy<space>({}, withBoundary ? *coEles : stInds),
-             exclDofs = proxy<space>(exclDofs),
+            [eles = proxy<space>({}, withBoundary ? *coEles : stInds), exclDofs = proxy<space>(exclDofs),
              vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), PP = PP.port(), PE = PE.port(), PT = PT.port(),
              csPT = csPT.port(), dHat, xi, thickness = xi + dHat,
              voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
-                if (exclDofs[vi]) return;
+                if (exclDofs[vi])
+                    return;
                 // auto vi = front.prim(i);
                 // vi = svInds("inds", vi, int_c);
                 const auto dHat2 = zs::sqr(dHat + xi);
@@ -291,7 +293,8 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                     if (BCorder0 == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
                         vtemp("BCorder", tri[2]) == 3)
                         return;
-                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]]) return;
+                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]])
+                        return;
 
                     auto t0 = vtemp.pack(dim_c<3>, "xn", tri[0]);
                     auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
@@ -371,7 +374,8 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                  csEE = csEE.port(), dHat2 = zs::sqr(dHat + xi), xi, thickness = xi + dHat,
                  voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
                     auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                    if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]]) return;
+                    if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                        return;
 
                     bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
                     auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
@@ -390,7 +394,8 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                         // all affected by sticky boundary conditions
                         if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
                             return;
-                        if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]]) return;
+                        if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                            return;
 
                         auto v2 = vtemp.pack(dim_c<3>, "xn", ejInds[0]);
                         auto v3 = vtemp.pack(dim_c<3>, "xn", ejInds[1]);
@@ -573,10 +578,11 @@ void UnifiedIPCSystem::findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &p
     snapshot(csPT);
     do {
         pol(Collapse{numBouDofs},
-            [eles = proxy<space>({}, stInds), exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stBvh),
-             csPT = csPT.port(), xi, alpha, coOffset = coOffset] __device__(int i) mutable {
+            [eles = proxy<space>({}, stInds), exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp),
+             bvh = proxy<space>(stBvh), csPT = csPT.port(), xi, alpha, coOffset = coOffset] __device__(int i) mutable {
                 auto vi = coOffset + i;
-                if (exclDofs[vi]) return;
+                if (exclDofs[vi])
+                    return;
                 auto p = vtemp.pack(dim_c<3>, "xn", vi);
                 auto dir = vtemp.pack(dim_c<3>, "dir", vi);
                 auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
@@ -586,7 +592,8 @@ void UnifiedIPCSystem::findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &p
                     auto tri = eles.pack(dim_c<3>, "inds", stI, int_c);
                     if (vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 && vtemp("BCorder", tri[2]) == 3)
                         return;
-                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]]) return;
+                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]])
+                        return;
                     csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                 });
             });
@@ -607,10 +614,11 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
     snapshot(csPT);
     do {
         pol(range(svInds, "inds", dim_c<1>, int_c),
-            [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds), exclDofs = proxy<space>(exclDofs), 
-             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh), csPT = csPT.port(), xi, alpha,
-             voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
-                if (exclDofs[vi]) return;
+            [svInds = proxy<space>({}, svInds), eles = proxy<space>({}, withBoundary ? *coEles : stInds),
+             exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(stbvh),
+             csPT = csPT.port(), xi, alpha, voffset = withBoundary ? coOffset : 0] __device__(int vi) mutable {
+                if (exclDofs[vi])
+                    return;
                 auto p = vtemp.pack(dim_c<3>, "xn", vi);
                 auto dir = vtemp.pack(dim_c<3>, "dir", vi);
                 auto bv = bv_t{get_bounding_box(p, p + alpha * dir)};
@@ -624,7 +632,8 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
                     if (vtemp("BCorder", vi) == 3 && vtemp("BCorder", tri[0]) == 3 && vtemp("BCorder", tri[1]) == 3 &&
                         vtemp("BCorder", tri[2]) == 3)
                         return;
-                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]]) return;
+                    if (exclDofs[tri[0]] || exclDofs[tri[1]] || exclDofs[tri[2]])
+                        return;
 
                     csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                 });
@@ -639,11 +648,12 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
         snapshot(csEE);
         do {
             pol(Collapse{seInds.size()},
-                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds), exclDofs = proxy<space>(exclDofs), 
-                 vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), csEE = csEE.port(), xi, alpha,
-                 voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                 exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+                 csEE = csEE.port(), xi, alpha, voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
                     auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                    if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]]) return;
+                    if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                        return;
 
                     bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
                     auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
@@ -665,7 +675,8 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
                         // all affected by sticky boundary conditions
                         if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
                             return;
-                        if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]]) return;
+                        if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                            return;
 
                         csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                     });
@@ -1576,7 +1587,11 @@ void UnifiedIPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
         vtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - vtemp.pack<3>(tempOffset, i);
     });
     // project(cudaPol, "r"); // project right hand side
+#if USE_MAS
+    linsys.precondition(cudaPol, vtemp, "r", "q");
+#else
     precondition(cudaPol, "r", "q");
+#endif
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), pOffset = vtemp.getPropertyOffset("p"),
                                  qOffset = vtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         vtemp.tuple<3>(pOffset, i) = vtemp.pack<3>(qOffset, i);
@@ -1607,7 +1622,11 @@ void UnifiedIPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
                 vtemp.pack(dim_c<3>, rOffset, vi) - alpha * vtemp.pack<3>(tempOffset, vi);
         });
 
+#if USE_MAS
+        linsys.precondition(cudaPol, vtemp, "r", "q");
+#else
         precondition(cudaPol, "r", "q");
+#endif
         double zTrkLast = zTrk;
         zTrk = dot(cudaPol, "q", "r");
         if (zs::isnan(zTrk, zs::exec_seq)) {
@@ -1630,7 +1649,11 @@ void UnifiedIPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
                                      gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
             vtemp.tuple<3>(tempOffset, i) = vtemp.pack<3>(gradOffset, i);
         });
+#if USE_MAS
+        linsys.precondition(cudaPol, vtemp, "grad", "dir");
+#else
         precondition(cudaPol, "grad", "dir");
+#endif
         zeno::log_warn("falling back to gradient descent.");
     }
     cudaPol.sync(true);
@@ -1809,15 +1832,14 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         updateInherentGradientAndHessian(pol, "grad");
         /// prepare linsys.hessx
         updateDynamicGradientAndHessian(pol, "grad");
-        /// prepare diagonal block preconditioner
-        prepareDiagonalPreconditioner(pol);
 
-        /// MAS
+#if USE_MAS
+        // prepare MAS preconditioner
         linsys.buildPreconditioner(pol, *this); // 1
-
-        project(pol, "grad");
-
-        // PREPARE P (INVERSION)
+#else
+        // prepare diagonal block preconditioner
+        prepareDiagonalPreconditioner(pol);
+        // P (INVERSION)
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
@@ -1825,7 +1847,9 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             else
                 vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
         });
+#endif
 
+        project(pol, "grad");
         systemSolve(pol);
 
         // CHECK PN CONDITION

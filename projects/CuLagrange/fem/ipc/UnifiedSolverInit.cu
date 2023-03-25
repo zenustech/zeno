@@ -330,10 +330,16 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::false_c);
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+    /// @note full neighbor info required for MAS
+    linsys.neighbors = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
+    linsys.neighbors.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
+    linsys.neighborInds = linsys.neighbors._inds;
     // no need to initialize (resize) linsys.dynHess (DynamicBuffer) here
 
-    /// @note make sure linsys.spmat/hess2/3/4 are all in valid state before calling this api
+#if USE_MAS
     linsys.initializePreconditioner(pol, *this); // 0
+#endif
+
 #if 0
     {
         puts("begin ordering checking");

@@ -18,6 +18,8 @@
 #include "../SolverUtils.cuh"
 #endif
 
+#define USE_MAS 0
+
 namespace zeno {
 
 struct UnifiedIPCSystem : IObject {
@@ -435,18 +437,63 @@ struct UnifiedIPCSystem : IObject {
 
         DynamicBuffer<dyn_hess_t> dynHess;
         /// @brief inherent part
-        spmat_t spmat{}; // _ptrs, _inds, _vals
+        spmat_t spmat{};     // _ptrs, _inds, _vals
+        spmat_t neighbors{}; // _ptrs, _inds, _vals
+        RM_CVREF_T(neighbors._inds) neighborInds;
         /// @brief preconditioner
         int nLevels;
         int nTotalEntries;
-        zs::Vector<zs::vec<T, 96, 96>> Pm;
+        zs::Vector<zs::vec<T, 96, 96>> Pm, inversePm;
         zs::Vector<zs::vec<T, 3>> Rm, Zm;
+
+        int totalNodes;
+        int levelnum;
+        int totalNumberClusters;
+        zs::vec<int, 2> h_clevelSize;
+
+        zs::Vector<zs::vec<int, 2>> d_levelSize;
+        zs::Vector<int> d_coarseSpaceTables;
+        zs::Vector<int> d_prefixOriginal;
+        zs::Vector<int> d_prefixSumOriginal;
+        zs::Vector<int> d_goingNext;
+        zs::Vector<int> d_denseLevel;
+        zs::Vector<zs::vec<int, 4>> d_coarseTable;
+
+        zs::Vector<unsigned int> d_fineConnectMask;
+        zs::Vector<unsigned int> d_nextConnectMask;
+        zs::Vector<unsigned int> d_nextPrefix;
+        zs::Vector<unsigned int> d_nextPrefixSum;
+
         RM_CVREF_T(spmat._ptrs) traversed;
 
         void initializePreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
         int buildPreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
         void precondition(zs::CudaExecutionPolicy &pol, dtiles_t &vtemp, const zs::SmallString srcTag,
                           const zs::SmallString dstTag);
+
+        void computeNumLevels(int vertNum);
+        //void initPreconditioner(int vertNum, int totalNeighborNum, int4* m_collisonPairs);
+
+        void BuildConnectMaskL0();
+        void PreparePrefixSumL0();
+
+        void BuildLevel1();
+        void BuildConnectMaskLx(int level);
+        void NextLevelCluster(int level);
+        void PrefixSumLx(int level);
+        void ComputeNextLevel(int level);
+        void AggregationKernel();
+
+        int ReorderRealtime(zs::CudaExecutionPolicy &pol, int cpNum);
+        void PrepareHessian();
+
+        void BuildCollisionConnection(zs::CudaExecutionPolicy &pol, zs::Vector<unsigned int> &connectionMsk,
+                                      zs::Vector<int> &coarseTableSpace, int level);
+
+        void BuildMultiLevelR(const double3 *R);
+        void SchwarzLocalXSym();
+
+        void CollectFinalZ(double3 *Z);
     };
     template <zs::execspace_e space, typename T_>
     struct SystemHessianView {
