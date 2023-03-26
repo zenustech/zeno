@@ -1,10 +1,11 @@
 #include "Structures.hpp"
 #include "zensim/container/Bcht.hpp"
+#include "zensim/container/Bht.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/graph/ConnectedComponents.hpp"
-#include "zensim/math/matrix/SparseMatrix.hpp"
+#include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
 #include <cstdlib>
@@ -181,6 +182,115 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {},
                                              {"zs_query"},
                                          });
+
+struct PrimitiveBFS : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+        spmat._vals.resize(spmat.nnz());
+        /// finalize connectivity graph
+        pol(spmat._vals, [](int &v) { v = 1; });
+        puts("done connectivity graph build");
+
+        auto id = get_input2<int>("vert_index");
+        if (id >= pos.size())
+            id = 0;
+
+        std::vector<int> maskOut(pos.size());
+        std::vector<int> levelQueue(pos.size());
+        std::vector<int> nextLevel(pos.size());
+        auto &bfslevel = prim->add_attr<int>("bfs_level");
+        // initial mask
+        maskOut[id] = 1;
+        levelQueue[id] = 1;
+        pol(bfslevel, [](int &l) { l = -1; });
+        bfslevel[id] = 0;
+
+        puts("done init");
+        // bfs
+        int iter = 0;
+        auto allZerosUpdateQueue = [&nextLevel, &levelQueue, &maskOut, &bfslevel, &pol](int iter) -> bool {
+            bool pred = true;
+            pol(zip(nextLevel, levelQueue, maskOut, bfslevel), [&](int &v, int &vnext, int &mask, int &level) {
+                if (v == 1) {
+                    pred = false;
+                    vnext = 1;
+                    mask = 1;
+                    level = iter;
+                }
+            });
+            return pred;
+        };
+        for (iter++;; ++iter) {
+            spmv_mask(pol, spmat, levelQueue, maskOut, nextLevel, wrapv<semiring_e::boolean>{});
+            if (allZerosUpdateQueue(iter))
+                break;
+        }
+        fmt::print("{} bfs levels in total.\n", iter);
+
+        auto lid = get_input2<int>("level_index");
+        auto outPrim = std::make_shared<PrimitiveObject>();
+        outPrim->resize(pos.size());
+        int setSize = 0;
+        for (int i = 0; i != pos.size(); ++i)
+            if (bfslevel[i] == lid)
+                outPrim->attr<zeno::vec3f>("pos")[setSize++] = pos[i];
+        outPrim->resize(setSize);
+
+        set_output("prim", std::move(outPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveBFS, {
+                             {{"PrimitiveObject", "prim"}, {"int", "vert_index", "0"}, {"int", "level_index", "0"}},
+                             {
+                                 {"PrimitiveObject", "prim"},
+                             },
+                             {},
+                             {"zs_query"},
+                         });
 
 struct PrimitiveProject : INode {
     virtual void apply() override {
