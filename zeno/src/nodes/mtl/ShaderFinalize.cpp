@@ -73,11 +73,11 @@ struct ShaderFinalize : INode {
             {1, "vol_depth"},
             {1, "vol_absorption"},
             {1, "vol_scattering"},
-            {1, "vol_anisotropy"},
 
-            {3, "vol_sample_albedo"},
-            {3, "vol_sample_emission"},
+            {1, "vol_sample_anisotropy"},
             {1, "vol_sample_density"},
+            {3, "vol_sample_emission"},
+            {3, "vol_sample_albedo"},
 
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
@@ -127,11 +127,12 @@ struct ShaderFinalize : INode {
             get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
             get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("vol_anisotropy", std::make_shared<NumericObject>(float(0))),
 
-            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
-            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
+
+            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
         });
         auto commonCode = em.getCommonCode();
 
@@ -264,11 +265,11 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "vol_depth",     "99"},
         {"float", "vol_absorption", "1"},
         {"float", "vol_scattering", "1"},
-        {"float", "vol_anisotropy", "0"},
-        
-        {"vec3f", "vol_sample_albedo", "1,1,1"},
-        {"vec3f", "vol_sample_emission", "0,0,0"},
+
+        {"float", "vol_sample_anisotropy", "0"},
         {"float", "vol_sample_density", "0"},
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"vec3f", "vol_sample_albedo", "1,1,1"},
     },
     {
         {"MaterialObject", "mtl"},

@@ -5,6 +5,8 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
+// #include <cuda_fp16.h>
+
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/Ray.h>
 #include <nanovdb/util/HDDA.h>
@@ -24,41 +26,38 @@ inline __device__ float _LERP_(float t, float s1, float s2)
     return fma(t, s2, fma(-t, s1, s1));
 }
 
-template <typename Acc>
+template <typename Acc, int Order>
 inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
 
-        // using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, 1, true>;
-        // return Sampler(acc)(point_indexd);
+        using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, Order, true>;
+        return Sampler(acc)(point_indexd);
 
         //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
         //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
 
-    auto point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd); 
-    auto point_a = nanovdb::Coord(point_floor[0], point_floor[1], point_floor[2]);
+    // auto point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd); 
+    // auto point_a = nanovdb::Coord(point_floor[0], point_floor[1], point_floor[2]);
 
-        auto value_000 = acc.getValue(point_a);
-        auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
+    //     auto value_000 = acc.getValue(point_a);
+    //     auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
+    //     auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
+    //     auto value_110 = acc.getValue(point_a + nanovdb::Coord(1, 1, 0));
+    //     auto value_001 = acc.getValue(point_a + nanovdb::Coord(0, 0, 1));
+    //     auto value_101 = acc.getValue(point_a + nanovdb::Coord(1, 0, 1));
+    //     auto value_011 = acc.getValue(point_a + nanovdb::Coord(0, 1, 1));
+    //     auto value_111 = acc.getValue(point_a + nanovdb::Coord(1, 1, 1));
 
-        auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
-        auto value_110 = acc.getValue(point_a + nanovdb::Coord(1, 1, 0));
+    // auto delta = point_indexd - point_floor; 
 
-        auto value_001 = acc.getValue(point_a + nanovdb::Coord(0, 0, 1));
-        auto value_101 = acc.getValue(point_a + nanovdb::Coord(1, 0, 1));
-
-        auto value_011 = acc.getValue(point_a + nanovdb::Coord(0, 1, 1));
-        auto value_111 = acc.getValue(point_a + nanovdb::Coord(1, 1, 1));
-
-    auto delta = point_indexd - point_floor; 
-
-        auto value_00 = _LERP_(delta[0], value_000, value_100);
-        auto value_10 = _LERP_(delta[0], value_010, value_110);
-        auto value_01 = _LERP_(delta[0], value_001, value_101);
-        auto value_11 = _LERP_(delta[0], value_011, value_111);
+    //     auto value_00 = _LERP_(delta[0], value_000, value_100);
+    //     auto value_10 = _LERP_(delta[0], value_010, value_110);
+    //     auto value_01 = _LERP_(delta[0], value_001, value_101);
+    //     auto value_11 = _LERP_(delta[0], value_011, value_111);
         
-        auto value_0 = _LERP_(delta[1], value_00, value_10);
-        auto value_1 = _LERP_(delta[1], value_01, value_11);
+    //     auto value_0 = _LERP_(delta[1], value_00, value_10);
+    //     auto value_1 = _LERP_(delta[1], value_01, value_11);
 
-    return _LERP_(delta[2], value_0, value_1);
+    // return _LERP_(delta[2], value_0, value_1);
 }
 
 struct VolumeIn {
@@ -66,27 +65,27 @@ struct VolumeIn {
 };
 
 struct VolumeOut {
-    float density;
     float max_density;
+    float density;
 
     float anisotropy;
-
-    vec3 albedo;    
     vec3 emission;
+    vec3 albedo;
 };
 
 #define USING_VDB 1
 
+template <int Order>
 static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos) {
 
     const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
 
+    auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
+    pos_indexed = _grid->worldToIndexF(pos_indexed);
     //_grid->tree().root().maximum();
 
-    auto pos_indexd = _grid->worldToIndexF(reinterpret_cast<const nanovdb::Vec3f&>(att_pos));
-
-    return vec2 {linearSampling(_acc, pos_indexd), _grid->tree().root().maximum() };
+    return vec2 { linearSampling<decltype(_acc), Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
 }
 
 static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn const &attrs) {
@@ -102,39 +101,21 @@ static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn con
     auto vdb_grids = sbt_data->vdb_grids;
     auto vdb_max_v = sbt_data->vdb_max_v;
 
-    //GENERATED_BEGIN_MARK
-        auto BlackbodyTempOffset = 0.f;
-        auto BlackbodyTempScale = 100.f;
-        auto BlackbodyIntensity = 100.f;
-        
-        auto vol_anisotropy = 0.0f;
-
-        auto vol_sample_albedo = vec3(1.0f);
-        auto vol_sample_emission = vec3(0.0f);
-
+    //GENERATED_BEGIN_MARK   
+        auto vol_sample_anisotropy = 0.0f;
         auto vol_sample_density = 0.0f;
 
+        auto vol_sample_emission = vec3(0.0f);
+        auto vol_sample_albedo = vec3(1.0f);
     //GENERATED_END_MARK
 
 #if USING_VDB
 
-    //vol_sample_density = samplingVDB(vdb_grids[0], att_pos);
-
-    // float temp = vol_sample_temperature;
-    // if (temp > 0) {
-    //     float scale = temp / att_max_temp;
-    //     scale = powf(scale, 4);
-
-    //     float kelvin = temp * BlackbodyTempScale;
-
-    //     emission = fakeBlackBody(kelvin); // Normalized color;
-    //     emission *= scale * BlackbodyIntensity;
-    // } 
-
     VolumeOut output;
+
+    output.anisotropy = clamp(vol_sample_anisotropy, -0.99, 0.99);;
     output.density = vol_sample_density;
 
-    output.anisotropy = clamp(vol_anisotropy, -0.99, 0.99);;
     output.emission = vol_sample_emission;
     output.albedo = vol_sample_albedo;
 
@@ -399,8 +380,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         if (rnd(prd->seed) < v_density) {
 
-            scattering = make_float3(sigma_s / sigma_t);
-
             float3 new_dir; 
             pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
                 
@@ -416,8 +395,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
             ray_dir = new_dir;
             break;
         } else {
-            //scattering = scattering / make_float3(sigma_s / sigma_t);
-            scattering = make_float3(1.0f);
             v_density = 0; 
         } 
     }

@@ -1932,17 +1932,15 @@ void optixupdatematerial(std::vector<bool> const            &markers,
     }
 
     CppTimer theTimer;
+    theTimer.tick();
     
     uint task_count = OptixUtil::rtMaterialShaders.size();
-    std::vector<tbb::task_group> task_groups(task_count);
-
-    theTimer.tick();
-
+    //std::vector<tbb::task_group> task_groups(task_count);
     for(int i=0; i<task_count; ++i)
     {
-        OptixUtil::_compile_group.run([&shaders, &task_groups, i] () {
+        OptixUtil::_compile_group.run([&shaders, i] () {
             
-            std::cout<<"now compiling "<<i<<"'th shader"<<std::endl;
+            printf("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)==false)
             {
                 std::cout<<"program compile failed, using default"<<std::endl;
@@ -1958,7 +1956,6 @@ void optixupdatematerial(std::vector<bool> const            &markers,
     }
 
     OptixUtil::_compile_group.wait();
-
     theTimer.tock("Done Optix Shader Compile:");
 
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
