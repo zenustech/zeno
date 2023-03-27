@@ -292,6 +292,114 @@ ZENDEFNODE(PrimitiveBFS, {
                              {"zs_query"},
                          });
 
+struct PrimitiveColoring : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<u32, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+        spmat._vals.resize(spmat.nnz());
+        /// finalize connectivity graph
+        pol(spmat._vals, [](u32 &v) { v = 1; });
+        puts("done connectivity graph build");
+
+        auto &colors = prim->add_attr<float>("colors"); // 0 by default
+        // init weights
+        std::vector<u32> minWeights(pos.size());
+        std::vector<u32> weights(pos.size());
+        {
+            bht<int, 1, int> tab{spmat.get_allocator(), pos.size() * 2};
+            tab.reset(pol, true);
+            pol(enumerate(weights), [tab1 = proxy<space>(tab)](int seed, u32 &w) mutable {
+                using tab_t = RM_CVREF_T(tab);
+                std::mt19937 rng;
+                rng.seed(seed);
+                u32 v = rng() % (u32)4294967291u;
+                // prevent weight duplications
+                while (tab1.insert(v) != tab_t::sentinel_v)
+                    v = rng() % (u32)4294967291u;
+                w = v;
+            });
+        }
+        std::vector<int> maskOut(pos.size());
+
+        puts("done init");
+        // bfs
+        int iter = 0;
+        auto update = [&](int iter) -> bool {
+            bool done = true;
+            pol(zip(weights, minWeights, maskOut, colors), [&](u32 &w, u32 &mw, int &mask, float &color) {
+                //if (w < mw && mask == 0)
+                if (w < mw && mw != limits<u32>::max()) {
+                    done = false;
+                    mask = 1;
+                    color = iter;
+                    w = limits<u32>::max();
+                }
+            });
+            return done;
+        };
+        for (iter++;; ++iter) {
+            // fmt::print("iterating {}-th time\n", iter);
+            spmv_mask(pol, spmat, weights, maskOut, minWeights, wrapv<semiring_e::min_times>{});
+            if (update(iter))
+                break;
+        }
+        fmt::print("{} colors in total.\n", iter);
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveColoring, {
+                                  {{"PrimitiveObject", "prim"}},
+                                  {
+                                      {"PrimitiveObject", "prim"},
+                                  },
+                                  {},
+                                  {"zs_query"},
+                              });
+
 struct PrimitiveProject : INode {
     virtual void apply() override {
         using bvh_t = zs::LBvh<3, int, float>;
