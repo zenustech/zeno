@@ -35,14 +35,14 @@ namespace VERTEX_FACE_SQRT_COLLISION {
     ///////////////////////////////////////////////////////////////////////
     constexpr REAL psi(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
-        const VECTOR3 bary = getInsideBarycentricCoordinates(v);
+        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
         return psi(v,bary,_mu,_nu,_eps);
     }
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 //  our normal pointing outward
-    constexpr VECTOR12 gradient(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr VECTOR12 gradient(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
         // REAL _inverseEps = 1e-6;
         using DREAL = double;
@@ -51,7 +51,9 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2]; 
-        const bool reversal = !reverse(v,e);
+        bool reversal = !reverse(v,e);
+        if(collide_from_inside)
+            reversal = !reversal;
         
         // remember we had to reorder vertices in a wonky way
         const VECTOR3 xs = bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3];
@@ -95,15 +97,15 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    constexpr VECTOR12 gradient(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr VECTOR12 gradient(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
-        const VECTOR3 bary = getInsideBarycentricCoordinates(v);
-        return gradient(v, bary, _mu, _nu, _eps);
+        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+        return gradient(v, bary, _mu, _nu, _eps,collide_from_inside);
     }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    constexpr MATRIX12 hessian(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr MATRIX12 hessian(const VECTOR3 v[4], const VECTOR3& bary,const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
         // REAL _inverseEps = 1e-6;
 
@@ -112,8 +114,12 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         e[0] = v[3] - v[2];
         e[1] = v[0] - v[2];
         e[2] = v[1] - v[2]; 
-        const bool reversal = !reverse(v,e);
-        
+        bool reversal = !reverse(v,e);
+        if(collide_from_inside)
+            reversal = !reversal;
+
+#if 0
+
         using DREAL = double;
 
         // remember we had to reorder vertices in a wonky way
@@ -142,13 +148,16 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
         alpha = alpha > 0 ? alpha : 0;
         beta = beta > 0 ? beta : 0;
+        return (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
+        // auto H = (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
+        // make_pd(H);
+        // return H; 
+
 
         // return (REAL)2.0 * _mu * (((REAL)1.0 / tDott - springDiff / (tDott * tMagnitude)) * (zs::dyadic_prod(product,product)) +
         //                     (springDiff / tMagnitude) * tDiff.transpose() * tDiff); 
 
         // return (REAL)2.0 * _mu * (alpha * (zs::dyadic_prod(product,product)) + beta * tDiff.transpose() * tDiff); 
-
-        return (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
 
         // could instead try to trap all the inverses and hand back something fixed up,
         // but consistency is not guaranteed, so let's just zero it out at the first
@@ -157,15 +166,84 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         //const REAL tDottInv = (zs::abs(tDott) > _inverseEps) ? 1.0 / tDott : 1.0;
         //return 2.0 * _mu * ((tDottInv - springDiff / (tDott * tMagnitude)) * (product * product.transpose()) +
         //                    (springDiff * tMagnitudeInv) * tDiff.transpose() * tDiff); 
+
+#else
+        const VECTOR3 xs = bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3];
+        const VECTOR3 t = v[0] - xs;  
+
+        const REAL tDott = t.dot(t);
+        const REAL tMagnitude = zs::sqrt(tDott);
+
+
+        const REAL springDiff = (reversal) ? tMagnitude + _eps : tMagnitude - _eps;
+        const MATRIX3x12 tDiff = tDiffPartial(bary); 
+
+        // get the spring length, non-zero rest-length
+        const VECTOR12 product = tDiff.transpose() * t;
+
+        auto res =  (REAL)2.0 * _mu * (((REAL)1.0 / tDott - springDiff / (tDott * tMagnitude)) * (zs::dyadic_prod(product,product)) + (springDiff / tMagnitude) * tDiff.transpose() * tDiff);   
+        make_pd(res);
+        return res;    
+
+#endif
     }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    constexpr MATRIX12 hessian(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
+    constexpr MATRIX12 hessian(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
-        const VECTOR3 bary = getInsideBarycentricCoordinates(v);
-        return hessian(v, bary,_mu,_nu,_eps);
+        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+        return hessian(v, bary,_mu,_nu,_eps,collide_from_inside);
     }
+
+    // constexpr VECTOR12 damp_gradient(const VECTOR v[4],const VECTOR vp[4],const REAL& _dt, const VECTOR3& bary,const REAL& _kd,const REAL& _mu,const REAL& _nu,const REAL& eps){
+    //     using DREAL = double;
+
+    //     // const VECTOR3 vs = bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3];
+    //     const VECTOR3 t = v[0] - (bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3]);// relative position
+    //     // const VECTOR3 vps = bary[0] * vp[1] + bary[1] * vp[2] + bary[2] * vp[3];
+    //     const VECTOR3 tp = vp[0] - (bary[0] * vp[1] + bary[1] * vp[2] + bary[2] * vp[3]);// previous relative position
+    //     const VECTOR3 vel_t = (t - tp) / _dt;// relative velocity
+
+    //     const MATRIX3x12 tDiff = tDiffPartial(bary); 
+    //     const auto tn = t.template cast<DREAL>().normalized().template cast<REAL>();
+
+    //     const DREAL project_vel_t = vel_t.dot(tn);
+    //     return (REAL)2.0 * _mu * _kd * (REAL)project_vel_t * tDiff.transpose() * tn;
+    // }
+
+    // constexpr VECTOR12 damp_gradient(const VECTOR v[4],const VECTOR vp[4],const REAL& _dt,const REAL& _kd,const REAL& _mu,const REAL& _nu,const REAL& eps)
+    // {
+    //     const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+    //     return damp_gradient(v, vp,_dt,bary,_kd, _mu,_nu,eps);
+    // }
+
+    // const MATRIX12 damp_hessian(const VECTOR v[4],const VECTOR vp[4],const REAL& _dt, const VECTOR3& bary,const REAL& _kd,const REAL& _mu,const REAL& _nu,const REAL& eps) {
+    //     using DREAL = double;
+
+    //     // const VECTOR3 vs = bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3];
+    //     const VECTOR3 t = v[0] - (bary[0] * v[1] + bary[1] * v[2] + bary[2] * v[3]);// relative position
+    //     // const VECTOR3 vps = bary[0] * vp[1] + bary[1] * vp[2] + bary[2] * vp[3];
+    //     const VECTOR3 tp = vp[0] - (bary[0] * vp[1] + bary[1] * vp[2] + bary[2] * vp[3]);// previous relative position
+    //     const VECTOR3 vel_t = (t - tp) / _dt;// relative velocity
+
+    //     const MATRIX3x12 tDiff = tDiffPartial(bary); 
+    //     const REAL tDott = t.dot(t);
+    //     const REAL tMagnitude = zs::sqrt(tDott);
+
+    //     const VECTOR12 product = tDiff.transpose() * t;
+    //     const VECTOR12 vproduct = tDiff.transpose() * vel_t;
+
+    //     const DREAL project_vel_t = vel_t.dot(tn);
+
+    //     return (T)2.0 * mu * kd * (
+    //         ((T)1.0/_dt/tDott - (T)2.0*project_vel_t/tMagnitude/tDott)*zs::dyadic_prod(product,product) +
+    //             project_vel_t/tDott * zs::dyadic_prod(tDiff) +
+    //             (T)1.0/tDott * zs::dyadic_prod(product,product)
+    //     );
+
+    // }
+
 
 
 
