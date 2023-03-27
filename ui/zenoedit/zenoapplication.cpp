@@ -18,6 +18,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     , m_server(nullptr)
 #endif
 {
+    initMetaTypes();
     initFonts();
     initStyleSheets();
     m_errSteam.registerMsgHandler();
@@ -44,6 +45,12 @@ QString ZenoApplication::readQss(const QString& qssPath)
     ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     ZASSERT_EXIT(ret, "");
     return ZenoStyle::dpiScaleSheet(file.readAll());
+}
+
+void ZenoApplication::initMetaTypes() 
+{
+    QMetaType::registerEqualsComparator<UI_VECTYPE>();
+    QMetaType::registerEqualsComparator<CURVES_DATA>();
 }
 
 void ZenoApplication::initStyleSheets()

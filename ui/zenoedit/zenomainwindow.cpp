@@ -603,9 +603,11 @@ void ZenoMainWindow::initTimelineDock()
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         if (m_bAlways) {
+            m_pTimeline->togglePlayButton(false);
+            int nFrame = m_pTimeline->value();
             QVector<DisplayWidget *> views = viewports();
             for (DisplayWidget *view : views) {
-                view->onRun();
+                view->onRun(nFrame, nFrame);
             }
         }
     });
@@ -1263,6 +1265,8 @@ void ZenoMainWindow::setAlways(bool bAlways)
 {
     m_bAlways = bAlways;
     emit alwaysModeChanged(bAlways);
+    if (m_bAlways)
+        m_pTimeline->togglePlayButton(false);
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)

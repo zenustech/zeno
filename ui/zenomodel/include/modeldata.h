@@ -320,6 +320,9 @@ struct CURVE_RANGE {
     qreal xTo;
     qreal yFrom;
     qreal yTo;
+    bool operator==(const CURVE_RANGE &rhs) const {
+        return xFrom == rhs.xFrom && xTo == rhs.xTo && yFrom == rhs.yFrom && yTo == rhs.yTo;
+    }
 };
 
 struct CURVE_POINT {
@@ -327,6 +330,10 @@ struct CURVE_POINT {
     QPointF leftHandler;
     QPointF rightHandler;
     int controlType;
+    bool operator==(const CURVE_POINT &rhs) const {
+                return point == rhs.point && leftHandler == rhs.leftHandler && rightHandler == rhs.rightHandler &&
+                       controlType == rhs.controlType;
+    }
 };
 
 struct CURVE_DATA {
@@ -336,6 +343,10 @@ struct CURVE_DATA {
     CURVE_RANGE rg;
     bool visible;
     bool timeline;
+    bool operator==(const CURVE_DATA &rhs) const {
+        return key == rhs.key && cycleType == rhs.cycleType && visible == rhs.visible &&
+                       timeline == rhs.timeline && rg == rhs.rg && points == rhs.points;
+    }
 };
 
 typedef QMap<QString, CURVE_DATA> CURVES_DATA;
