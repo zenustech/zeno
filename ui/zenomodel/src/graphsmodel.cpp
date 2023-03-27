@@ -1296,6 +1296,8 @@ int GraphsModel::ModelSetData(
         return -1;
 
     const QVariant& oldValue = pTargetModel->data(idx, role);
+    if (oldValue == value)
+        return -1;
     ModelDataCommand* pCmd = new ModelDataCommand(this, idx, oldValue, value, role);
     m_stack->push(pCmd);        //will call model->setData method.
     return 0;
