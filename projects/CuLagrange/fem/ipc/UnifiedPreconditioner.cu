@@ -254,7 +254,7 @@ int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy 
 
             if (electedPrefix == 0) {
                 //prefixSum[warpId]++;
-                atomicAdd(prefixSum + localWarpId, 1);
+                atomic_add(exec_cuda, prefixSum + localWarpId, 1);
             }
 
             if (laneId == 0) {
@@ -422,7 +422,7 @@ int UnifiedIPCSystem::SystemHessian<T>::ReorderRealtime(zs::CudaExecutionPolicy 
                 unsigned int electedPrefix = __popc(connMsk & _LanemaskLt(laneId));
 
                 if (electedPrefix == 0) {
-                    atomicAdd(prefixSum + localWarpId, 1);
+                    atomic_add(exec_cuda, prefixSum + localWarpId, 1);
                 }
 
                 if (laneId == 0)
@@ -559,7 +559,7 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
             auto &P = Pm[Pid];
             for (int j = 0; j < 3; j++) {
                 for (int t = 0; t < 3; t++) {
-                    atomicAdd(&P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[j][t]);
+                    atomic_add(exec_cuda, &P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[j][t]);
                 }
             }
             while (levelId < levelnum - 1) {
@@ -570,7 +570,7 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                 auto &P = Pm[Pid];
                 for (int j = 0; j < 3; j++) {
                     for (int t = 0; t < 3; t++) {
-                        atomicAdd(&P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[j][t]);
+                        atomic_add(exec_cuda, &P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[j][t]);
                     }
                 }
             }
@@ -592,7 +592,7 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                 auto &P = Pm[Pid];
                 for (int j = 0; j < 3; j++) {
                     for (int t = 0; t < 3; t++) {
-                        atomicAdd(&P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[t][j]);
+                        atomic_add(exec_cuda, &P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[t][j]);
                     }
                 }
 
@@ -604,7 +604,7 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
                     auto &P = Pm[Pid];
                     for (int j = 0; j < 3; j++) {
                         for (int t = 0; t < 3; t++) {
-                            atomicAdd(&P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[t][j]);
+                            atomic_add(exec_cuda, &P[(row % 32) * 3 + j][(col % 32) * 3 + t], mat[t][j]);
                         }
                     }
                 }
@@ -636,8 +636,8 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
         auto &P = Pm[Pid];
         for (int t = 0; t < 3; t++) {
             for (int j = 0; j < 3; j++) {
-                atomicAdd(&P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
-                atomicAdd(&P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
+                atomic_add(exec_cuda, &P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
+                atomic_add(exec_cuda, &P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
             }
         }
 
@@ -649,8 +649,8 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
             auto &P = Pm[Pid];
             for (int t = 0; t < 3; t++) {
                 for (int j = 0; j < 3; j++) {
-                    atomicAdd(&P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
-                    atomicAdd(&P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
+                    atomic_add(exec_cuda, &P[(row % 32) * 3 + t][(col % 32) * 3 + j], mat[t][j]);
+                    atomic_add(exec_cuda, &P[(col % 32) * 3 + t][(row % 32) * 3 + j], mat[j][t]);
                 }
             }
         }
@@ -855,12 +855,12 @@ void UnifiedIPCSystem::SystemHessian<T>::precondition(zs::CudaExecutionPolicy &p
                     while (level < levelnum - 1) {
                         level++;
                         idx = _goingNext[idx];
-                        atomicAdd(&_multiLR[idx][0], _R[0]);
-                        atomicAdd(&_multiLR[idx][1], _R[1]);
-                        atomicAdd(&_multiLR[idx][2], _R[2]);
-                        //atomicAdd((&((_multiLR + idx)->x)), r.x);
-                        //atomicAdd((&((_multiLR + idx)->x) + 1), r.y);
-                        //atomicAdd((&((_multiLR + idx)->x) + 2), r.z);
+                        atomic_add(exec_cuda, &_multiLR[idx][0], _R[0]);
+                        atomic_add(exec_cuda, &_multiLR[idx][1], _R[1]);
+                        atomic_add(exec_cuda, &_multiLR[idx][2], _R[2]);
+                        //atomic_add(exec_cuda, (&((_multiLR + idx)->x)), r.x);
+                        //atomic_add(exec_cuda, (&((_multiLR + idx)->x) + 1), r.y);
+                        //atomic_add(exec_cuda, (&((_multiLR + idx)->x) + 2), r.z);
                     }
                 }
                 return;
@@ -870,18 +870,18 @@ void UnifiedIPCSystem::SystemHessian<T>::precondition(zs::CudaExecutionPolicy &p
                 c_sumResidual[threadIdx.x] = 0;
                 c_sumResidual[threadIdx.x + DEFAULT_BLOCKSIZE] = 0;
                 c_sumResidual[threadIdx.x + 2 * DEFAULT_BLOCKSIZE] = 0;
-                atomicAdd(c_sumResidual + localWarpId * 32 + elected_lane, _R[0]);
-                atomicAdd(c_sumResidual + localWarpId * 32 + elected_lane + DEFAULT_BLOCKSIZE, _R[1]);
-                atomicAdd(c_sumResidual + localWarpId * 32 + elected_lane + 2 * DEFAULT_BLOCKSIZE, _R[2]);
+                atomic_add(exec_cuda, c_sumResidual + localWarpId * 32 + elected_lane, _R[0]);
+                atomic_add(exec_cuda, c_sumResidual + localWarpId * 32 + elected_lane + DEFAULT_BLOCKSIZE, _R[1]);
+                atomic_add(exec_cuda, c_sumResidual + localWarpId * 32 + elected_lane + 2 * DEFAULT_BLOCKSIZE, _R[2]);
 
                 unsigned int electedPrefix = __popc(connectMsk & _LanemaskLt(laneId));
                 if (electedPrefix == 0) {
                     while (level < levelnum - 1) {
                         level++;
                         idx = _goingNext[idx];
-                        atomicAdd(&_multiLR[idx][0], c_sumResidual[threadIdx.x]);
-                        atomicAdd(&_multiLR[idx][1], c_sumResidual[threadIdx.x + DEFAULT_BLOCKSIZE]);
-                        atomicAdd(&_multiLR[idx][2], c_sumResidual[threadIdx.x + DEFAULT_BLOCKSIZE * 2]);
+                        atomic_add(exec_cuda, &_multiLR[idx][0], c_sumResidual[threadIdx.x]);
+                        atomic_add(exec_cuda, &_multiLR[idx][1], c_sumResidual[threadIdx.x + DEFAULT_BLOCKSIZE]);
+                        atomic_add(exec_cuda, &_multiLR[idx][2], c_sumResidual[threadIdx.x + DEFAULT_BLOCKSIZE * 2]);
                     }
                 }
             }

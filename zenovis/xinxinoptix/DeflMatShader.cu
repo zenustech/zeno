@@ -40,6 +40,8 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_sheenTint = 0.0;
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
+    float mat_clearcoatRoughness = 0.0;
+    float mat_clearcoatIOR = 1.5;
     float mat_opacity = 0.0;
     float mat_specTrans = 0.0;
     float mat_ior = 1.0;
@@ -75,6 +77,8 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.sheenTint = mat_sheenTint;
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
         mats.clearcoatGloss = mat_clearcoatGloss;
+        mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
+        mats.clearcoatIOR = mat_clearcoatIOR;
         mats.opacity = mat_opacity;
         mats.nrm = mat_normal;
         mats.emission = mat_emission;
@@ -475,6 +479,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto sheenTint = mats.sheenTint;
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
+    auto ccRough = mats.clearcoatRoughness;
+    auto ccIor = mats.clearcoatIOR;
     auto opacity = mats.opacity;
     auto flatness = mats.flatness;
     auto specTrans = mats.specTrans;
@@ -582,6 +588,8 @@ extern "C" __global__ void __closesthit__radiance()
                 sheenTint,
                 clearcoat,
                 clearcoatGloss,
+                ccRough,
+                ccIor,
                 flatness,
                 specTrans,
                 scatterDistance,
@@ -776,7 +784,7 @@ extern "C" __global__ void __closesthit__radiance()
 
                 float3 lbrdf = DisneyBSDF::EvaluateDisney(
                     basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-                    clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
+                    clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
                     dot(N, L));
 
@@ -805,7 +813,7 @@ extern "C" __global__ void __closesthit__radiance()
                        &shadow_prd);
         lbrdf = DisneyBSDF::EvaluateDisney(
             basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-            clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
+            clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
