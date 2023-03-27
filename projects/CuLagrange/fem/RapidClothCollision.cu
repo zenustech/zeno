@@ -631,7 +631,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto inds = tempPP.pack(dim_c<2>, "inds", i, int_c); 
         auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto xj = vtemp.pack(dim_c<3>, tag, inds[1]);
-        auto xij_norm = (xi - xj).norm() + eps_c; 
+        auto dist = (xi - xj).norm(); 
+        auto xij_norm = dist + eps_c; 
         auto delta_inv = 1.0f / delta; 
         auto val = xij_norm * delta_inv - 1.0f; 
         if (val >= 0)
@@ -646,7 +647,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("vN", consInd) = 2; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = tempPP("dist", i); 
+        tempCons("dist", consInd, T_c) = dist; 
     }); 
     ope = oPP.getVal(); 
 
@@ -655,13 +656,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempPE = proxy<space>({}, tempPE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oPE = proxy<space>(oPE), 
-                    delta = (double)delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPE.pack(dim_c<3>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto e0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto e1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto area = (e0 - p).cross(e1 - p).norm(); 
+        auto dist = area / ((e1 - e0).norm() + eps_c); 
         T coef = (e1 - e0).norm() * delta; 
         auto val = area / coef - 1.0f; 
         if (val >= 0)
@@ -677,7 +679,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("vN", consInd) = 3; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = tempPE("dist", i); 
+        tempCons("dist", consInd, T_c) = dist; 
     }); 
     opt = oPE.getVal(); 
 
@@ -689,19 +691,11 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     delta = delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
-        auto fl_p = vtemp.pack(dim_c<3>, tag, inds[0]); 
-        auto fl_t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
-        auto fl_t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
-        auto fl_t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        auto fl3_to_db3 = [](const auto& v)
-        {
-            return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
-        }; 
-        auto p = fl3_to_db3(fl_p); 
-        auto t0 = fl3_to_db3(fl_t0); 
-        auto t1 = fl3_to_db3(fl_t1); 
-        auto t2 = fl3_to_db3(fl_t2); 
-        zs::vec<double, 3, 3> mat;
+        auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        zs::vec<T, 3, 3> mat;
         for (int d = 0; d < 3; d++)
         {
             mat(d, 0) = t0(d) - p(d); 
@@ -710,7 +704,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }
         auto vol = determinant(mat); 
         auto sgn = vol > 0 ? 1.0f : -1.0f; 
-        auto coef = sgn * (t1 - t0).cross(t2 - t0).norm() * delta; 
+        auto area = (t1 - t0).cross(t2 - t0).norm(); 
+        auto coef = sgn * area * delta; 
+        auto dist = zs::abs(vol) / (area + eps_c); 
         if (zs::abs(coef) < eps_c)
             coef = sgn * eps_c; 
         auto val = vol / coef - 1.0f; 
@@ -733,7 +729,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("vN", consInd) = 4; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = tempPT("dist", i); 
+        tempCons("dist", consInd, T_c) = dist; 
     }); 
     oee = oPT.getVal(); 
 
@@ -742,23 +738,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempEE = proxy<space>({}, tempEE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
-                    delta = (double)delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
-        using dvec3 = zs::vec<double, 3>; 
-        auto fl_ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
-        auto fl_ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
-        auto fl_ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
-        auto fl_ej1 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        auto fl3_to_db3 = [](const auto& v)
-        {
-            return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
-        }; 
-        auto ei0 = fl3_to_db3(fl_ei0); 
-        auto ei1 = fl3_to_db3(fl_ei1); 
-        auto ej0 = fl3_to_db3(fl_ej0); 
-        auto ej1 = fl3_to_db3(fl_ej1); 
-        zs::vec<double, 3, 3> mat, rMat;
+        auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
+        auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
+        auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
+        auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]);  
+        zs::vec<T, 3, 3> mat, rMat;
         for (int d = 0; d < 3; d++)
         {
             mat(d, 0) = ei1(d) - ei0(d); 
@@ -803,7 +790,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("vN", consInd) = 4; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = tempEE("dist", i); 
+        tempCons("dist", consInd, T_c) = dist; 
     }); 
     nCons = oEE.getVal(); 
     nae = opp, napp = ope - opp, nape = opt - ope, napt = oee - opt, naee = nCons - opt; 
@@ -984,6 +971,7 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     // check maj 
                     if (zs::abs(maj) < eps_c)
                     {
+                        printf("\t\t\t[tiny maj!!!] at ci = %d\n", i); 
                         return; 
                     }
                     auto newLam = zs::max(rhs / maj, 0.f); 
@@ -1008,7 +996,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
     consColoring(pol); 
     // TODO: project dof on boundaries? 
     solveLCP(pol); 
-    // y(l+1) = M^{-1} * (J(l)).T * lambda + y[k+1]
+    // y(l+1) = M^{-1} * (J(l)).T * lambda + y(l)
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
@@ -1063,16 +1051,8 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
          gamma = gamma] __device__ (int vi) mutable {
-            auto fl3_to_db3 = [](const auto& v)
-            {
-                return zs::vec<double, 3>{(double)v(0), (double)v(1), (double)v(2)}; 
-            }; 
-            auto db3_to_fl3 = [](const auto& v)
-            {
-                return zs::vec<float, 3>{(float)v(0), (float)v(1), (float)v(2)}; 
-            }; 
-            auto y = fl3_to_db3(vtemp.pack(dim_c<3>, "y(l)", vi)); 
-            auto x = fl3_to_db3(vtemp.pack(dim_c<3>, "x(l)", vi)); 
+            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
             if ((y - x).l2NormSqr() < eps_c)
             {
                 vtemp("disp", vi) = 0.f;
@@ -1083,8 +1063,8 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 ((y - x).norm() + eps_c);
             if (alpha > 1.0f)
                 alpha = 1.0f; 
-            vtemp.tuple(dim_c<3>, "x(l)", vi) = db3_to_fl3(fl3_to_db3(vtemp.pack(dim_c<3>, "x(l)", vi)) + 
-                ((double)alpha) * (y - x)); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
+                alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
