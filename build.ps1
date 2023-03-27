@@ -78,3 +78,5 @@ cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 cmake --build ninja --config Release
+
+cp ./ninja/compile_commands.json ./
