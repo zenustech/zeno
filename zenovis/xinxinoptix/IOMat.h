@@ -15,6 +15,8 @@ struct MatOutput {
     float sheenTint;
     float clearcoat;
     float clearcoatGloss;
+    float clearcoatRoughness;
+    float clearcoatIOR;
     float opacity;
     float ior;
     float flatness;
