@@ -217,6 +217,7 @@ struct UnifiedIPCSystem : IObject {
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
+    T collisionEnergy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
