@@ -8,8 +8,6 @@
 #     -DZENO_ENABLE_OPTIX:BOOL=ON \
 #     -DZENO_WITH_FBX:BOOL=ON \
 #     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-# # -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-
 
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DZENO_WITH_ZenoFX:BOOL=ON \
@@ -19,16 +17,16 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DZENOFX_ENABLE_OPENVDB:BOOL=ON \
     -DZENOFX_ENABLE_LBVH:BOOL=ON \
     -DZENO_WITH_FastFLIP:BOOL=ON \
-    -DZENO_WITH_FEM:BOOL=OFF \
+    -DZENO_WITH_FEM:BOOL=ON \
     -DZENO_WITH_Rigid:BOOL=ON \
-    -DZENO_WITH_cgmesh:BOOL=OFF \
+    -DZENO_WITH_cgmesh:BOOL=ON \
     -DZENO_WITH_oldzenbase:BOOL=ON \
     -DZENO_WITH_TreeSketch:BOOL=ON \
-    -DZENO_WITH_Skinning:BOOL=OFF \
-    -DZENO_WITH_Euler:BOOL=OFF \
+    -DZENO_WITH_Skinning:BOOL=ON \
+    -DZENO_WITH_Euler:BOOL=ON \
     -DZENO_WITH_Functional:BOOL=ON \
     -DZENO_WITH_LSystem:BOOL=ON \
-    -DZENO_WITH_mesher:BOOL=OFF \
+    -DZENO_WITH_mesher:BOOL=ON \
     -DZENO_WITH_Alembic:BOOL=ON \
     -DZENO_WITH_FBX:BOOL=ON \
     -DZENO_WITH_DemBones:BOOL=ON \
@@ -40,7 +38,6 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DZENO_WITH_GUI:BOOL=ON \
     -DZENO_WITH_ImgCV:BOOL=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-# -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
 
 cmake --build build --parallel $(nproc) \
 
