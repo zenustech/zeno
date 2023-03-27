@@ -418,13 +418,6 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instClr = rt_data->instClr[inst_idx2];
     attrs.instTang = rt_data->instTang[inst_idx2];
 
-    //  if(prd->test_distance)
-    // {
-    //     prd->vol_t1 = length(P - optixGetWorldRayOrigin());
-    //     return;
-    // }
-    // prd->test_distance = false;
-
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
     
     float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));

@@ -152,7 +152,6 @@ extern "C" __global__ void __raygen__rg()
 
 //            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
-            //prd.radiance += prd.emission;
             if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
                 // fire without smoke requires this line to work.
