@@ -50,6 +50,8 @@ target_sources(zeno PRIVATE
   fem/FastClothPipeline.cu
   fem/FastClothLinearSystem.cu
   fem/FastClothCollision.cu
+  fem/UpdateTargetFromMapping.cu 
+  fem/SetIsBCFromPrim.cu
 )
 
 # fem
@@ -59,9 +61,11 @@ target_sources(zeno PRIVATE
   fem/SolverLinearSystem.cu
   fem/SolverIPC.cu
 
+  fem/ipc/UnifiedPreconditioner.cu
   fem/ipc/UnifiedSolverInit.cu
   fem/ipc/UnifiedSolverPipeline.cu
   fem/ipc/UnifiedSolverLinearSystem.cu
+  fem/ipc/UnifiedSolverUtilities.cu
   fem/ipc/UnifiedSolverIPC.cu
 
   fem/BoundaryCondition.cu

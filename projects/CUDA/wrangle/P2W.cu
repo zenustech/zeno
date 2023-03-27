@@ -102,6 +102,12 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                         parnames.emplace_back(key, 1);
                         parnames.emplace_back(key, 2);
                         return 3;
+                    } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        return 2;
                     } else if constexpr (std::is_convertible_v<T, float>) {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
@@ -254,7 +260,7 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             void *args[4] = {(void *)&cnt, (void *)&d_params, (void *)&nchns, (void *)&addr};
 
             cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                           (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
+                           (CUstream)currentContext.streamSpare(-1), args, (void **)nullptr);
             // end kernel launch
             cuCtxSynchronize();
         }

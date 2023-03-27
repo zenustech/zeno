@@ -206,26 +206,42 @@ struct GraphicsManager {
                 auto isInst = prim_in->userData().get2<int>("isInst", 0);
                 if (isInst == 1)
                 {
-                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
-                    std::size_t numInsts = prim_in->verts.size();
-                    const float *translate = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    if (!prim_in->has_attr("pos"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("pos");
+                        prim_in->attr<zeno::vec3f>("pos").assign(prim_in->attr<zeno::vec3f>("pos").size(), zeno::vec3f(0, 0, 0));
+                    }
                     if (!prim_in->has_attr("nrm"))
                     {
                         prim_in->add_attr<zeno::vec3f>("nrm");
-                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(),
-                                                                 zeno::vec3f(0,1,0));
+                        prim_in->attr<zeno::vec3f>("nrm").assign(prim_in->attr<zeno::vec3f>("nrm").size(), zeno::vec3f(0, 1, 0));
+                    }
+                    if (!prim_in->has_attr("uv"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("uv");
+                        prim_in->attr<zeno::vec3f>("uv").assign(prim_in->attr<zeno::vec3f>("uv").size(), zeno::vec3f(0, 0, 0));
+                    }
+                    if (!prim_in->has_attr("clr"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("clr");
+                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(), zeno::vec3f(1, 1, 1));
+                    }
+                    if (!prim_in->has_attr("tang"))
+                    {
+                        prim_in->add_attr<zeno::vec3f>("tang");
+                        prim_in->attr<zeno::vec3f>("tang").assign(prim_in->attr<zeno::vec3f>("tang").size(), zeno::vec3f(1, 0, 0));
                     }
                     
-                    const float *direct = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
+                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
                     auto onbType = prim_in->userData().get2<std::string>("onbType", "XYZ");
                     
-                    if (!prim_in->has_attr("clr")) {
-                        prim_in->add_attr<zeno::vec3f>("clr");
-                        prim_in->attr<zeno::vec3f>("clr").assign(prim_in->attr<zeno::vec3f>("clr").size(),
-                                                                 zeno::vec3f(1, 1, 1));
-                    }
-                    const float *scale = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
-                    xinxinoptix::load_inst(key, instID, numInsts, translate, direct, onbType, scale);
+                    std::size_t numInsts = prim_in->verts.size();
+                    const float *pos = (const float *)prim_in->attr<zeno::vec3f>("pos").data();
+                    const float *nrm = (const float *)prim_in->attr<zeno::vec3f>("nrm").data();
+                    const float *uv = (const float *)prim_in->attr<zeno::vec3f>("uv").data();
+                    const float *clr = (const float *)prim_in->attr<zeno::vec3f>("clr").data();
+                    const float *tang = (const float *)prim_in->attr<zeno::vec3f>("tang").data();
+                    xinxinoptix::load_inst(key, instID, onbType, numInsts, pos, nrm, uv, clr, tang);
                 }
                 else if (isRealTimeObject == 0 && isUniformCarrier == 0)
                 {

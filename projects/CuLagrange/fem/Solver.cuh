@@ -151,7 +151,7 @@ struct IPCSystem : IObject {
     void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
         auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
     }
-    void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
+    bv_t updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
     IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
@@ -201,11 +201,19 @@ struct IPCSystem : IObject {
                                           bool includeHessian = true);
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
                                                   bool includeHessian = true);
+
+    void convertHessian(zs::CudaExecutionPolicy &pol);
+
+    /// @note build linsys.spmat
+    void initializeSystemHessian(zs::CudaExecutionPolicy &pol);
+    // elasticity, bending, kinematic, external force potential, boundary motion, ground collision
+    void updateInherentHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    // mostly self-collision related
+    void updateDynamicHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
-    void convertHessian(zs::CudaExecutionPolicy &pol);
-    void compactHessian(zs::CudaExecutionPolicy &pol);
     void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
@@ -215,16 +223,18 @@ struct IPCSystem : IObject {
     void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+
     void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
+    void systemSolve(zs::CudaExecutionPolicy &cudaPol);
+
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
-    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
+    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
-    int frameno = -1;
-    int substep = -1;
     std::size_t estNumCps = 1000000;
     bool enableGround = false;
     bool enableContact = true;
@@ -314,11 +324,84 @@ struct IPCSystem : IObject {
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
-    zs::Vector<T> temp;
+    zs::Vector<T> temp;   // generally 64-bit
     zs::Vector<bv_t> bvs; // as temporary buffer
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
+
+    /// @brief solver state machine
+    struct SolverState {
+        void frameStepping() {
+            frameNo++;
+            substep = -1;
+            curRatio = 0;
+        }
+        void subStepping(T ratio) {
+            substep++;
+            curRatio += ratio;
+        }
+        void reset() {
+            substep = -1;
+            frameNo = -1;
+        }
+
+        int getFrameNo() const noexcept {
+            return frameNo;
+        }
+        int getSubstep() const noexcept {
+            return substep;
+        }
+
+      private:
+        int substep{-1};
+        int frameNo{-1};
+        T curRatio{0};
+    } state;
+
+    /// @brief for system hessian storage
+    template <typename T_>
+    struct SystemHessian {
+        using T = T_;
+        using vec3 = zs::vec<T, 3>;
+        using mat3 = zs::vec<T, 3, 3>;
+        using spmat_t = zs::SparseMatrix<mat3, true>;
+        using hess2_t = HessianPiece<2, T>;
+        using hess3_t = HessianPiece<3, T>;
+        using hess4_t = HessianPiece<4, T>;
+
+        /// @brief dynamic part, mainly for collision constraints
+        bool initialized = false;
+        /// @note initialization: hess.init(allocator, size)
+        /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
+        HessianPiece<2, T> hess2;
+        HessianPiece<3, T> hess3;
+        HessianPiece<4, T> hess4;
+        /// @brief static part
+        spmat_t spmat{};
+        /// @brief preconditioner
+    };
+    /// probably useful for all possible hessian maintenance?
+    /// inherent + dynamic (discrete) 3x3 mat pieces?
+    template <zs::execspace_e space, typename T_>
+    struct SystemHessianView {
+        using sys_hess_t = SystemHessian<T_>;
+        using vec3 = zs::vec<T, 3>;
+        using mat3 = zs::vec<T, 3, 3>;
+        using spmat_t = zs::SparseMatrix<mat3, true>;
+        using hess_t = HessianPiece<1, T>;
+
+#if 0
+        SystemHessianView(sys_hess_t &sys)
+            : spmat{view<space>(sys.spmat, true_c)}, hess2{proxy<space>(sys.hess2)}, hess3{proxy<space>(sys.hess3)},
+              hess4{proxy<space>(sys.hess4)} {
+        }
+#endif
+        zs::SparseMatrixView<space, spmat_t, true> spmat;
+        HessianView<hess_t> hess;
+    };
+    // for one-time static hessian topo build
+    SystemHessian<T> linsys;
 
     // for faster linear system solve
     HessianPiece<1> hess1;
@@ -327,9 +410,7 @@ struct IPCSystem : IObject {
     HessianPiece<4> hess4;
     tiles_t cgtemp;
 
-    // possibly accessed in compactHessian and cgsolve
-    CsrMatrix<zs::vec<T, 3, 3>, int> linMat;
-    zs::SparseMatrix<mat3f, true> spmat{};
+    // zs::SparseMatrix<mat3f, true> spmat{};
 
     // boundary contacts
     // auxiliary data (spatial acceleration)
@@ -342,7 +423,8 @@ struct IPCSystem : IObject {
     bvfront_t selfStFront, boundaryStFront;
     bvfront_t selfSeFront, boundarySeFront;
     bool frontManageRequired;
-    T dt, framedt, curRatio;
+    std::optional<bv_t> wholeBv;
+    T dt, framedt;
 };
 
 } // namespace zeno

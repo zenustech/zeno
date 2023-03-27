@@ -173,6 +173,11 @@ struct PathTracerState
     raii<CUdeviceptr>              d_mat_indices;
     raii<CUdeviceptr>              d_meshIdxs;
     raii<CUdeviceptr>              d_meshMats;
+    raii<CUdeviceptr>              d_instPos;
+    raii<CUdeviceptr>              d_instNrm;
+    raii<CUdeviceptr>              d_instUv;
+    raii<CUdeviceptr>              d_instClr;
+    raii<CUdeviceptr>              d_instTang;
     raii<CUdeviceptr>              d_uniforms;
 
     raii<OptixModule>              ptx_module;
@@ -302,6 +307,15 @@ struct InstData
 };
 static std::map<std::string, InstData> g_instLUT;
 std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatsLUT;
+struct InstAttr
+{
+    std::vector<float3> pos;
+    std::vector<float3> nrm;
+    std::vector<float3> uv;
+    std::vector<float3> clr;
+    std::vector<float3> tang;
+};
+std::unordered_map<std::string, InstAttr> g_instAttrsLUT;
 
 //------------------------------------------------------------------------------
 //
@@ -677,6 +691,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     timer.tick();
     const float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
+    float3 defaultInstPos = {0, 0, 0};
+    float3 defaultInstNrm = {0, 1, 0};
+    float3 defaultInstUv = {0, 0, 0};
+    float3 defaultInstClr = {1, 1, 1};
+    float3 defaultInstTang = {1, 0, 0};
     std::size_t num_instances = g_staticAndDynamicMeshNum;
     for (const auto &[instID, instData] : g_instLUT)
     {
@@ -701,6 +720,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     
     std::vector<int> meshIdxs(num_instances);
     std::vector<float> meshMats(16 * num_instances);
+    std::vector<float3> instPos(num_instances);
+    std::vector<float3> instNrm(num_instances);
+    std::vector<float3> instUv(num_instances);
+    std::vector<float3> instClr(num_instances);
+    std::vector<float3> instTang(num_instances);
     unsigned int sbt_offset = 0;
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
@@ -724,6 +748,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         meshMats[16 * i + 13] = 0;
         meshMats[16 * i + 14] = 0;
         meshMats[16 * i + 15] = 1;
+        instPos[i] = defaultInstPos;
+        instNrm[i] = defaultInstNrm;
+        instUv[i] = defaultInstUv;
+        instClr[i] = defaultInstClr;
+        instTang[i] = defaultInstTang;
     }
 
     std::size_t instanceId = g_staticAndDynamicMeshNum;
@@ -734,11 +763,13 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         if (it != g_instMatsLUT.end())
         {
             const auto &instMats = it->second;
+            const auto &instAttrs = g_instAttrsLUT[instID];
             for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
             {
                 auto mesh = m_meshes[meshesOffset];
-                for (const auto &instMat : instMats)
+                for (std::size_t k = 0; k < instMats.size(); ++k)
                 {
+                    const auto &instMat = instMats[k];
                     float instMat4x4[12] = {
                         instMat[0][0], instMat[1][0], instMat[2][0], instMat[3][0],
                         instMat[0][1], instMat[1][1], instMat[2][1], instMat[3][1],
@@ -759,6 +790,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                     meshMats[16 * instanceId + 13] = 0;
                     meshMats[16 * instanceId + 14] = 0;
                     meshMats[16 * instanceId + 15] = 1;
+                    instPos[instanceId] = instAttrs.pos[k];
+                    instNrm[instanceId] = instAttrs.nrm[k];
+                    instUv[instanceId] = instAttrs.uv[k];
+                    instClr[instanceId] = instAttrs.clr[k];
+                    instTang[instanceId] = instAttrs.tang[k];
 
                     ++instanceId;
                 }
@@ -786,6 +822,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 meshMats[16 * instanceId + 13] = 0;
                 meshMats[16 * instanceId + 14] = 0;
                 meshMats[16 * instanceId + 15] = 1;
+                instPos[instanceId] = defaultInstPos;
+                instNrm[instanceId] = defaultInstNrm;
+                instUv[instanceId] = defaultInstUv;
+                instClr[instanceId] = defaultInstClr;
+                instTang[instanceId] = defaultInstTang;
 
                 ++instanceId;
                 ++meshesOffset;
@@ -807,6 +848,46 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_meshMats ),
                 meshMats.data(),
                 sizeof(meshMats[0]) * meshMats.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instPos.reset() ), sizeof(instPos[0]) * instPos.size()) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instPos ),
+                instPos.data(),
+                sizeof(instPos[0]) * instPos.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.d_instNrm.resize(sizeof(instNrm[0]) * instNrm.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instNrm.reset() ), sizeof(instNrm[0]) * instNrm.size()) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instNrm ),
+                instNrm.data(),
+                sizeof(instNrm[0]) * instNrm.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.d_instUv.resize(sizeof(instUv[0]) * instUv.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instUv.reset() ), sizeof(instUv[0]) * instUv.size()) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instUv ),
+                instUv.data(),
+                sizeof(instUv[0]) * instUv.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.d_instClr.resize(sizeof(instClr[0]) * instClr.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instClr.reset() ), sizeof(instClr[0]) * instClr.size()) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instClr ),
+                instClr.data(),
+                sizeof(instClr[0]) * instClr.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.d_instTang.resize(sizeof(instTang[0]) * instTang.size(), 0);
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instTang.reset() ), sizeof(instTang[0]) * instTang.size()) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instTang ),
+                instTang.data(),
+                sizeof(instTang[0]) * instTang.size(),
                 cudaMemcpyHostToDevice
                 ) );
 
@@ -1127,6 +1208,11 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
             hitgroup_records[sbt_idx].data.meshMats        = reinterpret_cast<float*>( (CUdeviceptr)state.d_meshMats );
+            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
+            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
+            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
+            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
+            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
             for(int t=0;t<32;t++)
             {
                 hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[j].getTexture(t);
@@ -1145,6 +1231,11 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
             hitgroup_records[sbt_idx].data.meshMats        = reinterpret_cast<float*>( (CUdeviceptr)state.d_meshMats );
+            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
+            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
+            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
+            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
+            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
             for(int t=0;t<32;t++)
             {
                 hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[j].getTexture(t);
@@ -2649,22 +2740,28 @@ void unload_object(std::string const &key) {
 struct InstTrs
 {
     std::string instID;
-    std::vector<float> translate;
-    std::vector<float> direct;
     std::string onbType;
-    std::vector<float> scale;
+
+    std::vector<float> pos;
+    std::vector<float> uv;
+    std::vector<float> nrm;
+    std::vector<float> clr;
+    std::vector<float> tang;
 };
 
 static std::unordered_map<std::string, InstTrs> instTrsLUT;
 
-void load_inst(const std::string &key, const std::string &instID, std::size_t numInsts, const float *translate, const float *direct, const std::string &onbType, const float *scale)
+void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang)
 {
     InstTrs &instTrs = instTrsLUT[key];
     instTrs.instID = instID;
-    instTrs.translate.assign(translate, translate + numInsts * 3);
-    instTrs.direct.assign(direct, direct + numInsts * 3);
     instTrs.onbType = onbType;
-    instTrs.scale.assign(scale, scale + numInsts * 3);
+
+    instTrs.pos.assign(pos, pos + numInsts * 3);
+    instTrs.nrm.assign(nrm, nrm + numInsts * 3);
+    instTrs.uv.assign(uv, uv + numInsts * 3);
+    instTrs.clr.assign(clr, clr + numInsts * 3);
+    instTrs.tang.assign(tang, tang + numInsts * 3);
 }
 
 void unload_inst(const std::string &key)
@@ -2678,16 +2775,22 @@ void UpdateInst()
     {
         const auto& instID = instTrs.instID;
         auto& instMat = g_instMatsLUT[instID];
+        auto& instAttr = g_instAttrsLUT[instID];
 
-        const auto& numInstMats = instTrs.translate.size() / 3;
+        const auto& numInstMats = instTrs.pos.size() / 3;
         instMat.resize(numInstMats);
+        instAttr.pos.resize(numInstMats);
+        instAttr.nrm.resize(numInstMats);
+        instAttr.uv.resize(numInstMats);
+        instAttr.clr.resize(numInstMats);
+        instAttr.tang.resize(numInstMats);
 #pragma omp parallel for
         for (int i = 0; i < numInstMats; ++i)
         {
-            auto translateMat = glm::translate(glm::vec3(instTrs.translate[3 * i + 0], instTrs.translate[3 * i + 1], instTrs.translate[3 * i + 2]));
+            auto translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
 
-            zeno::vec3f t0 = {instTrs.direct[3 * i + 0], instTrs.direct[3 * i + 1], instTrs.direct[3 * i + 2]};
-            zeno::vec3f t1 = {instTrs.scale[3 * i + 0], instTrs.scale[3 * i + 1], instTrs.scale[3 * i + 2]};
+            zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
+            zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
             t0 = normalizeSafe(t0);
             zeno::vec3f t2;
             zeno::guidedPixarONB(t0, t1, t2);
@@ -2767,6 +2870,21 @@ void UpdateInst()
 
             auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
+            instAttr.pos[i].x = instTrs.pos[3 * i + 0];
+            instAttr.pos[i].y = instTrs.pos[3 * i + 1];
+            instAttr.pos[i].z = instTrs.pos[3 * i + 2];
+            instAttr.nrm[i].x = instTrs.nrm[3 * i + 0];
+            instAttr.nrm[i].y = instTrs.nrm[3 * i + 1];
+            instAttr.nrm[i].z = instTrs.nrm[3 * i + 2];
+            instAttr.uv[i].x = instTrs.uv[3 * i + 0];
+            instAttr.uv[i].y = instTrs.uv[3 * i + 1];
+            instAttr.uv[i].z = instTrs.uv[3 * i + 2];
+            instAttr.clr[i].x = instTrs.clr[3 * i + 0];
+            instAttr.clr[i].y = instTrs.clr[3 * i + 1];
+            instAttr.clr[i].z = instTrs.clr[3 * i + 2];
+            instAttr.tang[i].x = instTrs.tang[3 * i + 0];
+            instAttr.tang[i].y = instTrs.tang[3 * i + 1];
+            instAttr.tang[i].z = instTrs.tang[3 * i + 2];
         }
     }
 }

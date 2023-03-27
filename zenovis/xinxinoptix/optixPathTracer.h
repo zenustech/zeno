@@ -110,6 +110,11 @@ struct HitGroupData
     unsigned short* lightMark;
     int* meshIdxs;
     float* meshMats;
+    float3* instPos;
+    float3* instNrm;
+    float3* instUv;
+    float3* instClr;
+    float3* instTang;
     float4* uniforms;
     cudaTextureObject_t textures[32];
 
