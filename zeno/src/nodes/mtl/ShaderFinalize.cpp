@@ -6,6 +6,9 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/types/UserData.h>
+
+#include <string>
 
 namespace zeno {
 
@@ -67,7 +70,17 @@ struct ShaderFinalize : INode {
             {1,"mat_reflection"},
             {1,"mat_reflectID"},
             {1,"mat_isCamera"},
-            {1,"mat_isVoxelDomain"}
+            {1,"mat_isVoxelDomain"},
+
+            {1, "vol_depth"},
+            {1, "vol_absorption"},
+            {1, "vol_scattering"},
+
+            {1, "vol_sample_anisotropy"},
+            {1, "vol_sample_density"},
+            {3, "vol_sample_emission"},
+            {3, "vol_sample_albedo"},
+
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
@@ -114,10 +127,28 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectID", std::make_shared<NumericObject>(float(-1))),
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
+            
+            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
+            get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
+            get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
 
+            get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
+            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
 
+            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
         });
         auto commonCode = em.getCommonCode();
+
+        int   vol_depth = (int)get_input2<float>("vol_depth");
+        float vol_absorption = get_input2<float>("vol_absorption");
+        float vol_scattering = get_input2<float>("vol_scattering");
+
+        vol_depth = clamp(vol_depth, 9, 99);
+
+        commonCode += "static const int _vol_depth = " + std::to_string(vol_depth) + ";\n";
+        commonCode += "static const float _vol_absorption = " + std::to_string(vol_absorption) + ";\n";
+        commonCode += "static const float _vol_scattering = " + std::to_string(vol_scattering) + ";\n";
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -128,12 +159,50 @@ struct ShaderFinalize : INode {
         if (has_input("tex2dList"))
         {
             auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
-            for (const auto &tex: tex2dList)
+            for (const auto tex: tex2dList)
             {
                 auto texId = mtl->tex2Ds.size();
-                auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
 			    mtl->tex2Ds.push_back(tex);
-                mtl->common.insert(0, texCode);
+            }
+
+            auto texCode = "uniform sampler2D zenotex[32]; \n";
+            mtl->common.insert(0, texCode);
+        }
+
+        if (has_input("tex3dList"))
+        {
+            auto tex3dList = get_input<ListObject>("tex3dList")->get<zeno::StringObject>();
+
+            for (const auto& ele : tex3dList) {
+
+                auto path = ele->get();
+                auto ud = ele->userData();
+
+                const std::string _key_ = "channel";
+                std::string channel_string = "0";
+
+                if (ud.has(_key_)) {
+
+                    if (ud.isa<zeno::StringObject>(_key_)) {
+                        //auto get = ud.get<zeno::StringObject>("channel");
+                        channel_string = ud.get2<std::string>(_key_);
+
+                    } else if (ud.isa<zeno::NumericObject>(_key_)) {
+                        auto channel_number = ud.get2<int>(_key_);
+                        channel_number = max(0, channel_number);
+
+                        channel_string = std::to_string(channel_number);
+                    } 
+                }
+                mtl->tex3Ds.push_back(std::make_pair(path, channel_string)); 
+            }
+
+            auto ud = get_input<ListObject>("tex3dList")->userData();
+
+            if ( ud.has("transform") ) {
+            
+                auto transformString = ud.get2<std::string>("transform");
+                mtl->transform = transformString;
             }
         }
 
@@ -197,6 +266,16 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
+        {"list", "tex3dList"},
+
+        {"float", "vol_depth",     "99"},
+        {"float", "vol_absorption", "1"},
+        {"float", "vol_scattering", "1"},
+
+        {"float", "vol_sample_anisotropy", "0"},
+        {"float", "vol_sample_density", "0"},
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"vec3f", "vol_sample_albedo", "1,1,1"},
     },
     {
         {"MaterialObject", "mtl"},

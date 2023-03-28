@@ -1250,7 +1250,7 @@ static __inline__ __device__ vec3 hdrSky(
             .rotY(to_radians(params.sky_rot_y))
             .rotX(to_radians(params.sky_rot_x))
             .rotZ(to_radians(params.sky_rot_z));
-    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float u = atan2(-dir.z, -dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
     float v = asin(dir.y) / 3.1415926 + 0.5;
     vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
     return col * params.sky_strength;
