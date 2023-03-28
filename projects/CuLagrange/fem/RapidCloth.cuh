@@ -19,7 +19,7 @@ struct RapidClothSystem : IObject {
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
-    constexpr static auto debugVis_c = true; 
+    constexpr static auto debugVis_c = false; 
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;

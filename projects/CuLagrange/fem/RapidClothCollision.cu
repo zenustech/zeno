@@ -529,9 +529,13 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
 // xl, cons -> c(xl), J(xl)   
 void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, 
     T shrinking)
-{
+{    
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp), maxDi = D] __device__ (int vi) mutable {
+            vtemp("Di", vi) = maxDi; 
+        }); 
     oE.setVal(0); 
     pol(range(ne), [vtemp = proxy<space>({}, vtemp), 
                     tempE = proxy<space>({}, tempE), 
@@ -576,6 +580,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto xij_norm = dist + eps_c; 
         auto delta_inv = 1.0f / delta; 
         auto val = xij_norm * delta_inv - 1.0f; 
+        for (int k = 0; k < 2; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         auto grad = (xi - xj) / xij_norm * delta_inv;             
@@ -607,6 +613,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto dist = area / ((e1 - e0).norm() + eps_c); 
         T coef = (e1 - e0).norm() * delta; 
         auto val = area / coef - 1.0f; 
+        for (int k = 0; k < 3; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         auto consInd = atomic_add(exec_cuda, &oPE[0], 1); 
@@ -651,6 +659,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         if (zs::abs(coef) < eps_c)
             coef = sgn * eps_c; 
         auto val = vol / coef - 1.0f; 
+        for (int k = 0; k < 4; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         mat = adjoint(mat).transpose();
@@ -712,6 +722,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }
         auto coef = determinant(rMat);
         auto val = vol / coef - 1.0f;
+        for (int k = 0; k < 4; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
@@ -970,22 +982,6 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
     // TODO: calculate an upper-bound of maxDi when doing findConstraints
-    pol(range(vtemp.size()), 
-        [vtemp = proxy<space>({}, vtemp), maxDi = delta] __device__ (int vi) mutable {
-            vtemp("Di", vi) = maxDi; 
-        }); 
-    pol(range(nCons - nae), 
-        [tempCons = proxy<space>({}, tempCons), 
-         vtemp = proxy<space>({}, vtemp), nae = nae] __device__ (int i) mutable {
-            int ci = i + nae; 
-            auto dist = tempCons("dist", ci, T_c); 
-            int vN = tempCons("vN", ci); 
-            for (int k = 0; k < vN; k++)
-            {
-                int vi = tempCons("vi", k, ci); 
-                atomic_min(exec_cuda, &vtemp("Di", vi), dist); 
-            }
-        }); 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
