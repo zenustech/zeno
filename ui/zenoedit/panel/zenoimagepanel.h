@@ -6,12 +6,14 @@
 #define ZENO_ZENOIMAGEPANEL_H
 
 #include <QtWidgets>
+class ZenoImageView;
 
 class ZenoImagePanel : public QWidget {
     Q_OBJECT
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
+    ZenoImageView *image_view = nullptr;
 
 public:
     ZenoImagePanel(QWidget* parent = nullptr);
