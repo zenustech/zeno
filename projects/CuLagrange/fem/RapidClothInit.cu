@@ -215,15 +215,19 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                         (tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset);
                 });
         }
+        exclTab.reset(pol, true); 
         const auto &edges = primHandle.getSurfEdges();
         pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
+                                     exclTab = proxy<space>(exclTab), 
                                      tempE = proxy<space>({}, tempE), 
                                      verts = view<space>({}, verts)] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
             tempE.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge; 
+            exclTab.insert(edge); 
+            exclTab.insert({edge[1], edge[0]}); 
         });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
@@ -513,16 +517,13 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
     colorMinWeights = colorWeights = zs::Vector<zs::u32>{vtemp.get_allocator(), 0}; 
     colors = colorMaskOut = zs::Vector<int>{vtemp.get_allocator(), 0}; 
+    exclTab = i2tab_t{vtemp.get_allocator(), estNumCps}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
     lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
-    // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
-    // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
-    fmt::print("init lcpMatIs size: {}\n", lcpMatIs.size()); 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
-    // average edge length (for CCD filtering)
-    initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
-                         // adaptive dhat, targetGRes, kappa
+
+    initialize(cudaPol); 
 }
 
 void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {

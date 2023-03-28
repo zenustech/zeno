@@ -21,6 +21,7 @@ struct RapidClothSystem : IObject {
     constexpr static auto enablePP_c = false; 
 
     using tiles_t = typename ZenoParticles::particles_t;
+    using i2tab_t = typename zs::bht<int, 2, int>; 
     using itiles_t = zs::TileVector<int, 32>; 
     using vec3 = zs::vec<T, 3>;
     using vec3f = zs::vec<float, 3>;
@@ -243,6 +244,7 @@ struct RapidClothSystem : IObject {
     T consShrinking = 1.1f; 
     int nCons = 0; 
     int consDegree = 32 * 3;
+    i2tab_t exclTab; 
     spmat_t lcpMat; 
     ispmat_t lcpTopMat; 
     zs::Vector<int> lcpMatIs, lcpMatJs; 

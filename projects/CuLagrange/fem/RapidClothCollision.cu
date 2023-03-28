@@ -26,6 +26,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          vCons = view<space>({}, vCons, false_c, "vCons"), 
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
          nPP = proxy<space>(nPP), nPE = proxy<space>(nPE), 
+         exclTab = proxy<space>(exclTab), 
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = spInds("inds", vi, int_c); 
@@ -36,6 +37,9 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
                 if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                     return;
+                for (int k = 0; k < 3; k++)
+                    if (exclTab.query({vi, tri[k]}) >= 0)
+                        return; 
                 // ccd
                 auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
                 auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
@@ -128,6 +132,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
             tempPP = proxy<space>({}, tempPP), nPP = proxy<space>(nPP), 
             tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), 
             radius, voffset = withBoundary ? coOffset : 0,
+            exclTab = proxy<space>(exclTab), 
             frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto sei = front.prim(i);
             auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
@@ -144,6 +149,11 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     return;
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
+
+                for (int i = 0; i < 2; i++)
+                    for (int j = 0; j < 2; j++)
+                        if (exclTab.query({eiInds[i], ejInds[j]}))
+                            return; 
 
                 switch(ee_distance_type(v0, v1, v2, v3)) {
                     case 0: {
@@ -479,7 +489,6 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     colorMaskOut.reset(0);
     colors.resize(nCons); 
     colors.reset(-1); 
-    fmt::print(fg(fmt::color::purple), "\t\t[debug] cons coloring init ended\n"); 
 
     // bfs
     int iter = 0; 
