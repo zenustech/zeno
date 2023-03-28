@@ -542,8 +542,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto inds = tempE.pack(dim_c<2>, "inds", i, int_c); 
         auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto xj = vtemp.pack(dim_c<3>, tag, inds[1]);
-        auto yi = vtemp.pack(dim_c<3>, "y[k+1]", inds[0]); 
-        auto yj = vtemp.pack(dim_c<3>, "y[k+1]", inds[1]);
+        auto yi = vtemp.pack(dim_c<3>, "x0", inds[0]); 
+        auto yj = vtemp.pack(dim_c<3>, "x0", inds[1]);
         auto xij_norm = (xi - xj).norm() + eps_c; 
         auto yij_norm_inv = 1.0f / ((yi - yj).norm() + eps_c); 
         auto grad = - (xi - xj) / xij_norm * yij_norm_inv; 
@@ -790,20 +790,6 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     lcpMatJs[no] = aj; 
                 }
             }
-            int max_color = (int)zs::ceil(((T)degree) / shrinking); 
-            if (max_color < 10)
-                max_color = 10;
-            if (max_color > 63)
-            {
-                printf("init max_color %d exceeded 63 at ci = %d, clamped to 63\n", max_color, ci); 
-                max_color = 63; 
-            }
-            tempCons("fixed", ci) = 0; 
-            tempCons("max_color", ci) = max_color; 
-            tempCons("num_color", ci) = max_color; 
-            constexpr int len = sizeof(zs::i64) * 8; 
-            // tempColors[ci] = (((zs::i64)1) << (len - 2)) - ((zs::i64)1) + 
-            //     (((zs::i64)1) << (len - 2)); 
          }); 
     auto lcpSize = lcpMatSize.getVal();
     lcpMatIs.resize(lcpSize); 
@@ -1021,6 +1007,27 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
-    // check infnorm of r(l) after calling forwardStep
+    
+    // DEBUG 
+    if constexpr (debugVis_c)
+    {
+        auto hv = vtemp.clone({memsrc_e::host, -1}); 
+        auto hv_view = proxy<execspace_e::host>({}, hv); 
+        int n = vtemp.size(); 
+        for (int vi = 0; vi < n; vi++)
+        {
+            visPrim->verts.values[vi] = zeno::vec3f {
+                hv_view("x(l)", 0, vi), 
+                hv_view("x(l)", 1, vi), 
+                hv_view("x(l)", 2, vi)
+            }; 
+            visPrim->verts.values[vi + n] = zeno::vec3f {
+                hv_view("y(l)", 0, vi), 
+                hv_view("y(l)", 1, vi), 
+                hv_view("y(l)", 2, vi)
+            }; 
+            visPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
+        }
+    }
 }
 }

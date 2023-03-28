@@ -205,6 +205,12 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         if (primHandle.isAuxiliary())
             continue;
         const auto &verts = primHandle.getVerts();
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
+                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+            auto x0 = verts.pack(dim_c<3>, "x0", i);
+            auto vi = voffset + i; 
+            vtemp.tuple(dim_c<3>, "x0", vi) = x0;
+        });
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
             auto &tris = primHandle.getSurfTris();
@@ -409,15 +415,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     tempCons = itiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
-            // graph coloring 
-            {"fixed", 1},        
-            {"max_color", 1}, 
-            {"num_color", 1}, 
-            {"tmp", 1}, 
-            // use its bits, e.g. 110 means 
-            // color-0: not available, color-1: okay, color-2: okay
-            // {"colors", 1}, use tempColors which is a zs::Vector
-            {"color", 1}, 
             // topology
             {"vi", 4}, 
             {"vN", 1}, 
@@ -491,6 +488,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
                         // cloth dynamics
+                        {"x0", 3},              // rest state 
                         {"x[0]", 3},
                         {"x[k]", 3},  
                         {"y[k+1]", 3}, 
@@ -524,6 +522,11 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
 
     initialize(cudaPol); 
+
+    // debug 
+    visPrim = std::make_shared<PrimitiveObject>(); 
+    visPrim->verts.resize(vtemp.size() * 2); 
+    visPrim->lines.resize(vtemp.size()); 
 }
 
 void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {

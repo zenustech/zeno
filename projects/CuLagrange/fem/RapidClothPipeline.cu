@@ -342,6 +342,7 @@ struct StepRapidClothSystem : INode {
         A->writebackPositionsAndVelocities(cudaPol);
 
         set_output("ZSRapidClothSystem", A);
+        set_output("visPrim", A->visPrim); 
     }
 };
 
@@ -350,7 +351,7 @@ ZENDEFNODE(StepRapidClothSystem, {{
                                  {"int", "num_substeps", "1"},
                                  {"float", "dt", "0.01"},
                              },
-                             {"ZSRapidClothSystem"},
+                             {"ZSRapidClothSystem", "visPrim"},
                              {},
                              {"FEM"}});
 

@@ -19,7 +19,9 @@ struct RapidClothSystem : IObject {
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
+    constexpr static auto debugVis_c = true; 
 
+    using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
     using i2tab_t = typename zs::bht<int, 2, int>; 
     using itiles_t = zs::TileVector<int, 32>; 
@@ -157,8 +159,6 @@ struct RapidClothSystem : IObject {
 
     /// collision; TODO
     void consColoring(zs::CudaExecutionPolicy &pol);   
-    void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
-        itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
@@ -271,6 +271,9 @@ struct RapidClothSystem : IObject {
     T dt, framedt, curRatio;
     // boundary condition param 
     T BCStiffness = 1e6f; 
+
+    //debug 
+    primptr_t visPrim; 
 };
 
     template <
