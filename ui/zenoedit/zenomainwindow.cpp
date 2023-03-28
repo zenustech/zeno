@@ -658,7 +658,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered()
+void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly)
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -679,7 +679,7 @@ void ZenoMainWindow::onRunTriggered()
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame);
+        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly);
     }
 
     for (auto view : views)

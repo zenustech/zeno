@@ -161,7 +161,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
-    void onRunTriggered();
+    void onRunTriggered(bool applyLightAndCameraOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
 

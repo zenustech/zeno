@@ -17,13 +17,13 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
     }
     else
     {
-        QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-        bool ret = dirCacheRoot.mkdir(tempDirPath);
-        ZASSERT_EXIT(ret, false);
-        m_spCacheDir = dirCacheRoot;
-        ret = m_spCacheDir.cd(tempDirPath);
-        ZASSERT_EXIT(ret, false);
-    }
+            //QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
+            //bool ret = dirCacheRoot.mkdir(tempDirPath);
+            //ZASSERT_EXIT(ret, false);
+            m_spCacheDir = dirCacheRoot;
+            //ret = m_spCacheDir.cd(tempDirPath);
+            //ZASSERT_EXIT(ret, false);
+        }
     return true;
 }
 

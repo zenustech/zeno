@@ -6,9 +6,15 @@
 #include "util/log.h"
 #include "util/apphelper.h"
 #include "variantptr.h"
+#include "settings/zsettings.h"
+#include <QSet>
 
 using namespace JsonHelper;
 
+QSet<QString> renderNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera", "MakeCamera", 
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky"
+    });
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
@@ -57,7 +63,7 @@ void resolveOutputSocket(
 }
 
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -101,7 +107,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly);
                 AddStringList({"popSubnetScope", ident}, writer);
             }
         }
@@ -250,6 +256,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
+                if (applyLightAndCameraOnly && !renderNodes.contains(name))
+                {
+                    continue;
+                }
                 for (OUTPUT_SOCKET output : outputs)
                 {
                     //if (output.info.name == "DST" && outputs.size() > 1)
@@ -267,9 +277,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 	}
 }
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly)
 {
-    serializeGraph(pModel, pModel->index("main"), "", true, writer);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly);
 }
 
 static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)
