@@ -27,7 +27,6 @@ struct GlobalComm {
     int endFrameNumber = 0;
     int maxCachedFrames = 1;
     std::string cacheFramePath;
-    std::string cacheNormalObjPath = "";
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void frameRange(int beg, int end);

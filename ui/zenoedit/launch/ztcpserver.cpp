@@ -74,7 +74,7 @@ void ZTcpServer::startProc(const std::string& progJson)
     {
         const QString& cacheRootdir = settings.value("zencachedir").toString();
         QDir dirCacheRoot(cacheRootdir);
-        if (!QFileInfo(cacheRootdir).isDir())
+        if (!QFileInfo(cacheRootdir).isDir() && !bAutoRemove)
         {
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;

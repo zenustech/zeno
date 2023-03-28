@@ -76,9 +76,7 @@ static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     if (cachedir.empty())
         return false;
     objs.clear();
-    cachepath[1] = zeno::getSession().globalComm->cacheNormalObjPath == "" ?
-        std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache" :
-        std::filesystem::u8path(zeno::getSession().globalComm->cacheNormalObjPath) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
+    cachepath[1] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
     cachepath[0] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "renderObj.zencache";
     for (auto path : cachepath)
     {

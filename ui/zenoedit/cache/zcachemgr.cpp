@@ -5,18 +5,22 @@
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
-    , m_separate(false)
-    , m_normalObjDir("")
+    , m_cacheSeparate(false)
+    , m_dirCreated(false)
 {
 }
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
 {
+    if (m_cacheSeparate && m_dirCreated) {
+        return true;
+    }
     m_bTempDir = bTempDir;
     if (m_bTempDir)
     {
         m_spTmpCacheDir.reset(new QTemporaryDir);
         m_spTmpCacheDir->setAutoRemove(true);
+        m_dirCreated = true;
     }
     else
     {
@@ -26,13 +30,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
         m_spCacheDir = dirCacheRoot;
         ret = m_spCacheDir.cd(tempDirPath);
         ZASSERT_EXIT(ret, false);
-        if (!m_separate) {
-            m_normalObjDir = m_spCacheDir.path();
-        }
-        else
-        {
-            zeno::getSession().globalComm->cacheNormalObjPath = m_normalObjDir.toStdString();
-        }
+        m_dirCreated = true;
     }
     return true;
 }
@@ -60,5 +58,9 @@ QDir ZCacheMgr::getPersistenceDir() const
 }
 
 void ZCacheMgr::cacheSeparately(bool separate) {
-    m_separate = separate;
+    m_cacheSeparate = separate;
+}
+
+void ZCacheMgr::setDirCreated(bool dirCreated) {
+    m_dirCreated = dirCreated;
 }
