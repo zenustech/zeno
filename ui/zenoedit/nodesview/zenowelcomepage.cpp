@@ -18,6 +18,11 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     palette.setColor(QPalette::Background, QColor(44,50,58));
     setPalette(palette);
 
+    QSize iconSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24));
+    m_ui->btnNew->setIconSize(iconSize);
+    m_ui->btnOpen->setIconSize(iconSize);
+    m_ui->btnNew->setIcon(QIcon(":/icons/file_newfile.svg"));
+    m_ui->btnOpen->setIcon(QIcon(":/icons/file_openfile.svg"));
 	m_ui->btnNew->setProperty("cssClass", "welcomepage");
     m_ui->btnOpen->setProperty("cssClass", "welcomepage");
     m_ui->lblCurrVer->setProperty("cssClass", "welcomepage");

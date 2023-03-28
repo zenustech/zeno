@@ -60,7 +60,7 @@ QToolButton[cssClass="welcomepage"]
 {
     border: 0px;
 	background-color: transparent;
-	font-size: 9pt;;
+	font-size: 10pt;;
 	font-weight: 500;
 	color: #4578AC;
 }
