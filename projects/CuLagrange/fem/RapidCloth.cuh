@@ -31,12 +31,10 @@ struct RapidClothSystem : IObject {
     using pair_t = zs::vec<int, 2>;
     using pair3_t = zs::vec<int, 3>;
     using pair4_t = zs::vec<int, 4>;
-    using dpair_t = zs::vec<Ti, 2>;
-    using dpair3_t = zs::vec<Ti, 3>;
-    using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using spmat_t = zs::SparseMatrix<T, true>;
+    using ispmat_t = zs::SparseMatrix<zs::u32, true>; 
     using bv_t = typename bvh_t::Box;
 
     static constexpr T s_constraint_residual = 1e-3;
@@ -245,12 +243,13 @@ struct RapidClothSystem : IObject {
     T consShrinking = 1.1f; 
     int nCons = 0; 
     int consDegree = 32 * 3;
-    spmat_t lcpMat{}; 
+    spmat_t lcpMat; 
+    ispmat_t lcpTopMat; 
     zs::Vector<int> lcpMatIs, lcpMatJs; 
     zs::Vector<int> lcpMatSize; 
-    zs::Vector<int> consColorBits; 
+    zs::Vector<zs::u32> colorMinWeights, colorWeights;
+    zs::Vector<int> colorMaskOut, colors; 
     itiles_t tempCons;       // LCP constraint matrix storing
-    zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> oPP, oPE, oPT, oEE, oE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;

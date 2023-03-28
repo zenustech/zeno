@@ -4,6 +4,7 @@
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "RapidClothGradHess.inl"
 
 namespace zeno {
@@ -384,7 +385,8 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
         ne, npp, npe, npt, nee); 
 }
 
-static constexpr int simple_hash(int a)
+template<class T>
+static constexpr T simple_hash(T a)
 {
     // https://burtleburtle.net/bob/hash/integer.html
     a = (a ^ 61) ^ (a >> 16);
@@ -393,6 +395,18 @@ static constexpr int simple_hash(int a)
     a = a * 0x27d4eb2d;
     a = a ^ (a >> 15);
     return a; 
+}
+
+// reference: https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
+template<class T>
+static constexpr T combine_hash(T lhs, T rhs)
+{
+    if constexpr (sizeof(T) >= 8) {
+        lhs ^= rhs + 0x517cc1b727220a95 + (lhs << 6) + (lhs >> 2);
+    } else {
+        lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+    }
+    return lhs; 
 }
 
 bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
@@ -404,10 +418,11 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
     correct.setVal(1); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
+         colors = proxy<space>(colors), 
          vCons = proxy<space>({}, vCons), 
          lcpMat = proxy<space>(lcpMat), 
          correct = proxy<space>(correct)] __device__ (int i) mutable {
-            int color = tempCons("color", i); 
+            int color = colors[i]; 
             auto &ap = lcpMat._ptrs; 
             auto &aj = lcpMat._inds; 
             for (int k = ap[i]; k < ap[i + 1]; k++)
@@ -415,7 +430,7 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
                 int j = aj[k]; 
                 if (j == i)
                     continue; 
-                if (tempCons("color", j) == color)
+                if (colors[j] == color)
                 {
                     correct[0] = 0;  
                     return; 
@@ -432,152 +447,69 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     
-    // cons graph coloring 
-    zs::Vector<int> finished {vtemp.get_allocator(), 1}; 
-    finished.setVal(0); 
-    int seed = 0; 
-    while (!finished.getVal())
-    { 
-        // pick random color for unfixed constraints
-        pol(range(nCons), 
-            [tempCons = proxy<space>({}, tempCons), 
-             tempColors = proxy<space>(tempColors), 
-             seed = seed++] __device__ (int i) mutable {
-                tempCons("tmp", i) = 0; 
-                if (tempCons("fixed", i))
-                    return; 
-                int ind = simple_hash(simple_hash(seed) + simple_hash(i)) % tempCons("num_color", i);
-                // int colors = tempCons("colors", i); 
-                zs::i64 colors = tempColors[i]; 
-                int maxColor = tempCons("max_color", i); 
-                int curInd = -1; 
-                int pos = -1;  
-                while(++pos < maxColor && colors)
-                {
-                    int digit = colors % 2; 
-                    if (digit && (++curInd == ind))
-                        break; 
-                    colors >>= 1; 
-                }
-                if (curInd < ind)
-                {
-                    colors = tempColors[i]; 
-                    int colors_high = colors >> 32;
-                    int colors_low = (int)(colors - (((zs::i64)colors_high) << 32)); 
-                    // printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, colors: %d, max_color: %d\n", 
-                    //     tempCons("num_color", i), tempCons("colors", i), tempCons("max_color", i)); 
-                    printf("[graph coloring] err in coloring: palette exhausted in the random-picking phase!, num_color: %d, max_color: %d, colors-high: %d, colors-low: %d\n", 
-                        tempCons("num_color", i), tempCons("max_color", i), colors_high, colors_low); 
-                    return; 
-                }
-                tempCons("color", i) = pos; 
-            }); 
-
-        // conflict resolution: fix the colors of 'good' constraints, remove them from their neighbors' palettes
-        pol(range(nCons), 
-            [tempCons = proxy<space>({}, tempCons), 
-             lcpMat = proxy<space>(lcpMat)] __device__ (int i) mutable {
-                if (tempCons("fixed", i))
-                    return; 
-                int color = tempCons("color", i); 
-                bool flagConflict = false; 
-                bool flagHigherInd = true; 
-                auto &ap = lcpMat._ptrs; 
-                auto &aj = lcpMat._inds; 
-                for (int k = ap[i]; k < ap[i + 1]; k++)
-                {
-                    int neCons = aj[k]; // neighbor constraint 
-                    if (neCons == i)
-                        continue; 
-                    if (neCons > i)
-                        flagHigherInd = false; 
-                    int neColor = tempCons("color", neCons); 
-                    if (neColor == color)
-                        flagConflict = true; 
-                    if (flagConflict && !flagHigherInd)
-                        break; 
-                }
-                if (!flagConflict || flagHigherInd)
-                {
-                    tempCons("fixed", i) = 1; 
-                    tempCons("tmp", i) = 1; // 1 means need to remove current color from neighbors' palettes
-                }
-             }); 
-
-        pol(range(nCons), 
-            [tempCons = proxy<space>({}, tempCons), 
-             tempColors = proxy<space>(tempColors), 
-             lcpMat = proxy<space>(lcpMat), 
-             vCons = proxy<space>({}, vCons)] __device__ (int i) mutable {
-                if (tempCons("fixed", i))
-                    return; 
-                int maxColor = tempCons("max_color", i); 
-                int numColor = tempCons("num_color", i); 
-                // int colors = tempCons("colors", i); 
-                zs::i64 colors = tempColors[i]; 
-                auto &ap = lcpMat._ptrs; 
-                auto &aj = lcpMat._inds; 
-                for (int k = ap[i]; k < ap[i + 1]; k++)
-                {
-                    int neCons = aj[k]; // neighbor constraint 
-                    if (neCons == i)
-                        continue; 
-                    if (tempCons("tmp", neCons))
-                    {
-                        int neColor = tempCons("color", neCons); 
-                        if ((colors >> neColor) % 2)
-                        {
-                            if (neColor < maxColor)
-                                numColor--; 
-                            // colors -= (1 << neColor); 
-                            colors -= (((zs::i64)1) << neColor); 
-                        }
-                    }
-                }
-                // tempCons("colors", i) = colors; 
-                tempColors[i] = colors; 
-                tempCons("num_color", i) = numColor; 
-             }); 
-
-        // feed the hungry & check if finished 
-        finished.setVal(1); 
-        pol(range(nCons), 
-            [tempCons = proxy<space>({}, tempCons), 
-            tempColors = proxy<space>(tempColors), 
-            finished = proxy<space>(finished)] __device__ (int i) mutable {
-                if (tempCons("fixed", i))
-                    return; 
-                finished[0] = 0; 
-                while (tempCons("num_color", i) == 0)
-                {
-                    // if ((tempCons("colors", i) >> tempCons("max_color", i)) % 2)
-                    if ((tempColors[i] >> tempCons("max_color", i)) % 2)
-                        tempCons("num_color", i) += 1; 
-                    tempCons("max_color", i) += 1; 
-                    if (tempCons("max_color", i) == 64)
-                    {
-                        printf("max_color exceeded threshold 32!\n"); 
-                        return; 
-                    }
-                }
-            }); 
-    }
-    consColorBits.reset(0); 
-    pol(range(nCons), 
-        [tempCons = proxy<space>({}, tempCons), 
-         consColorBits = proxy<space>(consColorBits)] __device__ (int i) mutable {
-            consColorBits[tempCons("color", i)] = 1; 
-         }); 
-    nConsColor = 0; 
-    for (int i = consColorBits.size() - 1; i >= 0; i--)
-        if (consColorBits[i] == 1)
-        {
-            nConsColor = i + 1; 
-            break; 
+    // init weights 
+    colorMinWeights.resize(nCons); 
+    colorWeights.resize(nCons); 
+    {
+        // bht<int, 1, int> tab{lcpTopMat.get_allocator(), (std::size_t)(nCons * 16)}; 
+        bcht<u32, int, true, zs::universal_hash<u32>, 32> tab{lcpTopMat.get_allocator(), (std::size_t)(nCons * 256)}; 
+        // tab.reset(pol, true); 
+        u32 seed = 114514u; 
+        pol(enumerate(colorWeights), 
+            [tab_view = view<space>(tab), 
+            seed = seed, nCons = nCons] __device__ (int idx, u32& w) mutable {
+                using tab_t = RM_CVREF_T(tab_view); 
+                u32 uidx = idx; 
+                u32 v = combine_hash(simple_hash(seed++), simple_hash(uidx)) % (u32)4294967291u;
+                tab_view.insert(v);
+                // TODO: use hash table insert
+                // while (tab_view.insert(v) != tab_t::sentinel_v) {
+                //     u32 tmp = combine_hash(simple_hash(seed++), simple_hash(uidx));
+                //     printf("[%d]-th (%d) random number : %u -> %u\n", idx, (int)nCons, v, tmp);
+                //     v = tmp;
+                // }
+                w = v; 
+        }); 
+        if (tab.size() != nCons) {
+            fmt::print("{} expected, {} inserted.\n", nCons, tab.size());
+            throw std::runtime_error("weight hash failed");
         }
-    timer.tock("constraint coloring"); 
-    fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor + 1); 
+    }
+    colorMaskOut.resize(nCons); 
+    colorMaskOut.reset(0);
+    colors.resize(nCons); 
+    colors.reset(-1); 
+    fmt::print(fg(fmt::color::purple), "\t\t[debug] cons coloring init ended\n"); 
 
+    // bfs
+    int iter = 0; 
+    zs::Vector<int> done{1, memsrc_e::device, 0};
+    auto update = 
+        [&] (int iter) -> bool {
+        done.setVal(1);  
+        pol(zip(colorWeights, colorMinWeights, colorMaskOut, colors), 
+            [done = proxy<space>(done), 
+             iter] __device__ (u32 &w, u32 &mw, int &mask, int &color) {
+            //if (w < mw && mask == 0)
+            if (w == mw && mw != limits<u32>::max()) 
+            {
+                done[0] = 0;
+                mask = 1;
+                color = iter;
+                w = limits<u32>::max();
+            }
+        });
+        return done.getVal() == 1;
+    };
+    for (iter++;;++iter)
+    {
+        spmv_mask(pol, lcpTopMat, colorWeights, colorMaskOut, colorMinWeights, wrapv<semiring_e::min_times>{});
+        if (update(iter))
+            break;
+    }
+    nConsColor = iter - 1; 
+    timer.tock("constraint coloring"); 
+    fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor); 
     if (checkConsColoring(pol))
         fmt::print("\t\t[graph coloring] The result is correct.\n");
     else 
@@ -826,7 +758,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     pol(range(nCons), 
         [vCons = proxy<space>({}, vCons), 
          tempCons = proxy<space>({}, tempCons), 
-         tempColors = proxy<space>(tempColors), 
+        //  tempColors = proxy<space>(tempColors), 
          lcpMatIs = view<space>(lcpMatIs, false_c, "lcpMatIs"), 
          lcpMatJs = view<space>(lcpMatJs, false_c, "lcpMatJs"), 
          lcpMatSize = view<space>(lcpMatSize, false_c, "lcpMatSize"), 
@@ -861,22 +793,31 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("max_color", ci) = max_color; 
             tempCons("num_color", ci) = max_color; 
             constexpr int len = sizeof(zs::i64) * 8; 
-            tempColors[ci] = (((zs::i64)1) << (len - 2)) - ((zs::i64)1) + 
-                (((zs::i64)1) << (len - 2)); 
+            // tempColors[ci] = (((zs::i64)1) << (len - 2)) - ((zs::i64)1) + 
+            //     (((zs::i64)1) << (len - 2)); 
          }); 
     auto lcpSize = lcpMatSize.getVal();
     lcpMatIs.resize(lcpSize); 
     lcpMatJs.resize(lcpSize); 
-    lcpMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, wrapv<false>{});
+    lcpMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, false_c);
     lcpMat.localOrdering(pol, false_c);  
     lcpMat._vals.resize(lcpMat.nnz());
+
+lcpTopMat._nrows = lcpMat.rows();
+lcpTopMat._ncols = lcpMat.cols();
+    lcpTopMat._ptrs = lcpMat._ptrs;
+    lcpTopMat._inds = lcpMat._inds;
+    lcpTopMat._vals = zs::Vector<zs::u32>{lcpTopMat._inds.get_allocator(),lcpTopMat._inds.size() };
+    //lcpTopMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, false_c); 
+    //lcpTopMat._vals.resize(lcpTopMat.nnz());     
     lcpMatIs.resize(estNumCps); 
-    lcpMatJs.resize(estNumCps); 
+    lcpMatJs.resize(estNumCps);  
     // compute lcpMat = J * M^{-1} * J.T
     pol(range(lcpMat.nnz()), 
-        [lcpMat = proxy<space>(lcpMat)] __device__ (int i) mutable {
-            auto &ax = lcpMat._vals; 
-            ax[i] = 0.f;
+        [lcpMat = proxy<space>(lcpMat), 
+         lcpTopMat = proxy<space>(lcpTopMat)] __device__ (int i) mutable {
+            lcpMat._vals[i] = 0.f;
+            lcpTopMat._vals[i] = 1u; 
         });
 
     // A = J * M^{-1} * J.T
@@ -912,6 +853,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 }
             }
         }); 
+    
+
 }
 
 // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
@@ -945,12 +888,13 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
         {
             pol(range(nCons), 
                 [tempCons = proxy<space>({}, tempCons), 
+                colors = proxy<space>(colors), 
                 lcpMat = proxy<space>(lcpMat), 
                 lcpConverged = proxy<space>(lcpConverged), 
                 lcpTol = lcpTol, color] __device__ (int i) mutable {
                     if (tempCons("val", i, T_c) == 0)
                         return; 
-                    if (tempCons("color", i) != color)
+                    if (colors[i] != color + 1)
                         return; 
                     auto &ap = lcpMat._ptrs; 
                     auto &aj = lcpMat._inds; 

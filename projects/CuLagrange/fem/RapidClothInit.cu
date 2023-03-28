@@ -428,10 +428,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         }, 
         (std::size_t)estNumCps
     }; 
-    tempColors = {
-        zsprims[0]->getParticles().get_allocator(), 
-        (std::size_t)estNumCps
-    }; 
     tempPP = tiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
@@ -515,8 +511,10 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                     },
                     (std::size_t)numDofs};
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
-    consColorBits = zs::Vector<int>{(std::size_t)sizeof(zs::i64) * 8, zs::memsrc_e::um, 0}; 
+    colorMinWeights = colorWeights = zs::Vector<zs::u32>{vtemp.get_allocator(), 0}; 
+    colors = colorMaskOut = zs::Vector<int>{vtemp.get_allocator(), 0}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
+    lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
     // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
     // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
