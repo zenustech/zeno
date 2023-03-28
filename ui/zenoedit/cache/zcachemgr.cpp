@@ -1,9 +1,12 @@
 #include "zcachemgr.h"
 #include "zassert.h"
-
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/zeno.h>
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
+    , m_separate(false)
+    , m_normalObjDir("")
 {
 }
 
@@ -17,13 +20,20 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
     }
     else
     {
-            //QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-            //bool ret = dirCacheRoot.mkdir(tempDirPath);
-            //ZASSERT_EXIT(ret, false);
-            m_spCacheDir = dirCacheRoot;
-            //ret = m_spCacheDir.cd(tempDirPath);
-            //ZASSERT_EXIT(ret, false);
+        QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
+        bool ret = dirCacheRoot.mkdir(tempDirPath);
+        ZASSERT_EXIT(ret, false);
+        m_spCacheDir = dirCacheRoot;
+        ret = m_spCacheDir.cd(tempDirPath);
+        ZASSERT_EXIT(ret, false);
+        if (!m_separate) {
+            m_normalObjDir = m_spCacheDir.path();
         }
+        else
+        {
+            zeno::getSession().globalComm->cacheNormalObjPath = m_normalObjDir.toStdString();
+        }
+    }
     return true;
 }
 
@@ -47,4 +57,8 @@ std::shared_ptr<QTemporaryDir> ZCacheMgr::getTempDir() const
 QDir ZCacheMgr::getPersistenceDir() const
 {
     return m_spCacheDir;
+}
+
+void ZCacheMgr::cacheSeparately(bool separate) {
+    m_separate = separate;
 }
