@@ -103,7 +103,7 @@ private:
     QTimer* m_wheelEventDally;
 
 public:
-    bool simpleRenderChecked;
+    int simpleRenderTime;
     bool updateLightOnce;
     bool m_bMovingCamera;
 };
