@@ -93,6 +93,7 @@ private:
     ZToolButton* m_btnRun;
     ZToolButton* m_btnKill;
     ZToolButton* m_btnAlways;
+    ZToolButton* m_btnLightCamera;
 
     QComboBox* cbZoom;
 };
