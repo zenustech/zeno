@@ -81,16 +81,16 @@ struct ZSLevelSetBinaryOperator : INode {
         float b = get_input2<float>("b");
         auto opStr = get_param<std::string>("transfer");
 
-        using Op = variant<static_plus, static_minus, static_multiplies, static_divides<true>>;
+        using Op = variant<plus<void>, minus<void>, multiplies<void>, divides<void>>;
         Op op{};
         if (opStr == "aX_plus_bY")
-            op = static_plus{};
+            op = _plus<void>{};
         else if (opStr == "aX_minus_bY")
-            op = static_minus{};
+            op = minus<void>{};
         else if (opStr == "aX_mul_bY")
-            op = static_multiplies{};
+            op = multiplies<void>{};
         else if (opStr == "aX_div_bY")
-            op = static_divides<true>{};
+            op = divides<void>{};
 
         match(
             [this, a, b](auto &lsPtr, const auto &lsPtrB, auto op)
@@ -235,7 +235,8 @@ ZENDEFNODE(ResampleZSLevelSet, {
 /// advection
 // process: refit, extend, advect
 struct AdvectZSLevelSet : INode {
-    template <typename SplsT, typename VelSplsT> int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
+    template <typename SplsT, typename VelSplsT>
+    int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
         using namespace zs;
 
         auto cudaPol = cuda_exec().device(0);

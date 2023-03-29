@@ -498,6 +498,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
 
         draw_all_points = !points_count && !lines_count && !tris_count;
+        auto& ud = prim->userData();
+        if (ud.get2<int>("isImage", 0)) {
+            draw_all_points = false;
+        }
         if (draw_all_points) {
             pointObj.prog = get_points_program();
         }

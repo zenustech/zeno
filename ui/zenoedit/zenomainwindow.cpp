@@ -36,6 +36,7 @@
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
 #include "dialog/zdocklayoutmangedlg.h"
+#include "panel/zenoimagepanel.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -1171,11 +1172,43 @@ void ZenoMainWindow::screenShoot()
     }
 }
 
+QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
+{
+    switch (type)
+    {
+    case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
+    case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
+    case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
+    case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
+    case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
+    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
+    default:
+        return UiHelper::generateUuid("dock_empty_");
+
+    switch (type)
+    {
+    case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
+    case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
+    case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
+    case DOCK_IMAGE: return UiHelper::generateUuid("dock_image_");
+    case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
+    case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
+    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
+    default:
+        return UiHelper::generateUuid("dock_empty_");
+    }
+}
+
 void ZenoMainWindow::setActionIcon(QAction *action) 
 {
     if (!action->isCheckable() || !action->isChecked()) 
     {
         action->setIcon(QIcon());
+        case DOCK_IMAGE: {
+            ZenoImagePanel* pPanel = new ZenoImagePanel;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
     }
     if (action->isChecked()) 
     {
