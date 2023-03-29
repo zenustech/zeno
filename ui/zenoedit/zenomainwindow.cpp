@@ -1172,6 +1172,8 @@ void ZenoMainWindow::screenShoot()
     }
 }
 
+#if 0
+//todo: resolve conflict.
 QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
 {
     switch (type)
@@ -1184,31 +1186,21 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
     default:
         return UiHelper::generateUuid("dock_empty_");
-
-    switch (type)
-    {
-    case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
-    case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
-    case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
-    case DOCK_IMAGE: return UiHelper::generateUuid("dock_image_");
-    case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
-    case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
-    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
-    default:
-        return UiHelper::generateUuid("dock_empty_");
-    }
 }
+#endif
 
 void ZenoMainWindow::setActionIcon(QAction *action) 
 {
     if (!action->isCheckable() || !action->isChecked()) 
     {
         action->setIcon(QIcon());
+#if 0
         case DOCK_IMAGE: {
             ZenoImagePanel* pPanel = new ZenoImagePanel;
             pDock->setWidget(type, pPanel);
             break;
         }
+#endif
     }
     if (action->isChecked()) 
     {

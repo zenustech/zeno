@@ -11,6 +11,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include "zeno/utils/log.h"
+#include "zenoapplication.h"
+#include "zassert.h"
+#include "viewport/viewportwidget.h"
+#include "zenomainwindow.h"
+
 
 const float ziv_wheelZoomFactor = 1.25;
 
@@ -75,7 +80,19 @@ void ZenoImagePanel::clear() {
 
 void ZenoImagePanel::setPrim(std::string primid) {
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    zenovis::Scene* scene = nullptr;
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    QVector<DisplayWidget*> wids = mainWin->viewports();
+    if (!wids.isEmpty())
+    {
+        auto session = wids[0]->getViewportWidget()->getSession();
+        ZASSERT_EXIT(session);
+        scene = session->get_scene();
+    }
+    if (!scene)
+        return;
+
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
         if (key != primid) {
@@ -156,10 +173,25 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
 
 
     pMainLayout->addWidget(pStatusBar);
-    auto *zenovis = &Zenovis::GetInstance();
+
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    QVector<DisplayWidget*> wids = mainWin->viewports();
+    if (wids.isEmpty())
+        return;
+
+    Zenovis* zenovis = wids[0]->getViewportWidget()->getZenoVis();
+    if (!zenovis)
+        return;
+
     connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        Zenovis* zenovis = wids[0]->getViewportWidget()->getZenoVis();
+        ZASSERT_EXIT(zenovis);
+        auto session = zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
         for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
             if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
                 setPrim(key);
