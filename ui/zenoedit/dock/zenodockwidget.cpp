@@ -10,6 +10,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
+#include "panel/zenoimagepanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/zenovis.h"
 #include "panel/zenolights.h"
@@ -105,10 +106,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         }
         panel->reset(pModel, subgIdx, nodes, select);
     }
-    else if (m_type == DOCK_NODE_DATA) {
-        ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
-        ZASSERT_EXIT(panel);
-
+    else if (m_type == DOCK_NODE_DATA || m_type == DOCK_IMAGE) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (select) {
             const QModelIndex& idx = nodes[0];
@@ -126,7 +124,16 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
-            panel->clear();
+            if (m_type == DOCK_NODE_DATA) {
+                ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+                ZASSERT_EXIT(panel);
+                panel->clear();
+            }
+            else if (m_type == DOCK_IMAGE) {
+                ZenoImagePanel* panel = qobject_cast<ZenoImagePanel*>(widget());
+                ZASSERT_EXIT(panel);
+                panel->clear();
+            }
         }
     }
     else if (m_type == DOCK_VIEW) {
@@ -302,16 +309,25 @@ void ZenoDockWidget::onFloatTriggered()
 
 
 void ZenoDockWidget::onPrimitiveSelected(const std::unordered_set <std::string> &primids) {
-    if (m_type != DOCK_NODE_DATA) {
-        return;
+    if (m_type == DOCK_NODE_DATA) {
+        ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+        ZASSERT_EXIT(panel);
+        if (primids.size() == 1) {
+            panel->setPrim(*primids.begin());
+        }
+        else {
+            panel->clear();
+        }
     }
-    ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
-    ZASSERT_EXIT(panel);
-    if (primids.size() == 1) {
-        panel->setPrim(*primids.begin());
-    }
-    else {
-        panel->clear();
+    else if (m_type == DOCK_IMAGE) {
+        ZenoImagePanel* panel = qobject_cast<ZenoImagePanel*>(widget());
+        ZASSERT_EXIT(panel);
+        if (primids.size() == 1) {
+            panel->setPrim(*primids.begin());
+        }
+        else {
+            panel->clear();
+        }
     }
 }
 

@@ -31,6 +31,7 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
+#include "panel/zenoimagepanel.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -607,6 +608,7 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
     case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
     case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
+    case DOCK_IMAGE: return UiHelper::generateUuid("dock_image_");
     case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
     case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
@@ -649,6 +651,11 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         }
         case DOCK_LIGHTS: {
             ZenoLights* pPanel = new ZenoLights;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
+        case DOCK_IMAGE: {
+            ZenoImagePanel* pPanel = new ZenoImagePanel;
             pDock->setWidget(type, pPanel);
             break;
         }
