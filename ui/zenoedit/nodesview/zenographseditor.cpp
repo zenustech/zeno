@@ -771,8 +771,13 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             pathLineEdit->setText(dir);
         });
 
+        pathLineEdit->setEnabled(!bAutoRemove);
         QCheckBox *pAutoDelCache = new QCheckBox;
         pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
+        connect(pAutoDelCache, &QCheckBox::stateChanged, [=](bool state) {
+            pathLineEdit->setText("");
+            pathLineEdit->setEnabled(!state);
+        });
 
         QCheckBox* pCheckbox = new QCheckBox;
         pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);

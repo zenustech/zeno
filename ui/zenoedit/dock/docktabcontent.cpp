@@ -397,12 +397,18 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnLightCamera, &ZToolButton::clicked, this, [=]() {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        mgr->cacheSeparately(true);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         pMainWin->onRunTriggered(true);
     });
 
     connect(m_btnRun, &ZToolButton::clicked, this, [=]() {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        mgr->cacheSeparately(false);
         ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         pMainWin->onRunTriggered();

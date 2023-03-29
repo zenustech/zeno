@@ -7,8 +7,12 @@
 #include <fstream>
 #include <cassert>
 #include <zeno/types/UserData.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
+
+std::vector<std::filesystem::path> cachepath{std::filesystem::path(""), std::filesystem::path("")};
 
 bool isRenderObj(std::string key, std::shared_ptr<IObject> obj){
     if (obj->userData().has<int>("isRealTimeObject"))
@@ -30,7 +34,6 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     {
         log_critical("can not create path: {}", dir);
     }
-    std::string cacheType[2] = {"renderObj", "normalObj"};
     std::vector<std::vector<char>> bufCaches(2);
     std::vector<std::vector<size_t>> poses(2);
     std::vector<std::string> keys(2);
@@ -47,6 +50,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
             encodeObject(obj.get(), bufCaches[1]);
         }
     }
+    cachepath[0] = std::filesystem::u8path(dir) / "renderObj.zencache";
+    cachepath[1] = std::filesystem::u8path(dir) / "normalObj.zencache";
     for (int i = 0; i < 2; i++)
     {
         if (poses[i].size() == 0)
@@ -57,9 +62,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
         poses[i].push_back(bufCaches[i].size());
 
-        auto path = std::filesystem::u8path(dir) / (cacheType[i] + ".zencache");
-        log_critical("dump cache to disk {}", path);
-        std::ofstream ofs(path, std::ios::binary);
+        log_critical("dump cache to disk {}", cachepath[i]);
+        std::ofstream ofs(cachepath[i], std::ios::binary);
         std::ostreambuf_iterator<char> oit(ofs);
         std::copy(keys[i].begin(), keys[i].end(), oit);
         std::copy_n((const char *)poses[i].data(), poses[i].size() * sizeof(size_t), oit);
@@ -72,10 +76,14 @@ static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     if (cachedir.empty())
         return false;
     objs.clear();
-
-	for (const std::filesystem::directory_entry &entry :
-         std::filesystem::directory_iterator(cachedir + "/" + std::to_string(1000000 + frameid).substr(1) + "/")) {
-        auto path = entry.path();
+    cachepath[1] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
+    cachepath[0] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "renderObj.zencache";
+    for (auto path : cachepath)
+    {
+        if (!std::filesystem::exists(path))
+        {
+            continue;
+        }
         log_critical("load cache from disk {}", path);
 
         auto szBuffer = std::filesystem::file_size(path);
