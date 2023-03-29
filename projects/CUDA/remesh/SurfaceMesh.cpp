@@ -22,31 +22,23 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     faces_size_ = 0;
     halfedges_size_ = 0;
 
-    bool add_lines = (lines_size_ == 0);
-
     vconn_.resize(vertices_size_);
     fconn_.resize(prim_->tris.size());
-    if (add_lines) {
-        hconn_.resize(prim_->tris.size() * 6);
-    } else {
-        auto& lines = prim_->lines;
-        for (int i = 0; i < lines_size_; ++i) {
-            auto line = std::make_pair(lines[i][0], lines[i][1]);
-            line_map_[line] = i;
-        }
-        halfedges_size_ = lines_size_ * 2;
-        hconn_.resize(halfedges_size_);
+    
+    auto& lines = prim_->lines;
+    for (int i = 0; i < lines_size_; ++i) {
+        auto line = std::make_pair(lines[i][0], lines[i][1]);
+        line_map_[line] = i;
     }
+    halfedges_size_ = lines_size_ * 2;
+    hconn_.resize(halfedges_size_);
 
     auto vdeleted = prim_->verts.add_attr<int>("v_deleted", 0);
     auto edeleted = prim_->lines.add_attr<int>("e_deleted", 0);
     auto fdeleted = prim_->tris.add_attr<int>("f_deleted", 0);
 
     for (auto& it : prim_->tris) {
-        add_tri(it, add_lines);
-    }
-    if (add_lines) {
-        hconn_.resize(lines_size_ * 2);
+        add_tri(it);
     }
 
     deleted_vertices_ = 0;
@@ -111,7 +103,7 @@ void SurfaceMesh::adjust_outgoing_halfedge(int v) {
     }
 }
 
-int SurfaceMesh::add_tri(const vec3i& vertices, bool add_lines){
+int SurfaceMesh::add_tri(const vec3i& vertices){
     int v;
     size_t i, ii, id;
     int innerNext, innerPrev, outerNext, outerPrev, boundaryNext,
@@ -189,17 +181,13 @@ int SurfaceMesh::add_tri(const vec3i& vertices, bool add_lines){
     // create missing edges
     for (i = 0, ii = 1; i < 3; ++i, ++ii, ii %= 3) {
         if (isNew[i]) {
-            if (!add_lines) {
-                int line_id;
-                if (line_map_.count(std::make_pair(vertices[i], vertices[ii])) > 0) {
-                    line_id = line_map_[std::make_pair(vertices[i], vertices[ii])];
-                } else {
-                    line_id = line_map_[std::make_pair(vertices[ii], vertices[i])];
-                }
-                halfedges[i] = new_halfedge(vertices[i], vertices[ii], line_id);
+            int line_id;
+            if (line_map_.count(std::make_pair(vertices[i], vertices[ii])) > 0) {
+                line_id = line_map_[std::make_pair(vertices[i], vertices[ii])];
             } else {
-                halfedges[i] = new_edge(vertices[i], vertices[ii]);
+                line_id = line_map_[std::make_pair(vertices[ii], vertices[i])];
             }
+            halfedges[i] = new_halfedge(vertices[i], vertices[ii], line_id);
         }
     }
 
@@ -659,6 +647,7 @@ void SurfaceMesh::garbage_collection() {
     auto& vlocked = prim_->verts.attr<int>("v_locked");
     auto& elocked = prim_->lines.attr<int>(line_pick_tag_);
     auto& vsizing = prim_->verts.attr<float>("v_sizing");
+    auto& vduplicate = prim_->verts.attr<int>("v_duplicate");
 
     // setup handle mapping
     auto& vmap = prim_->verts.add_attr<int>("v_garbage_collection");
@@ -695,6 +684,7 @@ void SurfaceMesh::garbage_collection() {
             std::swap(vfeature[i0], vfeature[i1]);
             std::swap(vlocked[i0], vlocked[i1]);
             std::swap(vsizing[i0], vsizing[i1]);
+            std::swap(vduplicate[i0], vduplicate[i1]);
             std::swap(vconn_[i0], vconn_[i1]);
         };
 
@@ -761,6 +751,7 @@ void SurfaceMesh::garbage_collection() {
 
     // update vertex connectivity
     for (int v = 0; v < nV; ++v) {
+        vduplicate[v] = vmap[vduplicate[v]];
         if (!is_isolated(v)) {
             vconn_[v].halfedge_ = hmap[halfedge(v)];
         }
@@ -800,6 +791,7 @@ void SurfaceMesh::garbage_collection() {
     vfeature.resize(nV);
     vlocked.resize(nV);
     vsizing.resize(nV);
+    vduplicate.resize(nV);
     vconn_.resize(nV);
     vertices_size_ = nV;
     
