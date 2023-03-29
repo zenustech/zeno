@@ -259,14 +259,14 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     };
     selfStFront = bvfront_t{(int)deduce_node_cnt(stInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
     selfSeeFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
-    if constexpr (enablePE_c)
+    if (enablePE_c)
         selfSevFront = bvfront_t{(int)deduce_node_cnt(seInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
-    if constexpr (enablePP_c)
+    if (enablePP_c)
         selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
     if (hasBoundary()) {
         boundaryStFront = bvfront_t{(int)deduce_node_cnt(coEles->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
         boundarySeeFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
-        if constexpr (enablePE_c)
+        if (enablePE_c)
             boundarySevFront = bvfront_t{(int)deduce_node_cnt(coEdges->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
         // boundarySvFront = bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)bvhFrontCps, zs::memsrc_e::um, vtemp.devid()};
     }
@@ -341,7 +341,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         }                                                                                                  \
     }
     {
-        if constexpr (enablePP_c)
+        if (enablePP_c)
         {
             bvs.resize(svInds.size()); 
             retrieve_bounding_volumes(pol, vtemp, "x[0]", svInds, zs::wrapv<1>{}, 0, bvs);
@@ -358,7 +358,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         retrieve_bounding_volumes(pol, vtemp, "x[0]", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
         init_front(seInds, selfSeeFront);
-        if constexpr (enablePE_c)
+        if (enablePE_c)
             init_front(spInds, selfSevFront); 
     }
     if (hasBoundary()) {
@@ -371,7 +371,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         retrieve_bounding_volumes(pol, vtemp, "x[0]", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
         init_front(seInds, boundarySeeFront);
-        if constexpr (enablePE_c)
+        if (enablePE_c)
             init_front(svInds, boundarySevFront);
     }
 }
@@ -476,7 +476,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"cons", maxVertCons}, 
                         {"ind", maxVertCons}    // its index in each constraint 
                     }, 
-                    (std::size_t)coOffset       // stiff BC
+                    (std::size_t)numDofs    // stiff BC
     }; 
     opp = ope = opt = oee = oe = 0;             // offsets
     npp = npe = npt = nee = ne = 0;
@@ -499,6 +499,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"disp", 1}, 
                         {"x_tilde", 3},
                         {"x_hat", 3}, 
+                        {"sync", 1}, 
                         // linear solver
                         {"dir", 3},
                         {"grad", 3},
@@ -520,6 +521,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
+    syncAlpha = {vtemp.get_allocator(), 1}; 
 
     initialize(cudaPol); 
 

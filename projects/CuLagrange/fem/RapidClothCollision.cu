@@ -265,7 +265,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
         seefront.reorder(pol);
 
     // e -> p 
-    if constexpr (enablePE_c)
+    if (enablePE_c)
     {
         auto &sevfront = withBoundary ? boundarySevFront : selfSevFront;
         pol(Collapse{sevfront.size()},
@@ -305,7 +305,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
             sevfront.reorder(pol);
     }
     // v-> v
-    if constexpr (enablePP_c)
+    if (enablePP_c)
     {
         if (!withBoundary)
         {
@@ -363,7 +363,7 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     // nE.setVal(0); TODO: put into findEdgeConstraints(bool init = false) and calls it in every iteration 
 
     // collect PP, PE, PT, EE, E constraints from bvh 
-    if constexpr (enablePP_c)
+    if (enablePP_c)
     {
         bvs.resize(svInds.size()); 
         retrieve_bounding_volumes(pol, vtemp, tag, svInds, zs::wrapv<1>{}, 0, bvs);
@@ -810,8 +810,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     lcpMat.localOrdering(pol, false_c);  
     lcpMat._vals.resize(lcpMat.nnz());
 
-lcpTopMat._nrows = lcpMat.rows();
-lcpTopMat._ncols = lcpMat.cols();
+    lcpTopMat._nrows = lcpMat.rows();
+    lcpTopMat._ncols = lcpMat.cols();
     lcpTopMat._ptrs = lcpMat._ptrs;
     lcpTopMat._inds = lcpMat._inds;
     lcpTopMat._vals = zs::Vector<zs::u32>{lcpTopMat._inds.get_allocator(),lcpTopMat._inds.size() };
@@ -860,7 +860,6 @@ lcpTopMat._ncols = lcpMat.cols();
                 }
             }
         }); 
-    
 
 }
 
@@ -945,7 +944,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
     // x(l), y[k+1] -> LCP -> updated lambda -> updated y(l) 
     computeConstraints(pol, "x(l)"); 
     consColoring(pol); 
-    // TODO: project dof on boundaries? 
     solveLCP(pol); 
     // y(l+1) = M^{-1} * (J(l)).T * lambda + y(l)
     pol(range(nCons), 
@@ -982,10 +980,13 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
     // TODO: calculate an upper-bound of maxDi when doing findConstraints
+    syncAlpha.setVal(1.0f); 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
+         syncAlpha = proxy<space>(syncAlpha), 
          coOffset = coOffset, 
-         gamma = gamma] __device__ (int vi) mutable {
+         gamma = gamma, 
+         tinyAlpha = tinyAlpha_c] __device__ (int vi) mutable {
             auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
             auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
             if ((y - x).l2NormSqr() < eps_c)
@@ -998,32 +999,29 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 ((y - x).norm() + eps_c);
             if (alpha > 1.0f)
                 alpha = 1.0f; 
+            vtemp("sync", vi) = 0.f; 
+            if (alpha < tinyAlpha)
+            {
+                vtemp("sync", vi) = 1.f; 
+                atomic_min(exec_cuda, &syncAlpha[0], alpha); 
+                return; 
+            }
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
                 alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
-    
-    // DEBUG 
-    if constexpr (debugVis_c)
-    {
-        auto hv = vtemp.clone({memsrc_e::host, -1}); 
-        auto hv_view = proxy<execspace_e::host>({}, hv); 
-        int n = vtemp.size(); 
-        for (int vi = 0; vi < n; vi++)
-        {
-            visPrim->verts.values[vi] = zeno::vec3f {
-                hv_view("x(l)", 0, vi), 
-                hv_view("x(l)", 1, vi), 
-                hv_view("x(l)", 2, vi)
-            }; 
-            visPrim->verts.values[vi + n] = zeno::vec3f {
-                hv_view("y(l)", 0, vi), 
-                hv_view("y(l)", 1, vi), 
-                hv_view("y(l)", 2, vi)
-            }; 
-            visPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
-        }
-    }
+        pol(range(vtemp.size()), 
+            [vtemp = proxy<space>({}, vtemp), 
+            alpha = syncAlpha.getVal()] __device__ (int vi) mutable {
+                if (vtemp("sync", vi) < 0.5f)
+                    return; 
+                auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+                auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+                vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
+                    alpha * (y - x); 
+                vtemp("r(l)", vi) *= 1.0f - alpha; 
+                vtemp("disp", vi) = alpha * (y - x).norm(); 
+            }); 
 }
 }
