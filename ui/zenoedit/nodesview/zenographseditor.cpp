@@ -23,6 +23,7 @@
 #include "dialog/zeditparamlayoutdlg.h"
 #include <zenomodel/include/nodesmgr.h>
 #include "settings/zenosettingsmanager.h"
+#include <zenoui/comctrl/zpathedit.h>
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -733,11 +734,17 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("nas_loc").toString();
 
-        bool ok;
-        QString text = QInputDialog::getText(this, tr("Set NASLOC"),
-                                             tr("NASLOC"), QLineEdit::Normal,
-                                             v, &ok);
-        if (ok) {
+        QDialog dlg(this);
+        QGridLayout *pLayout = new QGridLayout(&dlg);
+        QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+        ZPathEdit *pathLineEdit = new ZPathEdit(v, &dlg);
+        pLayout->addWidget(new QLabel("Set NASLOC"), 2, 0);
+        pLayout->addWidget(pathLineEdit, 2, 1);
+        pLayout->addWidget(pButtonBox, 4, 1);
+        connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+        connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+        if (QDialog::Accepted == dlg.exec()) {
+            QString text = pathLineEdit->text();
             text.replace('\\', '/');
             settings.setValue("nas_loc", text);
             // refresh settings (zeno::setConfigVariable), only needed in single-process mode
@@ -751,26 +758,8 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
         QString cacheRootDir = settings.value("zencachedir").toString();
         int cacheNum = settings.value("zencachenum").toInt();
-
-        ZLineEdit* pathLineEdit = new ZLineEdit(cacheRootDir);
-        pathLineEdit->setFocusPolicy(Qt::ClickFocus);
+        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
-        QAction* pAction = new QAction;
-        QIcon icon;
-        icon.addPixmap(QPixmap(":/icons/file-loader.svg"), QIcon::Normal, QIcon::Off);
-        icon.addPixmap(QPixmap(":/icons/file-loader-on.svg"), QIcon::Active, QIcon::Off);
-        pAction->setIcon(icon);
-        pathLineEdit->addAction(pAction, QLineEdit::TrailingPosition);
-
-        connect(pAction, &QAction::triggered, this, [=]() {
-            QString dir = QFileDialog::getExistingDirectory(nullptr, "File to Open", "");
-            if (dir.isEmpty())
-            {
-                return;
-            }
-            pathLineEdit->setText(dir);
-        });
-
         pathLineEdit->setEnabled(!bAutoRemove);
         QCheckBox *pAutoDelCache = new QCheckBox;
         pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);

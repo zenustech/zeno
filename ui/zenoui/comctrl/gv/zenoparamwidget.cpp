@@ -7,6 +7,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
 #include "zenoedit/zenoapplication.h"
+#include "../zpathedit.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -222,34 +223,14 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    m_pLineEdit = new ZenoParamLineEdit(path, ctrl, param);
-    pLayout->addItem(m_pLineEdit);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-
-    ImageElement elem;
-    elem.image = ":/icons/ic_openfile.svg";
-    elem.imageHovered = ":/icons/ic_openfile-on.svg";
-    elem.imageOn = ":/icons/ic_openfile-on.svg";
-    m_openBtn = new ZenoSvgLayoutItem(elem, ZenoStyle::dpiScaledSize(QSize(30, 30)));
-    bool isRead = (ctrl == CONTROL_READPATH);
-    pLayout->addItem(m_openBtn);
-    pLayout->setItemSpacing(0, 0);
-    pLayout->setItemSpacing(0, 0);
-
-    this->setLayout(pLayout);
+    m_pLineEdit = new ZPathEdit(path);
+    m_pLineEdit->setProperty("control", ctrl);
+    setWidget(m_pLineEdit);
 
     //connect slot.
-    connect(m_pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+    connect(m_pLineEdit, &ZPathEdit::editingFinished, this, [=]() {
         emit pathValueChanged(m_pLineEdit->text());
     });
-    connect(m_openBtn, &ZenoImageItem::clicked, this, &ZenoParamPathEdit::clicked);
-}
-
-void ZenoParamPathEdit::setValidator(QValidator* pValidator)
-{
-    //will override the original.
-    //m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamPathEdit::path() const

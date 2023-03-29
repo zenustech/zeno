@@ -155,30 +155,10 @@ namespace zenoui
             {
                 const QString& path = UiHelper::variantToString(value);
                 ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam);
-
                 pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, zenoui::g_ctrlHeight)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
-
-                bool isRead = ctrl == CONTROL_READPATH;
-
-                QObject::connect(pPathEditor, &ZenoParamPathEdit::clicked, [=]() {
-                    cbSet.cbSwitch(true);
-                    QString path;
-                    if (isRead) {
-                        path = getOpenFileName(ZenoParamPathEdit::tr("File to Open"), "", ZenoParamPathEdit::tr("All Files(*);;"));
-                    }
-                    else {
-                        path = getSaveFileName(ZenoParamPathEdit::tr("Path to Save"), "", ZenoParamPathEdit::tr("All Files(*);;"));
-                    }
-                    if (path.isEmpty())
-                    {
-                        cbSet.cbSwitch(false);
-                        return;
-                    }
-                    pPathEditor->setPath(path);
-                    cbSet.cbSwitch(false);
-                });
+                
                 QObject::connect(pPathEditor, &ZenoParamPathEdit::pathValueChanged, [=](QString newPath) {
                     cbSet.cbEditFinished(newPath);
                     });

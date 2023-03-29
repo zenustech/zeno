@@ -26,7 +26,7 @@ ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-    pHLayout->addItem(pEditBtn);
+    pHLayout->addItem(pEditBtn, Qt::AlignRight);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
     return pHLayout;
