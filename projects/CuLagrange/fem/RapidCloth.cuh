@@ -15,11 +15,15 @@ namespace zeno {
 struct RapidClothSystem : IObject {
     using T = float;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
+    constexpr static auto eps_c = zs::limits<T>::epsilon() * 1.0f; 
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
+    constexpr static auto debugVis_c = false; 
 
+    using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
+    using i2tab_t = typename zs::bht<int, 2, int>; 
     using itiles_t = zs::TileVector<int, 32>; 
     using vec3 = zs::vec<T, 3>;
     using vec3f = zs::vec<float, 3>;
@@ -30,12 +34,10 @@ struct RapidClothSystem : IObject {
     using pair_t = zs::vec<int, 2>;
     using pair3_t = zs::vec<int, 3>;
     using pair4_t = zs::vec<int, 4>;
-    using dpair_t = zs::vec<Ti, 2>;
-    using dpair3_t = zs::vec<Ti, 3>;
-    using dpair4_t = zs::vec<Ti, 4>;
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
     using spmat_t = zs::SparseMatrix<T, true>;
+    using ispmat_t = zs::SparseMatrix<zs::u32, true>; 
     using bv_t = typename bvh_t::Box;
 
     static constexpr T s_constraint_residual = 1e-3;
@@ -148,7 +150,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, T shrinkFactor); 
+                    T BCStiffness); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -156,13 +158,11 @@ struct RapidClothSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// collision; TODO
-    void consColoring(zs::CudaExecutionPolicy &pol, T shrinking = 1.1);   
-    void initPalettes(zs::CudaExecutionPolicy &pol, tiles_t &tempPair, itiles_t &vCons, 
-        itiles_t &tempCons, int pairNum, int pairSize, int offset, T shrinking);
+    void consColoring(zs::CudaExecutionPolicy &pol);   
     bool checkConsColoring(zs::CudaExecutionPolicy &pol); 
     void findConstraintsImpl(zs::CudaExecutionPolicy &pol, T radius, bool withBoundary, const zs::SmallString &tag); 
     void findConstraints(zs::CudaExecutionPolicy &pol, T dist, const zs::SmallString &tag = "x(l)");
-    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag); // xl, cons -> c(xl), J(xl)     
+    void computeConstraints(zs::CudaExecutionPolicy &pol, const zs::SmallString& tag, T shrinking = 1.1f); // xl, cons -> c(xl), J(xl)     
     void solveLCP(zs::CudaExecutionPolicy &pol);        // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
     void backwardStep(zs::CudaExecutionPolicy &pol);    // call cons + solveLCP 
     void forwardStep(zs::CudaExecutionPolicy &pol);     // async stepping  
@@ -194,12 +194,6 @@ struct RapidClothSystem : IObject {
     void updateConstraintCnt() {
         std::tie(npp, npe, npt, nee, ne) = 
             std::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nE.getVal());
-        oe = 0; 
-        opp = ne; 
-        ope = opp + npp; 
-        opt = ope + npe; 
-        oee = opt + npt; 
-        nCons = oee + nee; 
     }
 
     // sim params
@@ -247,18 +241,21 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpConverged; 
     int maxVertCons = 32;
     int nConsColor = 0; 
-    T consShrinking = 1.1f; 
     int nCons = 0; 
     int consDegree = 32 * 3;
-    spmat_t lcpMat{}; 
+    i2tab_t exclTab; 
+    spmat_t lcpMat; 
+    ispmat_t lcpTopMat; 
     zs::Vector<int> lcpMatIs, lcpMatJs; 
     zs::Vector<int> lcpMatSize; 
-    zs::Vector<int> consColorBits; 
+    zs::Vector<zs::u32> colorMinWeights, colorWeights;
+    zs::Vector<int> colorMaskOut, colors; 
     itiles_t tempCons;       // LCP constraint matrix storing
-    zs::Vector<zs::i64> tempColors; 
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
+    zs::Vector<int> oPP, oPE, oPT, oEE, oE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
     int opp, ope, opt, oee, oe;     // offsets
+    int napp, nape, napt, naee, nae; 
     int npp, npe, npt, nee, ne;
 
     // auxiliary data (spatial acceleration)
@@ -271,9 +268,11 @@ struct RapidClothSystem : IObject {
     bvfront_t selfSvFront, boundarySvFront; 
     bool frontManageRequired; 
     T dt, framedt, curRatio;
-
     // boundary condition param 
     T BCStiffness = 1e6f; 
+
+    //debug 
+    primptr_t visPrim; 
 };
 
     template <
@@ -284,7 +283,7 @@ struct RapidClothSystem : IObject {
         using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
         auto b = (ea1 - ea0).cross(eb1 - eb0);
         auto b2 = b.l2NormSqr(); 
-        if (b2 < zs::limits<T>::epsilon()) // PE
+        if (b2 < zs::limits<T>::epsilon() * 10.0f) // PE
             if (auto aLen2 = (ea0 - ea1).l2NormSqr(), bLen2 = (eb0 - eb1).l2NormSqr(); aLen2 < bLen2)
                 return (ea0 - eb0).cross(ea0 - eb1).l2NormSqr() / bLen2;  
             else 
@@ -292,6 +291,49 @@ struct RapidClothSystem : IObject {
         T aTb = (eb0 - ea0).dot(b);
         return aTb * aTb / b.l2NormSqr();
     }
+
+  template <
+      typename VecTA, typename VecTB,
+      zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+  constexpr auto safe_dist2_ee_unclassified(const zs::VecInterface<VecTA> &ea0,
+                                       const zs::VecInterface<VecTA> &ea1,
+                                       const zs::VecInterface<VecTB> &eb0,
+                                       const zs::VecInterface<VecTB> &eb1) noexcept {
+    using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+    T dist2{zs::limits<T>::max()};
+    switch (ee_distance_type(ea0, ea1, eb0, eb1)) {
+      case 0:
+        dist2 = dist2_pp(ea0, eb0);
+        break;
+      case 1:
+        dist2 = dist2_pp(ea0, eb1);
+        break;
+      case 2:
+        dist2 = dist2_pe(ea0, eb0, eb1);
+        break;
+      case 3:
+        dist2 = dist2_pp(ea1, eb0);
+        break;
+      case 4:
+        dist2 = dist2_pp(ea1, eb1);
+        break;
+      case 5:
+        dist2 = dist2_pe(ea1, eb0, eb1);
+        break;
+      case 6:
+        dist2 = dist2_pe(eb0, ea0, ea1);
+        break;
+      case 7:
+        dist2 = dist2_pe(eb1, ea0, ea1);
+        break;
+      case 8:
+        dist2 = safe_dist2_ee(ea0, ea1, eb0, eb1);
+        break;
+      default:
+        break;
+    }
+    return dist2;
+  }
 
 } // namespace zeno
 

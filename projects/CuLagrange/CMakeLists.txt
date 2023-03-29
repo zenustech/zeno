@@ -54,6 +54,16 @@ target_sources(zeno PRIVATE
   fem/SetIsBCFromPrim.cu
 )
 
+# fem-rapid-cloth 
+target_sources(zeno PRIVATE 
+  fem/RapidCloth.cuh 
+  fem/RapidClothInit.cu
+  fem/RapidClothLinearSystem.cu
+  fem/RapidClothCollision.cu
+  fem/RapidClothPrimitives.cu
+  fem/RapidClothPipeline.cu 
+)
+
 # fem
 target_sources(zeno PRIVATE
   fem/SolverInit.cu

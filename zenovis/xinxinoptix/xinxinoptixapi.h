@@ -19,7 +19,10 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut);
 void UpdateDynamicInstMesh(const std::map<std::string, int> &mtlidlut);
 void CopyInstMeshToGlobalMesh();
 void UpdateGasAndIas(bool staticNeedUpdate);
-void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
+void optixupdatematerial(std::vector<bool>        const &markers, 
+                         std::vector<std::string> const &shaders, 
+                         std::vector<std::vector<std::string>> &texs);
+void updateVolume();
 void optixupdatelight();
 void optixupdateend();
 

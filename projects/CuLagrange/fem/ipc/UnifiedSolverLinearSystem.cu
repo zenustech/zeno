@@ -69,7 +69,7 @@ template <typename SpmatT, typename VecTM, typename VecTI,
 __forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
                                                bool has_work = true) {
     using namespace zs;
-    constexpr int codim = VecTI::extent;
+    // constexpr int codim = VecTI::extent;
     auto tile = cg::tiled_partition<8>(cg::this_thread_block());
 
     u32 work_queue = tile.ballot(has_work);
@@ -340,8 +340,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
     /// clear entry values
     spmat._vals.reset(0);
     /// @note inertial, gravity
-    cudaPol(zs::range(coOffset), [spmat = view<space>(spmat), 
-                                  vtemp = proxy<space>({}, vtemp),
+    cudaPol(zs::range(coOffset), [spmat = view<space>(spmat), vtemp = proxy<space>({}, vtemp),
                                   boundaryKappa = boundaryKappa] ZS_LAMBDA(int i) mutable {
         using mat3 = RM_CVREF_T(spmat)::value_type;
         auto m = vtemp("ws", i);
@@ -532,8 +531,6 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
 
 void UnifiedIPCSystem::updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-
     linsys.dynHess.reset();
 
     if (enableContact) {
@@ -552,20 +549,19 @@ void UnifiedIPCSystem::updateDynamicGradientAndHessian(zs::CudaExecutionPolicy &
 void UnifiedIPCSystem::prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
-    constexpr auto execTag = wrapv<space>{};
     using T = typename RM_CVREF_T(linsys)::T;
     using vec3 = zs::vec<T, 3>;
     {
         const auto &spmat = linsys.spmat;
         /// should group by 8, not 3
-        pol(range(spmat.outerSize() * 3), [vtemp = view<space>({}, vtemp), // dxOffset = vtemp.getPropertyOffset(dxTag),
+        pol(range(spmat.outerSize() * 3), [vtemp = view<space>(vtemp), POffset = vtemp.getPropertyOffset("P"),
                                            spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
             auto row = tid / 3;
             auto d = tid % 3;
             auto mat = spmat._vals[spmat._ptrs[row]];
-            vtemp("P", d, row) += mat(0, d);
-            vtemp("P", 3 + d, row) += mat(1, d);
-            vtemp("P", 6 + d, row) += mat(2, d);
+            vtemp(POffset + d, row) = mat(0, d);
+            vtemp(POffset + 3 + d, row) = mat(1, d);
+            vtemp(POffset + 6 + d, row) = mat(2, d);
         });
     }
     // timer.tock("multiply takes");
@@ -574,9 +570,9 @@ void UnifiedIPCSystem::prepareDiagonalPreconditioner(zs::CudaExecutionPolicy &po
 /// elasticity
 template <typename Model>
 void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          typename UnifiedIPCSystem::dtiles_t &vtemp,
-                                          typename UnifiedIPCSystem::PrimitiveHandle &primHandle, const Model &model,
-                                          typename UnifiedIPCSystem::T dt) {
+                                typename UnifiedIPCSystem::dtiles_t &vtemp,
+                                typename UnifiedIPCSystem::PrimitiveHandle &primHandle, const Model &model,
+                                typename UnifiedIPCSystem::T dt) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     using mat3 = typename UnifiedIPCSystem::mat3;
@@ -588,10 +584,8 @@ void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::Smal
         /// ref: Fast Simulation of Mass-Spring Systems
         /// credits: Tiantian Liu
         cudaPol(zs::range(primHandle.getEles().size()),
-                [vtemp = proxy<space>({}, vtemp),
-                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, 
-                 vOffset = primHandle.vOffset, 
-                 n = primHandle.getEles().size()] __device__(int ei) mutable {
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt,
+                 vOffset = primHandle.vOffset, n = primHandle.getEles().size()] __device__(int ei) mutable {
                     auto inds = eles.pack(dim_c<2>, "inds", ei, int_c) + vOffset;
                     int BCorder[2];
                     for (int i = 0; i != 2; ++i) {
@@ -623,8 +617,7 @@ void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::Smal
         if (primHandle.isBoundary())
             return;
         cudaPol(zs::range(primHandle.getEles().size()),
-                [vtemp = proxy<space>({}, vtemp), 
-                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, 
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt,
                  vOffset = primHandle.vOffset] __device__(int ei) mutable {
                     auto IB = eles.template pack<2, 2>("IB", ei);
                     auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
@@ -638,7 +631,6 @@ void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::Smal
                     for (int i = 0; i != 3; ++i) {
                         BCorder[i] = vtemp("BCorder", inds[i]);
                     }
-                    zs::vec<T, 9, 9> H;
                     if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
                         return;
                     }
@@ -671,8 +663,7 @@ void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::Smal
                 });
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
-                [vtemp = proxy<space>({}, vtemp), 
-                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, 
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt,
                  vOffset = primHandle.vOffset] __device__(int ei) mutable {
                     auto IB = eles.pack(dim_c<3, 3>, "IB", ei);
                     auto inds = eles.pack(dim_c<4>, "inds", ei, int_c) + vOffset;
@@ -684,7 +675,6 @@ void computeElasticGradientImpl(zs::CudaExecutionPolicy &cudaPol, const zs::Smal
                     for (int i = 0; i != 4; ++i) {
                         BCorder[i] = vtemp("BCorder", inds[i]);
                     }
-                    zs::vec<T, 12, 12> H;
                     if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) {
                         return;
                     }
@@ -734,9 +724,8 @@ void UnifiedIPCSystem::computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &p
             continue;
         const auto &svs = primHandle.getSurfVerts();
         pol(range(svs.size()),
-            [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
-             gn = s_groundNormal, dHat2 = dHat * dHat, kappa = kappa,
-             svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+            [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs), gn = s_groundNormal, dHat2 = dHat * dHat,
+             kappa = kappa, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
                 const auto vi = svs("inds", svi, int_c) + svOffset;
                 auto x = vtemp.pack<3>("xn", vi);
                 auto dist = gn.dot(x);
@@ -755,8 +744,7 @@ void UnifiedIPCSystem::computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &p
             if (fricMu != 0) {
                 pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                                         svs = proxy<space>({}, svs), epsvh = epsv * dt, gn = s_groundNormal,
-                                        fricMu = fricMu,
-                                        svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                                        fricMu = fricMu, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
                     const auto vi = svs("inds", svi, int_c) + svOffset;
                     auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
                     auto fn = svtemp("fn", svi);

@@ -34,7 +34,7 @@ ZENO_SOURCE = "C:/src/zeno" if os.name == "nt" else "/opt/src/zeno"
 
 CONFIG_FILE = "C:/src/config.json" if os.name == "nt" else "/opt/src/config.json"
 
-VCPKG_CMAKE = "C:/DEV_PROJECT/vcpkg/scripts/buildsystems/vcpkg.cmake" if os.name == "nt" else "/home/zenus/work/vcpkg/scripts/buildsystems/vcpkg.cmake"
+VCPKG_CMAKE = "C:/src/vcpkg/scripts/buildsystems/vcpkg.cmake" if os.name == "nt" else "/home/zenus/work/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
 SIMPLE_OPTIONS = \
     'cmake ' \
@@ -75,7 +75,7 @@ CMAKE_OPTIONS = \
     '-DZENO_WITH_CUDA:BOOL=ON ' \
     '-DZENO_WITH_TOOL_FLIPtools:BOOL=ON ' \
     '-DZENO_WITH_TOOL_BulletTools:BOOL=ON ' \
-    '-DZENO_WITH_Python:BOOL=ON ' \
+    '-DZENO_WITH_Python:BOOL=OFF ' \
     '-DZENO_WITH_SampleModel:BOOL=ON ' \
     '-DZENO_ENABLE_OPENMP:BOOL=ON ' \
         .format(zeno_source=ZENO_SOURCE,

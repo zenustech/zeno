@@ -205,6 +205,12 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         if (primHandle.isAuxiliary())
             continue;
         const auto &verts = primHandle.getVerts();
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
+                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+            auto x0 = verts.pack(dim_c<3>, "x0", i);
+            auto vi = voffset + i; 
+            vtemp.tuple(dim_c<3>, "x0", vi) = x0;
+        });
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
             auto &tris = primHandle.getSurfTris();
@@ -215,15 +221,19 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                         (tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset);
                 });
         }
+        exclTab.reset(pol, true); 
         const auto &edges = primHandle.getSurfEdges();
         pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
                                      voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
+                                     exclTab = proxy<space>(exclTab), 
                                      tempE = proxy<space>({}, tempE), 
                                      verts = view<space>({}, verts)] __device__(int i) mutable {
             auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
             auto edge = inds + (int)voffset;
             seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
             tempE.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge; 
+            exclTab.insert(edge); 
+            exclTab.insert({edge[1], edge[0]}); 
         });
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
@@ -369,15 +379,18 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
                     T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, T shrinkFactor)
+                    T BCStiffness)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
         nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
+        oPP{zsprims[0]->getParticles().get_allocator(), 1}, oPE{zsprims[0]->getParticles().get_allocator(), 1},
+        oPT{zsprims[0]->getParticles().get_allocator(), 1}, oEE{zsprims[0]->getParticles().get_allocator(), 1},
+        oE{zsprims[0]->getParticles().get_allocator(), 1}, 
         dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta * 2}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
-        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, consShrinking{shrinkFactor} {
+        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness} { 
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -402,15 +415,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     tempCons = itiles_t{
         zsprims[0]->getParticles().get_allocator(), 
         {
-            // graph coloring 
-            {"fixed", 1},        
-            {"max_color", 1}, 
-            {"num_color", 1}, 
-            {"tmp", 1}, 
-            // use its bits, e.g. 110 means 
-            // color-0: not available, color-1: okay, color-2: okay
-            // {"colors", 1}, use tempColors which is a zs::Vector
-            {"color", 1}, 
             // topology
             {"vi", 4}, 
             {"vN", 1}, 
@@ -423,10 +427,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"b", 1},       // float, b in A*lambda+b, for LCP  
             {"diag", 1}     // float, diag element in the current row 
         }, 
-        (std::size_t)estNumCps
-    }; 
-    tempColors = {
-        zsprims[0]->getParticles().get_allocator(), 
         (std::size_t)estNumCps
     }; 
     tempPP = tiles_t{
@@ -488,6 +488,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
                         // cloth dynamics
+                        {"x0", 3},              // rest state 
                         {"x[0]", 3},
                         {"x[k]", 3},  
                         {"y[k+1]", 3}, 
@@ -512,16 +513,20 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                     },
                     (std::size_t)numDofs};
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
-    consColorBits = zs::Vector<int>{(std::size_t)sizeof(zs::i64) * 8, zs::memsrc_e::um, 0}; 
+    colorMinWeights = colorWeights = zs::Vector<zs::u32>{vtemp.get_allocator(), 0}; 
+    colors = colorMaskOut = zs::Vector<int>{vtemp.get_allocator(), 0}; 
+    exclTab = i2tab_t{vtemp.get_allocator(), estNumCps}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
-    // lcpMatIs = lcpMatJs = {vtemp.get_allocator(), maxVertCons * 3 * estNumCps * 4}; 
-    // TODO: use a different parameter instead of this estNumCps to control lcpMat nnz size 
+    lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
-    fmt::print("init lcpMatIs size: {}\n", lcpMatIs.size()); 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
-    // average edge length (for CCD filtering)
-    initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
-                         // adaptive dhat, targetGRes, kappa
+
+    initialize(cudaPol); 
+
+    // debug 
+    visPrim = std::make_shared<PrimitiveObject>(); 
+    visPrim->verts.resize(vtemp.size() * 2); 
+    visPrim->lines.resize(vtemp.size()); 
 }
 
 void RapidClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
@@ -635,7 +640,6 @@ struct MakeRapidClothSystem : INode {
         auto input_max_vert_cons = get_input2<int>("max_vert_cons");  
         auto input_lcp_tol = get_input2<int>("lcp_tol"); 
         auto input_lcp_cap = get_input2<int>("lcp_cap"); 
-        auto input_shrink_factor = get_input2<float>("shrink_factor"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
@@ -644,7 +648,7 @@ struct MakeRapidClothSystem : INode {
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
                                                    input_delta, input_sigma, input_gamma, input_eps, 
-                                                   input_max_vert_cons, input_BC_stiffness, input_shrink_factor);
+                                                   input_max_vert_cons, input_BC_stiffness);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -669,7 +673,6 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "gravity", "-9.8"},
                               {"int", "collision_iters", "512"}, 
                               {"float", "delta", "1"}, 
-                              {"float", "shrink_factor", "1.1"}, 
                               {"float", "edge_violation_ratio", "1.1"}, 
                               {"float", "stepping_limit", "0.9"},  
                               {"float", "term_thresh", "1e-4"}, 

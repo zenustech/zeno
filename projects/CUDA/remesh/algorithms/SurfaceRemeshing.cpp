@@ -149,9 +149,6 @@ void SurfaceRemeshing::preprocessing() {
     auto& efeature = mesh_->prim_->lines.add_attr<int>("e_feature", 0);
     auto& vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
     auto& vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
-    if (!mesh_->prim_->lines.has_attr(line_pick_tag_)) {
-        mesh_->prim_->lines.add_attr<int>(line_pick_tag_, 0);
-    }
     auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
@@ -372,6 +369,7 @@ void SurfaceRemeshing::split_long_edges() {
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
     auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto& vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
@@ -403,6 +401,7 @@ void SurfaceRemeshing::split_long_edges() {
                 vfeature.push_back(0);
                 vlocked.push_back(0);
                 vdeleted.push_back(0);
+                vduplicate.push_back(vnew);
 
                 if (is_feature) {
                     enew = is_boundary ? mesh_->lines_size_ - 2 : mesh_->lines_size_ - 3;

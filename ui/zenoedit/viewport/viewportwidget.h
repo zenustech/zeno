@@ -119,7 +119,7 @@ private:
     std::shared_ptr<zeno::FakeTransformer> m_fakeTrans;
 
 public:
-    bool simpleRenderChecked;
+    int simpleRenderTime;
     bool updateLightOnce;
     bool m_bMovingCamera;
 };

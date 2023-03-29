@@ -52,26 +52,23 @@ void ZTimeline::initSignals()
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
 
-    //connect(m_ui->btnSimpleRender, &QPushButton::clicked, this, [=](bool bChecked) {
-    //    //std::cout << "SR: SimpleRender " << std::boolalpha << bChecked << "\n";
-    //    ZenoMainWindow *pWin = zenoApp->getMainWindow();
-    //    ZASSERT_EXIT(pWin);
-    //    DisplayWidget *pWid = pWin->getDisplayWidget();
-    //    ZASSERT_EXIT(pWid);
-    //    ViewportWidget *viewport = pWid->getViewportWidget();
-    //    ZASSERT_EXIT(viewport);
+//merge from master.
+#if 0
+    connect(m_ui->editSR, &QLineEdit::editingFinished, this, [=]() {
+        auto srTime = std::abs(m_ui->editSR->text().toInt());  // Avoid negative
+        //std::cout << "SR: SimpleRender " << srTime << "\n";
+        auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        viewport->simpleRenderTime = srTime;
+        if(srTime == 0){
+            scene->drawOptions->simpleRender = false;
+        }else{
+            scene->drawOptions->simpleRender = true;
+        }
+        scene->drawOptions->needRefresh = true;
+    });
+#endif
 
-    //    auto scene = viewport->getZenoVis()->getSession()->get_scene();
-    //    ZASSERT_EXIT(scene);
-
-    //    viewport->simpleRenderChecked = bChecked;
-    //    scene->drawOptions->simpleRender = bChecked;
-    //    scene->drawOptions->needRefresh = true;
-    //});
-
-    //m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
-    //m_ui->btnForward->setShortcut(QKeySequence("F3"));
-    //m_ui->btnPlay->setShortcut(QKeySequence("F4"));
     connect(m_ui->btnBackward, &ZToolButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();

@@ -23,6 +23,13 @@
 #include <variant>
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
+
+#include <string>
+#include <string_view>
+
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+
 namespace zenovis::optx {
 
 struct CppTimer {
@@ -53,9 +60,12 @@ struct GraphicsManager {
 
         struct DetMaterial {
             std::vector<std::shared_ptr<zeno::Texture2DObject>> tex2Ds;
+            std::vector<std::pair<std::string, std::string>> tex3Ds;
             std::string common;
             std::string shader;
             std::string mtlidkey;
+            std::string extensions;
+            std::string transform;
         };
         struct DetPrimitive {
             std::shared_ptr<zeno::PrimitiveObject> primSp;
@@ -192,6 +202,7 @@ struct GraphicsManager {
 
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 auto isUniformCarrier = prim_in->userData().has("ShaderUniforms");
+                
                 auto isInst = prim_in->userData().get2<int>("isInst", 0);
                 if (isInst == 1)
                 {
@@ -351,7 +362,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->common, mtl->frag, mtl->mtlidkey};
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->mtlidkey, mtl->extensions, mtl->transform};
             }
         }
 
@@ -597,24 +608,49 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
-    bool ensuredshadtmpl = false;
-    bool needUpdateCamera = false;
-    std::string shadtmpl;
-    std::string_view commontpl;
-    std::pair<std::string_view, std::string_view> shadtpl2;
+    struct ShaderTemplateInfo {
+        const std::string name;
 
-    void ensure_shadtmpl() {
-        if (ensuredshadtmpl) return;
-        ensuredshadtmpl = true;
-        shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
-        std::string_view tplsv = shadtmpl;
+        bool ensured = false;
+        std::string shadtmpl {};
+        std::string_view commontpl {};
+        std::pair<std::string_view, std::string_view> shadtpl2;
+    };
+
+    ShaderTemplateInfo _material_template {
+        "DeflMatShader.cu", false, {}, {}, {}
+    };
+
+    ShaderTemplateInfo _volume_template {
+        "volume.cu", false, {}, {}, {}
+    };
+
+    void ensure_shadtmpl(ShaderTemplateInfo &_template) 
+    {
+        if (_template.ensured) return;
+
+        _template.shadtmpl = sutil::lookupIncFile(_template.name.c_str());
+
+        auto marker = std::string("//PLACEHOLDER");
+        auto marker_length = marker.length();
+
+        auto start_marker = _template.shadtmpl.find(marker);
+
+        if (start_marker != std::string::npos) {
+            auto end_marker = _template.shadtmpl.find(marker, start_marker + marker_length);
+
+            _template.shadtmpl.replace(start_marker, marker_length, "/*PLACEHOLDER");
+            _template.shadtmpl.replace(end_marker, marker_length, "PLACEHOLDER*/");
+        }
+
+        std::string_view tplsv = _template.shadtmpl;
         std::string_view tmpcommon = "//COMMON_CODE";
         auto pcommon = tplsv.find(tmpcommon);
         auto pcomend = pcommon;
         if(pcommon != std::string::npos)
         {
             pcomend = pcommon + tmpcommon.size();
-            commontpl = tplsv.substr(0, pcommon);
+            _template.commontpl = tplsv.substr(0, pcommon);
         }
         else{
             throw std::runtime_error("cannot find stub COMMON_CODE in shader template");
@@ -625,7 +661,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             auto q0 = p0 + tmplstub0.size();
             if (auto p1 = tplsv.find(tmplstub1, q0); p1 != std::string::npos) {
                 auto q1 = p1 + tmplstub1.size();
-                shadtpl2 = {tplsv.substr(pcomend, p0-pcomend), tplsv.substr(q1)};
+                _template.shadtpl2 = {tplsv.substr(pcomend, p0-pcomend), tplsv.substr(q1)};
             } else {
                 throw std::runtime_error("cannot find stub GENERATED_END_MARK in shader template");
             }
@@ -633,9 +669,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             throw std::runtime_error("cannot find stub GENERATED_BEGIN_MARK in shader template");
         }
         
+        _template.ensured = true;
     }
 
     std::map<std::string, int> mtlidlut;
+
+    bool hasEnding (std::string const &fullString, std::string const &ending) {
+        if (fullString.length() >= ending.length()) {
+            return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+        } else {
+            return false;
+        }
+    }
 
     void draw() override {
         //std::cout<<"in draw()"<<std::endl;
@@ -699,23 +744,106 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
-        //zeno::log_debug("[zeno-optix] updating scene");
-            
-            
-            
+            //zeno::log_debug("[zeno-optix] updating scene");
             //zeno::log_debug("[zeno-optix] updating material");
+            std::vector<bool>        markers;
             std::vector<std::string> shaders;
             std::vector<std::vector<std::string>> shader_tex_names;
             mtlidlut.clear();
 
-            ensure_shadtmpl();
-            shaders.push_back(shadtmpl);
+            ensure_shadtmpl(_material_template);
+            ensure_shadtmpl(_volume_template);
+
+            shaders.push_back(_material_template.shadtmpl);
+            markers.push_back(false);
             mtlidlut.insert({"Default", 0});
+
             shader_tex_names.clear();
             shader_tex_names.push_back(std::vector<std::string>());
-            for (auto const &[key, obj]: graphicsMan->graphics) {
+
+            OptixUtil::g_vdb_indice_visible.clear();
+            OptixUtil::g_vdb_list_for_each_shader.clear();
+            
+            for (auto const &[key, obj]: graphicsMan->graphics) { 
+                
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
+
+                    glm::f64mat4 linear_transform(1.0);  
+
+                    if (!mtldet->transform.empty()) {
+                    
+                        rapidjson::Document d;
+                        d.Parse(mtldet->transform.c_str());
+
+                        if ( !d.IsNull() ) {
+
+                            glm::f64vec3 scale_vector(1), translate_vector(0);
+                            glm::f64vec4 rotate_vector(1, 1, 1, 0);
+                            
+                            auto parsing = [&d](std::string key, auto &result) {
+
+                                if (!d.HasMember(key.c_str())) return;
+                                
+                                auto& _ele = d[key.c_str()];
+                                if (_ele.IsArray()) {
+                                    auto _array = _ele.GetArray();
+
+                                    for (uint i=0; i<result.length(); ++i) {
+                                        if (i<_array.Size() && _array[i].IsNumber()) {
+                                            result[i] = _array[i].GetFloat();
+                                        } // if
+                                    } // for
+                                }
+                            };
+
+                            parsing("scale", scale_vector);
+                            parsing("rotate", rotate_vector);
+                            parsing("translate", translate_vector);
+
+                            if (translate_vector != glm::f64vec3(0)) {
+                                linear_transform = glm::translate(linear_transform, translate_vector);
+                            }
+
+                            glm::f64vec3 rotate_axis = glm::f64vec3(rotate_vector);
+                            if (rotate_vector.w != 0.0 && rotate_axis != glm::f64vec3(1, 1, 1)) {
+                                linear_transform = glm::rotate(linear_transform, glm::radians(rotate_vector.w), rotate_axis);
+                            }
+
+                            if (scale_vector != glm::f64vec3(1)) {
+                                linear_transform = glm::scale(linear_transform, scale_vector);
+                            }
+                        } // IsNull
+                    }
+
+                    bool has_vdb = false;
+
+                    std::vector<std::string> g_vdb_list_for_this_shader;
+                    g_vdb_list_for_this_shader.reserve(mtldet->tex3Ds.size());
+
+                    for (uint k=0; k<mtldet->tex3Ds.size(); ++k) 
+                    {
+                        auto& tex = mtldet->tex3Ds.at(k);
+                        auto vdb_path = tex.first;
+
+                        static const auto extension = std::string("vdb");
+                        auto found_vdb = hasEnding(vdb_path, extension);
+                        if (!found_vdb) { continue; }
+
+                        auto index_of_shader = shaders.size();
+                        std::string combined_key;
+
+                        auto loaded = OptixUtil::preloadVDB(tex, index_of_shader, k, linear_transform, combined_key); 
+                        has_vdb = has_vdb || loaded;
+
+                        g_vdb_list_for_this_shader.push_back(combined_key);
+                    }
+                    if (has_vdb) {
+                        OptixUtil::g_vdb_list_for_each_shader[shaders.size()] = (g_vdb_list_for_this_shader);
+                    }
+                    
+                    auto selected_template = has_vdb? _volume_template : _material_template; 
+
                     std::string shader;
                     auto common_code = mtldet->common;
                     std::string tar = "uniform sampler2D";
@@ -731,6 +859,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         /* Advance index forward so the next iteration doesn't pick it up as well. */
                         index += tar.length();
                     }
+
+                    auto& commontpl = selected_template.commontpl;
+                    auto& shadtpl2 = selected_template.shadtpl2;
 
                     shader.reserve(commontpl.size()
                                     + common_code.size()
@@ -755,12 +886,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         texid++;
                     }
                     shaders.push_back(std::move(shader));
-                    
+                    markers.push_back(has_vdb);
                 }
             }
             std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
-            xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
+            xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
+            
+            xinxinoptix::updateVolume();
 
+    OptixUtil::logInfoVRAM("Before update Mesh");
             //zeno::log_debug("[zeno-optix] updating mesh");
             // timer.tick();
             if(staticNeedUpdate)
@@ -769,6 +903,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             // timer.tick();
             xinxinoptix::UpdateDynamicMesh(mtlidlut);
             // timer.tock("done dynamic mesh update");
+    OptixUtil::logInfoVRAM("After update Mesh");
 
             xinxinoptix::UpdateInst();
             xinxinoptix::UpdateStaticInstMesh(mtlidlut);

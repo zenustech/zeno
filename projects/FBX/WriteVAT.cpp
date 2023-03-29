@@ -10,6 +10,66 @@
 #include <iostream>
 #include <fstream>
 
+#include "tinyexr.h"
+
+static bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
+    EXRHeader header;
+    InitEXRHeader(&header);
+
+    EXRImage image;
+    InitEXRImage(&image);
+
+    image.num_channels = 3;
+
+    std::vector<float> images[3];
+    images[0].resize(width * height);
+    images[1].resize(width * height);
+    images[2].resize(width * height);
+
+    // Split RGBRGBRGB... into R, G and B layer
+    for (int i = 0; i < width * height; i++) {
+        images[0][i] = rgb[3*i+0];
+        images[1][i] = rgb[3*i+1];
+        images[2][i] = rgb[3*i+2];
+    }
+
+    float* image_ptr[3];
+    image_ptr[0] = &(images[2].at(0)); // B
+    image_ptr[1] = &(images[1].at(0)); // G
+    image_ptr[2] = &(images[0].at(0)); // R
+
+    image.images = (unsigned char**)image_ptr;
+    image.width = width;
+    image.height = height;
+
+    header.num_channels = 3;
+    header.channels = (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
+    // Must be (A)BGR order, since most of EXR viewers expect this channel order.
+    strncpy(header.channels[0].name, "B", 255); header.channels[0].name[strlen("B")] = '\0';
+    strncpy(header.channels[1].name, "G", 255); header.channels[1].name[strlen("G")] = '\0';
+    strncpy(header.channels[2].name, "R", 255); header.channels[2].name[strlen("R")] = '\0';
+
+    header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+    header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+    for (int i = 0; i < header.num_channels; i++) {
+        header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of input image
+        header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
+    }
+
+    const char* err = NULL; // or nullptr in C++11 or later.
+    int ret = SaveEXRImageToFile(&image, &header, outfilename, &err);
+    if (ret != TINYEXR_SUCCESS) {
+        fprintf(stderr, "Save EXR err: %s\n", err);
+        FreeEXRErrorMessage(err); // free's buffer for an error message
+        return ret;
+    }
+    printf("Saved exr file. [ %s ] \n", outfilename);
+
+    free(header.channels);
+    free(header.pixel_types);
+    free(header.requested_pixel_types);
+}
+
 #define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -53,6 +113,11 @@ static void write_normalized_vec3f(std::ofstream &file, vec3f vec, vec3f _min, v
     file.write((char*)&_2, sizeof(int16_t));
 }
 
+static vec3f normalized_vec3f(vec3f vec, vec3f _min, vec3f _max) {
+    vec = (vec - _min) / (_max - _min);
+    return vec;
+}
+
 static int align_to(int count, int align) {
     int remainder = count % align;
     if (remainder == 0) {
@@ -82,6 +147,10 @@ static zeno::vec3f read_normalized_vec3f(std::ifstream &file, vec3f _min, vec3f 
 
 static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     std::ofstream file(path, std::ios::out | std::ios::binary);
+    file << 'Z';
+    file << 'E';
+    file << 'N';
+    file << 'O';
     vector<vec3f> temp_bboxs;
     for (const auto& i: v) {
         auto bbox = parallel_reduce_minmax(i.begin(), i.end());
@@ -110,14 +179,21 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
         file.write((char*)&width, sizeof(int));
     }
 
+    std::vector<float> rgb_f32;
     for (auto i = 0; i < frames; i++) {
         int width = v[i].size();
         v[i].resize(maxWidthAlign);
         for (auto j = 0; j < maxWidthAlign; j++) {
-            write_normalized_vec3f(file, v[i][j], bbox.first, bbox.second);
+            auto vec = normalized_vec3f(v[i][j], bbox.first, bbox.second);
+            rgb_f32.push_back(vec[0]);
+            rgb_f32.push_back(vec[1]);
+            rgb_f32.push_back(vec[2]);
         }
         zeno::log_info("VAT: write frame {} done ({} face vec)!", i, width);
     }
+    std::string exr_path = path;
+    exr_path += ".exr";
+    SaveEXR(rgb_f32.data(), 8192, height, exr_path.c_str());
 }
 
 
@@ -168,6 +244,8 @@ struct VATTexture {
 static VATTexture read_vat_texture(const std::string &path) {
     VATTexture vat = {};
     std::ifstream file(path, std::ios::in | std::ios::binary);
+    char x;
+    file >> x >> x >> x >> x;
     auto _min = read_vec3f(file);
     auto _max = read_vec3f(file);
 
@@ -246,6 +324,20 @@ struct WriteCustomVAT : INode {
             prims[frameid - frameStart] = prim;
         }
         if (frameid == frameEnd) {
+            // face overflow check
+            {
+                int max_face_per_vat = 8192 / frameCount * 8192 / 3;
+                int max_face_in_prims = 0;
+                for (const auto & prim : prims) {
+                    max_face_in_prims = std::max(max_face_in_prims, (int)prim->tris.size());
+                }
+
+                if (max_face_in_prims > max_face_per_vat) {
+                    zeno::log_error("max_face_in_prims: {} > max_face_per_vat: {}", max_face_in_prims, max_face_per_vat);
+                    set_output("prim", raw_prim);
+                    return;
+                }
+            }
             vector<vector<vec3f>> v;
             v.resize(prims.size());
             for (auto i = 0; i < prims.size(); i++) {
