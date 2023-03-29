@@ -318,6 +318,27 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
             vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "x(l)", vi); 
         }); 
+    // DEBUG 
+    if (debugVis_c)
+    {
+        auto hv = vtemp.clone({memsrc_e::host, -1}); 
+        auto hv_view = proxy<execspace_e::host>({}, hv); 
+        int n = vtemp.size(); 
+        for (int vi = 0; vi < n; vi++)
+        {
+            visPrim->verts.values[vi] = zeno::vec3f {
+                hv_view("x(l)", 0, vi), 
+                hv_view("x(l)", 1, vi), 
+                hv_view("x(l)", 2, vi)
+            }; 
+            visPrim->verts.values[vi + n] = zeno::vec3f {
+                hv_view("y(l)", 0, vi), 
+                hv_view("y(l)", 1, vi), 
+                hv_view("y(l)", 2, vi)
+            }; 
+            visPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
+        }
+    }
 }
 
 struct StepRapidClothSystem : INode {
