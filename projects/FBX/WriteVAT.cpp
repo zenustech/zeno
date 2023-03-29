@@ -6,6 +6,7 @@
 #include <zeno/utils/log.h>
 #include "zeno/para/parallel_reduce.h"
 
+#include <string.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
