@@ -19,8 +19,7 @@ struct RapidClothSystem : IObject {
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false; 
-    constexpr static auto debugVis_c = true; 
-    constexpr static auto tinyAlpha_c = 0.2f; 
+    constexpr static auto debugVis_c = false; 
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -244,6 +243,7 @@ struct RapidClothSystem : IObject {
     int nConsColor = 0; 
     int nCons = 0; 
     int consDegree = 32 * 3;
+    // TODO: make it an option
     i2tab_t exclTab; 
     spmat_t lcpMat; 
     ispmat_t lcpTopMat; 
@@ -251,7 +251,6 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpMatSize; 
     zs::Vector<zs::u32> colorMinWeights, colorWeights;
     zs::Vector<int> colorMaskOut, colors;
-    zs::Vector<T> syncAlpha;  
     itiles_t tempCons;       // LCP constraint matrix storing
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> oPP, oPE, oPT, oEE, oE; 

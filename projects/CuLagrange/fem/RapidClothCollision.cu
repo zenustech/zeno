@@ -354,6 +354,8 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     // TODO: compute oE in initialize
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
+    zs::CppTimer timer; 
+    timer.tick(); 
 
     nPP.setVal(0);
     nPE.setVal(0);  
@@ -393,6 +395,7 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     D = D_max; 
     fmt::print("[CD] ne: {}, npp: {}, npe: {}, npt: {}, nee: {}\n", 
         ne, npp, npe, npt, nee); 
+    timer.tock("proximity search"); 
 }
 
 template<class T>
@@ -531,7 +534,10 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     T shrinking)
 {    
     using namespace zs; 
-    constexpr auto space = execspace_e::cuda; 
+    constexpr auto space = execspace_e::cuda;
+    zs::CppTimer timer; 
+    timer.tick(); 
+
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp), maxDi = D] __device__ (int vi) mutable {
             vtemp("Di", vi) = maxDi; 
@@ -774,7 +780,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 vCons("ind", n + nE, vi) = k; 
             }
         }); 
+    timer.tock("compute constraints gradients"); 
 
+    timer.tick(); 
     lcpMatSize.setVal(0); 
     pol(range(nCons), 
         [vCons = proxy<space>({}, vCons), 
@@ -860,7 +868,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 }
             }
         }); 
-
+    timer.tock("construct lcp matrix"); 
 }
 
 // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
@@ -869,6 +877,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
     // PGS solver 
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
+    zs::CppTimer timer; 
+    timer.tick(); 
     // b = c(x(l)) + J(x(l)) * (y[k+1] - x(l))
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
@@ -887,16 +897,17 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
             tempCons("lambda", ci, T_c) = 0.f; 
          }); 
     
+    pol.sync(false); 
     for (int iter = 0; iter < lcpCap; iter++)
     {
-        lcpConverged.setVal(1); 
+        // lcpConverged.setVal(1); 
         for (int color = 0; color < nConsColor; color++)
         {
             pol(range(nCons), 
                 [tempCons = proxy<space>({}, tempCons), 
                 colors = proxy<space>(colors), 
                 lcpMat = proxy<space>(lcpMat), 
-                lcpConverged = proxy<space>(lcpConverged), 
+                // lcpConverged = proxy<space>(lcpConverged), 
                 lcpTol = lcpTol, color] __device__ (int i) mutable {
                     if (tempCons("val", i, T_c) == 0)
                         return; 
@@ -926,13 +937,15 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     }
                     auto newLam = zs::max(rhs / maj, 0.f); 
                     tempCons("lambda", i, T_c) = newLam; 
-                    if (zs::abs(newLam - oldLam) > lcpTol)
-                        lcpConverged[0] = 0; 
+                    // if (zs::abs(newLam - oldLam) > lcpTol)
+                    //     lcpConverged[0] = 0; 
                 }); 
         }
-        if (lcpConverged.getVal())
-            break;         
+        // if (lcpConverged.getVal())
+        //     break;         
     }
+    pol.sync(true);
+    timer.tock("solve LCP"); 
 }      
 
 // call cons + solveLCP 
@@ -946,6 +959,8 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
     consColoring(pol); 
     solveLCP(pol); 
     // y(l+1) = M^{-1} * (J(l)).T * lambda + y(l)
+    zs::CppTimer timer; 
+    timer.tick(); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
@@ -970,6 +985,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                 }
             }
         }); 
+    timer.tock("update y(l)"); 
 }   
 
 // async stepping  
@@ -977,16 +993,15 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
+    zs::CppTimer timer; 
+    timer.tick(); 
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
     // TODO: calculate an upper-bound of maxDi when doing findConstraints
-    syncAlpha.setVal(1.0f); 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
-         syncAlpha = proxy<space>(syncAlpha), 
          coOffset = coOffset, 
-         gamma = gamma, 
-         tinyAlpha = tinyAlpha_c] __device__ (int vi) mutable {
+         gamma = gamma] __device__ (int vi) mutable {
             auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
             auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
             if ((y - x).l2NormSqr() < eps_c)
@@ -1000,28 +1015,11 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             if (alpha > 1.0f)
                 alpha = 1.0f; 
             vtemp("sync", vi) = 0.f; 
-            if (alpha < tinyAlpha)
-            {
-                vtemp("sync", vi) = 1.f; 
-                atomic_min(exec_cuda, &syncAlpha[0], alpha); 
-                return; 
-            }
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
                 alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
-        pol(range(vtemp.size()), 
-            [vtemp = proxy<space>({}, vtemp), 
-            alpha = syncAlpha.getVal()] __device__ (int vi) mutable {
-                if (vtemp("sync", vi) < 0.5f)
-                    return; 
-                auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
-                auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
-                vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
-                    alpha * (y - x); 
-                vtemp("r(l)", vi) *= 1.0f - alpha; 
-                vtemp("disp", vi) = alpha * (y - x).norm(); 
-            }); 
+    timer.tock("forward step"); 
 }
 }
