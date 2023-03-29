@@ -21,6 +21,24 @@ set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
 set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
 
+
+set(dbg_with_pdb_no_opt false)
+if (${dbg_with_pdb_no_opt})
+    target_compile_options(zenoedit PRIVATE /Zi)
+
+    # Tell linker to include symbol data
+    set_target_properties(zenoedit PROPERTIES 
+        LINK_FLAGS "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF"
+    )
+
+    # Set file name & location
+    set_target_properties(zenoedit PROPERTIES 
+        COMPILE_PDB_NAME zenoedit
+        COMPILE_PDB_OUTPUT_DIR zenoedit
+    )
+endif()
+
+
 if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     find_package(Threads REQUIRED)
     target_link_libraries(zenoedit PRIVATE Threads::Threads)
