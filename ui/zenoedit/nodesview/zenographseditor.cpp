@@ -118,6 +118,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
+    ZenoSettingsManager::GetInstance().setValue("zencache-enable", true);
     //m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
 

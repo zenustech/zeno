@@ -1,7 +1,5 @@
 #include "zcachemgr.h"
 #include "zassert.h"
-#include <zeno/extra/GlobalComm.h>
-#include <zeno/zeno.h>
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)

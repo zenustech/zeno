@@ -13,7 +13,8 @@ using namespace JsonHelper;
 
 QSet<QString> renderNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera", "MakeCamera", 
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky"
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "BindMaterial", "ShaderFinalize"
     });
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
