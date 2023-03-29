@@ -1194,7 +1194,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     else
     {
         NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
-        QPointF pos = event->scenePos();
+        QPointF pos = event->screenPos();
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
         menu->setEditorFocus();
         menu->exec(pos.toPoint());

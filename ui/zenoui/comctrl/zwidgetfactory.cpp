@@ -20,6 +20,7 @@
 #include "zdicttableview.h"
 #include <zenoedit/zenoapplication.h>
 #include "gv/zitemfactory.h"
+#include <zenoui/comctrl/zpathedit.h>
 
 namespace zenoui
 {
@@ -60,32 +61,10 @@ namespace zenoui
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
             {
-                ZLineEdit* pathLineEdit = new ZLineEdit(value.toString());
+                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
-                pathLineEdit->setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
-                pathLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pathLineEdit->setProperty("control", ctrl);
-                pathLineEdit->setFocusPolicy(Qt::ClickFocus);
-                QObject::connect(pathLineEdit, &ZLineEdit::btnClicked, [=]() {
-                    bool bRead = ctrl == CONTROL_READPATH;
-                    QString path;
-                    cbSet.cbSwitch(true);
-                    if (bRead) {
-                        path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
-                    }
-                    else {
-                        path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
-                    }
-                    if (path.isEmpty())
-                    {
-                        cbSet.cbSwitch(false);
-                        return;
-                    }
-                    pathLineEdit->setText(path);
-                    emit pathLineEdit->textEditFinished();
-                    pathLineEdit->clearFocus();
-                    cbSet.cbSwitch(false);
-                });
+                
                 QObject::connect(pathLineEdit, &ZLineEdit::textEditFinished, [=]() {
                     cbSet.cbEditFinished(pathLineEdit->text());
                 });

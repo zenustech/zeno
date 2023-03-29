@@ -88,7 +88,7 @@ private:
 };
 
 
-class ZenoSvgLayoutItem;
+class ZPathEdit;
 
 class ZenoParamPathEdit : public ZenoParamWidget
 {
@@ -97,16 +97,13 @@ public:
     ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString path() const;
     void setPath(const QString& path);
-    QString getOpenFileName(const QString& caption, const QString& dir, const QString& filter);
-    void setValidator(QValidator*);
 
 signals:
     void pathValueChanged(QString);
     void clicked();     //due the bug of rendering when open dialog, we have to move out this signal.
 
 private:
-    ZenoParamLineEdit* m_pLineEdit;
-    ZenoSvgLayoutItem* m_openBtn;
+    ZPathEdit *m_pLineEdit;
 };
 
 
