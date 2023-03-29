@@ -379,7 +379,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
                     T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, T shrinkFactor)
+                    T BCStiffness)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -390,7 +390,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta * 2}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
-        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, consShrinking{shrinkFactor} { 
+        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness} { 
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -640,7 +640,6 @@ struct MakeRapidClothSystem : INode {
         auto input_max_vert_cons = get_input2<int>("max_vert_cons");  
         auto input_lcp_tol = get_input2<int>("lcp_tol"); 
         auto input_lcp_cap = get_input2<int>("lcp_cap"); 
-        auto input_shrink_factor = get_input2<float>("shrink_factor"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
@@ -649,7 +648,7 @@ struct MakeRapidClothSystem : INode {
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
                                                    input_delta, input_sigma, input_gamma, input_eps, 
-                                                   input_max_vert_cons, input_BC_stiffness, input_shrink_factor);
+                                                   input_max_vert_cons, input_BC_stiffness);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -674,7 +673,6 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "gravity", "-9.8"},
                               {"int", "collision_iters", "512"}, 
                               {"float", "delta", "1"}, 
-                              {"float", "shrink_factor", "1.1"}, 
                               {"float", "edge_violation_ratio", "1.1"}, 
                               {"float", "stepping_limit", "0.9"},  
                               {"float", "term_thresh", "1e-4"}, 

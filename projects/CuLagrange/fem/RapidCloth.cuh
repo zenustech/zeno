@@ -150,7 +150,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, T shrinkFactor); 
+                    T BCStiffness); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -241,7 +241,6 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpConverged; 
     int maxVertCons = 32;
     int nConsColor = 0; 
-    T consShrinking = 1.1f; 
     int nCons = 0; 
     int consDegree = 32 * 3;
     i2tab_t exclTab; 
