@@ -335,6 +335,16 @@ struct PrimitiveColoring : INode {
             i = ij[0];
             j = ij[1];
         });
+        {
+            // test if self connectivity matters
+            auto offset = is.size();
+            is.resize(offset + pos.size());
+            js.resize(offset + pos.size());
+            pol(range(pos.size()), [&is, &js, offset](int i) {
+                is[offset + i] = i;
+                js[offset + i] = i;
+            });
+        }
 
         /// @note doublets (wihtout value) to csr matrix
         zs::SparseMatrix<u32, true> spmat{(int)pos.size(), (int)pos.size()};
@@ -366,7 +376,37 @@ struct PrimitiveColoring : INode {
 
         puts("done init");
 #if 1
-        auto iter = fast_independent_set(pol, spmat, weights, colors);
+        auto iter = fast_independent_sets(pol, spmat, weights, colors);
+        auto iterRef = maximum_independent_sets(pol, spmat, weights, colors);
+        {
+            fmt::print("{} colors by fast. {} colors by maximum\n", iter, iterRef);
+            using T = typename RM_CVREF_T(colors)::value_type;
+            zs::Vector<int> correct{spmat.get_allocator(), 1};
+            correct.setVal(1);
+            pol(range(spmat.outerSize()),
+                [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
+                    auto color = colors[i];
+                    if (color == limits<T>::max()) {
+                        correct[0] = 0;
+                        return;
+                    }
+                    auto &ap = spmat._ptrs;
+                    auto &aj = spmat._inds;
+                    for (int k = ap[i]; k < ap[i + 1]; k++) {
+                        int j = aj[k];
+                        if (j == i)
+                            continue;
+                        if (colors[j] == color) {
+                            correct[0] = 0;
+                            return;
+                        }
+                    }
+                });
+            if (correct.getVal()) {
+                throw std::runtime_error("coloring is wrong!\n");
+            }
+            puts("all right!");
+        }
 #else
         // bfs
         int iter = 0;
