@@ -8,6 +8,7 @@
 #include "../view/zcomboboxitemdelegate.h"
 #include "zenoedit/zenoapplication.h"
 #include "../zpathedit.h"
+#include <QSvgRenderer>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -807,6 +808,7 @@ ZenoParamSpinBox::ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *paren
     m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
     m_pSpinBox->setSingleStep(info.step);
     m_pSpinBox->setRange(info.min, info.max);
+    m_pSpinBox->installEventFilter(this);
     setWidget(m_pSpinBox);
     connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
 }
@@ -822,6 +824,21 @@ void ZenoParamSpinBox::setSliderInfo(const SLIDER_INFO &info)
     m_pSpinBox->setRange(info.min, info.max);
 }
 
+bool ZenoParamSpinBox::eventFilter(QObject *obj, QEvent *event) {
+    if (obj == m_pSpinBox && event->type() == QEvent::Paint) {
+        QSvgRenderer svgRnder(QString(":/icons/leftArrow.svg"));
+        QPainter painter(m_pSpinBox);
+        QRect iconRect = m_pSpinBox->rect();
+        QRect leftRect = iconRect.adjusted(0, ZenoStyle::dpiScaled(3), -iconRect.width() + ZenoStyle::dpiScaled(16), -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, leftRect);
+        svgRnder.load(QString(":/icons/rightArrow.svg"));
+         QRect rightRect = iconRect.adjusted(iconRect.right() - ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(3), 0,-ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, rightRect);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(obj, event);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 ZenoParamDoubleSpinBox::ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent)
 {
@@ -831,6 +848,7 @@ ZenoParamDoubleSpinBox::ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphic
     m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
     m_pSpinBox->setSingleStep(info.step);
     m_pSpinBox->setRange(info.min, info.max);
+    m_pSpinBox->installEventFilter(this);
     setWidget(m_pSpinBox);
     connect(m_pSpinBox, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged(double)));
 }
@@ -846,6 +864,22 @@ void ZenoParamDoubleSpinBox::setSliderInfo(const SLIDER_INFO &info)
     m_pSpinBox->setRange(info.min, info.max);
 }
 
+bool ZenoParamDoubleSpinBox::eventFilter(QObject *obj, QEvent *event) 
+{
+    if (obj == m_pSpinBox && event->type() == QEvent::Paint) 
+    {
+        QSvgRenderer svgRnder(QString(":/icons/leftArrow.svg"));
+        QPainter painter(m_pSpinBox);
+        QRect iconRect = m_pSpinBox->rect();
+        QRect leftRect = iconRect.adjusted(0, ZenoStyle::dpiScaled(3),-iconRect.width() + ZenoStyle::dpiScaled(16), -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, leftRect);
+        svgRnder.load(QString(":/icons/rightArrow.svg"));
+        QRect rightRect = iconRect.adjusted(iconRect.right() - ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(3), 0, -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, rightRect);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(obj, event);
+}
 //////////////////////////////////////////////////////////////////////////////////////
 ZenoParamGroupLine::ZenoParamGroupLine(const QString &text, QGraphicsItem *parent) : 
     QGraphicsItem(parent),

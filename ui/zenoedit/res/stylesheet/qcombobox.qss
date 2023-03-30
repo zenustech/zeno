@@ -59,3 +59,14 @@ QComboBox QAbstractItemView::item:selected {
     color: #FFFFFF;
     background-color: #4B9EF4;
 }
+
+
+ZComboBox::down-arrow {
+    image: url();
+	width: 16px;
+	height: 16px;
+}
+
+ZComboBox::down-arrow:on, ZComboBox::down-arrow:hover {
+    image: url();
+}

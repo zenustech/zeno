@@ -319,6 +319,9 @@ class ZenoParamSpinBox : public ZenoParamWidget {
     void setSliderInfo(const SLIDER_INFO &info);
   signals:
     void valueChanged(int);
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
   private:
     QSpinBox *m_pSpinBox;
 };
@@ -333,6 +336,8 @@ class ZenoParamDoubleSpinBox : public ZenoParamWidget
   signals:
     void valueChanged(double);
 
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
   private:
     QDoubleSpinBox *m_pSpinBox;
 };
