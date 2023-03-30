@@ -344,16 +344,10 @@ void NodeParamModel::setAddParam(
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
         pGroup->appendRow(pItem);
         if (PARAM_PARAM != cls)
-            initDictSocket(pItem, SOCKET_INFO());
+            initDictSocket(pItem, dictPanel);
     }
     else
     {
-        if (type == "curve") {
-            CURVES_DATA curves = deflValue.value<CURVES_DATA>();
-            int j;
-            j = -0;
-        }
-
         pItem->setData(deflValue, ROLE_PARAM_VALUE);
         pItem->m_name = name;
         pItem->setData(type, ROLE_PARAM_TYPE);      //only allow to change type on IO processing, especially for SubInput.
@@ -672,7 +666,7 @@ void NodeParamModel::clearLinks(VParamItem* pItem)
     pItem->m_links.clear();
 }
 
-void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socketInfo)
+void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dictpanel)
 {
     if (!pItem || pItem->vType != VPARAM_PARAM)
         return;
@@ -712,9 +706,9 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const SOCKET_INFO& socket
     if (pItem->m_sockProp == SOCKPROP_DICTLIST_PANEL)
     {
         DictKeyModel* pDictModel = new DictKeyModel(m_model, pItem->index(), this);
-        for (int r = 0; r < socketInfo.dictpanel.keys.size(); r++)
+        for (int r = 0; r < dictpanel.keys.size(); r++)
         {
-            const DICTKEY_INFO& keyInfo = socketInfo.dictpanel.keys[r];
+            const DICTKEY_INFO& keyInfo = dictpanel.keys[r];
             pDictModel->insertRow(r);
             QModelIndex newIdx = pDictModel->index(r, 0);
             pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
