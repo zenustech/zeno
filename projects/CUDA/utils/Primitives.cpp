@@ -4,6 +4,7 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/graph/Coloring.hpp"
 #include "zensim/graph/ConnectedComponents.hpp"
 #include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -364,6 +365,9 @@ struct PrimitiveColoring : INode {
         std::vector<int> maskOut(pos.size());
 
         puts("done init");
+#if 1
+        auto iter = fast_independent_set(pol, spmat, weights, colors);
+#else
         // bfs
         int iter = 0;
         auto update = [&](int iter) -> bool {
@@ -385,6 +389,7 @@ struct PrimitiveColoring : INode {
             if (update(iter))
                 break;
         }
+#endif
         fmt::print("{} colors in total.\n", iter);
 
         set_output("prim", std::move(prim));
