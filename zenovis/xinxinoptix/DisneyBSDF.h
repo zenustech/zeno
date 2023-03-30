@@ -1162,6 +1162,7 @@ static __inline__ __device__ float light(
     float absorption,
     float time
 ){
+    // tofix: try cone sampling
 	const float maxSteps = 10;
 	const float stepSize = 11.;
 	vec3 dir_step = -sunLightDir * stepSize;
@@ -1250,7 +1251,8 @@ static __inline__ __device__ vec4 render_clouds(
         
         // tofix: move lighting to this part, 
         //        to have a sense of thickness
-        float heightFract = cloudHeightFract(length(pos));
+        float heightFract = cloudHeightFract(length(pos-hit_in.origin)); 
+        // temporal fix of over exposure on the horizon for ambient lighting
         if (dens > 0.)
         {
             // cloud illumination
@@ -1260,7 +1262,8 @@ static __inline__ __device__ vec4 render_clouds(
                     sun_color * hgPhase
                     * light(pos, sunLightDir, windDir, coverage, absorption, time)
                     +
-                    // ambient lighting
+                    // ambient lighting 
+                    // tofix: not phisically correct (consider the conservation of energy)
                     ambient
                     * saturate(pow(sunLightDir.z + .04, 1.4))
                     + mix(vec3(.0, .1, .4), vec3(.3, .6, .8), 1.0 - r.direction.y) * .125 
