@@ -81,6 +81,29 @@
         <source>This function can only be used in cache mode.</source>
         <translation>该功能仅支持在缓存模式下运行</translation>
     </message>
+	<message>
+        <source>disable</source>
+        <translation>禁用实时预览</translation>
+    </message>
+	<message>
+        <source>alwaysAll</source>
+        <translation>实时预览全部</translation>
+    </message>
+	<message>
+        <source>alwaysLightCameraMaterial</source>
+        <translation>仅实时预览灯光相机材质</translation>
+    </message>
+</context>
+<context>
+    <name>ZToolMenuButton</name>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+	<message>
+        <source>RunLightCameraMaterial</source>
+        <translation>运行灯光相机材质</translation>
+    </message>
 </context>
 <context>
     <name>DockContent_View</name>

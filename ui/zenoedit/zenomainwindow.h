@@ -51,6 +51,7 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
+    void setAlwaysLightCameraMaterial(bool bAlways);
     bool isAlways() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
@@ -204,6 +205,7 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
+    bool m_bAlwaysLightCameraMaterial;
     int m_nResizeTimes;
     bool m_bMovingSeparator;    //dock separator.
     Ui::MainWindow* m_ui;

@@ -45,6 +45,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
+    , m_bAlwaysLightCameraMaterial(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -604,12 +605,19 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (m_bAlways) {
-            m_pTimeline->togglePlayButton(false);
-            int nFrame = m_pTimeline->value();
-            QVector<DisplayWidget *> views = viewports();
-            for (DisplayWidget *view : views) {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        m_pTimeline->togglePlayButton(false);
+        int nFrame = m_pTimeline->value();
+        QVector<DisplayWidget *> views = viewports();
+        for (DisplayWidget *view : views) {
+            if (m_bAlways) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 view->onRun(nFrame, nFrame);
+            }
+            else if (m_bAlwaysLightCameraMaterial) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
+                view->onRun(nFrame, nFrame, true);
             }
         }
     });
@@ -848,7 +856,7 @@ void ZenoMainWindow::openFileDialog()
 {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -863,7 +871,7 @@ void ZenoMainWindow::openFileDialog()
 void ZenoMainWindow::onNewFile() {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     if (saveQuit()) 
     {
         zenoApp->graphsManagment()->newFile();
@@ -1361,6 +1369,10 @@ void ZenoMainWindow::setAlways(bool bAlways)
     emit alwaysModeChanged(bAlways);
     if (m_bAlways)
         m_pTimeline->togglePlayButton(false);
+}
+
+void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlways) {
+    m_bAlwaysLightCameraMaterial = bAlways;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
