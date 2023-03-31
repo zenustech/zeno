@@ -150,7 +150,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness); 
+                    T BCStiffness, bool enableExclEdges); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -197,6 +197,7 @@ struct RapidClothSystem : IObject {
     }
 
     // sim params
+    bool enableExclEdges = false; 
     int substep = -1;
     std::size_t estNumCps = 100000;
     std::size_t bvhFrontCps = 10000000; 

@@ -4,6 +4,7 @@
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "zensim/graph/Coloring.hpp"
 #include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "RapidClothGradHess.inl"
 
@@ -13,7 +14,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
-    
+
     // p -> t
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
     auto &stfront = withBoundary ? boundaryStFront : selfStFront;
@@ -27,6 +28,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
          nPP = proxy<space>(nPP), nPE = proxy<space>(nPE), 
          exclTab = proxy<space>(exclTab), 
+         enableExclEdges = enableExclEdges, 
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = spInds("inds", vi, int_c); 
@@ -37,9 +39,14 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
                 if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                     return;
-                for (int k = 0; k < 3; k++)
-                    if (exclTab.query({vi, tri[k]}) >= 0)
-                        return; 
+                bool onlyPT = false; 
+                if (enableExclEdges)
+                    for (int k = 0; k < 3; k++)
+                        if (exclTab.query({vi, tri[k]}) >= 0)
+                        {
+                            onlyPT = true; 
+                            break; 
+                        }
                 // ccd
                 auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
                 auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
@@ -48,15 +55,20 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 switch (pt_distance_type(p, t0, t1, t2)) {
                     case 0: 
                     {
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1); 
                             tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[0]}; 
                             tempPP("dist", no) = (float)zs::sqrt(d2); 
                         }
+
                         break; 
                     }
                     case 1: 
                     {
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1); 
                             tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[1]}; 
@@ -66,15 +78,19 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     }
                     case 2: 
                     {
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1); 
                             tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[2]}; 
                             tempPP("dist", no) = (float)zs::sqrt(d2); 
-                        }
+                        } 
                         break; 
                     }
                     case 3: 
                     {
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                             tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[0], tri[1]}; 
@@ -84,6 +100,8 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     }
                     case 4: 
                     {
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                             tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[1], tri[2]}; 
@@ -92,7 +110,9 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                         break; 
                     }
                     case 5: 
-                    {
+                    {                        
+                        if (onlyPT)
+                            break; 
                         if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                             tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[2], tri[0]}; 
@@ -120,7 +140,35 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 bvh.iter_neighbors(bv, front.node(i), f);
         });
     if (frontManageRequired)
-        stfront.reorder(pol);   
+        stfront.reorder(pol); 
+
+#define check_potential_pe(p, e0, e1, pi, e0i, e1i)                                                                                                     \
+{                                                                                                                                                       \
+        switch (pe_distance_type(p, e0, e1)) {                                                                                                          \
+            case 0: {                                                                                                                                   \
+                if (auto d2 = dist2_pp(p, e0); d2 < dHat2) {                                                                                            \
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);                                                                                        \
+                    tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{pi, e0i};                                                                        \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            case 1: {                                                                                                                                   \
+                if (auto d2 = dist2_pp(p, e1); d2 < dHat2) {                                                                                            \
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);                                                                                        \
+                    tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{pi, e1i};                                                                        \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            case 2: {                                                                                                                                   \
+                if (auto d2 = dist2_pe(p, e0, e1); d2 < dHat2) {                                                                                        \
+                    auto no = atomic_add(exec_cuda, &nPE[0], 1);                                                                                        \
+                    tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{pi, e0i, e1i};                                                                  \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            default: break;                                                                                                                             \
+        }                                                                                                                                               \
+}
     // e -> e
     const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
     auto &seefront = withBoundary ? boundarySeeFront : selfSeeFront;
@@ -149,11 +197,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     return;
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
-
-                for (int i = 0; i < 2; i++)
-                    for (int j = 0; j < 2; j++)
-                        if (exclTab.query({eiInds[i], ejInds[j]}))
-                            return; 
 
                 switch(ee_distance_type(v0, v1, v2, v3)) {
                     case 0: {
@@ -222,27 +265,11 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                     }
                     case 8: {
                         if ((v1 - v0).cross(v3 - v2).l2NormSqr() / ((v1 - v0).l2NormSqr() * (v3 - v2).l2NormSqr() + eps_c) < eps_c)
-                        {
-                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
-                            }
-                            if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], ejInds[0], ejInds[1]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
-                            }
-                            if (auto d2 = dist2_pe(v0, v1, v2); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[0]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
-                            }
-                            if (auto d2 = dist2_pe(v0, v1, v3); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[1]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
-                            }
+                        {                                                                                                                                                \
+                            check_potential_pe(v0, v2, v3, eiInds[0], ejInds[0], ejInds[1]); 
+                            check_potential_pe(v1, v2, v3, eiInds[1], ejInds[0], ejInds[1]); 
+                            check_potential_pe(v2, v0, v1, ejInds[0], eiInds[0], eiInds[1]); 
+                            check_potential_pe(v3, v0, v1, ejInds[1], eiInds[0], eiInds[1]); 
                             break; 
                         }
                         if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
@@ -445,6 +472,8 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
                     continue; 
                 if (colors[j] == color)
                 {
+                    printf("\t\t\t\t[debug] cons-coloring error at i = %d, j = %d, color_i = %d, color_j = %d at %d-th neighbor\n", 
+                        i, j, color, colors[j], k); 
                     correct[0] = 0;  
                     return; 
                 }
@@ -493,7 +522,10 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     colors.resize(nCons); 
     colors.reset(-1); 
 
-    // bfs
+#if 1
+    auto iter = fast_independent_sets(pol, lcpTopMat, colorWeights, colors);
+    nConsColor = iter; 
+#else 
     int iter = 0; 
     zs::Vector<int> done{1, memsrc_e::device, 0};
     auto update = 
@@ -520,6 +552,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
             break;
     }
     nConsColor = iter - 1; 
+#endif 
     timer.tock("constraint coloring"); 
     fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor); 
     if (checkConsColoring(pol))
@@ -897,17 +930,16 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
             tempCons("lambda", ci, T_c) = 0.f; 
          }); 
     
-    pol.sync(false); 
     for (int iter = 0; iter < lcpCap; iter++)
     {
-        // lcpConverged.setVal(1); 
+        lcpConverged.setVal(1); 
         for (int color = 0; color < nConsColor; color++)
         {
             pol(range(nCons), 
                 [tempCons = proxy<space>({}, tempCons), 
                 colors = proxy<space>(colors), 
                 lcpMat = proxy<space>(lcpMat), 
-                // lcpConverged = proxy<space>(lcpConverged), 
+                lcpConverged = proxy<space>(lcpConverged), 
                 lcpTol = lcpTol, color] __device__ (int i) mutable {
                     if (tempCons("val", i, T_c) == 0)
                         return; 
@@ -937,14 +969,13 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     }
                     auto newLam = zs::max(rhs / maj, 0.f); 
                     tempCons("lambda", i, T_c) = newLam; 
-                    // if (zs::abs(newLam - oldLam) > lcpTol)
-                    //     lcpConverged[0] = 0; 
+                    if (zs::abs(newLam - oldLam) > lcpTol)
+                        lcpConverged[0] = 0; 
                 }); 
         }
-        // if (lcpConverged.getVal())
-        //     break;         
+        if (lcpConverged.getVal())
+            break;         
     }
-    pol.sync(true);
     timer.tock("solve LCP"); 
 }      
 
