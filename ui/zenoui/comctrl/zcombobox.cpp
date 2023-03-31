@@ -1,6 +1,7 @@
 #include "../style/zenostyle.h"
 #include "zcombobox.h"
 #include "./view/zcomboboxitemdelegate.h"
+#include <QSvgRenderer>
 
 
 ZComboBox::ZComboBox(bool bSysStyle, QWidget *parent)
@@ -77,6 +78,11 @@ void ZComboBox::paintEvent(QPaintEvent* event)
 {
     if (m_bSysStyle) {
         QComboBox::paintEvent(event);
+        QSvgRenderer svgRnder(QString(":/icons/combobox-dropdown.svg"));
+        QPainter painter(this);
+        QRect iconRect = rect();
+        iconRect.adjust(iconRect.right() - ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(3), 0, -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, iconRect);
     }
     else {
         QStylePainter painter(this);

@@ -1,13 +1,16 @@
 #include "zlineedit.h"
 #include "znumslider.h"
 #include "style/zenostyle.h"
-
+#include <QSvgRenderer>
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_pSlider(nullptr)
     , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
+    , m_pButton(nullptr)
+    , m_bIconHover(false)
+
 {
     init();
 }
@@ -17,6 +20,8 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     , m_pSlider(nullptr)
     , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
+    , m_pButton(nullptr)
+    , m_bIconHover(false)
 {
     init();
 }
@@ -33,13 +38,17 @@ void ZLineEdit::setShowingSlider(bool bShow)
 
 void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
 {
-    QAction* pAction = new QAction;
-    QIcon icon;
-    icon.addPixmap(QPixmap(icNormal), QIcon::Normal, QIcon::Off);
-    icon.addPixmap(QPixmap(icHover), QIcon::Active, QIcon::Off);
-    pAction->setIcon(icon);
-    addAction(pAction, TrailingPosition);
-    connect(pAction, SIGNAL(triggered()), this, SIGNAL(btnClicked()));
+    m_iconNormal = icNormal;
+    m_iconHover = icHover;
+    m_pButton = new QPushButton(this);
+    m_pButton->setFixedSize(ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(20));
+    m_pButton->installEventFilter(this);
+    QHBoxLayout *btnLayout = new QHBoxLayout(this);
+    btnLayout->addStretch();
+    btnLayout->addWidget(m_pButton);
+    btnLayout->setAlignment(Qt::AlignRight);
+    btnLayout->setContentsMargins(0, 0, 0, 0);
+    connect(m_pButton, SIGNAL(clicked(bool)), this, SIGNAL(btnClicked()));
 }
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
@@ -136,4 +145,27 @@ void ZLineEdit::paintEvent(QPaintEvent* event)
         p.setRenderHint(QPainter::Antialiasing, false);
         p.drawRect(rc.adjusted(0,0,-1,-1));
     }
+}
+
+bool ZLineEdit::eventFilter(QObject *obj, QEvent *event) {
+    if (obj == m_pButton) {
+        if (event->type() == QEvent::Paint) {
+            QSvgRenderer svgRender;
+            QPainter painter(m_pButton);
+            QRect rc = m_pButton->rect();
+            if (m_bIconHover)
+                svgRender.load(m_iconHover);
+            else
+                svgRender.load(m_iconNormal);
+            svgRender.render(&painter, rc);
+            return true;
+        } else if (event->type() == QEvent::HoverEnter) {
+            setCursor(QCursor(Qt::ArrowCursor));
+            m_bIconHover = true;
+        } else if (event->type() == QEvent::HoverLeave) {
+            setCursor(QCursor(Qt::IBeamCursor));
+            m_bIconHover = false;
+        }
+    }
+    return QLineEdit::eventFilter(obj, event);
 }

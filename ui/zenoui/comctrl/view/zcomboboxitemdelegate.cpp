@@ -14,7 +14,6 @@ void ZComboBoxItemDelegate2::paint(QPainter* painter, const QStyleOptionViewItem
     QStyleOptionViewItem opt = option;
 
     QStyledItemDelegate::initStyleOption(&opt, index);
-    opt.icon = QIcon(":/icons/checked.svg");
 
     QComboBox* pCombobox = qobject_cast<QComboBox*>(parent());
     bool bCurrent = pCombobox->currentIndex() == index.row();
@@ -39,8 +38,8 @@ void ZComboBoxItemDelegate2::paint(QPainter* painter, const QStyleOptionViewItem
         qreal iconSz = ZenoStyle::dpiScaled(16);
         QRect iconRect(opt.rect.x() + icon_xmargin, opt.rect.y() + icon_ymargin, iconSz, iconSz);
 
-        QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
-        opt.icon.paint(painter, iconRect, opt.decorationAlignment, QIcon::Normal, state);
+        QSvgRenderer svgRnder(QString(":/icons/checked.svg"));
+        svgRnder.render(painter, iconRect);
     }
 
     painter->setPen(QPen(foreground));

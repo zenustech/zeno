@@ -21,6 +21,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 signals:
     void btnClicked();
@@ -34,6 +35,10 @@ private:
     ZNumSlider* m_pSlider;
     bool m_bShowingSlider;
     bool m_bHasRightBtn;
+    QPushButton *m_pButton;
+    QString m_iconNormal;
+    QString m_iconHover;
+    bool m_bIconHover;
 };
 
 #endif
